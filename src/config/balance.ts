@@ -38,6 +38,8 @@ export const balance = {
   conquest: {
     pickTimerSeconds: 30,
     starterSetSize: 10,
+    /** Starter cards are distinct characters of this rarity rank or lower (1 = Delta). */
+    starterSetMaxRarityRank: 1,
     unlockAfterMatches: 5,
     unlockAtLevel: 3,
     maxCardsLostPerDay: 3,

@@ -2,7 +2,7 @@
 // visited pages available offline. Only same-origin GET requests are handled;
 // Supabase calls (other origin) always go straight to the network.
 
-const CACHE = "o-mega-v1";
+const CACHE = "o-mega-v2";
 // Scope path, e.g. "/o-mega/" on GitHub Pages or "/" locally.
 const SCOPE = new URL(self.registration.scope).pathname;
 
@@ -24,6 +24,8 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
+  // The OAuth callback carries one-time codes: never cache it.
+  if (url.pathname.startsWith(`${SCOPE}auth/`)) return;
 
   // Hashed build assets never change: serve from cache when present.
   if (url.pathname.startsWith(`${SCOPE}_next/static/`)) {

@@ -27,6 +27,11 @@ npm run dev                  # http://localhost:3000
 | `npm run lint` | ESLint |
 | `npm run typecheck` | Controllo dei tipi TypeScript |
 | `npm test` | Test Vitest |
+| `npm run test:db` | Test SQL sul progetto Supabase collegato (in transazione annullata) |
+| `npm run db:push` | Applica le migrazioni al progetto Supabase |
+| `npm run db:types` | Rigenera i tipi TypeScript dallo schema |
+
+Configurazione di Supabase, login Google e CLI: [`docs/SETUP.md`](docs/SETUP.md).
 
 ## Deploy
 

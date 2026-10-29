@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
 
 // Only public values may reach the frontend: the project URL and the
 // publishable (or legacy anon) key. Never the service_role key.
@@ -7,20 +8,20 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey);
 
-let client: SupabaseClient | null = null;
+let client: SupabaseClient<Database> | null = null;
 
 /**
  * Browser-side Supabase client. The site is a static export, so there is no
  * server session: auth uses the PKCE flow and keeps the session in localStorage.
  * Call it only from client components (e.g. inside effects or event handlers).
  */
-export function getSupabase(): SupabaseClient {
+export function getSupabase(): SupabaseClient<Database> {
   if (!supabaseUrl || !supabaseKey) {
     throw new Error(
       "Supabase is not configured: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.",
     );
   }
-  client ??= createClient(supabaseUrl, supabaseKey, {
+  client ??= createClient<Database>(supabaseUrl, supabaseKey, {
     auth: {
       flowType: "pkce",
       persistSession: true,
