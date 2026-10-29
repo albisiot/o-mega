@@ -10,7 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:db": "supabase db query --linked -f supabase/tests/player_bootstrap.test.sql",
+    "test:db": "node scripts/test-db.mjs",
     "db:push": "supabase db push --linked",
     "db:types": "supabase gen types typescript --linked --schema public > src/types/database.ts"
   },

@@ -112,6 +112,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "card_definitions_power_code_fkey"
+            columns: ["power_code"]
+            isOneToOne: false
+            referencedRelation: "power_definitions"
+            referencedColumns: ["code"]
+          },
+          {
             foreignKeyName: "card_definitions_rarity_code_fkey"
             columns: ["rarity_code"]
             isOneToOne: false
@@ -238,6 +245,30 @@ export type Database = {
         }
         Relationships: []
       }
+      power_definitions: {
+        Row: {
+          code: string
+          description_template: string
+          name: string
+          required_params: string[]
+          tier: string
+        }
+        Insert: {
+          code: string
+          description_template: string
+          name: string
+          required_params?: string[]
+          tier: string
+        }
+        Update: {
+          code?: string
+          description_template?: string
+          name?: string
+          required_params?: string[]
+          tier?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -319,6 +350,48 @@ export type Database = {
           drop_weight?: number
           name?: string
           rank?: number
+        }
+        Relationships: []
+      }
+      threat_definitions: {
+        Row: {
+          art_url: string | null
+          code: string
+          created_at: string
+          flavor: string
+          id: string
+          is_active: boolean
+          level: number
+          modifier_code: string | null
+          modifier_params: Json
+          name: string
+          required_abilities: string[]
+        }
+        Insert: {
+          art_url?: string | null
+          code: string
+          created_at?: string
+          flavor?: string
+          id?: string
+          is_active?: boolean
+          level: number
+          modifier_code?: string | null
+          modifier_params?: Json
+          name: string
+          required_abilities: string[]
+        }
+        Update: {
+          art_url?: string | null
+          code?: string
+          created_at?: string
+          flavor?: string
+          id?: string
+          is_active?: boolean
+          level?: number
+          modifier_code?: string | null
+          modifier_params?: Json
+          name?: string
+          required_abilities?: string[]
         }
         Relationships: []
       }
