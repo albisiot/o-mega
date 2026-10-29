@@ -51,17 +51,3 @@ export async function fetchOwnedCards(): Promise<OwnedCard[]> {
       a.definition.name.localeCompare(b.definition.name, "it"),
   );
 }
-
-const ERROR_MESSAGES: Record<string, string> = {
-  username_invalid: "Il nome utente deve avere da 3 a 20 caratteri: lettere, numeri o _.",
-  username_taken: "Questo nome utente è già in uso.",
-  not_authenticated: "Sessione scaduta: accedi di nuovo.",
-};
-
-/** Translates the error codes raised by the database functions into Italian. */
-export function describePlayerError(error: unknown): string {
-  const message = error instanceof Error || (error && typeof error === "object" && "message" in error)
-    ? String((error as { message: unknown }).message)
-    : "";
-  return ERROR_MESSAGES[message] ?? "Qualcosa è andato storto. Riprova tra poco.";
-}

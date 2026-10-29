@@ -3,7 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { withBasePath } from "@/lib/base-path";
-import { bootstrapPlayer, describePlayerError, type Profile } from "@/lib/player";
+import { describeServerError } from "@/lib/errors";
+import { bootstrapPlayer, type Profile } from "@/lib/player";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type AuthContextValue = {
@@ -54,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       .catch((cause: unknown) => {
         console.error("bootstrap_player failed", cause);
-        if (!cancelled) setError(describePlayerError(cause));
+        if (!cancelled) setError(describeServerError(cause));
       });
     return () => {
       cancelled = true;

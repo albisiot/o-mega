@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PackPanel } from "@/components/pack-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { countOwnedCards, type Profile } from "@/lib/player";
 
 const UPCOMING = [
-  { title: "Pacchetto del giorno", detail: "Un pacchetto gratuito ogni giorno" },
   { title: "Collezione", detail: "Album e dettaglio delle carte" },
   { title: "Gioca", detail: "Sfide 1 contro 1 da 3 minuti" },
 ];
@@ -39,13 +39,15 @@ export function HomeScreen({ profile }: { profile: Profile }) {
       </header>
 
       <main className="flex flex-1 flex-col gap-6 px-5 pb-8">
-        <section className="rounded-3xl border border-amber-400/20 bg-linear-to-br from-amber-400/15 to-transparent p-6">
+        <section>
           <p className="text-sm text-zinc-400">Ciao, {profile.username}!</p>
-          <p className="mt-1 text-2xl font-bold">
-            {cardCount === null ? "…" : cardCount} {cardCount === 1 ? "carta" : "carte"}
+          <p className="text-lg font-semibold">
+            {cardCount === null ? "…" : cardCount} {cardCount === 1 ? "carta" : "carte"} nella tua
+            collezione
           </p>
-          <p className="text-sm text-zinc-400">nella tua collezione</p>
         </section>
+
+        <PackPanel />
 
         <section className="flex flex-col gap-3">
           <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">In arrivo</h2>

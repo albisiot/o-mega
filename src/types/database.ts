@@ -224,6 +224,77 @@ export type Database = {
           },
         ]
       }
+      coin_ledger: {
+        Row: {
+          amount: number
+          created_at: string
+          id: number
+          reason: string
+          ref_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: never
+          reason: string
+          ref_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: never
+          reason?: string
+          ref_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coin_ledger_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_claims: {
+        Row: {
+          claimed_at: string
+          day: string
+          pack_opening_id: string | null
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          day: string
+          pack_opening_id?: string | null
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          day?: string
+          pack_opening_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_claims_pack_opening_id_fkey"
+            columns: ["pack_opening_id"]
+            isOneToOne: false
+            referencedRelation: "pack_openings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_claims_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_config: {
         Row: {
           description: string
@@ -244,6 +315,44 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      pack_openings: {
+        Row: {
+          card_instance_ids: string[]
+          id: string
+          is_daily: boolean | null
+          new_card_instance_ids: string[]
+          opened_at: string
+          pack_type: string
+          user_id: string
+        }
+        Insert: {
+          card_instance_ids: string[]
+          id?: string
+          is_daily?: boolean | null
+          new_card_instance_ids?: string[]
+          opened_at?: string
+          pack_type: string
+          user_id: string
+        }
+        Update: {
+          card_instance_ids?: string[]
+          id?: string
+          is_daily?: boolean | null
+          new_card_instance_ids?: string[]
+          opened_at?: string
+          pack_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pack_openings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       power_definitions: {
         Row: {
@@ -428,8 +537,30 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      buy_pack: { Args: never; Returns: Json }
+      claim_daily_pack: { Args: never; Returns: Json }
+      coin_balance: { Args: { p_user: string }; Returns: number }
       config_int: { Args: { p_key: string }; Returns: number }
+      config_text: { Args: { p_key: string }; Returns: string }
+      draw_pack_definitions: {
+        Args: { p_count: number; p_guaranteed_min_rank: number }
+        Returns: string[]
+      }
+      draw_rarity_rank: { Args: { p_min_rank: number }; Returns: number }
+      game_day: { Args: { p_at?: string }; Returns: string }
+      get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
+      get_pack_status: { Args: never; Returns: Json }
       grant_starter_set: { Args: { p_user: string }; Returns: number }
+      next_reset_at: { Args: { p_at?: string }; Returns: string }
+      open_pack: {
+        Args: { p_pack_type: string; p_user: string }
+        Returns: string
+      }
+      pack_opening_payload: { Args: { p_opening_id: string }; Returns: Json }
+      power_text: {
+        Args: { p_params: Json; p_power_code: string }
+        Returns: string
+      }
       set_username: {
         Args: { p_username: string }
         Returns: {

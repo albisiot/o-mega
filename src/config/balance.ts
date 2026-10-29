@@ -53,6 +53,8 @@ export const balance = {
     guaranteedMinRarityRank: 2,
     dailyFreePacks: 1,
     standardPackPrice: 150,
+    /** Cards of this rarity rank or higher get the special reveal (4 = Alfa). */
+    specialRevealMinRarityRank: 4,
   },
 
   economy: {

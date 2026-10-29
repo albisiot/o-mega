@@ -7,8 +7,8 @@ import { useAuth } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { FACTION_LABELS } from "@/lib/catalog";
+import { describeServerError } from "@/lib/errors";
 import {
-  describePlayerError,
   fetchOwnedCards,
   updateUsername,
   type OwnedCard,
@@ -143,7 +143,7 @@ function UsernameForm({ profile }: { profile: Profile }) {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!isValidUsername(trimmed)) {
-      setMessage({ text: describePlayerError({ message: "username_invalid" }), isError: true });
+      setMessage({ text: describeServerError({ message: "username_invalid" }), isError: true });
       return;
     }
     setSaving(true);
@@ -153,7 +153,7 @@ function UsernameForm({ profile }: { profile: Profile }) {
       setValue(updated.username);
       setMessage({ text: "Nome utente aggiornato.", isError: false });
     } catch (error) {
-      setMessage({ text: describePlayerError(error), isError: true });
+      setMessage({ text: describeServerError(error), isError: true });
     } finally {
       setSaving(false);
     }
