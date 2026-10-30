@@ -368,6 +368,41 @@ export type Database = {
         }
         Relationships: []
       }
+      match_lobbies: {
+        Row: {
+          card_instance_ids: string[]
+          code: string
+          created_at: string
+          expires_at: string
+          host_id: string
+          mode: string
+        }
+        Insert: {
+          card_instance_ids: string[]
+          code: string
+          created_at?: string
+          expires_at: string
+          host_id: string
+          mode?: string
+        }
+        Update: {
+          card_instance_ids?: string[]
+          code?: string
+          created_at?: string
+          expires_at?: string
+          host_id?: string
+          mode?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_lobbies_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_rounds: {
         Row: {
           deadline_at: string
@@ -417,6 +452,7 @@ export type Database = {
         Row: {
           card_instance_ids: string[] | null
           definition_ids: string[]
+          last_seen_at: string | null
           match_id: string
           side: string
           user_id: string | null
@@ -424,6 +460,7 @@ export type Database = {
         Insert: {
           card_instance_ids?: string[] | null
           definition_ids: string[]
+          last_seen_at?: string | null
           match_id: string
           side: string
           user_id?: string | null
@@ -431,6 +468,7 @@ export type Database = {
         Update: {
           card_instance_ids?: string[] | null
           definition_ids?: string[]
+          last_seen_at?: string | null
           match_id?: string
           side?: string
           user_id?: string | null
@@ -533,6 +571,38 @@ export type Database = {
           },
         ]
       }
+      matchmaking_queue: {
+        Row: {
+          card_instance_ids: string[]
+          enqueued_at: string
+          mode: string
+          refreshed_at: string
+          user_id: string
+        }
+        Insert: {
+          card_instance_ids: string[]
+          enqueued_at?: string
+          mode?: string
+          refreshed_at?: string
+          user_id: string
+        }
+        Update: {
+          card_instance_ids?: string[]
+          enqueued_at?: string
+          mode?: string
+          refreshed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matchmaking_queue_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pack_openings: {
         Row: {
           card_instance_ids: string[]
@@ -568,6 +638,45 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      pending_plays: {
+        Row: {
+          card_instance_id: string
+          match_id: string
+          round: number
+          side: string
+          submitted_at: string
+        }
+        Insert: {
+          card_instance_id: string
+          match_id: string
+          round: number
+          side: string
+          submitted_at?: string
+        }
+        Update: {
+          card_instance_id?: string
+          match_id?: string
+          round?: number
+          side?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_plays_card_instance_id_fkey"
+            columns: ["card_instance_id"]
+            isOneToOne: false
+            referencedRelation: "card_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_plays_match_id_round_fkey"
+            columns: ["match_id", "round"]
+            isOneToOne: false
+            referencedRelation: "match_rounds"
+            referencedColumns: ["match_id", "round"]
           },
         ]
       }
@@ -859,8 +968,10 @@ export type Database = {
         }
       }
       buy_pack: { Args: never; Returns: Json }
+      cancel_lobby: { Args: never; Returns: undefined }
       card_payload: { Args: { p_definition_id: string }; Returns: Json }
       claim_daily_pack: { Args: never; Returns: Json }
+      claim_victory: { Args: { p_match_id: string }; Returns: Json }
       coin_balance: { Args: { p_user: string }; Returns: number }
       collection_summary: {
         Args: { p_user: string }
@@ -882,6 +993,18 @@ export type Database = {
       convert_duplicates: {
         Args: { p_count?: number; p_definition_id: string }
         Returns: Json
+      }
+      create_lobby: { Args: { p_card_instance_ids: string[] }; Returns: Json }
+      create_pvp_match: {
+        Args: {
+          p_mode: string
+          p_player_a: string
+          p_player_b: string
+          p_team_a: string[]
+          p_team_b: string[]
+          p_threat_ids: string[]
+        }
+        Returns: string
       }
       delete_formation: { Args: { p_formation_id: string }; Returns: undefined }
       draw_pack_definitions: {
@@ -921,10 +1044,12 @@ export type Database = {
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
       get_pack_status: { Args: never; Returns: Json }
       grant_starter_set: { Args: { p_user: string }; Returns: number }
+      has_active_match: { Args: { p_user: string }; Returns: boolean }
       instance_in_active_match: {
         Args: { p_instance_id: string }
         Returns: boolean
       }
+      leave_queue: { Args: never; Returns: undefined }
       match_create_bot: {
         Args: {
           p_bot_definition_ids: string[]
@@ -933,6 +1058,20 @@ export type Database = {
           p_threat_ids: string[]
           p_user: string
         }
+        Returns: string
+      }
+      match_heartbeat: { Args: { p_match_id: string }; Returns: undefined }
+      match_join_lobby: {
+        Args: {
+          p_code: string
+          p_guest: string
+          p_team: string[]
+          p_threat_ids: string[]
+        }
+        Returns: string
+      }
+      match_queue_join: {
+        Args: { p_team: string[]; p_threat_ids: string[]; p_user: string }
         Returns: string
       }
       match_record_round: {
@@ -950,7 +1089,24 @@ export type Database = {
         Args: { p_match_id: string; p_side: string }
         Returns: Json
       }
+      match_submit_play: {
+        Args: {
+          p_card_instance_id: string
+          p_match_id: string
+          p_round: number
+          p_user: string
+        }
+        Returns: string
+      }
       next_reset_at: { Args: { p_at?: string }; Returns: string }
+      notify_match: {
+        Args: { p_kind: string; p_match_id: string }
+        Returns: undefined
+      }
+      notify_player: {
+        Args: { p_kind: string; p_match_id: string; p_user: string }
+        Returns: undefined
+      }
       open_pack: {
         Args: { p_pack_type: string; p_user: string }
         Returns: string
@@ -959,6 +1115,15 @@ export type Database = {
       power_text: {
         Args: { p_params: Json; p_power_code: string }
         Returns: string
+      }
+      pvp_reward: {
+        Args: {
+          p_match: Database["public"]["Tables"]["matches"]["Row"]
+          p_reason: string
+          p_result: string
+          p_side: string
+        }
+        Returns: number
       }
       save_formation: {
         Args: {

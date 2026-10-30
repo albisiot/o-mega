@@ -1,20 +1,26 @@
-// Edge Function "match": authoritative matches against bots (SPEC §5.9, §10.1).
-// Thin I/O layer around packages/game-engine: authenticate the caller, load
-// the data, let the engine decide, store the result through the service-only
-// database functions (which re-check the round order and the result).
+// Edge Function "match": authoritative matches (SPEC §5, §10.1), against bots
+// and between players. Thin I/O layer around packages/game-engine:
+// authenticate the caller, load the data, let the engine decide, store the
+// result through the service-only database functions (which re-check the
+// round order, the submitted choices and the final result).
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   computeAbilityMeans,
+  drawThreatLevels,
+  pickThreats,
   planBotMatch,
   playBotRound,
+  playPvpRound,
   type BotDifficulty,
   type BotMatchCatalog,
   type Character,
+  type MatchResult,
   type MatchRules,
   type MatchState,
   type Rng,
   type RoundRecord,
+  type Side,
   type Threat,
 } from "../_shared/game-engine/index.ts";
 
@@ -34,6 +40,7 @@ const CLIENT_ERRORS = new Set([
   "match_already_active",
   "round_already_resolved",
   "round_not_expired",
+  "round_expired",
   "character_not_available",
   "character_already_played",
   "invalid_team_size",
@@ -41,6 +48,8 @@ const CLIENT_ERRORS = new Set([
   "duplicate_character",
   "card_not_owned",
   "profile_not_found",
+  "lobby_not_found",
+  "cannot_play_yourself",
 ]);
 
 class GameError extends Error {}
@@ -69,6 +78,11 @@ function check<T>(result: { data: T | null; error: { message: string } | null })
   if (result.error) throw new Error(result.error.message);
   if (result.data === null) throw new Error("No data");
   return result.data;
+}
+
+function cardIds(value: unknown): string[] {
+  if (!Array.isArray(value) || !value.every((id) => typeof id === "string")) throw new GameError("invalid_request");
+  return value;
 }
 
 // ---------------------------------------------------------------------------
@@ -143,39 +157,21 @@ async function load(): Promise<Loaded> {
   return loaded;
 }
 
-// ---------------------------------------------------------------------------
-// Actions
-// ---------------------------------------------------------------------------
-
-const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard"];
-
-async function stateFor(matchId: string) {
-  return check(await admin.rpc("match_state_payload", { p_match_id: matchId, p_side: "a" }));
+function planThreats(loaded: Loaded): string[] {
+  return pickThreats(rng, loaded.catalog.threatCatalog, drawThreatLevels(rng, loaded.rules)).map((t) => t.id);
 }
 
-async function startMatch(userId: string, body: Record<string, unknown>) {
-  const difficulty = body.difficulty as BotDifficulty;
-  if (!DIFFICULTIES.includes(difficulty)) throw new GameError("invalid_difficulty");
-  const cards = body.card_instance_ids;
-  if (!Array.isArray(cards) || !cards.every((id) => typeof id === "string")) throw new GameError("invalid_request");
+// ---------------------------------------------------------------------------
+// Match state
+// ---------------------------------------------------------------------------
 
-  const { rules, catalog } = await load();
-  const plan = planBotMatch({ rules, catalog, difficulty, rng });
-  const matchId = check(
-    await admin.rpc("match_create_bot", {
-      p_user: userId,
-      p_difficulty: difficulty,
-      p_card_instance_ids: cards,
-      p_bot_definition_ids: plan.botTeam.map((c) => c.definitionId),
-      p_threat_ids: plan.threats.map((t) => t.id),
-    }),
-  ) as string;
-  return stateFor(matchId);
+async function stateFor(matchId: string, side: Side) {
+  return check(await admin.rpc("match_state_payload", { p_match_id: matchId, p_side: side }));
 }
 
 type PlayRow = {
   round: number;
-  side: "a" | "b";
+  side: Side;
   card_instance_id: string | null;
   definition_id: string;
   base_score: number;
@@ -188,7 +184,8 @@ type PlayRow = {
 /** Rebuilds the full engine state of a match from the database. */
 async function loadMatch(userId: string, matchId: string, loaded: Loaded) {
   const match = (await admin.from("matches").select("*").eq("id", matchId).maybeSingle()).data;
-  if (!match || match.player_a !== userId || match.mode !== "bot") throw new GameError("match_not_found");
+  const side: Side | null = match?.player_a === userId ? "a" : match?.player_b === userId ? "b" : null;
+  if (!match || !side) throw new GameError("match_not_found");
   if (match.status !== "active") throw new GameError("match_not_active");
 
   const [teams, rounds, plays] = await Promise.all([
@@ -196,14 +193,14 @@ async function loadMatch(userId: string, matchId: string, loaded: Loaded) {
     admin.from("match_rounds").select("round, deadline_at, winner_side, resolved_at").eq("match_id", matchId).order("round"),
     admin.from("round_plays").select("*").eq("match_id", matchId),
   ]);
-  const teamRows = check(teams) as { side: "a" | "b"; card_instance_ids: string[] | null; definition_ids: string[] }[];
+  const teamRows = check(teams) as { side: Side; card_instance_ids: string[] | null; definition_ids: string[] }[];
   const definitionOf = (id: string) => {
     const definition = loaded.definitions.get(id);
     if (!definition) throw new Error(`Unknown card definition ${id}`);
     return definition;
   };
-  const team = (side: "a" | "b") => {
-    const row = teamRows.find((t) => t.side === side)!;
+  const team = (teamSide: Side) => {
+    const row = teamRows.find((t) => t.side === teamSide)!;
     return row.definition_ids.map((definitionId, i) =>
       toCharacter(definitionOf(definitionId), row.card_instance_ids?.[i] ?? definitionId),
     );
@@ -214,8 +211,8 @@ async function loadMatch(userId: string, matchId: string, loaded: Loaded) {
   const resolved: RoundRecord[] = roundRows
     .filter((r) => r.resolved_at)
     .map((r) => {
-      const playOf = (side: "a" | "b") => {
-        const p = playRows.find((row) => row.round === r.round && row.side === side)!;
+      const playOf = (playSide: Side) => {
+        const p = playRows.find((row) => row.round === r.round && row.side === playSide)!;
         return {
           characterId: p.card_instance_id ?? p.definition_id,
           base: p.base_score,
@@ -244,10 +241,65 @@ async function loadMatch(userId: string, matchId: string, loaded: Loaded) {
     rounds: resolved,
   };
   const current = roundRows.find((r) => r.round === match.current_round)!;
-  return { match, state, deadline: Date.parse(current.deadline_at) };
+  return { match, side, state, deadline: Date.parse(current.deadline_at) };
 }
 
-async function playRound(userId: string, body: Record<string, unknown>) {
+/** Stores a round computed by the engine. */
+function recordRound(
+  matchId: string,
+  state: MatchState,
+  played: { round: RoundRecord; finished: boolean; result: MatchResult | null },
+) {
+  const playPayload = (side: Side) => {
+    const play = played.round.plays[side];
+    const character = state.teams[side].find((c) => c.id === play.characterId)!;
+    return {
+      // Bots own no cards: their character id is the definition id.
+      card_instance_id: character.id === character.definitionId ? null : character.id,
+      definition_id: character.definitionId,
+      base: play.base,
+      bonus: play.bonus,
+      score: play.total,
+      highest: play.highest,
+      auto_played: play.autoPlayed,
+    };
+  };
+  return admin.rpc("match_record_round", {
+    p_match_id: matchId,
+    p_round: played.round.round,
+    p_play_a: playPayload("a"),
+    p_play_b: playPayload("b"),
+    p_winner_side: played.round.winner,
+    p_result: played.finished ? played.result : null,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Bot matches
+// ---------------------------------------------------------------------------
+
+const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard"];
+
+async function startBotMatch(userId: string, body: Record<string, unknown>) {
+  const difficulty = body.difficulty as BotDifficulty;
+  if (!DIFFICULTIES.includes(difficulty)) throw new GameError("invalid_difficulty");
+  const cards = cardIds(body.card_instance_ids);
+
+  const { rules, catalog } = await load();
+  const plan = planBotMatch({ rules, catalog, difficulty, rng });
+  const matchId = check(
+    await admin.rpc("match_create_bot", {
+      p_user: userId,
+      p_difficulty: difficulty,
+      p_card_instance_ids: cards,
+      p_bot_definition_ids: plan.botTeam.map((c) => c.definitionId),
+      p_threat_ids: plan.threats.map((t) => t.id),
+    }),
+  ) as string;
+  return stateFor(matchId, "a");
+}
+
+async function playBotMatchRound(userId: string, body: Record<string, unknown>) {
   const matchId = body.match_id;
   const choice = body.card_instance_id ?? null;
   if (typeof matchId !== "string" || (choice !== null && typeof choice !== "string")) {
@@ -256,44 +308,108 @@ async function playRound(userId: string, body: Record<string, unknown>) {
 
   const loaded = await load();
   const { match, state, deadline } = await loadMatch(userId, matchId, loaded);
+  if (match.mode !== "bot") throw new GameError("match_not_found");
   if (body.round !== match.current_round) throw new GameError("round_already_resolved");
 
   const expired = Date.now() > deadline + loaded.graceSeconds * 1000;
   if (choice === null && !expired) throw new GameError("round_not_expired");
 
-  const record = async (playerChoice: string | null) => {
-    const played = playBotRound({
+  const record = (playerChoice: string | null) =>
+    recordRound(
+      matchId,
       state,
-      catalog: loaded.catalog,
-      difficulty: match.bot_difficulty as BotDifficulty,
-      playerSide: "a",
-      playerChoice,
-      rng,
-    });
-    const { a, b } = played.round.plays;
-    const definitionA = state.teams.a.find((c) => c.id === a.characterId)!.definitionId;
-    return admin.rpc("match_record_round", {
-      p_match_id: matchId,
-      p_round: played.round.round,
-      p_play_a: {
-        card_instance_id: a.characterId, definition_id: definitionA,
-        base: a.base, bonus: a.bonus, score: a.total, highest: a.highest, auto_played: a.autoPlayed,
-      },
-      p_play_b: {
-        definition_id: b.characterId,
-        base: b.base, bonus: b.bonus, score: b.total, highest: b.highest, auto_played: b.autoPlayed,
-      },
-      p_winner_side: played.round.winner,
-      p_result: played.finished ? played.result : null,
-    });
-  };
+      playBotRound({
+        state,
+        catalog: loaded.catalog,
+        difficulty: match.bot_difficulty as BotDifficulty,
+        playerSide: "a",
+        playerChoice,
+        rng,
+      }),
+    );
 
   let saved = await record(expired ? null : (choice as string));
   // Clocks can disagree by a moment: if the database says the time is up,
   // the round is played for the player, as the rules require.
   if (saved.error?.message === "round_expired") saved = await record(null);
   if (saved.error) throw new Error(saved.error.message);
-  return stateFor(matchId);
+  return stateFor(matchId, "a");
+}
+
+// ---------------------------------------------------------------------------
+// Matches between players
+// ---------------------------------------------------------------------------
+
+async function joinLobby(userId: string, body: Record<string, unknown>) {
+  if (typeof body.code !== "string") throw new GameError("invalid_request");
+  const cards = cardIds(body.card_instance_ids);
+  const loaded = await load();
+  const matchId = check(
+    await admin.rpc("match_join_lobby", {
+      p_guest: userId,
+      p_code: body.code,
+      p_team: cards,
+      p_threat_ids: planThreats(loaded),
+    }),
+  ) as string;
+  return stateFor(matchId, "b");
+}
+
+async function joinQueue(userId: string, body: Record<string, unknown>) {
+  const cards = cardIds(body.card_instance_ids);
+  const loaded = await load();
+  const { data, error } = await admin.rpc("match_queue_join", {
+    p_user: userId,
+    p_team: cards,
+    p_threat_ids: planThreats(loaded),
+  });
+  if (error) throw new Error(error.message);
+  return { matched: Boolean(data), match_id: data ?? null };
+}
+
+/**
+ * Resolves the current round when both players have chosen or the time is
+ * up. Safe to call from both clients at once: the database accepts one result.
+ */
+async function resolvePvpRound(userId: string, matchId: string) {
+  const loaded = await load();
+  const { match, side, state, deadline } = await loadMatch(userId, matchId, loaded);
+  if (match.mode === "bot") throw new GameError("match_not_found");
+
+  const pending = check(
+    await admin.from("pending_plays").select("side, card_instance_id").eq("match_id", matchId).eq("round", match.current_round),
+  ) as { side: Side; card_instance_id: string }[];
+  const choices = {
+    a: pending.find((p) => p.side === "a")?.card_instance_id ?? null,
+    b: pending.find((p) => p.side === "b")?.card_instance_id ?? null,
+  };
+  const expired = Date.now() > deadline + loaded.graceSeconds * 1000;
+  if ((choices.a === null || choices.b === null) && !expired) return stateFor(matchId, side);
+
+  const played = playPvpRound({ state, choices, families: loaded.catalog.families, rng });
+  const saved = await recordRound(matchId, state, played);
+  // Someone else resolved it first, or our clock ran slightly ahead: fine.
+  if (saved.error && !["round_already_resolved", "match_not_active", "round_not_expired"].includes(saved.error.message)) {
+    throw new Error(saved.error.message);
+  }
+  return stateFor(matchId, side);
+}
+
+async function submitChoice(userId: string, body: Record<string, unknown>) {
+  if (typeof body.match_id !== "string" || typeof body.card_instance_id !== "string" || typeof body.round !== "number") {
+    throw new GameError("invalid_request");
+  }
+  const status = check(
+    await admin.rpc("match_submit_play", {
+      p_user: userId,
+      p_match_id: body.match_id,
+      p_round: body.round,
+      p_card_instance_id: body.card_instance_id,
+    }),
+  );
+  if (status === "ready") return resolvePvpRound(userId, body.match_id);
+  const match = (await admin.from("matches").select("player_a").eq("id", body.match_id).single()).data;
+  return stateFor(body.match_id, match?.player_a === userId ? "a" : "b");
 }
 
 // ---------------------------------------------------------------------------
@@ -310,9 +426,18 @@ Deno.serve(async (req) => {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     switch (body.action) {
       case "start":
-        return json(await startMatch(userId, body));
+        return json(await startBotMatch(userId, body));
       case "play":
-        return json(await playRound(userId, body));
+        return json(await playBotMatchRound(userId, body));
+      case "join_lobby":
+        return json(await joinLobby(userId, body));
+      case "queue":
+        return json(await joinQueue(userId, body));
+      case "submit":
+        return json(await submitChoice(userId, body));
+      case "resolve":
+        if (typeof body.match_id !== "string") throw new GameError("invalid_request");
+        return json(await resolvePvpRound(userId, body.match_id));
       default:
         throw new GameError("invalid_request");
     }

@@ -28,6 +28,33 @@ export function planBotMatch(params: {
 }
 
 /**
+ * Resolves a round between two players who chose in secret. A null choice
+ * (timer expired) is played randomly for that side (SPEC §5.5).
+ */
+export function playPvpRound(params: {
+  state: MatchState;
+  choices: Record<Side, string | null>;
+  families: BotMatchCatalog["families"];
+  rng: Rng;
+}): { state: MatchState; round: RoundRecord; finished: boolean; result: MatchResult | null } {
+  const { state, choices, families, rng } = params;
+  const pick = (side: Side) => {
+    const available = availableCharacters(state, side);
+    const choice = choices[side];
+    if (choice === null) return { characterId: pickOne(rng, available).id, autoPlayed: true };
+    if (!available.some((c) => c.id === choice)) throw new Error("character_not_available");
+    return { characterId: choice, autoPlayed: false };
+  };
+  const resolved = resolveRound(state, { a: pick("a"), b: pick("b") }, families);
+  return {
+    state: resolved.state,
+    round: resolved.round,
+    finished: isFinished(resolved.state),
+    result: matchResult(resolved.state),
+  };
+}
+
+/**
  * Plays the current round. The bot decides first, from its own view only;
  * then the player's choice is applied (null = timer expired: a random
  * available character is played for them, SPEC §5.5).

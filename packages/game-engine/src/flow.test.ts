@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computeAbilityMeans } from "./bots.ts";
-import { planBotMatch, playBotRound, type BotMatchCatalog } from "./flow.ts";
+import { planBotMatch, playBotRound, playPvpRound, type BotMatchCatalog } from "./flow.ts";
 import { availableCharacters, roundsWon } from "./match.ts";
 import { mulberry32, pickOne } from "./rng.ts";
 import { ABILITIES, character, FAMILIES, RULES, threatCatalog } from "./test-fixtures.ts";
@@ -65,6 +65,29 @@ describe("playBotRound", () => {
     const state = startMatch(3, "medium");
     expect(() =>
       playBotRound({ state, catalog, difficulty: "medium", playerSide: "a", playerChoice: "someone-else", rng: mulberry32(1) }),
+    ).toThrow(/character_not_available/);
+  });
+
+  it("resolves a PvP round with both choices, or plays randomly for a missing one", () => {
+    const opponents = characters.slice(10, 15).map((c) => ({ ...c, id: `opp-${c.id}` }));
+    const plan = planBotMatch({ rules: RULES, catalog, difficulty: "easy", rng: mulberry32(8) });
+    const state: MatchState = { rules: RULES, threats: plan.threats, teams: { a: playerTeam, b: opponents }, rounds: [] };
+
+    const both = playPvpRound({
+      state,
+      choices: { a: playerTeam[0].id, b: opponents[2].id },
+      families: FAMILIES,
+      rng: mulberry32(1),
+    });
+    expect(both.round.plays.a).toMatchObject({ characterId: playerTeam[0].id, autoPlayed: false });
+    expect(both.round.plays.b).toMatchObject({ characterId: opponents[2].id, autoPlayed: false });
+
+    const missing = playPvpRound({ state, choices: { a: playerTeam[1].id, b: null }, families: FAMILIES, rng: mulberry32(2) });
+    expect(missing.round.plays.b.autoPlayed).toBe(true);
+    expect(opponents.map((c) => c.id)).toContain(missing.round.plays.b.characterId);
+
+    expect(() =>
+      playPvpRound({ state: both.state, choices: { a: playerTeam[0].id, b: null }, families: FAMILIES, rng: mulberry32(3) }),
     ).toThrow(/character_not_available/);
   });
 

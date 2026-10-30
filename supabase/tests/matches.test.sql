@@ -179,7 +179,9 @@ begin
 
   assert (select status from public.matches where id = v_match) = 'finished', 'match not finished at 3-0';
   assert (select reward_coins_a from public.matches where id = v_match) = 25, 'win reward';
-  assert (select count(*) from public.coin_ledger where reason = 'bot_match_reward' and amount = 25) = 1, 'ledger';
+  assert (select count(*) from public.coin_ledger
+          where user_id = '00000000-0000-4000-8000-0000000000a1' and reason = 'bot_match_reward' and amount = 25) = 1,
+    'ledger';
   assert (select matches_played = 1 and bot_wins = 1 and wins = 0 from public.profiles
           where id = '00000000-0000-4000-8000-0000000000a1'), 'statistics not updated';
 end $$;

@@ -72,6 +72,16 @@ export const balance = {
     botParticipationCoins: 8,
     /** Separate daily cap for bot rewards: assumed half of the PvP cap. */
     botDailyCoinCap: 150,
+    /** A win by forfeit pays the full reward only after this many rounds. */
+    forfeitFullRewardMinRounds: 3,
+  },
+
+  matchmaking: {
+    friendCodeMinutes: 10,
+    /** Queue entries not refreshed by the waiting client for this long are ignored. */
+    queueStaleSeconds: 20,
+    /** After this wait without an opponent, the app suggests a bot. */
+    suggestBotAfterSeconds: 60,
   },
 
   formations: {
