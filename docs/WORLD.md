@@ -126,6 +126,10 @@ Testo di colore (una frase):
 | P016, Cattivi | MAG 10, VOL 9, PSI 9, FUR 0, TEC 1 | **La Campana:** la si sente arrivare da tre quartieri di distanza. |
 | P021, Cattivi | FUR 8, VEL 7, INT 7, TEC 1, COM 2 | **Spillo:** entra ovunque, purché la serratura non sia elettronica. |
 | P022, Neutrali | PER 10, VOL 9, COM 9, INT 1, FUR 0 | **Cane da Porto:** trova tutto e non capisce niente. |
+| P001, Eroi | FOR 10, RES 9, COM 9, MAG 0, PSI 1 | **Gru** (Sciolti di porto, schierati con gli Eroi): solleva container a spalla, con un sorriso. |
+| P004, Neutrali | MAG 10, PSI 9, VOL 9, FOR 0, TEC 1 | **Sibilla** (Sciolti): legge il futuro al mercato e non riesce a sollevare la propria borsa. |
+| P009, Eroi | Generalista: FOR 6, VOL 6, gli altri da 3 a 5 | **Il Vigile** (Custodi): nessun Segno, solo tanta pazienza. |
+| P012, Eroi | Generalista: COM 6, PER 6, gli altri da 3 a 5 | **Lanterna** (Lanterne): la volontaria che arriva quando manca la luce. |
 
 ## 6. Minacce
 
