@@ -1,5 +1,6 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
+import { FACTION_COLORS, isFoil, rarityArt, rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 
 export type CardData = {
   name: string;
@@ -18,53 +19,91 @@ type CardViewProps = {
   glow?: boolean;
 };
 
-/** A character card. Art is a placeholder silhouette tinted by rarity. */
+/** A character card. The frame and art treatment grow with the rarity; art is a placeholder silhouette. */
 export function CardView({ card, abilities, size = "lg", glow = false }: CardViewProps) {
   const color = card.rarity.color;
-  const style = { "--glow-color": `${color}aa`, borderColor: `${color}99` } as CSSProperties;
+  const style = { "--glow-color": `${color}aa`, background: rarityFrame(card.rarity) } as CSSProperties;
   const large = size === "lg";
 
   return (
     <article
       style={style}
-      className={`relative flex flex-col overflow-hidden rounded-2xl border-2 bg-zinc-900 ${
-        large ? "w-72 gap-3 p-3" : "w-full gap-2 p-2"
-      } ${glow ? "animate-rare-glow" : ""}`}
+      className={`rounded-xl ${large ? "w-[300px] p-[7px]" : "w-full p-1"} ${glow ? "animate-rare-glow" : ""}`}
     >
-      <header className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className={`truncate font-bold ${large ? "text-lg" : "text-sm"}`}>{card.name}</h3>
-          <p className="text-[11px] text-zinc-400">{FACTION_LABELS[card.faction] ?? card.faction}</p>
-        </div>
-        <span
-          className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide"
-          style={{ color, backgroundColor: `${color}22` }}
-        >
-          {card.rarity.name}
-        </span>
-      </header>
+      <div className="flex flex-col overflow-hidden rounded-md bg-panel text-foreground">
+        <header className={`flex items-center justify-between gap-2 ${large ? "h-10 px-2.5" : "h-7 px-1.5"}`}>
+          <h3 className={`min-w-0 truncate font-display uppercase ${large ? "text-2xl" : "text-sm"}`}>{card.name}</h3>
+          <RarityTag rarity={card.rarity} compact={!large} />
+        </header>
 
-      <div
-        className={`flex items-end justify-center rounded-xl ${large ? "h-36" : "h-20"}`}
-        style={{ background: `radial-gradient(circle at 50% 35%, ${color}55, transparent 70%), #18181b` }}
-        aria-hidden
-      >
-        <Silhouette color={color} className={large ? "h-32" : "h-16"} />
+        <CardArt rarity={card.rarity} faction={card.faction} className={large ? "h-44" : "h-24"}>
+          <span
+            className={`absolute bottom-1.5 left-1.5 -skew-x-8 px-1.5 font-extrabold uppercase text-black ${
+              large ? "py-0.5 text-xs" : "text-[10px]"
+            }`}
+            style={{ backgroundColor: FACTION_COLORS[card.faction] ?? "#fff8e7" }}
+          >
+            {FACTION_LABELS[card.faction] ?? card.faction}
+          </span>
+        </CardArt>
+
+        {large && card.power && (
+          <div className="border-t-2 px-2.5 py-1.5" style={{ borderColor: color }}>
+            <p className="font-display text-sm uppercase" style={{ color }}>
+              {card.power.name}
+            </p>
+            <p className="text-xs leading-[15px]">{card.power.text}</p>
+          </div>
+        )}
+
+        {large && abilities && <AbilityGrid stats={card.stats} abilities={abilities} />}
       </div>
-
-      {large && card.power && (
-        <div className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color }}>
-            {card.power.name}
-          </p>
-          <p className="text-xs text-zinc-200">{card.power.text}</p>
-        </div>
-      )}
-
-      {large && abilities && <AbilityGrid stats={card.stats} abilities={abilities} />}
-
-      {large && card.flavor && <p className="text-[11px] italic text-zinc-500">{card.flavor}</p>}
     </article>
+  );
+}
+
+function RarityTag({ rarity, compact }: { rarity: CardData["rarity"]; compact: boolean }) {
+  return (
+    <span
+      className={`flex shrink-0 -skew-x-8 items-center gap-1 font-display uppercase text-black ${
+        compact ? "px-1 text-xs" : "h-6 px-2 text-sm"
+      }`}
+      style={{ background: rarityFrame(rarity) }}
+    >
+      <span className="font-sans font-black">{rarityLetter(rarity)}</span>
+      {!compact && rarity.name}
+    </span>
+  );
+}
+
+export function CardArt({
+  rarity,
+  faction,
+  className,
+  children,
+}: {
+  rarity: CardData["rarity"];
+  faction: string;
+  className: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className={`@container relative overflow-hidden ${className}`} style={rarityArt(rarity)} aria-hidden={!children}>
+      {isFoil(rarity) && (
+        <span
+          aria-hidden
+          className="absolute inset-0 flex items-center justify-center font-sans text-[50cqw] font-black leading-none text-foreground"
+        >
+          {rarityLetter(rarity)}
+        </span>
+      )}
+      <Silhouette
+        faction={faction}
+        accent={rarity.color}
+        className="absolute -bottom-1 left-1/2 h-[96%] -translate-x-1/2"
+      />
+      {children}
+    </div>
   );
 }
 
@@ -80,24 +119,25 @@ function AbilityGrid({ stats, abilities }: { stats: Record<string, number>; abil
   );
 
   return (
-    <div className="grid grid-cols-4 gap-1.5">
+    <div className="grid grid-cols-4 gap-1.5 bg-background px-2 pb-2 pt-1.5">
       {families.map(({ family, items }) => (
-        <div key={family.code} className="flex flex-col gap-0.5">
-          <p className="truncate text-[10px] font-semibold uppercase" style={{ color: family.color }}>
+        <div key={family.code} className="flex min-w-0 flex-col gap-0.5">
+          <p className="truncate text-[10px] font-extrabold uppercase leading-[14px]" style={{ color: family.color }}>
             {family.name}
           </p>
           {items.map((ability) => {
             const value = stats[ability.code] ?? 0;
+            const high = value >= 9;
             return (
               <div
                 key={ability.code}
                 title={ability.name}
-                className="flex items-center justify-between rounded bg-white/5 px-1.5 py-0.5"
+                className={`flex h-5 items-center justify-between px-1 ${
+                  high ? "bg-comic-yellow text-black" : "bg-panel-raised"
+                }`}
               >
-                <span className="text-[10px] text-zinc-400">{ability.code}</span>
-                <span className={`text-xs font-bold ${value >= 9 ? "text-amber-300" : "text-zinc-100"}`}>
-                  {value}
-                </span>
+                <span className="text-[10px] font-semibold">{ability.code}</span>
+                <span className="font-display text-sm">{value}</span>
               </div>
             );
           })}
@@ -107,11 +147,37 @@ function AbilityGrid({ stats, abilities }: { stats: Record<string, number>; abil
   );
 }
 
-export function Silhouette({ color, className }: { color: string; className: string }) {
+/** Placeholder art: a caped figure, or a horned cloak for villains. */
+export function Silhouette({
+  faction,
+  accent,
+  ink = "#000",
+  className,
+}: {
+  faction: string;
+  accent?: string;
+  ink?: string;
+  className: string;
+}) {
+  if (faction === "villains") {
+    return (
+      <svg viewBox="0 0 200 240" className={className} aria-hidden>
+        <path fill={ink} d="M84 30 72 2l20 16z" />
+        <path fill={ink} d="m116 30 12-28-20 16z" />
+        <path fill={ink} d="M100 12c14 0 22 10 22 24l-2 20 50 14 20 170H10L30 70l50-14-2-20c0-14 8-24 22-24z" />
+        {accent && <path fill={accent} d="m86 32 12 6-11 3zM114 32l-12 6 11 3zM100 76l16 20-16 28-16-28z" />}
+      </svg>
+    );
+  }
   return (
-    <svg viewBox="0 0 100 100" className={className} fill={color} fillOpacity={0.55}>
-      <circle cx="50" cy="30" r="16" />
-      <path d="M18 100c0-22 14-40 32-40s32 18 32 40z" />
+    <svg viewBox="0 0 200 240" className={className} aria-hidden>
+      <path fill={ink} fillOpacity={0.45} d="M62 70h76l42 170-50-18-30 18-30-18-50 18z" />
+      <path fill={ink} d="M80 30c0-16 10-20 20-20s20 4 20 20l-2 20-18 12-18-12z" />
+      <path fill={ink} d="M66 66h68l-12 64H78z" />
+      <path fill={ink} d="m66 66-20 6-6 40 34 18 6-12-20-14 6-20z" />
+      <path fill={ink} d="m134 66 20 6 6 40-34 18-6-12 20-14-6-20z" />
+      <path fill={ink} d="M78 130h44l10 110h-24l-8-80-8 80H68z" />
+      {accent && <path fill={accent} d="m100 76 14 14-14 20-14-20z" />}
     </svg>
   );
 }

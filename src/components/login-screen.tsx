@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { PackArt } from "@/components/comic-parts";
 import { SupabaseStatus } from "@/components/supabase-status";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -17,28 +18,33 @@ export function LoginScreen() {
   }
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-10 px-6 py-12 text-center">
-      <div className="flex flex-col items-center gap-3">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">Benvenuto in</p>
-        <h1 className="bg-linear-to-b from-amber-200 via-amber-400 to-orange-600 bg-clip-text text-6xl font-black tracking-tight text-transparent sm:text-7xl">
+    <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-10 text-center">
+      <div aria-hidden className="rays-dark fixed inset-0 -z-10" />
+      <div className="flex flex-col items-center gap-2">
+        <p className="text-sm font-bold">Benvenuto in</p>
+        <h1 className="-skew-x-8 font-display text-8xl tracking-wide text-comic-yellow [text-shadow:5px_5px_0_var(--comic-magenta)]">
           O-MEGA
         </h1>
-        <p className="max-w-xs text-base text-zinc-300">
-          Aprire, collezionare, giocare, conquistare.
-        </p>
+        <p className="mt-2 max-w-xs text-base font-semibold">Aprire, collezionare, giocare, conquistare.</p>
       </div>
+
+      <PackArt
+        body="#ffd60a"
+        omega="#ff2e6c"
+        className="h-56 -rotate-3 drop-shadow-[6px_6px_0_var(--comic-magenta)]"
+      />
 
       <div className="flex w-full max-w-xs flex-col items-center gap-3">
         <button
           type="button"
           onClick={handleSignIn}
           disabled={!isSupabaseConfigured || redirecting}
-          className="flex w-full items-center justify-center gap-3 rounded-full bg-white px-5 py-3 font-semibold text-zinc-900 shadow-lg shadow-black/40 transition active:scale-[0.98] disabled:opacity-60"
+          className="btn min-h-14 w-full bg-white font-bold text-zinc-900 shadow-[4px_4px_0_var(--comic-magenta)] disabled:opacity-60"
         >
           <GoogleIcon />
           {redirecting ? "Apertura di Google…" : "Accedi con Google"}
         </button>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
       </div>
 
       <SupabaseStatus />

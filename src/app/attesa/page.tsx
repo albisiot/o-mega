@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
+import { PageHeader } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { balance } from "@/config/balance";
 import { BASE_PATH } from "@/lib/base-path";
@@ -38,13 +39,7 @@ function WaitingContent() {
   if (!session) return <LoadingScreen />;
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between px-5 py-4">
-        <Link href="/gioca" className="text-sm text-zinc-300">
-          ← Gioca
-        </Link>
-        <h1 className="text-base font-semibold">{mode === "lobby" ? "Sfida un amico" : "Ricerca avversario"}</h1>
-        <span className="w-12" />
-      </header>
+      <PageHeader backHref="/gioca" backLabel="Gioca" title={mode === "lobby" ? "Sfida un amico" : "Ricerca avversario"} />
       {mode === "lobby" ? (
         <LobbyWait userId={session.user.id} />
       ) : (
@@ -120,10 +115,10 @@ function QueueWait({ userId, queueMode }: { userId: string; queueMode: QueueMode
   if (!team) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-sm text-zinc-300">Scegli prima la tua squadra.</p>
+        <p className="text-sm font-semibold">Scegli prima la tua squadra.</p>
         <Link
           href={queueMode === "conquest" ? "/squadra/?mode=conquest" : "/squadra/?mode=queue"}
-          className="text-sm text-amber-300 underline"
+          className="btn btn-outline"
         >
           Scegli la squadra
         </Link>
@@ -134,23 +129,24 @@ function QueueWait({ userId, queueMode }: { userId: string; queueMode: QueueMode
   const waited = Math.floor((now - startedAt) / 1000);
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
-      <span className="h-14 w-14 animate-spin rounded-full border-4 border-amber-400 border-t-transparent" />
+      <div aria-hidden className="rays-dark fixed inset-0 -z-10" />
+      <span className="h-14 w-14 animate-spin rounded-full border-[5px] border-comic-yellow border-t-transparent" />
       <div>
-        <p className="text-lg font-semibold">
+        <p className="font-display text-3xl uppercase">
           {queueMode === "conquest" ? "Ricerca di un avversario per la Conquista…" : "Ricerca di un avversario…"}
         </p>
-        <p className="text-sm text-zinc-400 tabular-nums">{waited} s</p>
+        <p className="mt-1 font-display text-2xl text-comic-yellow">{waited} s</p>
       </div>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
       {waited >= balance.matchmaking.suggestBotAfterSeconds && (
-        <div className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-sm text-zinc-300">Nessun avversario disponibile al momento.</p>
-          <Link href="/gioca" className="text-sm font-semibold text-amber-300 underline">
+        <div className="flex flex-col items-center gap-3 bg-panel p-4">
+          <p className="text-sm font-semibold">Nessun avversario disponibile al momento.</p>
+          <Link href="/gioca" className="btn btn-outline">
             Gioca contro un bot
           </Link>
         </div>
       )}
-      <Link href="/gioca" className="rounded-full border border-white/15 px-5 py-2 text-sm">
+      <Link href="/gioca" className="btn btn-ghost">
         Annulla
       </Link>
     </main>
@@ -209,8 +205,8 @@ function LobbyWait({ userId }: { userId: string }) {
   if (!lobby || remaining <= 0) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-sm text-zinc-300">{lobby ? "Il codice è scaduto." : "Nessun codice attivo."}</p>
-        <Link href="/squadra/?mode=lobby" className="text-sm font-semibold text-amber-300 underline">
+        <p className="text-sm font-semibold">{lobby ? "Il codice è scaduto." : "Nessun codice attivo."}</p>
+        <Link href="/squadra/?mode=lobby" className="btn btn-outline">
           Crea un nuovo codice
         </Link>
       </main>
@@ -219,22 +215,20 @@ function LobbyWait({ userId }: { userId: string }) {
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
-      <p className="text-sm text-zinc-400">Dai questo codice al tuo amico:</p>
-      <p className="select-all font-mono text-5xl font-black tracking-[0.25em] text-amber-200">{lobby.code}</p>
-      <p className="text-xs text-zinc-500">Valido ancora {formatCountdown(remaining)}</p>
-      <button
-        type="button"
-        onClick={() => share(lobby.code)}
-        className="rounded-full bg-amber-400 px-6 py-3 font-bold text-zinc-950"
-      >
+      <p className="text-base font-semibold">Dai questo codice al tuo amico:</p>
+      <p className="-skew-x-8 select-all bg-comic-yellow px-5 py-2 font-display text-5xl tracking-[0.15em] text-black shadow-[5px_5px_0_var(--comic-magenta)]">
+        {lobby.code}
+      </p>
+      <p className="text-sm font-medium text-muted">Valido ancora {formatCountdown(remaining)}</p>
+      <button type="button" onClick={() => share(lobby.code)} className="btn btn-primary px-6">
         Condividi il codice
       </button>
-      {notice && <p className="text-sm text-emerald-400">{notice}</p>}
-      <div className="flex items-center gap-2 text-sm text-zinc-400">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" aria-hidden />
+      {notice && <p className="text-sm font-semibold text-comic-cyan">{notice}</p>}
+      <div className="flex items-center gap-2 text-sm font-semibold text-muted">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-comic-yellow" aria-hidden />
         In attesa che il tuo amico entri…
       </div>
-      <button type="button" onClick={cancel} className="rounded-full border border-white/15 px-5 py-2 text-sm">
+      <button type="button" onClick={cancel} className="btn btn-ghost">
         Annulla
       </button>
     </main>

@@ -13,10 +13,10 @@ const LABELS: Record<Status, string> = {
 };
 
 const DOT_COLORS: Record<Status, string> = {
-  checking: "bg-zinc-400 animate-pulse",
-  connected: "bg-emerald-400",
-  unreachable: "bg-red-400",
-  "not-configured": "bg-amber-400",
+  checking: "bg-faint animate-pulse",
+  connected: "bg-comic-cyan",
+  unreachable: "bg-comic-magenta",
+  "not-configured": "bg-comic-yellow",
 };
 
 /** Small badge showing whether the Supabase client can reach the project. */
@@ -38,7 +38,7 @@ export function SupabaseStatus() {
 
   return (
     <p
-      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300"
+      className="inline-flex items-center gap-2 bg-black px-3 py-1 text-xs font-semibold text-muted"
       data-status={status}
     >
       <span className={`h-2 w-2 rounded-full ${DOT_COLORS[status]}`} aria-hidden />

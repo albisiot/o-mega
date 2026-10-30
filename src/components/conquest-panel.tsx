@@ -54,9 +54,9 @@ export function ConquestPanel({ matchId, conquest, opponentName, serverNow, onUp
   if (conquest.resolved) {
     if (conquest.bonus_coins > 0) {
       return (
-        <section className="rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 text-center">
-          <p className="font-semibold">Nessuna carta conquistabile</p>
-          <p className="mt-1 text-sm text-zinc-300">
+        <section className="bg-panel p-4 text-center">
+          <p className="font-display text-xl uppercase text-comic-yellow">Nessuna carta conquistabile</p>
+          <p className="mt-1 text-sm font-medium text-muted">
             {conquest.role === "winner"
               ? `Le carte di ${opponentName} erano protette o troppo rare per la tua squadra: +${conquest.bonus_coins} monete.`
               : "Nessuna delle tue carte poteva essere conquistata."}
@@ -68,11 +68,11 @@ export function ConquestPanel({ matchId, conquest, opponentName, serverNow, onUp
     const won = conquest.role === "winner";
     return (
       <section className="flex flex-col items-center gap-3 text-center">
-        <p className={`text-lg font-black ${won ? "text-emerald-300" : "text-red-300"}`}>
+        <p className={`font-display text-3xl uppercase ${won ? "text-comic-cyan" : "text-comic-magenta"}`}>
           {won ? "Carta conquistata!" : "Carta persa"}
         </p>
         <CardView card={conquest.chosen} abilities={abilities} glow={won} />
-        <p className="text-xs text-zinc-400">
+        <p className="text-sm font-medium text-muted">
           {conquest.auto_assigned ? "Tempo scaduto: l'ha assegnata il server. " : ""}
           {won
             ? `Non potrai schierarla in Conquista per ${balance.conquest.conqueredCardLockHours} ore.`
@@ -86,9 +86,9 @@ export function ConquestPanel({ matchId, conquest, opponentName, serverNow, onUp
 
   if (conquest.role === "loser" || !conquest.offered) {
     return (
-      <section className="flex flex-col items-center gap-2 rounded-2xl border border-red-400/40 bg-red-400/10 p-4 text-center">
-        <p className="font-semibold">{opponentName} sta scegliendo una delle tue carte…</p>
-        <p className="text-2xl font-black tabular-nums">{seconds}</p>
+      <section className="flex flex-col items-center gap-2 bg-comic-magenta p-4 text-center text-black">
+        <p className="font-display text-xl uppercase">{opponentName} sta scegliendo una delle tue carte…</p>
+        <p className="font-display text-4xl">{seconds}</p>
       </section>
     );
   }
@@ -101,14 +101,21 @@ export function ConquestPanel({ matchId, conquest, opponentName, serverNow, onUp
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-lg font-black">Scegli la tua conquista</p>
-          <p className="text-xs text-zinc-400">
+          <p className="font-display text-3xl uppercase">Scegli la tua conquista</p>
+          <p className="mt-1 text-sm font-medium text-muted">
             Allo scadere il server ne assegna una a caso. Quelle spente sono starter o troppo rare per la tua squadra.
           </p>
         </div>
-        <p className={`text-2xl font-black tabular-nums ${seconds <= 10 ? "text-red-300" : ""}`}>{seconds}</p>
+        <p
+          role="timer"
+          className={`flex h-14 w-14 shrink-0 rotate-3 items-center justify-center font-display text-3xl text-black ${
+            seconds <= 10 ? "bg-comic-magenta" : "bg-comic-yellow"
+          }`}
+        >
+          {seconds}
+        </p>
       </div>
-      <ul className="grid grid-cols-2 gap-2">
+      <ul className="grid grid-cols-2 gap-3">
         {options.map((card) => {
           const isSelected = card.instance_id === selected;
           return (
@@ -118,7 +125,9 @@ export function ConquestPanel({ matchId, conquest, opponentName, serverNow, onUp
                 disabled={!card.eligible || busy}
                 onClick={() => setSelected(card.instance_id)}
                 aria-pressed={isSelected}
-                className={`w-full rounded-2xl text-left disabled:opacity-35 ${isSelected ? "ring-2 ring-amber-400" : ""}`}
+                className={`w-full rounded-xl text-left disabled:opacity-35 ${
+                  isSelected ? "-rotate-1 shadow-[0_0_0_3px_var(--comic-yellow),5px_5px_0_3px_var(--comic-magenta)]" : ""
+                }`}
               >
                 <CardView card={card} size="sm" />
               </button>
@@ -126,14 +135,13 @@ export function ConquestPanel({ matchId, conquest, opponentName, serverNow, onUp
           );
         })}
       </ul>
-      {chosen && <CardView card={chosen} abilities={abilities} />}
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      <button
-        type="button"
-        onClick={pick}
-        disabled={!chosen || busy}
-        className="rounded-full bg-amber-400 px-5 py-3 font-bold text-zinc-950 disabled:bg-white/10 disabled:text-zinc-500"
-      >
+      {chosen && (
+        <div className="flex justify-center">
+          <CardView card={chosen} abilities={abilities} />
+        </div>
+      )}
+      {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
+      <button type="button" onClick={pick} disabled={!chosen || busy} className="btn btn-primary">
         {busy ? "Conquista…" : chosen ? `Prendi ${chosen.name}` : "Scegli una carta"}
       </button>
     </section>

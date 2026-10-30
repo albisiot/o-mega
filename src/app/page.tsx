@@ -13,8 +13,8 @@ export default function HomePage() {
   if (!profile) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-sm text-red-400">{error}</p>
-        <button type="button" onClick={signOut} className="text-sm text-zinc-300 underline">
+        <p className="text-sm font-semibold text-comic-magenta">{error}</p>
+        <button type="button" onClick={signOut} className="min-h-11 text-sm font-bold underline">
           Esci e riprova
         </button>
       </main>

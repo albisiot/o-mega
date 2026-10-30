@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
+import { PageHeader } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { describeServerError } from "@/lib/errors";
 import { DIFFICULTY_LABELS, fetchMatchHistory, type MatchHistoryEntry } from "@/lib/match";
 
 const RESULT_STYLES = {
-  win: { label: "Vittoria", className: "text-emerald-300" },
-  loss: { label: "Sconfitta", className: "text-red-300" },
-  draw: { label: "Pareggio", className: "text-zinc-300" },
+  win: { label: "Vittoria", className: "text-comic-cyan" },
+  loss: { label: "Sconfitta", className: "text-comic-magenta" },
+  draw: { label: "Pareggio", className: "text-muted" },
 } as const;
 
 const dateTime = new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short" });
@@ -39,20 +40,14 @@ export default function HistoryPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between px-5 py-4">
-        <Link href="/profilo" className="text-sm text-zinc-300">
-          ← Profilo
-        </Link>
-        <h1 className="text-base font-semibold">Storico partite</h1>
-        <span className="w-12" />
-      </header>
+      <PageHeader backHref="/profilo" backLabel="Profilo" title="Storico partite" />
 
-      <main className="flex flex-1 flex-col gap-2 px-5 pb-6">
-        {error && <p className="text-sm text-red-400">{error}</p>}
+      <main className="flex flex-1 flex-col gap-2 px-3 pb-6">
+        {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
         {history?.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-12 text-center">
-            <p className="text-sm text-zinc-400">Non hai ancora finito nessuna partita.</p>
-            <Link href="/gioca" className="rounded-full bg-amber-400 px-5 py-2 text-sm font-bold text-zinc-950">
+            <p className="text-sm font-medium text-muted">Non hai ancora finito nessuna partita.</p>
+            <Link href="/gioca" className="btn btn-primary px-6">
               Gioca
             </Link>
           </div>
@@ -77,24 +72,21 @@ function HistoryRow({ entry }: { entry: MatchHistoryEntry }) {
       : `${entry.mode === "conquest" ? "Conquista" : "Amichevole"} · ${entry.opponent ?? "giocatore rimosso"}`;
 
   return (
-    <Link
-      href={`/partita/?id=${entry.id}`}
-      className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-    >
+    <Link href={`/partita/?id=${entry.id}`} className="row-link">
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold">{mode}</p>
-        <p className="text-xs text-zinc-400">
+        <p className="truncate text-sm font-bold">{mode}</p>
+        <p className="text-xs font-medium text-muted">
           {dateTime.format(new Date(entry.finished_at))}
           {entry.end_reason === "forfeit" && " · abbandono"}
         </p>
         <ConquestLine entry={entry} />
       </div>
       <div className="shrink-0 text-right">
-        <p className={`text-sm font-bold ${result.className}`}>{result.label}</p>
-        <p className="text-xs tabular-nums text-zinc-400">
+        <p className={`font-display text-lg uppercase ${result.className}`}>{result.label}</p>
+        <p className="font-display text-base">
           {entry.rounds_me} – {entry.rounds_opponent}
         </p>
-        {entry.coins > 0 && <p className="text-xs text-amber-200">+{entry.coins} monete</p>}
+        {entry.coins > 0 && <p className="text-xs font-bold text-comic-yellow">+{entry.coins} monete</p>}
       </div>
     </Link>
   );
@@ -103,10 +95,10 @@ function HistoryRow({ entry }: { entry: MatchHistoryEntry }) {
 function ConquestLine({ entry }: { entry: MatchHistoryEntry }) {
   const conquest = entry.conquest;
   if (!conquest) return null;
-  if (conquest.pending) return <p className="text-xs text-zinc-400">Scelta della carta in corso…</p>;
+  if (conquest.pending) return <p className="text-xs font-medium text-muted">Scelta della carta in corso…</p>;
   if (conquest.card_name) {
     return (
-      <p className="truncate text-xs text-zinc-300">
+      <p className="truncate text-xs font-medium text-muted">
         {conquest.won ? "Conquistata: " : "Persa: "}
         <span className="font-semibold" style={{ color: conquest.card_color ?? undefined }}>
           {conquest.card_name}
@@ -115,6 +107,6 @@ function ConquestLine({ entry }: { entry: MatchHistoryEntry }) {
     );
   }
   return conquest.won && conquest.bonus_coins > 0 ? (
-    <p className="text-xs text-amber-200">Nessuna carta conquistabile: +{conquest.bonus_coins} monete</p>
+    <p className="text-xs font-bold text-comic-yellow">Nessuna carta conquistabile: +{conquest.bonus_coins} monete</p>
   ) : null;
 }

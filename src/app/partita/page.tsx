@@ -42,8 +42,8 @@ function MatchPageContent() {
   if (!id || error) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-sm text-red-400">{error ?? "Partita non trovata."}</p>
-        <Link href="/gioca" className="text-sm text-zinc-300 underline">
+        <p className="text-sm font-semibold text-comic-magenta">{error ?? "Partita non trovata."}</p>
+        <Link href="/gioca" className="flex min-h-11 items-center text-sm font-bold underline">
           Torna a Gioca
         </Link>
       </main>

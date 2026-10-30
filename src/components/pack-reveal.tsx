@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { CardView } from "@/components/card-view";
+import { PackArt } from "@/components/comic-parts";
 import { balance } from "@/config/balance";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import type { PackOpening } from "@/lib/packs";
@@ -57,23 +58,25 @@ export function PackReveal({ opening }: { opening: PackOpening }) {
 
   if (stage.kind === "sealed" || stage.kind === "tearing") {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6">
+      <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-6 text-center">
+        <div aria-hidden className="rays-dark fixed inset-0 -z-10" />
+        <h1 className="-skew-x-8 font-display text-[44px] uppercase leading-[52px] text-comic-yellow [text-shadow:3px_3px_0_var(--comic-magenta)]">
+          {opening.pack_type === "daily" ? "Pacchetto del giorno" : "Pacchetto standard"}
+        </h1>
         <button
           type="button"
           onClick={tearOpen}
           disabled={stage.kind === "tearing"}
-          className={`relative flex h-80 w-56 flex-col items-center justify-center gap-3 rounded-3xl border-2 border-amber-300/60 bg-linear-to-b from-amber-400 via-orange-500 to-rose-700 shadow-2xl shadow-orange-600/40 ${
-            stage.kind === "tearing" ? "animate-pack-shake" : "animate-pack-float"
-          }`}
+          className={stage.kind === "tearing" ? "animate-pack-shake" : "animate-pack-float"}
           aria-label="Apri il pacchetto"
         >
-          <span className="text-7xl font-black text-zinc-950/80">Ω</span>
-          <span className="text-sm font-black tracking-[0.3em] text-zinc-950/80">O-MEGA</span>
-          <span className="absolute bottom-4 text-xs font-semibold text-zinc-950/70">
-            {opening.pack_type === "daily" ? "Pacchetto del giorno" : "Pacchetto standard"}
-          </span>
+          <PackArt
+            body="#ffd60a"
+            omega="#ff2e6c"
+            className="h-[380px] drop-shadow-[8px_8px_0_var(--comic-magenta)]"
+          />
         </button>
-        <p className="text-sm text-zinc-400">
+        <p className="text-base font-bold">
           {stage.kind === "tearing" ? "Apertura…" : "Tocca il pacchetto per aprirlo"}
         </p>
       </main>
@@ -87,6 +90,7 @@ export function PackReveal({ opening }: { opening: PackOpening }) {
     if (stage.intro) {
       return (
         <main className="relative flex flex-1 items-center justify-center overflow-hidden">
+          <div aria-hidden className="rays-gold fixed inset-0 -z-10" />
           <span
             className="animate-rare-burst absolute h-40 w-40 rounded-full"
             style={{ backgroundColor: card.rarity.color }}
@@ -95,10 +99,7 @@ export function PackReveal({ opening }: { opening: PackOpening }) {
             className="animate-rare-burst absolute h-40 w-40 rounded-full [animation-delay:250ms]"
             style={{ backgroundColor: card.rarity.color }}
           />
-          <p
-            className="animate-rare-title relative text-5xl font-black uppercase"
-            style={{ color: card.rarity.color, textShadow: `0 0 30px ${card.rarity.color}` }}
-          >
+          <p className="animate-rare-title text-sfx relative text-8xl uppercase text-comic-magenta">
             {card.rarity.name}!
           </p>
         </main>
@@ -107,28 +108,32 @@ export function PackReveal({ opening }: { opening: PackOpening }) {
 
     return (
       <main
-        className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-5 px-6 py-8"
+        className={`flex flex-1 cursor-pointer flex-col items-center justify-center gap-5 px-6 py-6 ${
+          rare ? "text-black" : ""
+        }`}
         onClick={next}
-        style={{ background: `radial-gradient(circle at 50% 45%, ${card.rarity.color}${rare ? "40" : "1f"}, transparent 65%)` }}
       >
+        <div aria-hidden className={`${rare ? "rays-gold" : "rays-dark"} fixed inset-0 -z-10`} />
         <div key={stage.index} className="animate-card-reveal relative">
           {card.is_new && (
-            <span className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-emerald-400 px-3 py-0.5 text-xs font-bold text-zinc-950">
+            <span className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 -skew-x-8 bg-comic-cyan px-3 py-0.5 font-display text-sm uppercase text-black">
               Nuova!
             </span>
           )}
-          <CardView card={card} abilities={abilities} glow={rare} />
+          <div className={`rounded-xl ${rare ? "shadow-[8px_8px_0_#000]" : "shadow-[6px_6px_0_var(--comic-magenta)]"}`}>
+            <CardView card={card} abilities={abilities} />
+          </div>
         </div>
-        <div className="flex flex-col items-center gap-3">
-          <Progress total={cards.length} current={stage.index} />
-          <p className="text-xs text-zinc-500">Tocca per continuare</p>
+        <div className="flex flex-col items-center gap-2">
+          <Progress total={cards.length} current={stage.index} rare={rare} />
+          <p className="text-sm font-bold">Tocca per continuare</p>
           <button
             type="button"
             onClick={(event) => {
               event.stopPropagation();
               setStage({ kind: "summary" });
             }}
-            className="text-xs text-zinc-400 underline"
+            className="min-h-11 px-4 text-sm font-bold underline"
           >
             Salta
           </button>
@@ -138,16 +143,16 @@ export function PackReveal({ opening }: { opening: PackOpening }) {
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-5 px-5 py-6">
-      <header className="text-center">
-        <h1 className="text-xl font-bold">Il tuo pacchetto</h1>
-        <p className="text-sm text-zinc-400">Le carte sono già nella tua collezione.</p>
+    <main className="flex flex-1 flex-col gap-5 px-4 py-6">
+      <header>
+        <h1 className="font-display text-4xl uppercase text-comic-yellow">Il tuo pacchetto</h1>
+        <p className="mt-1 text-sm font-semibold text-muted">Le carte sono già nella tua collezione.</p>
       </header>
       <div className="grid grid-cols-2 gap-3">
         {[...cards].reverse().map((card) => (
           <div key={card.instance_id} className="relative">
             {card.is_new && (
-              <span className="absolute -top-2 right-2 z-10 rounded-full bg-emerald-400 px-2 py-0.5 text-[10px] font-bold text-zinc-950">
+              <span className="absolute -top-2 right-2 z-10 -skew-x-8 bg-comic-cyan px-2 font-display text-xs uppercase leading-5 text-black">
                 Nuova
               </span>
             )}
@@ -155,21 +160,20 @@ export function PackReveal({ opening }: { opening: PackOpening }) {
           </div>
         ))}
       </div>
-      <Link
-        href="/"
-        className="mt-2 rounded-full bg-amber-400 px-5 py-3 text-center font-bold text-zinc-950"
-      >
+      <Link href="/" className="btn btn-primary mt-2">
         Torna alla home
       </Link>
     </main>
   );
 }
 
-function Progress({ total, current }: { total: number; current: number }) {
+function Progress({ total, current, rare }: { total: number; current: number; rare: boolean }) {
+  const filled = rare ? "bg-black" : "bg-comic-yellow";
+  const empty = rare ? "bg-black/25" : "bg-panel-raised";
   return (
     <div className="flex gap-1.5" aria-label={`Carta ${current + 1} di ${total}`}>
       {Array.from({ length: total }, (_, i) => (
-        <span key={i} className={`h-1.5 w-6 rounded-full ${i <= current ? "bg-amber-400" : "bg-white/15"}`} />
+        <span key={i} className={`h-2 w-7 -skew-x-8 ${i <= current ? filled : empty}`} />
       ))}
     </div>
   );

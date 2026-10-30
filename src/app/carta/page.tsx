@@ -53,17 +53,24 @@ function CardPageContent() {
   const { card, owned, abilities } = loaded;
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between px-5 py-4">
-        <Link href="/collezione" className="text-sm text-zinc-300">
+      <header className="flex items-center justify-between px-4 py-2">
+        <Link href="/collezione" className="flex min-h-11 items-center text-sm font-bold">
           ← Collezione
         </Link>
-        <span className="text-xs text-zinc-500">N. {card.code.replace(/^\D+/, "")}</span>
+        <span className="text-sm font-bold text-muted">N. {card.code.replace(/^\D+/, "")}</span>
       </header>
 
-      <main className="flex flex-1 flex-col items-center gap-5 px-5 pb-10">
+      <main className="flex flex-1 flex-col items-center gap-5 px-4 pb-6">
         {owned ? (
           <>
-            <CardView card={card} abilities={abilities} />
+            <div className="rounded-xl shadow-[6px_6px_0_var(--comic-magenta)]">
+              <CardView card={card} abilities={abilities} />
+            </div>
+            {card.flavor && (
+              <p className="w-full max-w-sm -rotate-1 bg-comic-yellow px-3 py-2 text-sm font-semibold italic text-black shadow-[3px_3px_0_var(--foreground)]">
+                {card.flavor}
+              </p>
+            )}
             <CopiesPanel card={card} owned={owned} onConverted={() => setReloadKey((k) => k + 1)} />
           </>
         ) : (
@@ -77,8 +84,8 @@ function CardPageContent() {
 function Message({ text }: { text: string }) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-      <p className="text-sm text-red-400">{text}</p>
-      <Link href="/collezione" className="text-sm text-zinc-300 underline">
+      <p className="text-sm font-semibold text-comic-magenta">{text}</p>
+      <Link href="/collezione" className="flex min-h-11 items-center text-sm font-bold underline">
         Torna alla collezione
       </Link>
     </main>

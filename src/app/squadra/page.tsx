@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import type { BotDifficulty } from "@o-mega/game-engine";
 import { useRequireSignedIn } from "@/components/auth-provider";
+import { PageHeader } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { TeamPicker } from "@/components/team-picker";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
@@ -138,24 +139,15 @@ function TeamPageContent() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between px-5 py-4">
-        <Link href="/gioca" className="text-sm text-zinc-300">
-          ← Gioca
-        </Link>
-        <div className="text-center">
-          <h1 className="text-base font-semibold">La tua squadra</h1>
-          <p className="text-xs text-zinc-400">{COPY[mode.kind].subtitle(mode)}</p>
-        </div>
-        <span className="w-12" />
-      </header>
+      <PageHeader backHref="/gioca" backLabel="Gioca" title="La tua squadra" subtitle={COPY[mode.kind].subtitle(mode)} />
 
-      <main className="flex flex-1 flex-col gap-3 px-5">
-        <p className="text-sm text-zinc-400">
+      <main className="flex flex-1 flex-col gap-3 px-3">
+        <p className="text-sm font-medium text-muted">
           Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello
           basso e i generalisti per quelle alte.
         </p>
         {error && (
-          <p className="text-sm text-red-400">
+          <p className="text-sm font-semibold text-comic-magenta">
             {error}{" "}
             {error.includes("partita in corso") && (
               <Link href="/gioca" className="underline">

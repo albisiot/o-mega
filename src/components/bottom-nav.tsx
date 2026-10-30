@@ -29,7 +29,7 @@ export function BottomNav() {
       <nav
         aria-label="Navigazione principale"
         // Half the safe area: the icons still clear the iPhone home indicator, without a large empty band.
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-zinc-900 pb-[calc(env(safe-area-inset-bottom)*0.5)]"
+        className="fixed inset-x-0 bottom-0 z-20 border-t-[3px] border-foreground bg-black pb-[calc(env(safe-area-inset-bottom)*0.5)]"
       >
         <ul className="mx-auto flex max-w-md">
           {TABS.map((tab) => {
@@ -39,16 +39,16 @@ export function BottomNav() {
                 <Link
                   href={tab.href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold ${
-                    active ? "text-amber-300" : "text-zinc-400"
+                  className={`flex h-[60px] flex-col items-center justify-center gap-0.5 text-[11px] ${
+                    active ? "bg-comic-yellow font-extrabold text-black" : "font-bold text-muted"
                   }`}
                 >
                   <svg
                     viewBox="0 0 24 24"
-                    className="h-5 w-5"
+                    className="h-[22px] w-[22px]"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth={2}
+                    strokeWidth={2.4}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     aria-hidden

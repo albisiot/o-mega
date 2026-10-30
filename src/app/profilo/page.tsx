@@ -56,29 +56,21 @@ function ProfileView({ profile }: { profile: Profile }) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between px-5 py-4">
-        <Link href="/" className="text-sm text-zinc-300">
-          ← Home
-        </Link>
-        <h1 className="text-base font-semibold">Profilo</h1>
-        <span className="w-12" />
-      </header>
-
-      <main className="flex flex-1 flex-col gap-6 px-5 pb-10">
-        <section className="flex flex-col items-center gap-3 text-center">
+      <main className="flex flex-1 flex-col gap-6 px-3 pb-6 pt-3">
+        <section className="cut-bottom flex items-center gap-5 bg-comic-yellow px-5 pb-7 pt-5 text-black">
           <PlayerAvatar username={profile.username} avatarUrl={profile.avatar_url} size="lg" />
-          <div>
-            <p className="text-2xl font-bold">{profile.username}</p>
-            <p className="text-sm text-zinc-400">
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate font-display text-3xl uppercase">{profile.username}</h1>
+            <p className="text-sm font-bold">
               Livello {profile.level} · {profile.xp} XP
             </p>
-            <div className="mx-auto mt-1 h-1.5 w-40 overflow-hidden rounded-full bg-white/10">
+            <div className="mt-1 h-2 bg-black">
               <div
-                className="h-full rounded-full bg-amber-400"
+                className="h-full bg-comic-magenta"
                 style={{ width: `${levelProgress(profile.xp, profile.level) * 100}%` }}
               />
             </div>
-            <p className="mt-1 text-xs text-zinc-500">Prossimo livello a {xpForLevel(profile.level + 1)} XP</p>
+            <p className="mt-1 text-xs font-semibold">Prossimo livello a {xpForLevel(profile.level + 1)} XP</p>
           </div>
         </section>
 
@@ -86,33 +78,36 @@ function ProfileView({ profile }: { profile: Profile }) {
 
         <section className="grid grid-cols-2 gap-2">
           {stats.map((stat) => (
-            <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <p className="text-xl font-bold">{stat.value}</p>
-              <p className="text-xs text-zinc-400">{stat.label}</p>
+            <div key={stat.label} className="bg-panel px-4 py-3">
+              <p className="font-display text-2xl">{stat.value}</p>
+              <p className="text-xs font-semibold text-muted">{stat.label}</p>
             </div>
           ))}
         </section>
 
         <section className="flex flex-col gap-2">
-          <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Carte conquistate e perse</h2>
+          <h2 className="section-title">Carte conquistate e perse</h2>
           {history === null ? (
-            <p className="text-sm text-zinc-500">Caricamento…</p>
+            <p className="text-sm font-medium text-muted">Caricamento…</p>
           ) : history.length === 0 ? (
-            <p className="text-sm text-zinc-500">Ancora nessuna Conquista.</p>
+            <p className="text-sm font-medium text-muted">Ancora nessuna Conquista.</p>
           ) : (
-            <ul className="flex flex-col divide-y divide-white/5 rounded-2xl border border-white/10 bg-white/5">
+            <ul className="flex flex-col gap-0.5">
               {history.map((entry) => (
-                <li key={`${entry.created_at}-${entry.card.code}`} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                <li
+                  key={`${entry.created_at}-${entry.card.code}`}
+                  className="flex items-center justify-between gap-3 bg-panel px-4 py-2.5"
+                >
                   <div className="min-w-0">
-                    <p className="truncate font-medium" style={{ color: entry.card.rarity.color }}>
+                    <p className="truncate font-display uppercase" style={{ color: entry.card.rarity.color }}>
                       {entry.card.name}
                     </p>
-                    <p className="truncate text-xs text-zinc-400">
+                    <p className="truncate text-xs font-medium text-muted">
                       {entry.won ? "Da" : "A"} {entry.opponent ?? "giocatore rimosso"} ·{" "}
                       {new Date(entry.created_at).toLocaleDateString("it-IT")}
                     </p>
                   </div>
-                  <span className={`shrink-0 text-xs font-bold ${entry.won ? "text-emerald-300" : "text-red-300"}`}>
+                  <span className={`shrink-0 text-xs font-extrabold ${entry.won ? "text-comic-cyan" : "text-comic-magenta"}`}>
                     {entry.won ? "Conquistata" : "Persa"}
                   </span>
                 </li>
@@ -121,31 +116,21 @@ function ProfileView({ profile }: { profile: Profile }) {
           )}
         </section>
 
-        <Link
-          href="/storico"
-          className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-        >
-          <span className="font-semibold">Storico partite</span>
-          <span className="text-zinc-500" aria-hidden>
+        <Link href="/storico" className="row-link">
+          <span className="font-display text-xl uppercase">Storico partite</span>
+          <span className="font-display text-2xl text-comic-yellow" aria-hidden>
             →
           </span>
         </Link>
 
-        <Link
-          href="/collezione"
-          className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-        >
-          <span className="font-semibold">Vai alla collezione</span>
-          <span className="text-zinc-500" aria-hidden>
+        <Link href="/collezione" className="row-link">
+          <span className="font-display text-xl uppercase">Vai alla collezione</span>
+          <span className="font-display text-2xl text-comic-yellow" aria-hidden>
             →
           </span>
         </Link>
 
-        <button
-          type="button"
-          onClick={signOut}
-          className="mt-2 rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-zinc-200"
-        >
+        <button type="button" onClick={signOut} className="btn btn-ghost mt-2">
           Esci
         </button>
       </main>
@@ -183,7 +168,7 @@ function UsernameForm({ profile }: { profile: Profile }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <label htmlFor="username" className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+      <label htmlFor="username" className="section-title">
         Nome utente
       </label>
       <div className="flex gap-2">
@@ -198,18 +183,14 @@ function UsernameForm({ profile }: { profile: Profile }) {
           autoComplete="off"
           autoCapitalize="off"
           spellCheck={false}
-          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-base outline-none focus:border-amber-400"
+          className="input-comic min-w-0 flex-1"
         />
-        <button
-          type="submit"
-          disabled={saving || unchanged}
-          className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-40"
-        >
+        <button type="submit" disabled={saving || unchanged} className="btn btn-outline">
           {saving ? "…" : "Salva"}
         </button>
       </div>
       {message && (
-        <p className={`text-sm ${message.isError ? "text-red-400" : "text-emerald-400"}`}>
+        <p className={`text-sm font-semibold ${message.isError ? "text-comic-magenta" : "text-comic-cyan"}`}>
           {message.text}
         </p>
       )}

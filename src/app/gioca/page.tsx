@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
+import { PageHeader } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { balance } from "@/config/balance";
 import { describeServerError } from "@/lib/errors";
@@ -30,31 +31,28 @@ function ConquestSection({ status, disabled }: { status: ConquestStatus | null; 
   return (
     <section className="flex flex-col gap-3">
       <div>
-        <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Conquista</h2>
-        <p className="mt-1 text-sm text-zinc-400">
+        <h2 className="section-title">Conquista</h2>
+        <p className="mt-1 text-sm font-medium text-muted">
           Chi vince prende una carta dell&apos;avversario, chi perde guadagna {loserCoins} monete. Si rischia solo ciò
           che si porta in campo: servono almeno {minConquerableCards} carte non starter.
         </p>
       </div>
       {available ? (
-        <Link
-          href="/squadra/?mode=conquest"
-          className="flex items-center justify-between rounded-2xl border border-red-400/50 bg-red-400/10 px-4 py-3"
-        >
+        <Link href="/squadra/?mode=conquest" className="cut-both speed-lines flex min-h-24 items-center justify-between gap-3 bg-comic-magenta px-4 py-3 text-black">
           <div>
-            <p className="font-semibold">Cerca un avversario</p>
-            <p className="text-xs text-zinc-400">
+            <p className="-skew-x-8 font-display text-3xl uppercase">Cerca un avversario</p>
+            <p className="mt-1 text-sm font-bold">
               Un avversario del tuo livello. Carte perse oggi: {status?.cards_lost_today}/{maxCardsLostPerDay}.
             </p>
           </div>
-          <span className="text-zinc-500" aria-hidden>
+          <span className="font-display text-2xl" aria-hidden>
             →
           </span>
         </Link>
       ) : (
-        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 opacity-70">
-          <p className="font-semibold">Non disponibile</p>
-          <p className="text-xs text-zinc-400">
+        <div className="bg-panel px-4 py-3">
+          <p className="font-display text-lg uppercase text-faint">Non disponibile</p>
+          <p className="text-sm font-medium text-muted">
             {status && !status.unlocked
               ? `Completa ${unlockAfterMatches} partite (${status.completed_matches}/${unlockAfterMatches}) o raggiungi il livello ${unlockAtLevel} (sei al ${status.level}).`
               : limitReached
@@ -76,32 +74,26 @@ function FriendlySection({ disabled }: { disabled: boolean }) {
   return (
     <section className={`flex flex-col gap-3 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
       <div>
-        <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Amichevole online</h2>
-        <p className="mt-1 text-sm text-zinc-400">
+        <h2 className="section-title">Amichevole online</h2>
+        <p className="mt-1 text-sm font-medium text-muted">
           Solo per divertimento: nessuna carta in gioco e nessuna moneta. Con un codice sfidi un amico.
         </p>
       </div>
-      <Link
-        href="/squadra/?mode=queue"
-        className="flex items-center justify-between rounded-2xl border border-amber-400/40 bg-amber-400/10 px-4 py-3"
-      >
+      <Link href="/squadra/?mode=queue" className="flex min-h-14 items-center justify-between gap-3 bg-comic-yellow px-4 py-2.5 text-black">
         <div>
-          <p className="font-semibold">Cerca un avversario</p>
-          <p className="text-xs text-zinc-400">Sfida il primo giocatore disponibile.</p>
+          <p className="font-display text-xl uppercase">Cerca un avversario</p>
+          <p className="text-sm font-semibold">Sfida il primo giocatore disponibile.</p>
         </div>
-        <span className="text-zinc-500" aria-hidden>
+        <span className="font-display text-2xl" aria-hidden>
           →
         </span>
       </Link>
-      <Link
-        href="/squadra/?mode=lobby"
-        className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-      >
+      <Link href="/squadra/?mode=lobby" className="row-link">
         <div>
-          <p className="font-semibold">Crea un codice</p>
-          <p className="text-xs text-zinc-400">Mandalo a un amico per sfidarlo.</p>
+          <p className="font-display text-xl uppercase">Crea un codice</p>
+          <p className="text-sm font-medium text-muted">Mandalo a un amico per sfidarlo.</p>
         </div>
-        <span className="text-zinc-500" aria-hidden>
+        <span className="font-display text-2xl text-comic-yellow" aria-hidden>
           →
         </span>
       </Link>
@@ -117,16 +109,13 @@ function FriendlySection({ disabled }: { disabled: boolean }) {
           onChange={(event) => setCode(event.target.value)}
           maxLength={6}
           placeholder="Codice dell'amico"
+          aria-label="Codice dell'amico"
           autoCapitalize="characters"
           autoComplete="off"
           spellCheck={false}
-          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-base uppercase tracking-[0.3em] outline-none focus:border-amber-400"
+          className="input-comic min-w-0 flex-1 uppercase tracking-[0.2em] placeholder:normal-case placeholder:tracking-normal"
         />
-        <button
-          type="submit"
-          disabled={normalized.length !== 6}
-          className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-40"
-        >
+        <button type="submit" disabled={normalized.length !== 6} className="btn btn-outline">
           Entra
         </button>
       </form>
@@ -172,21 +161,15 @@ export default function PlayPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between px-5 py-4">
-        <Link href="/" className="text-sm text-zinc-300">
-          ← Home
-        </Link>
-        <h1 className="text-base font-semibold">Gioca</h1>
-        <span className="w-12" />
-      </header>
+      <PageHeader backHref="/" backLabel="Home" title="Gioca" />
 
-      <main className="flex flex-1 flex-col gap-6 px-5 pb-10">
-        {error && <p className="text-sm text-red-400">{error}</p>}
+      <main className="flex flex-1 flex-col gap-6 px-3 pb-6">
+        {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
 
         {active && (
-          <section className="flex flex-col gap-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4">
-            <p className="font-semibold">Hai una partita in corso</p>
-            <p className="text-sm text-zinc-300">
+          <section className="flex flex-col gap-3 bg-comic-cyan p-4 text-black">
+            <p className="font-display text-2xl uppercase">Hai una partita in corso</p>
+            <p className="text-sm font-semibold">
               {active.mode === "bot"
                 ? `Contro il bot ${DIFFICULTY_LABELS[active.bot_difficulty ?? "easy"]}`
                 : active.mode === "conquest"
@@ -196,20 +179,12 @@ export default function PlayPage() {
             </p>
             {confirmForfeit ? (
               <div className="flex flex-col gap-2">
-                <p className="text-sm text-zinc-300">Abbandonare conta come sconfitta, senza monete.</p>
+                <p className="text-sm font-semibold">Abbandonare conta come sconfitta, senza monete.</p>
                 <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => forfeit(active.id)}
-                    className="flex-1 rounded-full bg-red-500 px-4 py-2 text-sm font-bold text-white"
-                  >
+                  <button type="button" onClick={() => forfeit(active.id)} className="btn btn-danger flex-1">
                     Abbandona
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmForfeit(false)}
-                    className="rounded-full border border-white/15 px-4 py-2 text-sm"
-                  >
+                  <button type="button" onClick={() => setConfirmForfeit(false)} className="btn btn-ghost">
                     Annulla
                   </button>
                 </div>
@@ -218,15 +193,11 @@ export default function PlayPage() {
               <div className="flex gap-2">
                 <Link
                   href={`/partita/?id=${active.id}`}
-                  className="flex-1 rounded-full bg-amber-400 px-4 py-2 text-center text-sm font-bold text-zinc-950"
+                  className="btn flex-1 bg-black font-display text-lg uppercase tracking-wide text-comic-yellow"
                 >
                   Riprendi
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => setConfirmForfeit(true)}
-                  className="rounded-full border border-white/15 px-4 py-2 text-sm"
-                >
+                <button type="button" onClick={() => setConfirmForfeit(true)} className="btn btn-ghost">
                   Abbandona
                 </button>
               </div>
@@ -236,33 +207,31 @@ export default function PlayPage() {
 
         <section className="flex flex-col gap-3">
           <div>
-            <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Contro un bot</h2>
-            <p className="mt-1 text-sm text-zinc-400">Per allenarti: nessuna carta in gioco e nessuna moneta.</p>
+            <h2 className="section-title">Contro un bot</h2>
+            <p className="mt-1 text-sm font-medium text-muted">Per allenarti: nessuna carta in gioco e nessuna moneta.</p>
           </div>
           {BOTS.map((bot) => (
             <Link
               key={bot.difficulty}
               href={active ? "#" : `/squadra/?difficulty=${bot.difficulty}`}
               aria-disabled={Boolean(active)}
-              className={`flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 ${
-                active ? "pointer-events-none opacity-40" : ""
-              }`}
+              className={`row-link ${active ? "pointer-events-none opacity-40" : ""}`}
             >
               <div>
-                <p className="font-semibold">{DIFFICULTY_LABELS[bot.difficulty]}</p>
-                <p className="text-xs text-zinc-400">{bot.detail}</p>
+                <p className="font-display text-xl uppercase">{DIFFICULTY_LABELS[bot.difficulty]}</p>
+                <p className="text-sm font-medium text-muted">{bot.detail}</p>
               </div>
-              <span className="text-zinc-500" aria-hidden>
+              <span className="font-display text-2xl text-comic-yellow" aria-hidden>
                 →
               </span>
             </Link>
           ))}
-          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 opacity-40">
+          <div className="row-link opacity-50">
             <div>
-              <p className="font-semibold">{DIFFICULTY_LABELS.super_pro}</p>
-              <p className="text-xs text-zinc-400">Simula migliaia di partite prima di ogni mossa.</p>
+              <p className="font-display text-xl uppercase">{DIFFICULTY_LABELS.super_pro}</p>
+              <p className="text-sm font-medium text-muted">Simula migliaia di partite prima di ogni mossa.</p>
             </div>
-            <span className="text-xs text-zinc-500">Presto</span>
+            <span className="text-sm font-bold text-muted">Presto</span>
           </div>
         </section>
 

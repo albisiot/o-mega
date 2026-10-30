@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Silhouette } from "@/components/card-view";
+import { CardArt, Silhouette } from "@/components/card-view";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import {
   convertAllDuplicates,
@@ -11,6 +11,7 @@ import {
   type OwnedSummary,
 } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
+import { rarityFrame } from "@/lib/rarity-theme";
 
 type Ownership = "all" | "owned" | "missing";
 type Filters = { ownership: Ownership; rarity: number | null; faction: string | null; sort: string };
@@ -91,41 +92,34 @@ export function Album({
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between px-5 py-4">
-        <Link href="/" className="text-sm text-zinc-300">
-          ← Home
-        </Link>
-        <h1 className="text-base font-semibold">Collezione</h1>
-        <span className="w-12" />
-      </header>
-
-      <main className="flex flex-1 flex-col gap-4 px-4 pb-10">
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="flex items-baseline justify-between">
-            <p className="text-lg font-bold">
-              {owned.size}/{catalog.length} personaggi
+      <main className="flex flex-1 flex-col gap-3 px-3 pb-6 pt-2">
+        <section className="cut-bottom bg-comic-cyan px-3.5 pb-5 pt-2.5 text-black">
+          <div className="flex items-baseline justify-between gap-2">
+            <h1 className="font-display text-[32px] uppercase leading-10">Collezione</h1>
+            <p className="text-right text-sm font-extrabold">
+              {owned.size}/{catalog.length} personaggi · {totalCards} carte
             </p>
-            <p className="text-sm text-zinc-400">{totalCards} carte</p>
           </div>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+          <div className="mt-1 h-2 bg-black">
             <div
-              className="h-full rounded-full bg-amber-400"
+              className="h-full bg-foreground"
               style={{ width: `${(owned.size / Math.max(catalog.length, 1)) * 100}%` }}
             />
           </div>
-          {convertible.copies > 0 && (
-            <ConvertAll
-              convertible={convertible}
-              onConverted={(result) => {
-                setNotice(
-                  `Convertite ${result.converted} copie: +${result.coins} monete (saldo ${result.coin_balance}).`,
-                );
-                onChanged();
-              }}
-            />
-          )}
-          {notice && <p className="mt-3 text-sm text-emerald-400">{notice}</p>}
         </section>
+
+        {convertible.copies > 0 && (
+          <ConvertAll
+            convertible={convertible}
+            onConverted={(result) => {
+              setNotice(
+                `Convertite ${result.converted} copie: +${result.coins} monete (saldo ${result.coin_balance}).`,
+              );
+              onChanged();
+            }}
+          />
+        )}
+        {notice && <p className="text-sm font-semibold text-comic-cyan">{notice}</p>}
 
         <section className="flex flex-col gap-2">
           <ChipRow>
@@ -160,13 +154,12 @@ export function Album({
               </Chip>
             ))}
           </ChipRow>
-          <label className="flex items-center gap-2 text-sm text-zinc-400">
+          <label className="flex items-center gap-2 text-sm font-semibold text-muted">
             Ordina per
             <select
               value={filters.sort}
               onChange={(event) => update({ sort: event.target.value })}
-              // 16px: smaller fonts make iOS Safari zoom in on focus.
-              className="flex-1 rounded-lg border border-white/15 bg-zinc-900 px-2 py-1.5 text-base text-zinc-100"
+              className="input-comic flex-1 text-foreground"
             >
               <option value="number">Numero</option>
               <option value="rarity">Rarità</option>
@@ -184,7 +177,7 @@ export function Album({
         </section>
 
         {visible.length === 0 ? (
-          <p className="py-8 text-center text-sm text-zinc-500">Nessuna carta con questi filtri.</p>
+          <p className="py-8 text-center text-sm font-semibold text-muted">Nessuna carta con questi filtri.</p>
         ) : (
           <ul className="grid grid-cols-3 gap-2">
             {visible.map((card) => (
@@ -212,34 +205,35 @@ function AlbumTile({
   return (
     <Link
       href={`/carta/?id=${card.id}`}
-      className="relative flex flex-col gap-1 rounded-xl border-2 bg-zinc-900 p-1.5"
-      style={{ borderColor: owned ? `${card.rarity.color}99` : "#ffffff14" }}
+      className="relative flex flex-col rounded-[7px] p-1"
+      style={{ background: owned ? rarityFrame(card.rarity) : "var(--panel-raised)" }}
     >
       {owned && owned.copies > 1 && (
-        <span className="absolute right-1 top-1 z-10 rounded-full bg-zinc-950/80 px-1.5 text-[10px] font-bold">
+        <span className="absolute right-1.5 top-1.5 z-10 bg-black px-1.5 text-xs font-extrabold leading-[18px] text-comic-yellow">
           ×{owned.copies}
         </span>
       )}
-      <div
-        className="flex h-16 items-end justify-center rounded-lg"
-        style={{
-          background: owned ? `radial-gradient(circle at 50% 35%, ${card.rarity.color}55, transparent 70%), #18181b` : "#18181b",
-        }}
-      >
-        <Silhouette color={owned ? card.rarity.color : "#3f3f46"} className="h-14" />
-      </div>
-      <p className={`truncate text-[11px] font-semibold ${owned ? "" : "text-zinc-600"}`}>
-        {owned ? card.name : "???"}
-      </p>
-      <div className="flex items-center justify-between text-[10px]">
-        <span style={{ color: owned ? card.rarity.color : "#52525b" }}>{card.rarity.name}</span>
-        {owned && sortAbility ? (
-          <span className="font-bold text-amber-300">
-            {sortAbility} {card.stats[sortAbility] ?? 0}
-          </span>
-        ) : (
-          <span className="text-zinc-600">N. {number}</span>
-        )}
+      {owned ? (
+        <CardArt rarity={card.rarity} faction={card.faction} className="h-24 rounded-t" />
+      ) : (
+        <div className="relative h-24 overflow-hidden rounded-t bg-panel">
+          <Silhouette faction={card.faction} ink="#3a3a45" className="absolute -bottom-1 left-1/2 h-[96%] -translate-x-1/2" />
+        </div>
+      )}
+      <div className="rounded-b bg-panel px-1.5 py-1">
+        <p className={`truncate font-display text-sm uppercase ${owned ? "" : "text-faint"}`}>
+          {owned ? card.name : "???"}
+        </p>
+        <div className="flex items-center justify-between gap-1 text-[11px] font-semibold">
+          <span style={{ color: card.rarity.color }}>{card.rarity.name}</span>
+          {owned && sortAbility ? (
+            <span className="font-extrabold text-comic-yellow">
+              {sortAbility} {card.stats[sortAbility] ?? 0}
+            </span>
+          ) : (
+            <span className="text-faint">N. {number}</span>
+          )}
+        </div>
       </div>
     </Link>
   );
@@ -269,27 +263,17 @@ function ConvertAll({
   }
 
   return (
-    <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3">
-      <p className="text-sm text-zinc-300">
+    <div className="flex flex-col gap-2 bg-panel p-3">
+      <p className="text-sm font-semibold">
         {convertible.copies} {convertible.copies === 1 ? "doppione convertibile" : "doppioni convertibili"} ·{" "}
-        <span className="font-semibold text-amber-300">+{convertible.coins} monete</span>
+        <span className="font-extrabold text-comic-yellow">+{convertible.coins} monete</span>
       </p>
       {confirming ? (
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={convert}
-            disabled={busy}
-            className="flex-1 rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-zinc-950 disabled:opacity-60"
-          >
+          <button type="button" onClick={convert} disabled={busy} className="btn btn-primary flex-1 disabled:opacity-60">
             {busy ? "Conversione…" : "Conferma"}
           </button>
-          <button
-            type="button"
-            onClick={() => setConfirming(false)}
-            disabled={busy}
-            className="rounded-full border border-white/15 px-4 py-2 text-sm"
-          >
+          <button type="button" onClick={() => setConfirming(false)} disabled={busy} className="btn btn-ghost">
             Annulla
           </button>
         </div>
@@ -300,23 +284,23 @@ function ConvertAll({
             setConfirming(true);
             setError(null);
           }}
-          className="rounded-full border border-amber-400/60 px-4 py-2 text-sm font-semibold text-amber-300"
+          className="btn btn-outline"
         >
           Converti tutti i doppioni
         </button>
       )}
       {confirming && (
-        <p className="text-xs text-zinc-500">
+        <p className="text-sm font-medium text-muted">
           Tieni sempre almeno una copia di ogni personaggio. La conversione non si può annullare.
         </p>
       )}
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
     </div>
   );
 }
 
 function ChipRow({ children }: { children: React.ReactNode }) {
-  return <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">{children}</div>;
+  return <div className="-mx-3 flex gap-1.5 overflow-x-auto px-3 pb-1 [scrollbar-width:none]">{children}</div>;
 }
 
 function Chip({
@@ -334,10 +318,12 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold transition ${
-        active ? "border-amber-400 bg-amber-400 text-zinc-950" : "border-white/15 text-zinc-300"
+      className={`btn shrink-0 border-2 px-3 text-sm font-bold ${
+        active ? "border-transparent text-black" : "border-line bg-panel"
       }`}
-      style={!active && color ? { color } : undefined}
+      style={
+        active ? { backgroundColor: color ?? "var(--comic-yellow)" } : color ? { color, borderColor: color } : undefined
+      }
     >
       {children}
     </button>

@@ -6,15 +6,17 @@ export function CoinBadge({ balance }: { balance: number | null }) {
     <Link
       href="/negozio"
       aria-label={`Monete: ${balance ?? "…"}. Apri il negozio`}
-      className="flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-sm font-semibold text-amber-200"
+      className="flex min-h-11 items-center"
     >
-      <span
-        aria-hidden
-        className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[10px] font-black text-zinc-950"
-      >
-        Ω
+      <span className="flex h-9 -skew-x-8 items-center gap-1.5 border-2 border-comic-yellow bg-black px-2.5 text-sm font-extrabold text-comic-yellow">
+        <span
+          aria-hidden
+          className="flex h-4 w-4 items-center justify-center rounded-full bg-comic-yellow text-[10px] font-black text-black"
+        >
+          Ω
+        </span>
+        {balance ?? "…"}
       </span>
-      {balance ?? "…"}
     </Link>
   );
 }

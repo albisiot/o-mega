@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { carriedBonusAfter, scorePlay, type AbilityFamilies, type Character } from "@o-mega/game-engine";
+import { Silhouette } from "@/components/card-view";
+import { ComicBurst } from "@/components/comic-parts";
 import { ConquestPanel } from "@/components/conquest-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { balance } from "@/config/balance";
@@ -23,14 +25,15 @@ import {
   type MatchView,
 } from "@/lib/match";
 import { matchXp } from "@/lib/progression";
+import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { useNow } from "@/lib/use-now";
 
 type TeamCard = MatchView["my_team"][number];
 
 const WINNER_STYLES = {
-  me: "border-emerald-400 bg-emerald-400/20 text-emerald-200",
-  opponent: "border-red-400 bg-red-400/20 text-red-200",
-  none: "border-zinc-500 bg-zinc-500/20 text-zinc-300",
+  me: "bg-comic-cyan text-black",
+  opponent: "bg-panel-raised text-muted",
+  none: "bg-panel-raised text-faint",
 } as const;
 
 function toCharacter(card: MatchCard, id: string): Character {
@@ -188,30 +191,30 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between gap-3 px-5 py-3">
-        <div className="flex min-w-0 items-center gap-2">
+      <header className="flex items-center justify-between gap-3 px-3 py-2">
+        <div className="flex min-w-0 items-center gap-2.5">
           {view.opponent && <PlayerAvatar username={view.opponent.username} avatarUrl={view.opponent.avatar_url} />}
           <div className="min-w-0">
-            <p className="truncate text-xs text-zinc-400">
+            <p className="truncate text-xs font-semibold text-muted">
               {isBot
                 ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}`
                 : `${view.mode === "conquest" ? "Conquista" : "Amichevole"} · ${opponentName}`}
             </p>
-            <p className="truncate text-lg font-black tabular-nums">
-              Tu {view.rounds_won.me} – {view.rounds_won.opponent} {isBot ? "Bot" : opponentName}
+            <p className="flex items-baseline gap-1.5 text-sm font-bold">
+              Tu
+              <span className="shrink-0 font-display text-2xl text-comic-yellow">
+                {view.rounds_won.me} – {view.rounds_won.opponent}
+              </span>
+              <span className="truncate">{isBot ? "Bot" : opponentName}</span>
             </p>
           </div>
         </div>
         {view.status === "active" ? (
-          <button
-            type="button"
-            onClick={() => setConfirmForfeit(true)}
-            className="rounded-full border border-white/15 px-3 py-1 text-xs text-zinc-300"
-          >
+          <button type="button" onClick={() => setConfirmForfeit(true)} className="btn btn-ghost shrink-0 px-3">
             Abbandona
           </button>
         ) : (
-          <Link href="/" className="text-sm text-zinc-300">
+          <Link href="/" className="flex min-h-11 items-center text-sm font-bold">
             Home
           </Link>
         )}
@@ -220,33 +223,35 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
       <LevelTrack view={view} />
 
       {confirmForfeit && (
-        <div className="mx-5 mt-3 flex flex-col gap-2 rounded-2xl border border-red-400/40 bg-red-400/10 p-3">
-          <p className="text-sm">Abbandonare conta come sconfitta, senza monete.</p>
+        <div className="mx-3 mt-3 flex flex-col gap-2 bg-comic-magenta p-3 text-black">
+          <p className="text-sm font-bold">Abbandonare conta come sconfitta, senza monete.</p>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={forfeit}
               disabled={busy}
-              className="flex-1 rounded-full bg-red-500 px-4 py-2 text-sm font-bold text-white"
+              className="btn flex-1 bg-black font-display text-lg uppercase tracking-wide text-comic-yellow"
             >
               Abbandona
             </button>
-            <button type="button" onClick={() => setConfirmForfeit(false)} className="rounded-full border border-white/15 px-4 py-2 text-sm">
+            <button type="button" onClick={() => setConfirmForfeit(false)} className="btn btn-ghost">
               Continua a giocare
             </button>
           </div>
         </div>
       )}
-      {error && <p className="mx-5 mt-3 text-sm text-red-400">{error}</p>}
+      {error && <p className="mx-3 mt-3 text-sm font-semibold text-comic-magenta">{error}</p>}
       {absentMs > 20_000 && (
-        <div className="mx-5 mt-3 flex items-center justify-between gap-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-3">
-          <p className="text-sm">{opponentName} non risponde. Allo scadere del tempo il server sceglie al posto suo.</p>
+        <div className="mx-3 mt-3 flex items-center justify-between gap-3 bg-comic-yellow p-3 text-black">
+          <p className="text-sm font-semibold">
+            {opponentName} non risponde. Allo scadere del tempo il server sceglie al posto suo.
+          </p>
           {absentMs > balance.match.reconnectGraceSeconds * 1000 && (
             <button
               type="button"
               onClick={claim}
               disabled={busy}
-              className="shrink-0 rounded-full bg-amber-400 px-3 py-1.5 text-xs font-bold text-zinc-950"
+              className="btn shrink-0 bg-black px-3 text-sm font-bold text-comic-yellow"
             >
               Rivendica la vittoria
             </button>
@@ -283,20 +288,22 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
 
 function LevelTrack({ view }: { view: MatchView }) {
   return (
-    <ol className="flex gap-1.5 px-5" aria-label="Livelli delle Minacce">
+    <ol className="flex gap-1.5 px-3" aria-label="Livelli delle Minacce">
       {view.threat_levels.map((level, i) => {
         const round = view.rounds.find((r) => r.round === i + 1);
         const isCurrent = view.status === "active" && view.current_round === i + 1;
-        const style = round?.winner ? WINNER_STYLES[round.winner] : "border-white/10 bg-white/5 text-zinc-400";
+        const style = isCurrent
+          ? "bg-comic-yellow text-black"
+          : round?.winner
+            ? WINNER_STYLES[round.winner]
+            : "border-2 border-line text-foreground";
         return (
           <li
             key={i}
-            className={`flex h-10 flex-1 flex-col items-center justify-center rounded-lg border text-sm font-bold ${style} ${
-              isCurrent ? "ring-2 ring-amber-400" : ""
-            }`}
+            aria-label={`Livello ${level}`}
+            className={`flex h-10 flex-1 -skew-x-8 items-center justify-center font-display text-[22px] ${style}`}
           >
-            <span>{level}</span>
-            <span className="text-[9px] font-normal opacity-70">liv.</span>
+            {level}
           </li>
         );
       })}
@@ -356,47 +363,58 @@ function ChoosePhase({
   const abilityName = (code: string) => abilities.find((a) => a.code === code);
 
   return (
-    <main className="flex flex-1 flex-col gap-4 px-5 pb-28 pt-4">
-      <section className="rounded-2xl border border-amber-400/40 bg-linear-to-br from-amber-500/15 to-transparent p-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-amber-300">
-          Round {round.round} · Livello {round.level}
-        </p>
-        <p className="mt-1 text-xl font-black">{round.threat.name}</p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {round.threat.abilities.map((code) => {
-            const ability = abilityName(code);
-            return (
-              <span
-                key={code}
-                className="rounded-full border px-2 py-0.5 text-xs font-semibold"
-                style={{ borderColor: ability?.family.color ?? "#71717a", color: ability?.family.color ?? "#d4d4d8" }}
-              >
-                {ability?.name ?? code}
-              </span>
-            );
-          })}
-        </div>
-        <div className="mt-3 flex items-center gap-2">
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+    <main className="flex flex-1 flex-col gap-3 px-3 pb-28 pt-3">
+      <section className="cut-bottom relative overflow-hidden bg-comic-magenta px-4 pb-6 pt-3 text-black">
+        <div aria-hidden className="halftone absolute inset-0 [mask-image:linear-gradient(135deg,transparent_45%,#000_100%)]" />
+        <div className="relative">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-extrabold">
+                Round {round.round} · Livello {round.level}
+              </p>
+              <p className="mt-0.5 font-display text-[34px] uppercase leading-10">{round.threat.name}</p>
+            </div>
+            <p
+              role="timer"
+              aria-label={`${Math.min(seconds, timer)} secondi rimasti`}
+              className={`flex h-14 w-14 shrink-0 rotate-3 items-center justify-center font-display text-3xl ${
+                seconds <= 10 ? "bg-comic-yellow text-black" : "bg-black text-comic-yellow"
+              }`}
+            >
+              {Math.min(seconds, timer)}
+            </p>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {round.threat.abilities.map((code) => {
+              const ability = abilityName(code);
+              return (
+                <span
+                  key={code}
+                  className="bg-black px-2 py-1 text-[13px] font-extrabold"
+                  style={{ color: ability?.family.color ?? "#d8d3c5" }}
+                >
+                  {ability?.name ?? code}
+                </span>
+              );
+            })}
+          </div>
+          <div className="mt-2.5 h-2 bg-black" aria-hidden>
             <div
-              className={`h-full rounded-full transition-[width] duration-200 ${seconds <= 10 ? "bg-red-400" : "bg-amber-400"}`}
+              className={`h-full transition-[width] duration-200 ${seconds <= 10 ? "bg-foreground" : "bg-comic-yellow"}`}
               style={{ width: `${Math.min(100, (remainingMs / 1000 / timer) * 100)}%` }}
             />
           </div>
-          <span className={`w-8 text-right text-sm font-bold tabular-nums ${seconds <= 10 ? "text-red-300" : ""}`}>
-            {Math.min(seconds, timer)}
-          </span>
+          {carried > 0 && <p className="mt-2 text-sm font-bold">Riscossa: +{carried} al personaggio di questo round.</p>}
+          {!isBot && (
+            <p className="mt-2 text-sm font-bold">
+              {round.opponent_has_chosen ? `${opponentName} ha scelto.` : `${opponentName} sta scegliendo…`}
+            </p>
+          )}
         </div>
-        {carried > 0 && <p className="mt-2 text-xs text-emerald-300">Riscossa: +{carried} al personaggio di questo round.</p>}
-        {!isBot && (
-          <p className={`mt-2 text-xs ${round.opponent_has_chosen ? "text-emerald-300" : "text-zinc-400"}`}>
-            {round.opponent_has_chosen ? `${opponentName} ha scelto.` : `${opponentName} sta scegliendo…`}
-          </p>
-        )}
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Scegli chi mandare</h2>
+        <h2 className="section-title">Scegli chi mandare</h2>
         {previews.map(({ card, score }) => {
           const isSelected = card.instance_id === selected;
           return (
@@ -405,52 +423,59 @@ function ChoosePhase({
               type="button"
               onClick={() => onSelect(card.instance_id)}
               disabled={busy}
-              className={`flex items-center justify-between gap-3 rounded-2xl border-2 bg-zinc-900 px-3 py-2.5 text-left ${
-                isSelected ? "ring-2 ring-amber-400" : ""
+              className={`flex items-center justify-between gap-3 border-[3px] bg-panel px-3 py-2 text-left ${
+                isSelected ? "border-comic-yellow shadow-[4px_4px_0_var(--comic-magenta)]" : "border-panel-raised"
               }`}
-              style={{ borderColor: `${card.rarity.color}99` }}
               aria-pressed={isSelected}
             >
               <div className="min-w-0">
-                <p className="truncate font-semibold">{card.name}</p>
-                <p className="text-xs text-zinc-400">
+                <p className="flex items-center gap-1.5">
+                  <span
+                    className="flex h-[22px] w-[22px] shrink-0 items-center justify-center text-sm font-black text-black"
+                    style={{ background: rarityFrame(card.rarity) }}
+                  >
+                    {rarityLetter(card.rarity)}
+                  </span>
+                  <span className="truncate font-display text-xl uppercase">{card.name}</span>
+                </p>
+                <p className="text-xs font-semibold text-muted">
                   {round.threat.abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ")}
                 </p>
                 {card.power && (
-                  <p className="truncate text-[11px]" style={{ color: card.rarity.color }}>
+                  <p className="truncate text-xs font-semibold" style={{ color: card.rarity.color }}>
                     {card.power.name}: {card.power.text}
                   </p>
                 )}
               </div>
               <div className="shrink-0 text-right">
-                <p className="text-xl font-black tabular-nums">{score.total}</p>
-                {score.bonus > 0 && <p className="text-[11px] text-emerald-300">+{score.bonus} bonus</p>}
+                <p className={`font-display text-4xl ${isSelected ? "text-comic-yellow" : ""}`}>{score.total}</p>
+                {score.bonus > 0 && <p className="text-xs font-bold text-comic-cyan">+{score.bonus} bonus</p>}
               </div>
             </button>
           );
         })}
-        <p className="text-[11px] text-zinc-500">Il punteggio è un&apos;anteprima: lo calcola il server quando giochi.</p>
+        <p className="text-xs font-medium text-faint">Il punteggio è un&apos;anteprima: lo calcola il server quando giochi.</p>
       </section>
 
       {opponentPlayed.length > 0 && (
         <section className="flex flex-col gap-1.5">
-          <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">{opponentName} ha già giocato</h2>
+          <h2 className="section-title">{opponentName} ha già giocato</h2>
           <div className="flex flex-wrap gap-1.5">
             {opponentPlayed.map(({ round: r, card }) => (
-              <span key={r} className="rounded-full border px-2.5 py-1 text-xs" style={{ borderColor: `${card.rarity.color}99` }}>
-                {card.name} <span className="text-zinc-500">· round {r}</span>
+              <span key={r} className="border-2 bg-panel px-2.5 py-1 text-xs font-bold" style={{ borderColor: card.rarity.color }}>
+                {card.name} <span className="font-medium text-muted">· round {r}</span>
               </span>
             ))}
           </div>
         </section>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-white/10 bg-zinc-950/95 px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t-[3px] border-foreground bg-black px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
         <button
           type="button"
           onClick={() => chosen && onPlay(chosen.instance_id)}
           disabled={!chosen || busy || chosen.instance_id === pending}
-          className="w-full rounded-full bg-amber-400 px-5 py-3 font-bold text-zinc-950 disabled:bg-white/10 disabled:text-zinc-500"
+          className="btn btn-primary w-full"
         >
           {busy
             ? isBot
@@ -485,27 +510,61 @@ function RoundReveal({
   const banner = { me: "Round vinto!", opponent: "Round perso", none: "Round nullo" }[round.winner ?? "none"];
 
   return (
-    <main className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-5 px-5 py-6" onClick={onContinue}>
-      <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">
-        Round {round.round} · {round.threat.name}
-      </p>
-      <p
-        className={`animate-rare-title text-3xl font-black ${
-          round.winner === "me" ? "text-emerald-300" : round.winner === "opponent" ? "text-red-300" : "text-zinc-300"
-        }`}
+    <main className="relative mt-3 flex flex-1 cursor-pointer flex-col" onClick={onContinue}>
+      <section
+        aria-label="La tua giocata"
+        className="relative min-h-[290px] flex-1 overflow-hidden bg-comic-cyan px-4 pt-3 text-black [clip-path:polygon(0_0,100%_0,100%_calc(100%-52px),0_100%)]"
       >
-        {banner}
-      </p>
-      <div className="grid w-full max-w-sm grid-cols-2 gap-3">
-        <PlayCard label="Tu" card={mine ?? null} play={round.my_play} abilities={round.threat.abilities} winner={round.winner === "me"} />
-        <PlayCard label={opponentName} card={theirs} play={theirs} abilities={round.threat.abilities} winner={round.winner === "opponent"} />
-      </div>
-      {round.my_play?.auto_played && <p className="text-xs text-amber-300">Tempo scaduto: il server ha scelto per te.</p>}
-      {theirs?.auto_played && <p className="text-xs text-zinc-400">{opponentName} non ha scelto in tempo.</p>}
-      {round.winner === "none" && <p className="text-xs text-zinc-400">Stesso punteggio e stesso valore più alto.</p>}
-      <button type="button" className="rounded-full border border-white/15 px-5 py-2 text-sm">
-        {finished ? "Vedi il risultato" : "Continua"}
-      </button>
+        <p className="text-sm font-extrabold">
+          Round {round.round} · {round.threat.name}
+        </p>
+        <p
+          className={`animate-rare-title text-sfx mt-1 text-[56px] uppercase leading-[60px] ${
+            round.winner === "me" ? "text-comic-yellow" : "text-foreground"
+          }`}
+        >
+          {banner}
+        </p>
+        <PlaySide label="Tu" card={mine ?? null} play={round.my_play} abilities={round.threat.abilities} side="left" />
+      </section>
+
+      <section
+        aria-label={`La giocata di ${opponentName}`}
+        className="halftone relative -mt-[42px] flex min-h-[340px] flex-1 flex-col justify-end overflow-hidden bg-comic-magenta px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-16 text-black [clip-path:polygon(0_52px,100%_0,100%_100%,0_100%)]"
+      >
+        <PlaySide label={opponentName} card={theirs} play={theirs} abilities={round.threat.abilities} side="right" />
+        <div className="relative mt-3 flex flex-col gap-2">
+          {round.my_play?.auto_played && (
+            <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
+              Tempo scaduto: il server ha scelto per te.
+            </p>
+          )}
+          {theirs?.auto_played && (
+            <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
+              {opponentName} non ha scelto in tempo.
+            </p>
+          )}
+          {round.winner === "none" && (
+            <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
+              Stesso punteggio e stesso valore più alto.
+            </p>
+          )}
+          <button
+            type="button"
+            className="btn min-h-14 bg-comic-yellow font-display text-[22px] uppercase tracking-wide text-black shadow-[4px_4px_0_#000]"
+          >
+            {finished ? "Vedi il risultato" : "Continua"}
+          </button>
+        </div>
+      </section>
+
+      <ComicBurst
+        fill="#ffd60a"
+        className="absolute left-1/2 top-[calc(50%-92px)] h-32 w-32 -translate-x-1/2 -rotate-[8deg]"
+        textClassName="text-[34px] tracking-wide"
+      >
+        {round.winner === "none" ? "PARI!" : "SBAM!"}
+      </ComicBurst>
     </main>
   );
 }
@@ -525,43 +584,50 @@ function CountUp({ value }: { value: number }) {
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
   }, [value]);
-  return <span className="text-2xl font-black tabular-nums">{shown}</span>;
+  return <span className="font-display text-[80px] leading-[88px]">{shown}</span>;
 }
 
-function PlayCard({
+function PlaySide({
   label,
   card,
   play,
   abilities,
-  winner,
+  side,
 }: {
   label: string;
   card: MatchCard | null;
   play: { base: number; bonus: number; score: number } | null;
   abilities: string[];
-  winner: boolean;
+  side: "left" | "right";
 }) {
+  const isLeft = side === "left";
   return (
-    <div
-      className={`animate-card-reveal flex flex-col gap-1.5 rounded-2xl border-2 bg-zinc-900 p-3 ${winner ? "animate-rare-glow" : ""}`}
-      style={{ borderColor: card ? `${card.rarity.color}99` : "#3f3f46", ["--glow-color" as string]: "#34d39988" }}
-    >
-      <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
-      <p className="truncate font-bold">{card?.name ?? "?"}</p>
+    <div className={`relative flex ${isLeft ? "justify-start" : "justify-end text-right"}`}>
       {card && (
-        <p className="text-[11px] text-zinc-400">{abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ")}</p>
+        <Silhouette
+          faction={card.faction}
+          accent={card.rarity.color}
+          className={`absolute bottom-0 h-44 ${isLeft ? "-right-3" : "-left-3"}`}
+        />
       )}
-      {play && (
-        <p className="text-sm">
-          <CountUp value={play.score} />
-          {play.bonus > 0 && (
-            <span className="text-xs text-emerald-300">
-              {" "}
-              ({play.base} +{play.bonus})
-            </span>
-          )}
-        </p>
-      )}
+      <div className="relative max-w-[62%]">
+        <p className="truncate text-sm font-extrabold">{label}</p>
+        <p className="truncate font-display text-3xl uppercase">{card?.name ?? "?"}</p>
+        {card && (
+          <p className="text-[13px] font-bold">{abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ")}</p>
+        )}
+        {play && (
+          <p>
+            <CountUp value={play.score} />
+            {play.bonus > 0 && (
+              <span className="text-sm font-extrabold">
+                {" "}
+                ({play.base} +{play.bonus})
+              </span>
+            )}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -586,29 +652,35 @@ function MatchResult({
   const nameOf = (instanceId: string | null | undefined) => view.my_team.find((c) => c.instance_id === instanceId)?.name ?? "—";
 
   return (
-    <main className="flex flex-1 flex-col gap-5 px-5 py-6">
-      <section className="relative flex flex-col items-center gap-2 overflow-hidden py-2 text-center">
+    <main className="flex flex-1 flex-col gap-5 px-3 pb-6 pt-3">
+      <section
+        className={`cut-bottom relative -mx-3 flex flex-col items-center gap-2 overflow-hidden px-4 pb-8 pt-5 text-center ${
+          view.result === "win" ? "rays-gold" : view.result === "loss" ? "halftone bg-comic-magenta" : "bg-panel-raised"
+        }`}
+      >
         {view.result === "win" && (
           <span
             aria-hidden
-            className="animate-rare-burst pointer-events-none absolute left-1/2 top-4 -ml-12 h-24 w-24 rounded-full bg-emerald-400/40 [animation-iteration-count:2]"
+            className="animate-rare-burst pointer-events-none absolute left-1/2 top-4 -ml-12 h-24 w-24 rounded-full bg-comic-magenta/40 [animation-iteration-count:2]"
           />
         )}
         <p
-          className={`animate-rare-title relative text-4xl font-black ${
-            view.result === "win" ? "text-emerald-300" : view.result === "loss" ? "text-red-300" : "text-zinc-200"
+          className={`animate-rare-title text-sfx relative text-7xl uppercase ${
+            view.result === "win" ? "text-comic-magenta" : "text-foreground"
           }`}
         >
           {title}
         </p>
-        <p className="text-sm text-zinc-400">
+        <p className="relative -skew-x-8 bg-black px-3 py-1 text-sm font-extrabold text-comic-yellow">
           Round {view.rounds_won.me} – {view.rounds_won.opponent} · punti {view.total_score.me} – {view.total_score.opponent}
         </p>
-        {xp > 0 && <p className="text-xs font-semibold text-zinc-300">+{xp} XP</p>}
-        {coins > 0 && (
-          <p className="rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 text-sm font-semibold text-amber-200">
-            +{coins} monete
-          </p>
+        {(xp > 0 || coins > 0) && (
+          <div className="relative flex gap-2">
+            {xp > 0 && <p className="-skew-x-8 bg-black px-3 py-1 text-sm font-extrabold text-foreground">+{xp} XP</p>}
+            {coins > 0 && (
+              <p className="-skew-x-8 bg-black px-3 py-1 text-sm font-extrabold text-comic-yellow">+{coins} monete</p>
+            )}
+          </div>
         )}
       </section>
 
@@ -623,18 +695,18 @@ function MatchResult({
         />
       )}
 
-      <ol className="flex flex-col divide-y divide-white/5 rounded-2xl border border-white/10 bg-white/5">
+      <ol className="flex flex-col gap-0.5">
         {view.rounds
           .filter((r) => r.resolved)
           .map((r) => (
-            <li key={r.round} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+            <li key={r.round} className="flex items-center justify-between gap-2 bg-panel px-3 py-2 text-sm font-semibold">
               <span className="min-w-0">
-                <span className="text-zinc-500">{r.round}. </span>
-                {nameOf(r.my_play?.instance_id)} <span className="text-zinc-500">vs</span> {r.opponent_play?.name ?? "—"}
+                <span className="text-muted">{r.round}. </span>
+                {nameOf(r.my_play?.instance_id)} <span className="text-muted">vs</span> {r.opponent_play?.name ?? "—"}
               </span>
               <span
-                className={`shrink-0 font-bold tabular-nums ${
-                  r.winner === "me" ? "text-emerald-300" : r.winner === "opponent" ? "text-red-300" : "text-zinc-400"
+                className={`shrink-0 font-display text-lg ${
+                  r.winner === "me" ? "text-comic-cyan" : r.winner === "opponent" ? "text-comic-magenta" : "text-muted"
                 }`}
               >
                 {r.my_play?.score} – {r.opponent_play?.score}
@@ -646,11 +718,11 @@ function MatchResult({
       <div className="flex flex-col gap-2">
         <Link
           href={view.mode === "bot" ? `/squadra/?difficulty=${view.bot_difficulty ?? "easy"}` : "/gioca"}
-          className="rounded-full bg-amber-400 px-5 py-3 text-center font-bold text-zinc-950"
+          className="btn btn-primary"
         >
           {view.mode === "bot" ? "Rivincita" : "Gioca ancora"}
         </Link>
-        <Link href="/" className="rounded-full border border-white/15 px-5 py-3 text-center text-sm font-semibold">
+        <Link href="/" className="btn btn-ghost">
           Torna alla home
         </Link>
       </div>

@@ -140,14 +140,14 @@ export function TeamPicker(props: TeamPickerProps) {
               type="button"
               disabled={!card}
               onClick={() => card && toggle(card.id)}
-              className="flex h-16 flex-1 flex-col items-center justify-center rounded-xl border-2 border-dashed px-1 text-center"
-              style={{ borderColor: card ? card.rarity.color : "#ffffff26", borderStyle: card ? "solid" : "dashed" }}
+              className="flex h-16 min-w-0 flex-1 -skew-x-8 flex-col items-center justify-center border-2 bg-panel px-1 text-center"
+              style={{ borderColor: card ? card.rarity.color : "var(--line)", borderStyle: card ? "solid" : "dashed" }}
               aria-label={card ? `Togli ${card.name}` : `Posto ${i + 1} libero`}
             >
               {card ? (
-                <span className="line-clamp-2 text-[10px] font-semibold leading-tight">{card.name}</span>
+                <span className="line-clamp-2 font-display text-xs uppercase leading-tight">{card.name}</span>
               ) : (
-                <span className="text-xs text-zinc-600">{i + 1}</span>
+                <span className="font-display text-xl text-faint">{i + 1}</span>
               )}
             </button>
           );
@@ -155,15 +155,15 @@ export function TeamPicker(props: TeamPickerProps) {
       </section>
 
       {conquerable && (
-        <section className="flex flex-col gap-1 rounded-2xl border border-red-400/40 bg-red-400/10 p-3 text-sm">
+        <section className="flex flex-col gap-1 bg-comic-magenta p-3 text-sm font-semibold text-black">
           <p>
-            Carte in palio: <span className="font-bold">{atRisk}</span> (minimo {minConquerable}). Se perdi, il vincitore
-            può prendertene una. Le starter sono protette.
+            Carte in palio: <span className="font-extrabold">{atRisk}</span> (minimo {minConquerable}). Se perdi, il
+            vincitore può prendertene una. Le starter sono protette.
           </p>
           {limit && (
-            <p className="text-zinc-300">
+            <p>
               Se vinci puoi conquistare fino a:{" "}
-              <span className="font-bold" style={{ color: limit.color }}>
+              <span className="-skew-x-8 bg-black px-1.5 font-display uppercase" style={{ color: limit.color }}>
                 {limit.name}
               </span>
             </p>
@@ -173,13 +173,13 @@ export function TeamPicker(props: TeamPickerProps) {
 
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Formazioni</h2>
+          <h2 className="section-title">Formazioni</h2>
           {!naming && (
             <button
               type="button"
               disabled={selected.length < size || formations.length >= balance.formations.maxPerPlayer}
               onClick={() => setNaming(true)}
-              className="text-xs font-semibold text-amber-300 disabled:text-zinc-600"
+              className="min-h-11 text-sm font-bold text-comic-yellow disabled:text-faint"
             >
               + Salva questa squadra
             </button>
@@ -192,35 +192,30 @@ export function TeamPicker(props: TeamPickerProps) {
               onChange={(event) => setName(event.target.value)}
               maxLength={30}
               placeholder="Nome della formazione"
-              className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-base outline-none focus:border-amber-400"
+              className="input-comic min-w-0 flex-1"
             />
-            <button
-              type="button"
-              onClick={save}
-              disabled={!name.trim()}
-              className="rounded-xl bg-amber-400 px-3 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-40"
-            >
+            <button type="button" onClick={save} disabled={!name.trim()} className="btn btn-outline">
               Salva
             </button>
-            <button type="button" onClick={() => setNaming(false)} className="px-2 text-sm text-zinc-400">
+            <button type="button" onClick={() => setNaming(false)} className="min-h-11 px-1 text-sm font-semibold text-muted">
               Annulla
             </button>
           </div>
         )}
         {formations.length === 0 ? (
-          <p className="text-xs text-zinc-500">Nessuna formazione salvata.</p>
+          <p className="text-sm font-medium text-muted">Nessuna formazione salvata.</p>
         ) : (
-          <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-1">
+          <div className="-mx-3 flex gap-1.5 overflow-x-auto px-3 pb-1">
             {formations.map((formation) => (
-              <span key={formation.id} className="flex shrink-0 items-center rounded-full border border-white/15">
-                <button type="button" onClick={() => loadFormation(formation)} className="py-1 pl-3 pr-1 text-xs font-semibold">
+              <span key={formation.id} className="flex shrink-0 items-center border-2 border-line bg-panel">
+                <button type="button" onClick={() => loadFormation(formation)} className="min-h-10 pl-3 pr-1 text-sm font-bold">
                   {formation.name}
                 </button>
                 <button
                   type="button"
                   onClick={() => remove(formation)}
                   aria-label={`Elimina ${formation.name}`}
-                  className="px-2 py-1 text-xs text-zinc-500"
+                  className="min-h-10 px-2.5 text-sm font-bold text-muted"
                 >
                   ×
                 </button>
@@ -228,7 +223,9 @@ export function TeamPicker(props: TeamPickerProps) {
             ))}
           </div>
         )}
-        {message && <p className={`text-xs ${message.isError ? "text-red-400" : "text-emerald-400"}`}>{message.text}</p>}
+        {message && (
+          <p className={`text-sm font-semibold ${message.isError ? "text-comic-magenta" : "text-comic-cyan"}`}>{message.text}</p>
+        )}
       </section>
 
       <ul className="grid grid-cols-2 gap-2">
@@ -242,28 +239,28 @@ export function TeamPicker(props: TeamPickerProps) {
               <button
                 type="button"
                 onClick={() => toggle(card.id)}
-                className={`relative flex w-full flex-col gap-1 rounded-xl border-2 bg-zinc-900 p-2 text-left ${
-                  position >= 0 ? "ring-2 ring-amber-400" : ""
+                className={`relative flex w-full flex-col gap-0.5 border-[3px] bg-panel p-2 text-left ${
+                  position >= 0 ? "shadow-[4px_4px_0_var(--comic-magenta)]" : ""
                 }`}
-                style={{ borderColor: `${card.rarity.color}99` }}
+                style={{ borderColor: position >= 0 ? "var(--comic-yellow)" : card.rarity.color }}
                 aria-pressed={position >= 0}
               >
                 {position >= 0 && (
-                  <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-[11px] font-black text-zinc-950">
+                  <span className="absolute right-1 top-1 flex h-6 w-6 -skew-x-8 items-center justify-center bg-comic-yellow font-display text-sm text-black">
                     {position + 1}
                   </span>
                 )}
-                <span className="truncate pr-6 text-sm font-semibold">{card.name}</span>
-                <span className="text-[10px]" style={{ color: card.rarity.color }}>
+                <span className="truncate pr-6 font-display text-base uppercase">{card.name}</span>
+                <span className="text-xs font-semibold" style={{ color: card.rarity.color }}>
                   {card.rarity.name}
-                  {card.power && <span className="text-zinc-400"> · {card.power.name}</span>}
+                  {card.power && <span className="text-muted"> · {card.power.name}</span>}
                 </span>
                 {conquerable && (
-                  <span className={`text-[10px] font-semibold ${isAtRisk(card.id) ? "text-red-300" : "text-emerald-300"}`}>
+                  <span className={`text-xs font-bold ${isAtRisk(card.id) ? "text-comic-magenta" : "text-comic-cyan"}`}>
                     {isAtRisk(card.id) ? "In palio" : "Protetta"}
                   </span>
                 )}
-                <span className="text-[11px] text-zinc-300">
+                <span className="text-xs font-medium text-muted">
                   {top.map(([code, value]) => `${code} ${value}`).join(" · ")}
                 </span>
               </button>
@@ -277,7 +274,7 @@ export function TeamPicker(props: TeamPickerProps) {
                       return next;
                     })
                   }
-                  className="mt-1 w-full rounded-lg border border-white/15 px-2 py-1 text-[11px] font-semibold text-zinc-200"
+                  className="mt-1 min-h-11 w-full border-2 border-line bg-panel px-2 text-xs font-bold"
                 >
                   {staked.has(card.id) ? "Usa la copia starter" : "Metti in palio il doppione"}
                 </button>
@@ -287,12 +284,12 @@ export function TeamPicker(props: TeamPickerProps) {
         })}
       </ul>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-white/10 bg-zinc-950/95 px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t-[3px] border-foreground bg-black px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
         <button
           type="button"
           onClick={start}
           disabled={selected.length < size || starting || notEnoughAtRisk}
-          className="w-full rounded-full bg-amber-400 px-5 py-3 font-bold text-zinc-950 disabled:bg-white/10 disabled:text-zinc-500"
+          className="btn btn-primary w-full"
         >
           {starting
             ? "Preparazione…"

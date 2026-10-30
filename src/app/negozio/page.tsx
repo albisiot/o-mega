@@ -37,8 +37,8 @@ export default function ShopPage() {
   if (error || statusError) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-sm text-red-400">{error ?? statusError}</p>
-        <Link href="/" className="text-sm text-zinc-300 underline">
+        <p className="text-sm font-semibold text-comic-magenta">{error ?? statusError}</p>
+        <Link href="/" className="flex min-h-11 items-center text-sm font-bold underline">
           Torna alla home
         </Link>
       </main>

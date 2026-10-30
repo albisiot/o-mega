@@ -33,19 +33,16 @@ export default function AuthCallbackPage() {
     <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
       {failed ? (
         <>
-          <p className="text-lg font-semibold">Accesso non riuscito</p>
-          <p className="max-w-xs text-sm text-zinc-400">
+          <p className="font-display text-3xl uppercase text-comic-magenta">Accesso non riuscito</p>
+          <p className="max-w-xs text-sm font-medium text-muted">
             Non è stato possibile completare l&apos;accesso con Google. Riprova.
           </p>
-          <Link
-            href="/"
-            className="rounded-full bg-amber-400 px-5 py-2 text-sm font-semibold text-zinc-950"
-          >
+          <Link href="/" className="btn btn-primary">
             Torna all&apos;inizio
           </Link>
         </>
       ) : (
-        <p className="text-sm text-zinc-400">Accesso in corso…</p>
+        <p className="text-sm font-semibold text-muted">Accesso in corso…</p>
       )}
     </main>
   );

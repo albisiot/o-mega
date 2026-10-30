@@ -40,66 +40,64 @@ export function HomeScreen({ profile }: { profile: Profile }) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between px-5 py-4">
-        <span className="bg-linear-to-b from-amber-200 to-orange-500 bg-clip-text text-xl font-black tracking-tight text-transparent">
+      <header className="flex items-center justify-between px-4 py-2">
+        <span className="-skew-x-8 font-display text-[34px] leading-10 tracking-wide text-comic-yellow [text-shadow:3px_3px_0_var(--comic-magenta)]">
           O-MEGA
         </span>
         <div className="flex items-center gap-3">
           <CoinBadge balance={packs.status?.coin_balance ?? null} />
-          <Link href="/profilo" aria-label="Profilo">
+          <Link href="/profilo" aria-label={`Profilo di ${profile.username}`} className="flex min-h-11 min-w-11 items-center justify-center">
             <PlayerAvatar username={profile.username} avatarUrl={profile.avatar_url} />
           </Link>
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col gap-6 px-5 pb-8">
-        <p className="text-sm text-zinc-400">Ciao, {profile.username}!</p>
-
+      <main className="flex flex-1 flex-col gap-3 px-3 pb-3">
         {activeMatch && (
           <Link
             href={`/partita/?id=${activeMatch.id}`}
-            className="flex items-center justify-between rounded-2xl border border-emerald-400/50 bg-emerald-400/10 px-4 py-3"
+            className="flex min-h-14 items-center justify-between gap-3 bg-comic-cyan px-4 py-2.5 text-black"
           >
             <div>
-              <p className="font-semibold">Hai una partita in corso</p>
-              <p className="text-xs text-zinc-400">Round {activeMatch.current_round}: tocca per riprenderla.</p>
+              <p className="font-display text-lg uppercase">Hai una partita in corso</p>
+              <p className="text-sm font-semibold">Round {activeMatch.current_round}: tocca per riprenderla.</p>
             </div>
-            <span className="text-zinc-400" aria-hidden>
+            <span className="font-display text-2xl" aria-hidden>
               →
             </span>
           </Link>
         )}
 
+        <PackPanel status={packs.status} now={packs.now} resetsAt={packs.resetsAt} onFailed={packs.refresh} />
+        {packs.error && <p className="text-sm font-semibold text-comic-magenta">{packs.error}</p>}
+
         <Link
           href="/gioca"
-          className="flex items-center justify-between rounded-3xl bg-linear-to-r from-amber-400 to-orange-500 px-5 py-4 text-zinc-950 shadow-lg shadow-orange-600/30"
+          className="cut-both speed-lines flex min-h-[116px] items-center justify-between bg-comic-magenta px-5 py-2 text-black"
         >
           <div>
-            <p className="text-xl font-black">Gioca</p>
-            <p className="text-xs font-semibold opacity-80">Sfide 1 contro 1 da 3 minuti</p>
+            <p className="-skew-x-8 font-display text-6xl uppercase">Gioca</p>
+            <p className="mt-1 text-sm font-extrabold">Sfide 1 contro 1 da 3 minuti</p>
           </div>
-          <span className="text-2xl font-black" aria-hidden>
-            →
+          <span aria-hidden className="flex h-14 w-14 -skew-x-8 items-center justify-center bg-black">
+            <svg viewBox="0 0 24 24" className="h-8 w-8 fill-comic-magenta">
+              <path d="M6 4l14 8-14 8z" />
+            </svg>
           </span>
         </Link>
 
-        <PackPanel status={packs.status} now={packs.now} resetsAt={packs.resetsAt} onFailed={packs.refresh} />
-        {packs.error && <p className="text-sm text-red-400">{packs.error}</p>}
-
-        <Link
-          href="/collezione"
-          className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-        >
-          <div>
-            <p className="font-semibold">Collezione</p>
-            <p className="text-xs text-zinc-400">
+        <div className="grid grid-cols-2 gap-3">
+          <Link href="/collezione" className="flex min-h-24 flex-col gap-1 bg-comic-cyan px-3.5 py-3 text-black">
+            <span className="font-display text-2xl uppercase">Collezione</span>
+            <span className="text-sm font-bold">
               {cardCount === null ? "…" : cardCount} {cardCount === 1 ? "carta" : "carte"} · album e doppioni
-            </p>
-          </div>
-          <span className="text-zinc-500" aria-hidden>
-            →
-          </span>
-        </Link>
+            </span>
+          </Link>
+          <Link href="/negozio" className="flex min-h-24 flex-col gap-1 bg-foreground px-3.5 py-3 text-black">
+            <span className="font-display text-2xl uppercase">Negozio</span>
+            <span className="text-sm font-bold">Pacchetti e probabilità</span>
+          </Link>
+        </div>
       </main>
     </div>
   );

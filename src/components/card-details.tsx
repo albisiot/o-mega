@@ -38,16 +38,16 @@ export function CopiesPanel({
   }
 
   return (
-    <section className="flex w-full max-w-sm flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-      <dl className="flex flex-col gap-1.5 text-sm">
+    <section className="flex w-full max-w-sm flex-col gap-3">
+      <dl className="grid grid-cols-2 gap-2.5">
         <Row label="Copie possedute" value={owned.copies} />
+        <Row label="Doppioni convertibili" value={convertible} hint={`${value} monete l'uno`} />
         {owned.starter_copies > 0 && (
           <Row label="Starter" value={owned.starter_copies} hint="Legata all'account: mai conquistabile né convertibile." />
         )}
         {owned.locked_copies > 0 && (
           <Row label="Bloccate" value={owned.locked_copies} hint="Appena conquistate: non convertibili per ora." />
         )}
-        <Row label="Doppioni convertibili" value={convertible} hint={`${value} monete l'uno`} />
       </dl>
 
       {convertible > 0 &&
@@ -59,7 +59,7 @@ export function CopiesPanel({
                 setConfirm(1);
                 setMessage(null);
               }}
-              className="flex-1 rounded-full border border-amber-400/60 px-3 py-2 text-sm font-semibold text-amber-300"
+              className="btn btn-outline flex-1"
             >
               Converti 1 · +{value}
             </button>
@@ -70,7 +70,7 @@ export function CopiesPanel({
                   setConfirm(convertible);
                   setMessage(null);
                 }}
-                className="flex-1 rounded-full border border-amber-400/60 px-3 py-2 text-sm font-semibold text-amber-300"
+                className="btn btn-outline flex-1"
               >
                 Tutti ({convertible}) · +{value * convertible}
               </button>
@@ -78,7 +78,7 @@ export function CopiesPanel({
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            <p className="text-sm text-zinc-300">
+            <p className="text-sm font-semibold">
               Convertire {confirm === 1 ? "1 copia" : `${confirm} copie`} in {value * confirm} monete? Non si può
               annullare.
             </p>
@@ -87,50 +87,47 @@ export function CopiesPanel({
                 type="button"
                 onClick={() => convert(confirm)}
                 disabled={busy}
-                className="flex-1 rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-zinc-950 disabled:opacity-60"
+                className="btn btn-primary flex-1 disabled:opacity-60"
               >
                 {busy ? "Conversione…" : "Conferma"}
               </button>
-              <button
-                type="button"
-                onClick={() => setConfirm(null)}
-                disabled={busy}
-                className="rounded-full border border-white/15 px-4 py-2 text-sm"
-              >
+              <button type="button" onClick={() => setConfirm(null)} disabled={busy} className="btn btn-ghost">
                 Annulla
               </button>
             </div>
           </div>
         ))}
 
-      {message && <p className={`text-sm ${message.isError ? "text-red-400" : "text-emerald-400"}`}>{message.text}</p>}
+      {message && (
+        <p className={`text-sm font-semibold ${message.isError ? "text-comic-magenta" : "text-comic-cyan"}`}>
+          {message.text}
+        </p>
+      )}
     </section>
   );
 }
 
 function Row({ label, value, hint }: { label: string; value: number; hint?: string }) {
   return (
-    <div>
-      <div className="flex justify-between">
-        <dt className="text-zinc-400">{label}</dt>
-        <dd className="font-semibold">{value}</dd>
-      </div>
-      {hint && <p className="text-xs text-zinc-500">{hint}</p>}
+    <div className="flex flex-col bg-panel px-3.5 py-2.5">
+      <dt className="text-[13px] font-semibold leading-[17px] text-muted">{label}</dt>
+      <dd className="font-display text-3xl">{value}</dd>
+      {hint && <p className="text-xs font-medium text-faint">{hint}</p>}
     </div>
   );
 }
 
 export function MissingCard({ card }: { card: CatalogCard }) {
   return (
-    <div className="flex w-72 flex-col items-center gap-4 rounded-2xl border-2 border-white/10 bg-zinc-900 p-6 text-center">
-      <Silhouette color="#3f3f46" className="h-40" />
+    <div className="flex w-[300px] flex-col items-center gap-4 rounded-xl border-4 border-dashed border-line bg-panel p-6 text-center">
+      <Silhouette faction={card.faction} ink="#3a3a45" className="h-44" />
       <div>
-        <p className="text-lg font-bold text-zinc-500">???</p>
-        <p className="text-sm" style={{ color: card.rarity.color }}>
+        <p className="font-display text-3xl text-faint">???</p>
+        <p className="font-display text-lg uppercase" style={{ color: card.rarity.color }}>
           {card.rarity.name}
         </p>
       </div>
-      <p className="text-sm text-zinc-400">Non l&apos;hai ancora trovata. Apri pacchetti per scoprirla.</p>
+      <p className="text-sm font-semibold text-muted">Non l&apos;hai ancora trovata. Apri pacchetti per scoprirla.</p>
     </div>
   );
 }
