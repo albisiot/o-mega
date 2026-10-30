@@ -63,6 +63,19 @@ export type MatchView = {
   server_now: string;
   my_team: (MatchCard & { instance_id: string; played_round: number | null })[];
   rounds: MatchRound[];
+  /** Conquest only, once the match is over with a winner. */
+  conquest: ConquestState | null;
+};
+
+export type ConquestState = {
+  role: "winner" | "loser";
+  deadline_at: string;
+  resolved: boolean;
+  auto_assigned: boolean;
+  bonus_coins: number;
+  chosen: MatchCard | null;
+  /** Winner only, while picking: the loser's five cards. */
+  offered: (MatchCard & { instance_id: string; eligible: boolean })[] | null;
 };
 
 // The latest state of each match seen in this session, so navigating to the
@@ -133,8 +146,49 @@ export function joinLobby(code: string, cardInstanceIds: string[]): Promise<Matc
 }
 
 /** Joins or refreshes the random queue; call it again while waiting. */
-export function joinQueue(cardInstanceIds: string[]): Promise<{ matched: boolean; match_id: string | null }> {
-  return invokeFunction({ action: "queue", card_instance_ids: cardInstanceIds });
+export function joinQueue(
+  cardInstanceIds: string[],
+  mode: QueueMode,
+): Promise<{ matched: boolean; match_id: string | null }> {
+  return invokeFunction({ action: "queue", mode, card_instance_ids: cardInstanceIds });
+}
+
+export type QueueMode = "friendly" | "conquest";
+
+export type ConquestStatus = {
+  unlocked: boolean;
+  completed_matches: number;
+  level: number;
+  cards_lost_today: number;
+};
+
+export async function fetchConquestStatus(): Promise<ConquestStatus> {
+  const { data, error } = await getSupabase().rpc("get_conquest_status");
+  if (error) throw error;
+  return data as unknown as ConquestStatus;
+}
+
+/** The winner's pick; null only settles a pick whose time is up. */
+export async function claimConquestCard(matchId: string, cardInstanceId: string | null): Promise<MatchView> {
+  const { data, error } = await getSupabase().rpc("claim_conquest_card", {
+    p_match_id: matchId,
+    p_card_instance_id: cardInstanceId as string,
+  });
+  if (error) throw error;
+  return data as unknown as MatchView;
+}
+
+export type ConquestHistoryEntry = {
+  won: boolean;
+  created_at: string;
+  opponent: string | null;
+  card: MatchCard;
+};
+
+export async function fetchConquestHistory(): Promise<ConquestHistoryEntry[]> {
+  const { data, error } = await getSupabase().rpc("get_conquest_history");
+  if (error) throw error;
+  return data as unknown as ConquestHistoryEntry[];
 }
 
 /** Sends a secret choice; the round resolves as soon as both players chose. */
@@ -234,6 +288,32 @@ export async function fetchOwnedInstances(): Promise<Map<string, string>> {
   const byDefinition = new Map<string, string>();
   for (const row of data) if (!byDefinition.has(row.definition_id)) byDefinition.set(row.definition_id, row.id);
   return byDefinition;
+}
+
+/**
+ * The copy to field in Conquest for each owned character: the starter one when
+ * there is one (it is protected), otherwise the oldest. Locked copies cannot
+ * be fielded. `conquerable` lists the characters whose copy is at risk.
+ */
+export async function fetchConquestInstances(): Promise<{ owned: Map<string, string>; conquerable: Set<string> }> {
+  const { data, error } = await getSupabase()
+    .from("card_instances")
+    .select("id, definition_id, is_starter, locked_until, acquired_at")
+    .order("acquired_at");
+  if (error) throw error;
+  const owned = new Map<string, string>();
+  const conquerable = new Set<string>();
+  const now = Date.now();
+  for (const row of data) {
+    if (row.is_starter) {
+      owned.set(row.definition_id, row.id);
+      conquerable.delete(row.definition_id);
+    } else if (!owned.has(row.definition_id) && !(row.locked_until && Date.parse(row.locked_until) > now)) {
+      owned.set(row.definition_id, row.id);
+      conquerable.add(row.definition_id);
+    }
+  }
+  return { owned, conquerable };
 }
 
 /** Instance id → definition id for the player's cards. */

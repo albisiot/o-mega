@@ -3,6 +3,7 @@ import { getSupabase } from "@/lib/supabase/client";
 export const COIN_REASON_LABELS: Record<string, string> = {
   pack_purchase: "Acquisto pacchetto",
   match_reward: "Ricompensa partita",
+  bot_match_reward: "Ricompensa partita contro bot",
   duplicate_conversion: "Conversione doppioni",
   conquest_bonus: "Bonus conquista",
   admin_adjustment: "Rettifica",

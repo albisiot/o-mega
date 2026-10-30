@@ -17,6 +17,7 @@ import {
   readPendingTeam,
   subscribeToUpdates,
   type Lobby,
+  type QueueMode,
 } from "@/lib/match";
 import { formatCountdown, useNow } from "@/lib/use-now";
 
@@ -30,7 +31,9 @@ export default function WaitingPage() {
 }
 
 function WaitingContent() {
-  const mode = useSearchParams().get("mode") === "lobby" ? "lobby" : "queue";
+  const params = useSearchParams();
+  const mode = params.get("mode") === "lobby" ? "lobby" : "queue";
+  const queueMode: QueueMode = params.get("type") === "conquest" ? "conquest" : "friendly";
   const { session } = useRequireSignedIn();
   if (!session) return <LoadingScreen />;
   return (
@@ -42,7 +45,11 @@ function WaitingContent() {
         <h1 className="text-base font-semibold">{mode === "lobby" ? "Sfida un amico" : "Ricerca avversario"}</h1>
         <span className="w-12" />
       </header>
-      {mode === "lobby" ? <LobbyWait userId={session.user.id} /> : <QueueWait userId={session.user.id} />}
+      {mode === "lobby" ? (
+        <LobbyWait userId={session.user.id} />
+      ) : (
+        <QueueWait userId={session.user.id} queueMode={queueMode} />
+      )}
     </div>
   );
 }
@@ -72,7 +79,7 @@ function useMatchStart(userId: string, onStart: (matchId: string) => void) {
   }, [userId]);
 }
 
-function QueueWait({ userId }: { userId: string }) {
+function QueueWait({ userId, queueMode }: { userId: string; queueMode: QueueMode }) {
   const router = useRouter();
   const [team] = useState(readPendingTeam);
   const [startedAt] = useState(() => Date.now());
@@ -91,7 +98,7 @@ function QueueWait({ userId }: { userId: string }) {
   useEffect(() => {
     if (!team) return;
     const attempt = () =>
-      joinQueue(team)
+      joinQueue(team, queueMode)
         .then((result) => {
           if (result.matched && result.match_id) goToMatch(result.match_id);
         })
@@ -108,13 +115,16 @@ function QueueWait({ userId }: { userId: string }) {
     };
     // goToMatch only reads refs and the router.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [team]);
+  }, [team, queueMode]);
 
   if (!team) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm text-zinc-300">Scegli prima la tua squadra.</p>
-        <Link href="/squadra/?mode=queue" className="text-sm text-amber-300 underline">
+        <Link
+          href={queueMode === "conquest" ? "/squadra/?mode=conquest" : "/squadra/?mode=queue"}
+          className="text-sm text-amber-300 underline"
+        >
           Scegli la squadra
         </Link>
       </main>
@@ -126,7 +136,9 @@ function QueueWait({ userId }: { userId: string }) {
     <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
       <span className="h-14 w-14 animate-spin rounded-full border-4 border-amber-400 border-t-transparent" />
       <div>
-        <p className="text-lg font-semibold">Ricerca di un avversario…</p>
+        <p className="text-lg font-semibold">
+          {queueMode === "conquest" ? "Ricerca di un avversario per la Conquista…" : "Ricerca di un avversario…"}
+        </p>
         <p className="text-sm text-zinc-400 tabular-nums">{waited} s</p>
       </div>
       {error && <p className="text-sm text-red-400">{error}</p>}

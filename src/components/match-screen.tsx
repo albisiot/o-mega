@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { carriedBonusAfter, scorePlay, type AbilityFamilies, type Character } from "@o-mega/game-engine";
+import { ConquestPanel } from "@/components/conquest-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { balance } from "@/config/balance";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
@@ -79,6 +80,7 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
 
   const isBot = view.mode === "bot";
   const isActive = view.status === "active";
+  const conquestOpen = Boolean(view.conquest && !view.conquest.resolved);
   const current = isActive ? view.rounds.find((r) => r.round === view.current_round && !r.resolved) : undefined;
   const deadline = current ? Date.parse(current.deadline_at) : null;
 
@@ -119,7 +121,7 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
   }, [apply, view.id]);
 
   useEffect(() => {
-    if (isBot || !isActive) return;
+    if (isBot || !(isActive || conquestOpen)) return;
     const unsubscribe = subscribeToUpdates(`match:${view.id}`, () => {
       refresh();
     });
@@ -132,7 +134,7 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
       clearInterval(poll);
       clearInterval(heartbeat);
     };
-  }, [isBot, isActive, view.id, refresh]);
+  }, [isBot, isActive, conquestOpen, view.id, refresh]);
 
   async function claim() {
     setBusy(true);
@@ -190,7 +192,9 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
           {view.opponent && <PlayerAvatar username={view.opponent.username} avatarUrl={view.opponent.avatar_url} />}
           <div className="min-w-0">
             <p className="truncate text-xs text-zinc-400">
-              {isBot ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}` : `Amichevole · ${opponentName}`}
+              {isBot
+                ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}`
+                : `${view.mode === "conquest" ? "Conquista" : "Amichevole"} · ${opponentName}`}
             </p>
             <p className="truncate text-lg font-black tabular-nums">
               Tu {view.rounds_won.me} – {view.rounds_won.opponent} {isBot ? "Bot" : opponentName}
@@ -258,7 +262,7 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
           finished={view.status === "finished"}
         />
       ) : view.status === "finished" ? (
-        <MatchResult view={view} />
+        <MatchResult view={view} serverNow={now + offset} onUpdate={apply} abilities={abilities} />
       ) : current ? (
         <ChoosePhase
           view={view}
@@ -543,9 +547,19 @@ function PlayCard({
   );
 }
 
-function MatchResult({ view }: { view: MatchView }) {
+function MatchResult({
+  view,
+  serverNow,
+  onUpdate,
+  abilities,
+}: {
+  view: MatchView;
+  serverNow: number;
+  onUpdate: (next: MatchView) => void;
+  abilities: AbilityInfo[];
+}) {
   const title =
-    view.end_reason === "forfeit"
+    view.end_reason === "forfeit" && view.result === "loss"
       ? "Hai abbandonato"
       : { win: "Vittoria!", loss: "Sconfitta", draw: "Pareggio" }[view.result ?? "draw"];
   const coins = view.reward_coins ?? 0;
@@ -564,14 +578,23 @@ function MatchResult({ view }: { view: MatchView }) {
         <p className="text-sm text-zinc-400">
           Round {view.rounds_won.me} – {view.rounds_won.opponent} · punti {view.total_score.me} – {view.total_score.opponent}
         </p>
-        <p className="rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 text-sm font-semibold text-amber-200">
-          {coins > 0
-            ? `+${coins} monete`
-            : view.end_reason === "forfeit"
-              ? "Nessuna moneta"
-              : "Tetto giornaliero delle monete contro i bot raggiunto"}
-        </p>
+        {coins > 0 && (
+          <p className="rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 text-sm font-semibold text-amber-200">
+            +{coins} monete
+          </p>
+        )}
       </section>
+
+      {view.conquest && (
+        <ConquestPanel
+          matchId={view.id}
+          conquest={view.conquest}
+          opponentName={view.opponent?.username ?? "L'avversario"}
+          serverNow={serverNow}
+          onUpdate={onUpdate}
+          abilities={abilities}
+        />
+      )}
 
       <ol className="flex flex-col divide-y divide-white/5 rounded-2xl border border-white/10 bg-white/5">
         {view.rounds

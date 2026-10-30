@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth, useRequireSignedIn } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { describeServerError } from "@/lib/errors";
+import { fetchConquestHistory, type ConquestHistoryEntry } from "@/lib/match";
 import { updateUsername, type Profile } from "@/lib/player";
+import { levelProgress, xpForLevel } from "@/lib/progression";
 import { isValidUsername } from "@/lib/username";
 
 export default function ProfilePage() {
@@ -17,6 +19,19 @@ export default function ProfilePage() {
 
 function ProfileView({ profile }: { profile: Profile }) {
   const { signOut } = useAuth();
+  const [history, setHistory] = useState<ConquestHistoryEntry[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchConquestHistory()
+      .then((entries) => {
+        if (!cancelled) setHistory(entries);
+      })
+      .catch((error: unknown) => console.error("Conquest history failed", error));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const stats = [
     { label: "Partite", value: profile.matches_played },
@@ -48,6 +63,13 @@ function ProfileView({ profile }: { profile: Profile }) {
             <p className="text-sm text-zinc-400">
               Livello {profile.level} · {profile.xp} XP
             </p>
+            <div className="mx-auto mt-1 h-1.5 w-40 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-amber-400"
+                style={{ width: `${levelProgress(profile.xp, profile.level) * 100}%` }}
+              />
+            </div>
+            <p className="mt-1 text-xs text-zinc-500">Prossimo livello a {xpForLevel(profile.level + 1)} XP</p>
           </div>
         </section>
 
@@ -60,6 +82,34 @@ function ProfileView({ profile }: { profile: Profile }) {
               <p className="text-xs text-zinc-400">{stat.label}</p>
             </div>
           ))}
+        </section>
+
+        <section className="flex flex-col gap-2">
+          <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Carte conquistate e perse</h2>
+          {history === null ? (
+            <p className="text-sm text-zinc-500">Caricamento…</p>
+          ) : history.length === 0 ? (
+            <p className="text-sm text-zinc-500">Ancora nessuna Conquista.</p>
+          ) : (
+            <ul className="flex flex-col divide-y divide-white/5 rounded-2xl border border-white/10 bg-white/5">
+              {history.map((entry) => (
+                <li key={`${entry.created_at}-${entry.card.code}`} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium" style={{ color: entry.card.rarity.color }}>
+                      {entry.card.name}
+                    </p>
+                    <p className="truncate text-xs text-zinc-400">
+                      {entry.won ? "Da" : "A"} {entry.opponent ?? "giocatore rimosso"} ·{" "}
+                      {new Date(entry.created_at).toLocaleDateString("it-IT")}
+                    </p>
+                  </div>
+                  <span className={`shrink-0 text-xs font-bold ${entry.won ? "text-emerald-300" : "text-red-300"}`}>
+                    {entry.won ? "Conquistata" : "Persa"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <Link

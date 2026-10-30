@@ -12,6 +12,7 @@ import { describeServerError } from "@/lib/errors";
 import {
   createLobby,
   DIFFICULTY_LABELS,
+  fetchConquestInstances,
   fetchFormations,
   fetchInstanceDefinitions,
   fetchOwnedInstances,
@@ -25,6 +26,7 @@ const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard"];
 
 // /squadra/?difficulty=easy|medium|hard        (against a bot, default)
 // /squadra/?mode=queue                          (random opponent)
+// /squadra/?mode=conquest                       (Conquest, random opponent)
 // /squadra/?mode=lobby                          (create a friend code)
 // /squadra/?mode=join&code=ABC234               (join a friend)
 export default function TeamPage() {
@@ -38,6 +40,8 @@ export default function TeamPage() {
 type Loaded = {
   catalog: CatalogCard[];
   owned: Map<string, string>;
+  /** Conquest only: characters whose fielded copy can be taken. */
+  conquerable: Set<string> | null;
   instanceDefinitions: Map<string, string>;
   formations: Formation[];
 };
@@ -45,12 +49,13 @@ type Loaded = {
 type Mode =
   | { kind: "bot"; difficulty: BotDifficulty }
   | { kind: "queue" }
+  | { kind: "conquest" }
   | { kind: "lobby" }
   | { kind: "join"; code: string };
 
 function readMode(params: URLSearchParams): Mode {
   const mode = params.get("mode");
-  if (mode === "queue" || mode === "lobby") return { kind: mode };
+  if (mode === "queue" || mode === "lobby" || mode === "conquest") return { kind: mode };
   if (mode === "join") return { kind: "join", code: (params.get("code") ?? "").toUpperCase() };
   const difficulty = params.get("difficulty") as BotDifficulty | null;
   return { kind: "bot", difficulty: difficulty && DIFFICULTIES.includes(difficulty) ? difficulty : "easy" };
@@ -62,6 +67,7 @@ const COPY: Record<Mode["kind"], { subtitle: (mode: Mode) => string; start: (mod
     start: (mode) => `Sfida il bot ${DIFFICULTY_LABELS[(mode as { difficulty: BotDifficulty }).difficulty]}`,
   },
   queue: { subtitle: () => "Amichevole contro un avversario casuale", start: () => "Cerca un avversario" },
+  conquest: { subtitle: () => "Conquista: le carte in palio si possono perdere", start: () => "Cerca un avversario" },
   lobby: { subtitle: () => "Amichevole con un amico", start: () => "Crea il codice" },
   join: { subtitle: (mode) => `Entri con il codice ${(mode as { code: string }).code}`, start: () => "Entra nella partita" },
 };
@@ -70,6 +76,7 @@ function TeamPageContent() {
   const router = useRouter();
   const params = useSearchParams();
   const mode = readMode(params);
+  const isConquest = mode.kind === "conquest";
   const { session } = useRequireSignedIn();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -78,9 +85,12 @@ function TeamPageContent() {
   useEffect(() => {
     if (!session) return;
     let cancelled = false;
-    Promise.all([fetchCatalog(), fetchOwnedInstances(), fetchInstanceDefinitions(), fetchFormations()])
-      .then(([catalog, owned, instanceDefinitions, formations]) => {
-        if (!cancelled) setLoaded({ catalog, owned, instanceDefinitions, formations });
+    const copies = isConquest
+      ? fetchConquestInstances()
+      : fetchOwnedInstances().then((owned) => ({ owned, conquerable: null }));
+    Promise.all([fetchCatalog(), copies, fetchInstanceDefinitions(), fetchFormations()])
+      .then(([catalog, { owned, conquerable }, instanceDefinitions, formations]) => {
+        if (!cancelled) setLoaded({ catalog, owned, conquerable, instanceDefinitions, formations });
       })
       .catch((cause: unknown) => {
         if (!cancelled) setError(describeServerError(cause));
@@ -88,7 +98,7 @@ function TeamPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [session]);
+  }, [session, isConquest]);
 
   async function start(cardInstanceIds: string[]) {
     setStarting(true);
@@ -112,6 +122,10 @@ function TeamPageContent() {
         case "queue":
           storePendingTeam(cardInstanceIds);
           router.push("/attesa/?mode=queue");
+          break;
+        case "conquest":
+          storePendingTeam(cardInstanceIds);
+          router.push("/attesa/?mode=queue&type=conquest");
           break;
       }
     } catch (cause) {
@@ -152,6 +166,7 @@ function TeamPageContent() {
           <TeamPicker
             catalog={loaded.catalog}
             owned={loaded.owned}
+            conquerable={loaded.conquerable}
             instanceDefinitions={loaded.instanceDefinitions}
             formations={loaded.formations}
             onFormationsChanged={(formations) => setLoaded({ ...loaded, formations })}

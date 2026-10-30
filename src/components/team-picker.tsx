@@ -21,6 +21,8 @@ type TeamPickerProps = {
   catalog: CatalogCard[];
   /** Owned characters: definition id → one card instance id. */
   owned: Map<string, string>;
+  /** Conquest only: characters whose fielded copy can be taken (the rest is protected). */
+  conquerable?: Set<string> | null;
   /** Card instance id → definition id (to load formations). */
   instanceDefinitions: Map<string, string>;
   formations: Formation[];
@@ -32,7 +34,7 @@ type TeamPickerProps = {
 
 /** Pick 5 different characters among the owned ones; load or save formations. */
 export function TeamPicker(props: TeamPickerProps) {
-  const { catalog, owned, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart } = props;
+  const { catalog, owned, conquerable, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart } = props;
   const size = balance.match.teamSize;
   const [selected, setSelected] = useState<string[]>(() => loadLastTeam(owned).slice(0, size));
   const [naming, setNaming] = useState(false);
@@ -48,6 +50,17 @@ export function TeamPicker(props: TeamPickerProps) {
   );
   const byId = useMemo(() => new Map(catalog.map((card) => [card.id, card])), [catalog]);
   const instanceIds = selected.map((definitionId) => owned.get(definitionId)!);
+
+  // Conquest: what is at risk, and how rare a card this team can take.
+  const minConquerable = balance.conquest.minConquerableCards;
+  const atRisk = conquerable ? selected.filter((id) => conquerable.has(id)).length : 0;
+  const notEnoughAtRisk = Boolean(conquerable) && selected.length === size && atRisk < minConquerable;
+  const limit = selected
+    .map((id) => byId.get(id)?.rarity)
+    .reduce<CatalogCard["rarity"] | undefined>(
+      (best, rarity) => (rarity && (!best || rarity.rank > best.rank) ? rarity : best),
+      undefined,
+    );
 
   function toggle(definitionId: string) {
     setMessage(null);
@@ -126,6 +139,23 @@ export function TeamPicker(props: TeamPickerProps) {
           );
         })}
       </section>
+
+      {conquerable && (
+        <section className="flex flex-col gap-1 rounded-2xl border border-red-400/40 bg-red-400/10 p-3 text-sm">
+          <p>
+            Carte in palio: <span className="font-bold">{atRisk}</span> (minimo {minConquerable}). Se perdi, il vincitore
+            può prendertene una. Le starter sono protette.
+          </p>
+          {limit && (
+            <p className="text-zinc-300">
+              Se vinci puoi conquistare fino a:{" "}
+              <span className="font-bold" style={{ color: limit.color }}>
+                {limit.name}
+              </span>
+            </p>
+          )}
+        </section>
+      )}
 
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
@@ -214,6 +244,11 @@ export function TeamPicker(props: TeamPickerProps) {
                   {card.rarity.name}
                   {card.power && <span className="text-zinc-400"> · {card.power.name}</span>}
                 </span>
+                {conquerable && (
+                  <span className={`text-[10px] font-semibold ${conquerable.has(card.id) ? "text-red-300" : "text-emerald-300"}`}>
+                    {conquerable.has(card.id) ? "In palio" : "Protetta"}
+                  </span>
+                )}
                 <span className="text-[11px] text-zinc-300">
                   {top.map(([code, value]) => `${code} ${value}`).join(" · ")}
                 </span>
@@ -227,10 +262,16 @@ export function TeamPicker(props: TeamPickerProps) {
         <button
           type="button"
           onClick={start}
-          disabled={selected.length < size || starting}
+          disabled={selected.length < size || starting || notEnoughAtRisk}
           className="w-full rounded-full bg-amber-400 px-5 py-3 font-bold text-zinc-950 disabled:bg-white/10 disabled:text-zinc-500"
         >
-          {starting ? "Preparazione…" : selected.length < size ? `Scegli ancora ${size - selected.length}` : startLabel}
+          {starting
+            ? "Preparazione…"
+            : selected.length < size
+              ? `Scegli ancora ${size - selected.length}`
+              : notEnoughAtRisk
+                ? `Servono almeno ${minConquerable} carte in palio`
+                : startLabel}
         </button>
       </div>
     </div>

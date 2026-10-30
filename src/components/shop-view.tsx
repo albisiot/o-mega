@@ -70,10 +70,10 @@ export function ShopView({ status, odds, history, onFailed }: ShopViewProps) {
               </Link>{" "}
               della collezione.
             </li>
+            <li>Perdi una sfida di Conquista: +{balance.conquest.loserCoins} (chi vince prende una carta).</li>
             <li>
-              Vinci le sfide: +{balance.economy.winCoins} a vittoria, +{balance.economy.participationCoins} per
-              sconfitta o pareggio, fino a {balance.economy.dailyMatchCoinCap} al giorno.{" "}
-              <span className="text-zinc-500">(in arrivo)</span>
+              Vinci in Conquista quando nessuna carta è conquistabile: +{balance.conquest.noCardBonusCoins} al posto
+              della carta.
             </li>
           </ul>
         </section>

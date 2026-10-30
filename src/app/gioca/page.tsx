@@ -7,13 +7,65 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
 import { balance } from "@/config/balance";
 import { describeServerError } from "@/lib/errors";
-import { DIFFICULTY_LABELS, fetchActiveMatch, forfeitMatch, type ActiveMatch } from "@/lib/match";
+import {
+  DIFFICULTY_LABELS,
+  fetchActiveMatch,
+  fetchConquestStatus,
+  forfeitMatch,
+  type ActiveMatch,
+  type ConquestStatus,
+} from "@/lib/match";
 
 const BOTS = [
   { difficulty: "easy", detail: "Sceglie quasi a caso. Ideale per imparare." },
   { difficulty: "medium", detail: "Gioca sempre il personaggio migliore per la Minaccia del momento." },
   { difficulty: "hard", detail: "Pianifica: tiene da parte specialisti e generalisti per i round giusti." },
 ] as const;
+
+function ConquestSection({ status, disabled }: { status: ConquestStatus | null; disabled: boolean }) {
+  const { maxCardsLostPerDay, unlockAfterMatches, unlockAtLevel, loserCoins, minConquerableCards } = balance.conquest;
+  const limitReached = status !== null && status.cards_lost_today >= maxCardsLostPerDay;
+  const available = status?.unlocked && !limitReached && !disabled;
+
+  return (
+    <section className="flex flex-col gap-3">
+      <div>
+        <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Conquista</h2>
+        <p className="mt-1 text-sm text-zinc-400">
+          Chi vince prende una carta dell&apos;avversario, chi perde guadagna {loserCoins} monete. Si rischia solo ciò
+          che si porta in campo: servono almeno {minConquerableCards} carte non starter.
+        </p>
+      </div>
+      {available ? (
+        <Link
+          href="/squadra/?mode=conquest"
+          className="flex items-center justify-between rounded-2xl border border-red-400/50 bg-red-400/10 px-4 py-3"
+        >
+          <div>
+            <p className="font-semibold">Cerca un avversario</p>
+            <p className="text-xs text-zinc-400">
+              Un avversario del tuo livello. Carte perse oggi: {status?.cards_lost_today}/{maxCardsLostPerDay}.
+            </p>
+          </div>
+          <span className="text-zinc-500" aria-hidden>
+            →
+          </span>
+        </Link>
+      ) : (
+        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 opacity-70">
+          <p className="font-semibold">Non disponibile</p>
+          <p className="text-xs text-zinc-400">
+            {status && !status.unlocked
+              ? `Completa ${unlockAfterMatches} partite (${status.completed_matches}/${unlockAfterMatches}) o raggiungi il livello ${unlockAtLevel} (sei al ${status.level}).`
+              : limitReached
+                ? `Hai perso ${maxCardsLostPerDay} carte oggi: la Conquista torna dopo la mezzanotte.`
+                : "Finisci prima la partita in corso."}
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
 
 /** Friendly matches against other players: random opponent or friend code. */
 function FriendlySection({ disabled }: { disabled: boolean }) {
@@ -26,8 +78,7 @@ function FriendlySection({ disabled }: { disabled: boolean }) {
       <div>
         <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Amichevole online</h2>
         <p className="mt-1 text-sm text-zinc-400">
-          Nessuna carta in gioco. Vittoria +{balance.economy.winCoins} monete, sconfitta o pareggio +
-          {balance.economy.participationCoins}, fino a {balance.economy.dailyMatchCoinCap} al giorno.
+          Solo per divertimento: nessuna carta in gioco e nessuna moneta. Con un codice sfidi un amico.
         </p>
       </div>
       <Link
@@ -86,15 +137,18 @@ function FriendlySection({ disabled }: { disabled: boolean }) {
 export default function PlayPage() {
   const { session } = useRequireSignedIn();
   const [active, setActive] = useState<ActiveMatch | null | undefined>(undefined);
+  const [conquest, setConquest] = useState<ConquestStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmForfeit, setConfirmForfeit] = useState(false);
 
   useEffect(() => {
     if (!session) return;
     let cancelled = false;
-    fetchActiveMatch()
-      .then((match) => {
-        if (!cancelled) setActive(match);
+    Promise.all([fetchActiveMatch(), fetchConquestStatus()])
+      .then(([match, status]) => {
+        if (cancelled) return;
+        setActive(match);
+        setConquest(status);
       })
       .catch((cause: unknown) => {
         if (!cancelled) setError(describeServerError(cause));
@@ -135,7 +189,9 @@ export default function PlayPage() {
             <p className="text-sm text-zinc-300">
               {active.mode === "bot"
                 ? `Contro il bot ${DIFFICULTY_LABELS[active.bot_difficulty ?? "easy"]}`
-                : "Amichevole contro un giocatore"}{" "}
+                : active.mode === "conquest"
+                  ? "Conquista contro un giocatore"
+                  : "Amichevole contro un giocatore"}{" "}
               · round {active.current_round}
             </p>
             {confirmForfeit ? (
@@ -181,10 +237,7 @@ export default function PlayPage() {
         <section className="flex flex-col gap-3">
           <div>
             <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Contro un bot</h2>
-            <p className="mt-1 text-sm text-zinc-400">
-              Amichevole: nessuna carta in gioco. Vittoria +{balance.economy.botWinCoins} monete, sconfitta o pareggio +
-              {balance.economy.botParticipationCoins}, fino a {balance.economy.botDailyCoinCap} al giorno.
-            </p>
+            <p className="mt-1 text-sm text-zinc-400">Per allenarti: nessuna carta in gioco e nessuna moneta.</p>
           </div>
           {BOTS.map((bot) => (
             <Link
@@ -215,16 +268,7 @@ export default function PlayPage() {
 
         <FriendlySection disabled={Boolean(active)} />
 
-        <section className="flex flex-col gap-3">
-          <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Conquista</h2>
-          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 opacity-40">
-            <div>
-              <p className="font-semibold">Conquista</p>
-              <p className="text-xs text-zinc-400">Chi vince prende una carta dell&apos;avversario.</p>
-            </div>
-            <span className="text-xs text-zinc-500">Presto</span>
-          </div>
-        </section>
+        <ConquestSection status={conquest} disabled={Boolean(active)} />
       </main>
     </div>
   );
