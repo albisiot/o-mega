@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { CoinBadge } from "@/components/coin-badge";
 import { PackPanel } from "@/components/pack-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { countOwnedCards, type Profile } from "@/lib/player";
+import { usePackStatus } from "@/lib/use-pack-status";
 
 const UPCOMING = [{ title: "Gioca", detail: "Sfide 1 contro 1 da 3 minuti" }];
 
 export function HomeScreen({ profile }: { profile: Profile }) {
   const [cardCount, setCardCount] = useState<number | null>(null);
+  const packs = usePackStatus();
 
   useEffect(() => {
     let cancelled = false;
@@ -29,16 +32,19 @@ export function HomeScreen({ profile }: { profile: Profile }) {
         <span className="bg-linear-to-b from-amber-200 to-orange-500 bg-clip-text text-xl font-black tracking-tight text-transparent">
           O-MEGA
         </span>
-        <Link href="/profilo" aria-label="Profilo" className="flex items-center gap-2">
-          <span className="text-sm text-zinc-300">{profile.username}</span>
-          <PlayerAvatar username={profile.username} avatarUrl={profile.avatar_url} />
-        </Link>
+        <div className="flex items-center gap-3">
+          <CoinBadge balance={packs.status?.coin_balance ?? null} />
+          <Link href="/profilo" aria-label="Profilo">
+            <PlayerAvatar username={profile.username} avatarUrl={profile.avatar_url} />
+          </Link>
+        </div>
       </header>
 
       <main className="flex flex-1 flex-col gap-6 px-5 pb-8">
         <p className="text-sm text-zinc-400">Ciao, {profile.username}!</p>
 
-        <PackPanel />
+        <PackPanel status={packs.status} now={packs.now} resetsAt={packs.resetsAt} onFailed={packs.refresh} />
+        {packs.error && <p className="text-sm text-red-400">{packs.error}</p>}
 
         <Link
           href="/collezione"

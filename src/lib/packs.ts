@@ -28,6 +28,21 @@ export type PackStatus = {
   standard_pack_price: number;
 };
 
+export type PackOdds = {
+  cards_per_pack: number;
+  standard_pack_price: number;
+  guaranteed_min_rarity_rank: number;
+  guaranteed_rarity_name: string;
+  /** Per-card probability of each rarity, as used by the server draw. */
+  odds: { code: string; name: string; rank: number; color: string; probability: number }[];
+};
+
+export async function fetchPackOdds(): Promise<PackOdds> {
+  const { data, error } = await getSupabase().rpc("get_pack_odds");
+  if (error) throw error;
+  return data as unknown as PackOdds;
+}
+
 export async function fetchPackStatus(): Promise<PackStatus> {
   const { data, error } = await getSupabase().rpc("get_pack_status");
   if (error) throw error;

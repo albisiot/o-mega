@@ -604,6 +604,16 @@ export type Database = {
         Returns: string[]
       }
       draw_rarity_rank: { Args: { p_min_rank: number }; Returns: number }
+      eligible_rarities: {
+        Args: never
+        Returns: {
+          code: string
+          color: string
+          drop_weight: number
+          name: string
+          rank: number
+        }[]
+      }
       game_day: { Args: { p_at?: string }; Returns: string }
       get_collection: {
         Args: never
@@ -615,6 +625,7 @@ export type Database = {
           starter_copies: number
         }[]
       }
+      get_pack_odds: { Args: never; Returns: Json }
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
       get_pack_status: { Args: never; Returns: Json }
       grant_starter_set: { Args: { p_user: string }; Returns: number }

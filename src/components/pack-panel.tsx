@@ -1,38 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { describeServerError } from "@/lib/errors";
-import { buyPack, claimDailyPack, fetchPackStatus, type PackStatus } from "@/lib/packs";
-import { formatCountdown, useNow } from "@/lib/use-now";
+import { buyPack, claimDailyPack, type PackStatus } from "@/lib/packs";
+import { formatCountdown } from "@/lib/use-now";
+
+type PackPanelProps = {
+  status: PackStatus | null;
+  now: number;
+  resetsAt: number | null;
+  onFailed: () => void;
+};
 
 /** Daily free pack and standard pack purchase on the home screen. */
-export function PackPanel() {
+export function PackPanel({ status, now, resetsAt, onFailed }: PackPanelProps) {
   const router = useRouter();
-  const now = useNow(30_000);
-  const [status, setStatus] = useState<PackStatus | null>(null);
   const [opening, setOpening] = useState<"daily" | "standard" | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const resetsAt = status ? Date.parse(status.resets_at) : null;
-  const needsRefresh = status === null || (resetsAt !== null && now >= resetsAt);
-
-  // Load on mount, then again after the daily reset. Re-runs at most once per
-  // tick of `now`, so a device clock ahead of the server cannot cause a loop.
-  useEffect(() => {
-    if (!needsRefresh) return;
-    let cancelled = false;
-    fetchPackStatus()
-      .then((next) => {
-        if (!cancelled) setStatus(next);
-      })
-      .catch((cause: unknown) => {
-        if (!cancelled) setError(describeServerError(cause));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [needsRefresh, now]);
 
   async function open(kind: "daily" | "standard") {
     setOpening(kind);
@@ -43,7 +29,7 @@ export function PackPanel() {
     } catch (cause) {
       setError(describeServerError(cause));
       setOpening(null);
-      fetchPackStatus().then(setStatus).catch(() => {});
+      onFailed();
     }
   }
 
@@ -72,21 +58,18 @@ export function PackPanel() {
         ) : (
           <p className="mt-1 text-sm text-zinc-300">
             Già aperto oggi. Il prossimo arriva tra{" "}
-            <span className="font-semibold text-zinc-100">
-              {formatCountdown((resetsAt ?? now) - now)}
-            </span>
-            .
+            <span className="font-semibold text-zinc-100">{formatCountdown((resetsAt ?? now) - now)}</span>.
           </p>
         )}
       </div>
 
       <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-        <div>
+        <Link href="/negozio" className="min-w-0">
           <p className="font-semibold">Pacchetto standard</p>
           <p className="text-xs text-zinc-400">
-            {status.standard_pack_price} monete · ne hai {status.coin_balance}
+            {status.standard_pack_price} monete · <span className="underline">probabilità</span>
           </p>
-        </div>
+        </Link>
         <button
           type="button"
           onClick={() => open("standard")}
