@@ -81,3 +81,8 @@ body {
     animation: none;
   }
 }
+
+/* Fixed to the bottom of the screen, even when the window is shorter (see ViewportGapFix). */
+.pin-bottom {
+  bottom: calc(-1 * var(--viewport-gap, 0px));
+}

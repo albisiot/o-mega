@@ -287,7 +287,7 @@ export function TeamPicker(props: TeamPickerProps) {
         })}
       </ul>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-white/10 bg-zinc-950/95 px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+      <div className="fixed inset-x-0 pin-bottom border-t border-white/10 bg-zinc-950/95 px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
         <button
           type="button"
           onClick={start}
