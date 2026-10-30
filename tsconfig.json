@@ -19,8 +19,11 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": ["./src/*"],
+      "@o-mega/game-engine": ["./packages/game-engine/src/index.ts"]
+    },
+    // The engine imports with explicit .ts extensions so Deno can load it too.
+    "allowImportingTsExtensions": true
   },
   "include": [
     "next-env.d.ts",
