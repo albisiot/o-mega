@@ -37,6 +37,8 @@ yarn-error.log*
 # supabase cli
 /supabase/.temp/
 /supabase/.branches/
+# generated copy of packages/game-engine (scripts/sync-engine.mjs)
+/supabase/functions/_shared/game-engine/
 
 # vercel
 .vercel

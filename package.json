@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:db": "node scripts/test-db.mjs",
     "db:push": "supabase db push --linked",
-    "db:types": "supabase gen types typescript --linked --schema public > src/types/database.ts"
+    "db:types": "supabase gen types typescript --linked --schema public > src/types/database.ts",
+    "functions:deploy": "node scripts/sync-engine.mjs && supabase functions deploy match --use-api"
   },
   "engines": {
     "node": ">=24"

@@ -30,6 +30,7 @@ npm run dev                  # http://localhost:3000
 | `npm run test:db` | Test SQL sul progetto Supabase collegato (in transazione annullata) |
 | `npm run db:push` | Applica le migrazioni al progetto Supabase |
 | `npm run db:types` | Rigenera i tipi TypeScript dallo schema |
+| `npm run functions:deploy` | Pubblica la Edge Function `match` (partite contro i bot) |
 
 Configurazione di Supabase, login Google e CLI: [`docs/SETUP.md`](docs/SETUP.md).
 

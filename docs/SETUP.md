@@ -44,7 +44,10 @@ Comandi del progetto:
 |---|---|
 | `npm run db:push` | Applica al progetto le migrazioni nuove di `supabase/migrations/` |
 | `npm run db:types` | Rigenera `src/types/database.ts` dallo schema |
-| `npm run test:db` | Esegue i test SQL in una transazione annullata (nessun dato resta nel database) |
+| `npm run test:db` | Esegue i test SQL in una transazione annullata (nessun dato resta nel database) e controlla che `game_config` coincida con `src/config/balance.ts` |
+| `npm run functions:deploy` | Copia il motore in `supabase/functions/_shared/game-engine` e pubblica la Edge Function `match` |
+
+La Edge Function `match` gira con il ruolo `service_role` (chiave segreta fornita da Supabase all'ambiente della funzione, mai nel repository). Dato che le nuove tabelle non sono esposte automaticamente, ogni migrazione concede a `service_role` solo ciò che la funzione legge.
 
 ## 4. GitHub
 
