@@ -50,6 +50,12 @@ const CLIENT_ERRORS = new Set([
   "profile_not_found",
   "lobby_not_found",
   "cannot_play_yourself",
+  "card_at_stake",
+  "card_locked",
+  "conquest_locked",
+  "daily_loss_limit",
+  "not_enough_conquerable",
+  "same_pair_cooldown",
 ]);
 
 class GameError extends Error {}
@@ -357,9 +363,11 @@ async function joinLobby(userId: string, body: Record<string, unknown>) {
 
 async function joinQueue(userId: string, body: Record<string, unknown>) {
   const cards = cardIds(body.card_instance_ids);
+  const mode = body.mode === "conquest" ? "conquest" : "friendly";
   const loaded = await load();
   const { data, error } = await admin.rpc("match_queue_join", {
     p_user: userId,
+    p_mode: mode,
     p_team: cards,
     p_threat_ids: planThreats(loaded),
   });

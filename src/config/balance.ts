@@ -44,6 +44,13 @@ export const balance = {
     starterSetSize: 10,
     /** Starter cards are distinct characters of this rarity rank or lower (1 = Delta). */
     starterSetMaxRarityRank: 1,
+    /** Non-starter cards required in a Conquest team, so nobody plays risk-free. */
+    minConquerableCards: 3,
+    /** The only coins matches pay: to the Conquest loser (both players on a draw). */
+    loserCoins: 10,
+    /** Paid to the winner when none of the loser's cards can be taken. */
+    noCardBonusCoins: 50,
+    /** Completed matches (abandoned ones do not count). */
     unlockAfterMatches: 5,
     unlockAtLevel: 3,
     maxCardsLostPerDay: 3,
@@ -61,27 +68,28 @@ export const balance = {
     specialRevealMinRarityRank: 4,
   },
 
-  economy: {
-    winCoins: 50,
-    participationCoins: 15,
-    dailyMatchCoinCap: 300,
-    samePairRewardWindowHours: 24,
-    samePairFullRewardMatches: 3,
-    /** Bot matches pay half of PvP rewards, rounded up (SPEC §13.2 #5). */
-    botWinCoins: 25,
-    botParticipationCoins: 8,
-    /** Separate daily cap for bot rewards: assumed half of the PvP cap. */
-    botDailyCoinCap: 150,
-    /** A win by forfeit pays the full reward only after this many rounds. */
-    forfeitFullRewardMinRounds: 3,
-  },
-
   matchmaking: {
     friendCodeMinutes: 10,
     /** Queue entries not refreshed by the waiting client for this long are ignored. */
     queueStaleSeconds: 20,
     /** After this wait without an opponent, the app suggests a bot. */
     suggestBotAfterSeconds: 60,
+    /** Conquest pairing: maximum differences in level and team value (sum of rarity ranks). */
+    levelRange: 2,
+    teamValueRange: 4,
+    /** Same, once either player has waited for widenAfterSeconds. */
+    levelRangeWide: 4,
+    teamValueRangeWide: 8,
+    widenAfterSeconds: 30,
+  },
+
+  progression: {
+    pvpWinXp: 30,
+    pvpParticipationXp: 10,
+    botWinXp: 10,
+    botParticipationXp: 3,
+    /** XP needed for level L is levelXpBase * L * (L - 1). */
+    levelXpBase: 50,
   },
 
   formations: {

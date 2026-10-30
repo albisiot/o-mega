@@ -178,8 +178,13 @@ begin
   perform public.match_submit_play('00000000-0000-4000-8000-0000000000b2', v_match, 3, v_b[3]);
   perform public.match_record_round(v_match, 3, pg_temp.play(v_a[4], 20), pg_temp.play(v_b[3], 4), 'a', 'a');
 
-  assert (select status = 'finished' and result = 'a' and reward_coins_a = 50 and reward_coins_b = 15
-          from public.matches where id = v_match), 'PvP rewards 50/15';
+  -- Friendly matches pay nobody and move no cards.
+  assert (select status = 'finished' and result = 'a' and reward_coins_a = 0 and reward_coins_b = 0
+          from public.matches where id = v_match), 'a friendly match paid coins';
+  assert not exists (
+    select 1 from public.coin_ledger where ref_id = v_match
+  ), 'a friendly match wrote to the coin ledger';
+  assert not exists (select 1 from public.conquest_claims where match_id = v_match), 'a friendly match opened a pick';
   assert (select wins = 1 and current_streak = 1 and best_streak = 1 and matches_played = 1
           from public.profiles where id = '00000000-0000-4000-8000-0000000000a1'), 'winner statistics';
   assert (select losses = 1 and current_streak = 0 from public.profiles where id = '00000000-0000-4000-8000-0000000000b2'),
@@ -191,15 +196,15 @@ do $$
 declare
   v_match uuid;
 begin
-  assert public.match_queue_join('00000000-0000-4000-8000-0000000000a1', current_setting('test.team_a')::uuid[],
+  assert public.match_queue_join('00000000-0000-4000-8000-0000000000a1', 'friendly', current_setting('test.team_a')::uuid[],
     current_setting('test.threats')::uuid[]) is null, 'nobody was waiting';
   assert (select count(*) from public.matchmaking_queue) = 1, 'A not queued';
   -- Refreshing keeps a single entry.
-  perform public.match_queue_join('00000000-0000-4000-8000-0000000000a1', current_setting('test.team_a')::uuid[],
+  perform public.match_queue_join('00000000-0000-4000-8000-0000000000a1', 'friendly', current_setting('test.team_a')::uuid[],
     current_setting('test.threats')::uuid[]);
   assert (select count(*) from public.matchmaking_queue) = 1, 'refresh duplicated the entry';
 
-  v_match := public.match_queue_join('00000000-0000-4000-8000-0000000000c3', current_setting('test.team_c')::uuid[],
+  v_match := public.match_queue_join('00000000-0000-4000-8000-0000000000c3', 'friendly', current_setting('test.team_c')::uuid[],
     current_setting('test.threats')::uuid[]);
   assert v_match is not null, 'C was not paired';
   assert (select player_a = '00000000-0000-4000-8000-0000000000a1' and player_b = '00000000-0000-4000-8000-0000000000c3'
@@ -208,7 +213,7 @@ begin
   perform set_config('test.match2', v_match::text, true);
 
   begin
-    perform public.match_queue_join('00000000-0000-4000-8000-0000000000a1', current_setting('test.team_a')::uuid[],
+    perform public.match_queue_join('00000000-0000-4000-8000-0000000000a1', 'friendly', current_setting('test.team_a')::uuid[],
       current_setting('test.threats')::uuid[]);
     raise exception 'ASSERT: queued while playing';
   exception when raise_exception then
@@ -218,7 +223,6 @@ begin
 end $$;
 
 -- Absence: C cannot claim while A is present; after the grace C wins by forfeit.
--- A quick forfeit (fewer than 3 rounds) pays the winner only the participation coins.
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000c3", "role": "authenticated"}', true);
 
@@ -243,35 +247,7 @@ declare
   v_state jsonb := public.claim_victory(current_setting('test.match2')::uuid);
 begin
   assert v_state ->> 'result' = 'win' and v_state ->> 'end_reason' = 'forfeit', 'claim should win by forfeit';
-  assert (v_state ->> 'reward_coins')::integer = 15, format('quick forfeit paid %s', v_state ->> 'reward_coins');
-end $$;
-
-reset role;
-
-do $$
-begin
-  assert (select reward_coins_a from public.matches where id = current_setting('test.match2')::uuid) = 0,
-    'the absent player was paid';
-end $$;
-
--- Same pair: from the 4th match within 24 hours, no coins.
-do $$
-declare
-  v_a uuid := '00000000-0000-4000-8000-0000000000a1';
-  v_b uuid := '00000000-0000-4000-8000-0000000000b2';
-  v_match uuid;
-begin
-  -- Two more finished A-B matches (one already played above): 3 in total.
-  for i in 1..2 loop
-    insert into public.matches (mode, player_a, player_b, threat_ids, threat_levels, status, result, end_reason, finished_at)
-    values ('friendly', v_b, v_a, current_setting('test.threats')::uuid[], '{1,5,3,3,2}', 'finished', 'draw', 'completed', now());
-  end loop;
-
-  v_match := public.create_pvp_match('friendly', v_a, current_setting('test.team_a')::uuid[], v_b,
-    current_setting('test.team_b')::uuid[], current_setting('test.threats')::uuid[]);
-  perform public.finish_match(v_match, 'a', 'completed');
-  assert (select reward_coins_a = 0 and reward_coins_b = 0 from public.matches where id = v_match),
-    'the 4th match against the same opponent paid coins';
+  assert (v_state ->> 'reward_coins')::integer = 0, 'a friendly win by forfeit paid coins';
 end $$;
 
 rollback;

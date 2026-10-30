@@ -178,12 +178,12 @@ begin
     pg_temp.play(v_team[3], pg_temp.definition_of(v_team[3]), 15), pg_temp.play(null, v_bot[3], 4), 'a', 'a');
 
   assert (select status from public.matches where id = v_match) = 'finished', 'match not finished at 3-0';
-  assert (select reward_coins_a from public.matches where id = v_match) = 25, 'win reward';
-  assert (select count(*) from public.coin_ledger
-          where user_id = '00000000-0000-4000-8000-0000000000a1' and reason = 'bot_match_reward' and amount = 25) = 1,
-    'ledger';
-  assert (select matches_played = 1 and bot_wins = 1 and wins = 0 from public.profiles
-          where id = '00000000-0000-4000-8000-0000000000a1'), 'statistics not updated';
+  -- Matches against bots pay no coins.
+  assert (select reward_coins_a from public.matches where id = v_match) = 0, 'a bot match paid coins';
+  assert not exists (select 1 from public.coin_ledger where user_id = '00000000-0000-4000-8000-0000000000a1'),
+    'a bot match wrote to the coin ledger';
+  assert (select matches_played = 1 and bot_wins = 1 and wins = 0 and xp = 10 from public.profiles
+          where id = '00000000-0000-4000-8000-0000000000a1'), 'statistics or XP not updated';
 end $$;
 
 set local role authenticated;
@@ -193,7 +193,7 @@ declare
   v_state jsonb := public.get_match_state(current_setting('test.match')::uuid);
   v_bot uuid[] := current_setting('test.bot')::uuid[];
 begin
-  assert v_state ->> 'result' = 'win' and (v_state ->> 'reward_coins')::integer = 25, 'final state';
+  assert v_state ->> 'result' = 'win' and (v_state ->> 'reward_coins')::integer = 0, 'final state';
   assert v_state -> 'rounds' -> 0 -> 'opponent_play' ->> 'definition_id' = v_bot[1]::text, 'played bot card hidden';
   assert position(v_bot[4]::text in v_state::text) = 0, 'an unplayed bot card leaked';
   assert (v_state -> 'my_team' -> 0 ->> 'played_round')::integer = 1, 'played round of own card';
@@ -202,7 +202,7 @@ end $$;
 reset role;
 
 -- Timer: a human choice after the deadline is refused, an auto-play is accepted.
--- A void round counts for nobody. Daily cap on bot rewards.
+-- A void round counts for nobody.
 do $$
 declare
   v_a uuid := '00000000-0000-4000-8000-0000000000a1';
@@ -224,15 +224,13 @@ begin
   assert (select rounds_won_a = 0 and rounds_won_b = 0 and current_round = 2 from public.matches where id = v_match),
     'a void round changed the score';
 
-  -- 25 already earned today: 120 more leaves room for 5 coins.
-  insert into public.coin_ledger (user_id, amount, reason) values (v_a, 120, 'bot_match_reward');
   perform public.match_record_round(v_match, 2,
     pg_temp.play(v_team[2], pg_temp.definition_of(v_team[2]), 30), pg_temp.play(null, v_bot[2], 4), 'a', null);
   perform public.match_record_round(v_match, 3,
     pg_temp.play(v_team[3], pg_temp.definition_of(v_team[3]), 30), pg_temp.play(null, v_bot[3], 4), 'a', null);
   perform public.match_record_round(v_match, 4,
     pg_temp.play(v_team[4], pg_temp.definition_of(v_team[4]), 30), pg_temp.play(null, v_bot[4], 4), 'a', 'a');
-  assert (select reward_coins_a from public.matches where id = v_match) = 5, 'daily cap not applied';
+  assert (select status from public.matches where id = v_match) = 'finished', 'match not finished';
 end $$;
 
 -- Cards fielded in a running match cannot be converted.

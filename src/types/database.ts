@@ -233,6 +233,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "card_transfers_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "card_transfers_to_user_fkey"
             columns: ["to_user"]
             isOneToOne: false
@@ -270,6 +277,71 @@ export type Database = {
           {
             foreignKeyName: "coin_ledger_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conquest_claims: {
+        Row: {
+          auto_assigned: boolean
+          bonus_coins: number
+          chosen_instance_id: string | null
+          deadline_at: string
+          eligible_instance_ids: string[]
+          loser_id: string
+          match_id: string
+          resolved_at: string | null
+          winner_id: string
+        }
+        Insert: {
+          auto_assigned?: boolean
+          bonus_coins?: number
+          chosen_instance_id?: string | null
+          deadline_at: string
+          eligible_instance_ids?: string[]
+          loser_id: string
+          match_id: string
+          resolved_at?: string | null
+          winner_id: string
+        }
+        Update: {
+          auto_assigned?: boolean
+          bonus_coins?: number
+          chosen_instance_id?: string | null
+          deadline_at?: string
+          eligible_instance_ids?: string[]
+          loser_id?: string
+          match_id?: string
+          resolved_at?: string | null
+          winner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conquest_claims_chosen_instance_id_fkey"
+            columns: ["chosen_instance_id"]
+            isOneToOne: false
+            referencedRelation: "card_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conquest_claims_loser_id_fkey"
+            columns: ["loser_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conquest_claims_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conquest_claims_winner_id_fkey"
+            columns: ["winner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -575,22 +647,28 @@ export type Database = {
         Row: {
           card_instance_ids: string[]
           enqueued_at: string
+          level: number
           mode: string
           refreshed_at: string
+          team_value: number
           user_id: string
         }
         Insert: {
           card_instance_ids: string[]
           enqueued_at?: string
+          level?: number
           mode?: string
           refreshed_at?: string
+          team_value?: number
           user_id: string
         }
         Update: {
           card_instance_ids?: string[]
           enqueued_at?: string
+          level?: number
           mode?: string
           refreshed_at?: string
+          team_value?: number
           user_id?: string
         }
         Relationships: [
@@ -970,6 +1048,11 @@ export type Database = {
       buy_pack: { Args: never; Returns: Json }
       cancel_lobby: { Args: never; Returns: undefined }
       card_payload: { Args: { p_definition_id: string }; Returns: Json }
+      cards_lost_today: { Args: { p_user: string }; Returns: number }
+      claim_conquest_card: {
+        Args: { p_card_instance_id: string; p_match_id: string }
+        Returns: Json
+      }
       claim_daily_pack: { Args: never; Returns: Json }
       claim_victory: { Args: { p_match_id: string }; Returns: Json }
       coin_balance: { Args: { p_user: string }; Returns: number }
@@ -985,6 +1068,14 @@ export type Database = {
       }
       config_int: { Args: { p_key: string }; Returns: number }
       config_text: { Args: { p_key: string }; Returns: string }
+      conquest_pair_on_cooldown: {
+        Args: { p_a: string; p_b: string }
+        Returns: boolean
+      }
+      conquest_payload: {
+        Args: { p_match_id: string; p_side: string }
+        Returns: Json
+      }
       convert_all_duplicates: { Args: never; Returns: Json }
       convert_definition_duplicates: {
         Args: { p_count: number; p_definition_id: string; p_user: string }
@@ -1039,6 +1130,8 @@ export type Database = {
           starter_copies: number
         }[]
       }
+      get_conquest_history: { Args: never; Returns: Json }
+      get_conquest_status: { Args: never; Returns: Json }
       get_match_state: { Args: { p_match_id: string }; Returns: Json }
       get_pack_odds: { Args: never; Returns: Json }
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
@@ -1050,6 +1143,7 @@ export type Database = {
         Returns: boolean
       }
       leave_queue: { Args: never; Returns: undefined }
+      level_for_xp: { Args: { p_xp: number }; Returns: number }
       match_create_bot: {
         Args: {
           p_bot_definition_ids: string[]
@@ -1071,7 +1165,12 @@ export type Database = {
         Returns: string
       }
       match_queue_join: {
-        Args: { p_team: string[]; p_threat_ids: string[]; p_user: string }
+        Args: {
+          p_mode: string
+          p_team: string[]
+          p_threat_ids: string[]
+          p_user: string
+        }
         Returns: string
       }
       match_record_round: {
@@ -1107,6 +1206,10 @@ export type Database = {
         Args: { p_kind: string; p_match_id: string; p_user: string }
         Returns: undefined
       }
+      open_conquest_claim: {
+        Args: { p_match_id: string; p_winner_side: string }
+        Returns: undefined
+      }
       open_pack: {
         Args: { p_pack_type: string; p_user: string }
         Returns: string
@@ -1116,14 +1219,9 @@ export type Database = {
         Args: { p_params: Json; p_power_code: string }
         Returns: string
       }
-      pvp_reward: {
-        Args: {
-          p_match: Database["public"]["Tables"]["matches"]["Row"]
-          p_reason: string
-          p_result: string
-          p_side: string
-        }
-        Returns: number
+      resolve_conquest_claim: {
+        Args: { p_auto: boolean; p_instance_id: string; p_match_id: string }
+        Returns: undefined
       }
       save_formation: {
         Args: {
@@ -1177,7 +1275,13 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      settle_expired_claims: { Args: { p_user: string }; Returns: undefined }
+      team_value: { Args: { p_definition_ids: string[] }; Returns: number }
       username_base: { Args: { p_source: string }; Returns: string }
+      validate_conquest_team: {
+        Args: { p_instance_ids: string[]; p_user: string }
+        Returns: string[]
+      }
       validate_team: {
         Args: { p_instance_ids: string[]; p_user: string }
         Returns: string[]
