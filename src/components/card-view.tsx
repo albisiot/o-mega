@@ -34,7 +34,7 @@ export function CardView({ card, abilities, size = "lg", glow = false }: CardVie
     >
       <div className="flex flex-col overflow-hidden rounded-md bg-panel text-foreground">
         <header className={`flex items-center justify-between gap-2 ${large ? "h-10 px-2.5" : "h-7 px-1.5"}`}>
-          <h3 className={`min-w-0 truncate font-display uppercase ${large ? "text-2xl" : "text-sm"}`}>{card.name}</h3>
+          <h3 className={`min-w-0 truncate font-display uppercase ${large ? "text-2xl" : "text-xs"}`}>{card.name}</h3>
           <RarityTag rarity={card.rarity} compact={!large} />
         </header>
 

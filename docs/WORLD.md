@@ -93,7 +93,8 @@ Testo di colore (una frase):
 
 ### Regole di scrittura
 
-- Nomi brevi: nel formato piccolo della carta oggi ci stanno circa 8 caratteri, oltre vengono tagliati.
+- Nomi particolari: niente "Il Qualcosa" e niente descrizioni, ma soprannomi strani che la gente della città darebbe davvero, spesso ironici (Zavorra, Malocchia, Verbale).
+- Nomi brevi: nel formato piccolo della carta ci stanno circa 10 caratteri, oltre vengono tagliati.
 - Testo di colore in una sola frase, come una battuta che faccia capire il personaggio.
 - I 60 personaggi si dividono in 6-8 gruppi da 7-10, ognuno con un conflitto interno.
 - Il Potere della carta deve avere senso per il personaggio: chi ha "Riscossa" torna dopo una sconfitta, chi ha "Sfavorito" dà il meglio quando è in svantaggio.
@@ -102,9 +103,9 @@ Testo di colore (una frase):
 
 | Carta | Valori chiave | Personaggio |
 |---|---|---|
-| P057, Neutrali | RES 10, VOL 10, COM 10, VEL 1, ENE 0 | **Il Superstite:** era al centro dell'Ora Zero e non può morire. Si muove a fatica e il suo potere è solo non cedere. |
-| P058, Eroi | VEL 10, COM 10, TEC 10, PER 0, VOL 1 | **Sentinella Vuota:** un'armatura perfetta che protegge la città. Dentro non c'è nessuno. |
-| P059, Cattivi | PSI 10, PER 10, FUR 10, VOL 0 | **La Folla:** legge ogni mente e non ha volontà propria. Obbedisce all'ultima che ha ascoltato. |
+| P057, Neutrali | RES 10, VOL 10, COM 10, VEL 1, ENE 0 | **Residuo:** era al centro dell'Ora Zero e non può morire. Si muove a fatica e il suo potere è solo non cedere. |
+| P058, Eroi | VEL 10, COM 10, TEC 10, PER 0, VOL 1 | **Nessuno:** un'armatura perfetta che protegge la città. Dentro non c'è nessuno. |
+| P059, Cattivi | PSI 10, PER 10, FUR 10, VOL 0 | **Brusio:** legge ogni mente e non ha volontà propria. Obbedisce all'ultima che ha ascoltato. |
 | P060, Eroi | FOR 10, ENE 10, MAG 10, TEC 0, COM 1 | **Mongibello:** contiene un vulcano. Non sa combattere e non sa usare un telefono. |
 
 ### Alfa: le leggende
@@ -126,10 +127,10 @@ Testo di colore (una frase):
 | P016, Cattivi | MAG 10, VOL 9, PSI 9, FUR 0, TEC 1 | **La Campana:** la si sente arrivare da tre quartieri di distanza. |
 | P021, Cattivi | FUR 8, VEL 7, INT 7, TEC 1, COM 2 | **Spillo:** entra ovunque, purché la serratura non sia elettronica. |
 | P022, Neutrali | PER 10, VOL 9, COM 9, INT 1, FUR 0 | **Cane da Porto:** trova tutto e non capisce niente. |
-| P001, Eroi | FOR 10, RES 9, COM 9, MAG 0, PSI 1 | **Gru** (Sciolti di porto, schierati con gli Eroi): solleva container a spalla, con un sorriso. |
-| P004, Neutrali | MAG 10, PSI 9, VOL 9, FOR 0, TEC 1 | **Sibilla** (Sciolti): legge il futuro al mercato e non riesce a sollevare la propria borsa. |
-| P009, Eroi | Generalista: FOR 6, VOL 6, gli altri da 3 a 5 | **Il Vigile** (Custodi): nessun Segno, solo tanta pazienza. |
-| P012, Eroi | Generalista: COM 6, PER 6, gli altri da 3 a 5 | **Lanterna** (Lanterne): la volontaria che arriva quando manca la luce. |
+| P001, Eroi | FOR 10, RES 9, COM 9, MAG 0, PSI 1 | **Zavorra** (Sciolti di porto, schierati con gli Eroi): solleva container a spalla, con un sorriso. |
+| P004, Neutrali | MAG 10, PSI 9, VOL 9, FOR 0, TEC 1 | **Malocchia** (Sciolti): legge il futuro al mercato e non riesce a sollevare la propria borsa. |
+| P009, Eroi | Generalista: FOR 6, VOL 6, gli altri da 3 a 5 | **Verbale** (Custodi): nessun Segno, solo tanta pazienza. |
+| P012, Eroi | Generalista: COM 6, PER 6, gli altri da 3 a 5 | **Stoppino** (Lanterne): la volontaria che arriva quando manca la luce. |
 
 ## 6. Minacce
 
@@ -148,7 +149,7 @@ Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richi
 1. **Il Reggente:** un novellino riceve la licenza e perde subito la sua lastra migliore.
 2. **Rissa al porto:** i Custodi non bastano più e il Banco ci guadagna.
 3. **Il sismografo:** le scosse seguono uno schema, quello dell'alfabeto.
-4. **La Folla:** il nemico è dentro la testa di chi ti è vicino.
+4. **Brusio:** il nemico è dentro la testa di chi ti è vicino.
 5. **Mongibello:** i Figli dell'Ultima svegliano il vulcano e l'ultima pagina apre l'espansione.
 
 ### Formato del copione
@@ -180,7 +181,7 @@ RENATA (fuori campo): Però è tuo. Finché non lo perdi.
 
 Da applicare a ogni illustrazione, così le carte sembrano dello stesso universo.
 
-- **Riferimento:** l'immagine de **La Folla** (Higgsfield, job `0eed7ac1-e223-4cd6-bed5-e4c76f1e693b`) va passata come riferimento di stile a ogni generazione.
+- **Riferimento:** l'immagine di **Brusio** (Higgsfield, job `0eed7ac1-e223-4cd6-bed5-e4c76f1e693b`) va passata come riferimento di stile a ogni generazione.
 - **Stile:** locandina a fumetto dai toni cupi, inchiostro fitto, grana a retino, resa dipinta.
 - **Palette:** fondo quasi nero, magenta e ciano come colori base, un solo accento caldo (giallo o arancio).
 - **Inquadratura:** una sola figura, intera o a tre quarti, leggibile anche a schermo piccolo. La carta mostra soprattutto la parte alta dell'immagine: volto e dettaglio chiave devono stare nella metà superiore.
