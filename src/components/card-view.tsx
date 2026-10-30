@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { withBasePath } from "@/lib/base-path";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import { FACTION_COLORS, isFoil, rarityArt, rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 
@@ -9,6 +10,7 @@ export type CardData = {
   stats: Record<string, number>;
   rarity: { name: string; rank: number; color: string };
   power: { name: string; text: string } | null;
+  art_url?: string | null;
 };
 
 type CardViewProps = {
@@ -19,7 +21,7 @@ type CardViewProps = {
   glow?: boolean;
 };
 
-/** A character card. The frame and art treatment grow with the rarity; art is a placeholder silhouette. */
+/** A character card. The frame and art treatment grow with the rarity; without art it shows a placeholder silhouette. */
 export function CardView({ card, abilities, size = "lg", glow = false }: CardViewProps) {
   const color = card.rarity.color;
   const style = { "--glow-color": `${color}aa`, background: rarityFrame(card.rarity) } as CSSProperties;
@@ -36,7 +38,7 @@ export function CardView({ card, abilities, size = "lg", glow = false }: CardVie
           <RarityTag rarity={card.rarity} compact={!large} />
         </header>
 
-        <CardArt rarity={card.rarity} faction={card.faction} className={large ? "h-44" : "h-24"}>
+        <CardArt rarity={card.rarity} faction={card.faction} artUrl={card.art_url} className={large ? "h-44" : "h-24"}>
           <span
             className={`absolute bottom-1.5 left-1.5 -skew-x-8 px-1.5 font-extrabold uppercase text-black ${
               large ? "py-0.5 text-xs" : "text-[10px]"
@@ -79,29 +81,39 @@ function RarityTag({ rarity, compact }: { rarity: CardData["rarity"]; compact: b
 export function CardArt({
   rarity,
   faction,
+  artUrl,
   className,
   children,
 }: {
   rarity: CardData["rarity"];
   faction: string;
+  artUrl?: string | null;
   className: string;
   children?: ReactNode;
 }) {
   return (
     <div className={`@container relative overflow-hidden ${className}`} style={rarityArt(rarity)} aria-hidden={!children}>
-      {isFoil(rarity) && (
-        <span
-          aria-hidden
-          className="absolute inset-0 flex items-center justify-center font-sans text-[50cqw] font-black leading-none text-foreground"
-        >
-          {rarityLetter(rarity)}
-        </span>
+      {artUrl ? (
+        // Plain <img>: the static export has no image optimization.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={withBasePath(artUrl)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-top" />
+      ) : (
+        <>
+          {isFoil(rarity) && (
+            <span
+              aria-hidden
+              className="absolute inset-0 flex items-center justify-center font-sans text-[50cqw] font-black leading-none text-foreground"
+            >
+              {rarityLetter(rarity)}
+            </span>
+          )}
+          <Silhouette
+            faction={faction}
+            accent={rarity.color}
+            className="absolute -bottom-1 left-1/2 h-[96%] -translate-x-1/2"
+          />
+        </>
       )}
-      <Silhouette
-        faction={faction}
-        accent={rarity.color}
-        className="absolute -bottom-1 left-1/2 h-[96%] -translate-x-1/2"
-      />
       {children}
     </div>
   );

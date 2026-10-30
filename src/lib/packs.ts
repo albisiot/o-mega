@@ -7,6 +7,7 @@ export type PackCard = {
   name: string;
   faction: string;
   flavor: string;
+  art_url: string | null;
   stats: Record<string, number>;
   rarity: { code: string; name: string; rank: number; color: string };
   power: { name: string; text: string } | null;

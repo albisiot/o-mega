@@ -32,6 +32,7 @@ async function loadCatalog(): Promise<CatalogCard[]> {
     name: row.name!,
     faction: row.faction!,
     flavor: row.flavor ?? "",
+    art_url: row.art_url,
     stats: row.stats as Record<string, number>,
     rarity: { code: row.rarity_code!, name: row.rarity_name!, rank: row.rarity_rank!, color: row.rarity_color! },
     power: row.power_name ? { name: row.power_name, text: row.power_text ?? "" } : null,

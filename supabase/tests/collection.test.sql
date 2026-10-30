@@ -155,6 +155,7 @@ begin
     select 1 from public.card_catalog where rarity_rank > 1 and power_text is null
   ), 'a rare card has no power text in the catalog';
   assert (select duplicate_coin_value from public.card_catalog where code = 'P057') = 400, 'Omega value';
+  assert (select art_url from public.card_catalog where code = 'P057') = '/cards/P057.webp', 'Omega art';
   begin
     perform public.get_collection();
     raise exception 'ASSERT: anon read a collection';

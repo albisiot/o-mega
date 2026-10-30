@@ -214,7 +214,7 @@ function AlbumTile({
         </span>
       )}
       {owned ? (
-        <CardArt rarity={card.rarity} faction={card.faction} className="h-24 rounded-t" />
+        <CardArt rarity={card.rarity} faction={card.faction} artUrl={card.art_url} className="h-24 rounded-t" />
       ) : (
         <div className="relative h-24 overflow-hidden rounded-t bg-panel">
           <Silhouette faction={card.faction} ink="#3a3a45" className="absolute -bottom-1 left-1/2 h-[96%] -translate-x-1/2" />

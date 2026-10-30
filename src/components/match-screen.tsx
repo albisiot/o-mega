@@ -8,6 +8,7 @@ import { ComicBurst } from "@/components/comic-parts";
 import { ConquestPanel } from "@/components/conquest-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { balance } from "@/config/balance";
+import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
 import {
@@ -603,12 +604,21 @@ function PlaySide({
   const isLeft = side === "left";
   return (
     <div className={`relative flex ${isLeft ? "justify-start" : "justify-end text-right"}`}>
-      {card && (
-        <Silhouette
-          faction={card.faction}
-          accent={card.rarity.color}
-          className={`absolute bottom-0 h-44 ${isLeft ? "-right-3" : "-left-3"}`}
+      {card?.art_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={withBasePath(card.art_url)}
+          alt=""
+          className={`absolute bottom-0 h-44 w-32 border-[3px] border-black object-cover object-top ${isLeft ? "right-0" : "left-0"}`}
         />
+      ) : (
+        card && (
+          <Silhouette
+            faction={card.faction}
+            accent={card.rarity.color}
+            className={`absolute bottom-0 h-44 ${isLeft ? "-right-3" : "-left-3"}`}
+          />
+        )
       )}
       <div className="relative max-w-[62%]">
         <p className="truncate text-sm font-extrabold">{label}</p>
