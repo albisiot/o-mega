@@ -27,6 +27,8 @@ export const balance = {
     /** Network tolerance after a deadline before the server auto-plays. */
     timeoutGraceSeconds: 3,
     reconnectGraceSeconds: 30,
+    /** A match this long past its round deadline is considered abandoned. */
+    abandonAfterMinutes: 10,
     threatLevels: {
       min: 1,
       max: 6,

@@ -5,13 +5,26 @@ import { useEffect, useState } from "react";
 import { CoinBadge } from "@/components/coin-badge";
 import { PackPanel } from "@/components/pack-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { fetchActiveMatch, type ActiveMatch } from "@/lib/match";
 import { countOwnedCards, type Profile } from "@/lib/player";
 import { usePackStatus } from "@/lib/use-pack-status";
-
 
 export function HomeScreen({ profile }: { profile: Profile }) {
   const [cardCount, setCardCount] = useState<number | null>(null);
   const packs = usePackStatus();
+  const [activeMatch, setActiveMatch] = useState<ActiveMatch | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchActiveMatch()
+      .then((match) => {
+        if (!cancelled) setActiveMatch(match);
+      })
+      .catch((error: unknown) => console.error("Active match failed", error));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,6 +54,21 @@ export function HomeScreen({ profile }: { profile: Profile }) {
 
       <main className="flex flex-1 flex-col gap-6 px-5 pb-8">
         <p className="text-sm text-zinc-400">Ciao, {profile.username}!</p>
+
+        {activeMatch && (
+          <Link
+            href={`/partita/?id=${activeMatch.id}`}
+            className="flex items-center justify-between rounded-2xl border border-emerald-400/50 bg-emerald-400/10 px-4 py-3"
+          >
+            <div>
+              <p className="font-semibold">Hai una partita in corso</p>
+              <p className="text-xs text-zinc-400">Round {activeMatch.current_round}: tocca per riprenderla.</p>
+            </div>
+            <span className="text-zinc-400" aria-hidden>
+              →
+            </span>
+          </Link>
+        )}
 
         <Link
           href="/gioca"

@@ -22,6 +22,7 @@ import {
   type MatchRound,
   type MatchView,
 } from "@/lib/match";
+import { matchXp } from "@/lib/progression";
 import { useNow } from "@/lib/use-now";
 
 type TeamCard = MatchView["my_team"][number];
@@ -509,6 +510,24 @@ function RoundReveal({
   );
 }
 
+/** The score climbs to its value when a round is revealed. */
+function CountUp({ value }: { value: number }) {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const start = performance.now();
+    let frame = 0;
+    const step = (time: number) => {
+      const progress = reduced ? 1 : Math.min(1, (time - start) / 600);
+      setShown(Math.round(value * progress));
+      if (progress < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+  return <span className="text-2xl font-black tabular-nums">{shown}</span>;
+}
+
 function PlayCard({
   label,
   card,
@@ -534,7 +553,7 @@ function PlayCard({
       )}
       {play && (
         <p className="text-sm">
-          <span className="text-2xl font-black tabular-nums">{play.score}</span>
+          <CountUp value={play.score} />
           {play.bonus > 0 && (
             <span className="text-xs text-emerald-300">
               {" "}
@@ -563,13 +582,20 @@ function MatchResult({
       ? "Hai abbandonato"
       : { win: "Vittoria!", loss: "Sconfitta", draw: "Pareggio" }[view.result ?? "draw"];
   const coins = view.reward_coins ?? 0;
+  const xp = matchXp(view);
   const nameOf = (instanceId: string | null | undefined) => view.my_team.find((c) => c.instance_id === instanceId)?.name ?? "—";
 
   return (
     <main className="flex flex-1 flex-col gap-5 px-5 py-6">
-      <section className="flex flex-col items-center gap-2 text-center">
+      <section className="relative flex flex-col items-center gap-2 overflow-hidden py-2 text-center">
+        {view.result === "win" && (
+          <span
+            aria-hidden
+            className="animate-rare-burst pointer-events-none absolute left-1/2 top-4 -ml-12 h-24 w-24 rounded-full bg-emerald-400/40 [animation-iteration-count:2]"
+          />
+        )}
         <p
-          className={`animate-rare-title text-4xl font-black ${
+          className={`animate-rare-title relative text-4xl font-black ${
             view.result === "win" ? "text-emerald-300" : view.result === "loss" ? "text-red-300" : "text-zinc-200"
           }`}
         >
@@ -578,6 +604,7 @@ function MatchResult({
         <p className="text-sm text-zinc-400">
           Round {view.rounds_won.me} – {view.rounds_won.opponent} · punti {view.total_score.me} – {view.total_score.opponent}
         </p>
+        {xp > 0 && <p className="text-xs font-semibold text-zinc-300">+{xp} XP</p>}
         {coins > 0 && (
           <p className="rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 text-sm font-semibold text-amber-200">
             +{coins} monete

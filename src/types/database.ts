@@ -1055,6 +1055,7 @@ export type Database = {
       }
       claim_daily_pack: { Args: never; Returns: Json }
       claim_victory: { Args: { p_match_id: string }; Returns: Json }
+      close_abandoned_matches: { Args: { p_user: string }; Returns: undefined }
       coin_balance: { Args: { p_user: string }; Returns: number }
       collection_summary: {
         Args: { p_user: string }
@@ -1132,6 +1133,7 @@ export type Database = {
       }
       get_conquest_history: { Args: never; Returns: Json }
       get_conquest_status: { Args: never; Returns: Json }
+      get_match_history: { Args: { p_limit?: number }; Returns: Json }
       get_match_state: { Args: { p_match_id: string }; Returns: Json }
       get_pack_odds: { Args: never; Returns: Json }
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }

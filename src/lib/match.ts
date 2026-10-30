@@ -252,6 +252,32 @@ export function subscribeToUpdates(topic: string, onUpdate: (payload: Record<str
   };
 }
 
+export type MatchHistoryEntry = {
+  id: string;
+  mode: "bot" | "friendly" | "conquest";
+  bot_difficulty: BotDifficulty | "super_pro" | null;
+  finished_at: string;
+  end_reason: "completed" | "forfeit";
+  result: "win" | "loss" | "draw";
+  rounds_me: number;
+  rounds_opponent: number;
+  coins: number;
+  opponent: string | null;
+  conquest: {
+    won: boolean;
+    bonus_coins: number;
+    pending: boolean;
+    card_name: string | null;
+    card_color: string | null;
+  } | null;
+};
+
+export async function fetchMatchHistory(): Promise<MatchHistoryEntry[]> {
+  const { data, error } = await getSupabase().rpc("get_match_history");
+  if (error) throw error;
+  return data as unknown as MatchHistoryEntry[];
+}
+
 const PENDING_TEAM_KEY = "o-mega.pending-team";
 
 /** The team chosen for the random queue, kept for the waiting page. */

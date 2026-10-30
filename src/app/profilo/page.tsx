@@ -7,7 +7,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { describeServerError } from "@/lib/errors";
 import { fetchConquestHistory, type ConquestHistoryEntry } from "@/lib/match";
-import { updateUsername, type Profile } from "@/lib/player";
+import { bootstrapPlayer, updateUsername, type Profile } from "@/lib/player";
 import { levelProgress, xpForLevel } from "@/lib/progression";
 import { isValidUsername } from "@/lib/username";
 
@@ -18,7 +18,7 @@ export default function ProfilePage() {
 }
 
 function ProfileView({ profile }: { profile: Profile }) {
-  const { signOut } = useAuth();
+  const { signOut, setProfile } = useAuth();
   const [history, setHistory] = useState<ConquestHistoryEntry[] | null>(null);
 
   useEffect(() => {
@@ -28,13 +28,22 @@ function ProfileView({ profile }: { profile: Profile }) {
         if (!cancelled) setHistory(entries);
       })
       .catch((error: unknown) => console.error("Conquest history failed", error));
+    // Statistics change with every match: the profile loaded at sign-in is old.
+    bootstrapPlayer()
+      .then((fresh) => {
+        if (!cancelled) setProfile(fresh);
+      })
+      .catch((error: unknown) => console.error("Profile refresh failed", error));
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [setProfile]);
+
+  const pvpMatches = profile.wins + profile.losses + profile.draws;
 
   const stats = [
     { label: "Partite", value: profile.matches_played },
+    { label: "Vittorie contro giocatori", value: pvpMatches ? `${Math.round((profile.wins / pvpMatches) * 100)}%` : "–" },
     { label: "Vittorie", value: profile.wins },
     { label: "Sconfitte", value: profile.losses },
     { label: "Pareggi", value: profile.draws },
@@ -111,6 +120,16 @@ function ProfileView({ profile }: { profile: Profile }) {
             </ul>
           )}
         </section>
+
+        <Link
+          href="/storico"
+          className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+        >
+          <span className="font-semibold">Storico partite</span>
+          <span className="text-zinc-500" aria-hidden>
+            →
+          </span>
+        </Link>
 
         <Link
           href="/collezione"
