@@ -29,7 +29,7 @@ export function BottomNav() {
       <nav
         aria-label="Navigazione principale"
         // Half the safe area: the icons still clear the iPhone home indicator, without a large empty band.
-        className="fixed inset-x-0 pin-bottom z-20 border-t border-white/10 bg-zinc-900 pb-[calc(env(safe-area-inset-bottom)*0.5)]"
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-zinc-900 pb-[calc(env(safe-area-inset-bottom)*0.5)]"
       >
         <ul className="mx-auto flex max-w-md">
           {TABS.map((tab) => {

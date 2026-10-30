@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
 import { BottomNav } from "@/components/bottom-nav";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
-import { ViewportGapFix } from "@/components/viewport-gap-fix";
+import { ViewportReadout } from "@/components/viewport-readout";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -47,7 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <BottomNav />
         </AuthProvider>
         <ServiceWorkerRegistration />
-        <ViewportGapFix />
+        <ViewportReadout />
       </body>
     </html>
   );
