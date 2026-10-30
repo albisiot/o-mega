@@ -27,6 +27,7 @@ function ProfileView({ profile }: { profile: Profile }) {
     { label: "Serie attuale", value: profile.current_streak },
     { label: "Carte conquistate", value: profile.cards_conquered },
     { label: "Carte perse", value: profile.cards_lost },
+    { label: "Contro i bot: V / S / P", value: `${profile.bot_wins} / ${profile.bot_losses} / ${profile.bot_draws}` },
   ];
 
   return (

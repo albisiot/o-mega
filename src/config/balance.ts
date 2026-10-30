@@ -22,6 +22,10 @@ export const balance = {
     threatsPerMatch: 5,
     roundsToWin: 3,
     roundTimerSeconds: 30,
+    /** Time to show a round result before the next timer starts. */
+    revealPauseSeconds: 5,
+    /** Network tolerance after a deadline before the server auto-plays. */
+    timeoutGraceSeconds: 3,
     reconnectGraceSeconds: 30,
     threatLevels: {
       min: 1,
@@ -63,10 +67,15 @@ export const balance = {
     dailyMatchCoinCap: 300,
     samePairRewardWindowHours: 24,
     samePairFullRewardMatches: 3,
-    /** Bot matches pay this fraction of PvP rewards (SPEC §13.2 #5). */
-    botRewardMultiplier: 0.5,
+    /** Bot matches pay half of PvP rewards, rounded up (SPEC §13.2 #5). */
+    botWinCoins: 25,
+    botParticipationCoins: 8,
     /** Separate daily cap for bot rewards: assumed half of the PvP cap. */
     botDailyCoinCap: 150,
+  },
+
+  formations: {
+    maxPerPlayer: 10,
   },
 } as const;
 

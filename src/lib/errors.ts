@@ -9,6 +9,21 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   pack_not_found: "Pacchetto non trovato.",
   nothing_to_convert: "Non ci sono doppioni da convertire.",
   invalid_count: "Numero di copie non valido.",
+  match_already_active: "Hai già una partita in corso: riprendila o abbandonala.",
+  match_not_found: "Partita non trovata.",
+  match_not_active: "La partita è già finita.",
+  round_already_resolved: "Il round è già stato giocato.",
+  round_not_expired: "Il tempo non è ancora scaduto.",
+  character_not_available: "Questo personaggio non è disponibile.",
+  character_already_played: "Questo personaggio è già stato giocato.",
+  invalid_team_size: "Scegli 5 personaggi.",
+  duplicate_card: "Hai scelto due volte la stessa carta.",
+  duplicate_character: "Non puoi schierare due copie dello stesso personaggio.",
+  card_not_owned: "Una delle carte scelte non è più tua.",
+  invalid_difficulty: "Difficoltà non valida.",
+  too_many_formations: "Hai raggiunto il numero massimo di formazioni.",
+  invalid_formation_name: "Il nome della formazione deve avere da 1 a 30 caratteri.",
+  formation_not_found: "Formazione non trovata.",
 };
 
 export function describeServerError(error: unknown): string {
