@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
@@ -13,6 +14,74 @@ const BOTS = [
   { difficulty: "medium", detail: "Gioca sempre il personaggio migliore per la Minaccia del momento." },
   { difficulty: "hard", detail: "Pianifica: tiene da parte specialisti e generalisti per i round giusti." },
 ] as const;
+
+/** Friendly matches against other players: random opponent or friend code. */
+function FriendlySection({ disabled }: { disabled: boolean }) {
+  const router = useRouter();
+  const [code, setCode] = useState("");
+  const normalized = code.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+  return (
+    <section className={`flex flex-col gap-3 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
+      <div>
+        <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Amichevole online</h2>
+        <p className="mt-1 text-sm text-zinc-400">
+          Nessuna carta in gioco. Vittoria +{balance.economy.winCoins} monete, sconfitta o pareggio +
+          {balance.economy.participationCoins}, fino a {balance.economy.dailyMatchCoinCap} al giorno.
+        </p>
+      </div>
+      <Link
+        href="/squadra/?mode=queue"
+        className="flex items-center justify-between rounded-2xl border border-amber-400/40 bg-amber-400/10 px-4 py-3"
+      >
+        <div>
+          <p className="font-semibold">Cerca un avversario</p>
+          <p className="text-xs text-zinc-400">Sfida il primo giocatore disponibile.</p>
+        </div>
+        <span className="text-zinc-500" aria-hidden>
+          →
+        </span>
+      </Link>
+      <Link
+        href="/squadra/?mode=lobby"
+        className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+      >
+        <div>
+          <p className="font-semibold">Crea un codice</p>
+          <p className="text-xs text-zinc-400">Mandalo a un amico per sfidarlo.</p>
+        </div>
+        <span className="text-zinc-500" aria-hidden>
+          →
+        </span>
+      </Link>
+      <form
+        className="flex gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (normalized.length === 6) router.push(`/squadra/?mode=join&code=${normalized}`);
+        }}
+      >
+        <input
+          value={code}
+          onChange={(event) => setCode(event.target.value)}
+          maxLength={6}
+          placeholder="Codice dell'amico"
+          autoCapitalize="characters"
+          autoComplete="off"
+          spellCheck={false}
+          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-base uppercase tracking-[0.3em] outline-none focus:border-amber-400"
+        />
+        <button
+          type="submit"
+          disabled={normalized.length !== 6}
+          className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-40"
+        >
+          Entra
+        </button>
+      </form>
+    </section>
+  );
+}
 
 export default function PlayPage() {
   const { session } = useRequireSignedIn();
@@ -64,7 +133,10 @@ export default function PlayPage() {
           <section className="flex flex-col gap-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4">
             <p className="font-semibold">Hai una partita in corso</p>
             <p className="text-sm text-zinc-300">
-              Contro il bot {DIFFICULTY_LABELS[active.bot_difficulty ?? "easy"]} · round {active.current_round}
+              {active.mode === "bot"
+                ? `Contro il bot ${DIFFICULTY_LABELS[active.bot_difficulty ?? "easy"]}`
+                : "Amichevole contro un giocatore"}{" "}
+              · round {active.current_round}
             </p>
             {confirmForfeit ? (
               <div className="flex flex-col gap-2">
@@ -141,23 +213,17 @@ export default function PlayPage() {
           </div>
         </section>
 
+        <FriendlySection disabled={Boolean(active)} />
+
         <section className="flex flex-col gap-3">
-          <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Contro altri giocatori</h2>
-          {[
-            { title: "Amichevole", detail: "Avversario casuale o amico con un codice." },
-            { title: "Conquista", detail: "Chi vince prende una carta dell'avversario." },
-          ].map((mode) => (
-            <div
-              key={mode.title}
-              className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 opacity-40"
-            >
-              <div>
-                <p className="font-semibold">{mode.title}</p>
-                <p className="text-xs text-zinc-400">{mode.detail}</p>
-              </div>
-              <span className="text-xs text-zinc-500">Presto</span>
+          <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Conquista</h2>
+          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 opacity-40">
+            <div>
+              <p className="font-semibold">Conquista</p>
+              <p className="text-xs text-zinc-400">Chi vince prende una carta dell&apos;avversario.</p>
             </div>
-          ))}
+            <span className="text-xs text-zinc-500">Presto</span>
+          </div>
         </section>
       </main>
     </div>

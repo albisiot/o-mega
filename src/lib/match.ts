@@ -38,6 +38,10 @@ export type MatchRound = {
   my_play: (MatchPlay & { instance_id: string | null; definition_id: string }) | null;
   /** Only once the round is resolved. */
   opponent_play: (MatchCard & MatchPlay) | null;
+  /** PvP: my secret choice waiting for the opponent. */
+  my_pending_instance_id: string | null;
+  /** PvP: whether the opponent has chosen (never what). */
+  opponent_has_chosen: boolean;
 };
 
 /** What the server lets the player see (SPEC §10.2). */
@@ -46,6 +50,9 @@ export type MatchView = {
   mode: "bot" | "friendly" | "conquest";
   bot_difficulty: BotDifficulty | "super_pro" | null;
   status: "active" | "finished";
+  my_side: "a" | "b";
+  /** null against a bot. */
+  opponent: { username: string; avatar_url: string | null; level: number; last_seen_at: string | null } | null;
   current_round: number;
   threat_levels: number[];
   rounds_won: { me: number; opponent: number };
@@ -72,7 +79,7 @@ function remember(view: MatchView): MatchView {
 }
 
 /** Calls the "match" Edge Function and surfaces its error code as the message. */
-async function invokeMatch(body: Record<string, unknown>): Promise<MatchView> {
+async function invokeFunction<T>(body: Record<string, unknown>): Promise<T> {
   const { data, error } = await getSupabase().functions.invoke("match", { body });
   if (error) {
     if (error instanceof FunctionsHttpError) {
@@ -81,7 +88,11 @@ async function invokeMatch(body: Record<string, unknown>): Promise<MatchView> {
     }
     throw error;
   }
-  return remember(data as MatchView);
+  return data as T;
+}
+
+async function invokeMatch(body: Record<string, unknown>): Promise<MatchView> {
+  return remember(await invokeFunction<MatchView>(body));
 }
 
 export function startBotMatch(difficulty: BotDifficulty, cardInstanceIds: string[]): Promise<MatchView> {
@@ -111,6 +122,100 @@ export async function forfeitMatch(matchId: string): Promise<MatchView> {
   const { data, error } = await getSupabase().rpc("forfeit_match", { p_match_id: matchId });
   if (error) throw error;
   return data as unknown as MatchView;
+}
+
+// ---------------------------------------------------------------------------
+// Matches between players
+// ---------------------------------------------------------------------------
+
+export function joinLobby(code: string, cardInstanceIds: string[]): Promise<MatchView> {
+  return invokeMatch({ action: "join_lobby", code, card_instance_ids: cardInstanceIds });
+}
+
+/** Joins or refreshes the random queue; call it again while waiting. */
+export function joinQueue(cardInstanceIds: string[]): Promise<{ matched: boolean; match_id: string | null }> {
+  return invokeFunction({ action: "queue", card_instance_ids: cardInstanceIds });
+}
+
+/** Sends a secret choice; the round resolves as soon as both players chose. */
+export function submitChoice(matchId: string, round: number, cardInstanceId: string): Promise<MatchView> {
+  return invokeMatch({ action: "submit", match_id: matchId, round, card_instance_id: cardInstanceId });
+}
+
+/** Asks the server to resolve the round once the time is up. Idempotent. */
+export function resolvePvpRound(matchId: string): Promise<MatchView> {
+  return invokeMatch({ action: "resolve", match_id: matchId });
+}
+
+export type Lobby = { code: string; expires_at: string };
+
+export async function createLobby(cardInstanceIds: string[]): Promise<Lobby> {
+  const { data, error } = await getSupabase().rpc("create_lobby", { p_card_instance_ids: cardInstanceIds });
+  if (error) throw error;
+  return data as unknown as Lobby;
+}
+
+export async function fetchMyLobby(): Promise<Lobby | null> {
+  const { data, error } = await getSupabase().from("match_lobbies").select("code, expires_at").maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function cancelLobby(): Promise<void> {
+  const { error } = await getSupabase().rpc("cancel_lobby");
+  if (error) throw error;
+}
+
+export async function leaveQueue(): Promise<void> {
+  const { error } = await getSupabase().rpc("leave_queue");
+  if (error) throw error;
+}
+
+/** Tells the server the player is still here (SPEC §5.7). */
+export async function sendHeartbeat(matchId: string): Promise<void> {
+  const { error } = await getSupabase().rpc("match_heartbeat", { p_match_id: matchId });
+  if (error) throw error;
+}
+
+export async function claimVictory(matchId: string): Promise<MatchView> {
+  const { data, error } = await getSupabase().rpc("claim_victory", { p_match_id: matchId });
+  if (error) throw error;
+  return data as unknown as MatchView;
+}
+
+/**
+ * Listens to the server's "something changed" broadcasts on a topic
+ * ("match:<id>" or "player:<user id>"). Returns the unsubscribe function.
+ */
+export function subscribeToUpdates(topic: string, onUpdate: (payload: Record<string, unknown>) => void): () => void {
+  const supabase = getSupabase();
+  const channel = supabase
+    .channel(topic, { config: { private: false } })
+    .on("broadcast", { event: "update" }, (message) => onUpdate((message.payload ?? {}) as Record<string, unknown>))
+    .subscribe();
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+const PENDING_TEAM_KEY = "o-mega.pending-team";
+
+/** The team chosen for the random queue, kept for the waiting page. */
+export function storePendingTeam(cardInstanceIds: string[]) {
+  try {
+    sessionStorage.setItem(PENDING_TEAM_KEY, JSON.stringify(cardInstanceIds));
+  } catch {
+    // Without storage the waiting page sends the player back to pick a team.
+  }
+}
+
+export function readPendingTeam(): string[] | null {
+  try {
+    const value: unknown = JSON.parse(sessionStorage.getItem(PENDING_TEAM_KEY) ?? "null");
+    return Array.isArray(value) && value.every((id) => typeof id === "string") ? value : null;
+  } catch {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------

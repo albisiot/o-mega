@@ -10,17 +10,23 @@ import { TeamPicker } from "@/components/team-picker";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
 import {
+  createLobby,
   DIFFICULTY_LABELS,
   fetchFormations,
   fetchInstanceDefinitions,
   fetchOwnedInstances,
+  joinLobby,
   startBotMatch,
+  storePendingTeam,
   type Formation,
 } from "@/lib/match";
 
 const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard"];
 
-// /squadra/?difficulty=easy|medium|hard
+// /squadra/?difficulty=easy|medium|hard        (against a bot, default)
+// /squadra/?mode=queue                          (random opponent)
+// /squadra/?mode=lobby                          (create a friend code)
+// /squadra/?mode=join&code=ABC234               (join a friend)
 export default function TeamPage() {
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -36,10 +42,34 @@ type Loaded = {
   formations: Formation[];
 };
 
+type Mode =
+  | { kind: "bot"; difficulty: BotDifficulty }
+  | { kind: "queue" }
+  | { kind: "lobby" }
+  | { kind: "join"; code: string };
+
+function readMode(params: URLSearchParams): Mode {
+  const mode = params.get("mode");
+  if (mode === "queue" || mode === "lobby") return { kind: mode };
+  if (mode === "join") return { kind: "join", code: (params.get("code") ?? "").toUpperCase() };
+  const difficulty = params.get("difficulty") as BotDifficulty | null;
+  return { kind: "bot", difficulty: difficulty && DIFFICULTIES.includes(difficulty) ? difficulty : "easy" };
+}
+
+const COPY: Record<Mode["kind"], { subtitle: (mode: Mode) => string; start: (mode: Mode) => string }> = {
+  bot: {
+    subtitle: (mode) => `Contro il bot ${DIFFICULTY_LABELS[(mode as { difficulty: BotDifficulty }).difficulty]}`,
+    start: (mode) => `Sfida il bot ${DIFFICULTY_LABELS[(mode as { difficulty: BotDifficulty }).difficulty]}`,
+  },
+  queue: { subtitle: () => "Amichevole contro un avversario casuale", start: () => "Cerca un avversario" },
+  lobby: { subtitle: () => "Amichevole con un amico", start: () => "Crea il codice" },
+  join: { subtitle: (mode) => `Entri con il codice ${(mode as { code: string }).code}`, start: () => "Entra nella partita" },
+};
+
 function TeamPageContent() {
   const router = useRouter();
-  const requested = useSearchParams().get("difficulty") as BotDifficulty | null;
-  const difficulty = requested && DIFFICULTIES.includes(requested) ? requested : "easy";
+  const params = useSearchParams();
+  const mode = readMode(params);
   const { session } = useRequireSignedIn();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -64,8 +94,26 @@ function TeamPageContent() {
     setStarting(true);
     setError(null);
     try {
-      const view = await startBotMatch(difficulty, cardInstanceIds);
-      router.push(`/partita/?id=${view.id}`);
+      switch (mode.kind) {
+        case "bot": {
+          const view = await startBotMatch(mode.difficulty, cardInstanceIds);
+          router.push(`/partita/?id=${view.id}`);
+          break;
+        }
+        case "join": {
+          const view = await joinLobby(mode.code, cardInstanceIds);
+          router.push(`/partita/?id=${view.id}`);
+          break;
+        }
+        case "lobby":
+          await createLobby(cardInstanceIds);
+          router.push("/attesa/?mode=lobby");
+          break;
+        case "queue":
+          storePendingTeam(cardInstanceIds);
+          router.push("/attesa/?mode=queue");
+          break;
+      }
     } catch (cause) {
       setError(describeServerError(cause));
       setStarting(false);
@@ -80,7 +128,7 @@ function TeamPageContent() {
         </Link>
         <div className="text-center">
           <h1 className="text-base font-semibold">La tua squadra</h1>
-          <p className="text-xs text-zinc-400">Contro il bot {DIFFICULTY_LABELS[difficulty]}</p>
+          <p className="text-xs text-zinc-400">{COPY[mode.kind].subtitle(mode)}</p>
         </div>
         <span className="w-12" />
       </header>
@@ -107,7 +155,7 @@ function TeamPageContent() {
             instanceDefinitions={loaded.instanceDefinitions}
             formations={loaded.formations}
             onFormationsChanged={(formations) => setLoaded({ ...loaded, formations })}
-            startLabel={`Sfida il bot ${DIFFICULTY_LABELS[difficulty]}`}
+            startLabel={COPY[mode.kind].start(mode)}
             starting={starting}
             onStart={start}
           />

@@ -1,16 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { carriedBonusAfter, scorePlay, type AbilityFamilies, type Character } from "@o-mega/game-engine";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { balance } from "@/config/balance";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
 import {
+  claimVictory,
   DIFFICULTY_LABELS,
   fetchMatchState,
   forfeitMatch,
   playRound,
+  resolvePvpRound,
+  sendHeartbeat,
+  submitChoice,
+  subscribeToUpdates,
   type MatchCard,
   type MatchRound,
   type MatchView,
@@ -34,7 +40,11 @@ function toCharacter(card: MatchCard, id: string): Character {
   };
 }
 
-/** A bot match from the first threat to the final result. */
+function lastResolvedRound(view: MatchView): number {
+  return Math.max(0, ...view.rounds.filter((r) => r.resolved).map((r) => r.round));
+}
+
+/** A match (against a bot or a player) from the first threat to the final result. */
 export function MatchScreen({ initial }: { initial: MatchView }) {
   const [view, setView] = useState(initial);
   // Server time minus device time: countdowns follow the server clock.
@@ -53,12 +63,23 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
       .catch((cause: unknown) => console.error("Abilities failed", cause));
   }, []);
 
+  // Every newly resolved round is revealed, however we learned about it
+  // (our own play, the opponent's broadcast, a refresh).
+  const revealedUpTo = useRef(lastResolvedRound(initial));
   const apply = useCallback((next: MatchView) => {
     setView(next);
     setOffset(Date.parse(next.server_now) - Date.now());
+    const newest = lastResolvedRound(next);
+    if (newest > revealedUpTo.current) {
+      revealedUpTo.current = newest;
+      setRevealing(newest);
+      setSelected(null);
+    }
   }, []);
 
-  const current = view.status === "active" ? view.rounds.find((r) => r.round === view.current_round && !r.resolved) : undefined;
+  const isBot = view.mode === "bot";
+  const isActive = view.status === "active";
+  const current = isActive ? view.rounds.find((r) => r.round === view.current_round && !r.resolved) : undefined;
   const deadline = current ? Date.parse(current.deadline_at) : null;
 
   const submit = useCallback(
@@ -66,9 +87,8 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
       setBusy(true);
       setError(null);
       try {
-        apply(await playRound(view.id, round, choice));
-        setRevealing(round);
-        setSelected(null);
+        if (view.mode === "bot") apply(await playRound(view.id, round, choice));
+        else apply(choice === null ? await resolvePvpRound(view.id) : await submitChoice(view.id, round, choice));
       } catch (cause) {
         // Someone (the timer, another tab) was faster: reload the state.
         if (cause instanceof Error && ["round_already_resolved", "match_not_active"].includes(cause.message)) {
@@ -80,8 +100,50 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
         setBusy(false);
       }
     },
-    [apply, view.id],
+    [apply, view.id, view.mode],
   );
+
+  // Against a player: follow the server's broadcasts (with a slow poll in case
+  // one is missed) and tell the server we are still here.
+  const refreshing = useRef(false);
+  const refresh = useCallback(async () => {
+    if (refreshing.current) return;
+    refreshing.current = true;
+    try {
+      apply(await fetchMatchState(view.id));
+    } catch {
+      // The next broadcast or poll will try again.
+    } finally {
+      refreshing.current = false;
+    }
+  }, [apply, view.id]);
+
+  useEffect(() => {
+    if (isBot || !isActive) return;
+    const unsubscribe = subscribeToUpdates(`match:${view.id}`, () => {
+      refresh();
+    });
+    const poll = setInterval(refresh, 5000);
+    const beat = () => sendHeartbeat(view.id).catch(() => {});
+    beat();
+    const heartbeat = setInterval(beat, 10_000);
+    return () => {
+      unsubscribe();
+      clearInterval(poll);
+      clearInterval(heartbeat);
+    };
+  }, [isBot, isActive, view.id, refresh]);
+
+  async function claim() {
+    setBusy(true);
+    try {
+      apply(await claimVictory(view.id));
+    } catch (cause) {
+      setError(describeServerError(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   // When the time is up (plus the server's grace), let the server play for us.
   const round = current?.round;
@@ -117,15 +179,23 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
     [abilities],
   );
   const shownRound = revealing === null ? null : view.rounds.find((r) => r.round === revealing) ?? null;
+  const opponentName = view.opponent?.username ?? "Bot";
+  const absentMs =
+    !isBot && isActive && view.opponent?.last_seen_at ? now + offset - Date.parse(view.opponent.last_seen_at) : 0;
 
   return (
     <div className="flex flex-1 flex-col">
       <header className="flex items-center justify-between gap-3 px-5 py-3">
-        <div>
-          <p className="text-xs text-zinc-400">Bot {DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}</p>
-          <p className="text-lg font-black tabular-nums">
-            Tu {view.rounds_won.me} – {view.rounds_won.opponent} Bot
-          </p>
+        <div className="flex min-w-0 items-center gap-2">
+          {view.opponent && <PlayerAvatar username={view.opponent.username} avatarUrl={view.opponent.avatar_url} />}
+          <div className="min-w-0">
+            <p className="truncate text-xs text-zinc-400">
+              {isBot ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}` : `Amichevole · ${opponentName}`}
+            </p>
+            <p className="truncate text-lg font-black tabular-nums">
+              Tu {view.rounds_won.me} – {view.rounds_won.opponent} {isBot ? "Bot" : opponentName}
+            </p>
+          </div>
         </div>
         {view.status === "active" ? (
           <button
@@ -163,11 +233,27 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
         </div>
       )}
       {error && <p className="mx-5 mt-3 text-sm text-red-400">{error}</p>}
+      {absentMs > 20_000 && (
+        <div className="mx-5 mt-3 flex items-center justify-between gap-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-3">
+          <p className="text-sm">{opponentName} non risponde. Allo scadere del tempo il server sceglie al posto suo.</p>
+          {absentMs > balance.match.reconnectGraceSeconds * 1000 && (
+            <button
+              type="button"
+              onClick={claim}
+              disabled={busy}
+              className="shrink-0 rounded-full bg-amber-400 px-3 py-1.5 text-xs font-bold text-zinc-950"
+            >
+              Rivendica la vittoria
+            </button>
+          )}
+        </div>
+      )}
 
       {shownRound ? (
         <RoundReveal
           round={shownRound}
           team={view.my_team}
+          opponentName={opponentName}
           onContinue={() => setRevealing(null)}
           finished={view.status === "finished"}
         />
@@ -180,10 +266,10 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
           families={families}
           abilities={abilities}
           remainingMs={deadline === null ? 0 : deadline - (now + offset)}
-          selected={selected}
+          selected={selected ?? current.my_pending_instance_id}
           onSelect={setSelected}
           busy={busy}
-          onPlay={() => selected && submit(current.round, selected)}
+          onPlay={(choice) => submit(current.round, choice)}
         />
       ) : null}
     </div>
@@ -232,8 +318,11 @@ function ChoosePhase({
   selected: string | null;
   onSelect: (id: string) => void;
   busy: boolean;
-  onPlay: () => void;
+  onPlay: (choice: string) => void;
 }) {
+  const isBot = view.mode === "bot";
+  const opponentName = view.opponent?.username ?? "Il bot";
+  const pending = round.my_pending_instance_id;
   const timer = balance.match.roundTimerSeconds;
   const seconds = Math.max(0, Math.ceil(remainingMs / 1000));
   const threat = { id: "current", level: round.level, abilities: round.threat.abilities };
@@ -294,6 +383,11 @@ function ChoosePhase({
           </span>
         </div>
         {carried > 0 && <p className="mt-2 text-xs text-emerald-300">Riscossa: +{carried} al personaggio di questo round.</p>}
+        {!isBot && (
+          <p className={`mt-2 text-xs ${round.opponent_has_chosen ? "text-emerald-300" : "text-zinc-400"}`}>
+            {round.opponent_has_chosen ? `${opponentName} ha scelto.` : `${opponentName} sta scegliendo…`}
+          </p>
+        )}
       </section>
 
       <section className="flex flex-col gap-2">
@@ -335,7 +429,7 @@ function ChoosePhase({
 
       {opponentPlayed.length > 0 && (
         <section className="flex flex-col gap-1.5">
-          <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">Il bot ha già giocato</h2>
+          <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">{opponentName} ha già giocato</h2>
           <div className="flex flex-wrap gap-1.5">
             {opponentPlayed.map(({ round: r, card }) => (
               <span key={r} className="rounded-full border px-2.5 py-1 text-xs" style={{ borderColor: `${card.rarity.color}99` }}>
@@ -349,11 +443,19 @@ function ChoosePhase({
       <div className="fixed inset-x-0 bottom-0 border-t border-white/10 bg-zinc-950/95 px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
         <button
           type="button"
-          onClick={onPlay}
-          disabled={!chosen || busy}
+          onClick={() => chosen && onPlay(chosen.instance_id)}
+          disabled={!chosen || busy || chosen.instance_id === pending}
           className="w-full rounded-full bg-amber-400 px-5 py-3 font-bold text-zinc-950 disabled:bg-white/10 disabled:text-zinc-500"
         >
-          {busy ? "Il bot sta scegliendo…" : chosen ? `Gioca ${chosen.name}` : "Scegli un personaggio"}
+          {busy
+            ? isBot
+              ? "Il bot sta scegliendo…"
+              : "Invio…"
+            : chosen && chosen.instance_id === pending
+              ? `Hai scelto ${chosen.name}: in attesa di ${opponentName}`
+              : chosen
+                ? `${pending ? "Cambia: gioca" : "Gioca"} ${chosen.name}`
+                : "Scegli un personaggio"}
         </button>
       </div>
     </main>
@@ -363,11 +465,13 @@ function ChoosePhase({
 function RoundReveal({
   round,
   team,
+  opponentName,
   onContinue,
   finished,
 }: {
   round: MatchRound;
   team: TeamCard[];
+  opponentName: string;
   onContinue: () => void;
   finished: boolean;
 }) {
@@ -389,9 +493,10 @@ function RoundReveal({
       </p>
       <div className="grid w-full max-w-sm grid-cols-2 gap-3">
         <PlayCard label="Tu" card={mine ?? null} play={round.my_play} abilities={round.threat.abilities} winner={round.winner === "me"} />
-        <PlayCard label="Bot" card={theirs} play={theirs} abilities={round.threat.abilities} winner={round.winner === "opponent"} />
+        <PlayCard label={opponentName} card={theirs} play={theirs} abilities={round.threat.abilities} winner={round.winner === "opponent"} />
       </div>
       {round.my_play?.auto_played && <p className="text-xs text-amber-300">Tempo scaduto: il server ha scelto per te.</p>}
+      {theirs?.auto_played && <p className="text-xs text-zinc-400">{opponentName} non ha scelto in tempo.</p>}
       {round.winner === "none" && <p className="text-xs text-zinc-400">Stesso punteggio e stesso valore più alto.</p>}
       <button type="button" className="rounded-full border border-white/15 px-5 py-2 text-sm">
         {finished ? "Vedi il risultato" : "Continua"}
@@ -490,10 +595,10 @@ function MatchResult({ view }: { view: MatchView }) {
 
       <div className="flex flex-col gap-2">
         <Link
-          href={`/squadra/?difficulty=${view.bot_difficulty ?? "easy"}`}
+          href={view.mode === "bot" ? `/squadra/?difficulty=${view.bot_difficulty ?? "easy"}` : "/gioca"}
           className="rounded-full bg-amber-400 px-5 py-3 text-center font-bold text-zinc-950"
         >
-          Rivincita
+          {view.mode === "bot" ? "Rivincita" : "Gioca ancora"}
         </Link>
         <Link href="/" className="rounded-full border border-white/15 px-5 py-3 text-center text-sm font-semibold">
           Torna alla home

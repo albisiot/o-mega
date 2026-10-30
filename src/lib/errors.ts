@@ -24,6 +24,10 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   too_many_formations: "Hai raggiunto il numero massimo di formazioni.",
   invalid_formation_name: "Il nome della formazione deve avere da 1 a 30 caratteri.",
   formation_not_found: "Formazione non trovata.",
+  lobby_not_found: "Codice non valido o scaduto.",
+  cannot_play_yourself: "Non puoi sfidare te stesso.",
+  round_expired: "Tempo scaduto per questo round.",
+  opponent_still_connected: "L'avversario è ancora connesso.",
 };
 
 export function describeServerError(error: unknown): string {
