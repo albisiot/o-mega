@@ -312,6 +312,41 @@ export type Database = {
           },
         ]
       }
+      formations: {
+        Row: {
+          card_instance_ids: string[]
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_instance_ids: string[]
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_instance_ids?: string[]
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_config: {
         Row: {
           description: string
@@ -332,6 +367,171 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      match_rounds: {
+        Row: {
+          deadline_at: string
+          match_id: string
+          opened_at: string
+          resolved_at: string | null
+          round: number
+          threat_id: string
+          winner_side: string | null
+        }
+        Insert: {
+          deadline_at: string
+          match_id: string
+          opened_at?: string
+          resolved_at?: string | null
+          round: number
+          threat_id: string
+          winner_side?: string | null
+        }
+        Update: {
+          deadline_at?: string
+          match_id?: string
+          opened_at?: string
+          resolved_at?: string | null
+          round?: number
+          threat_id?: string
+          winner_side?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_rounds_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_rounds_threat_id_fkey"
+            columns: ["threat_id"]
+            isOneToOne: false
+            referencedRelation: "threat_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_teams: {
+        Row: {
+          card_instance_ids: string[] | null
+          definition_ids: string[]
+          match_id: string
+          side: string
+          user_id: string | null
+        }
+        Insert: {
+          card_instance_ids?: string[] | null
+          definition_ids: string[]
+          match_id: string
+          side: string
+          user_id?: string | null
+        }
+        Update: {
+          card_instance_ids?: string[] | null
+          definition_ids?: string[]
+          match_id?: string
+          side?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_teams_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_teams_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matches: {
+        Row: {
+          bot_difficulty: string | null
+          created_at: string
+          current_round: number
+          end_reason: string | null
+          finished_at: string | null
+          id: string
+          mode: string
+          player_a: string
+          player_b: string | null
+          result: string | null
+          reward_coins_a: number | null
+          reward_coins_b: number | null
+          rounds_won_a: number
+          rounds_won_b: number
+          status: string
+          threat_ids: string[]
+          threat_levels: number[]
+          total_score_a: number
+          total_score_b: number
+        }
+        Insert: {
+          bot_difficulty?: string | null
+          created_at?: string
+          current_round?: number
+          end_reason?: string | null
+          finished_at?: string | null
+          id?: string
+          mode: string
+          player_a: string
+          player_b?: string | null
+          result?: string | null
+          reward_coins_a?: number | null
+          reward_coins_b?: number | null
+          rounds_won_a?: number
+          rounds_won_b?: number
+          status?: string
+          threat_ids: string[]
+          threat_levels: number[]
+          total_score_a?: number
+          total_score_b?: number
+        }
+        Update: {
+          bot_difficulty?: string | null
+          created_at?: string
+          current_round?: number
+          end_reason?: string | null
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          player_a?: string
+          player_b?: string | null
+          result?: string | null
+          reward_coins_a?: number | null
+          reward_coins_b?: number | null
+          rounds_won_a?: number
+          rounds_won_b?: number
+          status?: string
+          threat_ids?: string[]
+          threat_levels?: number[]
+          total_score_a?: number
+          total_score_b?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_player_a_fkey"
+            columns: ["player_a"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_player_b_fkey"
+            columns: ["player_b"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pack_openings: {
         Row: {
@@ -399,6 +599,9 @@ export type Database = {
         Row: {
           avatar_url: string | null
           best_streak: number
+          bot_draws: number
+          bot_losses: number
+          bot_wins: number
           cards_conquered: number
           cards_lost: number
           conquest_unlocked: boolean
@@ -418,6 +621,9 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           best_streak?: number
+          bot_draws?: number
+          bot_losses?: number
+          bot_wins?: number
           cards_conquered?: number
           cards_lost?: number
           conquest_unlocked?: boolean
@@ -437,6 +643,9 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           best_streak?: number
+          bot_draws?: number
+          bot_losses?: number
+          bot_wins?: number
           cards_conquered?: number
           cards_lost?: number
           conquest_unlocked?: boolean
@@ -481,6 +690,77 @@ export type Database = {
           rank?: number
         }
         Relationships: []
+      }
+      round_plays: {
+        Row: {
+          auto_played: boolean
+          base_score: number
+          bonus: number
+          card_instance_id: string | null
+          created_at: string
+          definition_id: string
+          highest_value: number
+          match_id: string
+          round: number
+          score: number
+          side: string
+        }
+        Insert: {
+          auto_played?: boolean
+          base_score: number
+          bonus: number
+          card_instance_id?: string | null
+          created_at?: string
+          definition_id: string
+          highest_value: number
+          match_id: string
+          round: number
+          score: number
+          side: string
+        }
+        Update: {
+          auto_played?: boolean
+          base_score?: number
+          bonus?: number
+          card_instance_id?: string | null
+          created_at?: string
+          definition_id?: string
+          highest_value?: number
+          match_id?: string
+          round?: number
+          score?: number
+          side?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_plays_card_instance_id_fkey"
+            columns: ["card_instance_id"]
+            isOneToOne: false
+            referencedRelation: "card_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_plays_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_plays_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_plays_match_id_round_fkey"
+            columns: ["match_id", "round"]
+            isOneToOne: false
+            referencedRelation: "match_rounds"
+            referencedColumns: ["match_id", "round"]
+          },
+        ]
       }
       threat_definitions: {
         Row: {
@@ -552,6 +832,9 @@ export type Database = {
         Returns: {
           avatar_url: string | null
           best_streak: number
+          bot_draws: number
+          bot_losses: number
+          bot_wins: number
           cards_conquered: number
           cards_lost: number
           conquest_unlocked: boolean
@@ -576,6 +859,7 @@ export type Database = {
         }
       }
       buy_pack: { Args: never; Returns: Json }
+      card_payload: { Args: { p_definition_id: string }; Returns: Json }
       claim_daily_pack: { Args: never; Returns: Json }
       coin_balance: { Args: { p_user: string }; Returns: number }
       collection_summary: {
@@ -599,6 +883,7 @@ export type Database = {
         Args: { p_count?: number; p_definition_id: string }
         Returns: Json
       }
+      delete_formation: { Args: { p_formation_id: string }; Returns: undefined }
       draw_pack_definitions: {
         Args: { p_count: number; p_guaranteed_min_rank: number }
         Returns: string[]
@@ -614,7 +899,13 @@ export type Database = {
           rank: number
         }[]
       }
+      finish_match: {
+        Args: { p_match_id: string; p_reason: string; p_result: string }
+        Returns: undefined
+      }
+      forfeit_match: { Args: { p_match_id: string }; Returns: Json }
       game_day: { Args: { p_at?: string }; Returns: string }
+      get_active_match: { Args: never; Returns: Json }
       get_collection: {
         Args: never
         Returns: {
@@ -625,10 +916,40 @@ export type Database = {
           starter_copies: number
         }[]
       }
+      get_match_state: { Args: { p_match_id: string }; Returns: Json }
       get_pack_odds: { Args: never; Returns: Json }
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
       get_pack_status: { Args: never; Returns: Json }
       grant_starter_set: { Args: { p_user: string }; Returns: number }
+      instance_in_active_match: {
+        Args: { p_instance_id: string }
+        Returns: boolean
+      }
+      match_create_bot: {
+        Args: {
+          p_bot_definition_ids: string[]
+          p_card_instance_ids: string[]
+          p_difficulty: string
+          p_threat_ids: string[]
+          p_user: string
+        }
+        Returns: string
+      }
+      match_record_round: {
+        Args: {
+          p_match_id: string
+          p_play_a: Json
+          p_play_b: Json
+          p_result: string
+          p_round: number
+          p_winner_side: string
+        }
+        Returns: undefined
+      }
+      match_state_payload: {
+        Args: { p_match_id: string; p_side: string }
+        Returns: Json
+      }
       next_reset_at: { Args: { p_at?: string }; Returns: string }
       open_pack: {
         Args: { p_pack_type: string; p_user: string }
@@ -639,11 +960,35 @@ export type Database = {
         Args: { p_params: Json; p_power_code: string }
         Returns: string
       }
+      save_formation: {
+        Args: {
+          p_card_instance_ids: string[]
+          p_formation_id: string
+          p_name: string
+        }
+        Returns: {
+          card_instance_ids: string[]
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "formations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_username: {
         Args: { p_username: string }
         Returns: {
           avatar_url: string | null
           best_streak: number
+          bot_draws: number
+          bot_losses: number
+          bot_wins: number
           cards_conquered: number
           cards_lost: number
           conquest_unlocked: boolean
@@ -668,6 +1013,10 @@ export type Database = {
         }
       }
       username_base: { Args: { p_source: string }; Returns: string }
+      validate_team: {
+        Args: { p_instance_ids: string[]; p_user: string }
+        Returns: string[]
+      }
     }
     Enums: {
       [_ in never]: never
