@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { useAuth } from "@/components/auth-provider";
+import { useRequireSignedIn } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PackReveal } from "@/components/pack-reveal";
 import { describeServerError } from "@/lib/errors";
@@ -20,15 +20,10 @@ export default function PackPage() {
 }
 
 function PackPageContent() {
-  const router = useRouter();
   const id = useSearchParams().get("id");
-  const { status, session } = useAuth();
+  const { session } = useRequireSignedIn();
   const [opening, setOpening] = useState<PackOpening | null>(() => (id ? cachedPackOpening(id) : null));
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (status === "ready" && !session) router.replace("/");
-  }, [status, session, router]);
 
   useEffect(() => {
     if (!id || opening || !session) return;

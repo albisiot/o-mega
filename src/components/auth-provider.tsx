@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
 import { withBasePath } from "@/lib/base-path";
 import { describeServerError } from "@/lib/errors";
 import { bootstrapPlayer, type Profile } from "@/lib/player";
@@ -88,4 +89,15 @@ export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used inside <AuthProvider>");
   return context;
+}
+
+/** For pages that need a player: sends signed-out visitors to the home. */
+export function useRequireSignedIn(): AuthContextValue {
+  const router = useRouter();
+  const auth = useAuth();
+  const { status, session } = auth;
+  useEffect(() => {
+    if (status === "ready" && !session) router.replace("/");
+  }, [status, session, router]);
+  return auth;
 }

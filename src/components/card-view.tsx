@@ -107,7 +107,7 @@ function AbilityGrid({ stats, abilities }: { stats: Record<string, number>; abil
   );
 }
 
-function Silhouette({ color, className }: { color: string; className: string }) {
+export function Silhouette({ color, className }: { color: string; className: string }) {
   return (
     <svg viewBox="0 0 100 100" className={className} fill={color} fillOpacity={0.55}>
       <circle cx="50" cy="30" r="16" />

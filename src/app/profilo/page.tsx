@@ -1,48 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useAuth } from "@/components/auth-provider";
+import { useState } from "react";
+import { useAuth, useRequireSignedIn } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayerAvatar } from "@/components/player-avatar";
-import { FACTION_LABELS } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
-import {
-  fetchOwnedCards,
-  updateUsername,
-  type OwnedCard,
-  type Profile,
-} from "@/lib/player";
+import { updateUsername, type Profile } from "@/lib/player";
 import { isValidUsername } from "@/lib/username";
 
 export default function ProfilePage() {
-  const router = useRouter();
-  const { status, session, profile } = useAuth();
-
-  useEffect(() => {
-    if (status === "ready" && !session) router.replace("/");
-  }, [status, session, router]);
-
+  const { profile } = useRequireSignedIn();
   if (!profile) return <LoadingScreen />;
   return <ProfileView profile={profile} />;
 }
 
 function ProfileView({ profile }: { profile: Profile }) {
   const { signOut } = useAuth();
-  const [cards, setCards] = useState<OwnedCard[] | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchOwnedCards()
-      .then((owned) => {
-        if (!cancelled) setCards(owned);
-      })
-      .catch((error: unknown) => console.error("Owned cards failed", error));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const stats = [
     { label: "Partite", value: profile.matches_played },
@@ -87,37 +61,15 @@ function ProfileView({ profile }: { profile: Profile }) {
           ))}
         </section>
 
-        <section className="flex flex-col gap-2">
-          <h2 className="text-xs uppercase tracking-[0.2em] text-zinc-500">
-            Le tue carte {cards && `(${cards.length})`}
-          </h2>
-          {cards === null ? (
-            <p className="text-sm text-zinc-500">Caricamento…</p>
-          ) : (
-            <ul className="flex flex-col divide-y divide-white/5 rounded-2xl border border-white/10 bg-white/5">
-              {cards.map((card) => (
-                <li key={card.id} className="flex items-center justify-between px-4 py-2.5">
-                  <div>
-                    <p className="font-medium">{card.definition.name}</p>
-                    <p className="text-xs text-zinc-400">
-                      {FACTION_LABELS[card.definition.faction] ?? card.definition.faction}
-                      {card.is_starter && " · Starter, mai conquistabile"}
-                    </p>
-                  </div>
-                  <span
-                    className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                    style={{
-                      color: card.definition.rarity.color,
-                      backgroundColor: `${card.definition.rarity.color}22`,
-                    }}
-                  >
-                    {card.definition.rarity.name}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <Link
+          href="/collezione"
+          className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+        >
+          <span className="font-semibold">Vai alla collezione</span>
+          <span className="text-zinc-500" aria-hidden>
+            →
+          </span>
+        </Link>
 
         <button
           type="button"

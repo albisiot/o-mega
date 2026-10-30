@@ -7,6 +7,8 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   daily_pack_already_claimed: "Hai già aperto il pacchetto di oggi.",
   insufficient_coins: "Non hai abbastanza monete.",
   pack_not_found: "Pacchetto non trovato.",
+  nothing_to_convert: "Non ci sono doppioni da convertire.",
+  invalid_count: "Numero di copie non valido.",
 };
 
 export function describeServerError(error: unknown): string {

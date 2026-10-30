@@ -122,6 +122,13 @@ export type Database = {
             foreignKeyName: "card_definitions_rarity_code_fkey"
             columns: ["rarity_code"]
             isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["rarity_code"]
+          },
+          {
+            foreignKeyName: "card_definitions_rarity_code_fkey"
+            columns: ["rarity_code"]
+            isOneToOne: false
             referencedRelation: "rarity_definitions"
             referencedColumns: ["code"]
           },
@@ -131,31 +138,41 @@ export type Database = {
         Row: {
           acquired_at: string
           acquired_via: string
+          converted_at: string | null
           definition_id: string
           id: string
           is_starter: boolean
           locked_until: string | null
-          owner_id: string
+          owner_id: string | null
         }
         Insert: {
           acquired_at?: string
           acquired_via: string
+          converted_at?: string | null
           definition_id: string
           id?: string
           is_starter?: boolean
           locked_until?: string | null
-          owner_id: string
+          owner_id?: string | null
         }
         Update: {
           acquired_at?: string
           acquired_via?: string
+          converted_at?: string | null
           definition_id?: string
           id?: string
           is_starter?: boolean
           locked_until?: string | null
-          owner_id?: string
+          owner_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "card_instances_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "card_instances_definition_id_fkey"
             columns: ["definition_id"]
@@ -443,6 +460,7 @@ export type Database = {
           code: string
           color: string
           drop_weight: number
+          duplicate_coin_value: number
           name: string
           rank: number
         }
@@ -450,6 +468,7 @@ export type Database = {
           code: string
           color: string
           drop_weight: number
+          duplicate_coin_value?: number
           name: string
           rank: number
         }
@@ -457,6 +476,7 @@ export type Database = {
           code?: string
           color?: string
           drop_weight?: number
+          duplicate_coin_value?: number
           name?: string
           rank?: number
         }
@@ -506,7 +526,25 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      card_catalog: {
+        Row: {
+          art_url: string | null
+          code: string | null
+          duplicate_coin_value: number | null
+          faction: string | null
+          flavor: string | null
+          id: string | null
+          name: string | null
+          power_name: string | null
+          power_text: string | null
+          rarity_code: string | null
+          rarity_color: string | null
+          rarity_name: string | null
+          rarity_rank: number | null
+          stats: Json | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       bootstrap_player: {
@@ -540,14 +578,43 @@ export type Database = {
       buy_pack: { Args: never; Returns: Json }
       claim_daily_pack: { Args: never; Returns: Json }
       coin_balance: { Args: { p_user: string }; Returns: number }
+      collection_summary: {
+        Args: { p_user: string }
+        Returns: {
+          convertible_copies: number
+          copies: number
+          definition_id: string
+          locked_copies: number
+          starter_copies: number
+        }[]
+      }
       config_int: { Args: { p_key: string }; Returns: number }
       config_text: { Args: { p_key: string }; Returns: string }
+      convert_all_duplicates: { Args: never; Returns: Json }
+      convert_definition_duplicates: {
+        Args: { p_count: number; p_definition_id: string; p_user: string }
+        Returns: Record<string, unknown>
+      }
+      convert_duplicates: {
+        Args: { p_count?: number; p_definition_id: string }
+        Returns: Json
+      }
       draw_pack_definitions: {
         Args: { p_count: number; p_guaranteed_min_rank: number }
         Returns: string[]
       }
       draw_rarity_rank: { Args: { p_min_rank: number }; Returns: number }
       game_day: { Args: { p_at?: string }; Returns: string }
+      get_collection: {
+        Args: never
+        Returns: {
+          convertible_copies: number
+          copies: number
+          definition_id: string
+          locked_copies: number
+          starter_copies: number
+        }[]
+      }
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
       get_pack_status: { Args: never; Returns: Json }
       grant_starter_set: { Args: { p_user: string }; Returns: number }
