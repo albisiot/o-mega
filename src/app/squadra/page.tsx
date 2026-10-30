@@ -42,6 +42,8 @@ type Loaded = {
   owned: Map<string, string>;
   /** Conquest only: characters whose fielded copy can be taken. */
   conquerable: Set<string> | null;
+  /** Conquest only: pack copies of characters also owned as starter. */
+  atRiskCopies: Map<string, string> | null;
   instanceDefinitions: Map<string, string>;
   formations: Formation[];
 };
@@ -87,10 +89,10 @@ function TeamPageContent() {
     let cancelled = false;
     const copies = isConquest
       ? fetchConquestInstances()
-      : fetchOwnedInstances().then((owned) => ({ owned, conquerable: null }));
+      : fetchOwnedInstances().then((owned) => ({ owned, conquerable: null, atRiskCopies: null }));
     Promise.all([fetchCatalog(), copies, fetchInstanceDefinitions(), fetchFormations()])
-      .then(([catalog, { owned, conquerable }, instanceDefinitions, formations]) => {
-        if (!cancelled) setLoaded({ catalog, owned, conquerable, instanceDefinitions, formations });
+      .then(([catalog, { owned, conquerable, atRiskCopies }, instanceDefinitions, formations]) => {
+        if (!cancelled) setLoaded({ catalog, owned, conquerable, atRiskCopies, instanceDefinitions, formations });
       })
       .catch((cause: unknown) => {
         if (!cancelled) setError(describeServerError(cause));
@@ -167,6 +169,7 @@ function TeamPageContent() {
             catalog={loaded.catalog}
             owned={loaded.owned}
             conquerable={loaded.conquerable}
+            atRiskCopies={loaded.atRiskCopies}
             instanceDefinitions={loaded.instanceDefinitions}
             formations={loaded.formations}
             onFormationsChanged={(formations) => setLoaded({ ...loaded, formations })}

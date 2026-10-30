@@ -23,6 +23,8 @@ type TeamPickerProps = {
   owned: Map<string, string>;
   /** Conquest only: characters whose fielded copy can be taken (the rest is protected). */
   conquerable?: Set<string> | null;
+  /** Conquest only: for characters also owned as starter, the copy that can be put at stake. */
+  atRiskCopies?: Map<string, string> | null;
   /** Card instance id → definition id (to load formations). */
   instanceDefinitions: Map<string, string>;
   formations: Formation[];
@@ -34,7 +36,7 @@ type TeamPickerProps = {
 
 /** Pick 5 different characters among the owned ones; load or save formations. */
 export function TeamPicker(props: TeamPickerProps) {
-  const { catalog, owned, conquerable, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart } = props;
+  const { catalog, owned, conquerable, atRiskCopies, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart } = props;
   const size = balance.match.teamSize;
   const [selected, setSelected] = useState<string[]>(() => loadLastTeam(owned).slice(0, size));
   const [naming, setNaming] = useState(false);
@@ -49,11 +51,16 @@ export function TeamPicker(props: TeamPickerProps) {
     [catalog, owned],
   );
   const byId = useMemo(() => new Map(catalog.map((card) => [card.id, card])), [catalog]);
-  const instanceIds = selected.map((definitionId) => owned.get(definitionId)!);
+  // Characters for which the player fields the pack copy instead of the protected starter one.
+  const [staked, setStaked] = useState<Set<string>>(new Set());
+  const instanceIds = selected.map((definitionId) =>
+    staked.has(definitionId) ? atRiskCopies!.get(definitionId)! : owned.get(definitionId)!,
+  );
+  const isAtRisk = (definitionId: string) => Boolean(conquerable?.has(definitionId)) || staked.has(definitionId);
 
   // Conquest: what is at risk, and how rare a card this team can take.
   const minConquerable = balance.conquest.minConquerableCards;
-  const atRisk = conquerable ? selected.filter((id) => conquerable.has(id)).length : 0;
+  const atRisk = conquerable ? selected.filter(isAtRisk).length : 0;
   const notEnoughAtRisk = Boolean(conquerable) && selected.length === size && atRisk < minConquerable;
   const limit = selected
     .map((id) => byId.get(id)?.rarity)
@@ -78,6 +85,13 @@ export function TeamPicker(props: TeamPickerProps) {
       .map((id) => instanceDefinitions.get(id))
       .filter((id): id is string => Boolean(id && owned.has(id)));
     setSelected([...new Set(definitions)].slice(0, size));
+    setStaked(
+      new Set(
+        formation.card_instance_ids
+          .map((id) => instanceDefinitions.get(id))
+          .filter((id): id is string => Boolean(id && atRiskCopies?.get(id) && formation.card_instance_ids.includes(atRiskCopies.get(id)!))),
+      ),
+    );
     setMessage(
       definitions.length < size
         ? { text: "Alcune carte di questa formazione non sono più nella collezione.", isError: true }
@@ -245,14 +259,29 @@ export function TeamPicker(props: TeamPickerProps) {
                   {card.power && <span className="text-zinc-400"> · {card.power.name}</span>}
                 </span>
                 {conquerable && (
-                  <span className={`text-[10px] font-semibold ${conquerable.has(card.id) ? "text-red-300" : "text-emerald-300"}`}>
-                    {conquerable.has(card.id) ? "In palio" : "Protetta"}
+                  <span className={`text-[10px] font-semibold ${isAtRisk(card.id) ? "text-red-300" : "text-emerald-300"}`}>
+                    {isAtRisk(card.id) ? "In palio" : "Protetta"}
                   </span>
                 )}
                 <span className="text-[11px] text-zinc-300">
                   {top.map(([code, value]) => `${code} ${value}`).join(" · ")}
                 </span>
               </button>
+              {atRiskCopies?.has(card.id) && position >= 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setStaked((current) => {
+                      const next = new Set(current);
+                      if (!next.delete(card.id)) next.add(card.id);
+                      return next;
+                    })
+                  }
+                  className="mt-1 w-full rounded-lg border border-white/15 px-2 py-1 text-[11px] font-semibold text-zinc-200"
+                >
+                  {staked.has(card.id) ? "Usa la copia starter" : "Metti in palio il doppione"}
+                </button>
+              )}
             </li>
           );
         })}

@@ -293,9 +293,15 @@ export async function fetchOwnedInstances(): Promise<Map<string, string>> {
 /**
  * The copy to field in Conquest for each owned character: the starter one when
  * there is one (it is protected), otherwise the oldest. Locked copies cannot
- * be fielded. `conquerable` lists the characters whose copy is at risk.
+ * be fielded. `conquerable` lists the characters whose copy is at risk;
+ * `atRiskCopies` holds, for characters with both, the copy the player may
+ * choose to put at stake instead of the starter one.
  */
-export async function fetchConquestInstances(): Promise<{ owned: Map<string, string>; conquerable: Set<string> }> {
+export async function fetchConquestInstances(): Promise<{
+  owned: Map<string, string>;
+  conquerable: Set<string>;
+  atRiskCopies: Map<string, string>;
+}> {
   const { data, error } = await getSupabase()
     .from("card_instances")
     .select("id, definition_id, is_starter, locked_until, acquired_at")
@@ -303,17 +309,27 @@ export async function fetchConquestInstances(): Promise<{ owned: Map<string, str
   if (error) throw error;
   const owned = new Map<string, string>();
   const conquerable = new Set<string>();
+  const oldestFree = new Map<string, string>();
+  const starters = new Map<string, string>();
   const now = Date.now();
   for (const row of data) {
     if (row.is_starter) {
-      owned.set(row.definition_id, row.id);
-      conquerable.delete(row.definition_id);
-    } else if (!owned.has(row.definition_id) && !(row.locked_until && Date.parse(row.locked_until) > now)) {
-      owned.set(row.definition_id, row.id);
-      conquerable.add(row.definition_id);
+      starters.set(row.definition_id, row.id);
+    } else if (!oldestFree.has(row.definition_id) && !(row.locked_until && Date.parse(row.locked_until) > now)) {
+      oldestFree.set(row.definition_id, row.id);
     }
   }
-  return { owned, conquerable };
+  const atRiskCopies = new Map<string, string>();
+  for (const [definitionId, id] of oldestFree) {
+    if (starters.has(definitionId)) {
+      atRiskCopies.set(definitionId, id);
+    } else {
+      owned.set(definitionId, id);
+      conquerable.add(definitionId);
+    }
+  }
+  for (const [definitionId, id] of starters) owned.set(definitionId, id);
+  return { owned, conquerable, atRiskCopies };
 }
 
 /** Instance id → definition id for the player's cards. */
