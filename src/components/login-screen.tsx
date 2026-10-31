@@ -26,6 +26,7 @@ export function LoginScreen() {
           O-MEGA
         </h1>
         <p className="mt-2 max-w-xs text-base font-semibold">Aprire, collezionare, giocare, conquistare.</p>
+        <p className="max-w-xs text-sm font-bold text-comic-cyan">Nuova Megara ha bisogno di un Reggente.</p>
       </div>
 
       <PackArt

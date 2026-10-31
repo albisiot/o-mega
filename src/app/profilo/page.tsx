@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useAuth, useRequireSignedIn } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { WorldGuide } from "@/components/world-intro";
 import { PATCH_NOTES } from "@/config/patch-notes";
 import { describeServerError } from "@/lib/errors";
 import { fetchConquestHistory, type ConquestHistoryEntry } from "@/lib/match";
@@ -130,6 +131,19 @@ function ProfileView({ profile }: { profile: Profile }) {
             →
           </span>
         </Link>
+
+        <details className="group flex flex-col gap-2">
+          <summary className="row-link cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+            <span className="font-display text-xl uppercase">Il mondo</span>
+            <span className="font-display text-2xl text-comic-yellow group-open:hidden" aria-hidden>
+              →
+            </span>
+            <span className="hidden font-display text-2xl text-comic-yellow group-open:inline" aria-hidden>
+              ↓
+            </span>
+          </summary>
+          <WorldGuide />
+        </details>
 
         <details className="group flex flex-col gap-2">
           <summary className="row-link cursor-pointer list-none [&::-webkit-details-marker]:hidden">

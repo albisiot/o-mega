@@ -1,6 +1,6 @@
 # SPEC — O-MEGA
 
-*Gioco di carte collezionabili multiplayer. Specifica di progetto v0.2 — punto di partenza per lo sviluppo. Nome dell'universo ancora da definire.*
+*Gioco di carte collezionabili multiplayer. Specifica di progetto v0.2 — punto di partenza per lo sviluppo. Il mondo del gioco è Nuova Megara: vedi `docs/WORLD.md`.*
 
 ---
 
@@ -18,13 +18,13 @@ Il valore di ogni carta nasce dal legame tra collezione e competizione: ogni car
 - La rarità non garantisce la vittoria: chi ha giocato meglio vince.
 - Perdere una carta deve sembrare un rischio accettato, mai un'ingiustizia.
 
-## 2. Universo (provvisorio)
+## 2. Universo
 
-Un **nuovo mondo di supereroi e supercattivi**, ancora da definire (nome, ambientazione, fazioni, personaggi).
+Un **nuovo mondo di supereroi e supercattivi**: la città di **Nuova Megara**, descritta in `docs/WORLD.md` (ambientazione, fazioni, personaggi).
 
-Per l'MVP servono dati segnaposto:
-- circa **60 carte personaggio** (eroi e cattivi, tutti giocabili dal giocatore);
-- circa **60 carte Minaccia** (gli scenari e nemici da sconfiggere durante la partita, gestiti dal server e non collezionabili), circa 10 per ciascun livello da 1 a 6.
+Il catalogo dell'MVP comprende:
+- circa **60 carte personaggio** (eroi e cattivi, tutti giocabili dal giocatore), con nome, testo e immagine definitivi;
+- circa **60 carte Minaccia** (gli scenari e nemici da sconfiggere durante la partita, gestiti dal server e non collezionabili), circa 10 per ciascun livello da 1 a 6, con testi ancora segnaposto.
 
 Le carte personaggio appartengono a una **fazione** (es. Eroi / Cattivi / Neutrali, da definire). Nell'MVP la fazione è solo un'etichetta; gli eventuali effetti verranno decisi più avanti.
 
@@ -359,7 +359,7 @@ Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy
 
 | # | Decisione | Default da usare |
 |---|---|---|
-| 1 | Nome dell'universo (mondo/città) | Segnaposto "Universo O-MEGA" |
+| 1 | Nome dell'universo (mondo/città) | Deciso: Nuova Megara (`docs/WORLD.md`) |
 | 2 | Composizione dei livelli delle Minacce in una partita | Regola di §5.4 |
 | 3 | Valori di economia e limiti | Tabelle di §6.4 e §8 (provvisorie) |
 | 4 | Effetti delle fazioni | Nessuno nell'MVP |
