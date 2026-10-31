@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { CardArt, Silhouette } from "@/components/card-view";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import {
@@ -18,6 +18,12 @@ type Filters = { ownership: Ownership; rarity: number | null; faction: string | 
 
 const DEFAULT_FILTERS: Filters = { ownership: "all", rarity: null, faction: null, sort: "number" };
 const FILTERS_KEY = "o-mega.album-filters";
+const SORT_OPTIONS = [
+  { value: "number", label: "Numero" },
+  { value: "rarity", label: "Rarità" },
+  { value: "name", label: "Nome" },
+  { value: "copies", label: "Copie" },
+];
 
 function loadFilters(): Filters {
   try {
@@ -154,26 +160,7 @@ export function Album({
               </Chip>
             ))}
           </ChipRow>
-          <label className="flex items-center gap-2 text-sm font-semibold text-muted">
-            Ordina per
-            <select
-              value={filters.sort}
-              onChange={(event) => update({ sort: event.target.value })}
-              className="input-comic flex-1 text-foreground"
-            >
-              <option value="number">Numero</option>
-              <option value="rarity">Rarità</option>
-              <option value="name">Nome</option>
-              <option value="copies">Copie</option>
-              <optgroup label="Abilità (dalla più alta)">
-                {abilities.map((ability) => (
-                  <option key={ability.code} value={`ability:${ability.code}`}>
-                    {ability.name}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-          </label>
+          <SortPicker value={filters.sort} abilities={abilities} onChange={(sort) => update({ sort })} />
         </section>
 
         {visible.length === 0 ? (
@@ -188,6 +175,74 @@ export function Album({
           </ul>
         )}
       </main>
+    </div>
+  );
+}
+
+/** A bottom sheet in the game's style: a native select opens the system's menu. */
+function SortPicker({
+  value,
+  abilities,
+  onChange,
+}: {
+  value: string;
+  abilities: AbilityInfo[];
+  onChange: (sort: string) => void;
+}) {
+  const sheet = useRef<HTMLDialogElement>(null);
+  const abilityOptions = abilities.map((ability) => ({ value: `ability:${ability.code}`, label: ability.name }));
+  const current = [...SORT_OPTIONS, ...abilityOptions].find((option) => option.value === value) ?? SORT_OPTIONS[0];
+
+  function choose(sort: string) {
+    onChange(sort);
+    sheet.current?.close();
+  }
+
+  const options = (list: { value: string; label: string }[]) => (
+    <div className="flex flex-wrap gap-1.5">
+      {list.map((option) => (
+        <Chip key={option.value} active={option.value === current.value} onClick={() => choose(option.value)}>
+          {option.label}
+        </Chip>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="flex items-center gap-2 text-sm font-semibold text-muted">
+      Ordina per
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={() => sheet.current?.showModal()}
+        className="input-comic flex min-w-0 flex-1 items-center justify-between gap-2 text-left text-foreground"
+      >
+        <span className="truncate">{current.label}</span>
+        <span aria-hidden className="text-comic-yellow">
+          ▾
+        </span>
+      </button>
+      <dialog
+        ref={sheet}
+        aria-label="Ordina per"
+        // The sheet's content fills it: a click on the dialog itself is on the backdrop.
+        onClick={(event) => {
+          if (event.target === sheet.current) sheet.current.close();
+        }}
+        className="m-0 mt-auto max-h-[80svh] w-full max-w-none border-0 border-t-[3px] border-foreground bg-panel p-0 text-foreground backdrop:bg-black/70"
+      >
+        <div className="flex flex-col gap-3 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-display text-2xl uppercase text-comic-yellow">Ordina per</h2>
+            <button type="button" onClick={() => sheet.current?.close()} className="btn btn-ghost">
+              Chiudi
+            </button>
+          </div>
+          {options(SORT_OPTIONS)}
+          <h3 className="section-title">Abilità (dalla più alta)</h3>
+          {options(abilityOptions)}
+        </div>
+      </dialog>
     </div>
   );
 }
@@ -269,14 +324,19 @@ function ConvertAll({
         <span className="font-extrabold text-comic-yellow">+{convertible.coins} monete</span>
       </p>
       {confirming ? (
-        <div className="flex gap-2">
-          <button type="button" onClick={convert} disabled={busy} className="btn btn-primary flex-1 disabled:opacity-60">
-            {busy ? "Conversione…" : "Conferma"}
-          </button>
-          <button type="button" onClick={() => setConfirming(false)} disabled={busy} className="btn btn-ghost">
-            Annulla
-          </button>
-        </div>
+        <>
+          <p className="text-sm font-medium text-muted">
+            Tieni sempre almeno una copia di ogni personaggio. La conversione non si può annullare.
+          </p>
+          <div className="flex gap-2">
+            <button type="button" onClick={convert} disabled={busy} className="btn btn-primary flex-1 disabled:opacity-60">
+              {busy ? "Conversione…" : "Conferma"}
+            </button>
+            <button type="button" onClick={() => setConfirming(false)} disabled={busy} className="btn btn-ghost">
+              Annulla
+            </button>
+          </div>
+        </>
       ) : (
         <button
           type="button"
@@ -289,12 +349,7 @@ function ConvertAll({
           Converti tutti i doppioni
         </button>
       )}
-      {confirming && (
-        <p className="text-sm font-medium text-muted">
-          Tieni sempre almeno una copia di ogni personaggio. La conversione non si può annullare.
-        </p>
-      )}
-      {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
+      {error &&<p className="text-sm font-semibold text-comic-magenta">{error}</p>}
     </div>
   );
 }

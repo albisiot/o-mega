@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { LoadingScreen } from "@/components/loading-screen";
 import { getSupabase } from "@/lib/supabase/client";
 
 // Google redirects here with ?code=...; the Supabase client exchanges it for a
@@ -29,21 +30,17 @@ export default function AuthCallbackPage() {
       });
   }, [router]);
 
+  if (!failed) return <LoadingScreen label="Accesso in corso…" />;
+
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-      {failed ? (
-        <>
-          <p className="font-display text-3xl uppercase text-comic-magenta">Accesso non riuscito</p>
-          <p className="max-w-xs text-sm font-medium text-muted">
-            Non è stato possibile completare l&apos;accesso con Google. Riprova.
-          </p>
-          <Link href="/" className="btn btn-primary">
-            Torna all&apos;inizio
-          </Link>
-        </>
-      ) : (
-        <p className="text-sm font-semibold text-muted">Accesso in corso…</p>
-      )}
+      <p className="font-display text-3xl uppercase text-comic-magenta">Accesso non riuscito</p>
+      <p className="max-w-xs text-sm font-medium text-muted">
+        Non è stato possibile completare l&apos;accesso con Google. Riprova.
+      </p>
+      <Link href="/" className="btn btn-primary">
+        Torna all&apos;inizio
+      </Link>
     </main>
   );
 }

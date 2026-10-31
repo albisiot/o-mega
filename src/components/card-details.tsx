@@ -77,7 +77,7 @@ export function CopiesPanel({
             )}
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 bg-panel p-3">
             <p className="text-sm font-semibold">
               Convertire {confirm === 1 ? "1 copia" : `${confirm} copie`} in {value * confirm} monete? Non si può
               annullare.

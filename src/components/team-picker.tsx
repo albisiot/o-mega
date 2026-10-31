@@ -197,7 +197,7 @@ export function TeamPicker(props: TeamPickerProps) {
             <button type="button" onClick={save} disabled={!name.trim()} className="btn btn-outline">
               Salva
             </button>
-            <button type="button" onClick={() => setNaming(false)} className="min-h-11 px-1 text-sm font-semibold text-muted">
+            <button type="button" onClick={() => setNaming(false)} className="btn btn-ghost px-3">
               Annulla
             </button>
           </div>
