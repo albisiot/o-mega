@@ -256,11 +256,12 @@ begin
   assert (select resolved_at is not null and auto_assigned and chosen_instance_id = any (eligible_instance_ids)
           from public.conquest_claims where match_id = v_match), 'expired pick not assigned';
 
-  -- Daily limit: 3 cards lost blocks Conquest until the reset. A fresh team,
-  -- since the assigned card now belongs to A.
+  -- Daily limit: reaching the configured losses blocks Conquest until the reset.
+  -- C already lost the assigned card. A fresh team, since that card now belongs to A.
   v_team_c := array[pg_temp.give(v_c, 'P037'), pg_temp.give(v_c, 'P038'), pg_temp.give(v_c, 'P039')] || pg_temp.starters(v_c, 2);
   insert into public.card_transfers (instance_id, from_user, to_user, reason)
-  select id, v_c, v_a, 'conquest' from public.card_instances where owner_id = v_c and is_starter limit 2;
+  select v_team_c[1], v_c, v_a, 'conquest'
+  from generate_series(2, public.config_int('conquest.max_cards_lost_per_day'));
   begin
     perform public.validate_conquest_team(v_c, v_team_c);
     raise exception 'ASSERT: entered Conquest over the daily limit';

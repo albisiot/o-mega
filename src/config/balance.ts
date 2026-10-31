@@ -55,7 +55,7 @@ export const balance = {
     /** Completed matches (abandoned ones do not count). */
     unlockAfterMatches: 5,
     unlockAtLevel: 3,
-    maxCardsLostPerDay: 3,
+    maxCardsLostPerDay: 10,
     samePairCooldownHours: 24,
     conqueredCardLockHours: 48,
   },

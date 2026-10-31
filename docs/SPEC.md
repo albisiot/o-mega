@@ -218,7 +218,7 @@ Se il perdente non ha carte idonee (tutte sopra il limite o protette), il vincit
 |---|---|
 | **Starter set** vincolato all'account, mai conquistabile | 10 carte al primo accesso |
 | Sblocco della modalità Conquista | dopo 5 partite o al livello 3 |
-| Massimo carte perse in Conquista al giorno | 3 |
+| Massimo carte perse in Conquista al giorno | 10 |
 | Partite Conquista tra la stessa coppia di giocatori | 1 ogni 24 ore |
 | Blocco delle carte appena conquistate (non schierabili in Conquista né scambiabili) | 48 ore |
 | Matchmaking Conquista | per livello e per valore della squadra schierata |

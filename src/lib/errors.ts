@@ -29,7 +29,7 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   round_expired: "Tempo scaduto per questo round.",
   opponent_still_connected: "L'avversario è ancora connesso.",
   conquest_locked: "Completa 5 partite o raggiungi il livello 3 per sbloccare la Conquista.",
-  daily_loss_limit: "Hai già perso 3 carte oggi: la Conquista torna dopo la mezzanotte.",
+  daily_loss_limit: "Hai già perso 10 carte oggi: la Conquista torna dopo la mezzanotte.",
   not_enough_conquerable: "In Conquista servono almeno 3 carte non starter.",
   card_locked: "Una carta appena conquistata non si può schierare in Conquista per 48 ore.",
   card_at_stake: "Una delle carte è in palio in una scelta aperta.",
