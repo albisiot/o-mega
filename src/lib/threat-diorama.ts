@@ -26,6 +26,7 @@ import type { ThreatActor, ThreatScene } from "@/lib/threat-scene";
 const POP_SECONDS = 0.45;
 const REST_YAW = -0.35;
 const FRAME_MS = 1000 / 30;
+const FRAME_MARGIN_MS = 4;
 const SLOW_FRAME_MS = 66;
 const SLOW_FRAMES_LIMIT = 20;
 
@@ -295,6 +296,7 @@ export function mountThreatDiorama(
   let start = 0;
   let previous = 0;
   let slowFrames = 0;
+  const popMs = (Math.max(...parts.map((part) => part.delay)) + POP_SECONDS) * 1000;
 
   function draw(now: number, settled: boolean) {
     const elapsed = (now - start) / 1000;
@@ -316,8 +318,11 @@ export function mountThreatDiorama(
 
   function loop(now: number) {
     frame = requestAnimationFrame(loop);
-    if (now - previous < FRAME_MS) return;
     const delta = now - previous;
+    // Full display rate while something moves on purpose, half rate at rest.
+    // The margin stops a 60 Hz display from skipping frames irregularly.
+    const atRest = now - start > popMs && dragX === null;
+    if (atRest && delta < FRAME_MS - FRAME_MARGIN_MS) return;
     previous = now;
     // Too slow for this phone: stop on the finished scene, keep the battery.
     // Long gaps are a hidden tab, not a slow device.
