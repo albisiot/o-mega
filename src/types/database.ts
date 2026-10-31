@@ -440,6 +440,45 @@ export type Database = {
         }
         Relationships: []
       }
+      level_rewards: {
+        Row: {
+          coins: number
+          created_at: string
+          level: number
+          match_id: string | null
+          user_id: string
+        }
+        Insert: {
+          coins: number
+          created_at?: string
+          level: number
+          match_id?: string | null
+          user_id: string
+        }
+        Update: {
+          coins?: number
+          created_at?: string
+          level?: number
+          match_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "level_rewards_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "level_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_lobbies: {
         Row: {
           card_instance_ids: string[]
@@ -1138,6 +1177,10 @@ export type Database = {
       get_pack_odds: { Args: never; Returns: Json }
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
       get_pack_status: { Args: never; Returns: Json }
+      grant_level_rewards: {
+        Args: { p_match_id: string; p_user: string }
+        Returns: undefined
+      }
       grant_starter_set: { Args: { p_user: string }; Returns: number }
       has_active_match: { Args: { p_user: string }; Returns: boolean }
       instance_in_active_match: {
