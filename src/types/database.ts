@@ -81,6 +81,7 @@ export type Database = {
           power_params: Json
           rarity_code: string
           stats: Json
+          unlock_level: number | null
         }
         Insert: {
           art_url?: string | null
@@ -95,6 +96,7 @@ export type Database = {
           power_params?: Json
           rarity_code: string
           stats: Json
+          unlock_level?: number | null
         }
         Update: {
           art_url?: string | null
@@ -109,6 +111,7 @@ export type Database = {
           power_params?: Json
           rarity_code?: string
           stats?: Json
+          unlock_level?: number | null
         }
         Relationships: [
           {
@@ -472,6 +475,66 @@ export type Database = {
           },
           {
             foreignKeyName: "level_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      level_unlocks: {
+        Row: {
+          created_at: string
+          definition_id: string
+          instance_id: string
+          match_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          definition_id: string
+          instance_id: string
+          match_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          definition_id?: string
+          instance_id?: string
+          match_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "level_unlocks_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "level_unlocks_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "level_unlocks_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "card_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "level_unlocks_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "level_unlocks_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -1179,6 +1242,10 @@ export type Database = {
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
       get_pack_status: { Args: never; Returns: Json }
       grant_level_rewards: {
+        Args: { p_match_id: string; p_user: string }
+        Returns: undefined
+      }
+      grant_level_unlocks: {
         Args: { p_match_id: string; p_user: string }
         Returns: undefined
       }
