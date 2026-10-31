@@ -22,10 +22,17 @@ function markIntroSeen() {
   }
 }
 
+/** Fills the browser cache from the login screen, before the intro can open. */
+export function preloadWorldIntro() {
+  if (hasSeenIntro()) return;
+  for (const panel of WORLD_INTRO) new Image().src = withBasePath(panel.image);
+}
+
 /** Full-screen story shown once per device, above the home screen. */
 export function WorldIntro() {
   const [open, setOpen] = useState(() => !hasSeenIntro());
   const [step, setStep] = useState(0);
+  const [loaded, setLoaded] = useState<number[]>([]);
 
   if (!open) return null;
 
@@ -40,7 +47,18 @@ export function WorldIntro() {
   return (
     <div role="dialog" aria-modal="true" aria-label={panel.title} className="fixed inset-0 z-30 flex flex-col bg-black">
       <div className="relative min-h-0 flex-1">
-        <img src={withBasePath(panel.image)} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
+        {/* All panels load up front; each fades in over the previous one, which stays until it is covered. */}
+        {WORLD_INTRO.map((item, index) => (
+          <img
+            key={item.image}
+            src={withBasePath(item.image)}
+            alt=""
+            onLoad={() => setLoaded((current) => [...current, index])}
+            className={`absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-500 ${
+              index <= step && loaded.includes(index) ? "opacity-100" : "opacity-0"
+            }`}
+          />
+        ))}
         <button
           type="button"
           onClick={close}
@@ -51,10 +69,12 @@ export function WorldIntro() {
       </div>
 
       <div className="flex flex-col gap-3 border-t-[3px] border-foreground px-5 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-4">
-        <h2 className="-skew-x-8 font-display text-4xl uppercase text-comic-yellow [text-shadow:3px_3px_0_var(--comic-magenta)]">
-          {panel.title}
-        </h2>
-        <p className="min-h-30 text-base font-semibold">{panel.text}</p>
+        <div key={panel.title} className="animate-panel-fade flex flex-col gap-3">
+          <h2 className="-skew-x-8 font-display text-4xl uppercase text-comic-yellow [text-shadow:3px_3px_0_var(--comic-magenta)]">
+            {panel.title}
+          </h2>
+          <p className="min-h-30 text-base font-semibold">{panel.text}</p>
+        </div>
         <div className="flex items-center justify-between gap-4">
           <div className="flex gap-2" aria-hidden>
             {WORLD_INTRO.map((item, index) => (
