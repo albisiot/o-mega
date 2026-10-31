@@ -93,7 +93,7 @@ Testo di colore (una frase):
 
 ### Regole di scrittura
 
-- Nomi particolari: niente "Il Qualcosa" e niente descrizioni, ma soprannomi strani che la gente della città darebbe davvero, spesso ironici (Zavorra, Malocchia, Verbale).
+- Nomi accattivanti: da supereroe o da persona, anche mezzi stranieri (Vetrix, Yuki Ombra, Vera Kross, Don Atlas). Niente "Il Qualcosa" e niente descrizioni.
 - Nomi brevi: nel formato piccolo della carta ci stanno circa 10 caratteri, oltre vengono tagliati.
 - Testo di colore in una sola frase, come una battuta che faccia capire il personaggio.
 - I 60 personaggi si dividono in 6-8 gruppi da 7-10, ognuno con un conflitto interno.
@@ -112,12 +112,12 @@ Testo di colore (una frase):
 
 | Carta | Valori chiave | Potere | Personaggio |
 |---|---|---|---|
-| P051, Cattivi | VEL 10, COM 10, FOR 9, RES 1, VOL 1 | Riscossa | **Scheggia** (Compagnia Lete): il combattente più veloce della città, con ossa di vetro. Quando si rompe, i frammenti colpiscono il prossimo bersaglio. |
-| P052, Neutrali | ENE 10, TEC 10, INT 9, VOL 1, MAG 1 | Sfavorito | **Dinamo** (Sciolti): ha progettato la centrale e vende il proprio genio a chiunque paghi. |
-| P053, Eroi | FUR 10, INT 10, VEL 9, COM 1, VOL 1 | Riscossa | **Lucciola** (Lanterne): nessuno riesce a vederla. Scappa sempre, poi torna sempre. |
-| P054, Cattivi | VOL 10, PER 10, COM 9, TEC 1, MAG 1 | Sfavorito | **Segugio** (Figli dell'Ultima): trova chiunque e non si ferma mai, soprattutto quando sta perdendo. |
-| P055, Eroi | RES 10, VOL 10, MAG 9, VEL 1, INT 1 | Riscossa | **Soglia** (Custodi): sta davanti alla porta del tempio. Da lì non passa nessuno, e da lì non si sposta. |
-| P056, Cattivi | ENE 10, MAG 10, TEC 9, RES 1, VOL 1 | Sfavorito | **Alambicco** (Compagnia Lete): costruisce macchine che funzionano a incantesimi, e ormai è più macchina che persona. |
+| P051, Cattivi | VEL 10, COM 10, FOR 9, RES 1, VOL 1 | Riscossa | **Vetrix** (Compagnia Lete): il combattente più veloce della città, con ossa di vetro. Quando si rompe, i frammenti colpiscono il prossimo bersaglio. |
+| P052, Neutrali | ENE 10, TEC 10, INT 9, VOL 1, MAG 1 | Sfavorito | **Dr. Volta** (Sciolti): ha progettato la centrale e vende il proprio genio a chiunque paghi. |
+| P053, Eroi | FUR 10, INT 10, VEL 9, COM 1, VOL 1 | Riscossa | **Yuki Ombra** (Lanterne): nessuno riesce a vederla. Scappa sempre, poi torna sempre. |
+| P054, Cattivi | VOL 10, PER 10, COM 9, TEC 1, MAG 1 | Sfavorito | **Vera Kross** (Figli dell'Ultima): trova chiunque e non si ferma mai, soprattutto quando sta perdendo. |
+| P055, Eroi | RES 10, VOL 10, MAG 9, VEL 1, INT 1 | Riscossa | **Don Atlas** (Custodi): sta davanti alla porta del tempio. Da lì non passa nessuno, e da lì non si sposta. |
+| P056, Cattivi | ENE 10, MAG 10, TEC 9, RES 1, VOL 1 | Sfavorito | **Mekana** (Compagnia Lete): costruisce macchine che funzionano a incantesimi, e ormai è più macchina che persona. |
 
 ### Delta: esempi di tono
 
