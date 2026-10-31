@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { CardArt, Silhouette } from "@/components/card-view";
+import { cardEffects } from "@/lib/card-effects";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import {
   convertAllDuplicates,
@@ -269,7 +270,13 @@ function AlbumTile({
         </span>
       )}
       {owned ? (
-        <CardArt rarity={card.rarity} faction={card.faction} artUrl={card.art_url} className="h-24 rounded-t" />
+        <CardArt
+          rarity={card.rarity}
+          faction={card.faction}
+          artUrl={card.art_url}
+          effects={cardEffects(card, "sm")}
+          className="h-24 rounded-t"
+        />
       ) : (
         <div className="relative h-24 overflow-hidden rounded-t bg-panel">
           <Silhouette faction={card.faction} ink="#3a3a45" className="absolute -bottom-1 left-1/2 h-[96%] -translate-x-1/2" />

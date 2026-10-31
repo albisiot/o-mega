@@ -246,6 +246,20 @@ Da applicare a ogni illustrazione, così le carte sembrano dello stesso universo
 - **Il prezzo si vede:** il difetto del personaggio deve stare nell'immagine (l'armatura vuota, le ossa di vetro).
 - **Mai nell'immagine:** testo, loghi, cornici, personaggi o simboli di fumetti esistenti.
 
+### Effetti delle carte
+
+Gli effetti cambiano solo l'aspetto, mai valori o regole. L'abbinamento è in `src/lib/card-effects.ts`.
+
+| Rarità | Carta grande | Carta piccola (album, elenchi) |
+|---|---|---|
+| Delta | Nessuno | Nessuno |
+| Gamma | Lampo di luce | Nessuno |
+| Beta | Lampo di luce, inclinazione 3D | Nessuno |
+| Alfa | Olografico, inclinazione 3D | Olografico |
+| Omega | Olografico, inclinazione 3D, effetto personale | Olografico |
+
+Effetti personali Omega: Papa Zero l'aura, Sir Nemo le scariche elettriche, Vox Mille il glitch, Mongibello le braci.
+
 ## 9. Prima di pubblicare
 
 - Controllare che O-MEGA, Nuova Megara e i nomi delle carte non siano già marchi o personaggi esistenti.

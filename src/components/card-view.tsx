@@ -1,9 +1,12 @@
 import type { CSSProperties, ReactNode } from "react";
+import { CARD_TOUCH_HANDLERS, CardArtEffects } from "@/components/card-effects";
 import { withBasePath } from "@/lib/base-path";
+import { cardEffects, type CardEffect } from "@/lib/card-effects";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import { FACTION_COLORS, isFoil, rarityArt, rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 
 export type CardData = {
+  code?: string;
   name: string;
   faction: string;
   flavor: string;
@@ -24,21 +27,34 @@ type CardViewProps = {
 /** A character card. The frame and art treatment grow with the rarity; without art it shows a placeholder silhouette. */
 export function CardView({ card, abilities, size = "lg", glow = false }: CardViewProps) {
   const color = card.rarity.color;
-  const style = { "--glow-color": `${color}aa`, background: rarityFrame(card.rarity) } as CSSProperties;
   const large = size === "lg";
+  const effects = cardEffects(card, size);
+  const style = {
+    "--glow-color": `${color}aa`,
+    "--fx-aura-color": FACTION_COLORS[card.faction] ?? "#fff8e7",
+    background: rarityFrame(card.rarity),
+  } as CSSProperties;
 
-  return (
+  const article = (
     <article
       style={style}
-      className={`rounded-xl ${large ? "w-[300px] p-[7px]" : "w-full p-1"} ${glow ? "animate-rare-glow" : ""}`}
+      className={`rounded-xl ${large ? "w-[300px] p-[7px]" : "w-full p-1"} ${effects.includes("aura") ? "fx-aura" : ""} ${
+        glow ? "animate-rare-glow" : ""
+      }`}
     >
-      <div className="flex flex-col overflow-hidden rounded-md bg-panel text-foreground">
+      <div className="relative z-[1] flex flex-col overflow-hidden rounded-md bg-panel text-foreground">
         <header className={`flex items-center justify-between gap-2 ${large ? "h-10 px-2.5" : "h-7 px-1.5"}`}>
           <h3 className={`min-w-0 truncate font-display uppercase ${large ? "text-2xl" : "text-xs"}`}>{card.name}</h3>
           <RarityTag rarity={card.rarity} compact={!large} />
         </header>
 
-        <CardArt rarity={card.rarity} faction={card.faction} artUrl={card.art_url} className={large ? "h-44" : "h-24"}>
+        <CardArt
+          rarity={card.rarity}
+          faction={card.faction}
+          artUrl={card.art_url}
+          effects={effects}
+          className={large ? "h-44" : "h-24"}
+        >
           <span
             className={`absolute bottom-1.5 left-1.5 -skew-x-8 px-1.5 font-extrabold uppercase text-black ${
               large ? "py-0.5 text-xs" : "text-[10px]"
@@ -62,6 +78,13 @@ export function CardView({ card, abilities, size = "lg", glow = false }: CardVie
       </div>
     </article>
   );
+
+  if (!effects.includes("tilt")) return article;
+  return (
+    <div className="fx-tilt" {...CARD_TOUCH_HANDLERS}>
+      {article}
+    </div>
+  );
 }
 
 function RarityTag({ rarity, compact }: { rarity: CardData["rarity"]; compact: boolean }) {
@@ -82,12 +105,14 @@ export function CardArt({
   rarity,
   faction,
   artUrl,
+  effects = [],
   className,
   children,
 }: {
   rarity: CardData["rarity"];
   faction: string;
   artUrl?: string | null;
+  effects?: CardEffect[];
   className: string;
   children?: ReactNode;
 }) {
@@ -114,6 +139,7 @@ export function CardArt({
           />
         </>
       )}
+      <CardArtEffects effects={effects} artUrl={artUrl} />
       {children}
     </div>
   );

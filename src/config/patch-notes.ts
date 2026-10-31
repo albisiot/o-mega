@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "31 ottobre 2026",
     changes: [
+      "Le carte hanno effetti visivi che crescono con la rarità, e ogni Omega ne ha uno tutto suo. Valori e regole non cambiano.",
       "Premi di livello: ogni nuovo livello regala monete (livello 2: 50, livello 3: 60, poi 10 in più a ogni livello). Chi è già salito ha ricevuto i premi arretrati.",
       "Passaggi più rapidi tra le schermate: Collezione, Negozio e Gioca si aprono subito.",
       "Prime carte da guardare in 3D: Guarda in 3D nel dettaglio di tre personaggi.",

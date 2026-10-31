@@ -236,6 +236,126 @@ body {
   100% { opacity: 1; }
 }
 
+/* Card effects (src/lib/card-effects.ts). Before the utilities below, so a won card's glow wins over the aura's pulse. */
+
+.fx-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.fx-holo {
+  background:
+    repeating-linear-gradient(115deg, rgb(255 255 255 / 0.1) 0 2px, transparent 2px 7px),
+    linear-gradient(115deg, transparent 18%, rgb(255 46 108 / 0.7) 34%, rgb(255 214 10 / 0.7) 45%, rgb(22 200 255 / 0.7) 56%, rgb(47 208 110 / 0.6) 67%, transparent 82%);
+  background-size: 100% 100%, 260% 260%;
+  background-position: 0 0, var(--fx-x, 50%) var(--fx-y, 50%);
+  mix-blend-mode: color-dodge;
+  animation: fx-holo 5s ease-in-out infinite alternate;
+}
+
+.fx-touching .fx-holo { animation: none; }
+
+@keyframes fx-holo {
+  from { background-position: 0 0, 0% 20%; }
+  to { background-position: 0 0, 100% 80%; }
+}
+
+.fx-flash {
+  inset: -20% -60%;
+  background: linear-gradient(110deg, transparent 42%, rgb(255 255 255 / 0.85) 50%, transparent 58%);
+  mix-blend-mode: overlay;
+  animation: fx-flash 3.4s ease-in-out infinite;
+}
+
+@keyframes fx-flash {
+  0% { transform: translateX(-55%); }
+  45%, 100% { transform: translateX(55%); }
+}
+
+.fx-aura {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 14px 2px var(--fx-aura-color);
+  animation: fx-aura-pulse 2.4s ease-in-out infinite;
+}
+
+.fx-aura::before {
+  content: "";
+  position: absolute;
+  inset: -80%;
+  background: conic-gradient(transparent 0 58%, var(--fx-aura-color) 78%, #fff 84%, var(--fx-aura-color) 90%, transparent 100%);
+  animation: fx-spin 2.6s linear infinite;
+}
+
+@keyframes fx-aura-pulse {
+  50% { box-shadow: 0 0 26px 6px var(--fx-aura-color); }
+}
+
+@keyframes fx-spin {
+  to { transform: rotate(360deg); }
+}
+
+.fx-glitch {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fx-glitch-a {
+  filter: sepia(1) saturate(9) hue-rotate(290deg);
+  animation: fx-glitch-a 3s steps(1) infinite;
+}
+
+.fx-glitch-b {
+  filter: sepia(1) saturate(9) hue-rotate(150deg);
+  animation: fx-glitch-b 3s steps(1) infinite;
+}
+
+@keyframes fx-glitch-a {
+  0%, 62%, 74%, 100% { opacity: 0; transform: none; clip-path: none; }
+  63% { opacity: 1; transform: translateX(-7px); clip-path: inset(8% 0 62% 0); }
+  66% { opacity: 1; transform: translateX(9px); clip-path: inset(44% 0 30% 0); }
+  69% { opacity: 1; transform: translateX(-4px); clip-path: inset(20% 0 44% 0); }
+  72% { opacity: 1; transform: translateX(5px); clip-path: inset(66% 0 8% 0); }
+}
+
+@keyframes fx-glitch-b {
+  0%, 62%, 74%, 100% { opacity: 0; transform: none; clip-path: none; }
+  64% { opacity: 1; transform: translateX(8px); clip-path: inset(30% 0 40% 0); }
+  67% { opacity: 1; transform: translateX(-9px); clip-path: inset(4% 0 72% 0); }
+  70% { opacity: 1; transform: translateX(6px); clip-path: inset(56% 0 20% 0); }
+  73% { opacity: 1; transform: translateX(-5px); clip-path: inset(12% 0 56% 0); }
+}
+
+.fx-tilt {
+  touch-action: pan-y;
+  transform: perspective(700px) rotateX(var(--fx-rx, 0deg)) rotateY(var(--fx-ry, 0deg));
+  transition: transform 160ms ease-out;
+  animation: fx-sway 6s ease-in-out infinite;
+}
+
+.fx-tilt.fx-touching { animation: none; }
+
+@keyframes fx-sway {
+  0%, 100% { transform: perspective(700px) rotateX(4deg) rotateY(-9deg); }
+  50% { transform: perspective(700px) rotateX(-3deg) rotateY(9deg); }
+}
+
+.fx-glare {
+  background: radial-gradient(circle at var(--fx-x, 50%) var(--fx-y, 50%), rgb(255 255 255 / 0.4), transparent 55%);
+  opacity: 0;
+  transition: opacity 160ms ease-out;
+}
+
+.fx-touching .fx-glare { opacity: 1; }
+
 @keyframes seismograph {
   to { transform: translateX(-50%); }
 }
@@ -250,6 +370,12 @@ body {
 .animate-rare-title { animation: rare-title 0.9s ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
+  .fx-holo,
+  .fx-flash,
+  .fx-aura,
+  .fx-aura::before,
+  .fx-glitch,
+  .fx-tilt,
   .animate-seismograph,
   .animate-panel-fade,
   .animate-pack-float,
