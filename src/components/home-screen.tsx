@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { markHomeReady } from "@/components/app-splash";
 import { CoinBadge } from "@/components/coin-badge";
 import { PackPanel } from "@/components/pack-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
@@ -14,6 +15,11 @@ export function HomeScreen({ profile }: { profile: Profile }) {
   const [cardCount, setCardCount] = useState<number | null>(null);
   const packs = usePackStatus();
   const [activeMatch, setActiveMatch] = useState<ActiveMatch | null>(null);
+
+  const packsSettled = Boolean(packs.status || packs.error);
+  useEffect(() => {
+    if (packsSettled) markHomeReady();
+  }, [packsSettled]);
 
   useEffect(() => {
     let cancelled = false;

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Anton, Archivo, Bangers } from "next/font/google";
+import { AppSplash } from "@/components/app-splash";
 import { AuthProvider } from "@/components/auth-provider";
 import { BottomNav } from "@/components/bottom-nav";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AuthProvider>
           {children}
           <BottomNav />
+          <AppSplash />
         </AuthProvider>
         <ServiceWorkerRegistration />
       </body>

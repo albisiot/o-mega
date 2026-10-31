@@ -22,7 +22,7 @@ function markIntroSeen() {
   }
 }
 
-/** Fills the browser cache from the login screen, before the intro can open. */
+/** Fills the browser cache during the splash, before the intro can open. */
 export function preloadWorldIntro() {
   if (hasSeenIntro()) return;
   for (const panel of WORLD_INTRO) new Image().src = withBasePath(panel.image);

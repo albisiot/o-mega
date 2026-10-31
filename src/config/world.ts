@@ -17,6 +17,13 @@ export const WORLD_INTRO = [
   },
 ];
 
+export const WORLD_LOADING_LINES = [
+  "Sismografo in ascolto…",
+  "Il Banco conta le lastre…",
+  "Le Lanterne accendono il quartiere…",
+  "I Custodi chiudono il porto…",
+];
+
 export const WORLD_FACTIONS = [
   {
     name: "Eroi",

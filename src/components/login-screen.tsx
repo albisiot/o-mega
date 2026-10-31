@@ -1,17 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { PackArt } from "@/components/comic-parts";
 import { SupabaseStatus } from "@/components/supabase-status";
-import { preloadWorldIntro } from "@/components/world-intro";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 export function LoginScreen() {
   const { signInWithGoogle, error } = useAuth();
   const [redirecting, setRedirecting] = useState(false);
-
-  useEffect(preloadWorldIntro, []);
 
   async function handleSignIn() {
     setRedirecting(true);
