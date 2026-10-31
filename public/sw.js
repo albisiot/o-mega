@@ -33,8 +33,9 @@ self.addEventListener("fetch", (event) => {
   // The OAuth callback carries one-time codes: never cache it.
   if (url.pathname.startsWith(`${SCOPE}auth/`)) return;
 
-  // Hashed build assets never change: serve from cache when present.
-  if (url.pathname.startsWith(`${SCOPE}_next/static/`)) {
+  // Hashed build assets never change, and 3D models are too heavy to download
+  // again at every visit: serve from cache when present.
+  if (url.pathname.startsWith(`${SCOPE}_next/static/`) || url.pathname.startsWith(`${SCOPE}models/`)) {
     event.respondWith(
       caches.match(request).then((cached) => cached ?? fetchAndCache(request)),
     );

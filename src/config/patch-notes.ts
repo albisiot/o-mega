@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "31 ottobre 2026",
     changes: [
+      "Prime carte da guardare in 3D: Guarda in 3D nel dettaglio di tre personaggi.",
       "Benvenuti a Nuova Megara: un'introduzione racconta il mondo al primo accesso e il profilo ha la nuova voce Il mondo.",
       "Nuova schermata di caricamento all'apertura dell'app, con il sismografo di Nuova Megara.",
       "Le immagini già viste vengono salvate sul telefono e compaiono subito.",
