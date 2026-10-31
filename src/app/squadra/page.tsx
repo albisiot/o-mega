@@ -23,9 +23,9 @@ import {
   type Formation,
 } from "@/lib/match";
 
-const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard"];
+const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
 
-// /squadra/?difficulty=easy|medium|hard        (against a bot, default)
+// /squadra/?difficulty=easy|medium|hard|super_pro  (against a bot, default)
 // /squadra/?mode=queue                          (random opponent)
 // /squadra/?mode=conquest                       (Conquest, random opponent)
 // /squadra/?mode=lobby                          (create a friend code)

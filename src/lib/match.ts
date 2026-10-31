@@ -2,7 +2,7 @@ import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { BotDifficulty, Power } from "@o-mega/game-engine";
 import { getSupabase } from "@/lib/supabase/client";
 
-export const DIFFICULTY_LABELS: Record<BotDifficulty | "super_pro", string> = {
+export const DIFFICULTY_LABELS: Record<BotDifficulty, string> = {
   easy: "Facile",
   medium: "Medio",
   hard: "Difficile",
@@ -49,7 +49,7 @@ export type MatchRound = {
 export type MatchView = {
   id: string;
   mode: "bot" | "friendly" | "conquest";
-  bot_difficulty: BotDifficulty | "super_pro" | null;
+  bot_difficulty: BotDifficulty | null;
   status: "active" | "finished";
   my_side: "a" | "b";
   /** null against a bot. */
@@ -259,7 +259,7 @@ export function subscribeToUpdates(topic: string, onUpdate: (payload: Record<str
 export type MatchHistoryEntry = {
   id: string;
   mode: "bot" | "friendly" | "conquest";
-  bot_difficulty: BotDifficulty | "super_pro" | null;
+  bot_difficulty: BotDifficulty | null;
   finished_at: string;
   end_reason: "completed" | "forfeit";
   result: "win" | "loss" | "draw";

@@ -21,6 +21,7 @@ const BOTS = [
   { difficulty: "easy", detail: "Sceglie quasi a caso. Ideale per imparare." },
   { difficulty: "medium", detail: "Gioca sempre il personaggio migliore per la Minaccia del momento." },
   { difficulty: "hard", detail: "Pianifica: tiene da parte specialisti e generalisti per i round giusti." },
+  { difficulty: "super_pro", detail: "Simula mille partite possibili prima di ogni mossa." },
 ] as const;
 
 const MODES = [
@@ -51,13 +52,6 @@ function BotSection({ disabled }: { disabled: boolean }) {
           </span>
         </Link>
       ))}
-      <div className="row-link opacity-50">
-        <div>
-          <p className="font-display text-xl uppercase">{DIFFICULTY_LABELS.super_pro}</p>
-          <p className="text-sm font-medium text-muted">Simula migliaia di partite prima di ogni mossa.</p>
-        </div>
-        <span className="text-sm font-bold text-muted">Presto</span>
-      </div>
     </div>
   );
 }

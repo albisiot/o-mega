@@ -1,14 +1,18 @@
-import { availableCharacters, carriedBonus, currentThreat, otherSide, roundsWon } from "./match.ts";
-import { pickOne, pickWeighted, shuffle, type Rng } from "./rng.ts";
-import { scorePlay, type ScoreContext } from "./scoring.ts";
+import { availableCharacters, carriedBonus, currentThreat, otherSide, roundsWon, totalScores } from "./match.ts";
+import { pickOne, pickWeighted, randomInt, shuffle, type Rng } from "./rng.ts";
+import { carriedBonusAfter, compareScores, scorePlay, type ScoreContext } from "./scoring.ts";
 import type { AbilityCode, AbilityFamilies, Character, MatchState, Side, Threat } from "./types.ts";
 
-export type BotDifficulty = "easy" | "medium" | "hard";
+export type BotDifficulty = "easy" | "medium" | "hard" | "super_pro";
+
+/** Plausible matches Super Pro plays out before each move, for all its options together. */
+export const SUPER_PRO_SIMULATIONS = 1000;
 
 /**
  * What a bot may know (SPEC §5.9): its own remaining characters, the current
- * threat, the levels of future rounds and the threat catalog. Never the
- * opponent's choice for this round, nor the identity of future threats.
+ * threat, the levels of future rounds, the threat catalog and what the
+ * opponent has already played. Never the opponent's choice for this round,
+ * the rest of their team, nor the identity of future threats.
  */
 export type BotView = {
   available: Character[];
@@ -22,18 +26,35 @@ export type BotView = {
   families: AbilityFamilies;
   /** Average value of each ability over the character catalog: the "typical" opponent. */
   abilityMeans: Record<AbilityCode, number>;
+  /** Catalog characters the opponent may still field: a team never repeats a character. */
+  opponentPool: Character[];
+  /** Bonus the opponent carries into this round (Riscossa). It follows from public results. */
+  opponentCarriedBonus: number;
+  /** Total score so far, own minus opponent's (tie-break of the match, SPEC §5.6). */
+  scoreLead: number;
+  roundsToWin: number;
 };
 
 export type BotKnowledge = {
   threatCatalog: Threat[];
   families: AbilityFamilies;
   abilityMeans: Record<AbilityCode, number>;
+  /** Every active character, as the bot may field them (id = definition id). */
+  characters: Character[];
 };
 
 export function botView(state: MatchState, side: Side, knowledge: BotKnowledge): BotView {
   const revealed = new Set(state.threats.slice(0, state.rounds.length + 1).map((threat) => threat.id));
   const won = roundsWon(state);
+  const opponent = otherSide(side);
+  const played = new Set(state.rounds.map((round) => round.plays[opponent].characterId));
+  const seen = new Set(state.teams[opponent].filter((c) => played.has(c.id)).map((c) => c.definitionId));
+  const totals = totalScores(state);
   return {
+    opponentPool: knowledge.characters.filter((character) => !seen.has(character.definitionId)),
+    opponentCarriedBonus: carriedBonus(state, opponent),
+    scoreLead: totals[side] - totals[opponent],
+    roundsToWin: state.rules.roundsToWin,
     available: availableCharacters(state, side),
     currentThreat: currentThreat(state),
     futureLevels: state.threats.slice(state.rounds.length + 1).map((threat) => threat.level),
@@ -82,7 +103,105 @@ export function chooseBotPlay(difficulty: BotDifficulty, view: BotView, rng: Rng
     }
     case "hard":
       return planHardPlay(view, rng);
+    case "super_pro":
+      return simulateBestPlay(view, rng);
   }
+}
+
+/** A random subset of `items`, cheaper than shuffling the whole list. */
+function sample<T>(rng: Rng, items: readonly T[], count: number): T[] {
+  const pool = [...items];
+  const picked: T[] = [];
+  for (let i = 0; i < count && pool.length > 0; i++) {
+    const index = randomInt(rng, pool.length);
+    picked.push(pool[index]);
+    pool[index] = pool[pool.length - 1];
+    pool.pop();
+  }
+  return picked;
+}
+
+/** The future rounds of one plausible match: a distinct unrevealed threat per known level. */
+function sampleFutureThreats(view: BotView, rng: Rng): Threat[] {
+  const threats: Threat[] = [];
+  for (const level of view.futureLevels) {
+    const options = view.threatPool.filter((threat) => threat.level === level && !threats.includes(threat));
+    if (options.length > 0) threats.push(pickOne(rng, options));
+  }
+  return threats;
+}
+
+/** Plays out one plausible match with the rules of §5.6. 1 = win, 0.5 = draw, 0 = loss. */
+function playOut(view: BotView, first: Character, opponents: Character[], threats: Threat[], rng: Rng): number {
+  const own = view.available.filter((character) => character !== first);
+  const theirs = [...opponents];
+  let won = view.roundsWon;
+  let lost = view.opponentRoundsWon;
+  let lead = view.scoreLead;
+  let ownCarried = view.carriedBonus;
+  let theirCarried = view.opponentCarriedBonus;
+  let ownPick: Character | null = first;
+
+  for (const threat of threats) {
+    const ownContext = { families: view.families, roundsWon: won, opponentRoundsWon: lost, carriedBonus: ownCarried };
+    const theirContext = { families: view.families, roundsWon: lost, opponentRoundsWon: won, carriedBonus: theirCarried };
+    const ownCharacter: Character = ownPick ?? takeBest(own, threat, ownContext, rng);
+    const theirCharacter = takeBest(theirs, threat, theirContext, rng);
+    ownPick = null;
+
+    const ownScore = scorePlay(ownCharacter, threat, ownContext);
+    const theirScore = scorePlay(theirCharacter, threat, theirContext);
+    const winner = compareScores(ownScore, theirScore);
+    lead += ownScore.total - theirScore.total;
+    if (winner === "a") won += 1;
+    if (winner === "b") lost += 1;
+    ownCarried = carriedBonusAfter(ownCharacter, winner === "b");
+    theirCarried = carriedBonusAfter(theirCharacter, winner === "a");
+    if (won >= view.roundsToWin || lost >= view.roundsToWin) break;
+  }
+
+  if (won !== lost) return won > lost ? 1 : 0;
+  if (lead !== 0) return lead > 0 ? 1 : 0;
+  return 0.5;
+}
+
+/** Removes and returns the best-scoring character: how both sides play the simulated rounds. */
+function takeBest(characters: Character[], threat: Threat, context: ScoreContext, rng: Rng): Character {
+  let best = -Infinity;
+  let index = 0;
+  let ties = 0;
+  characters.forEach((character, i) => {
+    const total = scorePlay(character, threat, context).total;
+    if (total > best) {
+      best = total;
+      index = i;
+      ties = 1;
+    } else if (total === best && randomInt(rng, ++ties) === 0) {
+      index = i;
+    }
+  });
+  return characters.splice(index, 1)[0];
+}
+
+/**
+ * Super Pro (SPEC §5.9): Monte Carlo. Each simulation draws future threats and
+ * an opponent team that fit what is known, then tries every option against
+ * that same draw, so options differ by their merit and not by luck. Plays the
+ * option that wins most often.
+ */
+function simulateBestPlay(view: BotView, rng: Rng): string {
+  const options = shuffle(rng, view.available); // random tie-breaking
+  if (options.length === 1) return options[0].id;
+  const wins = new Array<number>(options.length).fill(0);
+  const simulations = Math.ceil(SUPER_PRO_SIMULATIONS / options.length);
+  for (let i = 0; i < simulations; i++) {
+    const threats = [view.currentThreat, ...sampleFutureThreats(view, rng)];
+    const opponents = sample(rng, view.opponentPool, options.length);
+    options.forEach((option, o) => {
+      wins[o] += playOut(view, option, opponents, threats, rng);
+    });
+  }
+  return options[wins.indexOf(Math.max(...wins))].id;
 }
 
 /** Estimated chance that `score` beats a typical opponent on `threat`. */
@@ -160,9 +279,9 @@ export function buildBotTeam(
 ): Character[] {
   const distinct = [...new Map(catalog.map((character) => [character.definitionId, character])).values()];
   if (distinct.length < size) throw new Error("Not enough characters for a bot team");
-  if (difficulty !== "hard") return shuffle(rng, distinct).slice(0, size);
+  if (difficulty !== "hard" && difficulty !== "super_pro") return shuffle(rng, distinct).slice(0, size);
 
-  // Hard: specialists that cover different peaks, plus a couple of generalists.
+  // Hard and Super Pro: specialists that cover different peaks, plus a couple of generalists.
   const bySpread = [...distinct].sort((x, y) => spread(y) - spread(x));
   const third = Math.max(size, Math.floor(bySpread.length / 3));
   const specialists = bySpread.slice(0, third);

@@ -7,10 +7,7 @@ import { pickOne, type Rng } from "./rng.ts";
 import { drawThreatLevels, pickThreats } from "./threats.ts";
 import type { Character, MatchResult, MatchRules, MatchState, RoundRecord, Side, Threat } from "./types.ts";
 
-export type BotMatchCatalog = BotKnowledge & {
-  /** Every active character, as the bot may field them (id = definition id). */
-  characters: Character[];
-};
+export type BotMatchCatalog = BotKnowledge;
 
 /** Threats of the match and the bot's team. */
 export function planBotMatch(params: {

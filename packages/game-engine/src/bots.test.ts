@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildBotTeam, chooseBotPlay, computeAbilityMeans, type BotView } from "./bots.ts";
+import { botView, buildBotTeam, chooseBotPlay, computeAbilityMeans, type BotView } from "./bots.ts";
 import { mulberry32 } from "./rng.ts";
-import { ABILITIES, character, FAMILIES, threat, threatCatalog } from "./test-fixtures.ts";
-import type { Threat } from "./types.ts";
+import { ABILITIES, character, FAMILIES, newState, threat, threatCatalog } from "./test-fixtures.ts";
+import type { MatchState, Threat } from "./types.ts";
 
 const MEANS = Object.fromEntries(ABILITIES.map((ability) => [ability, 4.5]));
 
@@ -17,6 +17,10 @@ function view(overrides: Partial<BotView>): BotView {
     threatPool: threatCatalog(),
     families: FAMILIES,
     abilityMeans: MEANS,
+    opponentPool: Array.from({ length: 12 }, (_, i) => character(`pool${i}`, { [ABILITIES[i]]: 9 }, null, 4)),
+    opponentCarriedBonus: 0,
+    scoreLead: 0,
+    roundsToWin: 3,
     ...overrides,
   };
 }
@@ -82,6 +86,63 @@ describe("hard bot", () => {
   });
 });
 
+describe("super pro bot", () => {
+  it("is deterministic for a given seed", () => {
+    const options = [specialist, generalist, character("other", { MAG: 9 })];
+    const v = view({ available: options, futureLevels: [3, 5] });
+    expect(chooseBotPlay("super_pro", v, mulberry32(42))).toBe(chooseBotPlay("super_pro", v, mulberry32(42)));
+  });
+
+  it("plays the character that wins the deciding last round", () => {
+    const options = [character("weak", {}, null, 1), character("strong", {}, null, 9)];
+    const choice = chooseBotPlay("super_pro", view({ available: options, roundsWon: 2, opponentRoundsWon: 2 }), mulberry32(5));
+    expect(choice).toBe("strong");
+  });
+
+  it("gives each character the round that suits it", () => {
+    // The specialist wins now but is hopeless on the level 6 that follows,
+    // where the all-rounder would win: the other order loses both rounds' edge.
+    const allRounder = character("all", { FOR: 5 }, null, 8);
+    const forOnly = character("for", { FOR: 10 }, null, 1);
+    const choice = chooseBotPlay(
+      "super_pro",
+      view({
+        available: [forOnly, allRounder],
+        currentThreat: threat("now", ["FOR"]),
+        futureLevels: [6],
+        threatPool: [threat("six", ["VEL", "RES", "INT", "VOL", "PER", "ENE"])],
+      }),
+      mulberry32(7),
+    );
+    expect(choice).toBe("for");
+  });
+
+  it("only knows the opponent's characters already played", () => {
+    const seen = character("seen", {}, null, 9);
+    const hidden = character("hidden", {}, null, 9);
+    const other = character("other");
+    const state: MatchState = {
+      ...newState([character("mine1"), character("mine2")], [seen, hidden], [threat("t1", ["FOR"]), threat("t2", ["VEL"])]),
+    };
+    const pick = (id: string) => ({ characterId: id, base: 4, bonus: 0, total: 4, highest: 4, autoPlayed: false });
+    const played: MatchState = {
+      ...state,
+      rounds: [{ round: 1, threatId: "t1", plays: { a: pick("mine1"), b: pick("seen") }, winner: null }],
+    };
+    const knowledge = {
+      characters: [seen, hidden, other],
+      threatCatalog: threatCatalog(),
+      families: FAMILIES,
+      abilityMeans: MEANS,
+    };
+    const pool = botView(played, "a", knowledge).opponentPool.map((c) => c.id);
+    expect(pool).toEqual(["hidden", "other"]);
+    // The pool is the catalog: the same whether or not "hidden" is on their team.
+    const elsewhere = { ...played, teams: { ...played.teams, b: [seen, other] } };
+    expect(botView(elsewhere, "a", knowledge).opponentPool.map((c) => c.id)).toEqual(pool);
+  });
+});
+
 describe("buildBotTeam", () => {
   const catalog = Array.from({ length: 30 }, (_, i) =>
     i % 3 === 0
@@ -90,7 +151,7 @@ describe("buildBotTeam", () => {
   );
 
   it("returns distinct characters for every difficulty", () => {
-    for (const difficulty of ["easy", "medium", "hard"] as const) {
+    for (const difficulty of ["easy", "medium", "hard", "super_pro"] as const) {
       const team = buildBotTeam(difficulty, catalog, 5, mulberry32(9));
       expect(team).toHaveLength(5);
       expect(new Set(team.map((c) => c.definitionId)).size).toBe(5);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeAbilityMeans } from "./bots.ts";
+import { computeAbilityMeans, type BotDifficulty } from "./bots.ts";
 import { planBotMatch, playBotRound, playPvpRound, type BotMatchCatalog } from "./flow.ts";
 import { availableCharacters, roundsWon } from "./match.ts";
 import { mulberry32, pickOne } from "./rng.ts";
@@ -18,7 +18,7 @@ const catalog: BotMatchCatalog = {
 };
 const playerTeam = characters.slice(0, 5).map((c) => ({ ...c, id: `inst-${c.id}` }));
 
-function startMatch(seed: number, difficulty: "easy" | "medium" | "hard"): MatchState {
+function startMatch(seed: number, difficulty: BotDifficulty): MatchState {
   const plan = planBotMatch({ rules: RULES, catalog, difficulty, rng: mulberry32(seed) });
   return { rules: RULES, threats: plan.threats, teams: { a: playerTeam, b: plan.botTeam }, rounds: [] };
 }
@@ -33,7 +33,7 @@ describe("planBotMatch", () => {
 
 describe("playBotRound", () => {
   it("plays whole matches to a consistent result for every difficulty", () => {
-    for (const difficulty of ["easy", "medium", "hard"] as const) {
+    for (const difficulty of ["easy", "medium", "hard", "super_pro"] as const) {
       for (let seed = 1; seed <= 30; seed++) {
         const rng = mulberry32(seed * 7);
         let state = startMatch(seed, difficulty);

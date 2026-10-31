@@ -284,7 +284,7 @@ function recordRound(
 // Bot matches
 // ---------------------------------------------------------------------------
 
-const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard"];
+const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
 
 async function startBotMatch(userId: string, body: Record<string, unknown>) {
   const difficulty = body.difficulty as BotDifficulty;
