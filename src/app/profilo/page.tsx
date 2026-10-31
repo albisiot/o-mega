@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useAuth, useRequireSignedIn } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { PATCH_NOTES } from "@/config/patch-notes";
 import { describeServerError } from "@/lib/errors";
 import { fetchConquestHistory, type ConquestHistoryEntry } from "@/lib/match";
 import { bootstrapPlayer, updateUsername, type Profile } from "@/lib/player";
@@ -129,6 +130,30 @@ function ProfileView({ profile }: { profile: Profile }) {
             →
           </span>
         </Link>
+
+        <details className="group flex flex-col gap-2">
+          <summary className="row-link cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+            <span className="font-display text-xl uppercase">Patch notes</span>
+            <span className="font-display text-2xl text-comic-yellow group-open:hidden" aria-hidden>
+              →
+            </span>
+            <span className="hidden font-display text-2xl text-comic-yellow group-open:inline" aria-hidden>
+              ↓
+            </span>
+          </summary>
+          <div className="mt-2 flex flex-col gap-0.5">
+            {PATCH_NOTES.map((release) => (
+              <div key={release.date} className="bg-panel px-4 py-3">
+                <h3 className="font-display text-lg uppercase text-comic-yellow">{release.date}</h3>
+                <ul className="mt-1 flex list-disc flex-col gap-1 pl-4 text-sm font-medium text-muted">
+                  {release.changes.map((change) => (
+                    <li key={change}>{change}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </details>
 
         <button type="button" onClick={signOut} className="btn btn-ghost mt-2">
           Esci
