@@ -23,25 +23,61 @@ const BOTS = [
   { difficulty: "hard", detail: "Pianifica: tiene da parte specialisti e generalisti per i round giusti." },
 ] as const;
 
+const MODES = [
+  { key: "bot", label: "Contro bot", detail: "Allenati senza rischiare nulla", color: "bg-comic-cyan" },
+  { key: "friendly", label: "Amichevole online", detail: "Sfida un giocatore o un amico", color: "bg-comic-yellow" },
+  { key: "conquest", label: "Conquista", detail: "Chi vince prende una carta", color: "bg-comic-magenta" },
+] as const;
+
+type ModeKey = (typeof MODES)[number]["key"];
+
+function BotSection({ disabled }: { disabled: boolean }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm font-medium text-muted">Per allenarti: nessuna carta in gioco e nessuna moneta.</p>
+      {BOTS.map((bot) => (
+        <Link
+          key={bot.difficulty}
+          href={disabled ? "#" : `/squadra/?difficulty=${bot.difficulty}`}
+          aria-disabled={disabled}
+          className={`row-link ${disabled ? "pointer-events-none opacity-40" : ""}`}
+        >
+          <div>
+            <p className="font-display text-xl uppercase">{DIFFICULTY_LABELS[bot.difficulty]}</p>
+            <p className="text-sm font-medium text-muted">{bot.detail}</p>
+          </div>
+          <span className="font-display text-2xl text-comic-yellow" aria-hidden>
+            →
+          </span>
+        </Link>
+      ))}
+      <div className="row-link opacity-50">
+        <div>
+          <p className="font-display text-xl uppercase">{DIFFICULTY_LABELS.super_pro}</p>
+          <p className="text-sm font-medium text-muted">Simula migliaia di partite prima di ogni mossa.</p>
+        </div>
+        <span className="text-sm font-bold text-muted">Presto</span>
+      </div>
+    </div>
+  );
+}
+
 function ConquestSection({ status, disabled }: { status: ConquestStatus | null; disabled: boolean }) {
   const { maxCardsLostPerDay, unlockAfterMatches, unlockAtLevel, loserCoins, minConquerableCards } = balance.conquest;
   const limitReached = status !== null && status.cards_lost_today >= maxCardsLostPerDay;
   const available = status?.unlocked && !limitReached && !disabled;
 
   return (
-    <section className="flex flex-col gap-3">
-      <div>
-        <h2 className="section-title">Conquista</h2>
-        <p className="mt-1 text-sm font-medium text-muted">
-          Chi vince prende una carta dell&apos;avversario, chi perde guadagna {loserCoins} monete. Si rischia solo ciò
-          che si porta in campo: servono almeno {minConquerableCards} carte non starter.
-        </p>
-      </div>
+    <div className="flex flex-col gap-3">
+      <p className="text-sm font-medium text-muted">
+        Chi vince prende una carta dell&apos;avversario, chi perde guadagna {loserCoins} monete. Si rischia solo ciò
+        che si porta in campo: servono almeno {minConquerableCards} carte non starter.
+      </p>
       {available ? (
-        <Link href="/squadra/?mode=conquest" className="cut-both speed-lines flex min-h-24 items-center justify-between gap-3 bg-comic-magenta px-4 py-3 text-black">
+        <Link href="/squadra/?mode=conquest" className="flex min-h-14 items-center justify-between gap-3 bg-comic-magenta px-4 py-2.5 text-black">
           <div>
-            <p className="-skew-x-8 font-display text-3xl uppercase">Cerca un avversario</p>
-            <p className="mt-1 text-sm font-bold">
+            <p className="font-display text-xl uppercase">Cerca un avversario</p>
+            <p className="text-sm font-semibold">
               Un avversario del tuo livello. Carte perse oggi: {status?.cards_lost_today}/{maxCardsLostPerDay}.
             </p>
           </div>
@@ -61,7 +97,7 @@ function ConquestSection({ status, disabled }: { status: ConquestStatus | null; 
           </p>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -72,13 +108,10 @@ function FriendlySection({ disabled }: { disabled: boolean }) {
   const normalized = code.toUpperCase().replace(/[^A-Z0-9]/g, "");
 
   return (
-    <section className={`flex flex-col gap-3 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
-      <div>
-        <h2 className="section-title">Amichevole online</h2>
-        <p className="mt-1 text-sm font-medium text-muted">
-          Solo per divertimento: nessuna carta in gioco e nessuna moneta. Con un codice sfidi un amico.
-        </p>
-      </div>
+    <div className={`flex flex-col gap-3 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
+      <p className="text-sm font-medium text-muted">
+        Solo per divertimento: nessuna carta in gioco e nessuna moneta. Con un codice sfidi un amico.
+      </p>
       <Link href="/squadra/?mode=queue" className="flex min-h-14 items-center justify-between gap-3 bg-comic-yellow px-4 py-2.5 text-black">
         <div>
           <p className="font-display text-xl uppercase">Cerca un avversario</p>
@@ -119,7 +152,7 @@ function FriendlySection({ disabled }: { disabled: boolean }) {
           Entra
         </button>
       </form>
-    </section>
+    </div>
   );
 }
 
@@ -129,6 +162,7 @@ export default function PlayPage() {
   const [conquest, setConquest] = useState<ConquestStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmForfeit, setConfirmForfeit] = useState(false);
+  const [openMode, setOpenMode] = useState<ModeKey | null>(null);
 
   useEffect(() => {
     if (!session) return;
@@ -205,39 +239,30 @@ export default function PlayPage() {
           </section>
         )}
 
-        <section className="flex flex-col gap-3">
-          <div>
-            <h2 className="section-title">Contro un bot</h2>
-            <p className="mt-1 text-sm font-medium text-muted">Per allenarti: nessuna carta in gioco e nessuna moneta.</p>
-          </div>
-          {BOTS.map((bot) => (
-            <Link
-              key={bot.difficulty}
-              href={active ? "#" : `/squadra/?difficulty=${bot.difficulty}`}
-              aria-disabled={Boolean(active)}
-              className={`row-link ${active ? "pointer-events-none opacity-40" : ""}`}
-            >
-              <div>
-                <p className="font-display text-xl uppercase">{DIFFICULTY_LABELS[bot.difficulty]}</p>
-                <p className="text-sm font-medium text-muted">{bot.detail}</p>
-              </div>
-              <span className="font-display text-2xl text-comic-yellow" aria-hidden>
-                →
-              </span>
-            </Link>
-          ))}
-          <div className="row-link opacity-50">
-            <div>
-              <p className="font-display text-xl uppercase">{DIFFICULTY_LABELS.super_pro}</p>
-              <p className="text-sm font-medium text-muted">Simula migliaia di partite prima di ogni mossa.</p>
-            </div>
-            <span className="text-sm font-bold text-muted">Presto</span>
-          </div>
-        </section>
-
-        <FriendlySection disabled={Boolean(active)} />
-
-        <ConquestSection status={conquest} disabled={Boolean(active)} />
+        {MODES.map((mode) => {
+          const open = openMode === mode.key;
+          return (
+            <section key={mode.key} className="flex flex-col gap-3">
+              <button
+                type="button"
+                aria-expanded={open}
+                onClick={() => setOpenMode(open ? null : mode.key)}
+                className={`cut-both speed-lines flex min-h-24 w-full items-center justify-between gap-3 px-4 py-3 text-left text-black ${mode.color}`}
+              >
+                <div>
+                  <h2 className="-skew-x-8 font-display text-3xl uppercase">{mode.label}</h2>
+                  <p className="mt-1 text-sm font-bold">{mode.detail}</p>
+                </div>
+                <span className="font-display text-2xl" aria-hidden>
+                  {open ? "↓" : "→"}
+                </span>
+              </button>
+              {open && mode.key === "bot" && <BotSection disabled={Boolean(active)} />}
+              {open && mode.key === "friendly" && <FriendlySection disabled={Boolean(active)} />}
+              {open && mode.key === "conquest" && <ConquestSection status={conquest} disabled={Boolean(active)} />}
+            </section>
+          );
+        })}
       </main>
     </div>
   );
