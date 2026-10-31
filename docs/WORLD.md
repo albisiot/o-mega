@@ -157,18 +157,36 @@ Tutti hanno il potere Specialità: +2 contro le Minacce che richiedono la prima 
 | P039, Cattivi | VOL 9, RES 8, PSI 1 | **Baron Zolfo** (Figli dell'Ultima): fanatico. |
 | P040, Eroi | MAG 7, TEC 6, VEL 2 | **Tina Glitch** (Lanterne): tecnomaga. |
 
-### Delta: esempi di tono
+### Delta: la gente della città
+
+I Delta non hanno poteri.
 
 | Carta | Valori chiave | Personaggio |
 |---|---|---|
-| P013, Eroi | FOR 10, RES 9, COM 9, VEL 0, INT 1 | **Il Molo:** scaricatore di porto. Non corre e non serve che corra. |
-| P016, Cattivi | MAG 10, VOL 9, PSI 9, FUR 0, TEC 1 | **La Campana:** la si sente arrivare da tre quartieri di distanza. |
-| P021, Cattivi | FUR 8, VEL 7, INT 7, TEC 1, COM 2 | **Spillo:** entra ovunque, purché la serratura non sia elettronica. |
-| P022, Neutrali | PER 10, VOL 9, COM 9, INT 1, FUR 0 | **Cane da Porto:** trova tutto e non capisce niente. |
 | P001, Eroi | FOR 10, RES 9, COM 9, MAG 0, PSI 1 | **Max Cargo** (Sciolti di porto, schierati con gli Eroi): solleva container a spalla, con un sorriso. |
+| P002, Cattivi | VEL 10, FUR 9, MAG 0 | **Kid Scippo** (Sciolti, schierato con i Cattivi): scippatore adulto con la faccia da ragazzino. |
+| P003, Eroi | INT 10, PER 9, FOR 0 | **Prof. Lince** (Lanterne): inventore geniale e gracile. |
 | P004, Neutrali | MAG 10, PSI 9, VOL 9, FOR 0, TEC 1 | **Nonna Hex** (Sciolti): legge il futuro al mercato e non riesce a sollevare la propria borsa. |
+| P005, Cattivi | ENE 10, FOR 9, FUR 0 | **Boom Bruno** (Compagnia Lete): bomba umana. |
+| P006, Neutrali | PSI 10, VOL 9, FOR 0 | **Cassia Moon** (Sciolti): veggente fragile, ispirata a Cassandra. |
+| P007, Eroi | COM 8, TEC 7, PSI 1 | **Sam Diesel** (Custodi): autista e meccanico. |
+| P008, Cattivi | FUR 8, INT 7, FOR 1 | **Greta Talpa** (Compagnia Lete): infiltrata. |
 | P009, Eroi | Generalista: FOR 6, VOL 6, gli altri da 3 a 5 | **Tony Ronda** (Custodi): nessun Segno, solo tanta pazienza. |
+| P010, Neutrali | TEC 6, VEL 6, MAG 3 | **Tito Ferry** (Sciolti): contrabbandiere del porto. |
+| P011, Cattivi | ENE 6, MAG 6, FUR 3 | **Cosmo Nero** (Figli dell'Ultima): nuovo adepto. |
 | P012, Eroi | Generalista: COM 6, PER 6, gli altri da 3 a 5 | **Lucy Lumen** (Lanterne): la volontaria che arriva quando manca la luce. |
+| P013, Eroi | FOR 10, RES 9, VEL 0 | **Hugo Molo** (Custodi): colosso del porto con tatuaggi magici, sempre fermo. |
+| P014, Cattivi | VEL 6, FUR 6, PSI 3 | **Mr. Grigio** (Compagnia Lete): uomo qualunque, nessuno se lo ricorda. |
+| P015, Eroi | INT 8, TEC 7, RES 1 | **Iris Medix** (Lanterne): dottoressa di salute fragile. |
+| P016, Cattivi | MAG 10, VOL 9, FUR 0 | **Belladonna** (Figli dell'Ultima): strega annunciata dalle campane. |
+| P017, Neutrali | ENE 6, RES 6, VOL 3 | **Nino Bar** (Sciolti): barista, il suo locale è terreno neutrale. |
+| P018, Eroi | PSI 8, VOL 7, COM 1 | **Elia Mentis** (Lanterne): maestro di scuola telepate. |
+| P019, Cattivi | COM 10, FOR 9, RES 0 | **Mirko KO** (Compagnia Lete): pugile imbattibile con la mascella di vetro. |
+| P020, Eroi | ENE 6, TEC 6, COM 3 | **Bea Radio** (Lanterne): radioamatrice. |
+| P021, Cattivi | FUR 8, VEL 7, TEC 1 | **Ugo Spillo** (Sciolti, schierato con i Cattivi): scassinatore all'antica. |
+| P022, Neutrali | PER 10, VOL 9, FUR 0 | **Rex Mastino** (Sciolti): cacciatore di taglie. |
+| P023, Eroi | RES 6, VOL 6, PSI 3 | **Enzo Brace** (Custodi): pompiere. |
+| P024, Cattivi | MAG 8, ENE 7, INT 1 | **Dino Fuse** (Compagnia Lete): apprendista pasticcione. |
 
 ## 6. Minacce
 
