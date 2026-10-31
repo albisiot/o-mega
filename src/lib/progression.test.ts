@@ -7,13 +7,13 @@ describe("progression", () => {
   });
 
   it("mirrors the XP that finish_match awards", () => {
-    expect(matchXp({ mode: "bot", result: "win", end_reason: "completed" })).toBe(10);
-    expect(matchXp({ mode: "bot", result: "loss", end_reason: "completed" })).toBe(3);
-    expect(matchXp({ mode: "conquest", result: "win", end_reason: "forfeit" })).toBe(30);
-    expect(matchXp({ mode: "friendly", result: "draw", end_reason: "completed" })).toBe(10);
-    expect(matchXp({ mode: "friendly", result: "loss", end_reason: "forfeit" })).toBe(0);
-    expect(matchXp({ mode: "friendly", result: "draw", end_reason: "forfeit" })).toBe(0);
-    expect(matchXp({ mode: "bot", result: null, end_reason: null })).toBe(0);
+    expect(matchXp({ bot_difficulty: "easy", result: "win", end_reason: "completed" })).toBe(10);
+    expect(matchXp({ bot_difficulty: "super_pro", result: "loss", end_reason: "completed" })).toBe(3);
+    expect(matchXp({ bot_difficulty: null, result: "win", end_reason: "forfeit" })).toBe(30);
+    expect(matchXp({ bot_difficulty: null, result: "draw", end_reason: "completed" })).toBe(10);
+    expect(matchXp({ bot_difficulty: null, result: "loss", end_reason: "forfeit" })).toBe(0);
+    expect(matchXp({ bot_difficulty: null, result: "draw", end_reason: "forfeit" })).toBe(0);
+    expect(matchXp({ bot_difficulty: "easy", result: null, end_reason: null })).toBe(0);
   });
 
   it("measures the progress within a level", () => {

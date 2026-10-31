@@ -72,7 +72,8 @@ function ConquestSection({ status, disabled }: { status: ConquestStatus | null; 
           <div>
             <p className="font-display text-xl uppercase">Cerca un avversario</p>
             <p className="text-sm font-semibold">
-              Un avversario del tuo livello. Carte perse oggi: {status?.cards_lost_today}/{maxCardsLostPerDay}.
+              Un avversario del tuo livello, o un bot dopo {balance.matchmaking.conquestBotAfterSeconds} secondi. Carte
+              perse oggi: {status?.cards_lost_today}/{maxCardsLostPerDay}.
             </p>
           </div>
           <span className="font-display text-2xl" aria-hidden>
@@ -204,7 +205,9 @@ export default function PlayPage() {
               {active.mode === "bot"
                 ? `Contro il bot ${DIFFICULTY_LABELS[active.bot_difficulty ?? "easy"]}`
                 : active.mode === "conquest"
-                  ? "Conquista contro un giocatore"
+                  ? active.bot_difficulty
+                    ? `Conquista contro il bot ${DIFFICULTY_LABELS[active.bot_difficulty]}`
+                    : "Conquista contro un giocatore"
                   : "Amichevole contro un giocatore"}{" "}
               · round {active.current_round}
             </p>

@@ -146,6 +146,7 @@ export type Database = {
           id: string
           is_starter: boolean
           locked_until: string | null
+          out_of_play_at: string | null
           owner_id: string | null
         }
         Insert: {
@@ -156,6 +157,7 @@ export type Database = {
           id?: string
           is_starter?: boolean
           locked_until?: string | null
+          out_of_play_at?: string | null
           owner_id?: string | null
         }
         Update: {
@@ -166,6 +168,7 @@ export type Database = {
           id?: string
           is_starter?: boolean
           locked_until?: string | null
+          out_of_play_at?: string | null
           owner_id?: string | null
         }
         Relationships: [
@@ -293,10 +296,10 @@ export type Database = {
           chosen_instance_id: string | null
           deadline_at: string
           eligible_instance_ids: string[]
-          loser_id: string
+          loser_id: string | null
           match_id: string
           resolved_at: string | null
-          winner_id: string
+          winner_id: string | null
         }
         Insert: {
           auto_assigned?: boolean
@@ -304,10 +307,10 @@ export type Database = {
           chosen_instance_id?: string | null
           deadline_at: string
           eligible_instance_ids?: string[]
-          loser_id: string
+          loser_id?: string | null
           match_id: string
           resolved_at?: string | null
-          winner_id: string
+          winner_id?: string | null
         }
         Update: {
           auto_assigned?: boolean
@@ -315,10 +318,10 @@ export type Database = {
           chosen_instance_id?: string | null
           deadline_at?: string
           eligible_instance_ids?: string[]
-          loser_id?: string
+          loser_id?: string | null
           match_id?: string
           resolved_at?: string | null
-          winner_id?: string
+          winner_id?: string | null
         }
         Relationships: [
           {
@@ -1261,6 +1264,15 @@ export type Database = {
         Args: {
           p_bot_definition_ids: string[]
           p_card_instance_ids: string[]
+          p_difficulty: string
+          p_threat_ids: string[]
+          p_user: string
+        }
+        Returns: string
+      }
+      match_create_conquest_bot: {
+        Args: {
+          p_bot_definition_ids: string[]
           p_difficulty: string
           p_threat_ids: string[]
           p_user: string

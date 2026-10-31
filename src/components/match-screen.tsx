@@ -84,7 +84,7 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
     }
   }, []);
 
-  const isBot = view.mode === "bot";
+  const isBot = view.bot_difficulty !== null;
   const isActive = view.status === "active";
   const conquestOpen = Boolean(view.conquest && !view.conquest.resolved);
   const current = isActive ? view.rounds.find((r) => r.round === view.current_round && !r.resolved) : undefined;
@@ -95,7 +95,7 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
       setBusy(true);
       setError(null);
       try {
-        if (view.mode === "bot") apply(await playRound(view.id, round, choice));
+        if (isBot) apply(await playRound(view.id, round, choice));
         else apply(choice === null ? await resolvePvpRound(view.id) : await submitChoice(view.id, round, choice));
       } catch (cause) {
         // Someone (the timer, another tab) was faster: reload the state.
@@ -108,7 +108,7 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
         setBusy(false);
       }
     },
-    [apply, view.id, view.mode],
+    [apply, view.id, isBot],
   );
 
   // Against a player: follow the server's broadcasts (with a slow poll in case
@@ -198,9 +198,11 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
           {view.opponent && <PlayerAvatar username={view.opponent.username} avatarUrl={view.opponent.avatar_url} />}
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold text-muted">
-              {isBot
+              {view.mode === "bot"
                 ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}`
-                : `${view.mode === "conquest" ? "Conquista" : "Amichevole"} · ${opponentName}`}
+                : `${view.mode === "conquest" ? "Conquista" : "Amichevole"} · ${
+                    isBot ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}` : opponentName
+                  }`}
             </p>
             <p className="flex items-baseline gap-1.5 text-sm font-bold">
               Tu
@@ -334,7 +336,7 @@ function ChoosePhase({
   busy: boolean;
   onPlay: (choice: string) => void;
 }) {
-  const isBot = view.mode === "bot";
+  const isBot = view.bot_difficulty !== null;
   const opponentName = view.opponent?.username ?? "Il bot";
   const pending = round.my_pending_instance_id;
   const timer = balance.match.roundTimerSeconds;
@@ -710,7 +712,9 @@ function MatchResult({
         <ConquestPanel
           matchId={view.id}
           conquest={view.conquest}
-          opponentName={view.opponent?.username ?? "L'avversario"}
+          opponentName={
+            view.bot_difficulty ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty]}` : (view.opponent?.username ?? "L'avversario")
+          }
           serverNow={serverNow}
           onUpdate={onUpdate}
           abilities={abilities}

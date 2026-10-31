@@ -76,6 +76,8 @@ export const balance = {
     queueStaleSeconds: 20,
     /** After this wait without an opponent, the app suggests a bot. */
     suggestBotAfterSeconds: 60,
+    /** After this wait in the Conquest queue, a random bot becomes the opponent. */
+    conquestBotAfterSeconds: 60,
     /** Conquest pairing: maximum differences in level and team value (sum of rarity ranks). */
     levelRange: 2,
     teamValueRange: 4,

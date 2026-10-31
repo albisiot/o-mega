@@ -10,11 +10,11 @@ export function xpForLevel(level: number): number {
 }
 
 /** XP earned in a finished match, for display: finish_match() is the authority. */
-export function matchXp(view: Pick<MatchView, "mode" | "result" | "end_reason">): number {
+export function matchXp(view: Pick<MatchView, "bot_difficulty" | "result" | "end_reason">): number {
   const { pvpWinXp, pvpParticipationXp, botWinXp, botParticipationXp } = balance.progression;
   if (!view.result) return 0;
   if (view.end_reason === "forfeit" && view.result !== "win") return 0; // whoever leaves earns nothing
-  if (view.mode === "bot") return view.result === "win" ? botWinXp : botParticipationXp;
+  if (view.bot_difficulty) return view.result === "win" ? botWinXp : botParticipationXp;
   return view.result === "win" ? pvpWinXp : pvpParticipationXp;
 }
 

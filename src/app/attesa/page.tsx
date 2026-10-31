@@ -138,7 +138,13 @@ function QueueWait({ userId, queueMode }: { userId: string; queueMode: QueueMode
         <p className="mt-1 font-display text-2xl text-comic-yellow">{waited} s</p>
       </div>
       {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
-      {waited >= balance.matchmaking.suggestBotAfterSeconds && (
+      {queueMode === "conquest" && (
+        <p className="max-w-xs text-sm font-semibold">
+          Se non arriva nessuno, dopo {balance.matchmaking.conquestBotAfterSeconds} secondi sfiderai un bot a caso. Le
+          carte restano in palio: puoi vincerne una o perderla.
+        </p>
+      )}
+      {queueMode !== "conquest" && waited >= balance.matchmaking.suggestBotAfterSeconds && (
         <div className="flex flex-col items-center gap-3 bg-panel p-4">
           <p className="text-sm font-semibold">Nessun avversario disponibile al momento.</p>
           <Link href="/gioca" className="btn btn-outline">

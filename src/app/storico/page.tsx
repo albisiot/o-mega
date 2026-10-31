@@ -69,7 +69,9 @@ function HistoryRow({ entry }: { entry: MatchHistoryEntry }) {
   const mode =
     entry.mode === "bot"
       ? `Bot ${DIFFICULTY_LABELS[entry.bot_difficulty ?? "easy"]}`
-      : `${entry.mode === "conquest" ? "Conquista" : "Amichevole"} · ${entry.opponent ?? "giocatore rimosso"}`;
+      : `${entry.mode === "conquest" ? "Conquista" : "Amichevole"} · ${
+          entry.bot_difficulty ? `Bot ${DIFFICULTY_LABELS[entry.bot_difficulty]}` : (entry.opponent ?? "giocatore rimosso")
+        }`;
 
   return (
     <Link href={`/partita/?id=${entry.id}`} className="row-link">

@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "31 ottobre 2026",
     changes: [
+      "Conquista senza attese: se dopo 60 secondi non si trova nessuno, sfidi un bot a caso con le carte in palio. Se vinci ricevi una copia di una sua carta, se perdi la carta presa dal bot esce dal gioco.",
       "Arriva il bot Super Pro: prima di ogni mossa simula mille partite possibili e sceglie quella che vince più spesso.",
       "20 nuovi personaggi a Nuova Megara. Quattro si sbloccano salendo di livello: Nico Icaro al 3, Mara Nebbia al 5, Cap. Zefiro al 7 e Stella Nova al 10.",
       "Le carte hanno effetti visivi che crescono con la rarità, e ogni Omega ne ha uno tutto suo. Valori e regole non cambiano.",

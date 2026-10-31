@@ -8,6 +8,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   computeAbilityMeans,
   drawThreatLevels,
+  pickOne,
   pickThreats,
   planBotMatch,
   playBotRound,
@@ -314,7 +315,7 @@ async function playBotMatchRound(userId: string, body: Record<string, unknown>) 
 
   const loaded = await load();
   const { match, state, deadline } = await loadMatch(userId, matchId, loaded);
-  if (match.mode !== "bot") throw new GameError("match_not_found");
+  if (!match.bot_difficulty) throw new GameError("match_not_found");
   if (body.round !== match.current_round) throw new GameError("round_already_resolved");
 
   const expired = Date.now() > deadline + loaded.graceSeconds * 1000;
@@ -372,7 +373,19 @@ async function joinQueue(userId: string, body: Record<string, unknown>) {
     p_threat_ids: planThreats(loaded),
   });
   if (error) throw new Error(error.message);
-  return { matched: Boolean(data), match_id: data ?? null };
+  if (data || mode !== "conquest") return { matched: Boolean(data), match_id: data ?? null };
+
+  // Nobody yet: the database decides whether the wait is over and a bot steps in.
+  const difficulty = pickOne(rng, DIFFICULTIES);
+  const plan = planBotMatch({ rules: loaded.rules, catalog: loaded.catalog, difficulty, rng });
+  const bot = await admin.rpc("match_create_conquest_bot", {
+    p_user: userId,
+    p_difficulty: difficulty,
+    p_bot_definition_ids: plan.botTeam.map((c) => c.definitionId),
+    p_threat_ids: plan.threats.map((t) => t.id),
+  });
+  if (bot.error) throw new Error(bot.error.message);
+  return { matched: Boolean(bot.data), match_id: bot.data ?? null };
 }
 
 /**
@@ -382,7 +395,7 @@ async function joinQueue(userId: string, body: Record<string, unknown>) {
 async function resolvePvpRound(userId: string, matchId: string) {
   const loaded = await load();
   const { match, side, state, deadline } = await loadMatch(userId, matchId, loaded);
-  if (match.mode === "bot") throw new GameError("match_not_found");
+  if (match.bot_difficulty) throw new GameError("match_not_found");
 
   const pending = check(
     await admin.from("pending_plays").select("side, card_instance_id").eq("match_id", matchId).eq("round", match.current_round),

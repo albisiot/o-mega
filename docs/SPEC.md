@@ -184,7 +184,7 @@ Il giocatore può sfidare un bot scegliendo la difficoltà. Le partite contro bo
 | **Super Pro** | Simulazione Monte Carlo: per ogni scelta possibile simula molte volte il resto della partita, estraendo Minacce plausibili dal catalogo e squadre avversarie plausibili (coerenti con i personaggi già visti), e gioca la mossa con la probabilità di vittoria più alta. |
 
 - Il bot costruisce la propria squadra in modo coerente con la difficoltà (es. Facile con squadre casuali, Super Pro con squadre equilibrate).
-- Le partite contro bot sono sempre **Amichevoli**: nessuna conquista di carte.
+- Le partite scelte contro un bot sono sempre **Amichevoli**: nessuna conquista di carte. L'unica eccezione è la Conquista dopo l'attesa (§6.5).
 - Ricompense in monete contro bot: da definire con l'economia (§8).
 - In futuro il matchmaking potrà inserire bot quando mancano avversari umani: in quel caso la difficoltà sarà scelta dal sistema in base al livello del giocatore.
 
@@ -224,6 +224,15 @@ Se il perdente non ha carte idonee (tutte sopra il limite o protette), il vincit
 | Matchmaking Conquista | per livello e per valore della squadra schierata |
 
 Raggiunto il limite giornaliero di carte perse, il giocatore può continuare solo in Amichevole fino al reset.
+
+### 6.5 Conquista contro un bot
+
+Dopo **60 secondi** in coda Conquista senza avversari, il giocatore sfida un bot di difficoltà casuale, sapendolo prima e durante la partita. Valgono le regole di §6.1-6.4, con queste differenze dovute al fatto che un bot non possiede carte:
+
+- Se il giocatore vince, sceglie tra **copie nuove** delle carte del bot, e la carta scelta è bloccata 48 ore come ogni carta conquistata. Non c'è un limite giornaliero di carte vinte.
+- Se il giocatore perde, il bot prende subito una carta idonea a caso, che **esce dal gioco**. Conta nel limite giornaliero di carte perse.
+- Abbandonare o sparire conta come sconfitta, quindi la carta si perde comunque.
+- La partita dà l'esperienza delle partite contro bot e conta nelle statistiche contro i bot.
 
 ## 7. Pacchetti
 
