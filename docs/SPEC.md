@@ -351,6 +351,7 @@ Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy
 | Abilità | 12 in 4 famiglie: Corpo (Forza, Velocità, Resistenza), Mente (Intelletto, Volontà, Percezione), Potere (Energia, Magia, Psiche), Mestiere (Combattimento, Tecnologia, Furtività) |
 | Bot | Difficoltà selezionabile: Facile, Medio, Difficile, Super Pro |
 | Monete dalle partite (sostituisce §8) | Solo la Conquista paga: chi perde +10 monete, chi vince prende la carta (e +50 solo se nessuna carta è conquistabile); pareggio +10 a entrambi. Bot e amichevoli non pagano monete. Chi abbandona non guadagna nulla. |
+| Premi di livello | Raggiungere il livello L paga una sola volta 30 + 10 × L monete (livello 2: 50, livello 3: 60), in qualsiasi modalità. Chi supera più livelli insieme li riceve tutti. |
 | Codice amico | Solo amichevole: nessuno scambio di carte, nessuna moneta. La Conquista si gioca solo con avversario casuale. |
 | Squadra in Conquista | Almeno 3 carte conquistabili (non starter). Se un personaggio è posseduto sia come starter sia come doppione, il giocatore sceglie quale copia schierare (di default la starter, protetta). |
 | Sblocco Conquista | 5 partite completate o livello 3; le partite abbandonate non contano. |

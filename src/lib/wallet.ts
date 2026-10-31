@@ -7,6 +7,7 @@ export const COIN_REASON_LABELS: Record<string, string> = {
   bot_match_reward: "Ricompensa partita contro bot",
   duplicate_conversion: "Conversione doppioni",
   conquest_bonus: "Bonus conquista",
+  level_reward: "Premio di livello",
   admin_adjustment: "Rettifica",
 };
 

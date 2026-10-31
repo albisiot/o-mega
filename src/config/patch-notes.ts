@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "31 ottobre 2026",
     changes: [
+      "Premi di livello: ogni nuovo livello regala monete (livello 2: 50, livello 3: 60, poi 10 in più a ogni livello). Chi è già salito ha ricevuto i premi arretrati.",
       "Passaggi più rapidi tra le schermate: Collezione, Negozio e Gioca si aprono subito.",
       "Prime carte da guardare in 3D: Guarda in 3D nel dettaglio di tre personaggi.",
       "Benvenuti a Nuova Megara: un'introduzione racconta il mondo al primo accesso e il profilo ha la nuova voce Il mondo.",

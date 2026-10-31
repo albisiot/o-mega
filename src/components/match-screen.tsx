@@ -694,6 +694,11 @@ function MatchResult({
             )}
           </div>
         )}
+        {view.level_rewards.map((reward) => (
+          <p key={reward.level} className="relative -skew-x-8 bg-comic-cyan px-3 py-1 text-sm font-extrabold text-black">
+            Livello {reward.level}! +{reward.coins} monete
+          </p>
+        ))}
       </section>
 
       {view.conquest && (

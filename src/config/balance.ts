@@ -92,6 +92,9 @@ export const balance = {
     botParticipationXp: 3,
     /** XP needed for level L is levelXpBase * L * (L - 1). */
     levelXpBase: 50,
+    /** Coins for reaching level L are levelRewardBase + levelRewardPerLevel * L. */
+    levelRewardBase: 30,
+    levelRewardPerLevel: 10,
   },
 
   formations: {
