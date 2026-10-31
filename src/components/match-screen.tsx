@@ -7,6 +7,7 @@ import { Silhouette } from "@/components/card-view";
 import { ComicBurst } from "@/components/comic-parts";
 import { ConquestPanel } from "@/components/conquest-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { ThreatDiorama } from "@/components/threat-diorama";
 import { balance } from "@/config/balance";
 import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
@@ -368,6 +369,7 @@ function ChoosePhase({
       <section className="cut-bottom relative overflow-hidden bg-comic-magenta px-4 pb-6 pt-3 text-black">
         <div aria-hidden className="halftone absolute inset-0 [mask-image:linear-gradient(135deg,transparent_45%,#000_100%)]" />
         <div className="relative">
+          <ThreatDiorama key={round.round} name={round.threat.name} level={round.level} />
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-sm font-extrabold">
