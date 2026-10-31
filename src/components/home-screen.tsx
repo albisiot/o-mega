@@ -7,9 +7,29 @@ import { CoinBadge } from "@/components/coin-badge";
 import { PackPanel } from "@/components/pack-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { WorldIntro } from "@/components/world-intro";
+import { fetchAbilities, seenAbilities } from "@/lib/catalog";
+import { fetchCatalog, fetchCollection, seenCatalog, seenCollection } from "@/lib/collection";
 import { fetchActiveMatch, type ActiveMatch } from "@/lib/match";
+import { fetchPackOdds, seenPackOdds } from "@/lib/packs";
 import { countOwnedCards, type Profile } from "@/lib/player";
 import { usePackStatus } from "@/lib/use-pack-status";
+import { fetchCoinHistory, seenCoinHistory } from "@/lib/wallet";
+
+const PRELOAD_DELAY_MS = 800;
+
+function preloadScreens() {
+  const loads: [unknown, () => Promise<unknown>][] = [
+    [seenCatalog(), fetchCatalog],
+    [seenAbilities(), fetchAbilities],
+    [seenCollection(), fetchCollection],
+    [seenPackOdds(), fetchPackOdds],
+    [seenCoinHistory(), fetchCoinHistory],
+  ];
+  for (const [seen, load] of loads) {
+    // A nicety: the screen fetches for itself anyway.
+    if (!seen) load().catch(() => {});
+  }
+}
 
 export function HomeScreen({ profile }: { profile: Profile }) {
   const [cardCount, setCardCount] = useState<number | null>(null);
@@ -18,7 +38,11 @@ export function HomeScreen({ profile }: { profile: Profile }) {
 
   const packsSettled = Boolean(packs.status || packs.error);
   useEffect(() => {
-    if (packsSettled) markHomeReady();
+    if (!packsSettled) return;
+    markHomeReady();
+    // Once the home is up, gets the other screens' data ready for the first tap.
+    const timer = setTimeout(preloadScreens, PRELOAD_DELAY_MS);
+    return () => clearTimeout(timer);
   }, [packsSettled]);
 
   useEffect(() => {

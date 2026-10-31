@@ -1,3 +1,4 @@
+import { forget, keepSeen, lastSeen } from "@/lib/last-seen";
 import { getSupabase } from "@/lib/supabase/client";
 
 export type PackCard = {
@@ -41,13 +42,16 @@ export type PackOdds = {
 export async function fetchPackOdds(): Promise<PackOdds> {
   const { data, error } = await getSupabase().rpc("get_pack_odds");
   if (error) throw error;
-  return data as unknown as PackOdds;
+  return keepSeen("packOdds", data as unknown as PackOdds);
 }
+
+export const seenPackOdds = () => lastSeen<PackOdds>("packOdds");
+export const seenPackStatus = () => lastSeen<PackStatus>("packStatus");
 
 export async function fetchPackStatus(): Promise<PackStatus> {
   const { data, error } = await getSupabase().rpc("get_pack_status");
   if (error) throw error;
-  return data as unknown as PackStatus;
+  return keepSeen("packStatus", data as unknown as PackStatus);
 }
 
 export async function claimDailyPack(): Promise<PackOpening> {
@@ -68,6 +72,9 @@ const openings = new Map<string, PackOpening>();
 
 function remember(opening: PackOpening): PackOpening {
   openings.set(opening.id, opening);
+  // A pack just opened: the old status would offer it again, the old balance is wrong.
+  forget("packStatus");
+  forget("coinHistory");
   return opening;
 }
 

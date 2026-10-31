@@ -1,3 +1,4 @@
+import { keepSeen, lastSeen } from "@/lib/last-seen";
 import { getSupabase } from "@/lib/supabase/client";
 
 // UI labels for catalog codes stored in the database.
@@ -20,10 +21,15 @@ async function loadAbilities(): Promise<AbilityInfo[]> {
     .from("ability_definitions")
     .select("code, name, sort_order, family:ability_families!inner(code, name, color, sort_order)");
   if (error) throw error;
-  return data
-    .sort((a, b) => a.family.sort_order - b.family.sort_order || a.sort_order - b.sort_order)
-    .map(({ code, name, family }) => ({ code, name, family }));
+  return keepSeen(
+    "abilities",
+    data
+      .sort((a, b) => a.family.sort_order - b.family.sort_order || a.sort_order - b.sort_order)
+      .map(({ code, name, family }) => ({ code, name, family })),
+  );
 }
+
+export const seenAbilities = () => lastSeen<AbilityInfo[]>("abilities");
 
 /** The 12 abilities ordered by family then position; fetched once per session. */
 export function fetchAbilities(): Promise<AbilityInfo[]> {

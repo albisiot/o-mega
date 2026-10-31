@@ -6,15 +6,15 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
 import { ShopView } from "@/components/shop-view";
 import { describeServerError } from "@/lib/errors";
-import { fetchPackOdds, type PackOdds } from "@/lib/packs";
+import { fetchPackOdds, seenPackOdds, type PackOdds } from "@/lib/packs";
 import { usePackStatus } from "@/lib/use-pack-status";
-import { fetchCoinHistory, type CoinMovement } from "@/lib/wallet";
+import { fetchCoinHistory, seenCoinHistory, type CoinMovement } from "@/lib/wallet";
 
 export default function ShopPage() {
   const { session } = useRequireSignedIn();
   const { status, error: statusError, refresh } = usePackStatus();
-  const [odds, setOdds] = useState<PackOdds | null>(null);
-  const [history, setHistory] = useState<CoinMovement[] | null>(null);
+  const [odds, setOdds] = useState<PackOdds | null>(seenPackOdds);
+  const [history, setHistory] = useState<CoinMovement[] | null>(seenCoinHistory);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

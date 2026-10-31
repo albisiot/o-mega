@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { describeServerError } from "@/lib/errors";
-import { fetchPackStatus, type PackStatus } from "@/lib/packs";
+import { fetchPackStatus, seenPackStatus, type PackStatus } from "@/lib/packs";
 import { useNow } from "@/lib/use-now";
 
 /**
@@ -11,7 +11,7 @@ import { useNow } from "@/lib/use-now";
  */
 export function usePackStatus() {
   const now = useNow(30_000);
-  const [status, setStatus] = useState<PackStatus | null>(null);
+  const [status, setStatus] = useState<PackStatus | null>(seenPackStatus);
   const [error, setError] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
 

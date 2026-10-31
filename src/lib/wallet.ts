@@ -1,3 +1,4 @@
+import { keepSeen, lastSeen } from "@/lib/last-seen";
 import { getSupabase } from "@/lib/supabase/client";
 
 export const COIN_REASON_LABELS: Record<string, string> = {
@@ -21,6 +22,8 @@ export type CoinMovement = {
 
 type LedgerRow = { id: number; amount: number; reason: string; created_at: string };
 
+export const seenCoinHistory = () => lastSeen<CoinMovement[]>("coinHistory");
+
 export async function fetchCoinHistory(limit = 200): Promise<CoinMovement[]> {
   const { data, error } = await getSupabase()
     .from("coin_ledger")
@@ -29,7 +32,7 @@ export async function fetchCoinHistory(limit = 200): Promise<CoinMovement[]> {
     .order("id", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return groupCoinMovements(data);
+  return keepSeen("coinHistory", groupCoinMovements(data));
 }
 
 /** Merges consecutive rows of one operation: they share reason and created_at (the transaction's now()). */

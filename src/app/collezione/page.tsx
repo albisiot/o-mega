@@ -5,15 +5,22 @@ import { useEffect, useState } from "react";
 import { Album } from "@/components/album";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
-import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
-import { fetchCatalog, fetchCollection, type CatalogCard, type OwnedSummary } from "@/lib/collection";
+import { fetchAbilities, seenAbilities, type AbilityInfo } from "@/lib/catalog";
+import {
+  fetchCatalog,
+  fetchCollection,
+  seenCatalog,
+  seenCollection,
+  type CatalogCard,
+  type OwnedSummary,
+} from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
 
 export default function CollectionPage() {
   const { session } = useRequireSignedIn();
-  const [catalog, setCatalog] = useState<CatalogCard[] | null>(null);
-  const [owned, setOwned] = useState<Map<string, OwnedSummary> | null>(null);
-  const [abilities, setAbilities] = useState<AbilityInfo[]>([]);
+  const [catalog, setCatalog] = useState<CatalogCard[] | null>(seenCatalog);
+  const [owned, setOwned] = useState<Map<string, OwnedSummary> | null>(seenCollection);
+  const [abilities, setAbilities] = useState<AbilityInfo[]>(() => seenAbilities() ?? []);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 

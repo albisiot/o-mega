@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 
 const TABS = [
@@ -20,7 +21,10 @@ const SHOWN_ON = new Set([...TABS.map((tab) => tab.href), "/storico"]);
 export function BottomNav() {
   const { session } = useAuth();
   const pathname = usePathname().replace(/\/+$/, "") || "/";
+  // The tapped tab lights up at once, without waiting for the next screen.
+  const [tapped, setTapped] = useState<{ from: string; href: string } | null>(null);
   if (!session || !SHOWN_ON.has(pathname)) return null;
+  const current = tapped?.from === pathname ? tapped.href : pathname;
 
   return (
     <>
@@ -33,11 +37,12 @@ export function BottomNav() {
       >
         <ul className="mx-auto flex max-w-md">
           {TABS.map((tab) => {
-            const active = pathname === tab.href;
+            const active = current === tab.href;
             return (
               <li key={tab.href} className="flex-1">
                 <Link
                   href={tab.href}
+                  onClick={() => setTapped({ from: pathname, href: tab.href })}
                   aria-current={active ? "page" : undefined}
                   className={`flex h-[60px] flex-col items-center justify-center gap-0.5 text-[11px] ${
                     active ? "bg-comic-yellow font-extrabold text-black" : "font-bold text-muted"

@@ -1,4 +1,5 @@
 import type { CardData } from "@/components/card-view";
+import { keepSeen, lastSeen } from "@/lib/last-seen";
 import { getSupabase } from "@/lib/supabase/client";
 
 export type CatalogCard = CardData & {
@@ -26,7 +27,7 @@ async function loadCatalog(): Promise<CatalogCard[]> {
   const { data, error } = await getSupabase().from("card_catalog").select("*").order("code");
   if (error) throw error;
   // View columns are typed as nullable; the view only joins non-null columns.
-  return data.map((row) => ({
+  return keepSeen("catalog", data.map((row) => ({
     id: row.id!,
     code: row.code!,
     name: row.name!,
@@ -37,8 +38,11 @@ async function loadCatalog(): Promise<CatalogCard[]> {
     rarity: { code: row.rarity_code!, name: row.rarity_name!, rank: row.rarity_rank!, color: row.rarity_color! },
     power: row.power_name ? { name: row.power_name, text: row.power_text ?? "" } : null,
     duplicateCoinValue: row.duplicate_coin_value ?? 0,
-  }));
+  })));
 }
+
+export const seenCatalog = () => lastSeen<CatalogCard[]>("catalog");
+export const seenCollection = () => lastSeen<Map<string, OwnedSummary>>("collection");
 
 /** Every active character, by catalog number; fetched once per session. */
 export function fetchCatalog(): Promise<CatalogCard[]> {
@@ -56,7 +60,7 @@ export function fetchCatalog(): Promise<CatalogCard[]> {
 export async function fetchCollection(): Promise<Map<string, OwnedSummary>> {
   const { data, error } = await getSupabase().rpc("get_collection");
   if (error) throw error;
-  return new Map(data.map((row) => [row.definition_id, row]));
+  return keepSeen("collection", new Map(data.map((row) => [row.definition_id, row])));
 }
 
 /** Converts `count` duplicates of a character, or all of them when omitted. */

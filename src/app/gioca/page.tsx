@@ -191,7 +191,10 @@ export default function PlayPage() {
     }
   }
 
-  if (active === undefined && !error) return <LoadingScreen />;
+  if (!session) return <LoadingScreen />;
+
+  // The modes wait for the answer: a match in progress would block them anyway.
+  const blocked = Boolean(active) || (active === undefined && !error);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -257,9 +260,9 @@ export default function PlayPage() {
                   {open ? "↓" : "→"}
                 </span>
               </button>
-              {open && mode.key === "bot" && <BotSection disabled={Boolean(active)} />}
-              {open && mode.key === "friendly" && <FriendlySection disabled={Boolean(active)} />}
-              {open && mode.key === "conquest" && <ConquestSection status={conquest} disabled={Boolean(active)} />}
+              {open && mode.key === "bot" && <BotSection disabled={blocked} />}
+              {open && mode.key === "friendly" && <FriendlySection disabled={blocked} />}
+              {open && mode.key === "conquest" && <ConquestSection status={conquest} disabled={blocked} />}
             </section>
           );
         })}

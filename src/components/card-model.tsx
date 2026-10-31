@@ -5,13 +5,25 @@ import { withBasePath } from "@/lib/base-path";
 
 /** Cards that have a 3D model in public/models. */
 const CARD_MODELS = new Set(["P001", "P030", "P060"]);
+const PRELOAD_DELAY_MS = 600;
 
 /** The button that opens a card's 3D model. Purely decorative: other cards show nothing. */
 export function CardModelButton({ code, name }: { code: string; name: string }) {
   const sheet = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
+  const hasModel = CARD_MODELS.has(code);
 
-  if (!CARD_MODELS.has(code)) return null;
+  // Starts the download as soon as the page is quiet, so that the button feels instant.
+  useEffect(() => {
+    if (!hasModel) return;
+    const timer = setTimeout(() => {
+      void import("@/lib/card-model").catch(() => {});
+      void fetch(withBasePath(`/models/${code}.glb`)).catch(() => {});
+    }, PRELOAD_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [code, hasModel]);
+
+  if (!hasModel) return null;
   return (
     <>
       <button

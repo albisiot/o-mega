@@ -8,8 +8,15 @@ import { CopiesPanel, MissingCard } from "@/components/card-details";
 import { CardModelButton } from "@/components/card-model";
 import { CardView } from "@/components/card-view";
 import { LoadingScreen } from "@/components/loading-screen";
-import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
-import { fetchCatalog, fetchCollection, type CatalogCard, type OwnedSummary } from "@/lib/collection";
+import { fetchAbilities, seenAbilities, type AbilityInfo } from "@/lib/catalog";
+import {
+  fetchCatalog,
+  fetchCollection,
+  seenCatalog,
+  seenCollection,
+  type CatalogCard,
+  type OwnedSummary,
+} from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
 
 // /carta/?id=<definition id>: query string, see CLAUDE.md (static export).
@@ -23,10 +30,19 @@ export default function CardPage() {
 
 type Loaded = { card: CatalogCard | null; owned: OwnedSummary | null; abilities: AbilityInfo[] };
 
+function seenCard(id: string | null): Loaded | null {
+  const catalog = seenCatalog();
+  const collection = seenCollection();
+  const abilities = seenAbilities();
+  const card = catalog?.find((entry) => entry.id === id);
+  if (!card || !collection || !abilities) return null;
+  return { card, owned: collection.get(card.id) ?? null, abilities };
+}
+
 function CardPageContent() {
   const id = useSearchParams().get("id");
   const { session } = useRequireSignedIn();
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [loaded, setLoaded] = useState<Loaded | null>(() => seenCard(id));
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 

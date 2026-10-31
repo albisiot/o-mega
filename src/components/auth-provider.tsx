@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { withBasePath } from "@/lib/base-path";
 import { describeServerError } from "@/lib/errors";
+import { forgetEverything } from "@/lib/last-seen";
 import { bootstrapPlayer, type Profile } from "@/lib/player";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -35,6 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(nextSession);
       setSessionKnown(true);
       if (!nextSession) {
+        forgetEverything();
         setProfile(null);
         setError(null);
       }
