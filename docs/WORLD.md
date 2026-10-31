@@ -119,6 +119,21 @@ Testo di colore (una frase):
 | P055, Eroi | RES 10, VOL 10, MAG 9, VEL 1, INT 1 | Riscossa | **Don Atlas** (Custodi): sta davanti alla porta del tempio. Da lì non passa nessuno, e da lì non si sposta. |
 | P056, Cattivi | ENE 10, MAG 10, TEC 9, RES 1, VOL 1 | Sfavorito | **Mekana** (Compagnia Lete): costruisce macchine che funzionano a incantesimi, e ormai è più macchina che persona. |
 
+### Beta: figure note in città
+
+| Carta | Valori chiave | Potere | Personaggio |
+|---|---|---|---|
+| P041, Cattivi | RES 10, COM 9, PER 1 | Terreno favorevole | **Otto Kaiser** (Compagnia Lete): esattore che incassa ogni colpo e ci vede pochissimo. |
+| P042, Neutrali | VEL 7, COM 7, INT 1 | Affinità (Corpo) | **Rico Turbo** (Sciolti): corriere su moto elettrica truccata. |
+| P043, Eroi | PSI 10, PER 9, INT 1 | Terreno favorevole | **Zoe Sonar** (Lanterne): sente i pensieri, ma non sempre li capisce. |
+| P044, Cattivi | ENE 7, MAG 7, INT 1 | Affinità (Potere) | **Igor Fiamma** (Figli dell'Ultima): piromane. |
+| P045, Eroi | FOR 10, RES 9, INT 1 | Terreno favorevole | **Bull Rossi** (Custodi): ex campione di lotta. |
+| P046, Cattivi | VEL 10, FUR 9, RES 1 | Terreno favorevole | **Lola Jet** (Sciolti, schierata con i Cattivi): la ladra più rapida di Nuova Megara. |
+| P047, Neutrali | INT 7, TEC 7, ENE 1 | Affinità (Mente) | **Ada Kode** (Banco): analista. |
+| P048, Eroi | MAG 10, PSI 9, PER 1 | Terreno favorevole | **Dante Nox** (Lanterne): mago di strada quasi cieco. |
+| P049, Cattivi | ENE 7, RES 7, FUR 1 | Affinità (Potere) | **Ivan Nucleo** (Compagnia Lete): dirigente, è un reattore che cammina. |
+| P050, Eroi | PSI 10, VOL 9, COM 1 | Terreno favorevole | **Sofia Zen** (Custodi): negoziatrice telepatica. |
+
 ### Delta: esempi di tono
 
 | Carta | Valori chiave | Personaggio |
