@@ -355,6 +355,7 @@ Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy
 | Codice amico | Solo amichevole: nessuno scambio di carte, nessuna moneta. La Conquista si gioca solo con avversario casuale. |
 | Squadra in Conquista | Almeno 3 carte conquistabili (non starter). Se un personaggio è posseduto sia come starter sia come doppione, il giocatore sceglie quale copia schierare (di default la starter, protetta). |
 | Sblocco Conquista | 5 partite completate o livello 3; le partite abbandonate non contano. |
+| Personaggi sbloccabili | Alcune carte hanno un livello di sblocco: non escono da pacchetti e starter set, ogni giocatore ne riceve una copia a quel livello, legata all'account (mai conquistabile né convertibile). Elenco in `docs/WORLD.md`. |
 
 ### 13.2 Aperte (usare il default)
 

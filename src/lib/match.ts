@@ -63,6 +63,7 @@ export type MatchView = {
   reward_coins: number | null;
   /** Levels reached with this match and the coins each one paid. */
   level_rewards: { level: number; coins: number }[];
+  level_unlocks?: { name: string; level: number }[];
   server_now: string;
   my_team: (MatchCard & { instance_id: string; played_round: number | null })[];
   rounds: MatchRound[];

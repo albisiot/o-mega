@@ -43,7 +43,7 @@ export function CopiesPanel({
         <Row label="Copie possedute" value={owned.copies} />
         <Row label="Doppioni convertibili" value={convertible} hint={`${value} monete l'uno`} />
         {owned.starter_copies > 0 && (
-          <Row label="Starter" value={owned.starter_copies} hint="Legata all'account: mai conquistabile né convertibile." />
+          <Row label="Protette" value={owned.starter_copies} hint="Legata all'account: mai conquistabile né convertibile." />
         )}
         {owned.locked_copies > 0 && (
           <Row label="Bloccate" value={owned.locked_copies} hint="Appena conquistate: non convertibili per ora." />
@@ -127,7 +127,11 @@ export function MissingCard({ card }: { card: CatalogCard }) {
           {card.rarity.name}
         </p>
       </div>
-      <p className="text-sm font-semibold text-muted">Non l&apos;hai ancora trovata. Apri pacchetti per scoprirla.</p>
+      <p className="text-sm font-semibold text-muted">
+        {card.unlockLevel
+          ? `Si sblocca al livello ${card.unlockLevel}: non si trova nei pacchetti.`
+          : "Non l'hai ancora trovata. Apri pacchetti per scoprirla."}
+      </p>
     </div>
   );
 }

@@ -7,6 +7,8 @@ export type CatalogCard = CardData & {
   code: string;
   rarity: CardData["rarity"] & { code: string };
   duplicateCoinValue: number;
+  /** Set for the characters players get at a level instead of finding them in packs. */
+  unlockLevel: number | null;
 };
 
 export type OwnedSummary = {
@@ -38,6 +40,7 @@ async function loadCatalog(): Promise<CatalogCard[]> {
     rarity: { code: row.rarity_code!, name: row.rarity_name!, rank: row.rarity_rank!, color: row.rarity_color! },
     power: row.power_name ? { name: row.power_name, text: row.power_text ?? "" } : null,
     duplicateCoinValue: row.duplicate_coin_value ?? 0,
+    unlockLevel: row.unlock_level ?? null,
   })));
 }
 

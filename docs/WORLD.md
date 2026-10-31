@@ -188,6 +188,35 @@ I Delta non hanno poteri.
 | P023, Eroi | RES 6, VOL 6, PSI 3 | **Enzo Brace** (Custodi): pompiere. |
 | P024, Cattivi | MAG 8, ENE 7, INT 1 | **Dino Fuse** (Compagnia Lete): apprendista pasticcione. |
 
+### La nuova ondata: 20 personaggi più in costume
+
+Da P061 a P080. Stesse proporzioni di rarità, stessi totali di valori e stessi tipi di Potere delle prime 60 carte. I disegni sono più da fumetto di supereroi: costumi, mantelli e poteri in azione. I Delta sono esordienti in costume fatto in casa.
+
+| Carta | Rarità e fazione | Personaggio | Sblocco |
+|---|---|---|---|
+| P061 | Delta, Eroi | **Nico Icaro:** ali di lamiera, vola finché regge la saldatura. | Livello 3 |
+| P062 | Delta, Eroi | **Gina Razzo:** zaino fatto di estintori, sa partire ma non fermarsi. | |
+| P063 | Delta, Eroi | **Tom Magnete:** attira il metallo, comprese le chiavi di tutti. | |
+| P064 | Delta, Eroi | **Bibi Gomma:** si allunga e ci mette molto a tornare. | |
+| P065 | Delta, Cattivi | **Vito Acido:** scioglie tutto, anche i propri guanti. | |
+| P066 | Delta, Cattivi | **Ruby Rasoio:** lame fatte in casa, si taglia spesso. | |
+| P067 | Delta, Cattivi | **Zeno Sciame:** comanda vespe meccaniche e ne ha paura. | |
+| P068 | Delta, Neutrali | **Mara Nebbia:** diventa nebbia e non sa dove si ricompone. | Livello 5 |
+| P069 | Gamma, Eroi | **Aurora Kane:** luce accecante, di giorno vale poco. | |
+| P070 | Gamma, Eroi | **Falco Neri:** ali retrattili, vista perfetta da lontano e pessima da vicino. | |
+| P071 | Gamma, Cattivi | **Mr. Cenere:** brucia ciò che tocca, comprese le proprie mani. | |
+| P072 | Gamma, Cattivi | **Sirena Nera:** voce ipnotica, ogni parola le costa. | |
+| P073 | Gamma, Neutrali | **Vic Cromo:** cacciatore di taglie col braccio cromato, in debito con il Banco. | |
+| P074 | Beta, Eroi | **Cap. Zefiro:** comanda il vento e non riesce a stare fermo. | Livello 7 |
+| P075 | Beta, Eroi | **Ercole Neo:** esoscheletro fortissimo, dipende dalle batterie. | |
+| P076 | Beta, Cattivi | **Dr. Caos:** una macchina che piega il caso, i suoi piani saltano sempre. | |
+| P077 | Beta, Cattivi | **Lord Kraken:** tentacoli d'acciaio, lentissimo fuori dall'acqua. | |
+| P078 | Alfa, Eroi | **Stella Nova:** la forza di una stella, che la consuma. | Livello 10 |
+| P079 | Alfa, Cattivi | **Lady Medusa:** pietrifica con lo sguardo, e la pietra sale anche su di lei. | |
+| P080 | Omega, Cattivi | **Re Tifeo:** gigante del mito sepolto sotto il vulcano, non può lasciare la sua prigione. | |
+
+Regola nuova: le carte con un livello di sblocco non escono dai pacchetti né dallo starter set. Ogni giocatore ne riceve una copia al livello indicato, legata all'account come una starter: non si conquista e non si converte in monete.
+
 ## 6. Minacce
 
 Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richiede Forza e Tecnologia. Molti nomi attuali funzionano già e vanno solo ambientati a Nuova Megara. Il testo di colore può usare il tono di un bollettino del sismografo.

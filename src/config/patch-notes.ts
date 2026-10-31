@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "31 ottobre 2026",
     changes: [
+      "20 nuovi personaggi a Nuova Megara. Quattro si sbloccano salendo di livello: Nico Icaro al 3, Mara Nebbia al 5, Cap. Zefiro al 7 e Stella Nova al 10.",
       "Le carte hanno effetti visivi che crescono con la rarità, e ogni Omega ne ha uno tutto suo. Valori e regole non cambiano.",
       "Premi di livello: ogni nuovo livello regala monete (livello 2: 50, livello 3: 60, poi 10 in più a ogni livello). Chi è già salito ha ricevuto i premi arretrati.",
       "Passaggi più rapidi tra le schermate: Collezione, Negozio e Gioca si aprono subito.",

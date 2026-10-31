@@ -699,6 +699,11 @@ function MatchResult({
             Livello {reward.level}! +{reward.coins} monete
           </p>
         ))}
+        {view.level_unlocks?.map((unlock) => (
+          <p key={unlock.name} className="relative -skew-x-8 bg-comic-yellow px-3 py-1 text-sm font-extrabold text-black">
+            Sbloccato: {unlock.name}!
+          </p>
+        ))}
       </section>
 
       {view.conquest && (

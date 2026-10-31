@@ -1048,6 +1048,7 @@ export type Database = {
           rarity_name: string | null
           rarity_rank: number | null
           stats: Json | null
+          unlock_level: number | null
         }
         Relationships: []
       }
