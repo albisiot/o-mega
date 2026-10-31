@@ -4,7 +4,7 @@ export const PATCH_NOTES = [
     date: "31 ottobre 2026",
     changes: [
       "Benvenuti a Nuova Megara: un'introduzione racconta il mondo al primo accesso e il profilo ha la nuova voce Il mondo.",
-      "L'introduzione carica subito le immagini e passa da una schermata all'altra con una dissolvenza.",
+      "L'introduzione carica subito le immagini, passa da una schermata all'altra con una dissolvenza e si può rivedere dal profilo.",
       "Il menu Gioca ora si apre su tre modalità: Contro bot, Amichevole online e Conquista.",
       "In Conquista si possono perdere fino a 10 carte al giorno (prima erano 3).",
       "Le patch notes sono ora nel profilo.",

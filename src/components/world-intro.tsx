@@ -31,18 +31,25 @@ export function preloadWorldIntro() {
 /** Full-screen story shown once per device, above the home screen. */
 export function WorldIntro() {
   const [open, setOpen] = useState(() => !hasSeenIntro());
-  const [step, setStep] = useState(0);
-  const [loaded, setLoaded] = useState<number[]>([]);
 
   if (!open) return null;
 
+  return (
+    <IntroPanels
+      onClose={() => {
+        markIntroSeen();
+        setOpen(false);
+      }}
+    />
+  );
+}
+
+function IntroPanels({ onClose: close }: { onClose: () => void }) {
+  const [step, setStep] = useState(0);
+  const [loaded, setLoaded] = useState<number[]>([]);
+
   const panel = WORLD_INTRO[step];
   const last = step === WORLD_INTRO.length - 1;
-
-  function close() {
-    markIntroSeen();
-    setOpen(false);
-  }
 
   return (
     <div role="dialog" aria-modal="true" aria-label={panel.title} className="fixed inset-0 z-30 flex flex-col bg-black">
@@ -96,8 +103,14 @@ export function WorldIntro() {
 
 /** The same story as a reading page, with the factions, for the profile. */
 export function WorldGuide() {
+  const [replaying, setReplaying] = useState(false);
+
   return (
     <div className="mt-2 flex flex-col gap-0.5">
+      {replaying && <IntroPanels onClose={() => setReplaying(false)} />}
+      <button type="button" onClick={() => setReplaying(true)} className="btn btn-outline mb-2">
+        Rivedi l&apos;introduzione
+      </button>
       {WORLD_INTRO.map((panel) => (
         <div key={panel.title} className="bg-panel">
           <img src={withBasePath(panel.image)} alt="" loading="lazy" className="h-44 w-full object-cover object-top" />
