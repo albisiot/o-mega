@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { PackArt } from "@/components/comic-parts";
@@ -46,6 +47,9 @@ export function LoginScreen() {
           {redirecting ? "Apertura di Google…" : "Accedi con Google"}
         </button>
         {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
+        <Link href="/privacy" className="text-xs font-semibold underline">
+          Informativa sulla privacy
+        </Link>
       </div>
 
       <SupabaseStatus />

@@ -169,6 +169,13 @@ function ProfileView({ profile }: { profile: Profile }) {
           </div>
         </details>
 
+        <Link href="/privacy" className="row-link">
+          <span className="font-display text-xl uppercase">Privacy</span>
+          <span className="font-display text-2xl text-comic-yellow" aria-hidden>
+            →
+          </span>
+        </Link>
+
         <button type="button" onClick={signOut} className="btn btn-ghost mt-2">
           Esci
         </button>
