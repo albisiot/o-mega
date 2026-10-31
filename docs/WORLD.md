@@ -134,6 +134,29 @@ Testo di colore (una frase):
 | P049, Cattivi | ENE 7, RES 7, FUR 1 | Affinità (Potere) | **Ivan Nucleo** (Compagnia Lete): dirigente, è un reattore che cammina. |
 | P050, Eroi | PSI 10, VOL 9, COM 1 | Terreno favorevole | **Sofia Zen** (Custodi): negoziatrice telepatica. |
 
+### Gamma: professionisti di quartiere
+
+Tutti hanno il potere Specialità: +2 contro le Minacce che richiedono la prima abilità indicata.
+
+| Carta | Valori chiave | Personaggio |
+|---|---|---|
+| P025, Eroi | RES 9, COM 8, FUR 1 | **Marta Scudo** (Custodi): agente con lo scudo antisommossa. |
+| P026, Cattivi | VEL 7, TEC 6, RES 2 | **Nitro Vega** (Sciolti, schierato con i Cattivi): capo di una gang di motociclisti. |
+| P027, Neutrali | PSI 9, PER 8, INT 1 | **Zara Veil** (Sciolti): medium che vende segreti senza capirli. |
+| P028, Eroi | ENE 7, MAG 6, VEL 2 | **Mastro Watt** (Lanterne): elettricista, ripara i cavi a mani nude. |
+| P029, Cattivi | FOR 9, RES 8, INT 1 | **Goran Orso** (Compagnia Lete): picchiatore. |
+| P030, Eroi | VEL 7, PER 6, MAG 2 | **Jay Rondine** (Lanterne): staffetta che corre sui tetti. |
+| P031, Cattivi | INT 9, TEC 8, FUR 1 | **Nadia Byte** (Compagnia Lete): hacker vanitosa. |
+| P032, Neutrali | MAG 7, PSI 6, COM 2 | **Madame Lira** (Sciolti): rigattiera di maledizioni. |
+| P033, Eroi | ENE 9, RES 8, COM 1 | **Leo Ampere** (Lanterne): ex operaio della centrale, gigante gentile. |
+| P034, Cattivi | PSI 7, INT 6, COM 2 | **Mr. Sonno** (Figli dell'Ultima): ipnotizzatore e reclutatore. |
+| P035, Eroi | COM 9, VEL 8, VOL 2 | **Rey Pugno** (Lanterne): lottatore di strada, testa calda. |
+| P036, Cattivi | TEC 7, ENE 6, FUR 2 | **Fritz Rotor** (Compagnia Lete): costruttore di robot. |
+| P037, Neutrali | FUR 9, INT 8, VOL 2 | **Sasha Nera** (Sciolti): spia su commissione. |
+| P038, Eroi | PER 7, COM 6, FOR 2 | **Nora Fiuto** (Custodi): investigatrice. |
+| P039, Cattivi | VOL 9, RES 8, PSI 1 | **Baron Zolfo** (Figli dell'Ultima): fanatico. |
+| P040, Eroi | MAG 7, TEC 6, VEL 2 | **Tina Glitch** (Lanterne): tecnomaga. |
+
 ### Delta: esempi di tono
 
 | Carta | Valori chiave | Personaggio |
