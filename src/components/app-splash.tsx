@@ -94,7 +94,7 @@ function Splash({ onGone }: { onGone: () => void }) {
         }`}
       />
 
-      <div className="relative mt-[calc(env(safe-area-inset-top)+9vh)] flex flex-col items-center gap-1 px-6 text-center">
+      <div className="relative mt-[calc(var(--safe-top)+9vh)] flex flex-col items-center gap-1 px-6 text-center">
         <p className="-skew-x-8 font-display text-8xl tracking-wide text-comic-yellow [text-shadow:5px_5px_0_var(--comic-magenta)]">
           O-MEGA
         </p>

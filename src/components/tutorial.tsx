@@ -82,7 +82,7 @@ function TutorialPanels({ onClose: close }: { onClose: () => void }) {
 
   return (
     <div role="dialog" aria-modal="true" aria-label={panel.title} className="fixed inset-0 z-30 flex flex-col bg-background">
-      <header className="flex flex-col gap-2 border-b-[3px] border-foreground px-4 pb-2 pt-[calc(env(safe-area-inset-top)+8px)]">
+      <header className="flex flex-col gap-2 border-b-[3px] border-foreground px-4 pb-2 pt-[calc(var(--safe-top)+8px)]">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-bold text-muted">
             {step + 1} di {TUTORIAL_STEPS.length}

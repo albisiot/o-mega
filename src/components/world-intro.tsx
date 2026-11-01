@@ -69,7 +69,7 @@ function IntroPanels({ onClose: close }: { onClose: () => void }) {
         <button
           type="button"
           onClick={close}
-          className="btn btn-ghost absolute right-3 top-[calc(env(safe-area-inset-top)+12px)]"
+          className="btn btn-ghost absolute right-3 top-[calc(var(--safe-top)+12px)]"
         >
           Salta
         </button>

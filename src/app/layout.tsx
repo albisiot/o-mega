@@ -49,7 +49,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${archivo.variable} ${anton.variable} ${bangers.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">
-        <div aria-hidden className="status-bar-band" />
         <AuthProvider>
           {children}
           <BottomNav />
