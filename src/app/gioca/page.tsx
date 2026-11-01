@@ -194,7 +194,7 @@ export default function PlayPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader backHref="/" backLabel="Home" title="Gioca" />
+      <PageHeader title="Gioca" />
 
       <main className="flex flex-1 flex-col gap-6 px-3 pb-6">
         {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}

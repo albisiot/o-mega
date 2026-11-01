@@ -23,7 +23,7 @@ type ShopViewProps = {
 export function ShopView({ status, odds, history, onFailed }: ShopViewProps) {
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader backHref="/" backLabel="Home" title="Negozio" />
+      <PageHeader title="Negozio" />
 
       <main className="flex flex-1 flex-col gap-5 px-3 pb-6">
         <section className="flex items-center justify-between bg-black px-4 py-3">

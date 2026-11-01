@@ -8,16 +8,18 @@ export function PageHeader({
   title,
   subtitle,
 }: {
-  backHref: string;
-  backLabel: string;
+  backHref?: string;
+  backLabel?: string;
   title?: string;
   subtitle?: string;
 }) {
   return (
     <header className="flex flex-col gap-1 px-4 pb-3 pt-2">
-      <Link href={backHref} className="flex min-h-11 items-center self-start text-sm font-bold">
-        ← {backLabel}
-      </Link>
+      {backHref && (
+        <Link href={backHref} className="flex min-h-11 items-center self-start text-sm font-bold">
+          ← {backLabel}
+        </Link>
+      )}
       {title && <h1 className="font-display text-4xl uppercase text-comic-yellow">{title}</h1>}
       {subtitle && <p className="text-sm font-semibold text-muted">{subtitle}</p>}
     </header>
