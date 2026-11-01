@@ -47,7 +47,12 @@ export function PackPanel({ status, now, resetsAt, onFailed }: PackPanelProps) {
           aria-hidden
           className="halftone absolute inset-0 [--dot-color:var(--comic-magenta)] [mask-image:linear-gradient(200deg,#000_8%,transparent_62%)]"
         />
-        <PackArt body="#ff2e6c" omega="#ffd60a" className="absolute -right-2 top-6 h-56 rotate-[9deg]" />
+        <PackArt
+          body="#ff2e6c"
+          omega="#ffd60a"
+          shine={status.daily_available}
+          className={`absolute -right-2 top-6 h-56 rotate-[9deg] ${status.daily_available ? "animate-pack-float" : ""}`}
+        />
         <div className="relative flex min-h-60 max-w-[52%] flex-col items-start">
           <h1 className="font-display text-[44px] uppercase leading-[48px]">Pacchetto del giorno</h1>
           {status.daily_available ? (

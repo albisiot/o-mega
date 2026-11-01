@@ -178,6 +178,22 @@ body {
     background-image: repeating-linear-gradient(108deg, transparent 0 16px, rgb(0 0 0 / 0.16) 16px 19px);
   }
 
+  /* Moves a layer rather than the background: the phone does not repaint at every frame. */
+  .speed-lines-moving {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .speed-lines-moving::before {
+    content: "";
+    position: absolute;
+    inset: 0 -24px;
+    z-index: -1;
+    background-image: repeating-linear-gradient(108deg, transparent 0 16px, rgb(0 0 0 / 0.16) 16px 19px);
+    animation: speed-lines 1.2s linear infinite;
+  }
+
   .rays-dark {
     background-color: var(--background);
     background-image: repeating-conic-gradient(from 0deg at 50% 50%, #1d1d26 0 8deg, var(--background) 8deg 16deg);
@@ -235,6 +251,34 @@ body {
   0% { opacity: 0; }
   100% { opacity: 1; }
 }
+
+/* Home and album details */
+
+@keyframes pack-shine {
+  0% { transform: translateX(0) skewX(-15deg); }
+  30%, 100% { transform: translateX(360px) skewX(-15deg); }
+}
+
+/* One stripe of .speed-lines measured along the x axis: 19px / sin(108deg). */
+@keyframes speed-lines {
+  from { transform: translateX(-19.98px); }
+  to { transform: translateX(0); }
+}
+
+@keyframes coin-bump {
+  0%, 100% { transform: skewX(-8deg) scale(1); }
+  30% { transform: skewX(-8deg) scale(1.14); }
+}
+
+@keyframes new-pop {
+  0% { transform: scale(0.3) rotate(-6deg); opacity: 0; }
+  60% { transform: scale(1.25) rotate(-6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-6deg); }
+}
+
+.pack-shine { animation: pack-shine 4.5s ease-in-out infinite; }
+.animate-coin-bump { animation: coin-bump 0.7s ease-out; }
+.animate-new-pop { animation: new-pop 0.5s ease-out both; }
 
 /* Card effects (src/lib/card-effects.ts). Before the utilities below, so a won card's glow wins over the aura's pulse. */
 
@@ -370,6 +414,10 @@ body {
 .animate-rare-title { animation: rare-title 0.9s ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
+  .pack-shine,
+  .speed-lines-moving::before,
+  .animate-coin-bump,
+  .animate-new-pop,
   .fx-holo,
   .fx-flash,
   .fx-aura,

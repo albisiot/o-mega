@@ -57,14 +57,30 @@ const PACK_OUTLINE =
   "M10 16 20 6 30 16 40 6 50 16 60 6 70 16 80 6 90 16 100 6 110 16 120 6 130 16 140 6 150 16 160 6 170 16 180 6 190 16V264L180 274 170 264 160 274 150 264 140 274 130 264 120 274 110 264 100 274 90 264 80 274 70 264 60 274 50 264 40 274 30 264 20 274 10 264Z";
 
 /** The foil pack, with the Ω on a halftone band. */
-export function PackArt({ body, omega, className }: { body: string; omega: string; className: string }) {
+export function PackArt({
+  body,
+  omega,
+  className,
+  shine = false,
+}: {
+  body: string;
+  omega: string;
+  className: string;
+  shine?: boolean;
+}) {
   const dots = useId();
+  const outline = useId();
   return (
     <svg viewBox="0 0 200 280" className={className} aria-hidden>
       <defs>
         <pattern id={dots} width="10" height="10" patternUnits="userSpaceOnUse">
           <circle cx="5" cy="5" r="2.4" fill="#000" fillOpacity="0.28" />
         </pattern>
+        {shine && (
+          <clipPath id={outline}>
+            <path d={PACK_OUTLINE} />
+          </clipPath>
+        )}
       </defs>
       <path d={PACK_OUTLINE} fill={body} stroke="#000" strokeWidth="5" strokeLinejoin="round" />
       <path d="M13 210 187 120V261H13Z" fill="#16c8ff" />
@@ -89,6 +105,11 @@ export function PackArt({ body, omega, className }: { body: string; omega: strin
       <text x="100" y="246" textAnchor="middle" fontSize="20" fill="#000" style={{ fontFamily: "var(--display-font)" }}>
         5 CARTE
       </text>
+      {shine && (
+        <g clipPath={`url(#${outline})`}>
+          <rect className="pack-shine" x="-70" y="-20" width="50" height="320" fill="#fff" fillOpacity="0.5" />
+        </g>
+      )}
     </svg>
   );
 }

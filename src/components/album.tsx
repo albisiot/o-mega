@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CardArt, Silhouette, VariantTag } from "@/components/card-view";
 import { cardEffects } from "@/lib/card-effects";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
@@ -13,6 +13,7 @@ import {
   type OwnedSummary,
 } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
+import { loadSeenCards, saveSeenCards } from "@/lib/new-cards";
 import { rarityFrame } from "@/lib/rarity-theme";
 
 type Ownership = "all" | "owned" | "missing";
@@ -50,6 +51,10 @@ export function Album({
   const [filters, setFilters] = useState<Filters>(loadFilters);
   // Lives here: the conversion panel disappears once no duplicates are left.
   const [notice, setNotice] = useState<string | null>(null);
+  // Read once: the badges stay for this whole visit, and the next one no longer shows them.
+  const [seenBefore] = useState(loadSeenCards);
+
+  useEffect(() => saveSeenCards([...owned.keys()]), [owned]);
 
   function update(change: Partial<Filters>) {
     const next = { ...filters, ...change };
@@ -171,7 +176,13 @@ export function Album({
           <ul className="grid grid-cols-3 gap-2">
             {visible.map((card) => (
               <li key={card.id}>
-                <AlbumTile card={card} owned={owned.get(card.id) ?? null} sortAbility={sortAbility} />
+                <AlbumTile
+                  card={card}
+                  owned={owned.get(card.id) ?? null}
+                  // Before the first visit nothing is new: an existing player's whole album would be.
+                  isNew={seenBefore !== null && owned.has(card.id) && !seenBefore.has(card.id)}
+                  sortAbility={sortAbility}
+                />
               </li>
             ))}
           </ul>
@@ -252,10 +263,12 @@ function SortPicker({
 function AlbumTile({
   card,
   owned,
+  isNew,
   sortAbility,
 }: {
   card: CatalogCard;
   owned: OwnedSummary | null;
+  isNew: boolean;
   sortAbility: string | null;
 }) {
   const number = card.code.replace(/^\D+/, "");
@@ -268,6 +281,11 @@ function AlbumTile({
       {owned && owned.copies > 1 && (
         <span className="absolute left-1.5 top-1.5 z-10 bg-black px-1.5 text-xs font-extrabold leading-[18px] text-comic-yellow">
           ×{owned.copies}
+        </span>
+      )}
+      {isNew && (
+        <span className="animate-new-pop absolute left-1.5 top-[76px] z-10 bg-comic-yellow px-1.5 font-sfx text-sm leading-[18px] tracking-wide text-black shadow-[2px_2px_0_var(--comic-magenta)]">
+          NEW!
         </span>
       )}
       {owned ? (

@@ -106,7 +106,7 @@ export function HomeScreen({ profile }: { profile: Profile }) {
 
         <Link
           href="/gioca"
-          className="cut-both speed-lines flex min-h-[116px] items-center justify-between bg-comic-magenta px-5 py-2 text-black"
+          className="cut-both speed-lines-moving flex min-h-[116px] items-center justify-between bg-comic-magenta px-5 py-2 text-black"
         >
           <div>
             <p className="-skew-x-8 font-display text-6xl uppercase">Gioca</p>
