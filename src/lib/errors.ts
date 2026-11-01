@@ -43,6 +43,13 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   bonus_code_exhausted: "Questo codice è esaurito.",
   bonus_code_already_redeemed: "Hai già usato questo codice.",
   bonus_code_too_many_attempts: "Troppi codici sbagliati: riprova tra un'ora.",
+  not_admin: "Questa pagina non è disponibile.",
+  bonus_code_invalid_format: "Il codice deve avere da 3 a 32 caratteri: lettere, numeri, - o _.",
+  bonus_code_duplicate: "Esiste già un codice con questo nome.",
+  bonus_code_no_reward: "Scegli almeno un premio: monete, pacchetti o carte.",
+  bonus_code_invalid_limits: "Controlla i numeri: premi da 0 in su, giocatori da 1 in su.",
+  bonus_code_invalid_expiry: "L'ultimo giorno non può essere già passato.",
+  bonus_code_card_unavailable: "Una delle carte scelte non si può dare con un codice.",
 };
 
 export function describeServerError(error: unknown): string {

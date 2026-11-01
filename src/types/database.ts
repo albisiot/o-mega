@@ -1412,6 +1412,24 @@ export type Database = {
       }
       next_reset_at: { Args: { p_at?: string }; Returns: string }
       redeem_bonus_code: { Args: { p_code: string }; Returns: Json }
+      is_admin: { Args: never; Returns: boolean }
+      admin_list_bonus_codes: { Args: never; Returns: Json }
+      admin_create_bonus_code: {
+        Args: {
+          p_code: string
+          p_coins?: number
+          p_packs?: number
+          p_card_codes?: string[]
+          p_max_uses?: number
+          p_expires_on?: string
+          p_note?: string
+        }
+        Returns: Json
+      }
+      admin_set_bonus_code_active: {
+        Args: { p_id: string; p_is_active: boolean }
+        Returns: Json
+      }
       notify_match: {
         Args: { p_kind: string; p_match_id: string }
         Returns: undefined

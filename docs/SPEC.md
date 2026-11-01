@@ -321,6 +321,8 @@ Nel Negozio il giocatore può inserire un codice e ricevere subito i premi decis
 - **Tentativi:** massimo 10 codici inesistenti all'ora per giocatore, così non si indovinano provando.
 - **Sicurezza:** i codici stanno solo nel database, mai nel repository, e nessun client può leggerli. Tutto passa da `coin_ledger` e `card_transfers`.
 
+**Gestione dall'app:** gli account elencati in `admin_users` vedono in fondo all'informativa sulla privacy il link discreto *Gestione codici* (`/gestione-codici`): crea i codici, mostra quante volte sono stati usati e li disattiva. Il controllo è sul server, in ogni funzione: agli altri account la pagina non mostra nulla.
+
 Creazione dall'editor SQL di Supabase (ogni parametro di premio e limite è facoltativo):
 
 ```sql
