@@ -24,6 +24,13 @@ export const WORLD_LOADING_LINES = [
   "I Custodi chiudono il porto…",
 ];
 
+export const WORLD_SEARCH_LINES = [
+  "Il Sismografo cerca un rivale…",
+  "Le Lanterne scrutano i tetti…",
+  "I Custodi chiedono in giro…",
+  "Qualcuno raccoglierà la sfida?",
+];
+
 export const WORLD_FACTIONS = [
   {
     name: "Eroi",

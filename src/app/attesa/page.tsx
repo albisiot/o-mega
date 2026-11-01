@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
-import { PageHeader } from "@/components/comic-parts";
+import { ComicBurst, PageHeader } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { balance } from "@/config/balance";
+import { WORLD_SEARCH_LINES } from "@/config/world";
 import { BASE_PATH } from "@/lib/base-path";
 import { describeServerError } from "@/lib/errors";
 import {
@@ -21,6 +22,8 @@ import {
   type QueueMode,
 } from "@/lib/match";
 import { formatCountdown, useNow } from "@/lib/use-now";
+
+const SEARCH_LINE_SECONDS = 4;
 
 // /attesa/?mode=queue | /attesa/?mode=lobby
 export default function WaitingPage() {
@@ -126,16 +129,28 @@ function QueueWait({ userId, queueMode }: { userId: string; queueMode: QueueMode
     );
   }
 
-  const waited = Math.floor((now - startedAt) / 1000);
+  const waited = Math.max(0, Math.floor((now - startedAt) / 1000));
+  const line = Math.floor(waited / SEARCH_LINE_SECONDS);
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
-      <div aria-hidden className="rays-dark fixed inset-0 -z-10" />
-      <span className="h-14 w-14 animate-spin rounded-full border-[5px] border-comic-yellow border-t-transparent" />
+      <div aria-hidden className="fixed inset-0 -z-10 overflow-hidden">
+        <div className="rays-dark animate-rays-spin absolute left-1/2 top-1/2 h-[200vmax] w-[200vmax] -translate-x-1/2 -translate-y-1/2" />
+      </div>
+      <ComicBurst
+        fill="#ffd60a"
+        className="animate-search-burst relative h-36 w-36"
+        textClassName="text-[34px] tracking-wide"
+      >
+        CERCO!
+      </ComicBurst>
       <div>
         <p className="font-display text-3xl uppercase">
           {queueMode === "conquest" ? "Ricerca di un avversario per la Conquista…" : "Ricerca di un avversario…"}
         </p>
         <p className="mt-1 font-display text-2xl text-comic-yellow">{waited} s</p>
+        <p key={line} className="animate-panel-fade mt-1 text-sm font-semibold text-comic-cyan">
+          {WORLD_SEARCH_LINES[line % WORLD_SEARCH_LINES.length]}
+        </p>
       </div>
       {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
       {queueMode === "conquest" && (

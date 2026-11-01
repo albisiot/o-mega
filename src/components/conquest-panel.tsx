@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CardView } from "@/components/card-view";
+import { ComicBurst } from "@/components/comic-parts";
 import { balance } from "@/config/balance";
 import type { AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
@@ -21,6 +22,15 @@ export function ConquestPanel({ matchId, conquest, opponentName, serverNow, onUp
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Only the moment of the conquest: reopening a finished match shows the card quietly.
+  const [wasPending] = useState(!conquest.resolved);
+  const celebrate = wasPending && conquest.resolved && conquest.role === "winner" && Boolean(conquest.chosen);
+  const conquered = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // The list of cards just disappeared: the new card may be off screen.
+    if (celebrate) conquered.current?.scrollIntoView({ block: "center" });
+  }, [celebrate]);
 
   // When the time is up, ask the server to assign a card at random.
   const deadline = Date.parse(conquest.deadline_at);
@@ -71,7 +81,18 @@ export function ConquestPanel({ matchId, conquest, opponentName, serverNow, onUp
         <p className={`font-display text-3xl uppercase ${won ? "text-comic-cyan" : "text-comic-magenta"}`}>
           {won ? "Carta conquistata!" : "Carta persa"}
         </p>
-        <CardView card={conquest.chosen} abilities={abilities} glow={won} />
+        <div ref={conquered} className={`relative ${celebrate ? "animate-card-slam" : ""}`}>
+          <CardView card={conquest.chosen} abilities={abilities} glow={won} />
+          {celebrate && (
+            <ComicBurst
+              fill="#ffd60a"
+              className="animate-bam absolute left-1/2 top-1/2 z-20 h-48 w-48 -translate-x-1/2 -translate-y-1/2 -rotate-[8deg]"
+              textClassName="text-[64px] tracking-wide"
+            >
+              BAM!
+            </ComicBurst>
+          )}
+        </div>
         <p className="text-sm font-medium text-muted">
           {conquest.auto_assigned ? "Tempo scaduto: l'ha assegnata il server. " : ""}
           {won

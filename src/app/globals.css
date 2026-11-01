@@ -276,7 +276,36 @@ body {
   100% { transform: scale(1) rotate(-6deg); }
 }
 
+@keyframes rays-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes search-burst {
+  0%, 100% { transform: scale(1) rotate(-6deg); }
+  50% { transform: scale(1.1) rotate(4deg); }
+}
+
+@keyframes card-slam {
+  0% { transform: scale(1.5) rotate(-6deg); opacity: 0; }
+  40% { transform: scale(0.95) rotate(1deg); opacity: 1; }
+  70% { transform: scale(1.03) rotate(0); }
+  100% { transform: none; }
+}
+
+@keyframes bam {
+  0% { transform: scale(0.2); opacity: 0; }
+  15% { transform: scale(1.2); opacity: 1; }
+  25% { transform: scale(1); }
+  80% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.15); opacity: 0; }
+}
+
 .pack-shine { animation: pack-shine 4.5s ease-in-out infinite; }
+.animate-rays-spin { animation: rays-spin 60s linear infinite; }
+.animate-search-burst { animation: search-burst 1.6s ease-in-out infinite; }
+.animate-card-slam { animation: card-slam 0.5s ease-out both; }
+/* Hidden at rest: without motion it must not stay on top of the card. */
+.animate-bam { opacity: 0; animation: bam 1.4s ease-out 0.15s both; }
 .animate-coin-bump { animation: coin-bump 0.7s ease-out; }
 .animate-new-pop { animation: new-pop 0.5s ease-out both; }
 
@@ -415,6 +444,10 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .pack-shine,
+  .animate-rays-spin,
+  .animate-search-burst,
+  .animate-card-slam,
+  .animate-bam,
   .speed-lines-moving::before,
   .animate-coin-bump,
   .animate-new-pop,
