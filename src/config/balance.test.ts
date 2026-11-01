@@ -32,4 +32,19 @@ describe("balance config", () => {
 
     expect(valid.length).toBeGreaterThan(0);
   });
+
+  it("gives every Emergenza run a reachable last reward", () => {
+    const { threatsPerRun, maxFailures, rewards } = balance.emergency;
+    expect(rewards.tier1Passed).toBeLessThan(rewards.tier2Passed);
+    expect(rewards.tier2Passed).toBeLessThan(rewards.tier3Passed);
+    expect(rewards.tier3Passed).toBeLessThanOrEqual(threatsPerRun);
+    expect(maxFailures).toBeLessThan(threatsPerRun);
+  });
+
+  it("allows the Emergenza level sums with the levels of a match", () => {
+    const { min, max } = balance.match.threatLevels;
+    const { threatsPerRun, threatLevels } = balance.emergency;
+    expect(threatLevels.minSum).toBeGreaterThanOrEqual(min * threatsPerRun);
+    expect(threatLevels.maxSum).toBeLessThanOrEqual(max * threatsPerRun);
+  });
 });

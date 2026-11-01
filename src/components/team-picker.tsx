@@ -8,9 +8,9 @@ import { deleteFormation, saveFormation, type Formation, type VariantCopy } from
 
 const LAST_TEAM_KEY = "o-mega.last-team";
 
-function loadLastTeam(owned: Map<string, string>): string[] {
+function loadLastTeam(key: string, owned: Map<string, string>): string[] {
   try {
-    const saved: unknown = JSON.parse(localStorage.getItem(LAST_TEAM_KEY) ?? "[]");
+    const saved: unknown = JSON.parse(localStorage.getItem(key) ?? "[]");
     return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === "string" && owned.has(id)) : [];
   } catch {
     return [];
@@ -34,13 +34,16 @@ type TeamPickerProps = {
   startLabel: string;
   starting: boolean;
   onStart: (cardInstanceIds: string[]) => void;
+  /** Emergenza: a larger squad, which formations (always a match team) cannot hold. */
+  squadSize?: number;
 };
 
-/** Pick 5 different characters among the owned ones; load or save formations. */
+/** Pick different characters among the owned ones (a match team by default); load or save formations. */
 export function TeamPicker(props: TeamPickerProps) {
-  const { catalog, owned, conquerable, atRiskCopies, variantCopies, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart } = props;
-  const size = balance.match.teamSize;
-  const [selected, setSelected] = useState<string[]>(() => loadLastTeam(owned).slice(0, size));
+  const { catalog, owned, conquerable, atRiskCopies, variantCopies, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart, squadSize } = props;
+  const size = squadSize ?? balance.match.teamSize;
+  const lastTeamKey = squadSize ? `${LAST_TEAM_KEY}.${squadSize}` : LAST_TEAM_KEY;
+  const [selected, setSelected] = useState<string[]>(() => loadLastTeam(lastTeamKey, owned).slice(0, size));
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState("");
   const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
@@ -155,7 +158,7 @@ export function TeamPicker(props: TeamPickerProps) {
 
   function start() {
     try {
-      localStorage.setItem(LAST_TEAM_KEY, JSON.stringify(selected));
+      localStorage.setItem(lastTeamKey, JSON.stringify(selected));
     } catch {
       // Remembering the team is a convenience only.
     }
@@ -164,7 +167,7 @@ export function TeamPicker(props: TeamPickerProps) {
 
   return (
     <div className="flex flex-col gap-4 pb-28">
-      <section className="flex gap-1.5">
+      <section className={squadSize ? "grid grid-cols-4 gap-1.5" : "flex gap-1.5"}>
         {Array.from({ length: size }, (_, i) => {
           const card = selected[i] ? byId.get(selected[i]) : null;
           return (
@@ -204,7 +207,7 @@ export function TeamPicker(props: TeamPickerProps) {
         </section>
       )}
 
-      <section className="flex flex-col gap-2">
+      <section className={squadSize ? "hidden" : "flex flex-col gap-2"}>
         <div className="flex items-center justify-between">
           <h2 className="section-title">Formazioni</h2>
           {!naming && (

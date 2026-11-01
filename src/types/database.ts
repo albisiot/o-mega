@@ -1326,6 +1326,7 @@ export type Database = {
       }
       get_conquest_history: { Args: never; Returns: Json }
       get_conquest_status: { Args: never; Returns: Json }
+      get_emergency_leaderboard: { Args: { p_limit?: number }; Returns: Json }
       get_match_history: { Args: { p_limit?: number }; Returns: Json }
       get_match_state: { Args: { p_match_id: string }; Returns: Json }
       get_pack_odds: { Args: never; Returns: Json }

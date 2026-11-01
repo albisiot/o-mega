@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { carriedBonusAfter, scorePlay, type AbilityFamilies, type Character } from "@o-mega/game-engine";
+import { carriedBonusAfter, scorePlay, type AbilityFamilies } from "@o-mega/game-engine";
 import { Silhouette } from "@/components/card-view";
 import { ComicBurst } from "@/components/comic-parts";
 import { ConquestPanel } from "@/components/conquest-panel";
@@ -22,6 +22,7 @@ import {
   sendHeartbeat,
   submitChoice,
   subscribeToUpdates,
+  toCharacter,
   type MatchCard,
   type MatchRound,
   type MatchView,
@@ -37,16 +38,6 @@ const WINNER_STYLES = {
   opponent: "bg-panel-raised text-muted",
   none: "bg-panel-raised text-faint",
 } as const;
-
-function toCharacter(card: MatchCard, id: string): Character {
-  return {
-    id,
-    definitionId: card.definition_id,
-    faction: card.faction,
-    stats: card.stats,
-    power: card.power ? { code: card.power.code, params: card.power.params } : null,
-  };
-}
 
 function lastResolvedRound(view: MatchView): number {
   return Math.max(0, ...view.rounds.filter((r) => r.resolved).map((r) => r.round));

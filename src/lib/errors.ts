@@ -35,6 +35,9 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   card_at_stake: "Una delle carte è in palio in una scelta aperta.",
   same_pair_cooldown: "Avete già giocato in Conquista nelle ultime 24 ore.",
   card_not_eligible: "Questa carta non si può conquistare.",
+  emergency_already_played: "Hai già giocato l'Emergenza di oggi: la prossima arriva dopo la mezzanotte.",
+  emergency_not_started: "L'Emergenza di oggi non è ancora iniziata: scegli la squadra.",
+  invalid_emergency_squad: "Scegli 8 personaggi.",
 };
 
 export function describeServerError(error: unknown): string {

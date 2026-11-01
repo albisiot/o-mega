@@ -7,15 +7,19 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   computeAbilityMeans,
+  drawEmergencyThreats,
   drawThreatLevels,
   pickOne,
   pickThreats,
   planBotMatch,
   playBotRound,
   playPvpRound,
+  resolveEmergencyPlay,
   type BotDifficulty,
   type BotMatchCatalog,
   type Character,
+  type EmergencyAttempt,
+  type EmergencyRules,
   type MatchResult,
   type MatchRules,
   type MatchState,
@@ -57,6 +61,9 @@ const CLIENT_ERRORS = new Set([
   "daily_loss_limit",
   "not_enough_conquerable",
   "same_pair_cooldown",
+  "emergency_already_played",
+  "emergency_not_started",
+  "invalid_emergency_squad",
 ]);
 
 class GameError extends Error {}
@@ -99,6 +106,7 @@ function cardIds(value: unknown): string[] {
 type Definition = { id: string; faction: string; stats: Record<string, number>; power_code: string | null; power_params: Record<string, string | number> };
 type Loaded = {
   rules: MatchRules;
+  emergency: EmergencyRules;
   graceSeconds: number;
   catalog: BotMatchCatalog;
   definitions: Map<string, Definition>;
@@ -123,7 +131,7 @@ async function load(): Promise<Loaded> {
     admin.from("card_definitions").select("id, faction, stats, power_code, power_params, is_active"),
     admin.from("threat_definitions").select("id, level, required_abilities, is_active"),
     admin.from("ability_definitions").select("code, family"),
-    admin.from("game_config").select("key, value").like("key", "match.%"),
+    admin.from("game_config").select("key, value"),
   ]);
   const values = new Map(check(config).map((row) => [row.key, Number(row.value)]));
   const value = (key: string) => {
@@ -149,6 +157,19 @@ async function load(): Promise<Loaded> {
         requireOneAtLeast: value("match.threat_levels.require_one_at_least"),
         minSum: value("match.threat_levels.min_sum"),
         maxSum: value("match.threat_levels.max_sum"),
+      },
+    },
+    emergency: {
+      threatsPerRun: value("emergency.threats_per_run"),
+      maxFailures: value("emergency.max_failures"),
+      targets: Object.fromEntries([1, 2, 3, 4, 5, 6].map((level) => [level, value(`emergency.targets.level${level}`)])),
+      threatLevels: {
+        min: value("match.threat_levels.min"),
+        max: value("match.threat_levels.max"),
+        requireOneAtMost: value("match.threat_levels.require_one_at_most"),
+        requireOneAtLeast: value("match.threat_levels.require_one_at_least"),
+        minSum: value("emergency.threat_levels.min_sum"),
+        maxSum: value("emergency.threat_levels.max_sum"),
       },
     },
     graceSeconds: value("match.timeout_grace_seconds"),
@@ -435,6 +456,88 @@ async function submitChoice(userId: string, body: Record<string, unknown>) {
 }
 
 // ---------------------------------------------------------------------------
+// Emergenza (daily solo challenge)
+// ---------------------------------------------------------------------------
+
+/** The first request of the day draws the threats; the database keeps that draw for everyone. */
+async function ensureEmergencyDay(loaded: Loaded) {
+  const threats = drawEmergencyThreats(rng, loaded.catalog.threatCatalog, loaded.emergency);
+  const { error } = await admin.rpc("emergency_ensure_day", { p_threat_ids: threats.map((t) => t.id) });
+  if (error) throw new Error(error.message);
+}
+
+async function emergencyState(userId: string) {
+  return check(await admin.rpc("emergency_state_payload", { p_user: userId })) as { day: string };
+}
+
+async function openEmergency(userId: string) {
+  await ensureEmergencyDay(await load());
+  return emergencyState(userId);
+}
+
+async function startEmergency(userId: string, body: Record<string, unknown>) {
+  const cards = cardIds(body.card_instance_ids);
+  await ensureEmergencyDay(await load());
+  const { error } = await admin.rpc("emergency_start", { p_user: userId, p_card_instance_ids: cards });
+  if (error) throw new Error(error.message);
+  return emergencyState(userId);
+}
+
+async function playEmergency(userId: string, body: Record<string, unknown>) {
+  const choice = body.card_instance_id;
+  if (typeof choice !== "string" || typeof body.round !== "number") throw new GameError("invalid_request");
+
+  const loaded = await load();
+  // The game day comes from the database: never computed here.
+  const { day: today } = await emergencyState(userId);
+  const run =(await admin.from("emergency_runs").select("*").eq("user_id", userId).eq("day", today).maybeSingle()).data;
+  if (!run) throw new GameError("emergency_not_started");
+  if (run.status !== "active") throw new GameError("emergency_already_played");
+  if (run.current_round !== body.round) throw new GameError("round_already_resolved");
+
+  const day = check(await admin.from("emergency_days").select("threat_ids").eq("day", today).single());
+  const plays = check(
+    await admin.from("emergency_plays").select("card_instance_id, passed").eq("run_id", run.id).order("round"),
+  ) as { card_instance_id: string; passed: boolean }[];
+
+  const squad = (run.definition_ids as string[]).map((definitionId, i) => {
+    const definition = loaded.definitions.get(definitionId);
+    if (!definition) throw new Error(`Unknown card definition ${definitionId}`);
+    return toCharacter(definition, run.card_instance_ids[i]);
+  });
+  const threat = loaded.threats.get(day.threat_ids[run.current_round - 1]);
+  if (!threat) throw new Error("Unknown threat of the day");
+
+  const character = squad.find((c) => c.id === choice);
+  if (!character || plays.some((p) => p.card_instance_id === choice)) throw new GameError("character_not_available");
+
+  const attempts: EmergencyAttempt[] = plays.map((p) => ({
+    character: squad.find((c) => c.id === p.card_instance_id)!,
+    passed: p.passed,
+  }));
+  const outcome = resolveEmergencyPlay({
+    character,
+    threat,
+    squad,
+    attempts,
+    rules: loaded.emergency,
+    families: loaded.catalog.families,
+  });
+
+  const { error } = await admin.rpc("emergency_record_play", {
+    p_user: userId,
+    p_round: run.current_round,
+    p_card_instance_id: choice,
+    p_base: outcome.score.base,
+    p_bonus: outcome.score.bonus,
+    p_score: outcome.score.total,
+    p_required: outcome.required,
+  });
+  if (error) throw new Error(error.message);
+  return emergencyState(userId);
+}
+
+// ---------------------------------------------------------------------------
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -460,6 +563,12 @@ Deno.serve(async (req) => {
       case "resolve":
         if (typeof body.match_id !== "string") throw new GameError("invalid_request");
         return json(await resolvePvpRound(userId, body.match_id));
+      case "emergency_open":
+        return json(await openEmergency(userId));
+      case "emergency_start":
+        return json(await startEmergency(userId, body));
+      case "emergency_play":
+        return json(await playEmergency(userId, body));
       default:
         throw new GameError("invalid_request");
     }

@@ -1,5 +1,5 @@
 import { FunctionsHttpError } from "@supabase/supabase-js";
-import type { BotDifficulty, Power } from "@o-mega/game-engine";
+import type { BotDifficulty, Character, Power } from "@o-mega/game-engine";
 import { getSupabase } from "@/lib/supabase/client";
 
 export const DIFFICULTY_LABELS: Record<BotDifficulty, string> = {
@@ -22,6 +22,17 @@ export type MatchCard = {
   rarity: { code: string; name: string; rank: number; color: string };
   power: (Power & { name: string; text: string }) | null;
 };
+
+/** A card as the rules engine reads it, for score previews. */
+export function toCharacter(card: MatchCard, id: string): Character {
+  return {
+    id,
+    definitionId: card.definition_id,
+    faction: card.faction,
+    stats: card.stats,
+    power: card.power ? { code: card.power.code, params: card.power.params } : null,
+  };
+}
 
 export type MatchPlay = {
   base: number;
@@ -100,7 +111,7 @@ function remember(view: MatchView): MatchView {
 }
 
 /** Calls the "match" Edge Function and surfaces its error code as the message. */
-async function invokeFunction<T>(body: Record<string, unknown>): Promise<T> {
+export async function invokeFunction<T>(body: Record<string, unknown>): Promise<T> {
   const { data, error } = await getSupabase().functions.invoke("match", { body });
   if (error) {
     if (error instanceof FunctionsHttpError) {

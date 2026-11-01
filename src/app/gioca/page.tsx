@@ -29,6 +29,7 @@ const MODES = [
   { key: "bot", label: "Contro bot", detail: "Allenati senza rischiare nulla", color: "bg-comic-cyan" },
   { key: "friendly", label: "Amichevole online", detail: "Sfida un giocatore o un amico", color: "bg-comic-yellow" },
   { key: "conquest", label: "Conquista", detail: "Chi vince prende una carta", color: "bg-comic-magenta" },
+  { key: "emergency", label: "Emergenza", detail: "La sfida del giorno, da solo", color: "bg-foreground" },
 ] as const;
 
 type ModeKey = (typeof MODES)[number]["key"];
@@ -93,6 +94,28 @@ function ConquestSection({ status, disabled }: { status: ConquestStatus | null; 
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+function EmergencySection() {
+  const { threatsPerRun, rewards } = balance.emergency;
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm font-medium text-muted">
+        {threatsPerRun} Minacce uguali per tutti e un solo tentativo al giorno, con una classifica. Nessuna carta in
+        gioco, fino a {rewards.tier1Coins + rewards.tier2Coins + rewards.tier3Coins} monete. Si può giocare anche con una
+        partita in corso.
+      </p>
+      <Link href="/emergenza" className="row-link">
+        <div>
+          <p className="font-display text-xl uppercase">Apri l&apos;Emergenza di oggi</p>
+          <p className="text-sm font-medium text-muted">Guarda i livelli, poi scegli la squadra.</p>
+        </div>
+        <span className="font-display text-2xl text-comic-yellow" aria-hidden>
+          →
+        </span>
+      </Link>
     </div>
   );
 }
@@ -261,6 +284,7 @@ export default function PlayPage() {
               {open && mode.key === "bot" && <BotSection disabled={blocked} />}
               {open && mode.key === "friendly" && <FriendlySection disabled={blocked} />}
               {open && mode.key === "conquest" && <ConquestSection status={conquest} disabled={blocked} />}
+              {open && mode.key === "emergency" && <EmergencySection />}
             </section>
           );
         })}

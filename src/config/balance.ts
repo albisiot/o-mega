@@ -41,6 +41,36 @@ export const balance = {
     },
   },
 
+  /** Thresholds tuned by simulation on the real catalog (SPEC §5.10). */
+  emergency: {
+    /** Threats of a run, and characters of its squad. */
+    threatsPerRun: 8,
+    maxFailures: 3,
+    /** Level limits and required levels are those of a match; only the sum changes. */
+    threatLevels: {
+      minSum: 24,
+      maxSum: 32,
+    },
+    /** Score needed to pass a threat of each level. */
+    targets: {
+      level1: 7,
+      level2: 13,
+      level3: 18,
+      level4: 23,
+      level5: 28,
+      level6: 32,
+    },
+    /** Paid once per run, when the threats passed reach each tier. */
+    rewards: {
+      tier1Passed: 3,
+      tier1Coins: 10,
+      tier2Passed: 5,
+      tier2Coins: 15,
+      tier3Passed: 8,
+      tier3Coins: 25,
+    },
+  },
+
   conquest: {
     pickTimerSeconds: 30,
     starterSetSize: 10,

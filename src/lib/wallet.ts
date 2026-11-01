@@ -8,6 +8,7 @@ export const COIN_REASON_LABELS: Record<string, string> = {
   duplicate_conversion: "Conversione doppioni",
   conquest_bonus: "Bonus conquista",
   level_reward: "Premio di livello",
+  emergency_reward: "Premio Emergenza",
   admin_adjustment: "Rettifica",
 };
 

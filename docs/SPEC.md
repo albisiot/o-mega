@@ -214,6 +214,33 @@ Il giocatore può sfidare un bot scegliendo la difficoltà. Le partite contro bo
 - Ricompense in monete contro bot: da definire con l'economia (§8).
 - In futuro il matchmaking potrà inserire bot quando mancano avversari umani: in quel caso la difficoltà sarà scelta dal sistema in base al livello del giocatore.
 
+### 5.10 Emergenza (sfida giornaliera)
+
+Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte.
+
+- **Sfida del giorno:** ogni giorno (mezzanotte `Europe/Rome`) il server estrae con RNG reale **8 Minacce**, uguali per tutti. Un solo tentativo per giocatore, anche se lasciato a metà.
+- **Squadra:** conoscendo solo i livelli, il giocatore sceglie **8 personaggi diversi** dalla collezione. La squadra non si cambia. Ognuno affronta una sola Minaccia.
+- **Svolgimento:** le Minacce si svelano una alla volta. Non c'è timer: si può uscire e riprendere entro la giornata. Il punteggio si calcola come in partita (§5.5).
+- **Punteggio richiesto:** una Minaccia è superata se il punteggio arriva alla soglia del suo livello: 7, 13, 18, 23, 28, 32 (dal livello 1 al 6).
+- **Fine:** dopo l'ultima Minaccia o alla **terza fallita**.
+- **Livelli:** stesse regole di §5.4, con somma tra 24 e 32.
+- **Premi:** 10 monete a 3 Minacce superate, altre 15 a 5, altre 25 a 8 (massimo 50 al giorno). Si ricevono subito, quindi restano anche se il tentativo non viene finito. Nessuna esperienza e nessun effetto sulle statistiche di partita o sullo sblocco della Conquista.
+- **Classifica di giornata:** solo i tentativi finiti, per Minacce superate, poi punteggio totale, poi chi ha finito prima. Non mostra i personaggi giocati, che rivelerebbero le Minacce.
+
+**I poteri in Emergenza:** le Minacce superate contano come round vinti e quelle fallite come round persi. La squadra è quella di 8.
+
+| Potere | Effetto in Emergenza |
+|---|---|
+| Riscossa | Se fallisce la Minaccia, il personaggio successivo ottiene il bonus |
+| Sfavorito | Bonus se le Minacce fallite sono più di quelle superate |
+| Legame | +1 per ogni altro personaggio della stessa fazione tra gli 8 |
+| Sabotatore | Abbassa la soglia della Minaccia di 1 per ogni abilità richiesta |
+| Implacabile | Gli basta un punto in meno della soglia |
+| Veggente | Dopo averlo giocato, il giocatore vede tutte le Minacce successive |
+| Gli altri | Come in partita, contando la Minaccia come round: Ultimo baluardo vale dalla 4ª o 5ª all'ultima |
+
+**Soglie:** simulate sul catalogo reale. Con tutta la collezione a disposizione, invece di 8 personaggi, chi ha molte carte supera quasi sempre tutte le Minacce; con la squadra limitata contano di più le scelte. In simulazione lo starter set supera in media 4,3 Minacce e una squadra ben costruita 5,8, con 8 su 8 raro (circa 5%).
+
 ## 6. Conquista delle carte
 
 ### 6.1 Regola base
@@ -386,7 +413,7 @@ Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy
 | Rarità | Delta → Gamma → Beta → Alfa → Omega (lettere greche, estendibili con le espansioni) |
 | Abilità | 12 in 4 famiglie: Corpo (Forza, Velocità, Resistenza), Mente (Intelletto, Volontà, Percezione), Potere (Energia, Magia, Psiche), Mestiere (Combattimento, Tecnologia, Furtività) |
 | Bot | Difficoltà selezionabile: Facile, Medio, Difficile, Super Pro |
-| Monete dalle partite (sostituisce §8) | Solo la Conquista paga: chi perde +10 monete, chi vince prende la carta (e +50 solo se nessuna carta è conquistabile); pareggio +10 a entrambi. Bot e amichevoli non pagano monete. Chi abbandona non guadagna nulla. |
+| Monete dalle partite (sostituisce §8) | Solo la Conquista paga: chi perde +10 monete, chi vince prende la carta (e +50 solo se nessuna carta è conquistabile); pareggio +10 a entrambi. Bot e amichevoli non pagano monete. Chi abbandona non guadagna nulla. Emergenza ha i suoi premi (§5.10). |
 | Premi di livello | Raggiungere il livello L paga una sola volta 30 + 10 × L monete (livello 2: 50, livello 3: 60), in qualsiasi modalità. Chi supera più livelli insieme li riceve tutti. |
 | Codice amico | Solo amichevole: nessuno scambio di carte, nessuna moneta. La Conquista si gioca solo con avversario casuale. |
 | Squadra in Conquista | Almeno 3 carte conquistabili (non starter). Se un personaggio è posseduto sia come starter sia come doppione, il giocatore sceglie quale copia schierare (di default la starter, protetta). |
