@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { carriedBonusAfter, compareScores, scorePlay, type ScoreContext } from "./scoring.ts";
+import {
+  abilityMalusFrom,
+  carriedBonusAfter,
+  compareScores,
+  revealsFutureThreats,
+  scorePlay,
+  type ScoreContext,
+} from "./scoring.ts";
 import { character, FAMILIES, threat } from "./test-fixtures.ts";
 
-const context: ScoreContext = { families: FAMILIES, roundsWon: 0, opponentRoundsWon: 0, carriedBonus: 0 };
+const context: ScoreContext = { families: FAMILIES, roundsWon: 0, opponentRoundsWon: 0, carriedBonus: 0, round: 3, team: [] };
 
 describe("scorePlay", () => {
   it("sums the values of the required abilities", () => {
@@ -53,6 +60,56 @@ describe("scorePlay", () => {
   it("rejects powers the engine does not know", () => {
     const hero = character("h", {}, { code: "teleport", params: {} });
     expect(() => scorePlay(hero, threat("t", ["FOR"]), context)).toThrow(/Unknown power/);
+  });
+});
+
+describe("new powers", () => {
+  const t = threat("t", ["FOR"]);
+
+  it("Apripista pays only in the first rounds", () => {
+    const hero = character("h", {}, { code: "opener", params: { bonus: 3, max_round: 2 } });
+    expect(scorePlay(hero, t, { ...context, round: 2 }).bonus).toBe(3);
+    expect(scorePlay(hero, t, { ...context, round: 3 }).bonus).toBe(0);
+  });
+
+  it("Ultimo baluardo pays only in the last rounds", () => {
+    const hero = character("h", {}, { code: "last_stand", params: { bonus: 3, min_round: 4 } });
+    expect(scorePlay(hero, t, { ...context, round: 3 }).bonus).toBe(0);
+    expect(scorePlay(hero, t, { ...context, round: 4 }).bonus).toBe(3);
+  });
+
+  it("Legame counts the other characters of the same faction, played ones too", () => {
+    const hero = { ...character("h", {}, { code: "bond", params: { bonus: 1 } }), faction: "heroes" };
+    const ally = { ...character("a"), faction: "heroes" };
+    const ally2 = { ...character("b"), faction: "heroes" };
+    const stranger = { ...character("c"), faction: "villains" };
+    expect(scorePlay(hero, t, { ...context, team: [hero, ally, ally2, stranger] }).bonus).toBe(2);
+    expect(scorePlay(hero, t, { ...context, team: [hero, stranger] }).bonus).toBe(0);
+  });
+
+  it("Sabotatore lowers every required ability, never below 0, and the tie-break", () => {
+    const hero = character("h", { FOR: 5, VEL: 0, RES: 8 });
+    const score = scorePlay(hero, threat("t", ["FOR", "VEL", "RES"]), { ...context, abilityMalus: 1 });
+    expect(score.base).toBe(4 + 0 + 7);
+    expect(score.highest).toBe(7);
+    expect(abilityMalusFrom(character("s", {}, { code: "sabotage", params: { malus: 1 } }))).toBe(1);
+    expect(abilityMalusFrom(hero)).toBe(0);
+  });
+
+  it("Veggente reveals and gives no points", () => {
+    const seer = character("s", {}, { code: "foresight", params: {} });
+    expect(revealsFutureThreats(seer)).toBe(true);
+    expect(revealsFutureThreats(character("x"))).toBe(false);
+    expect(scorePlay(seer, t, context).bonus).toBe(0);
+  });
+
+  it("Implacabile wins equal totals before the tie-break, unless both have it", () => {
+    const relentless = scorePlay(character("r", { FOR: 5 }, { code: "relentless", params: {} }), t, context);
+    const higher = { ...scorePlay(character("x", { FOR: 5 }), t, context), highest: 9 };
+    expect(compareScores(relentless, higher)).toBe("a");
+    expect(compareScores(higher, relentless)).toBe("b");
+    expect(compareScores(relentless, relentless)).toBeNull();
+    expect(compareScores({ ...relentless, total: 4 }, higher)).toBe("b");
   });
 });
 

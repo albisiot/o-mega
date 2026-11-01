@@ -104,6 +104,22 @@ I poteri sono effetti **situazionali**, mai bonus generici. Disponibilità indic
 
 Nell'MVP bastano 4-6 tipi di potere implementati nel motore di regole, parametrici.
 
+Poteri implementati:
+
+| Potere | Livello | Effetto |
+|---|---|---|
+| Specialità | Semplice | +2 contro Minacce che richiedono una certa abilità |
+| Affinità | Semplice | +2 se la Minaccia richiede almeno 2 abilità di una famiglia |
+| Terreno favorevole | Semplice | +2 contro Minacce di livello 1-2 |
+| Apripista | Semplice | +3 se giocato nel round 1 o 2 |
+| Ultimo baluardo | Semplice | +3 se giocato nel round 4 o 5 |
+| Legame | Semplice | +1 per ogni altro personaggio della stessa fazione in squadra, anche già giocato |
+| Implacabile | Semplice | Con punteggi totali pari vince il round, prima dello spareggio sul valore più alto. Se ce l'hanno entrambi si passa allo spareggio |
+| Riscossa | Distintivo | Se perde il round, il personaggio successivo ottiene +2 o +3 |
+| Sfavorito | Distintivo | +2 o +3 se l'avversario ha vinto più round |
+| Sabotatore | Distintivo | -1 a ogni abilità del personaggio avversario nel round, senza scendere sotto 0. Vale anche per lo spareggio. Pesa di più sulle Minacce di livello alto |
+| Veggente | Distintivo | Dopo averlo giocato, il giocatore vede tutte le Minacce dei round successivi. Non dà punti |
+
 ### 4.5 Doppioni
 
 I doppioni restano istanze normali: si possono usare in partita e quindi rischiare in conquista. Il giocatore può anche **convertirli in monete** (valore per rarità in configurazione).

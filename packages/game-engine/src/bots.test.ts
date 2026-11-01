@@ -21,6 +21,10 @@ function view(overrides: Partial<BotView>): BotView {
     opponentCarriedBonus: 0,
     scoreLead: 0,
     roundsToWin: 3,
+    round: 1,
+    team: overrides.available ?? [],
+    opponentSeen: [],
+    foreseenThreats: null,
     ...overrides,
   };
 }
@@ -140,6 +144,63 @@ describe("super pro bot", () => {
     // The pool is the catalog: the same whether or not "hidden" is on their team.
     const elsewhere = { ...played, teams: { ...played.teams, b: [seen, other] } };
     expect(botView(elsewhere, "a", knowledge).opponentPool.map((c) => c.id)).toEqual(pool);
+  });
+});
+
+describe("bots and the new powers", () => {
+  it("medium counts what Sabotatore takes from the opponent", () => {
+    const saboteur = character("sab", { INT: 5, VOL: 5, PER: 5 }, { code: "sabotage", params: { malus: 1 } });
+    const plain = character("plain", { INT: 6, VOL: 6, PER: 6 });
+    const current = threat("now", ["INT", "VOL", "PER", "ENE"]);
+    // 15 + 4 + 4 of malus against 18 + 4.
+    expect(chooseBotPlay("medium", view({ available: [saboteur, plain], currentThreat: current }), mulberry32(1))).toBe("sab");
+  });
+
+  it("hard keeps Ultimo baluardo for the last rounds", () => {
+    const lastStand = character("last", {}, { code: "last_stand", params: { bonus: 3, min_round: 4 } }, 6);
+    const plain = character("plain", {}, null, 5);
+    const choice = chooseBotPlay(
+      "hard",
+      view({ available: [lastStand, plain], round: 3, currentThreat: threat("now", ["FOR"]), futureLevels: [1] }),
+      mulberry32(2),
+    );
+    expect(choice).toBe("plain");
+  });
+
+  it("uses the foreseen threats instead of guessing them", () => {
+    const forOnly = character("for", { FOR: 10 }, null, 1);
+    const velOnly = character("vel", { VEL: 10 }, null, 1);
+    const foreseen = [threat("next", ["VEL"])];
+    for (const difficulty of ["hard", "super_pro"] as const) {
+      const choice = chooseBotPlay(
+        difficulty,
+        view({
+          available: [forOnly, velOnly],
+          currentThreat: threat("now", ["FOR"]),
+          futureLevels: [1],
+          foreseenThreats: foreseen,
+        }),
+        mulberry32(3),
+      );
+      expect(choice).toBe("for");
+    }
+  });
+
+  it("only foresees after playing its own Veggente", () => {
+    const seer = character("seer", {}, { code: "foresight", params: {} });
+    const threats = [threat("t1", ["FOR"]), threat("t2", ["VEL"]), threat("t3", ["RES"])];
+    const knowledge = { characters: [], threatCatalog: threatCatalog(), families: FAMILIES, abilityMeans: MEANS };
+    const pick = (id: string) => ({ characterId: id, base: 4, bonus: 0, total: 4, highest: 4, autoPlayed: false });
+    const state: MatchState = newState([seer, character("a2")], [character("b1"), character("b2")], threats);
+    expect(botView(state, "a", knowledge).foreseenThreats).toBeNull();
+
+    const played: MatchState = {
+      ...state,
+      rounds: [{ round: 1, threatId: "t1", plays: { a: pick("seer"), b: pick("b1") }, winner: null }],
+    };
+    expect(botView(played, "a", knowledge).foreseenThreats?.map((t) => t.id)).toEqual(["t3"]);
+    // Seeing the opponent's Veggente played gives the other side nothing.
+    expect(botView(played, "b", knowledge).foreseenThreats).toBeNull();
   });
 });
 

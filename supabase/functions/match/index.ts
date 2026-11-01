@@ -96,7 +96,7 @@ function cardIds(value: unknown): string[] {
 // Catalog and rules (cached for a minute per isolate)
 // ---------------------------------------------------------------------------
 
-type Definition = { id: string; stats: Record<string, number>; power_code: string | null; power_params: Record<string, string | number> };
+type Definition = { id: string; faction: string; stats: Record<string, number>; power_code: string | null; power_params: Record<string, string | number> };
 type Loaded = {
   rules: MatchRules;
   graceSeconds: number;
@@ -111,6 +111,7 @@ function toCharacter(definition: Definition, id = definition.id): Character {
   return {
     id,
     definitionId: definition.id,
+    faction: definition.faction,
     stats: definition.stats,
     power: definition.power_code ? { code: definition.power_code, params: definition.power_params ?? {} } : null,
   };
@@ -119,7 +120,7 @@ function toCharacter(definition: Definition, id = definition.id): Character {
 async function load(): Promise<Loaded> {
   if (cache && Date.now() - cache.at < 60_000) return cache.loaded;
   const [definitions, threats, abilities, config] = await Promise.all([
-    admin.from("card_definitions").select("id, stats, power_code, power_params, is_active"),
+    admin.from("card_definitions").select("id, faction, stats, power_code, power_params, is_active"),
     admin.from("threat_definitions").select("id, level, required_abilities, is_active"),
     admin.from("ability_definitions").select("code, family"),
     admin.from("game_config").select("key, value").like("key", "match.%"),

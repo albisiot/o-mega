@@ -1,6 +1,21 @@
-import { availableCharacters, carriedBonus, currentThreat, otherSide, roundsWon, totalScores } from "./match.ts";
+import {
+  availableCharacters,
+  carriedBonus,
+  currentRoundNumber,
+  currentThreat,
+  otherSide,
+  roundsWon,
+  totalScores,
+} from "./match.ts";
 import { pickOne, pickWeighted, randomInt, shuffle, type Rng } from "./rng.ts";
-import { carriedBonusAfter, compareScores, scorePlay, type ScoreContext } from "./scoring.ts";
+import {
+  abilityMalusFrom,
+  carriedBonusAfter,
+  compareScores,
+  revealsFutureThreats,
+  scorePlay,
+  type ScoreContext,
+} from "./scoring.ts";
 import type { AbilityCode, AbilityFamilies, Character, MatchState, Side, Threat } from "./types.ts";
 
 export type BotDifficulty = "easy" | "medium" | "hard" | "super_pro";
@@ -33,6 +48,14 @@ export type BotView = {
   /** Total score so far, own minus opponent's (tie-break of the match, SPEC §5.6). */
   scoreLead: number;
   roundsToWin: number;
+  /** 1-based number of the round being played. */
+  round: number;
+  /** Own whole team, already played characters included. */
+  team: Character[];
+  /** The opponent's characters already played. */
+  opponentSeen: Character[];
+  /** The threats of the following rounds, once Veggente has been played. */
+  foreseenThreats: Threat[] | null;
 };
 
 export type BotKnowledge = {
@@ -48,9 +71,16 @@ export function botView(state: MatchState, side: Side, knowledge: BotKnowledge):
   const won = roundsWon(state);
   const opponent = otherSide(side);
   const played = new Set(state.rounds.map((round) => round.plays[opponent].characterId));
-  const seen = new Set(state.teams[opponent].filter((c) => played.has(c.id)).map((c) => c.definitionId));
+  const opponentSeen = state.teams[opponent].filter((c) => played.has(c.id));
+  const seen = new Set(opponentSeen.map((c) => c.definitionId));
   const totals = totalScores(state);
+  const ownPlayed = new Set(state.rounds.map((round) => round.plays[side].characterId));
+  const foresees = state.teams[side].some((c) => ownPlayed.has(c.id) && revealsFutureThreats(c));
   return {
+    round: currentRoundNumber(state),
+    team: state.teams[side],
+    opponentSeen,
+    foreseenThreats: foresees ? state.threats.slice(state.rounds.length + 1) : null,
     opponentPool: knowledge.characters.filter((character) => !seen.has(character.definitionId)),
     opponentCarriedBonus: carriedBonus(state, opponent),
     scoreLead: totals[side] - totals[opponent],
@@ -83,7 +113,14 @@ function currentContext(view: BotView): ScoreContext {
     roundsWon: view.roundsWon,
     opponentRoundsWon: view.opponentRoundsWon,
     carriedBonus: view.carriedBonus,
+    round: view.round,
+    team: view.team,
   };
+}
+
+/** A character's score plus what Sabotatore would take from the opposing character. */
+function effectiveScore(character: Character, threat: Threat, context: ScoreContext): number {
+  return scorePlay(character, threat, context).total + abilityMalusFrom(character) * threat.level;
 }
 
 /** Chooses the character the bot plays this round (its id). */
@@ -98,8 +135,9 @@ export function chooseBotPlay(difficulty: BotDifficulty, view: BotView, rng: Rng
       return pickWeighted(rng, view.available, (character) => (scoreOf(character) + 1) ** 2).id;
     case "medium": {
       // Greedy: best score for the current threat, no planning.
-      const best = Math.max(...view.available.map(scoreOf));
-      return pickOne(rng, view.available.filter((character) => scoreOf(character) === best)).id;
+      const value = (character: Character) => effectiveScore(character, view.currentThreat, context);
+      const best = Math.max(...view.available.map(value));
+      return pickOne(rng, view.available.filter((character) => value(character) === best)).id;
     }
     case "hard":
       return planHardPlay(view, rng);
@@ -123,6 +161,7 @@ function sample<T>(rng: Rng, items: readonly T[], count: number): T[] {
 
 /** The future rounds of one plausible match: a distinct unrevealed threat per known level. */
 function sampleFutureThreats(view: BotView, rng: Rng): Threat[] {
+  if (view.foreseenThreats) return view.foreseenThreats;
   const threats: Threat[] = [];
   for (const level of view.futureLevels) {
     const options = view.threatPool.filter((threat) => threat.level === level && !threats.includes(threat));
@@ -141,16 +180,20 @@ function playOut(view: BotView, first: Character, opponents: Character[], threat
   let ownCarried = view.carriedBonus;
   let theirCarried = view.opponentCarriedBonus;
   let ownPick: Character | null = first;
+  let round = view.round;
+  const theirTeam = [...view.opponentSeen, ...opponents];
 
   for (const threat of threats) {
-    const ownContext = { families: view.families, roundsWon: won, opponentRoundsWon: lost, carriedBonus: ownCarried };
-    const theirContext = { families: view.families, roundsWon: lost, opponentRoundsWon: won, carriedBonus: theirCarried };
+    const shared = { families: view.families, round };
+    const ownContext = { ...shared, roundsWon: won, opponentRoundsWon: lost, carriedBonus: ownCarried, team: view.team };
+    const theirContext = { ...shared, roundsWon: lost, opponentRoundsWon: won, carriedBonus: theirCarried, team: theirTeam };
     const ownCharacter: Character = ownPick ?? takeBest(own, threat, ownContext, rng);
     const theirCharacter = takeBest(theirs, threat, theirContext, rng);
     ownPick = null;
+    round += 1;
 
-    const ownScore = scorePlay(ownCharacter, threat, ownContext);
-    const theirScore = scorePlay(theirCharacter, threat, theirContext);
+    const ownScore = scorePlay(ownCharacter, threat, { ...ownContext, abilityMalus: abilityMalusFrom(theirCharacter) });
+    const theirScore = scorePlay(theirCharacter, threat, { ...theirContext, abilityMalus: abilityMalusFrom(ownCharacter) });
     const winner = compareScores(ownScore, theirScore);
     lead += ownScore.total - theirScore.total;
     if (winner === "a") won += 1;
@@ -171,7 +214,7 @@ function takeBest(characters: Character[], threat: Threat, context: ScoreContext
   let index = 0;
   let ties = 0;
   characters.forEach((character, i) => {
-    const total = scorePlay(character, threat, context).total;
+    const total = effectiveScore(character, threat, context);
     if (total > best) {
       best = total;
       index = i;
@@ -225,14 +268,16 @@ function planHardPlay(view: BotView, rng: Rng): string {
 
   const expectedWins = (character: Character, roundIndex: number): number => {
     if (roundIndex === 0) {
-      const score = scorePlay(character, view.currentThreat, context).total;
+      const score = effectiveScore(character, view.currentThreat, context);
       return winChance(score, view.currentThreat, view.abilityMeans);
     }
     const level = view.futureLevels[roundIndex - 1];
-    const threats = view.threatPool.filter((threat) => threat.level === level);
+    const known = view.foreseenThreats?.[roundIndex - 1];
+    const threats = known ? [known] : view.threatPool.filter((threat) => threat.level === level);
     if (threats.length === 0) return 0.5;
+    const atRound = { ...futureContext, round: view.round + roundIndex };
     const total = threats.reduce(
-      (sum, threat) => sum + winChance(scorePlay(character, threat, futureContext).total, threat, view.abilityMeans),
+      (sum, threat) => sum + winChance(effectiveScore(character, threat, atRound), threat, view.abilityMeans),
       0,
     );
     return total / threats.length;

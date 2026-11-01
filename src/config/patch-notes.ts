@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "1 novembre 2026",
+    changes: [
+      "6 nuovi poteri: Sabotatore, Veggente, Apripista, Ultimo baluardo, Legame e Implacabile. 16 carte Gamma, Beta e Alfa cambiano potere: controlla le tue formazioni.",
+    ],
+  },
+  {
     date: "31 ottobre 2026",
     changes: [
       "Conquista senza attese: se dopo 60 secondi non si trova nessuno, sfidi un bot a caso con le carte in palio. Se vinci ricevi una copia di una sua carta, se perdi la carta presa dal bot esce dal gioco.",

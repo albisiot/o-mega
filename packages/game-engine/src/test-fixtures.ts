@@ -23,6 +23,7 @@ export function character(id: string, stats: Record<string, number> = {}, power:
   return {
     id,
     definitionId: `def-${id}`,
+    faction: "neutrals",
     stats: Object.fromEntries(ABILITIES.map((ability) => [ability, stats[ability] ?? base])),
     power,
   };

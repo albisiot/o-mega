@@ -42,6 +42,7 @@ function toCharacter(card: MatchCard, id: string): Character {
   return {
     id,
     definitionId: card.definition_id,
+    faction: card.faction,
     stats: card.stats,
     power: card.power ? { code: card.power.code, params: card.power.params } : null,
   };
@@ -359,6 +360,8 @@ function ChoosePhase({
         roundsWon: view.rounds_won.me,
         opponentRoundsWon: view.rounds_won.opponent,
         carriedBonus: carried,
+        round: round.round,
+        team: view.my_team.map((member) => toCharacter(member, member.instance_id)),
       }),
     }))
     .sort((a, b) => b.score.total - a.score.total);
@@ -462,6 +465,23 @@ function ChoosePhase({
         <p className="text-xs font-medium text-faint">Il punteggio è un&apos;anteprima: lo calcola il server quando giochi.</p>
       </section>
 
+      {view.foreseen_threats && view.foreseen_threats.length > 0 && (
+        <section className="flex flex-col gap-1.5">
+          <h2 className="section-title">Le prossime Minacce</h2>
+          <ul className="flex flex-col gap-0.5">
+            {view.foreseen_threats.map((threat) => (
+              <li key={threat.round} className="bg-panel px-3 py-2 text-sm font-semibold">
+                <span className="text-muted">Round {threat.round} · </span>
+                {threat.name}
+                <p className="text-xs font-medium text-muted">
+                  {threat.abilities.map((code) => abilityName(code)?.name ?? code).join(" · ")}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {opponentPlayed.length > 0 && (
         <section className="flex flex-col gap-1.5">
           <h2 className="section-title">{opponentName} ha già giocato</h2>
@@ -513,6 +533,11 @@ function RoundReveal({
   const mine = team.find((card) => card.instance_id === round.my_play?.instance_id);
   const theirs = round.opponent_play;
   const banner = { me: "Round vinto!", opponent: "Round perso", none: "Round nullo" }[round.winner ?? "none"];
+  const winnerCard = round.winner === "me" ? mine : round.winner === "opponent" ? theirs : null;
+  const isTie = round.my_play && theirs && round.my_play.score === theirs.score;
+  // With Implacabile on both sides the tie is settled as usual, by the highest value.
+  const tieWonBy =
+    isTie && winnerCard?.power?.code === "relentless" && mine?.power?.code !== theirs?.power?.code ? winnerCard.name : null;
 
   return (
     <main className="relative mt-3 flex flex-1 cursor-pointer flex-col" onClick={onContinue}>
@@ -552,6 +577,21 @@ function RoundReveal({
           {round.winner === "none" && (
             <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
               Stesso punteggio e stesso valore più alto.
+            </p>
+          )}
+          {theirs?.power?.code === "sabotage" && (
+            <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
+              Sabotatore: le abilità di {mine?.name ?? "chi hai giocato"} valgono {theirs.power.params.malus} in meno.
+            </p>
+          )}
+          {mine?.power?.code === "sabotage" && (
+            <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
+              Sabotatore: le abilità di {theirs?.name ?? "chi ha giocato"} valgono {mine.power.params.malus} in meno.
+            </p>
+          )}
+          {tieWonBy && (
+            <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
+              Implacabile: {tieWonBy} vince la parità di punteggio.
             </p>
           )}
           <button

@@ -1,4 +1,4 @@
-import { carriedBonusAfter, compareScores, scorePlay } from "./scoring.ts";
+import { abilityMalusFrom, carriedBonusAfter, compareScores, scorePlay } from "./scoring.ts";
 import type {
   AbilityFamilies,
   Character,
@@ -85,15 +85,23 @@ export function resolveRound(
   const threat = currentThreat(state);
   const won = roundsWon(state);
 
-  const plays = {} as Record<Side, PlayRecord>;
+  const chosen = {} as Record<Side, Character>;
   for (const side of SIDES) {
     const character = availableCharacters(state, side).find((c) => c.id === choices[side].characterId);
     if (!character) throw new Error(`Character ${choices[side].characterId} is not available for side ${side}`);
-    const score = scorePlay(character, threat, {
+    chosen[side] = character;
+  }
+
+  const plays = {} as Record<Side, PlayRecord>;
+  for (const side of SIDES) {
+    const score = scorePlay(chosen[side], threat, {
       families,
       roundsWon: won[side],
       opponentRoundsWon: won[otherSide(side)],
       carriedBonus: carriedBonus(state, side),
+      round: currentRoundNumber(state),
+      team: state.teams[side],
+      abilityMalus: abilityMalusFrom(chosen[otherSide(side)]),
     });
     plays[side] = { ...score, autoPlayed: choices[side].autoPlayed };
   }

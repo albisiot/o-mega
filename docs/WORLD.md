@@ -113,22 +113,22 @@ Testo di colore (una frase):
 | Carta | Valori chiave | Potere | Personaggio |
 |---|---|---|---|
 | P051, Cattivi | VEL 10, COM 10, FOR 9, RES 1, VOL 1 | Riscossa | **Vetrix** (Compagnia Lete): il combattente più veloce della città, con ossa di vetro. Quando si rompe, i frammenti colpiscono il prossimo bersaglio. |
-| P052, Neutrali | ENE 10, TEC 10, INT 9, VOL 1, MAG 1 | Sfavorito | **Dr. Volta** (Sciolti): ha progettato la centrale e vende il proprio genio a chiunque paghi. |
+| P052, Neutrali | ENE 10, TEC 10, INT 9, VOL 1, MAG 1 | Sabotatore | **Dr. Volta** (Sciolti): ha progettato la centrale e vende il proprio genio a chiunque paghi. |
 | P053, Eroi | FUR 10, INT 10, VEL 9, COM 1, VOL 1 | Riscossa | **Yuki Ombra** (Lanterne): nessuno riesce a vederla. Scappa sempre, poi torna sempre. |
 | P054, Cattivi | VOL 10, PER 10, COM 9, TEC 1, MAG 1 | Sfavorito | **Vera Kross** (Figli dell'Ultima): trova chiunque e non si ferma mai, soprattutto quando sta perdendo. |
 | P055, Eroi | RES 10, VOL 10, MAG 9, VEL 1, INT 1 | Riscossa | **Don Atlas** (Custodi): sta davanti alla porta del tempio. Da lì non passa nessuno, e da lì non si sposta. |
-| P056, Cattivi | ENE 10, MAG 10, TEC 9, RES 1, VOL 1 | Sfavorito | **Mekana** (Compagnia Lete): costruisce macchine che funzionano a incantesimi, e ormai è più macchina che persona. |
+| P056, Cattivi | ENE 10, MAG 10, TEC 9, RES 1, VOL 1 | Sabotatore | **Mekana** (Compagnia Lete): costruisce macchine che funzionano a incantesimi, e ormai è più macchina che persona. |
 
 ### Beta: figure note in città
 
 | Carta | Valori chiave | Potere | Personaggio |
 |---|---|---|---|
-| P041, Cattivi | RES 10, COM 9, PER 1 | Terreno favorevole | **Otto Kaiser** (Compagnia Lete): esattore che incassa ogni colpo e ci vede pochissimo. |
-| P042, Neutrali | VEL 7, COM 7, INT 1 | Affinità (Corpo) | **Rico Turbo** (Sciolti): corriere su moto elettrica truccata. |
+| P041, Cattivi | RES 10, COM 9, PER 1 | Ultimo baluardo | **Otto Kaiser** (Compagnia Lete): esattore che incassa ogni colpo e ci vede pochissimo. |
+| P042, Neutrali | VEL 7, COM 7, INT 1 | Apripista | **Rico Turbo** (Sciolti): corriere su moto elettrica truccata. |
 | P043, Eroi | PSI 10, PER 9, INT 1 | Terreno favorevole | **Zoe Sonar** (Lanterne): sente i pensieri, ma non sempre li capisce. |
 | P044, Cattivi | ENE 7, MAG 7, INT 1 | Affinità (Potere) | **Igor Fiamma** (Figli dell'Ultima): piromane. |
-| P045, Eroi | FOR 10, RES 9, INT 1 | Terreno favorevole | **Bull Rossi** (Custodi): ex campione di lotta. |
-| P046, Cattivi | VEL 10, FUR 9, RES 1 | Terreno favorevole | **Lola Jet** (Sciolti, schierata con i Cattivi): la ladra più rapida di Nuova Megara. |
+| P045, Eroi | FOR 10, RES 9, INT 1 | Legame | **Bull Rossi** (Custodi): ex campione di lotta. |
+| P046, Cattivi | VEL 10, FUR 9, RES 1 | Legame | **Lola Jet** (Sciolti, schierata con i Cattivi): la ladra più rapida di Nuova Megara. |
 | P047, Neutrali | INT 7, TEC 7, ENE 1 | Affinità (Mente) | **Ada Kode** (Banco): analista. |
 | P048, Eroi | MAG 10, PSI 9, PER 1 | Terreno favorevole | **Dante Nox** (Lanterne): mago di strada quasi cieco. |
 | P049, Cattivi | ENE 7, RES 7, FUR 1 | Affinità (Potere) | **Ivan Nucleo** (Compagnia Lete): dirigente, è un reattore che cammina. |
@@ -136,7 +136,7 @@ Testo di colore (una frase):
 
 ### Gamma: professionisti di quartiere
 
-Tutti hanno il potere Specialità: +2 contro le Minacce che richiedono la prima abilità indicata.
+Hanno il potere Specialità (+2 contro le Minacce che richiedono la prima abilità indicata), tranne: Jay Rondine e Nitro Vega (Apripista), Marta Scudo (Ultimo baluardo), Rey Pugno e Fritz Rotor (Legame), Goran Orso e Vic Cromo (Implacabile). Tra le carte aggiunte dopo, Ercole Neo ha Implacabile, Stella Nova e Lady Medusa hanno Veggente.
 
 | Carta | Valori chiave | Personaggio |
 |---|---|---|

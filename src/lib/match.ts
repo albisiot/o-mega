@@ -64,6 +64,8 @@ export type MatchView = {
   /** Levels reached with this match and the coins each one paid. */
   level_rewards: { level: number; coins: number }[];
   level_unlocks?: { name: string; level: number }[];
+  /** Veggente: the threats of the following rounds, once the player has played it. */
+  foreseen_threats?: { round: number; level: number; name: string; abilities: string[] }[];
   server_now: string;
   my_team: (MatchCard & { instance_id: string; played_round: number | null })[];
   rounds: MatchRound[];

@@ -13,6 +13,7 @@ export type Character = {
   /** Card instance id for players; definition id for bots (they own no cards). */
   id: string;
   definitionId: string;
+  faction: string;
   stats: Record<AbilityCode, number>;
   power: Power | null;
 };
@@ -54,6 +55,8 @@ export type PlayScore = {
   total: number;
   /** Highest single required-ability value, without bonuses (tie-break). */
   highest: number;
+  /** Implacabile: wins when the totals are equal. */
+  relentless?: boolean;
 };
 
 export type PlayRecord = PlayScore & { autoPlayed: boolean };

@@ -120,7 +120,7 @@ select set_config('request.jwt.claims',
 do $$
 begin
   assert (select count(*) from public.card_definitions) = 80, 'players cannot read the full catalog';
-  assert (select count(*) from public.power_definitions) = 5, 'players cannot read powers';
+  assert (select count(*) from public.power_definitions) = 11, 'players cannot read powers';
   begin
     perform 1 from public.threat_definitions;
     raise exception 'ASSERT: players can read the threat catalog';
@@ -132,7 +132,7 @@ set local role anon;
 
 do $$
 begin
-  assert (select count(*) from public.power_definitions) = 5, 'anon cannot read powers';
+  assert (select count(*) from public.power_definitions) = 11, 'anon cannot read powers';
   begin
     perform 1 from public.threat_definitions;
     raise exception 'ASSERT: anon can read the threat catalog';
