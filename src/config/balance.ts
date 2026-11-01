@@ -102,6 +102,11 @@ export const balance = {
     specialRevealMinRarityRank: 4,
   },
 
+  bonusCodes: {
+    /** Unknown codes a player can try per hour: codes cannot be found by guessing. */
+    maxFailedAttemptsPerHour: 10,
+  },
+
   matchmaking: {
     friendCodeMinutes: 10,
     /** Queue entries not refreshed by the waiting client for this long are ignored. */

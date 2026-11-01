@@ -9,6 +9,7 @@ export const COIN_REASON_LABELS: Record<string, string> = {
   conquest_bonus: "Bonus conquista",
   level_reward: "Premio di livello",
   emergency_reward: "Premio Emergenza",
+  bonus_code: "Codice bonus",
   admin_adjustment: "Rettifica",
 };
 

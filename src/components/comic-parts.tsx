@@ -62,11 +62,13 @@ export function PackArt({
   omega,
   className,
   shine = false,
+  cards = 5,
 }: {
   body: string;
   omega: string;
   className: string;
   shine?: boolean;
+  cards?: number;
 }) {
   const dots = useId();
   const outline = useId();
@@ -103,7 +105,7 @@ export function PackArt({
         O-MEGA
       </text>
       <text x="100" y="246" textAnchor="middle" fontSize="20" fill="#000" style={{ fontFamily: "var(--display-font)" }}>
-        5 CARTE
+        {cards} {cards === 1 ? "CARTA" : "CARTE"}
       </text>
       {shine && (
         <g clipPath={`url(#${outline})`}>

@@ -6,7 +6,7 @@ import { CardView } from "@/components/card-view";
 import { PackArt } from "@/components/comic-parts";
 import { balance } from "@/config/balance";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
-import type { PackCard, PackOpening } from "@/lib/packs";
+import { packRevealHref, type PackCard, type PackOpening } from "@/lib/packs";
 
 type Stage =
   | { kind: "sealed" }
@@ -21,8 +21,14 @@ const RARE_INTRO_MS = 1400;
 const isSpecial = (card: PackCard) =>
   card.rarity.rank >= balance.packs.specialRevealMinRarityRank || Boolean(card.variant);
 
-/** Sealed pack → cards revealed one at a time → summary. */
-export function PackReveal({ opening }: { opening: PackOpening }) {
+const PACK_TITLES: Record<PackOpening["pack_type"], string> = {
+  daily: "Pacchetto del giorno",
+  standard: "Pacchetto standard",
+  bonus: "Carte bonus",
+};
+
+/** Sealed pack → cards revealed one at a time → summary, then the next pack if any. */
+export function PackReveal({ opening, nextIds = [] }: { opening: PackOpening; nextIds?: string[] }) {
   const [stage, setStage] = useState<Stage>({ kind: "sealed" });
   const [abilities, setAbilities] = useState<AbilityInfo[] | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -65,7 +71,7 @@ export function PackReveal({ opening }: { opening: PackOpening }) {
       <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-6 text-center">
         <div aria-hidden className="rays-dark fixed inset-0 -z-10" />
         <h1 className="-skew-x-8 font-display text-[44px] uppercase leading-[52px] text-comic-yellow [text-shadow:3px_3px_0_var(--comic-magenta)]">
-          {opening.pack_type === "daily" ? "Pacchetto del giorno" : "Pacchetto standard"}
+          {PACK_TITLES[opening.pack_type]}
         </h1>
         <button
           type="button"
@@ -77,6 +83,7 @@ export function PackReveal({ opening }: { opening: PackOpening }) {
           <PackArt
             body="#ffd60a"
             omega="#ff2e6c"
+            cards={cards.length}
             className="h-[380px] drop-shadow-[8px_8px_0_var(--comic-magenta)]"
           />
         </button>
@@ -153,7 +160,9 @@ export function PackReveal({ opening }: { opening: PackOpening }) {
   return (
     <main className="flex flex-1 flex-col gap-5 px-4 py-6">
       <header>
-        <h1 className="font-display text-4xl uppercase text-comic-yellow">Il tuo pacchetto</h1>
+        <h1 className="font-display text-4xl uppercase text-comic-yellow">
+          {opening.pack_type === "bonus" ? "Le tue carte" : "Il tuo pacchetto"}
+        </h1>
         <p className="mt-1 text-sm font-semibold text-muted">Le carte sono già nella tua collezione.</p>
       </header>
       <div className="grid grid-cols-2 gap-3">
@@ -168,9 +177,15 @@ export function PackReveal({ opening }: { opening: PackOpening }) {
           </div>
         ))}
       </div>
-      <Link href="/" className="btn btn-primary mt-2">
-        Torna alla home
-      </Link>
+      {nextIds.length > 0 ? (
+        <Link href={packRevealHref(nextIds)} className="btn btn-primary mt-2">
+          {nextIds.length === 1 ? "Apri l'ultimo pacchetto" : `Apri il prossimo (ne restano ${nextIds.length})`}
+        </Link>
+      ) : (
+        <Link href="/" className="btn btn-primary mt-2">
+          Torna alla home
+        </Link>
+      )}
     </main>
   );
 }

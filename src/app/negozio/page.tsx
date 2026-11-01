@@ -17,6 +17,8 @@ export default function ShopPage() {
   const [history, setHistory] = useState<CoinMovement[] | null>(seenCoinHistory);
   const [error, setError] = useState<string | null>(null);
 
+  const [historyVersion, setHistoryVersion] = useState(0);
+
   useEffect(() => {
     if (!session) return;
     let cancelled = false;
@@ -32,7 +34,7 @@ export default function ShopPage() {
     return () => {
       cancelled = true;
     };
-  }, [session]);
+  }, [session, historyVersion]);
 
   if (error || statusError) {
     return (
@@ -46,5 +48,16 @@ export default function ShopPage() {
   }
   if (!status || !odds || !history) return <LoadingScreen label="Apertura del negozio…" />;
 
-  return <ShopView status={status} odds={odds} history={history} onFailed={refresh} />;
+  return (
+    <ShopView
+      status={status}
+      odds={odds}
+      history={history}
+      onFailed={refresh}
+      onRedeemed={() => {
+        refresh();
+        setHistoryVersion((version) => version + 1);
+      }}
+    />
+  );
 }

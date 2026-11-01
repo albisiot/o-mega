@@ -312,6 +312,29 @@ Ogni movimento passa da `coin_ledger`. **Nessun acquisto con denaro reale** nell
 
 Nota per il futuro: pacchetti a pagamento combinati con carte che si possono perdere in partita richiedono una verifica legale (normativa su loot box e gioco d'azzardo). L'orientamento è monetizzare solo con elementi cosmetici.
 
+### 8.1 Codici bonus
+
+Nel Negozio il giocatore può inserire un codice e ricevere subito i premi decisi in anticipo.
+
+- **Premi:** qualsiasi combinazione di monete, pacchetti standard e carte scelte. Le carte scelte sono copie normali, conquistabili come quelle dei pacchetti: mai varianti (§4.6) né personaggi da sblocco di livello.
+- **Limiti di ogni codice:** una volta per giocatore; facoltativi un numero massimo di giocatori e una scadenza.
+- **Tentativi:** massimo 10 codici inesistenti all'ora per giocatore, così non si indovinano provando.
+- **Sicurezza:** i codici stanno solo nel database, mai nel repository, e nessun client può leggerli. Tutto passa da `coin_ledger` e `card_transfers`.
+
+Creazione dall'editor SQL di Supabase (ogni parametro di premio e limite è facoltativo):
+
+```sql
+select public.create_bonus_code('NATALE26',
+  p_coins => 100,
+  p_packs => 1,
+  p_card_codes => array['P002'],
+  p_max_uses => 50,
+  p_expires_at => '2026-12-31 23:59 Europe/Rome',
+  p_note => 'Regalo di Natale');
+```
+
+Disattivazione: `update public.bonus_codes set is_active = false where code = 'NATALE26';`
+
 ## 9. Collezione e album
 
 - Album con tutte le carte del catalogo: possedute e mancanti (sagoma).

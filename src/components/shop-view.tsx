@@ -2,11 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { PageHeader, PackArt } from "@/components/comic-parts";
 import { balance } from "@/config/balance";
 import { describeServerError } from "@/lib/errors";
-import { buyPack, type PackOdds, type PackStatus } from "@/lib/packs";
+import {
+  buyPack,
+  describeBonusReward,
+  packRevealHref,
+  redeemBonusCode,
+  type BonusReward,
+  type PackOdds,
+  type PackStatus,
+} from "@/lib/packs";
 import { COIN_REASON_LABELS, type CoinMovement } from "@/lib/wallet";
 
 const percent = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 1 });
@@ -17,10 +25,11 @@ type ShopViewProps = {
   odds: PackOdds;
   history: CoinMovement[];
   onFailed: () => void;
+  onRedeemed: () => void;
 };
 
-/** Balance, standard pack purchase, published odds and coin history. */
-export function ShopView({ status, odds, history, onFailed }: ShopViewProps) {
+/** Balance, standard pack purchase, bonus codes, published odds and coin history. */
+export function ShopView({ status, odds, history, onFailed, onRedeemed }: ShopViewProps) {
   return (
     <div className="flex flex-1 flex-col">
       <PageHeader title="Negozio" />
@@ -34,6 +43,8 @@ export function ShopView({ status, odds, history, onFailed }: ShopViewProps) {
         </section>
 
         <BuySection price={odds.standard_pack_price} balance={status.coin_balance} odds={odds} onFailed={onFailed} />
+
+        <BonusCodeSection onRedeemed={onRedeemed} />
 
         <section className="flex flex-col gap-2">
           <h2 className="section-title">Probabilità per carta</h2>
@@ -104,6 +115,71 @@ export function ShopView({ status, odds, history, onFailed }: ShopViewProps) {
         </section>
       </main>
     </div>
+  );
+}
+
+function BonusCodeSection({ onRedeemed }: { onRedeemed: () => void }) {
+  const [code, setCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reward, setReward] = useState<BonusReward | null>(null);
+
+  async function redeem(event: FormEvent) {
+    event.preventDefault();
+    setRedeeming(true);
+    setError(null);
+    setReward(null);
+    try {
+      setReward(await redeemBonusCode(code));
+      setCode("");
+      onRedeemed();
+    } catch (cause) {
+      setError(describeServerError(cause));
+    } finally {
+      setRedeeming(false);
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-2">
+      <h2 className="section-title">Codici bonus</h2>
+      <form onSubmit={redeem} className="flex gap-2">
+        <input
+          value={code}
+          onChange={(event) => setCode(event.target.value.toUpperCase())}
+          aria-label="Codice bonus"
+          placeholder="Inserisci il codice"
+          maxLength={40}
+          autoCapitalize="characters"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          className="min-h-12 min-w-0 flex-1 border-2 border-comic-yellow bg-black px-3 font-display text-lg uppercase tracking-wide placeholder:normal-case placeholder:text-faint"
+        />
+        <button
+          type="submit"
+          disabled={redeeming || code.trim() === ""}
+          className="btn min-h-12 bg-comic-yellow px-4 font-display text-lg uppercase text-black disabled:opacity-60"
+        >
+          {redeeming ? "Verifica…" : "Riscatta"}
+        </button>
+      </form>
+      <div aria-live="polite" className="flex flex-col gap-2">
+        {error && <p className="text-sm font-bold text-comic-magenta">{error}</p>}
+        {reward && (
+          <>
+            <p className="bg-panel px-4 py-2.5 text-sm font-bold">
+              Codice riscattato! Hai ricevuto <span className="text-comic-cyan">{describeBonusReward(reward)}</span>.
+            </p>
+            {reward.openings.length > 0 && (
+              <Link href={packRevealHref(reward.openings.map((opening) => opening.id))} className="btn btn-primary">
+                {reward.packs > 0 ? "Apri i premi" : "Guarda le carte"}
+              </Link>
+            )}
+          </>
+        )}
+      </div>
+    </section>
   );
 }
 

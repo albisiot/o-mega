@@ -1411,6 +1411,7 @@ export type Database = {
         Returns: string
       }
       next_reset_at: { Args: { p_at?: string }; Returns: string }
+      redeem_bonus_code: { Args: { p_code: string }; Returns: Json }
       notify_match: {
         Args: { p_kind: string; p_match_id: string }
         Returns: undefined

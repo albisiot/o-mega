@@ -20,7 +20,13 @@ export default function PackPage() {
 }
 
 function PackPageContent() {
-  const id = useSearchParams().get("id");
+  const params = useSearchParams();
+  const id = params.get("id");
+  // A bonus code can open several packs: each one starts its own reveal.
+  return <PackOpeningView key={id} id={id} nextIds={params.get("next")?.split(",") ?? []} />;
+}
+
+function PackOpeningView({ id, nextIds }: { id: string | null; nextIds: string[] }) {
   const { session } = useRequireSignedIn();
   const [opening, setOpening] = useState<PackOpening | null>(() => (id ? cachedPackOpening(id) : null));
   const [error, setError] = useState<string | null>(null);
@@ -51,5 +57,5 @@ function PackPageContent() {
     );
   }
   if (!opening) return <LoadingScreen label="Preparazione del pacchetto…" />;
-  return <PackReveal opening={opening} />;
+  return <PackReveal opening={opening} nextIds={nextIds} />;
 }

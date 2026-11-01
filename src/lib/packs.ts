@@ -18,7 +18,8 @@ export type PackCard = {
 /** Cards come least rare first, so the best one is revealed last. */
 export type PackOpening = {
   id: string;
-  pack_type: "daily" | "standard";
+  /** "bonus": the cards chosen for a bonus code, shown like a pack. */
+  pack_type: "daily" | "standard" | "bonus";
   opened_at: string;
   cards: PackCard[];
 };
@@ -67,6 +68,41 @@ export async function buyPack(): Promise<PackOpening> {
   const { data, error } = await getSupabase().rpc("buy_pack");
   if (error) throw error;
   return remember(data as unknown as PackOpening);
+}
+
+export type BonusReward = {
+  coins: number;
+  cards: number;
+  packs: number;
+  /** Chosen cards first, then one opening per pack. */
+  openings: PackOpening[];
+};
+
+export async function redeemBonusCode(code: string): Promise<BonusReward> {
+  const { data, error } = await getSupabase().rpc("redeem_bonus_code", { p_code: code });
+  if (error) throw error;
+  // An unknown code is an answer, not a failure: the server must keep counting attempts.
+  const result = data as unknown as BonusReward | { error: string };
+  if ("error" in result) throw new Error(result.error);
+  result.openings.forEach(remember);
+  forget("packStatus");
+  forget("coinHistory");
+  return result;
+}
+
+/** "100 monete, 1 carta e 2 pacchetti" */
+export function describeBonusReward({ coins, cards, packs }: Pick<BonusReward, "coins" | "cards" | "packs">): string {
+  const parts = [
+    coins > 0 && `${coins} ${coins === 1 ? "moneta" : "monete"}`,
+    cards > 0 && `${cards} ${cards === 1 ? "carta" : "carte"}`,
+    packs > 0 && `${packs} ${packs === 1 ? "pacchetto" : "pacchetti"}`,
+  ].filter((part) => part !== false);
+  return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} e ${parts.at(-1)}` : (parts[0] ?? "");
+}
+
+/** Reveal page of the first opening; the others follow it, in order. */
+export function packRevealHref([first, ...rest]: string[]): string {
+  return `/pacchetto/?id=${first}${rest.length > 0 ? `&next=${rest.join(",")}` : ""}`;
 }
 
 // The opening RPCs already return the cards: keep them so the reveal page

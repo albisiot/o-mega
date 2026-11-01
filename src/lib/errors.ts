@@ -38,6 +38,11 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   emergency_already_played: "Hai già giocato l'Emergenza di oggi: la prossima arriva dopo la mezzanotte.",
   emergency_not_started: "L'Emergenza di oggi non è ancora iniziata: scegli la squadra.",
   invalid_emergency_squad: "Scegli 8 personaggi.",
+  bonus_code_invalid: "Questo codice non esiste.",
+  bonus_code_expired: "Questo codice è scaduto.",
+  bonus_code_exhausted: "Questo codice è esaurito.",
+  bonus_code_already_redeemed: "Hai già usato questo codice.",
+  bonus_code_too_many_attempts: "Troppi codici sbagliati: riprova tra un'ora.",
 };
 
 export function describeServerError(error: unknown): string {

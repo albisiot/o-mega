@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "1 novembre 2026",
     changes: [
+      "Nel Negozio arrivano i codici bonus: inserisci un codice e ricevi monete, pacchetti o carte. Ogni codice si usa una volta sola.",
       "Altri 12 nuovi personaggi da trovare nei pacchetti: alieni, macchine e gente del futuro, da Glip ad Aion.",
       "12 nuovi personaggi da trovare nei pacchetti: robot, mostri e mutanti, da Rottame a Cariddi.",
       "Arriva Emergenza, la sfida del giorno da giocare da soli: 8 Minacce uguali per tutti, una squadra di 8 personaggi e un solo tentativo, con la classifica di giornata. Nessuna carta in gioco e fino a 50 monete.",
