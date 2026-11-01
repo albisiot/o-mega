@@ -388,10 +388,26 @@ body {
   }
 }
 
+.status-bar-band {
+  display: none;
+}
+
 /* iOS 26 gives a home-screen app a viewport short by the status bar height while
    the page is shorter than the screen. The lvh cap avoids extra scroll elsewhere. */
 @media (display-mode: standalone) {
   html {
     min-height: min(100lvh, calc(100% + env(safe-area-inset-top)));
+  }
+
+  /* iOS 26 blurs the top of a home-screen app unless a fixed, full-width box with
+     one solid color spans the top edge. It stays above overlays so iOS can see it. */
+  .status-bar-band {
+    display: block;
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 50;
+    height: max(env(safe-area-inset-top), 1px);
+    background: var(--background);
+    pointer-events: none;
   }
 }
