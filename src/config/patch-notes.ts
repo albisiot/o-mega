@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "1 novembre 2026",
     changes: [
+      "12 nuovi personaggi da trovare nei pacchetti: robot, mostri e mutanti, da Rottame a Cariddi.",
       "Arriva Emergenza, la sfida del giorno da giocare da soli: 8 Minacce uguali per tutti, una squadra di 8 personaggi e un solo tentativo, con la classifica di giornata. Nessuna carta in gioco e fino a 50 monete.",
       "Nuovo tutorial: spiega carte, Minacce, Conquista e monete, con un round di prova. Parte da solo la prima volta e si può rivedere da Gioca e dal Profilo.",
       "Arrivano le varianti: 20 personaggi hanno anche un disegno Neon più raro, da trovare nei pacchetti. Stessi valori e poteri, disegno diverso. Se la schieri in Conquista puoi perderla.",

@@ -217,6 +217,25 @@ Da P061 a P080. Stesse proporzioni di rarità, stessi totali di valori e stessi 
 
 Regola nuova: le carte con un livello di sblocco non escono dai pacchetti né dallo starter set. Ogni giocatore ne riceve una copia al livello indicato, legata all'account come una starter: non si conquista e non si converte in monete.
 
+### Robot, mostri e mutanti
+
+Da P081 a P092: chi non è più del tutto una persona, o non lo è mai stato. L'Ora Zero ha svegliato quello che dormiva negli scavi (Talos, Polifemo, Cerbero, Cariddi), ha dato coscienza alle macchine e ha cambiato il corpo di chi era vicino. Stessi totali di valori e stessi tipi di Potere del resto del catalogo. Si trovano tutti nei pacchetti.
+
+| Carta | Rarità e fazione | Personaggio | Il difetto nei valori |
+|---|---|---|---|
+| P081 | Delta, Neutrali | **Rottame:** robot assemblato con gli scarti del porto, cerca lavoro. | VEL 1, MAG 0 |
+| P082 | Delta, Neutrali | **Rag. 404:** robot contabile del Banco, non trova mai il tuo pagamento. | PER 0 |
+| P083 | Delta, Eroi | **Geco Nardi:** mutante mezzo geco, la coda gli ricresce. | TEC 1 |
+| P084 | Delta, Cattivi | **Nina Muffa:** creatura di muffa viva cresciuta nella metro, dei Figli dell'Ultima. | VEL 0, FOR 1 |
+| P085 | Gamma, Eroi | **Ciro-9:** vecchio robot domestico, ha cresciuto mezzo quartiere con le Lanterne. | COM 1, FUR 1 |
+| P086 | Gamma, Eroi | **Gino Lupo:** vigile dei Custodi, licantropo con la luna piena. | INT 1 |
+| P087 | Gamma, Neutrali | **Cerbero:** cane a tre teste delle necropoli sotto la metro. | INT 1, TEC 1 |
+| P088 | Gamma, Cattivi | **Zia Arpia:** arpia di quartiere, sa tutto di tutti. | FOR 1, TEC 1 |
+| P089 | Beta, Cattivi | **Polifemo:** gigante con un occhio solo, scaricatore per la Compagnia Lete. | PER 1 |
+| P090 | Beta, Cattivi | **Conte Rata:** vampiro e dirigente della Compagnia Lete. | RES 0 |
+| P091 | Alfa, Eroi | **Talos:** automa di bronzo trovato negli scavi, un solo punto debole. | RES 1, VEL 1 |
+| P092 | Omega, Neutrali | **Cariddi:** vortice con i denti nel porto, quello che l'Ora Zero ha fatto del mare. | INT 0, VEL 1 |
+
 ## 6. Minacce
 
 Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richiede Forza e Tecnologia. Molti nomi attuali funzionano già e vanno solo ambientati a Nuova Megara. Il testo di colore può usare il tono di un bollettino del sismografo.
