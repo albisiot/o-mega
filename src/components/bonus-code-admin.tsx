@@ -12,7 +12,7 @@ import {
 } from "@/lib/bonus-code-admin";
 import { describeServerError } from "@/lib/errors";
 
-const INPUT = "min-h-12 w-full min-w-0 border-2 border-comic-yellow bg-black px-3 text-base font-semibold";
+const INPUT = "min-h-12 w-full min-w-0 max-w-full border-2 border-comic-yellow bg-black px-3 text-base font-semibold";
 const LABEL = "flex min-w-0 flex-col gap-1 text-sm font-bold";
 
 const romeDate = new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeZone: "Europe/Rome" });
@@ -25,7 +25,7 @@ type BonusCodeAdminProps = {
 /** Creates bonus codes and shows how the existing ones are doing. */
 export function BonusCodeAdmin({ data, onChange }: BonusCodeAdminProps) {
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
       <PageHeader title="Codici bonus" />
       <main className="flex flex-1 flex-col gap-5 px-3 pb-6">
         <NewCodeForm cards={data.cards} onChange={onChange} />
@@ -169,29 +169,28 @@ function NewCodeForm({ cards, onChange }: { cards: AdminBonusCodes["cards"]; onC
           ))}
         </ul>
       )}
-      <div className="grid grid-cols-2 gap-2">
-        <label className={LABEL}>
-          Max giocatori
-          <input
-            type="number"
-            inputMode="numeric"
-            min={1}
-            value={maxUses}
-            onChange={(event) => setMaxUses(event.target.value)}
-            placeholder="Nessun limite"
-            className={`${INPUT} placeholder:text-faint`}
-          />
-        </label>
-        <label className={LABEL}>
-          Ultimo giorno
-          <input
-            type="date"
-            value={expiresOn}
-            onChange={(event) => setExpiresOn(event.target.value)}
-            className={INPUT}
-          />
-        </label>
-      </div>
+      <label className={LABEL}>
+        Max giocatori
+        <input
+          type="number"
+          inputMode="numeric"
+          min={1}
+          value={maxUses}
+          onChange={(event) => setMaxUses(event.target.value)}
+          placeholder="Nessun limite"
+          className={`${INPUT} placeholder:text-faint`}
+        />
+      </label>
+      <label className={LABEL}>
+        Ultimo giorno
+        {/* Safari ignores the width of a date field that keeps its native appearance. */}
+        <input
+          type="date"
+          value={expiresOn}
+          onChange={(event) => setExpiresOn(event.target.value)}
+          className={`${INPUT} appearance-none [&::-webkit-date-and-time-value]:text-left`}
+        />
+      </label>
       <label className={LABEL}>
         Nota per te
         <input
