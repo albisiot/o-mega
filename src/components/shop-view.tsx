@@ -55,6 +55,10 @@ export function ShopView({ status, odds, history, onFailed }: ShopViewProps) {
             {odds.cards_per_pack - 1} non contengono una {odds.guaranteed_rarity_name} o superiore, l&apos;ultima è
             garantita di quella rarità o superiore. Le estrazioni avvengono sul server.
           </p>
+          <p className="text-sm font-medium text-muted">
+            Varianti: {odds.characters_with_variants} personaggi hanno anche un disegno più raro. Quando ne esce uno, ha
+            il {odds.variant_chance_percent}% di probabilità di avere quel disegno. Valori e poteri restano uguali.
+          </p>
         </section>
 
         <section className="flex flex-col gap-2">

@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
-import { CardArt, Silhouette } from "@/components/card-view";
+import { CardArt, Silhouette, VariantTag } from "@/components/card-view";
 import { cardEffects } from "@/lib/card-effects";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import {
   convertAllDuplicates,
+  ownedArt,
   type CatalogCard,
   type ConversionResult,
   type OwnedSummary,
@@ -265,7 +266,7 @@ function AlbumTile({
       style={{ background: owned ? rarityFrame(card.rarity) : "var(--panel-raised)" }}
     >
       {owned && owned.copies > 1 && (
-        <span className="absolute right-1.5 top-1.5 z-10 bg-black px-1.5 text-xs font-extrabold leading-[18px] text-comic-yellow">
+        <span className="absolute left-1.5 top-1.5 z-10 bg-black px-1.5 text-xs font-extrabold leading-[18px] text-comic-yellow">
           ×{owned.copies}
         </span>
       )}
@@ -273,10 +274,12 @@ function AlbumTile({
         <CardArt
           rarity={card.rarity}
           faction={card.faction}
-          artUrl={card.art_url}
+          artUrl={ownedArt(card, owned).art_url}
           effects={cardEffects(card, "sm")}
           className="h-24 rounded-t"
-        />
+        >
+          {owned.variants[0] && <VariantTag name={owned.variants[0].name} compact />}
+        </CardArt>
       ) : (
         <div className="relative h-24 overflow-hidden rounded-t bg-panel">
           <Silhouette faction={card.faction} ink="#3a3a45" className="absolute -bottom-1 left-1/2 h-[96%] -translate-x-1/2" />
@@ -333,7 +336,7 @@ function ConvertAll({
       {confirming ? (
         <>
           <p className="text-sm font-medium text-muted">
-            Tieni sempre almeno una copia di ogni personaggio. La conversione non si può annullare.
+            Tieni sempre almeno una copia di ogni personaggio e tutte le varianti. La conversione non si può annullare.
           </p>
           <div className="flex gap-2">
             <button type="button" onClick={convert} disabled={busy} className="btn btn-primary flex-1 disabled:opacity-60">

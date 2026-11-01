@@ -9,6 +9,7 @@ export type PackCard = {
   faction: string;
   flavor: string;
   art_url: string | null;
+  variant: { style: string; name: string } | null;
   stats: Record<string, number>;
   rarity: { code: string; name: string; rank: number; color: string };
   power: { name: string; text: string } | null;
@@ -35,6 +36,8 @@ export type PackOdds = {
   standard_pack_price: number;
   guaranteed_min_rarity_rank: number;
   guaranteed_rarity_name: string;
+  variant_chance_percent: number;
+  characters_with_variants: number;
   /** Per-card probability of each rarity, as used by the server draw. */
   odds: { code: string; name: string; rank: number; color: string; probability: number }[];
 };

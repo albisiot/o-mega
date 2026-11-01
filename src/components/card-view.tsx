@@ -14,6 +14,8 @@ export type CardData = {
   rarity: { name: string; rank: number; color: string };
   power: { name: string; text: string } | null;
   art_url?: string | null;
+  /** Set when this copy shows an artwork variant instead of the base drawing. */
+  variant?: { name: string } | null;
 };
 
 type CardViewProps = {
@@ -55,6 +57,7 @@ export function CardView({ card, abilities, size = "lg", glow = false }: CardVie
           effects={effects}
           className={large ? "h-44" : "h-24"}
         >
+          {card.variant && <VariantTag name={card.variant.name} compact={!large} />}
           <span
             className={`absolute bottom-1.5 left-1.5 -skew-x-8 px-1.5 font-extrabold uppercase text-black ${
               large ? "py-0.5 text-xs" : "text-[10px]"
@@ -97,6 +100,19 @@ function RarityTag({ rarity, compact }: { rarity: CardData["rarity"]; compact: b
     >
       <span className="font-sans font-black">{rarityLetter(rarity)}</span>
       {!compact && rarity.name}
+    </span>
+  );
+}
+
+/** Marks a copy with an artwork variant, on the card and in the lists that show its art. */
+export function VariantTag({ name, compact }: { name: string; compact: boolean }) {
+  return (
+    <span
+      className={`absolute right-1.5 top-1.5 z-10 -skew-x-8 bg-comic-magenta font-extrabold uppercase text-black ${
+        compact ? "px-1 text-[10px]" : "px-1.5 py-0.5 text-xs"
+      }`}
+    >
+      ★ {name}
     </span>
   );
 }

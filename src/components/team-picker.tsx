@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { balance } from "@/config/balance";
 import type { CatalogCard } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
-import { deleteFormation, saveFormation, type Formation } from "@/lib/match";
+import { deleteFormation, saveFormation, type Formation, type VariantCopy } from "@/lib/match";
 
 const LAST_TEAM_KEY = "o-mega.last-team";
 
@@ -25,6 +25,8 @@ type TeamPickerProps = {
   conquerable?: Set<string> | null;
   /** Conquest only: for characters also owned as starter, the copy that can be put at stake. */
   atRiskCopies?: Map<string, string> | null;
+  /** Copies with an artwork variant: fielded only when the player chooses them. */
+  variantCopies: Map<string, VariantCopy[]>;
   /** Card instance id → definition id (to load formations). */
   instanceDefinitions: Map<string, string>;
   formations: Formation[];
@@ -36,7 +38,7 @@ type TeamPickerProps = {
 
 /** Pick 5 different characters among the owned ones; load or save formations. */
 export function TeamPicker(props: TeamPickerProps) {
-  const { catalog, owned, conquerable, atRiskCopies, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart } = props;
+  const { catalog, owned, conquerable, atRiskCopies, variantCopies, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart } = props;
   const size = balance.match.teamSize;
   const [selected, setSelected] = useState<string[]>(() => loadLastTeam(owned).slice(0, size));
   const [naming, setNaming] = useState(false);
@@ -53,10 +55,31 @@ export function TeamPicker(props: TeamPickerProps) {
   const byId = useMemo(() => new Map(catalog.map((card) => [card.id, card])), [catalog]);
   // Characters for which the player fields the pack copy instead of the protected starter one.
   const [staked, setStaked] = useState<Set<string>>(new Set());
-  const instanceIds = selected.map((definitionId) =>
-    staked.has(definitionId) ? atRiskCopies!.get(definitionId)! : owned.get(definitionId)!,
+  // Characters for which the player fields a copy with an artwork variant: definition id → instance id.
+  const [variantChoice, setVariantChoice] = useState<Map<string, string>>(new Map());
+  const instanceIds = selected.map(
+    (definitionId) =>
+      variantChoice.get(definitionId) ??
+      (staked.has(definitionId) ? atRiskCopies!.get(definitionId)! : owned.get(definitionId)!),
   );
-  const isAtRisk = (definitionId: string) => Boolean(conquerable?.has(definitionId)) || staked.has(definitionId);
+  const isAtRisk = (definitionId: string) =>
+    Boolean(conquerable?.has(definitionId)) || staked.has(definitionId) || variantChoice.has(definitionId);
+  // The variant the player can switch to; none when the default copy already is that one.
+  const switchableVariant = (definitionId: string) =>
+    variantCopies.get(definitionId)?.find((copy) => copy.id !== owned.get(definitionId));
+
+  function toggleVariant(definitionId: string, copy: VariantCopy) {
+    setVariantChoice((current) => {
+      const next = new Map(current);
+      if (!next.delete(definitionId)) next.set(definitionId, copy.id);
+      return next;
+    });
+    setStaked((current) => {
+      const next = new Set(current);
+      next.delete(definitionId);
+      return next;
+    });
+  }
 
   // Conquest: what is at risk, and how rare a card this team can take.
   const minConquerable = balance.conquest.minConquerableCards;
@@ -90,6 +113,16 @@ export function TeamPicker(props: TeamPickerProps) {
         formation.card_instance_ids
           .map((id) => instanceDefinitions.get(id))
           .filter((id): id is string => Boolean(id && atRiskCopies?.get(id) && formation.card_instance_ids.includes(atRiskCopies.get(id)!))),
+      ),
+    );
+    setVariantChoice(
+      new Map(
+        formation.card_instance_ids.flatMap((id) => {
+          const definitionId = instanceDefinitions.get(id);
+          const isChosenVariant =
+            definitionId && id !== owned.get(definitionId) && variantCopies.get(definitionId)?.some((copy) => copy.id === id);
+          return isChosenVariant ? [[definitionId, id] as const] : [];
+        }),
       ),
     );
     setMessage(
@@ -231,6 +264,8 @@ export function TeamPicker(props: TeamPickerProps) {
       <ul className="grid grid-cols-2 gap-2">
         {cards.map((card) => {
           const position = selected.indexOf(card.id);
+          const variant = switchableVariant(card.id);
+          const usesVariant = variantChoice.has(card.id);
           const top = Object.entries(card.stats)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 3);
@@ -264,7 +299,7 @@ export function TeamPicker(props: TeamPickerProps) {
                   {top.map(([code, value]) => `${code} ${value}`).join(" · ")}
                 </span>
               </button>
-              {atRiskCopies?.has(card.id) && position >= 0 && (
+              {atRiskCopies?.has(card.id) && position >= 0 && !usesVariant && (
                 <button
                   type="button"
                   onClick={() =>
@@ -277,6 +312,20 @@ export function TeamPicker(props: TeamPickerProps) {
                   className="mt-1 min-h-11 w-full border-2 border-line bg-panel px-2 text-xs font-bold"
                 >
                   {staked.has(card.id) ? "Usa la copia starter" : "Metti in palio il doppione"}
+                </button>
+              )}
+              {variant && position >= 0 && (
+                <button
+                  type="button"
+                  onClick={() => toggleVariant(card.id, variant)}
+                  aria-pressed={usesVariant}
+                  className={`mt-1 min-h-11 w-full border-2 px-2 text-xs font-bold ${
+                    usesVariant ? "border-comic-magenta bg-comic-magenta text-black" : "border-line bg-panel"
+                  }`}
+                >
+                  {usesVariant
+                    ? `★ Variante ${variant.name} schierata${conquerable ? ": puoi perderla" : ""}`
+                    : `★ Schiera la variante ${variant.name}`}
                 </button>
               )}
             </li>

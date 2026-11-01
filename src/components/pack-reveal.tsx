@@ -6,7 +6,7 @@ import { CardView } from "@/components/card-view";
 import { PackArt } from "@/components/comic-parts";
 import { balance } from "@/config/balance";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
-import type { PackOpening } from "@/lib/packs";
+import type { PackCard, PackOpening } from "@/lib/packs";
 
 type Stage =
   | { kind: "sealed" }
@@ -16,6 +16,10 @@ type Stage =
 
 const TEAR_MS = 700;
 const RARE_INTRO_MS = 1400;
+
+/** High rarities and artwork variants get the special reveal. */
+const isSpecial = (card: PackCard) =>
+  card.rarity.rank >= balance.packs.specialRevealMinRarityRank || Boolean(card.variant);
 
 /** Sealed pack → cards revealed one at a time → summary. */
 export function PackReveal({ opening }: { opening: PackOpening }) {
@@ -39,7 +43,7 @@ export function PackReveal({ opening }: { opening: PackOpening }) {
   }
 
   function showCard(index: number) {
-    const rare = cards[index].rarity.rank >= balance.packs.specialRevealMinRarityRank;
+    const rare = isSpecial(cards[index]);
     setStage({ kind: "card", index, intro: rare });
     if (rare) later(RARE_INTRO_MS, { kind: "card", index, intro: false });
   }
@@ -85,7 +89,7 @@ export function PackReveal({ opening }: { opening: PackOpening }) {
 
   if (stage.kind === "card") {
     const card = cards[stage.index];
-    const rare = card.rarity.rank >= balance.packs.specialRevealMinRarityRank;
+    const rare = isSpecial(card);
 
     if (stage.intro) {
       return (
@@ -99,8 +103,12 @@ export function PackReveal({ opening }: { opening: PackOpening }) {
             className="animate-rare-burst absolute h-40 w-40 rounded-full [animation-delay:250ms]"
             style={{ backgroundColor: card.rarity.color }}
           />
-          <p className="animate-rare-title text-sfx relative text-8xl uppercase text-comic-magenta">
-            {card.rarity.name}!
+          <p
+            className={`animate-rare-title text-sfx relative text-center uppercase text-comic-magenta ${
+              card.variant ? "text-6xl" : "text-8xl"
+            }`}
+          >
+            {card.variant ? `Variante ${card.variant.name}!` : `${card.rarity.name}!`}
           </p>
         </main>
       );

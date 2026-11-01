@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       ability_definitions: {
@@ -148,6 +173,7 @@ export type Database = {
           locked_until: string | null
           out_of_play_at: string | null
           owner_id: string | null
+          variant_id: string | null
         }
         Insert: {
           acquired_at?: string
@@ -159,6 +185,7 @@ export type Database = {
           locked_until?: string | null
           out_of_play_at?: string | null
           owner_id?: string | null
+          variant_id?: string | null
         }
         Update: {
           acquired_at?: string
@@ -170,6 +197,7 @@ export type Database = {
           locked_until?: string | null
           out_of_play_at?: string | null
           owner_id?: string | null
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -192,6 +220,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_instances_variant_fkey"
+            columns: ["variant_id", "definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_variants"
+            referencedColumns: ["id", "definition_id"]
           },
         ]
       }
@@ -250,6 +285,51 @@ export type Database = {
             columns: ["to_user"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      card_variants: {
+        Row: {
+          art_url: string
+          created_at: string
+          definition_id: string
+          id: string
+          is_active: boolean
+          style: string
+          style_name: string
+        }
+        Insert: {
+          art_url: string
+          created_at?: string
+          definition_id: string
+          id?: string
+          is_active?: boolean
+          style: string
+          style_name: string
+        }
+        Update: {
+          art_url?: string
+          created_at?: string
+          definition_id?: string
+          id?: string
+          is_active?: boolean
+          style?: string
+          style_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_variants_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_variants_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
             referencedColumns: ["id"]
           },
         ]
@@ -1115,6 +1195,7 @@ export type Database = {
           rarity_rank: number | null
           stats: Json | null
           unlock_level: number | null
+          variant_count: number | null
         }
         Relationships: []
       }
@@ -1153,7 +1234,12 @@ export type Database = {
       }
       buy_pack: { Args: never; Returns: Json }
       cancel_lobby: { Args: never; Returns: undefined }
-      card_payload: { Args: { p_definition_id: string }; Returns: Json }
+      card_payload:
+        | { Args: { p_definition_id: string }; Returns: Json }
+        | {
+            Args: { p_definition_id: string; p_instance_id: string }
+            Returns: Json
+          }
       cards_lost_today: { Args: { p_user: string }; Returns: number }
       claim_conquest_card: {
         Args: { p_card_instance_id: string; p_match_id: string }
@@ -1210,6 +1296,7 @@ export type Database = {
         Returns: string[]
       }
       draw_rarity_rank: { Args: { p_min_rank: number }; Returns: number }
+      draw_variant: { Args: { p_definition_id: string }; Returns: string }
       eligible_rarities: {
         Args: never
         Returns: {
@@ -1539,6 +1626,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

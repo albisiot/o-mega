@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Silhouette } from "@/components/card-view";
+import { CardView, Silhouette } from "@/components/card-view";
 import { convertDuplicates, type CatalogCard, type OwnedSummary } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
 
@@ -47,6 +47,9 @@ export function CopiesPanel({
         )}
         {owned.locked_copies > 0 && (
           <Row label="Bloccate" value={owned.locked_copies} hint="Appena conquistate: non convertibili per ora." />
+        )}
+        {owned.variants.length > 0 && (
+          <Row label="Varianti" value={owned.variants.length} hint="Disegno più raro: non si convertono in monete." />
         )}
       </dl>
 
@@ -101,6 +104,32 @@ export function CopiesPanel({
       {message && (
         <p className={`text-sm font-semibold ${message.isError ? "text-comic-magenta" : "text-comic-cyan"}`}>
           {message.text}
+        </p>
+      )}
+    </section>
+  );
+}
+
+/** The variants this player found, one per style, and how many are still to find. */
+export function VariantsPanel({ card, owned }: { card: CatalogCard; owned: OwnedSummary }) {
+  const found = [...new Map(owned.variants.map((variant) => [variant.style, variant])).values()];
+  const missing = Math.max(0, card.variantCount - found.length);
+  if (card.variantCount === 0) return null;
+  return (
+    <section className="flex w-full max-w-sm flex-col items-center gap-3">
+      <h2 className="section-title self-start">Varianti</h2>
+      {found.map((variant) => (
+        <CardView
+          key={variant.style}
+          card={{ ...card, art_url: variant.art_url, variant: { name: variant.name } }}
+        />
+      ))}
+      {missing > 0 && (
+        <p className="self-start text-sm font-semibold text-muted">
+          {missing === 1
+            ? "Esiste una variante di questa carta che non hai ancora trovato."
+            : `Esistono ${missing} varianti di questa carta che non hai ancora trovato.`}{" "}
+          Si trovano nei pacchetti.
         </p>
       )}
     </section>

@@ -16,6 +16,8 @@ export type MatchCard = {
   faction: string;
   flavor: string;
   art_url: string | null;
+  /** Set when this copy has an artwork variant: `art_url` is already its drawing. */
+  variant?: { style: string; name: string } | null;
   stats: Record<string, number>;
   rarity: { code: string; name: string; rank: number; color: string };
   power: (Power & { name: string; text: string }) | null;
@@ -310,44 +312,68 @@ export function readPendingTeam(): string[] | null {
 
 export type Formation = { id: string; name: string; card_instance_ids: string[] };
 
-/** One instance per owned character (any copy works outside Conquest). */
-export async function fetchOwnedInstances(): Promise<Map<string, string>> {
+/** A copy with an artwork variant, which a player fields only by choosing it. */
+export type VariantCopy = { id: string; name: string };
+
+function collectVariantCopy(copies: Map<string, VariantCopy[]>, definitionId: string, copy: VariantCopy) {
+  copies.set(definitionId, [...(copies.get(definitionId) ?? []), copy]);
+}
+
+/**
+ * One instance per owned character (any copy works outside Conquest), a base
+ * one when there is one. `variantCopies` lists the copies with a variant.
+ */
+export async function fetchOwnedInstances(): Promise<{
+  owned: Map<string, string>;
+  variantCopies: Map<string, VariantCopy[]>;
+}> {
   const { data, error } = await getSupabase()
     .from("card_instances")
-    .select("id, definition_id, acquired_at")
+    .select("id, definition_id, acquired_at, card_variants(style_name)")
     .order("acquired_at");
   if (error) throw error;
-  const byDefinition = new Map<string, string>();
-  for (const row of data) if (!byDefinition.has(row.definition_id)) byDefinition.set(row.definition_id, row.id);
-  return byDefinition;
+  const owned = new Map<string, string>();
+  const variantCopies = new Map<string, VariantCopy[]>();
+  for (const row of data) {
+    if (row.card_variants) collectVariantCopy(variantCopies, row.definition_id, { id: row.id, name: row.card_variants.style_name });
+    else if (!owned.has(row.definition_id)) owned.set(row.definition_id, row.id);
+  }
+  for (const [definitionId, copies] of variantCopies) if (!owned.has(definitionId)) owned.set(definitionId, copies[0].id);
+  return { owned, variantCopies };
 }
 
 /**
  * The copy to field in Conquest for each owned character: the starter one when
- * there is one (it is protected), otherwise the oldest. Locked copies cannot
- * be fielded. `conquerable` lists the characters whose copy is at risk;
- * `atRiskCopies` holds, for characters with both, the copy the player may
- * choose to put at stake instead of the starter one.
+ * there is one (it is protected), otherwise the oldest base copy, otherwise a
+ * variant. Locked copies cannot be fielded. `conquerable` lists the characters
+ * whose copy is at risk; `atRiskCopies` holds, for characters with both, the
+ * copy the player may choose to put at stake instead of the starter one;
+ * `variantCopies` the free copies with a variant, always at risk when fielded.
  */
 export async function fetchConquestInstances(): Promise<{
   owned: Map<string, string>;
   conquerable: Set<string>;
   atRiskCopies: Map<string, string>;
+  variantCopies: Map<string, VariantCopy[]>;
 }> {
   const { data, error } = await getSupabase()
     .from("card_instances")
-    .select("id, definition_id, is_starter, locked_until, acquired_at")
+    .select("id, definition_id, is_starter, locked_until, acquired_at, card_variants(style_name)")
     .order("acquired_at");
   if (error) throw error;
   const owned = new Map<string, string>();
   const conquerable = new Set<string>();
   const oldestFree = new Map<string, string>();
   const starters = new Map<string, string>();
+  const variantCopies = new Map<string, VariantCopy[]>();
   const now = Date.now();
   for (const row of data) {
+    const locked = Boolean(row.locked_until && Date.parse(row.locked_until) > now);
     if (row.is_starter) {
       starters.set(row.definition_id, row.id);
-    } else if (!oldestFree.has(row.definition_id) && !(row.locked_until && Date.parse(row.locked_until) > now)) {
+    } else if (row.card_variants) {
+      if (!locked) collectVariantCopy(variantCopies, row.definition_id, { id: row.id, name: row.card_variants.style_name });
+    } else if (!oldestFree.has(row.definition_id) && !locked) {
       oldestFree.set(row.definition_id, row.id);
     }
   }
@@ -361,7 +387,13 @@ export async function fetchConquestInstances(): Promise<{
     }
   }
   for (const [definitionId, id] of starters) owned.set(definitionId, id);
-  return { owned, conquerable, atRiskCopies };
+  for (const [definitionId, copies] of variantCopies) {
+    if (!owned.has(definitionId)) {
+      owned.set(definitionId, copies[0].id);
+      conquerable.add(definitionId);
+    }
+  }
+  return { owned, conquerable, atRiskCopies, variantCopies };
 }
 
 /** Instance id → definition id for the player's cards. */

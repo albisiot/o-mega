@@ -21,6 +21,7 @@ import {
   startBotMatch,
   storePendingTeam,
   type Formation,
+  type VariantCopy,
 } from "@/lib/match";
 
 const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
@@ -45,6 +46,8 @@ type Loaded = {
   conquerable: Set<string> | null;
   /** Conquest only: pack copies of characters also owned as starter. */
   atRiskCopies: Map<string, string> | null;
+  /** Copies with an artwork variant that can be fielded instead of the default one. */
+  variantCopies: Map<string, VariantCopy[]>;
   instanceDefinitions: Map<string, string>;
   formations: Formation[];
 };
@@ -90,10 +93,10 @@ function TeamPageContent() {
     let cancelled = false;
     const copies = isConquest
       ? fetchConquestInstances()
-      : fetchOwnedInstances().then((owned) => ({ owned, conquerable: null, atRiskCopies: null }));
+      : fetchOwnedInstances().then((free) => ({ ...free, conquerable: null, atRiskCopies: null }));
     Promise.all([fetchCatalog(), copies, fetchInstanceDefinitions(), fetchFormations()])
-      .then(([catalog, { owned, conquerable, atRiskCopies }, instanceDefinitions, formations]) => {
-        if (!cancelled) setLoaded({ catalog, owned, conquerable, atRiskCopies, instanceDefinitions, formations });
+      .then(([catalog, { owned, conquerable, atRiskCopies, variantCopies }, instanceDefinitions, formations]) => {
+        if (!cancelled) setLoaded({ catalog, owned, conquerable, atRiskCopies, variantCopies, instanceDefinitions, formations });
       })
       .catch((cause: unknown) => {
         if (!cancelled) setError(describeServerError(cause));
@@ -162,6 +165,7 @@ function TeamPageContent() {
             owned={loaded.owned}
             conquerable={loaded.conquerable}
             atRiskCopies={loaded.atRiskCopies}
+            variantCopies={loaded.variantCopies}
             instanceDefinitions={loaded.instanceDefinitions}
             formations={loaded.formations}
             onFormationsChanged={(formations) => setLoaded({ ...loaded, formations })}

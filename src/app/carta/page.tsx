@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
-import { CopiesPanel, MissingCard } from "@/components/card-details";
+import { CopiesPanel, MissingCard, VariantsPanel } from "@/components/card-details";
 import { CardModelButton } from "@/components/card-model";
 import { CardView } from "@/components/card-view";
 import { LoadingScreen } from "@/components/loading-screen";
@@ -12,6 +12,7 @@ import { fetchAbilities, seenAbilities, type AbilityInfo } from "@/lib/catalog";
 import {
   fetchCatalog,
   fetchCollection,
+  ownedArt,
   seenCatalog,
   seenCollection,
   type CatalogCard,
@@ -81,7 +82,7 @@ function CardPageContent() {
         {owned ? (
           <>
             <div className="rounded-xl shadow-[6px_6px_0_var(--comic-magenta)]">
-              <CardView card={card} abilities={abilities} />
+              <CardView card={{ ...card, ...ownedArt(card, owned) }} abilities={abilities} />
             </div>
             <CardModelButton code={card.code} name={card.name} />
             {card.flavor && (
@@ -90,6 +91,7 @@ function CardPageContent() {
               </p>
             )}
             <CopiesPanel card={card} owned={owned} onConverted={() => setReloadKey((k) => k + 1)} />
+            <VariantsPanel card={card} owned={owned} />
           </>
         ) : (
           <MissingCard card={card} />

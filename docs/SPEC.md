@@ -124,6 +124,16 @@ Poteri implementati:
 
 I doppioni restano istanze normali: si possono usare in partita e quindi rischiare in conquista. Il giocatore può anche **convertirli in monete** (valore per rarità in configurazione).
 
+### 4.6 Varianti
+
+Le carte base restano nello stile attuale. Una **variante** è la stessa carta con un disegno diverso e più raro: nome, valori, potere e rarità non cambiano. È un dato della singola istanza (`card_instances.variant_id`), definito nel catalogo `card_variants`.
+
+- **Si trova solo nei pacchetti.** Dopo aver estratto rarità e personaggio, il server tira a sorte la variante (`packs.variant_chance_percent`, default 10%), quindi le probabilità delle rarità non cambiano. La probabilità è visibile nel negozio.
+- **Niente varianti** per starter, carte sbloccate a livello e carte dei bot.
+- **In squadra** viene schierata la copia base, a meno che il giocatore non scelga la variante.
+- **In Conquista** una variante schierata è in palio come ogni altra carta non starter e passa al vincitore con il suo disegno. Contro un bot, se presa, esce dal gioco.
+- **Non si converte** in monete e non rende doppione l'unica copia base.
+
 ## 5. Il minigioco — Regolamento
 
 ### 5.1 Panoramica
@@ -255,7 +265,7 @@ Dopo **60 secondi** in coda Conquista senza avversari, il giocatore sfida un bot
 - **Un pacchetto gratuito al giorno**, che scade al reset (mezzanotte `Europe/Rome`) se non aperto.
 - Pacchetto standard acquistabile con monete (default **150 monete**).
 - RNG esclusivamente lato server; il risultato viene salvato prima di essere mostrato.
-- Apertura animata: carte rivelate una alla volta, animazione speciale per Alfa e Omega.
+- Apertura animata: carte rivelate una alla volta, animazione speciale per Alfa, Omega e varianti (§4.6).
 - Le carte vengono inserite automaticamente nella collezione.
 
 ## 8. Economia
@@ -279,7 +289,7 @@ Nota per il futuro: pacchetti a pagamento combinati con carte che si possono per
 
 - Album con tutte le carte del catalogo: possedute e mancanti (sagoma).
 - Filtri per rarità, fazione e abilità; ordinamento.
-- Dettaglio carta: abilità, potere, numero di copie, carte bloccate o protette.
+- Dettaglio carta: abilità, potere, numero di copie, carte bloccate o protette, varianti trovate e quante restano da trovare.
 - Conversione dei doppioni.
 - Gestione delle formazioni salvate.
 
