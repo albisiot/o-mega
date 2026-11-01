@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "1 novembre 2026",
     changes: [
+      "Altri 12 nuovi personaggi da trovare nei pacchetti: alieni, macchine e gente del futuro, da Glip ad Aion.",
       "12 nuovi personaggi da trovare nei pacchetti: robot, mostri e mutanti, da Rottame a Cariddi.",
       "Arriva Emergenza, la sfida del giorno da giocare da soli: 8 Minacce uguali per tutti, una squadra di 8 personaggi e un solo tentativo, con la classifica di giornata. Nessuna carta in gioco e fino a 50 monete.",
       "Nuovo tutorial: spiega carte, Minacce, Conquista e monete, con un round di prova. Parte da solo la prima volta e si può rivedere da Gioca e dal Profilo.",

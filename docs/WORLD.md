@@ -236,6 +236,25 @@ Da P081 a P092: chi non è più del tutto una persona, o non lo è mai stato. L'
 | P091 | Alfa, Eroi | **Talos:** automa di bronzo trovato negli scavi, un solo punto debole. | RES 1, VEL 1 |
 | P092 | Omega, Neutrali | **Cariddi:** vortice con i denti nel porto, quello che l'Ora Zero ha fatto del mare. | INT 0, VEL 1 |
 
+### Alieni, macchine e gente del futuro
+
+Da P093 a P104: l'Ora Zero non ha aperto solo gli scavi. Dallo strappo arriva chi viene da lontano (Glip, Don Viscido, Zeta Rax, Regina Ix) e chi viene da dopo (Nonno 3000, Aion). Le macchine di Nuova Megara, intanto, hanno iniziato a farsi un'idea propria. Il tono resta quello dei quartieri: anche gli alieni devono fare la fila. Stessi totali di valori e stessi tipi di Potere del resto del catalogo. Si trovano tutti nei pacchetti.
+
+| Carta | Rarità e fazione | Personaggio | Il difetto nei valori |
+|---|---|---|---|
+| P093 | Delta, Neutrali | **Glip:** piccolo alieno turista, ha sbagliato pianeta. | FOR 0, RES 1 |
+| P094 | Delta, Eroi | **Vigile-8:** robot dei Custodi, multa chiunque. | MAG 0, PSI 0 |
+| P095 | Delta, Eroi | **Lina Laser:** esordiente in costume, spara laser dagli occhi e ci vede poco. | PER 1 |
+| P096 | Delta, Cattivi | **Don Viscido:** alieno gelatinoso, venditore porta a porta. | FOR 0, COM 1 |
+| P097 | Gamma, Eroi | **Eva Orbita:** astronauta tornata in armatura dopo l'Ora Zero. | FUR 0 |
+| P098 | Gamma, Cattivi | **Ing. Copia:** androide della Compagnia Lete che ha preso il posto di un ingegnere. | PSI 0 |
+| P099 | Gamma, Neutrali | **Zeta Rax:** cacciatrice di taglie aliena, non si ferma mai. | PSI 0, VOL 1 |
+| P100 | Gamma, Eroi | **Nonno 3000:** anziano eroe arrivato dal futuro, con il jetpack. | FUR 0, FOR 1, VEL 1 |
+| P101 | Beta, Eroi | **Suor Mecha:** suora delle Lanterne, pilota un robot gigante fatto di impalcature e campane. | FUR 0, VEL 1 |
+| P102 | Beta, Cattivi | **Regina Ix:** imperatrice aliena a quattro braccia, bloccata dalla burocrazia. | FUR 0 |
+| P103 | Alfa, Neutrali | **Sibilla:** intelligenza artificiale cresciuta nel tempio oracolare, vede cosa succederà. | FOR 0, VEL 0 |
+| P104 | Omega, Cattivi | **Aion:** quello che resta del tempo dopo la fine, arrivato dallo strappo. | FOR 0 |
+
 ## 6. Minacce
 
 Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richiede Forza e Tecnologia. Molti nomi attuali funzionano già e vanno solo ambientati a Nuova Megara. Il testo di colore può usare il tono di un bollettino del sismografo.
