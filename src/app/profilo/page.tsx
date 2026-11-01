@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useAuth, useRequireSignedIn } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { TutorialButton } from "@/components/tutorial";
 import { WorldGuide } from "@/components/world-intro";
 import { PATCH_NOTES } from "@/config/patch-notes";
 import { describeServerError } from "@/lib/errors";
@@ -131,6 +132,8 @@ function ProfileView({ profile }: { profile: Profile }) {
             →
           </span>
         </Link>
+
+        <TutorialButton />
 
         <details className="group flex flex-col gap-2">
           <summary className="row-link cursor-pointer list-none [&::-webkit-details-marker]:hidden">

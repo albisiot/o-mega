@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "1 novembre 2026",
     changes: [
+      "Nuovo tutorial: spiega carte, Minacce, Conquista e monete, con un round di prova. Parte da solo la prima volta e si può rivedere da Gioca e dal Profilo.",
       "Arrivano le varianti: 20 personaggi hanno anche un disegno Neon più raro, da trovare nei pacchetti. Stessi valori e poteri, disegno diverso. Se la schieri in Conquista puoi perderla.",
       "6 nuovi poteri: Sabotatore, Veggente, Apripista, Ultimo baluardo, Legame e Implacabile. 16 carte Gamma, Beta e Alfa cambiano potere: controlla le tue formazioni.",
     ],

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { PageHeader } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
+import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
 import { describeServerError } from "@/lib/errors";
 import {
@@ -263,6 +264,8 @@ export default function PlayPage() {
             </section>
           );
         })}
+
+        <TutorialButton />
       </main>
     </div>
   );

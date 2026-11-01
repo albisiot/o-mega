@@ -349,6 +349,7 @@ Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy
 8. **Fine partita:** esito, monete, schermata di conquista (scelta della carta).
 9. **Profilo:** statistiche e storico conquiste e perdite.
 10. **Negozio:** pacchetti acquistabili con monete, probabilità visibili.
+11. **Tutorial:** spiega regole ed economia con un round di prova non valido ai fini del gioco. Parte una volta per dispositivo dopo l'introduzione al mondo, si può saltare e si rivede da Gioca e Profilo.
 
 ## 12. Milestone di sviluppo
 

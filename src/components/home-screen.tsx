@@ -6,6 +6,7 @@ import { markHomeReady } from "@/components/app-splash";
 import { CoinBadge } from "@/components/coin-badge";
 import { PackPanel } from "@/components/pack-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { FirstRunTutorial } from "@/components/tutorial";
 import { WorldIntro } from "@/components/world-intro";
 import { fetchAbilities, seenAbilities } from "@/lib/catalog";
 import { fetchCatalog, fetchCollection, seenCatalog, seenCollection } from "@/lib/collection";
@@ -71,7 +72,7 @@ export function HomeScreen({ profile }: { profile: Profile }) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <WorldIntro />
+      <WorldIntro next={<FirstRunTutorial />} />
       <header className="flex items-center justify-between px-4 py-2">
         <span className="-skew-x-8 font-display text-[34px] leading-10 tracking-wide text-comic-yellow [text-shadow:3px_3px_0_var(--comic-magenta)]">
           O-MEGA

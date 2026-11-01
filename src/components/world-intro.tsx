@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { WORLD_FACTIONS, WORLD_INTRO } from "@/config/world";
 import { withBasePath } from "@/lib/base-path";
 
@@ -28,11 +28,11 @@ export function preloadWorldIntro() {
   for (const panel of WORLD_INTRO) new Image().src = withBasePath(panel.image);
 }
 
-/** Full-screen story shown once per device, above the home screen. */
-export function WorldIntro() {
+/** Full-screen story shown once per device, above the home screen; `next` takes over when it is closed. */
+export function WorldIntro({ next }: { next?: ReactNode }) {
   const [open, setOpen] = useState(() => !hasSeenIntro());
 
-  if (!open) return null;
+  if (!open) return next;
 
   return (
     <IntroPanels
