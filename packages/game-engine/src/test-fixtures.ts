@@ -24,6 +24,7 @@ export function character(id: string, stats: Record<string, number> = {}, power:
     id,
     definitionId: `def-${id}`,
     faction: "neutrals",
+    rarityRank: 2,
     stats: Object.fromEntries(ABILITIES.map((ability) => [ability, stats[ability] ?? base])),
     power,
   };

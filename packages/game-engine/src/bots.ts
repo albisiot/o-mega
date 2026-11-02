@@ -249,7 +249,9 @@ function simulateBestPlay(view: BotView, rng: Rng): string {
 
 /** Estimated chance that `score` beats a typical opponent on `threat`. */
 function winChance(score: number, threat: Threat, abilityMeans: Record<AbilityCode, number>): number {
-  const expected = threat.abilities.reduce((sum, ability) => sum + (abilityMeans[ability] ?? 0), 0);
+  const means = threat.abilities.map((ability) => abilityMeans[ability] ?? 0);
+  const doubled = threat.modifier?.code === "focus" ? means[0] : threat.modifier?.code === "weak_link" ? Math.min(...means) : 0;
+  const expected = means.reduce((sum, mean) => sum + mean, doubled);
   const scale = 2.5 * Math.sqrt(threat.level);
   return 1 / (1 + Math.exp(-(score - expected) / scale));
 }

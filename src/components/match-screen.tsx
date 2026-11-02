@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { carriedBonusAfter, scorePlay, type AbilityFamilies } from "@o-mega/game-engine";
+import { carriedBonusAfter, scorePlay, type AbilityFamilies, type ThreatModifier } from "@o-mega/game-engine";
 import { Silhouette } from "@/components/card-view";
 import { ComicBurst } from "@/components/comic-parts";
 import { ConquestPanel } from "@/components/conquest-panel";
@@ -29,6 +29,7 @@ import {
 } from "@/lib/match";
 import { matchXp } from "@/lib/progression";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
+import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { useNow } from "@/lib/use-now";
 
 type TeamCard = MatchView["my_team"][number];
@@ -259,6 +260,7 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
         <RoundReveal
           round={shownRound}
           team={view.my_team}
+          abilities={abilities}
           opponentName={opponentName}
           onContinue={() => setRevealing(null)}
           finished={view.status === "finished"}
@@ -333,7 +335,7 @@ function ChoosePhase({
   const pending = round.my_pending_instance_id;
   const timer = balance.match.roundTimerSeconds;
   const seconds = Math.max(0, Math.ceil(remainingMs / 1000));
-  const threat = { id: "current", level: round.level, abilities: round.threat.abilities };
+  const threat = { id: "current", level: round.level, abilities: round.threat.abilities, modifier: round.modifier };
 
   // Riscossa: bonus earned by losing the previous round with a comeback character.
   const previous = view.rounds.find((r) => r.round === round.round - 1);
@@ -384,7 +386,7 @@ function ChoosePhase({
             </p>
           </div>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {round.threat.abilities.map((code) => {
+            {round.threat.abilities.map((code, index) => {
               const ability = abilityName(code);
               return (
                 <span
@@ -393,10 +395,12 @@ function ChoosePhase({
                   style={{ color: ability?.family.color ?? "#d8d3c5" }}
                 >
                   {ability?.name ?? code}
+                  {round.modifier?.code === "focus" && index === 0 && " ×2"}
                 </span>
               );
             })}
           </div>
+          {round.modifier && <ModifierBanner modifier={round.modifier} firstAbility={abilityName(round.threat.abilities[0])?.name ?? round.threat.abilities[0]} />}
           <div className="mt-2.5 h-2 bg-black" aria-hidden>
             <div
               className={`h-full transition-[width] duration-200 ${seconds <= 10 ? "bg-foreground" : "bg-comic-yellow"}`}
@@ -449,6 +453,7 @@ function ChoosePhase({
               <div className="shrink-0 text-right">
                 <p className={`font-display text-4xl ${isSelected ? "text-comic-yellow" : ""}`}>{score.total}</p>
                 {score.bonus > 0 && <p className="text-xs font-bold text-comic-cyan">+{score.bonus} bonus</p>}
+                {score.bonus < 0 && <p className="text-xs font-bold text-comic-magenta">{score.bonus} malus</p>}
               </div>
             </button>
           );
@@ -467,6 +472,11 @@ function ChoosePhase({
                 <p className="text-xs font-medium text-muted">
                   {threat.abilities.map((code) => abilityName(code)?.name ?? code).join(" · ")}
                 </p>
+                {threat.modifier && (
+                  <p className="text-xs font-bold text-comic-yellow">
+                    {modifierLine(threat.modifier, abilityName(threat.abilities[0])?.name ?? threat.abilities[0])}
+                  </p>
+                )}
               </li>
             ))}
           </ul>
@@ -508,14 +518,25 @@ function ChoosePhase({
   );
 }
 
+function ModifierBanner({ modifier, firstAbility }: { modifier: ThreatModifier; firstAbility: string }) {
+  const { name, text } = describeThreatModifier(modifier, firstAbility);
+  return (
+    <p className="mt-2 -skew-x-3 bg-comic-yellow px-3 py-1.5 text-sm font-bold text-black">
+      <span className="font-display uppercase">{name}:</span> {text}
+    </p>
+  );
+}
+
 function RoundReveal({
   round,
   team,
+  abilities,
   opponentName,
   onContinue,
   finished,
 }: {
   round: MatchRound;
+  abilities: AbilityInfo[];
   team: TeamCard[];
   opponentName: string;
   onContinue: () => void;
@@ -555,6 +576,14 @@ function RoundReveal({
       >
         <PlaySide label={opponentName} card={theirs} play={theirs} abilities={round.threat.abilities} side="right" />
         <div className="relative mt-3 flex flex-col gap-2">
+          {round.modifier && (
+            <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
+              {modifierLine(
+                round.modifier,
+                abilities.find((a) => a.code === round.threat.abilities[0])?.name ?? round.threat.abilities[0],
+              )}
+            </p>
+          )}
           {round.my_play?.auto_played && (
             <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
               Tempo scaduto: il server ha scelto per te.
@@ -664,10 +693,11 @@ function PlaySide({
         {play && (
           <p>
             <CountUp value={play.score} />
-            {play.bonus > 0 && (
+            {play.bonus !== 0 && (
               <span className="text-sm font-extrabold">
                 {" "}
-                ({play.base} +{play.bonus})
+                ({play.base} {play.bonus > 0 ? "+" : ""}
+                {play.bonus})
               </span>
             )}
           </p>

@@ -167,7 +167,16 @@ Ogni Minaccia ha un **livello da 1 a 6**, che corrisponde al **numero di abilit�
 | 6 | 6 | "Invasione dimensionale — sei abilità" |
 
 - Le abilità richieste sono definite per ciascuna Minaccia del catalogo (non casuali), così ogni Minaccia ha un'identità narrativa.
-- Alcune Minacce possono avere un modificatore (es. "la prima abilità conta doppio"). I modificatori sono opzionali nell'MVP.
+- **Modificatori:** in ogni partita **1 o 2 Minacce** hanno un modificatore, diverso per ciascuna. Il server lo sorteggia alla creazione della partita e il giocatore lo scopre insieme alla Minaccia (o prima con Veggente). L'Emergenza (§5.10) non ne ha, perché le sue soglie sono tarate sulle Minacce normali.
+
+| Modificatore | Effetto | Favorisce |
+|---|---|---|
+| Colpo mirato | La prima abilità richiesta conta doppio | Gli specialisti |
+| Anello debole | Il valore più basso tra le abilità richieste conta doppio (solo da livello 2) | I personaggi equilibrati |
+| Territorio ostile | +3 a una fazione, -2 a un'altra, sorteggiate | Le squadre con più fazioni |
+| Sottovalutati | Delta +3, Alfa e Omega -3 | Le carte comuni |
+
+Il punteggio non scende sotto 0 e lo spareggio sul valore più alto usa i valori normali. Da simulazione sul catalogo a 104 personaggi (Difficile contro Difficile), una squadra di Alfa e Omega contro una di Delta passa dal 77% al 70% di vittorie: il vantaggio delle carte rare resta. I valori sono in `balance.ts` e `game_config`.
 - **Composizione dei livelli in una partita:** il server sceglie i 5 livelli in modo che la partita sia varia. Default: almeno una Minaccia di livello 1-2, almeno una di livello 5-6, somma dei livelli tra 14 e 20, ordine casuale. I parametri sono in configurazione.
 
 **Intento di design:** sapendo solo i livelli, il giocatore decide se tenere lo specialista per la Minaccia di livello 1 (dove conta un solo valore altissimo) e il generalista per quella di livello 6 (dove contano tanti valori discreti), senza però sapere quali abilità usciranno né chi schiererà l'avversario.

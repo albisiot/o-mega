@@ -62,7 +62,7 @@ export const SAMPLE_CARD: CardData = {
 };
 
 export function scoreOn(card: CardData, threat: Threat): number {
-  return baseScore({ id: card.name, definitionId: card.name, faction: card.faction, stats: card.stats, power: null }, threat);
+  return baseScore({ id: card.name, definitionId: card.name, faction: card.faction, rarityRank: card.rarity.rank, stats: card.stats, power: null }, threat);
 }
 
 /** A low threat rewards the specialist, a high one the generalist. */

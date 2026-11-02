@@ -1,5 +1,5 @@
 import { FunctionsHttpError } from "@supabase/supabase-js";
-import type { BotDifficulty, Character, Power } from "@o-mega/game-engine";
+import type { BotDifficulty, Character, Power, ThreatModifier } from "@o-mega/game-engine";
 import { getSupabase } from "@/lib/supabase/client";
 
 export const DIFFICULTY_LABELS: Record<BotDifficulty, string> = {
@@ -29,6 +29,7 @@ export function toCharacter(card: MatchCard, id: string): Character {
     id,
     definitionId: card.definition_id,
     faction: card.faction,
+    rarityRank: card.rarity.rank,
     stats: card.stats,
     power: card.power ? { code: card.power.code, params: card.power.params } : null,
   };
@@ -45,6 +46,7 @@ export type MatchPlay = {
 export type MatchRound = {
   round: number;
   level: number;
+  modifier: ThreatModifier | null;
   threat: { name: string; abilities: string[]; flavor: string };
   deadline_at: string;
   resolved: boolean;
@@ -78,7 +80,7 @@ export type MatchView = {
   level_rewards: { level: number; coins: number }[];
   level_unlocks?: { name: string; level: number }[];
   /** Veggente: the threats of the following rounds, once the player has played it. */
-  foreseen_threats?: { round: number; level: number; name: string; abilities: string[] }[];
+  foreseen_threats?: { round: number; level: number; name: string; abilities: string[]; modifier: ThreatModifier | null }[];
   server_now: string;
   my_team: (MatchCard & { instance_id: string; played_round: number | null })[];
   rounds: MatchRound[];

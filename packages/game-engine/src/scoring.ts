@@ -28,9 +28,33 @@ function abilityValue(character: Character, ability: AbilityCode, malus: number)
   return Math.max(0, (character.stats[ability] ?? 0) - malus);
 }
 
-/** Sum of the character's values in the abilities required by the threat. */
+/** Sum of the character's values in the abilities required by the threat, with the value a modifier doubles. */
 export function baseScore(character: Character, threat: Threat, malus = 0): number {
-  return threat.abilities.reduce((sum, ability) => sum + abilityValue(character, ability, malus), 0);
+  const values = threat.abilities.map((ability) => abilityValue(character, ability, malus));
+  const sum = values.reduce((total, value) => total + value, 0);
+  switch (threat.modifier?.code) {
+    case "focus":
+      return sum + (values[0] ?? 0);
+    case "weak_link":
+      return sum + Math.min(...values);
+    default:
+      return sum;
+  }
+}
+
+/** Points a modifier gives or takes whatever the abilities. */
+export function modifierBonus(character: Character, threat: Threat): number {
+  const modifier = threat.modifier;
+  switch (modifier?.code) {
+    case "hostile_ground":
+      if (character.faction === modifier.favored) return modifier.bonus;
+      return character.faction === modifier.hindered ? -modifier.malus : 0;
+    case "underdogs":
+      if (character.rarityRank <= modifier.commonMaxRank) return modifier.bonus;
+      return character.rarityRank >= modifier.eliteMinRank ? -modifier.malus : 0;
+    default:
+      return 0;
+  }
 }
 
 /** Highest single value among the required abilities (tie-break, no bonuses). */
@@ -87,12 +111,13 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
 export function scorePlay(character: Character, threat: Threat, context: ScoreContext): PlayScore {
   const malus = context.abilityMalus ?? 0;
   const base = baseScore(character, threat, malus);
-  const bonus = powerBonus(character, threat, context) + context.carriedBonus;
+  // A malus cannot bring the score below 0: the bonus stays the difference from the base.
+  const total = Math.max(0, base + powerBonus(character, threat, context) + context.carriedBonus + modifierBonus(character, threat));
   return {
     characterId: character.id,
     base,
-    bonus,
-    total: base + bonus,
+    bonus: total - base,
+    total,
     highest: highestRequired(character, threat, malus),
     ...(character.power?.code === "relentless" ? { relentless: true } : {}),
   };

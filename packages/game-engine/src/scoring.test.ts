@@ -11,6 +11,52 @@ import { character, FAMILIES, threat } from "./test-fixtures.ts";
 
 const context: ScoreContext = { families: FAMILIES, roundsWon: 0, opponentRoundsWon: 0, carriedBonus: 0, round: 3, team: [] };
 
+describe("threat modifiers", () => {
+  const hero = character("h", { FOR: 9, TEC: 3 });
+  const plain = threat("t", ["FOR", "TEC"]);
+
+  it("focus doubles the first required ability", () => {
+    expect(scorePlay(hero, { ...plain, modifier: { code: "focus" } }, context)).toMatchObject({ base: 21, bonus: 0, total: 21 });
+    expect(scorePlay(hero, { ...threat("t", ["TEC", "FOR"]), modifier: { code: "focus" } }, context).total).toBe(15);
+  });
+
+  it("weak_link doubles the lowest required value", () => {
+    expect(scorePlay(hero, { ...plain, modifier: { code: "weak_link" } }, context)).toMatchObject({ base: 15, total: 15 });
+  });
+
+  it("doubled values use the abilities lowered by Sabotatore", () => {
+    const score = scorePlay(hero, { ...plain, modifier: { code: "focus" } }, { ...context, abilityMalus: 1 });
+    expect(score.base).toBe(18);
+  });
+
+  it("hostile_ground helps one faction and hinders another", () => {
+    const modifier = { code: "hostile_ground", favored: "heroes", hindered: "villains", bonus: 3, malus: 2 } as const;
+    const target = { ...plain, modifier };
+    expect(scorePlay({ ...hero, faction: "heroes" }, target, context)).toMatchObject({ base: 12, bonus: 3, total: 15 });
+    expect(scorePlay({ ...hero, faction: "villains" }, target, context)).toMatchObject({ base: 12, bonus: -2, total: 10 });
+    expect(scorePlay({ ...hero, faction: "neutrals" }, target, context).total).toBe(12);
+  });
+
+  it("underdogs helps the common cards and hinders the elite ones", () => {
+    const modifier = { code: "underdogs", commonMaxRank: 1, eliteMinRank: 4, bonus: 3, malus: 3 } as const;
+    const target = { ...plain, modifier };
+    expect(scorePlay({ ...hero, rarityRank: 1 }, target, context).total).toBe(15);
+    expect(scorePlay({ ...hero, rarityRank: 3 }, target, context).total).toBe(12);
+    expect(scorePlay({ ...hero, rarityRank: 5 }, target, context).total).toBe(9);
+  });
+
+  it("never brings a score below 0, and the bonus stays the difference from the base", () => {
+    const weak = character("w", { FOR: 1 }, null, 0);
+    const modifier = { code: "underdogs", commonMaxRank: 1, eliteMinRank: 4, bonus: 3, malus: 3 } as const;
+    const score = scorePlay({ ...weak, rarityRank: 5 }, { ...threat("t", ["FOR"]), modifier }, context);
+    expect(score).toMatchObject({ base: 1, bonus: -1, total: 0 });
+  });
+
+  it("the tie-break ignores the modifier", () => {
+    expect(scorePlay(hero, { ...plain, modifier: { code: "focus" } }, context).highest).toBe(9);
+  });
+});
+
 describe("scorePlay", () => {
   it("sums the values of the required abilities", () => {
     const hero = character("h", { FOR: 9, TEC: 3 });

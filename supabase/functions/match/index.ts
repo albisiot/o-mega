@@ -27,6 +27,7 @@ import {
   type RoundRecord,
   type Side,
   type Threat,
+  type ThreatModifier,
 } from "../_shared/game-engine/index.ts";
 
 const corsHeaders = {
@@ -103,7 +104,7 @@ function cardIds(value: unknown): string[] {
 // Catalog and rules (cached for a minute per isolate)
 // ---------------------------------------------------------------------------
 
-type Definition = { id: string; faction: string; stats: Record<string, number>; power_code: string | null; power_params: Record<string, string | number> };
+type Definition = { id: string; faction: string; rarity_rank: number; stats: Record<string, number>; power_code: string | null; power_params: Record<string, string | number> };
 type Loaded = {
   rules: MatchRules;
   emergency: EmergencyRules;
@@ -120,6 +121,7 @@ function toCharacter(definition: Definition, id = definition.id): Character {
     id,
     definitionId: definition.id,
     faction: definition.faction,
+    rarityRank: definition.rarity_rank,
     stats: definition.stats,
     power: definition.power_code ? { code: definition.power_code, params: definition.power_params ?? {} } : null,
   };
@@ -127,8 +129,9 @@ function toCharacter(definition: Definition, id = definition.id): Character {
 
 async function load(): Promise<Loaded> {
   if (cache && Date.now() - cache.at < 60_000) return cache.loaded;
-  const [definitions, threats, abilities, config] = await Promise.all([
-    admin.from("card_definitions").select("id, faction, stats, power_code, power_params, is_active"),
+  const [definitions, rarities, threats, abilities, config] = await Promise.all([
+    admin.from("card_definitions").select("id, faction, rarity_code, stats, power_code, power_params, is_active"),
+    admin.from("rarity_definitions").select("code, rank"),
     admin.from("threat_definitions").select("id, level, required_abilities, is_active"),
     admin.from("ability_definitions").select("code, family"),
     admin.from("game_config").select("key, value"),
@@ -140,7 +143,10 @@ async function load(): Promise<Loaded> {
     return v;
   };
 
-  const definitionRows = check(definitions) as (Definition & { is_active: boolean })[];
+  const ranks = new Map((check(rarities) as { code: string; rank: number }[]).map((r) => [r.code, r.rank]));
+  const definitionRows = (check(definitions) as (Omit<Definition, "rarity_rank"> & { rarity_code: string; is_active: boolean })[]).map(
+    (d) => ({ ...d, rarity_rank: ranks.get(d.rarity_code) ?? 1 }),
+  );
   const threatRows = check(threats) as { id: string; level: number; required_abilities: string[]; is_active: boolean }[];
   const activeCharacters = definitionRows.filter((d) => d.is_active).map((d) => toCharacter(d));
   const threatList = threatRows.map((t) => ({ id: t.id, level: t.level, abilities: t.required_abilities, active: t.is_active }));
@@ -261,10 +267,10 @@ async function loadMatch(userId: string, matchId: string, loaded: Loaded) {
 
   const state: MatchState = {
     rules: loaded.rules,
-    threats: (match.threat_ids as string[]).map((id) => {
+    threats: (match.threat_ids as string[]).map((id, i) => {
       const threat = loaded.threats.get(id);
       if (!threat) throw new Error(`Unknown threat ${id}`);
-      return threat;
+      return { ...threat, modifier: (match.threat_modifiers as (ThreatModifier | null)[])[i] ?? null };
     }),
     teams: { a: team("a"), b: team("b") },
     rounds: resolved,

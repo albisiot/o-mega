@@ -71,6 +71,18 @@ export const balance = {
     },
   },
 
+  /** Twists on the threats of a match; Emergenza has none. Tuned by simulation (SPEC §5.4). */
+  threatModifiers: {
+    minPerMatch: 1,
+    maxPerMatch: 2,
+    hostileBonus: 3,
+    hostileMalus: 2,
+    underdogBonus: 3,
+    underdogMalus: 3,
+    underdogCommonMaxRank: 1,
+    underdogEliteMinRank: 4,
+  },
+
   conquest: {
     pickTimerSeconds: 30,
     starterSetSize: 10,

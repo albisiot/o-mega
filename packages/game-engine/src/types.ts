@@ -14,15 +14,28 @@ export type Character = {
   id: string;
   definitionId: string;
   faction: string;
+  /** 1 = Delta ... 5 = Omega. */
+  rarityRank: number;
   stats: Record<AbilityCode, number>;
   power: Power | null;
 };
+
+/** The twist of a threat in one match (SPEC §5.4). Its numbers are fixed when the match is created. */
+export type ThreatModifier =
+  /** The first required ability counts double. */
+  | { code: "focus" }
+  /** The lowest value among the required abilities counts double. */
+  | { code: "weak_link" }
+  | { code: "hostile_ground"; favored: string; hindered: string; bonus: number; malus: number }
+  /** Rarity up to `commonMaxRank` gains the bonus, from `eliteMinRank` takes the malus. */
+  | { code: "underdogs"; commonMaxRank: number; eliteMinRank: number; bonus: number; malus: number };
 
 export type Threat = {
   id: string;
   /** Number of required abilities, 1-6. */
   level: number;
   abilities: AbilityCode[];
+  modifier?: ThreatModifier | null;
 };
 
 export type ThreatLevelRules = {
@@ -48,9 +61,9 @@ export type AbilityFamilies = Record<AbilityCode, string>;
 
 export type PlayScore = {
   characterId: string;
-  /** Sum of the character's values in the required abilities. */
+  /** Sum of the character's values in the required abilities, counted as the modifier says. */
   base: number;
-  /** Powers, including a bonus carried over from the previous round. */
+  /** Powers, a bonus carried over from the previous round and the modifier. Can be negative. */
   bonus: number;
   total: number;
   /** Highest single required-ability value, without bonuses (tie-break). */

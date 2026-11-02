@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "2 novembre 2026",
+    changes: [
+      "Le Minacce si fanno imprevedibili: in ogni partita una o due hanno un modificatore che cambia la carta da mandare. Colpo mirato, Anello debole, Territorio ostile e Sottovalutati si scoprono insieme alla Minaccia. L'Emergenza resta senza.",
+    ],
+  },
+  {
     date: "1 novembre 2026",
     changes: [
       "Nel Negozio arrivano i codici bonus: inserisci un codice e ricevi monete, pacchetti o carte. Ogni codice si usa una volta sola.",
