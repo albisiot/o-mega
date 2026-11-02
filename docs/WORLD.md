@@ -93,7 +93,9 @@ Testo di colore (una frase):
 
 ### Regole di scrittura
 
-- Nomi accattivanti: da supereroe o da persona, anche mezzi stranieri (Vetrix, Yuki Ombra, Vera Kross, Don Atlas). Niente "Il Qualcosa" e niente descrizioni.
+- Nomi in codice, nello stile del compendio *THE FRACTURE* (`THE_FRACTURE_Compendio_v4.1.xlsx`): una sola parola inglese o latina, come un nome di battaglia (Nightward, Gridwitch, Latchkey, Holdout). Il nome evoca il personaggio senza descriverlo: niente "nome di persona + parola che dice cosa fa" (com'erano Marta Scudo o Tom Magnete) e niente "Il Qualcosa". Restano validi i nomi del mito e quelli inventati di una parola (Talos, Mongibello, Vetrix).
+- Prima di inventare un nome si cerca nel compendio un personaggio con un ruolo simile: Dogwatch è un tecnico del turno di notte, Latchkey un ladro d'appartamento, Gazetteer una giornalista di pettegolezzi.
+- Evitare i nomi già usati da personaggi famosi (per questo sono stati scartati Tallyman, Parallax, Solaris e Vector).
 - Nomi brevi: nel formato piccolo della carta ci stanno circa 10 caratteri, oltre vengono tagliati.
 - Testo di colore in una sola frase, come una battuta che faccia capire il personaggio.
 - I 60 personaggi si dividono in 6-8 gruppi da 7-10, ognuno con un conflitto interno.
@@ -103,9 +105,9 @@ Testo di colore (una frase):
 
 | Carta | Valori chiave | Personaggio |
 |---|---|---|
-| P057, Neutrali | RES 10, VOL 10, COM 10, VEL 1, ENE 0 | **Papa Zero:** era al centro dell'Ora Zero e non può morire. Si muove a fatica e il suo potere è solo non cedere. |
-| P058, Eroi | VEL 10, COM 10, TEC 10, PER 0, VOL 1 | **Sir Nemo:** un'armatura perfetta che protegge la città. Dentro non c'è nessuno. |
-| P059, Cattivi | PSI 10, PER 10, FUR 10, VOL 0 | **Vox Mille:** legge ogni mente e non ha volontà propria. Obbedisce all'ultima che ha ascoltato. |
+| P057, Neutrali | RES 10, VOL 10, COM 10, VEL 1, ENE 0 | **Holdout:** era al centro dell'Ora Zero e non può morire. Si muove a fatica e il suo potere è solo non cedere. |
+| P058, Eroi | VEL 10, COM 10, TEC 10, PER 0, VOL 1 | **Absentia:** un'armatura perfetta che protegge la città. Dentro non c'è nessuno. |
+| P059, Cattivi | PSI 10, PER 10, FUR 10, VOL 0 | **Multitude:** legge ogni mente e non ha volontà propria. Obbedisce all'ultima che ha ascoltato. |
 | P060, Eroi | FOR 10, ENE 10, MAG 10, TEC 0, COM 1 | **Mongibello:** contiene un vulcano. Non sa combattere e non sa usare un telefono. |
 
 ### Alfa: le leggende
@@ -113,49 +115,49 @@ Testo di colore (una frase):
 | Carta | Valori chiave | Potere | Personaggio |
 |---|---|---|---|
 | P051, Cattivi | VEL 10, COM 10, FOR 9, RES 1, VOL 1 | Riscossa | **Vetrix** (Compagnia Lete): il combattente più veloce della città, con ossa di vetro. Quando si rompe, i frammenti colpiscono il prossimo bersaglio. |
-| P052, Neutrali | ENE 10, TEC 10, INT 9, VOL 1, MAG 1 | Sabotatore | **Dr. Volta** (Sciolti): ha progettato la centrale e vende il proprio genio a chiunque paghi. |
-| P053, Eroi | FUR 10, INT 10, VEL 9, COM 1, VOL 1 | Riscossa | **Yuki Ombra** (Lanterne): nessuno riesce a vederla. Scappa sempre, poi torna sempre. |
+| P052, Neutrali | ENE 10, TEC 10, INT 9, VOL 1, MAG 1 | Sabotatore | **Auctor** (Sciolti): ha progettato la centrale e vende il proprio genio a chiunque paghi. |
+| P053, Eroi | FUR 10, INT 10, VEL 9, COM 1, VOL 1 | Riscossa | **Moth** (Lanterne): nessuno riesce a vederla. Scappa sempre, poi torna sempre. |
 | P054, Cattivi | VOL 10, PER 10, COM 9, TEC 1, MAG 1 | Sfavorito | **Vera Kross** (Figli dell'Ultima): trova chiunque e non si ferma mai, soprattutto quando sta perdendo. |
-| P055, Eroi | RES 10, VOL 10, MAG 9, VEL 1, INT 1 | Riscossa | **Don Atlas** (Custodi): sta davanti alla porta del tempio. Da lì non passa nessuno, e da lì non si sposta. |
+| P055, Eroi | RES 10, VOL 10, MAG 9, VEL 1, INT 1 | Riscossa | **Keelstone** (Custodi): sta davanti alla porta del tempio. Da lì non passa nessuno, e da lì non si sposta. |
 | P056, Cattivi | ENE 10, MAG 10, TEC 9, RES 1, VOL 1 | Sabotatore | **Mekana** (Compagnia Lete): costruisce macchine che funzionano a incantesimi, e ormai è più macchina che persona. |
 
 ### Beta: figure note in città
 
 | Carta | Valori chiave | Potere | Personaggio |
 |---|---|---|---|
-| P041, Cattivi | RES 10, COM 9, PER 1 | Ultimo baluardo | **Otto Kaiser** (Compagnia Lete): esattore che incassa ogni colpo e ci vede pochissimo. |
-| P042, Neutrali | VEL 7, COM 7, INT 1 | Apripista | **Rico Turbo** (Sciolti): corriere su moto elettrica truccata. |
-| P043, Eroi | PSI 10, PER 9, INT 1 | Terreno favorevole | **Zoe Sonar** (Lanterne): sente i pensieri, ma non sempre li capisce. |
-| P044, Cattivi | ENE 7, MAG 7, INT 1 | Affinità (Potere) | **Igor Fiamma** (Figli dell'Ultima): piromane. |
-| P045, Eroi | FOR 10, RES 9, INT 1 | Legame | **Bull Rossi** (Custodi): ex campione di lotta. |
-| P046, Cattivi | VEL 10, FUR 9, RES 1 | Legame | **Lola Jet** (Sciolti, schierata con i Cattivi): la ladra più rapida di Nuova Megara. |
-| P047, Neutrali | INT 7, TEC 7, ENE 1 | Affinità (Mente) | **Ada Kode** (Banco): analista. |
-| P048, Eroi | MAG 10, PSI 9, PER 1 | Terreno favorevole | **Dante Nox** (Lanterne): mago di strada quasi cieco. |
-| P049, Cattivi | ENE 7, RES 7, FUR 1 | Affinità (Potere) | **Ivan Nucleo** (Compagnia Lete): dirigente, è un reattore che cammina. |
-| P050, Eroi | PSI 10, VOL 9, COM 1 | Terreno favorevole | **Sofia Zen** (Custodi): negoziatrice telepatica. |
+| P041, Cattivi | RES 10, COM 9, PER 1 | Ultimo baluardo | **Gavel** (Compagnia Lete): esattore che incassa ogni colpo e ci vede pochissimo. |
+| P042, Neutrali | VEL 7, COM 7, INT 1 | Apripista | **Postmark** (Sciolti): corriere su moto elettrica truccata. |
+| P043, Eroi | PSI 10, PER 9, INT 1 | Terreno favorevole | **Fathom** (Lanterne): sente i pensieri, ma non sempre li capisce. |
+| P044, Cattivi | ENE 7, MAG 7, INT 1 | Affinità (Potere) | **Kiln** (Figli dell'Ultima): piromane. |
+| P045, Eroi | FOR 10, RES 9, INT 1 | Legame | **Apostate** (Custodi): ex campione di lotta. |
+| P046, Cattivi | VEL 10, FUR 9, RES 1 | Legame | **Larceny** (Sciolti, schierata con i Cattivi): la ladra più rapida di Nuova Megara. |
+| P047, Neutrali | INT 7, TEC 7, ENE 1 | Affinità (Mente) | **Actuary** (Banco): analista. |
+| P048, Eroi | MAG 10, PSI 9, PER 1 | Terreno favorevole | **Hapax** (Lanterne): mago di strada quasi cieco. |
+| P049, Cattivi | ENE 7, RES 7, FUR 1 | Affinità (Potere) | **Blackbody** (Compagnia Lete): dirigente, è un reattore che cammina. |
+| P050, Eroi | PSI 10, VOL 9, COM 1 | Terreno favorevole | **Parley** (Custodi): negoziatrice telepatica. |
 
 ### Gamma: professionisti di quartiere
 
-Hanno il potere Specialità (+2 contro le Minacce che richiedono la prima abilità indicata), tranne: Jay Rondine e Nitro Vega (Apripista), Marta Scudo (Ultimo baluardo), Rey Pugno e Fritz Rotor (Legame), Goran Orso e Vic Cromo (Implacabile). Tra le carte aggiunte dopo, Ercole Neo ha Implacabile, Stella Nova e Lady Medusa hanno Veggente.
+Hanno il potere Specialità (+2 contro le Minacce che richiedono la prima abilità indicata), tranne: Milewright e Rubicon (Apripista), Bulwark (Ultimo baluardo), Ambit e Swarf (Legame), Malleus e Collateral (Implacabile). Tra le carte aggiunte dopo, Truss ha Implacabile, Novissima ed Effigy hanno Veggente.
 
 | Carta | Valori chiave | Personaggio |
 |---|---|---|
-| P025, Eroi | RES 9, COM 8, FUR 1 | **Marta Scudo** (Custodi): agente con lo scudo antisommossa. |
-| P026, Cattivi | VEL 7, TEC 6, RES 2 | **Nitro Vega** (Sciolti, schierato con i Cattivi): capo di una gang di motociclisti. |
-| P027, Neutrali | PSI 9, PER 8, INT 1 | **Zara Veil** (Sciolti): medium che vende segreti senza capirli. |
-| P028, Eroi | ENE 7, MAG 6, VEL 2 | **Mastro Watt** (Lanterne): elettricista, ripara i cavi a mani nude. |
-| P029, Cattivi | FOR 9, RES 8, INT 1 | **Goran Orso** (Compagnia Lete): picchiatore. |
-| P030, Eroi | VEL 7, PER 6, MAG 2 | **Jay Rondine** (Lanterne): staffetta che corre sui tetti. |
-| P031, Cattivi | INT 9, TEC 8, FUR 1 | **Nadia Byte** (Compagnia Lete): hacker vanitosa. |
-| P032, Neutrali | MAG 7, PSI 6, COM 2 | **Madame Lira** (Sciolti): rigattiera di maledizioni. |
-| P033, Eroi | ENE 9, RES 8, COM 1 | **Leo Ampere** (Lanterne): ex operaio della centrale, gigante gentile. |
-| P034, Cattivi | PSI 7, INT 6, COM 2 | **Mr. Sonno** (Figli dell'Ultima): ipnotizzatore e reclutatore. |
-| P035, Eroi | COM 9, VEL 8, VOL 2 | **Rey Pugno** (Lanterne): lottatore di strada, testa calda. |
-| P036, Cattivi | TEC 7, ENE 6, FUR 2 | **Fritz Rotor** (Compagnia Lete): costruttore di robot. |
-| P037, Neutrali | FUR 9, INT 8, VOL 2 | **Sasha Nera** (Sciolti): spia su commissione. |
-| P038, Eroi | PER 7, COM 6, FOR 2 | **Nora Fiuto** (Custodi): investigatrice. |
-| P039, Cattivi | VOL 9, RES 8, PSI 1 | **Baron Zolfo** (Figli dell'Ultima): fanatico. |
-| P040, Eroi | MAG 7, TEC 6, VEL 2 | **Tina Glitch** (Lanterne): tecnomaga. |
+| P025, Eroi | RES 9, COM 8, FUR 1 | **Bulwark** (Custodi): agente con lo scudo antisommossa. |
+| P026, Cattivi | VEL 7, TEC 6, RES 2 | **Rubicon** (Sciolti, schierato con i Cattivi): capo di una gang di motociclisti. |
+| P027, Neutrali | PSI 9, PER 8, INT 1 | **Vulgate** (Sciolti): medium che vende segreti senza capirli. |
+| P028, Eroi | ENE 7, MAG 6, VEL 2 | **Juncture** (Lanterne): elettricista, ripara i cavi a mani nude. |
+| P029, Cattivi | FOR 9, RES 8, INT 1 | **Malleus** (Compagnia Lete): picchiatore. |
+| P030, Eroi | VEL 7, PER 6, MAG 2 | **Milewright** (Lanterne): staffetta che corre sui tetti. |
+| P031, Cattivi | INT 9, TEC 8, FUR 1 | **Byline** (Compagnia Lete): hacker vanitosa. |
+| P032, Neutrali | MAG 7, PSI 6, COM 2 | **Escrow** (Sciolti): rigattiera di maledizioni. |
+| P033, Eroi | ENE 9, RES 8, COM 1 | **Cathode** (Lanterne): ex operaio della centrale, gigante gentile. |
+| P034, Cattivi | PSI 7, INT 6, COM 2 | **Lullaby** (Figli dell'Ultima): ipnotizzatore e reclutatore. |
+| P035, Eroi | COM 9, VEL 8, VOL 2 | **Ambit** (Lanterne): lottatore di strada, testa calda. |
+| P036, Cattivi | TEC 7, ENE 6, FUR 2 | **Swarf** (Compagnia Lete): costruttore di robot. |
+| P037, Neutrali | FUR 9, INT 8, VOL 2 | **Sordina** (Sciolti): spia su commissione. |
+| P038, Eroi | PER 7, COM 6, FOR 2 | **Nightward** (Custodi): investigatrice. |
+| P039, Cattivi | VOL 9, RES 8, PSI 1 | **Credo** (Figli dell'Ultima): fanatico. |
+| P040, Eroi | MAG 7, TEC 6, VEL 2 | **Gridwitch** (Lanterne): tecnomaga. |
 
 ### Delta: la gente della città
 
@@ -163,30 +165,30 @@ I Delta non hanno poteri.
 
 | Carta | Valori chiave | Personaggio |
 |---|---|---|
-| P001, Eroi | FOR 10, RES 9, COM 9, MAG 0, PSI 1 | **Max Cargo** (Sciolti di porto, schierati con gli Eroi): solleva container a spalla, con un sorriso. |
-| P002, Cattivi | VEL 10, FUR 9, MAG 0 | **Kid Scippo** (Sciolti, schierato con i Cattivi): scippatore adulto con la faccia da ragazzino. |
-| P003, Eroi | INT 10, PER 9, FOR 0 | **Prof. Lince** (Lanterne): inventore geniale e gracile. |
-| P004, Neutrali | MAG 10, PSI 9, VOL 9, FOR 0, TEC 1 | **Nonna Hex** (Sciolti): legge il futuro al mercato e non riesce a sollevare la propria borsa. |
-| P005, Cattivi | ENE 10, FOR 9, FUR 0 | **Boom Bruno** (Compagnia Lete): bomba umana. |
-| P006, Neutrali | PSI 10, VOL 9, FOR 0 | **Cassia Moon** (Sciolti): veggente fragile, ispirata a Cassandra. |
-| P007, Eroi | COM 8, TEC 7, PSI 1 | **Sam Diesel** (Custodi): autista e meccanico. |
-| P008, Cattivi | FUR 8, INT 7, FOR 1 | **Greta Talpa** (Compagnia Lete): infiltrata. |
-| P009, Eroi | Generalista: FOR 6, VOL 6, gli altri da 3 a 5 | **Tony Ronda** (Custodi): nessun Segno, solo tanta pazienza. |
-| P010, Neutrali | TEC 6, VEL 6, MAG 3 | **Tito Ferry** (Sciolti): contrabbandiere del porto. |
-| P011, Cattivi | ENE 6, MAG 6, FUR 3 | **Cosmo Nero** (Figli dell'Ultima): nuovo adepto. |
-| P012, Eroi | Generalista: COM 6, PER 6, gli altri da 3 a 5 | **Lucy Lumen** (Lanterne): la volontaria che arriva quando manca la luce. |
-| P013, Eroi | FOR 10, RES 9, VEL 0 | **Hugo Molo** (Custodi): colosso del porto con tatuaggi magici, sempre fermo. |
-| P014, Cattivi | VEL 6, FUR 6, PSI 3 | **Mr. Grigio** (Compagnia Lete): uomo qualunque, nessuno se lo ricorda. |
-| P015, Eroi | INT 8, TEC 7, RES 1 | **Iris Medix** (Lanterne): dottoressa di salute fragile. |
+| P001, Eroi | FOR 10, RES 9, COM 9, MAG 0, PSI 1 | **Gantry** (Sciolti di porto, schierati con gli Eroi): solleva container a spalla, con un sorriso. |
+| P002, Cattivi | VEL 10, FUR 9, MAG 0 | **Foundling** (Sciolti, schierato con i Cattivi): scippatore adulto con la faccia da ragazzino. |
+| P003, Eroi | INT 10, PER 9, FOR 0 | **Kelvin** (Lanterne): inventore geniale e gracile. |
+| P004, Neutrali | MAG 10, PSI 9, VOL 9, FOR 0, TEC 1 | **Wardmother** (Sciolti): legge il futuro al mercato e non riesce a sollevare la propria borsa. |
+| P005, Cattivi | ENE 10, FOR 9, FUR 0 | **Pyrrhic** (Compagnia Lete): bomba umana. |
+| P006, Neutrali | PSI 10, VOL 9, FOR 0 | **Ephemeris** (Sciolti): veggente fragile, ispirata a Cassandra. |
+| P007, Eroi | COM 8, TEC 7, PSI 1 | **Macadam** (Custodi): autista e meccanico. |
+| P008, Cattivi | FUR 8, INT 7, FOR 1 | **Understudy** (Compagnia Lete): infiltrata. |
+| P009, Eroi | Generalista: FOR 6, VOL 6, gli altri da 3 a 5 | **Dogwatch** (Custodi): nessun Segno, solo tanta pazienza. |
+| P010, Neutrali | TEC 6, VEL 6, MAG 3 | **Ferryman** (Sciolti): contrabbandiere del porto. |
+| P011, Cattivi | ENE 6, MAG 6, FUR 3 | **Epigone** (Figli dell'Ultima): nuovo adepto. |
+| P012, Eroi | Generalista: COM 6, PER 6, gli altri da 3 a 5 | **Vigil** (Lanterne): la volontaria che arriva quando manca la luce. |
+| P013, Eroi | FOR 10, RES 9, VEL 0 | **Hawser** (Custodi): colosso del porto con tatuaggi magici, sempre fermo. |
+| P014, Cattivi | VEL 6, FUR 6, PSI 3 | **Lacuna** (Compagnia Lete): uomo qualunque, nessuno se lo ricorda. |
+| P015, Eroi | INT 8, TEC 7, RES 1 | **Suture** (Lanterne): dottoressa di salute fragile. |
 | P016, Cattivi | MAG 10, VOL 9, FUR 0 | **Belladonna** (Figli dell'Ultima): strega annunciata dalle campane. |
-| P017, Neutrali | ENE 6, RES 6, VOL 3 | **Nino Bar** (Sciolti): barista, il suo locale è terreno neutrale. |
-| P018, Eroi | PSI 8, VOL 7, COM 1 | **Elia Mentis** (Lanterne): maestro di scuola telepate. |
-| P019, Cattivi | COM 10, FOR 9, RES 0 | **Mirko KO** (Compagnia Lete): pugile imbattibile con la mascella di vetro. |
-| P020, Eroi | ENE 6, TEC 6, COM 3 | **Bea Radio** (Lanterne): radioamatrice. |
-| P021, Cattivi | FUR 8, VEL 7, TEC 1 | **Ugo Spillo** (Sciolti, schierato con i Cattivi): scassinatore all'antica. |
-| P022, Neutrali | PER 10, VOL 9, FUR 0 | **Rex Mastino** (Sciolti): cacciatore di taglie. |
-| P023, Eroi | RES 6, VOL 6, PSI 3 | **Enzo Brace** (Custodi): pompiere. |
-| P024, Cattivi | MAG 8, ENE 7, INT 1 | **Dino Fuse** (Compagnia Lete): apprendista pasticcione. |
+| P017, Neutrali | ENE 6, RES 6, VOL 3 | **Publican** (Sciolti): barista, il suo locale è terreno neutrale. |
+| P018, Eroi | PSI 8, VOL 7, COM 1 | **Hornbook** (Lanterne): maestro di scuola telepate. |
+| P019, Cattivi | COM 10, FOR 9, RES 0 | **Cullet** (Compagnia Lete): pugile imbattibile con la mascella di vetro. |
+| P020, Eroi | ENE 6, TEC 6, COM 3 | **Longwave** (Lanterne): radioamatrice. |
+| P021, Cattivi | FUR 8, VEL 7, TEC 1 | **Latchkey** (Sciolti, schierato con i Cattivi): scassinatore all'antica. |
+| P022, Neutrali | PER 10, VOL 9, FUR 0 | **Warrant** (Sciolti): cacciatore di taglie. |
+| P023, Eroi | RES 6, VOL 6, PSI 3 | **Ignifuge** (Custodi): pompiere. |
+| P024, Cattivi | MAG 8, ENE 7, INT 1 | **Typo** (Compagnia Lete): apprendista pasticcione. |
 
 ### La nuova ondata: 20 personaggi più in costume
 
@@ -194,25 +196,25 @@ Da P061 a P080. Stesse proporzioni di rarità, stessi totali di valori e stessi 
 
 | Carta | Rarità e fazione | Personaggio | Sblocco |
 |---|---|---|---|
-| P061 | Delta, Eroi | **Nico Icaro:** ali di lamiera, vola finché regge la saldatura. | Livello 3 |
-| P062 | Delta, Eroi | **Gina Razzo:** zaino fatto di estintori, sa partire ma non fermarsi. | |
-| P063 | Delta, Eroi | **Tom Magnete:** attira il metallo, comprese le chiavi di tutti. | |
-| P064 | Delta, Eroi | **Bibi Gomma:** si allunga e ci mette molto a tornare. | |
-| P065 | Delta, Cattivi | **Vito Acido:** scioglie tutto, anche i propri guanti. | |
-| P066 | Delta, Cattivi | **Ruby Rasoio:** lame fatte in casa, si taglia spesso. | |
-| P067 | Delta, Cattivi | **Zeno Sciame:** comanda vespe meccaniche e ne ha paura. | |
-| P068 | Delta, Neutrali | **Mara Nebbia:** diventa nebbia e non sa dove si ricompone. | Livello 5 |
-| P069 | Gamma, Eroi | **Aurora Kane:** luce accecante, di giorno vale poco. | |
-| P070 | Gamma, Eroi | **Falco Neri:** ali retrattili, vista perfetta da lontano e pessima da vicino. | |
-| P071 | Gamma, Cattivi | **Mr. Cenere:** brucia ciò che tocca, comprese le proprie mani. | |
-| P072 | Gamma, Cattivi | **Sirena Nera:** voce ipnotica, ogni parola le costa. | |
-| P073 | Gamma, Neutrali | **Vic Cromo:** cacciatore di taglie col braccio cromato, in debito con il Banco. | |
-| P074 | Beta, Eroi | **Cap. Zefiro:** comanda il vento e non riesce a stare fermo. | Livello 7 |
-| P075 | Beta, Eroi | **Ercole Neo:** esoscheletro fortissimo, dipende dalle batterie. | |
-| P076 | Beta, Cattivi | **Dr. Caos:** una macchina che piega il caso, i suoi piani saltano sempre. | |
-| P077 | Beta, Cattivi | **Lord Kraken:** tentacoli d'acciaio, lentissimo fuori dall'acqua. | |
-| P078 | Alfa, Eroi | **Stella Nova:** la forza di una stella, che la consuma. | Livello 10 |
-| P079 | Alfa, Cattivi | **Lady Medusa:** pietrifica con lo sguardo, e la pietra sale anche su di lei. | |
+| P061 | Delta, Eroi | **Nadir:** ali di lamiera, vola finché regge la saldatura. | Livello 3 |
+| P062 | Delta, Eroi | **Headway:** zaino fatto di estintori, sa partire ma non fermarsi. | |
+| P063 | Delta, Eroi | **Azimuth:** attira il metallo, comprese le chiavi di tutti. | |
+| P064 | Delta, Eroi | **Tether:** si allunga e ci mette molto a tornare. | |
+| P065 | Delta, Cattivi | **Quicklime:** scioglie tutto, anche i propri guanti. | |
+| P066 | Delta, Cattivi | **Falx:** lame fatte in casa, si taglia spesso. | |
+| P067 | Delta, Cattivi | **Odonate:** comanda vespe meccaniche e ne ha paura. | |
+| P068 | Delta, Neutrali | **Nimbus:** diventa nebbia e non sa dove si ricompone. | Livello 5 |
+| P069 | Gamma, Eroi | **Noctiluca:** luce accecante, di giorno vale poco. | |
+| P070 | Gamma, Eroi | **Aerie:** ali retrattili, vista perfetta da lontano e pessima da vicino. | |
+| P071 | Gamma, Cattivi | **Cineris:** brucia ciò che tocca, comprese le proprie mani. | |
+| P072 | Gamma, Cattivi | **Tacet:** voce ipnotica, ogni parola le costa. | |
+| P073 | Gamma, Neutrali | **Collateral:** cacciatore di taglie col braccio cromato, in debito con il Banco. | |
+| P074 | Beta, Eroi | **Tempestas:** comanda il vento e non riesce a stare fermo. | Livello 7 |
+| P075 | Beta, Eroi | **Truss:** esoscheletro fortissimo, dipende dalle batterie. | |
+| P076 | Beta, Cattivi | **Errata:** una macchina che piega il caso, i suoi piani saltano sempre. | |
+| P077 | Beta, Cattivi | **Dredge:** tentacoli d'acciaio, lentissimo fuori dall'acqua. | |
+| P078 | Alfa, Eroi | **Novissima:** la forza di una stella, che la consuma. | Livello 10 |
+| P079 | Alfa, Cattivi | **Effigy:** pietrifica con lo sguardo, e la pietra sale anche su di lei. | |
 | P080 | Omega, Cattivi | **Re Tifeo:** gigante del mito sepolto sotto il vulcano, non può lasciare la sua prigione. | |
 
 Regola nuova: le carte con un livello di sblocco non escono dai pacchetti né dallo starter set. Ogni giocatore ne riceve una copia al livello indicato, legata all'account come una starter: non si conquista e non si converte in monete.
@@ -223,34 +225,34 @@ Da P081 a P092: chi non è più del tutto una persona, o non lo è mai stato. L'
 
 | Carta | Rarità e fazione | Personaggio | Il difetto nei valori |
 |---|---|---|---|
-| P081 | Delta, Neutrali | **Rottame:** robot assemblato con gli scarti del porto, cerca lavoro. | VEL 1, MAG 0 |
-| P082 | Delta, Neutrali | **Rag. 404:** robot contabile del Banco, non trova mai il tuo pagamento. | PER 0 |
-| P083 | Delta, Eroi | **Geco Nardi:** mutante mezzo geco, la coda gli ricresce. | TEC 1 |
-| P084 | Delta, Cattivi | **Nina Muffa:** creatura di muffa viva cresciuta nella metro, dei Figli dell'Ultima. | VEL 0, FOR 1 |
-| P085 | Gamma, Eroi | **Ciro-9:** vecchio robot domestico, ha cresciuto mezzo quartiere con le Lanterne. | COM 1, FUR 1 |
-| P086 | Gamma, Eroi | **Gino Lupo:** vigile dei Custodi, licantropo con la luna piena. | INT 1 |
+| P081 | Delta, Neutrali | **Derelict:** robot assemblato con gli scarti del porto, cerca lavoro. | VEL 1, MAG 0 |
+| P082 | Delta, Neutrali | **Abeyance:** robot contabile del Banco, non trova mai il tuo pagamento. | PER 0 |
+| P083 | Delta, Eroi | **Cicatrix:** mutante mezzo geco, la coda gli ricresce. | TEC 1 |
+| P084 | Delta, Cattivi | **Patina:** creatura di muffa viva cresciuta nella metro, dei Figli dell'Ultima. | VEL 0, FOR 1 |
+| P085 | Gamma, Eroi | **Heirloom:** vecchio robot domestico, ha cresciuto mezzo quartiere con le Lanterne. | COM 1, FUR 1 |
+| P086 | Gamma, Eroi | **Precinct:** vigile dei Custodi, licantropo con la luna piena. | INT 1 |
 | P087 | Gamma, Neutrali | **Cerbero:** cane a tre teste delle necropoli sotto la metro. | INT 1, TEC 1 |
-| P088 | Gamma, Cattivi | **Zia Arpia:** arpia di quartiere, sa tutto di tutti. | FOR 1, TEC 1 |
+| P088 | Gamma, Cattivi | **Gazetteer:** arpia di quartiere, sa tutto di tutti. | FOR 1, TEC 1 |
 | P089 | Beta, Cattivi | **Polifemo:** gigante con un occhio solo, scaricatore per la Compagnia Lete. | PER 1 |
-| P090 | Beta, Cattivi | **Conte Rata:** vampiro e dirigente della Compagnia Lete. | RES 0 |
+| P090 | Beta, Cattivi | **Lamprey:** vampiro e dirigente della Compagnia Lete. | RES 0 |
 | P091 | Alfa, Eroi | **Talos:** automa di bronzo trovato negli scavi, un solo punto debole. | RES 1, VEL 1 |
 | P092 | Omega, Neutrali | **Cariddi:** vortice con i denti nel porto, quello che l'Ora Zero ha fatto del mare. | INT 0, VEL 1 |
 
 ### Alieni, macchine e gente del futuro
 
-Da P093 a P104: l'Ora Zero non ha aperto solo gli scavi. Dallo strappo arriva chi viene da lontano (Glip, Don Viscido, Zeta Rax, Regina Ix) e chi viene da dopo (Nonno 3000, Aion). Le macchine di Nuova Megara, intanto, hanno iniziato a farsi un'idea propria. Il tono resta quello dei quartieri: anche gli alieni devono fare la fila. Stessi totali di valori e stessi tipi di Potere del resto del catalogo. Si trovano tutti nei pacchetti.
+Da P093 a P104: l'Ora Zero non ha aperto solo gli scavi. Dallo strappo arriva chi viene da lontano (Glip, Huckster, Zeta Rax, Regina Ix) e chi viene da dopo (Retrograde, Aion). Le macchine di Nuova Megara, intanto, hanno iniziato a farsi un'idea propria. Il tono resta quello dei quartieri: anche gli alieni devono fare la fila. Stessi totali di valori e stessi tipi di Potere del resto del catalogo. Si trovano tutti nei pacchetti.
 
 | Carta | Rarità e fazione | Personaggio | Il difetto nei valori |
 |---|---|---|---|
 | P093 | Delta, Neutrali | **Glip:** piccolo alieno turista, ha sbagliato pianeta. | FOR 0, RES 1 |
-| P094 | Delta, Eroi | **Vigile-8:** robot dei Custodi, multa chiunque. | MAG 0, PSI 0 |
-| P095 | Delta, Eroi | **Lina Laser:** esordiente in costume, spara laser dagli occhi e ci vede poco. | PER 1 |
-| P096 | Delta, Cattivi | **Don Viscido:** alieno gelatinoso, venditore porta a porta. | FOR 0, COM 1 |
-| P097 | Gamma, Eroi | **Eva Orbita:** astronauta tornata in armatura dopo l'Ora Zero. | FUR 0 |
-| P098 | Gamma, Cattivi | **Ing. Copia:** androide della Compagnia Lete che ha preso il posto di un ingegnere. | PSI 0 |
+| P094 | Delta, Eroi | **Censor:** robot dei Custodi, multa chiunque. | MAG 0, PSI 0 |
+| P095 | Delta, Eroi | **Raster:** esordiente in costume, spara laser dagli occhi e ci vede poco. | PER 1 |
+| P096 | Delta, Cattivi | **Huckster:** alieno gelatinoso, venditore porta a porta. | FOR 0, COM 1 |
+| P097 | Gamma, Eroi | **Sextant:** astronauta tornata in armatura dopo l'Ora Zero. | FUR 0 |
+| P098 | Gamma, Cattivi | **Facsimile:** androide della Compagnia Lete che ha preso il posto di un ingegnere. | PSI 0 |
 | P099 | Gamma, Neutrali | **Zeta Rax:** cacciatrice di taglie aliena, non si ferma mai. | PSI 0, VOL 1 |
-| P100 | Gamma, Eroi | **Nonno 3000:** anziano eroe arrivato dal futuro, con il jetpack. | FUR 0, FOR 1, VEL 1 |
-| P101 | Beta, Eroi | **Suor Mecha:** suora delle Lanterne, pilota un robot gigante fatto di impalcature e campane. | FUR 0, VEL 1 |
+| P100 | Gamma, Eroi | **Retrograde:** anziano eroe arrivato dal futuro, con il jetpack. | FUR 0, FOR 1, VEL 1 |
+| P101 | Beta, Eroi | **Carillon:** suora delle Lanterne, pilota un robot gigante fatto di impalcature e campane. | FUR 0, VEL 1 |
 | P102 | Beta, Cattivi | **Regina Ix:** imperatrice aliena a quattro braccia, bloccata dalla burocrazia. | FUR 0 |
 | P103 | Alfa, Neutrali | **Sibilla:** intelligenza artificiale cresciuta nel tempio oracolare, vede cosa succederà. | FOR 0, VEL 0 |
 | P104 | Omega, Cattivi | **Aion:** quello che resta del tempo dopo la fine, arrivato dallo strappo. | FOR 0 |
@@ -272,7 +274,7 @@ Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richi
 1. **Il Reggente:** un novellino riceve la licenza e perde subito la sua lastra migliore.
 2. **Rissa al porto:** i Custodi non bastano più e il Banco ci guadagna.
 3. **Il sismografo:** le scosse seguono uno schema, quello dell'alfabeto.
-4. **Vox Mille:** il nemico è dentro la testa di chi ti è vicino.
+4. **Multitude:** il nemico è dentro la testa di chi ti è vicino.
 5. **Mongibello:** i Figli dell'Ultima svegliano il vulcano e l'ultima pagina apre l'espansione.
 
 ### Formato del copione
@@ -304,7 +306,7 @@ RENATA (fuori campo): Però è tuo. Finché non lo perdi.
 
 Da applicare a ogni illustrazione, così le carte sembrano dello stesso universo.
 
-- **Riferimento:** l'immagine di **Vox Mille** (Higgsfield, job `0eed7ac1-e223-4cd6-bed5-e4c76f1e693b`) va passata come riferimento di stile a ogni generazione.
+- **Riferimento:** l'immagine di **Multitude** (Higgsfield, job `0eed7ac1-e223-4cd6-bed5-e4c76f1e693b`) va passata come riferimento di stile a ogni generazione.
 - **Stile:** locandina a fumetto dai toni cupi, inchiostro fitto, grana a retino, resa dipinta.
 - **Palette:** fondo quasi nero, magenta e ciano come colori base, un solo accento caldo (giallo o arancio).
 - **Inquadratura:** una sola figura, intera o a tre quarti, leggibile anche a schermo piccolo. La carta mostra soprattutto la parte alta dell'immagine: volto e dettaglio chiave devono stare nella metà superiore.
@@ -325,7 +327,7 @@ Gli effetti cambiano solo l'aspetto, mai valori o regole. L'abbinamento è in `s
 | Alfa | Olografico, inclinazione 3D | Olografico |
 | Omega | Olografico, inclinazione 3D, effetto personale | Olografico |
 
-Effetti personali Omega: Papa Zero l'aura, Sir Nemo le scariche elettriche, Vox Mille il glitch, Mongibello le braci.
+Effetti personali Omega: Holdout l'aura, Absentia le scariche elettriche, Multitude il glitch, Mongibello le braci.
 
 ## 9. Prima di pubblicare
 

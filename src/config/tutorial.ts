@@ -35,24 +35,24 @@ function deltaHero(name: string, art: string, stats: Record<string, number>): Ca
   return { name, faction: "heroes", flavor: "", stats, rarity: DELTA, power: null, art_url: `/cards/${art}.webp` };
 }
 
-export const MAX_CARGO = deltaHero("Max Cargo", "P001", {
+export const GANTRY = deltaHero("Gantry", "P001", {
   FOR: 10, VEL: 5, RES: 9, INT: 2, VOL: 6, PER: 3, ENE: 4, MAG: 0, PSI: 1, COM: 9, TEC: 3, FUR: 2,
 });
-export const TONY_RONDA = deltaHero("Tony Ronda", "P009", {
+export const DOGWATCH = deltaHero("Dogwatch", "P009", {
   FOR: 6, VEL: 4, RES: 5, INT: 5, VOL: 6, PER: 5, ENE: 4, MAG: 4, PSI: 3, COM: 5, TEC: 4, FUR: 3,
 });
-const NONNA_HEX: CardData = {
-  ...deltaHero("Nonna Hex", "P004", {
+const WARDMOTHER: CardData = {
+  ...deltaHero("Wardmother", "P004", {
     FOR: 0, VEL: 2, RES: 3, INT: 5, VOL: 9, PER: 4, ENE: 6, MAG: 10, PSI: 9, COM: 2, TEC: 1, FUR: 3,
   }),
   faction: "neutrals",
 };
-const LUCY_LUMEN = deltaHero("Lucy Lumen", "P012", {
+const VIGIL = deltaHero("Vigil", "P012", {
   FOR: 4, VEL: 5, RES: 5, INT: 4, VOL: 5, PER: 6, ENE: 5, MAG: 3, PSI: 3, COM: 6, TEC: 4, FUR: 4,
 });
 
 export const SAMPLE_CARD: CardData = {
-  name: "Marta Scudo",
+  name: "Bulwark",
   faction: "heroes",
   flavor: "",
   stats: { FOR: 3, VEL: 4, RES: 9, INT: 2, VOL: 7, PER: 3, ENE: 2, MAG: 4, PSI: 6, COM: 8, TEC: 5, FUR: 1 },
@@ -75,19 +75,19 @@ export const SAMPLE_LEVELS = [2, 5, 1, 3, 6];
 
 export const PRACTICE = {
   threat: { id: "T201", name: "Robot impazzito", level: 2, abilities: ["FOR", "TEC"] } as Threat & { name: string },
-  opponent: LUCY_LUMEN,
+  opponent: VIGIL,
   team: [
     {
-      card: MAX_CARGO,
-      feedback: "Vinto, ma Max Cargo non tornerà più in questa partita: era sprecato, bastava molto meno.",
+      card: GANTRY,
+      feedback: "Vinto, ma Gantry non tornerà più in questa partita: era sprecato, bastava molto meno.",
     },
     {
-      card: TONY_RONDA,
-      feedback: "La mossa migliore: hai vinto il round spendendo il minimo e Max Cargo resta per una Minaccia più adatta.",
+      card: DOGWATCH,
+      feedback: "La mossa migliore: hai vinto il round spendendo il minimo e Gantry resta per una Minaccia più adatta.",
     },
     {
-      card: NONNA_HEX,
-      feedback: "Nonna Hex è fortissima in Magia e Psiche, ma qui non servono. E ogni personaggio si usa una volta sola: l'hai bruciata per niente.",
+      card: WARDMOTHER,
+      feedback: "Wardmother è fortissima in Magia e Psiche, ma qui non servono. E ogni personaggio si usa una volta sola: l'hai bruciata per niente.",
     },
   ],
 };

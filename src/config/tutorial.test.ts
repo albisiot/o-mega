@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_CARGO, PRACTICE, scoreOn, THREAT_EXAMPLES, TONY_RONDA } from "./tutorial";
+import { DOGWATCH, GANTRY, PRACTICE, scoreOn, THREAT_EXAMPLES } from "./tutorial";
 
 describe("tutorial examples", () => {
   it("practice round: the feedback matches the scores", () => {
@@ -12,7 +12,7 @@ describe("tutorial examples", () => {
 
   it("the specialist wins the low threat, the generalist the high one", () => {
     const [low, high] = THREAT_EXAMPLES;
-    expect(scoreOn(MAX_CARGO, low)).toBeGreaterThan(scoreOn(TONY_RONDA, low));
-    expect(scoreOn(TONY_RONDA, high)).toBeGreaterThan(scoreOn(MAX_CARGO, high));
+    expect(scoreOn(GANTRY, low)).toBeGreaterThan(scoreOn(DOGWATCH, low));
+    expect(scoreOn(DOGWATCH, high)).toBeGreaterThan(scoreOn(GANTRY, high));
   });
 });

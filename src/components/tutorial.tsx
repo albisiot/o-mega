@@ -5,13 +5,13 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CardView } from "@/components/card-view";
 import { PackArt } from "@/components/comic-parts";
 import {
-  MAX_CARGO,
+  DOGWATCH,
+  GANTRY,
   PRACTICE,
   SAMPLE_CARD,
   SAMPLE_LEVELS,
   scoreOn,
   THREAT_EXAMPLES,
-  TONY_RONDA,
   TUTORIAL_ABILITIES,
   TUTORIAL_FAMILIES,
   TUTORIAL_MODES,
@@ -258,7 +258,7 @@ function ThreatsDemo() {
         </ol>
       </div>
       {THREAT_EXAMPLES.map((threat) => {
-        const fighters = [MAX_CARGO, TONY_RONDA].map((card) => ({ card, score: scoreOn(card, threat) }));
+        const fighters = [GANTRY, DOGWATCH].map((card) => ({ card, score: scoreOn(card, threat) }));
         const best = Math.max(...fighters.map((fighter) => fighter.score));
         return (
           <section key={threat.id} className="flex flex-col gap-1 bg-panel px-3 py-2">
@@ -269,7 +269,7 @@ function ThreatsDemo() {
             {fighters.map(({ card, score }) => (
               <p key={card.name} className="flex items-center justify-between text-sm font-semibold">
                 <span>
-                  {card.name} <span className="text-muted">({card === MAX_CARGO ? "specialista" : "generalista"})</span>
+                  {card.name} <span className="text-muted">({card === GANTRY ? "specialista" : "generalista"})</span>
                 </span>
                 <span className={`font-display text-2xl leading-6 ${score === best ? "text-comic-yellow" : "text-muted"}`}>{score}</span>
               </p>
@@ -298,13 +298,13 @@ function AbilityChips({ codes }: { codes: readonly string[] }) {
 
 function RoundDemo() {
   const { threat } = PRACTICE;
-  const score = scoreOn(TONY_RONDA, threat);
+  const score = scoreOn(DOGWATCH, threat);
   return (
     <div className="flex flex-col gap-1 bg-panel px-3 py-2">
       <p className="font-display text-lg uppercase">{threat.name}</p>
       <AbilityChips codes={threat.abilities} />
       <p className="mt-1 text-sm font-semibold">
-        {TONY_RONDA.name}: {threat.abilities.map((code) => `${code} ${TONY_RONDA.stats[code]}`).join(" + ")} ={" "}
+        {DOGWATCH.name}: {threat.abilities.map((code) => `${code} ${DOGWATCH.stats[code]}`).join(" + ")} ={" "}
         <span className="font-display text-2xl text-comic-yellow">{score}</span>
       </p>
     </div>

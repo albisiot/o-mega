@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "2 novembre 2026",
     changes: [
+      "89 personaggi cambiano nome e prendono un nome in codice: Marta Scudo ora è Bulwark, Max Cargo è Gantry, Vox Mille è Multitude. Disegni, valori e poteri restano uguali.",
       "Le Minacce si fanno imprevedibili: in ogni partita una o due hanno un modificatore che cambia la carta da mandare. Colpo mirato, Anello debole, Territorio ostile e Sottovalutati si scoprono insieme alla Minaccia. L'Emergenza resta senza.",
       "Bot più forti: Difficile e Super Pro scendono in campo con i personaggi migliori del catalogo. Facile e Medio non cambiano, e in Conquista i bot tengono squadre normali.",
     ],
@@ -12,7 +13,7 @@ export const PATCH_NOTES = [
     changes: [
       "Nel Negozio arrivano i codici bonus: inserisci un codice e ricevi monete, pacchetti o carte. Ogni codice si usa una volta sola.",
       "Altri 12 nuovi personaggi da trovare nei pacchetti: alieni, macchine e gente del futuro, da Glip ad Aion.",
-      "12 nuovi personaggi da trovare nei pacchetti: robot, mostri e mutanti, da Rottame a Cariddi.",
+      "12 nuovi personaggi da trovare nei pacchetti: robot, mostri e mutanti, da Derelict a Cariddi.",
       "Arriva Emergenza, la sfida del giorno da giocare da soli: 8 Minacce uguali per tutti, una squadra di 8 personaggi e un solo tentativo, con la classifica di giornata. Nessuna carta in gioco e fino a 50 monete.",
       "Nuovo tutorial: spiega carte, Minacce, Conquista e monete, con un round di prova. Parte da solo la prima volta e si può rivedere da Gioca e dal Profilo.",
       "Arrivano le varianti: 20 personaggi hanno anche un disegno Neon più raro, da trovare nei pacchetti. Stessi valori e poteri, disegno diverso. Se la schieri in Conquista puoi perderla.",
@@ -24,7 +25,7 @@ export const PATCH_NOTES = [
     changes: [
       "Conquista senza attese: se dopo 60 secondi non si trova nessuno, sfidi un bot a caso con le carte in palio. Se vinci ricevi una copia di una sua carta, se perdi la carta presa dal bot esce dal gioco.",
       "Arriva il bot Super Pro: prima di ogni mossa simula mille partite possibili e sceglie quella che vince più spesso.",
-      "20 nuovi personaggi a Nuova Megara. Quattro si sbloccano salendo di livello: Nico Icaro al 3, Mara Nebbia al 5, Cap. Zefiro al 7 e Stella Nova al 10.",
+      "20 nuovi personaggi a Nuova Megara. Quattro si sbloccano salendo di livello: Nadir al 3, Nimbus al 5, Tempestas al 7 e Novissima al 10.",
       "Le carte hanno effetti visivi che crescono con la rarità, e ogni Omega ne ha uno tutto suo. Valori e regole non cambiano.",
       "Premi di livello: ogni nuovo livello regala monete (livello 2: 50, livello 3: 60, poi 10 in più a ogni livello). Chi è già salito ha ricevuto i premi arretrati.",
       "Passaggi più rapidi tra le schermate: Collezione, Negozio e Gioca si aprono subito.",
