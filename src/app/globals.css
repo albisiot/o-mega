@@ -442,6 +442,71 @@ body {
 .animate-rare-burst { animation: rare-burst 1.2s ease-out infinite; }
 .animate-rare-title { animation: rare-title 0.9s ease-out both; }
 
+/* Card names (src/lib/card-names.ts): the face paints the letters, the depth layer behind it
+   draws the outline, the 3D extrusion and the glow. The font size fits the name to the space. */
+.card-name {
+  container-type: inline-size;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  align-self: stretch;
+  min-width: 0;
+}
+
+.card-name-lg { --nm-max: 32px; }
+.card-name-sm { --nm-max: 15px; }
+
+.card-name-text {
+  position: relative;
+  font-family: var(--nm-font), var(--display-font);
+  font-size: min(var(--nm-max), 100cqw / var(--nm-width));
+  font-weight: normal;
+  font-synthesis: none;
+  line-height: 1;
+  letter-spacing: var(--nm-tracking);
+  text-transform: var(--nm-case);
+  white-space: nowrap;
+  transform: skewX(var(--nm-slant));
+}
+
+/* Padding keeps italic overhangs and descenders inside the painted area. */
+.card-name-depth,
+.card-name-face {
+  display: block;
+  padding: 0.14em 0.12em 0.14em 0.08em;
+  text-box: trim-both cap alphabetic;
+}
+
+.card-name-depth {
+  position: absolute;
+  inset: 0;
+  -webkit-text-fill-color: var(--nm-rim);
+  -webkit-text-stroke: 0.15em var(--nm-rim);
+  text-shadow: var(--nm-shadow);
+}
+
+.card-name-face,
+.card-name-face-letters > .card-name-letter {
+  position: relative;
+  background: var(--nm-fill);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0.025em var(--nm-line);
+}
+
+.card-name-face.card-name-face-letters {
+  background: none;
+}
+
+/* Same padding trick per letter, cancelled by the margin so the spacing does not change. */
+.card-name-letter {
+  display: inline-block;
+  margin: -0.14em -0.06em;
+  padding: 0.14em 0.06em;
+  transform: var(--nm-letter);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pack-shine,
   .animate-rays-spin,

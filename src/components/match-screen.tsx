@@ -9,6 +9,7 @@ import { ConquestPanel } from "@/components/conquest-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { StoryRewardPanel } from "@/components/story-reward";
 import { ThreatDiorama } from "@/components/threat-diorama";
+import { WinnerName } from "@/components/winner-name";
 import { balance } from "@/config/balance";
 import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
@@ -568,6 +569,7 @@ function RoundReveal({
         >
           {banner}
         </p>
+        {winnerCard && <WinnerName key={`${round.round}-${winnerCard.code}`} card={winnerCard} />}
         <PlaySide label="Tu" card={mine ?? null} play={round.my_play} abilities={round.threat.abilities} side="left" />
       </section>
 

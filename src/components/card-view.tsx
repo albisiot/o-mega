@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { CARD_TOUCH_HANDLERS, CardArtEffects } from "@/components/card-effects";
+import { CardName } from "@/components/card-name";
 import { withBasePath } from "@/lib/base-path";
 import { cardEffects, type CardEffect } from "@/lib/card-effects";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
@@ -45,8 +46,8 @@ export function CardView({ card, abilities, size = "lg", glow = false }: CardVie
       }`}
     >
       <div className="relative z-[1] flex flex-col overflow-hidden rounded-md bg-panel text-foreground">
-        <header className={`flex items-center justify-between gap-2 ${large ? "h-10 px-2.5" : "h-7 px-1.5"}`}>
-          <h3 className={`min-w-0 truncate font-display uppercase ${large ? "text-2xl" : "text-xs"}`}>{card.name}</h3>
+        <header className={`relative z-[2] flex items-center justify-between gap-2 ${large ? "h-12 px-2.5" : "h-8 px-1.5"}`}>
+          <CardName card={card} size={size} />
           <RarityTag rarity={card.rarity} compact={!large} />
         </header>
 

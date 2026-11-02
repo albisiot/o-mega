@@ -346,6 +346,10 @@ Gli effetti cambiano solo l'aspetto, mai valori o regole. L'abbinamento è in `s
 
 Effetti personali Omega: Holdout l'aura, Absentia le scariche elettriche, Multitude il glitch, Mongibello le braci.
 
+### Nomi delle carte
+
+Ogni personaggio ha una scritta del nome sua: carattere, colori, materiale ed estrusione 3D che ricordano chi è (la lava di Mongibello, il vetro di Vetrix, la visiera vuota di Absentia). Gli stili sono in `src/lib/card-names.ts`, indicizzati per codice carta: un personaggio nuovo ne riceve uno, altrimenti usa lo stile base della sua fazione. Quando una carta vince un round, il suo nome appare in 3D vero con lo stesso stile (`src/lib/winner-name-3d.ts`). Se si aggiunge un carattere, le forme 3D delle lettere si rigenerano con `node scripts/build-name-fonts.mjs`.
+
 ## 9. Prima di pubblicare
 
 - Controllare che O-MEGA, Nuova Megara e i nomi delle carte non siano già marchi o personaggi esistenti.

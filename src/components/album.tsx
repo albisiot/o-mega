@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { CardName } from "@/components/card-name";
 import { CardArt, Silhouette, VariantTag } from "@/components/card-view";
 import { clearAlbumScroll, saveAlbumScroll, savedAlbumScroll } from "@/lib/album-scroll";
 import { cardEffects } from "@/lib/card-effects";
@@ -318,9 +319,11 @@ function AlbumTile({
         </div>
       )}
       <div className="rounded-b bg-panel px-1.5 py-1">
-        <p className={`truncate font-display text-sm uppercase ${owned ? "" : "text-faint"}`}>
-          {owned ? card.name : "???"}
-        </p>
+        {owned ? (
+          <CardName card={card} size="sm" as="p" className="h-5" />
+        ) : (
+          <p className="truncate font-display text-sm uppercase text-faint">???</p>
+        )}
         <div className="flex items-center justify-between gap-1 text-[11px] font-semibold">
           <span style={{ color: card.rarity.color }}>{card.rarity.name}</span>
           {owned && sortAbility ? (

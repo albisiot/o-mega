@@ -1,6 +1,13 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "3 novembre 2026",
+    changes: [
+      "Ogni personaggio ha il suo nome in 3D, con carattere, colori e materiale che lo ricordano: la lava di Mongibello, il vetro di Vetrix, le voci di Multitude, l'armatura vuota di Absentia. Lo vedi sulle carte, nell'album e nei pacchetti.",
+      "Quando una carta vince un round, la tua o quella dell'avversario, il suo nome arriva in scena in 3D, lettera per lettera. Puoi girarlo con il dito.",
+    ],
+  },
+  {
     date: "2 novembre 2026",
     changes: [
       "Più rara vuol dire più forte: Gamma, Beta, Alfa e Omega hanno più punti nelle abilità, e ogni rarità supera quella sotto (Delta 54, Gamma 55, Beta 57, Alfa 58, Omega 61). Le Delta non cambiano e i punti deboli dei personaggi restano uguali.",
