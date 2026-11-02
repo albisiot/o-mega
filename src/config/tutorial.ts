@@ -55,7 +55,7 @@ export const SAMPLE_CARD: CardData = {
   name: "Bulwark",
   faction: "heroes",
   flavor: "",
-  stats: { FOR: 3, VEL: 4, RES: 9, INT: 2, VOL: 7, PER: 3, ENE: 2, MAG: 4, PSI: 6, COM: 8, TEC: 5, FUR: 1 },
+  stats: { FOR: 3, VEL: 4, RES: 10, INT: 2, VOL: 7, PER: 3, ENE: 2, MAG: 4, PSI: 6, COM: 8, TEC: 5, FUR: 1 },
   rarity: GAMMA,
   power: { name: "Ultimo baluardo", text: "+3 se giocato nel round 4 o 5" },
   art_url: "/cards/P025.webp",
@@ -150,7 +150,7 @@ export const TUTORIAL_STEPS = [
     key: "abilities",
     title: "Le 12 abilità",
     points: [
-      "Sono divise in 4 famiglie. Tutti hanno più o meno lo stesso totale di punti: cambia come sono distribuiti.",
+      "Sono divise in 4 famiglie. Il totale dei punti dipende dalla rarità, ma conta molto anche come sono distribuiti.",
       "Gli specialisti hanno pochi valori altissimi, i generalisti tanti valori medi. Servono entrambi.",
     ],
   },
@@ -158,7 +158,7 @@ export const TUTORIAL_STEPS = [
     key: "rarity",
     title: "Rarità e varianti",
     points: [
-      "Più rara non vuol dire più forte: una squadra di Delta ben scelta può battere una squadra di Omega. Le rare hanno profili più estremi e un Potere, le Delta non ne hanno.",
+      "Più rara vuol dire più forte: ogni rarità ha più punti di quella sotto, profili più estremi e, dalle Gamma in su, un Potere. Le Delta non sono da buttare: con le scelte giuste e Minacce come Sottovalutati possono ancora battere una squadra di Omega.",
       `Varianti ★: stessa carta con un disegno più raro. Il ${packs.variantChancePercent}% delle volte, sui personaggi che ne hanno una. Valori e Potere non cambiano.`,
       "Doppioni: le copie in più si convertono in monete dalla Collezione. Le starter e le varianti no.",
     ],

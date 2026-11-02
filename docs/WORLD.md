@@ -46,7 +46,7 @@ Nuova Megara è una megalopoli costruita sulle rovine della Magna Grecia. Dall'O
 
 ### Rarità
 
-**Regola da non violare mai: la rarità non indica potenza** (SPEC §4.3). Omega non significa "più forte" ma "più deformato dal potere". Le carte rare hanno davvero meno punti totali e profili più estremi: ogni dono ha un prezzo, visibile nelle statistiche.
+**La rarità indica potenza** (SPEC §4.3): più una carta è rara, più punti ha in totale (Delta 54, Gamma 55, Beta 57, Alfa 58, Omega 61). Omega significa anche "più deformato dal potere": i profili sono più estremi e ogni dono ha un prezzo, visibile nelle statistiche. **Regola da non violare mai:** i valori 0 e 1 sono il prezzo del personaggio e non crescono con la rarità; i punti in più vanno ai suoi doni.
 
 | Rarità | Nella storia |
 |---|---|
@@ -114,27 +114,27 @@ Testo di colore (una frase):
 
 | Carta | Valori chiave | Potere | Personaggio |
 |---|---|---|---|
-| P051, Cattivi | VEL 10, COM 10, FOR 9, RES 1, VOL 1 | Riscossa | **Vetrix** (Compagnia Lete): il combattente più veloce della città, con ossa di vetro. Quando si rompe, i frammenti colpiscono il prossimo bersaglio. |
-| P052, Neutrali | ENE 10, TEC 10, INT 9, VOL 1, MAG 1 | Sabotatore | **Auctor** (Sciolti): ha progettato la centrale e vende il proprio genio a chiunque paghi. |
-| P053, Eroi | FUR 10, INT 10, VEL 9, COM 1, VOL 1 | Riscossa | **Moth** (Lanterne): nessuno riesce a vederla. Scappa sempre, poi torna sempre. |
-| P054, Cattivi | VOL 10, PER 10, COM 9, TEC 1, MAG 1 | Sfavorito | **Vera Kross** (Figli dell'Ultima): trova chiunque e non si ferma mai, soprattutto quando sta perdendo. |
-| P055, Eroi | RES 10, VOL 10, MAG 9, VEL 1, INT 1 | Riscossa | **Keelstone** (Custodi): sta davanti alla porta del tempio. Da lì non passa nessuno, e da lì non si sposta. |
-| P056, Cattivi | ENE 10, MAG 10, TEC 9, RES 1, VOL 1 | Sabotatore | **Mekana** (Compagnia Lete): costruisce macchine che funzionano a incantesimi, e ormai è più macchina che persona. |
+| P051, Cattivi | VEL 10, COM 10, FOR 10, RES 1, VOL 1 | Riscossa | **Vetrix** (Compagnia Lete): il combattente più veloce della città, con ossa di vetro. Quando si rompe, i frammenti colpiscono il prossimo bersaglio. |
+| P052, Neutrali | ENE 10, TEC 10, INT 10, VOL 1, MAG 1 | Sabotatore | **Auctor** (Sciolti): ha progettato la centrale e vende il proprio genio a chiunque paghi. |
+| P053, Eroi | FUR 10, INT 10, VEL 10, COM 1, VOL 1 | Riscossa | **Moth** (Lanterne): nessuno riesce a vederla. Scappa sempre, poi torna sempre. |
+| P054, Cattivi | VOL 10, PER 10, COM 10, TEC 1, MAG 1 | Sfavorito | **Vera Kross** (Figli dell'Ultima): trova chiunque e non si ferma mai, soprattutto quando sta perdendo. |
+| P055, Eroi | RES 10, VOL 10, MAG 10, VEL 1, INT 1 | Riscossa | **Keelstone** (Custodi): sta davanti alla porta del tempio. Da lì non passa nessuno, e da lì non si sposta. |
+| P056, Cattivi | ENE 10, MAG 10, TEC 10, RES 1, VOL 1 | Sabotatore | **Mekana** (Compagnia Lete): costruisce macchine che funzionano a incantesimi, e ormai è più macchina che persona. |
 
 ### Beta: figure note in città
 
 | Carta | Valori chiave | Potere | Personaggio |
 |---|---|---|---|
-| P041, Cattivi | RES 10, COM 9, PER 1 | Ultimo baluardo | **Gavel** (Compagnia Lete): esattore che incassa ogni colpo e ci vede pochissimo. |
-| P042, Neutrali | VEL 7, COM 7, INT 1 | Apripista | **Postmark** (Sciolti): corriere su moto elettrica truccata. |
-| P043, Eroi | PSI 10, PER 9, INT 1 | Terreno favorevole | **Fathom** (Lanterne): sente i pensieri, ma non sempre li capisce. |
-| P044, Cattivi | ENE 7, MAG 7, INT 1 | Affinità (Potere) | **Kiln** (Figli dell'Ultima): piromane. |
-| P045, Eroi | FOR 10, RES 9, INT 1 | Legame | **Apostate** (Custodi): ex campione di lotta. |
-| P046, Cattivi | VEL 10, FUR 9, RES 1 | Legame | **Larceny** (Sciolti, schierata con i Cattivi): la ladra più rapida di Nuova Megara. |
-| P047, Neutrali | INT 7, TEC 7, ENE 1 | Affinità (Mente) | **Actuary** (Banco): analista. |
-| P048, Eroi | MAG 10, PSI 9, PER 1 | Terreno favorevole | **Hapax** (Lanterne): mago di strada quasi cieco. |
-| P049, Cattivi | ENE 7, RES 7, FUR 1 | Affinità (Potere) | **Blackbody** (Compagnia Lete): dirigente, è un reattore che cammina. |
-| P050, Eroi | PSI 10, VOL 9, COM 1 | Terreno favorevole | **Parley** (Custodi): negoziatrice telepatica. |
+| P041, Cattivi | RES 10, COM 10, PER 1 | Ultimo baluardo | **Gavel** (Compagnia Lete): esattore che incassa ogni colpo e ci vede pochissimo. |
+| P042, Neutrali | VEL 8, COM 8, INT 1 | Apripista | **Postmark** (Sciolti): corriere su moto elettrica truccata. |
+| P043, Eroi | PSI 10, PER 10, INT 1 | Terreno favorevole | **Fathom** (Lanterne): sente i pensieri, ma non sempre li capisce. |
+| P044, Cattivi | ENE 8, MAG 8, INT 1 | Affinità (Potere) | **Kiln** (Figli dell'Ultima): piromane. |
+| P045, Eroi | FOR 10, RES 10, INT 1 | Legame | **Apostate** (Custodi): ex campione di lotta. |
+| P046, Cattivi | VEL 10, FUR 10, RES 1 | Legame | **Larceny** (Sciolti, schierata con i Cattivi): la ladra più rapida di Nuova Megara. |
+| P047, Neutrali | INT 8, TEC 8, ENE 1 | Affinità (Mente) | **Actuary** (Banco): analista. |
+| P048, Eroi | MAG 10, PSI 10, PER 1 | Terreno favorevole | **Hapax** (Lanterne): mago di strada quasi cieco. |
+| P049, Cattivi | ENE 8, RES 8, FUR 1 | Affinità (Potere) | **Blackbody** (Compagnia Lete): dirigente, è un reattore che cammina. |
+| P050, Eroi | PSI 10, VOL 10, COM 1 | Terreno favorevole | **Parley** (Custodi): negoziatrice telepatica. |
 
 ### Gamma: professionisti di quartiere
 
@@ -142,22 +142,22 @@ Hanno il potere Specialità (+2 contro le Minacce che richiedono la prima abilit
 
 | Carta | Valori chiave | Personaggio |
 |---|---|---|
-| P025, Eroi | RES 9, COM 8, FUR 1 | **Bulwark** (Custodi): agente con lo scudo antisommossa. |
-| P026, Cattivi | VEL 7, TEC 6, RES 2 | **Rubicon** (Sciolti, schierato con i Cattivi): capo di una gang di motociclisti. |
-| P027, Neutrali | PSI 9, PER 8, INT 1 | **Vulgate** (Sciolti): medium che vende segreti senza capirli. |
-| P028, Eroi | ENE 7, MAG 6, VEL 2 | **Juncture** (Lanterne): elettricista, ripara i cavi a mani nude. |
-| P029, Cattivi | FOR 9, RES 8, INT 1 | **Malleus** (Compagnia Lete): picchiatore. |
-| P030, Eroi | VEL 7, PER 6, MAG 2 | **Milewright** (Lanterne): staffetta che corre sui tetti. |
-| P031, Cattivi | INT 9, TEC 8, FUR 1 | **Byline** (Compagnia Lete): hacker vanitosa. |
-| P032, Neutrali | MAG 7, PSI 6, COM 2 | **Escrow** (Sciolti): rigattiera di maledizioni. |
-| P033, Eroi | ENE 9, RES 8, COM 1 | **Cathode** (Lanterne): ex operaio della centrale, gigante gentile. |
-| P034, Cattivi | PSI 7, INT 6, COM 2 | **Lullaby** (Figli dell'Ultima): ipnotizzatore e reclutatore. |
-| P035, Eroi | COM 9, VEL 8, VOL 2 | **Ambit** (Lanterne): lottatore di strada, testa calda. |
-| P036, Cattivi | TEC 7, ENE 6, FUR 2 | **Swarf** (Compagnia Lete): costruttore di robot. |
-| P037, Neutrali | FUR 9, INT 8, VOL 2 | **Sordina** (Sciolti): spia su commissione. |
-| P038, Eroi | PER 7, COM 6, FOR 2 | **Nightward** (Custodi): investigatrice. |
-| P039, Cattivi | VOL 9, RES 8, PSI 1 | **Credo** (Figli dell'Ultima): fanatico. |
-| P040, Eroi | MAG 7, TEC 6, VEL 2 | **Gridwitch** (Lanterne): tecnomaga. |
+| P025, Eroi | RES 10, COM 8, FUR 1 | **Bulwark** (Custodi): agente con lo scudo antisommossa. |
+| P026, Cattivi | VEL 8, TEC 6, RES 2 | **Rubicon** (Sciolti, schierato con i Cattivi): capo di una gang di motociclisti. |
+| P027, Neutrali | PSI 10, PER 8, INT 1 | **Vulgate** (Sciolti): medium che vende segreti senza capirli. |
+| P028, Eroi | ENE 8, MAG 6, VEL 2 | **Juncture** (Lanterne): elettricista, ripara i cavi a mani nude. |
+| P029, Cattivi | FOR 10, RES 8, INT 1 | **Malleus** (Compagnia Lete): picchiatore. |
+| P030, Eroi | VEL 8, PER 6, MAG 2 | **Milewright** (Lanterne): staffetta che corre sui tetti. |
+| P031, Cattivi | INT 10, TEC 8, FUR 1 | **Byline** (Compagnia Lete): hacker vanitosa. |
+| P032, Neutrali | MAG 8, PSI 6, COM 2 | **Escrow** (Sciolti): rigattiera di maledizioni. |
+| P033, Eroi | ENE 10, RES 8, COM 1 | **Cathode** (Lanterne): ex operaio della centrale, gigante gentile. |
+| P034, Cattivi | PSI 8, INT 6, COM 2 | **Lullaby** (Figli dell'Ultima): ipnotizzatore e reclutatore. |
+| P035, Eroi | COM 10, VEL 8, VOL 2 | **Ambit** (Lanterne): lottatore di strada, testa calda. |
+| P036, Cattivi | TEC 8, ENE 6, FUR 2 | **Swarf** (Compagnia Lete): costruttore di robot. |
+| P037, Neutrali | FUR 10, INT 8, VOL 2 | **Sordina** (Sciolti): spia su commissione. |
+| P038, Eroi | PER 8, COM 6, FOR 2 | **Nightward** (Custodi): investigatrice. |
+| P039, Cattivi | VOL 10, RES 8, PSI 1 | **Credo** (Figli dell'Ultima): fanatico. |
+| P040, Eroi | MAG 8, TEC 6, VEL 2 | **Gridwitch** (Lanterne): tecnomaga. |
 
 ### Delta: la gente della città
 

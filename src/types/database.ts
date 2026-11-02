@@ -1038,6 +1038,7 @@ export type Database = {
       }
       rarity_definitions: {
         Row: {
+          ability_budget: number
           code: string
           color: string
           drop_weight: number
@@ -1046,6 +1047,7 @@ export type Database = {
           rank: number
         }
         Insert: {
+          ability_budget: number
           code: string
           color: string
           drop_weight: number
@@ -1054,6 +1056,7 @@ export type Database = {
           rank: number
         }
         Update: {
+          ability_budget?: number
           code?: string
           color?: string
           drop_weight?: number

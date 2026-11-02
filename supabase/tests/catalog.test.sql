@@ -20,11 +20,20 @@ begin
   ) = '{"delta": 43, "gamma": 32, "beta": 20, "alfa": 11, "omega": 8}'::jsonb,
     'unexpected rarity distribution';
 
-  -- Same ability budget for every card of a rarity (the rarest have the fewest points).
+  -- Rarer cards have more ability points: every card has exactly the budget of its rarity.
+  assert (
+    select jsonb_object_agg(code, ability_budget) from public.rarity_definitions
+  ) = '{"delta": 54, "gamma": 55, "beta": 57, "alfa": 58, "omega": 61}'::jsonb,
+    'unexpected ability budgets';
+
   assert not exists (
-    select 1 from public.card_definitions d
-    where (select sum(s.value::integer) from jsonb_each_text(d.stats) as s) <> case d.rarity_code
-      when 'delta' then 54 when 'gamma' then 54 when 'beta' then 53 when 'alfa' then 52 when 'omega' then 51 end
+    select 1 from public.rarity_definitions lower_r join public.rarity_definitions higher_r on higher_r.rank > lower_r.rank
+    where higher_r.ability_budget <= lower_r.ability_budget
+  ), 'a rarity does not have more ability points than the rarities below it';
+
+  assert not exists (
+    select 1 from public.card_definitions d join public.rarity_definitions r on r.code = d.rarity_code
+    where (select sum(s.value::integer) from jsonb_each_text(d.stats) as s) <> r.ability_budget
   ), 'a card has the wrong ability budget';
 
   -- Delta cards have no power, every rarer card has one.
@@ -93,6 +102,14 @@ begin
     raise exception 'ASSERT: power params without a power were accepted';
   exception when raise_exception then
     if sqlerrm like 'ASSERT:%' then raise; end if;
+  end;
+
+  begin
+    insert into public.card_definitions (code, name, faction, rarity_code, stats, power_code, power_params)
+    values ('TEST_P5', 'Omega da Delta', 'heroes', 'omega', v_stats, 'underdog', '{"bonus": 3}');
+    raise exception 'ASSERT: an Omega with the ability total of a Delta was accepted';
+  exception when raise_exception then
+    if sqlerrm like 'ASSERT:%' or sqlerrm not like '%budget%' then raise; end if;
   end;
 
   begin

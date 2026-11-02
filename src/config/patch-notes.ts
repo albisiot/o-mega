@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "2 novembre 2026",
     changes: [
+      "Più rara vuol dire più forte: Gamma, Beta, Alfa e Omega hanno più punti nelle abilità, e ogni rarità supera quella sotto (Delta 54, Gamma 55, Beta 57, Alfa 58, Omega 61). Le Delta non cambiano e i punti deboli dei personaggi restano uguali.",
       "Arriva la Storia: missioni contro gli avversari di Nuova Megara, con squadre e Minacce preparate. Il primo capitolo, Il porto, ha 5 missioni: la prima vittoria di ognuna dà monete, e battere il boss ti fa ottenere la carta Vetrix.",
       "Altri quattro stili di variante, ciascuno su 5 personaggi: Classico, fumetto colorato; Retrò, copertina anni '80; Olio, pittura a spatola; Animato, cartone lucido.",
       "Nel dettaglio di una carta, Guarda il disegno lo mostra intero e a tutto schermo, anche per le varianti.",

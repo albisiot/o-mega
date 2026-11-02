@@ -1,7 +1,8 @@
 // Single source of balance values (SPEC §4-§8). All numbers are provisional.
 // The authoritative copy lives in the `game_config` table: server-side logic
 // reads it from there, and this file must stay in sync with it.
-// Rarity drop weights are not here: they belong to `rarity_definitions`.
+// Per-rarity values (drop weights, ability budgets, duplicate coins) are not
+// here: they belong to `rarity_definitions`.
 
 export const balance = {
   time: {
@@ -12,8 +13,7 @@ export const balance = {
   cards: {
     abilityMin: 0,
     abilityMax: 10,
-    /** Target sum of the 12 abilities for every card, whatever its rarity. */
-    abilityBudget: 54,
+    /** Allowed deviation from the ability budget of the card's rarity (rarer cards have more points). */
     abilityBudgetTolerance: 3,
   },
 

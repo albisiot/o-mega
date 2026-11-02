@@ -89,11 +89,17 @@ Ogni personaggio ha **12 abilità** con valori da **0 a 10**, raggruppate in 4 f
 
 Nel codice le abilità sono un elenco configurabile (codice, nome, famiglia): rinominarle non deve richiedere modifiche alla logica.
 
-**Principio di bilanciamento: rarità ≠ potenza.**
-- Tutte le carte hanno un **budget di abilità simile**: indicativamente **54 punti totali** (media 4,5 per abilità), con una tolleranza di ±3 tra rarità.
+**Principio di bilanciamento: più rara, più forte.**
+- Ogni rarità ha il suo **budget di abilità**, che cresce con il rango (`rarity_definitions.ability_budget`, tolleranza ±3 in `game_config`). Ogni carta ha esattamente il budget della sua rarità:
+
+| Rarità | Delta | Gamma | Beta | Alfa | Omega |
+|---|---|---|---|---|---|
+| Punti totali | 54 | 55 | 57 | 58 | 61 |
+
 - I profili variano tra **specialisti** (pochi valori 9-10, molti 0-2) e **generalisti** (valori medi diffusi). Il sistema delle Minacce (§5.4) rende utili entrambi: gli specialisti dominano le Minacce di livello basso, i generalisti quelle di livello alto.
-- Le carte rare non sono più forti ma più **caratteristiche**: profili più estremi e un Potere (§4.4).
-- Una squadra di carte Delta ben scelta deve poter battere una squadra di Omega.
+- Le carte rare sono anche più **caratteristiche**: profili più estremi e un Potere (§4.4). I valori 0 e 1 di ogni personaggio non crescono con la rarità: i punti in più vanno alle altre abilità, in proporzione, fino a 10.
+- **Budget tarati per simulazione** sul catalogo reale (Difficile contro Difficile, con i modificatori): una squadra di ogni rarità batte una squadra della rarità sotto circa il 63% delle volte (Gamma su Delta 63%, Beta su Gamma 63%, Alfa su Beta 69%, Omega su Alfa 59%). Il salto da Beta ad Alfa basta a pochi punti perché i poteri distintivi di Alfa (Sabotatore, Veggente) valgono più di quelli di Omega; con i vecchi budget (54/54/53/52/51) Omega perdeva contro Alfa (44%).
+- Una squadra di Delta ben scelta può ancora battere una squadra di Omega, ma raramente: circa 1 volta su 9.
 
 ### 4.4 Poteri (passivi)
 
@@ -177,7 +183,7 @@ Ogni Minaccia ha un **livello da 1 a 6**, che corrisponde al **numero di abilit�
 | Territorio ostile | +3 a una fazione, -2 a un'altra, sorteggiate | Le squadre con più fazioni |
 | Sottovalutati | Delta +3, Alfa e Omega -3 | Le carte comuni |
 
-Il punteggio non scende sotto 0 e lo spareggio sul valore più alto usa i valori normali. Da simulazione sul catalogo a 104 personaggi (Difficile contro Difficile), una squadra di Alfa e Omega contro una di Delta passa dal 77% al 70% di vittorie: il vantaggio delle carte rare resta. I valori sono in `balance.ts` e `game_config`.
+Il punteggio non scende sotto 0 e lo spareggio sul valore più alto usa i valori normali. Da simulazione sul catalogo a 114 personaggi con i budget per rarità (§4.3), Difficile contro Difficile, una squadra di Alfa e Omega contro una di Delta passa dal 92% all'89% di vittorie: il vantaggio delle carte rare resta. I valori sono in `balance.ts` e `game_config`.
 - **Composizione dei livelli in una partita:** il server sceglie i 5 livelli in modo che la partita sia varia. Default: almeno una Minaccia di livello 1-2, almeno una di livello 5-6, somma dei livelli tra 14 e 20, ordine casuale. I parametri sono in configurazione.
 
 **Intento di design:** sapendo solo i livelli, il giocatore decide se tenere lo specialista per la Minaccia di livello 1 (dove conta un solo valore altissimo) e il generalista per quella di livello 6 (dove contano tanti valori discreti), senza però sapere quali abilità usciranno né chi schiererà l'avversario.
@@ -220,7 +226,7 @@ Il giocatore può sfidare un bot scegliendo la difficoltà. Le partite contro bo
 | **Super Pro** | Simulazione Monte Carlo: per ogni scelta possibile simula molte volte il resto della partita, estraendo Minacce plausibili dal catalogo e squadre avversarie plausibili (coerenti con i personaggi già visti), e gioca la mossa con la probabilità di vittoria più alta. |
 
 - Il bot costruisce la propria squadra in modo coerente con la difficoltà. Facile e Medio: squadra casuale. Difficile: 5 personaggi a caso tra il 40% più forte del catalogo. Super Pro: tra il 15% più forte. La forza si stima dai valori, perché i picchi vincono i round e i valori piatti quasi mai (somma dei quadrati, più il Sabotatore).
-- Le simulazioni mostrano che, con le sole informazioni concesse, giocare meglio conta poco: Difficile e Super Pro battevano Medio poco più della metà delle volte a parità di squadra, e anche chi conoscesse in anticipo Minacce e squadra avversaria vincerebbe il 75%. La difficoltà quindi cresce soprattutto con la squadra. Contro un giocatore che manda sempre la carta col punteggio più alto e ha una squadra casuale, i bot vincono: Facile 27%, Medio 50%, Difficile 63%, Super Pro 69%.
+- Le simulazioni mostrano che, con le sole informazioni concesse, giocare meglio conta poco: Difficile e Super Pro battevano Medio poco più della metà delle volte a parità di squadra, e anche chi conoscesse in anticipo Minacce e squadra avversaria vincerebbe il 75%. La difficoltà quindi cresce soprattutto con la squadra. Contro un giocatore che manda sempre la carta col punteggio più alto e ha una squadra casuale, i bot vincono: Facile 28%, Medio 50%, Difficile 67%, Super Pro 85%. Con i budget per rarità (§4.3) il 15% più forte è quasi tutto Alfa e Omega, quindi Super Pro è salito da circa il 70%.
 - **In Conquista** (§6.5) il bot gioca al livello sorteggiato ma con una squadra casuale, come Medio: una squadra più forte costerebbe carte ai giocatori.
 - Le partite scelte contro un bot sono sempre **Amichevoli**: nessuna conquista di carte. L'unica eccezione è la Conquista dopo l'attesa (§6.5).
 - Ricompense in monete contro bot: da definire con l'economia (§8).
@@ -251,7 +257,7 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 | Veggente | Dopo averlo giocato, il giocatore vede tutte le Minacce successive |
 | Gli altri | Come in partita, contando la Minaccia come round: Ultimo baluardo vale dalla 4ª o 5ª all'ultima |
 
-**Soglie:** simulate sul catalogo reale. Con tutta la collezione a disposizione, invece di 8 personaggi, chi ha molte carte supera quasi sempre tutte le Minacce; con la squadra limitata contano di più le scelte. In simulazione lo starter set supera in media 4,3 Minacce e una squadra ben costruita 5,8, con 8 su 8 raro (circa 5%).
+**Soglie:** simulate sul catalogo reale. Con tutta la collezione a disposizione, invece di 8 personaggi, chi ha molte carte supera quasi sempre tutte le Minacce; con la squadra limitata contano di più le scelte. In simulazione lo starter set supera in media 4,3 Minacce e una squadra ben costruita 5,8, con 8 su 8 raro (circa 5%). Misure fatte prima dei budget per rarità (§4.3): lo starter set (tutto Delta) non cambia, le squadre con carte rare ora superano qualche Minaccia in più.
 
 ### 5.11 Storia
 
@@ -273,7 +279,7 @@ Capitoli di missioni da giocare da soli contro gli avversari di Nuova Megara. **
 | 4. La notte delle campane | I Figli dell'Ultima | Difficile | 1·2·3·4·5 | 60 monete |
 | 5. Il caveau della Compagnia | Vetrix e la Compagnia Lete (2 Alfa) | Super Pro | 1·2·3·4·6 | 80 monete e la carta Vetrix (Alfa) |
 
-Squadre e Minacce sono tarate con la simulazione. La prima Minaccia di ogni missione è a tema, le altre sono scelte perché un giocatore con una squadra casuale che manda sempre la carta col punteggio più alto vinca circa l'81%, 57%, 55%, 50% e 34% delle volte. Minacce tutte "a tema", cioè quelle in cui gli avversari sono più forti, rendevano anche la prima missione quasi impossibile (circa 20%).
+Squadre e Minacce sono tarate con la simulazione. La prima Minaccia di ogni missione è a tema, le altre sono scelte perché un giocatore con una squadra casuale che manda sempre la carta col punteggio più alto vinca circa l'81%, 57%, 55%, 50% e 34% delle volte. Con i budget per rarità (§4.3) la squadra casuale è più forte e le percentuali diventano circa 87%, 73%, 66%, 52% e 33%: le missioni 2 e 3, con avversari quasi tutti Delta e Gamma, sono più facili di prima. Minacce tutte "a tema", cioè quelle in cui gli avversari sono più forti, rendevano anche la prima missione quasi impossibile (circa 20%).
 
 ## 6. Conquista delle carte
 
