@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "2 novembre 2026",
     changes: [
+      "Altri quattro stili di variante, ciascuno su 5 personaggi: Classico, fumetto colorato; Retrò, copertina anni '80; Olio, pittura a spatola; Animato, cartone lucido.",
       "Nel dettaglio di una carta, Guarda il disegno lo mostra intero e a tutto schermo, anche per le varianti.",
       "Tre nuovi stili di variante, ciascuno su 5 personaggi: Cinema, dipinto e realistico; Pastello, morbido e sognante; Oro, a fumetto e scintillante.",
       "10 nuovi personaggi dal compendio THE FRACTURE, da trovare nei pacchetti: da Maroon, il tecnico alieno dimenticato, a Perpetuum, che regge il campo magnetico seduto sul suo trono di rame.",
