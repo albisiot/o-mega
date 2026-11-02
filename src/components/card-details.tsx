@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ArtViewerButton } from "@/components/art-viewer";
 import { CardView, Silhouette } from "@/components/card-view";
 import { convertDuplicates, type CatalogCard, type OwnedSummary } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
@@ -119,10 +120,10 @@ export function VariantsPanel({ card, owned }: { card: CatalogCard; owned: Owned
     <section className="flex w-full max-w-sm flex-col items-center gap-3">
       <h2 className="section-title self-start">Varianti</h2>
       {found.map((variant) => (
-        <CardView
-          key={variant.style}
-          card={{ ...card, art_url: variant.art_url, variant: { name: variant.name } }}
-        />
+        <div key={variant.style} className="flex w-full flex-col items-center gap-2">
+          <CardView card={{ ...card, art_url: variant.art_url, variant: { name: variant.name } }} />
+          <ArtViewerButton artUrl={variant.art_url} name={`${card.name} · ${variant.name}`} label={`Guarda il disegno ${variant.name}`} />
+        </div>
       ))}
       {missing > 0 && (
         <p className="self-start text-sm font-semibold text-muted">
