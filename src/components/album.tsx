@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CardArt, Silhouette, VariantTag } from "@/components/card-view";
+import { clearAlbumScroll, saveAlbumScroll, savedAlbumScroll } from "@/lib/album-scroll";
 import { cardEffects } from "@/lib/card-effects";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import {
@@ -55,6 +56,18 @@ export function Album({
   const [seenBefore] = useState(loadSeenCards);
 
   useEffect(() => saveSeenCards([...owned.keys()]), [owned]);
+
+  // Back from a card: the same place, also when the page was reloaded meanwhile.
+  useEffect(() => {
+    const y = savedAlbumScroll();
+    if (y === null) return;
+    // A frame later, so it runs after the router's own scroll.
+    const frame = requestAnimationFrame(() => {
+      window.scrollTo(0, y);
+      clearAlbumScroll();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   function update(change: Partial<Filters>) {
     const next = { ...filters, ...change };
@@ -275,6 +288,7 @@ function AlbumTile({
   return (
     <Link
       href={`/carta/?id=${card.id}`}
+      onClick={saveAlbumScroll}
       className="relative flex flex-col rounded-[7px] p-1"
       style={{ background: owned ? rarityFrame(card.rarity) : "var(--panel-raised)" }}
     >

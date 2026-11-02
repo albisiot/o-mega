@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { CopiesPanel, MissingCard, VariantsPanel } from "@/components/card-details";
@@ -18,6 +18,7 @@ import {
   type CatalogCard,
   type OwnedSummary,
 } from "@/lib/collection";
+import { savedAlbumScroll } from "@/lib/album-scroll";
 import { describeServerError } from "@/lib/errors";
 
 // /carta/?id=<definition id>: query string, see CLAUDE.md (static export).
@@ -42,6 +43,7 @@ function seenCard(id: string | null): Loaded | null {
 
 function CardPageContent() {
   const id = useSearchParams().get("id");
+  const router = useRouter();
   const { session } = useRequireSignedIn();
   const [loaded, setLoaded] = useState<Loaded | null>(() => seenCard(id));
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +74,17 @@ function CardPageContent() {
   return (
     <div className="flex flex-1 flex-col">
       <header className="flex items-center justify-between px-4 py-2">
-        <Link href="/collezione" className="flex min-h-11 items-center text-sm font-bold">
+        <Link
+          href="/collezione"
+          onClick={(event) => {
+            // Opened from the album: going back returns to the same place in it.
+            if (savedAlbumScroll() !== null && window.history.length > 1) {
+              event.preventDefault();
+              router.back();
+            }
+          }}
+          className="flex min-h-11 items-center text-sm font-bold"
+        >
           ← Collezione
         </Link>
         <span className="text-sm font-bold text-muted">N. {card.code.replace(/^\D+/, "")}</span>
