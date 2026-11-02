@@ -9,18 +9,23 @@ import type { Character, MatchResult, MatchRules, MatchState, RoundRecord, Side,
 
 export type BotMatchCatalog = BotKnowledge;
 
-/** Threats of the match and the bot's team. */
+/**
+ * Threats of the match and the bot's team. `teamDifficulty` builds the team as
+ * another difficulty would: in Conquest the bot plays at its level, but with a
+ * plain team, since a stronger one would cost players their cards.
+ */
 export function planBotMatch(params: {
   rules: MatchRules;
   catalog: BotMatchCatalog;
   difficulty: BotDifficulty;
+  teamDifficulty?: BotDifficulty;
   rng: Rng;
 }): { threats: Threat[]; botTeam: Character[] } {
-  const { rules, catalog, difficulty, rng } = params;
+  const { rules, catalog, difficulty, teamDifficulty = difficulty, rng } = params;
   const levels = drawThreatLevels(rng, rules);
   return {
     threats: pickThreats(rng, catalog.threatCatalog, levels),
-    botTeam: buildBotTeam(difficulty, catalog.characters, rules.teamSize, rng),
+    botTeam: buildBotTeam(teamDifficulty, catalog.characters, rules.teamSize, rng),
   };
 }
 

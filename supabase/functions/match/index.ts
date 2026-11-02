@@ -405,7 +405,7 @@ async function joinQueue(userId: string, body: Record<string, unknown>) {
 
   // Nobody yet: the database decides whether the wait is over and a bot steps in.
   const difficulty = pickOne(rng, DIFFICULTIES);
-  const plan = planBotMatch({ rules: loaded.rules, catalog: loaded.catalog, difficulty, rng });
+  const plan = planBotMatch({ rules: loaded.rules, catalog: loaded.catalog, difficulty, teamDifficulty: "medium", rng });
   const bot = await admin.rpc("match_create_conquest_bot", {
     p_user: userId,
     p_difficulty: difficulty,

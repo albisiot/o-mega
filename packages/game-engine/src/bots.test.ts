@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { botView, buildBotTeam, chooseBotPlay, computeAbilityMeans, type BotView } from "./bots.ts";
+import { botView, buildBotTeam, characterStrength, chooseBotPlay, computeAbilityMeans, type BotView } from "./bots.ts";
 import { mulberry32 } from "./rng.ts";
 import { ABILITIES, character, FAMILIES, newState, threat, threatCatalog } from "./test-fixtures.ts";
 import type { MatchState, Threat } from "./types.ts";
@@ -207,7 +207,7 @@ describe("bots and the new powers", () => {
 describe("buildBotTeam", () => {
   const catalog = Array.from({ length: 30 }, (_, i) =>
     i % 3 === 0
-      ? character(`s${i}`, { [ABILITIES[i % 12]]: 10, [ABILITIES[(i + 1) % 12]]: 9 }, null, 3)
+      ? character(`s${i}`, { [ABILITIES[i % 12]]: 10, [ABILITIES[(i + 1) % 12]]: 10, [ABILITIES[(i + 2) % 12]]: 10 }, null, 2)
       : character(`g${i}`, {}, null, 4 + (i % 2)),
   );
 
@@ -219,10 +219,39 @@ describe("buildBotTeam", () => {
     }
   });
 
-  it("gives the hard bot both specialists and generalists", () => {
-    const team = buildBotTeam("hard", catalog, 5, mulberry32(11));
-    expect(team.filter((c) => c.id.startsWith("s")).length).toBe(3);
-    expect(team.filter((c) => c.id.startsWith("g")).length).toBe(2);
+  it("builds the stronger difficulties from the strongest characters", () => {
+    // 10 peaked characters out of 30: Super Pro draws only from them, Hard mostly.
+    for (let seed = 0; seed < 20; seed++) {
+      expect(buildBotTeam("super_pro", catalog, 5, mulberry32(seed)).every((c) => c.id.startsWith("s"))).toBe(true);
+    }
+    const peaked = Array.from({ length: 50 }, (_, seed) =>
+      buildBotTeam("hard", catalog, 5, mulberry32(seed)).filter((c) => c.id.startsWith("s")).length,
+    ).reduce((sum, n) => sum + n, 0);
+    expect(peaked / 50).toBeGreaterThan(3);
+  });
+
+  it("still varies the strong teams", () => {
+    const teams = new Set(
+      Array.from({ length: 10 }, (_, seed) =>
+        buildBotTeam("super_pro", catalog, 5, mulberry32(seed)).map((c) => c.id).sort().join(),
+      ),
+    );
+    expect(teams.size).toBeGreaterThan(5);
+  });
+});
+
+describe("characterStrength", () => {
+  it("prefers peaks to flat values with the same total", () => {
+    expect(characterStrength(character("peaks", { FOR: 10, VEL: 10 }, null, 4))).toBeGreaterThan(
+      characterStrength(character("flat", {}, null, 4 + 12 / 12)),
+    );
+  });
+
+  it("counts Sabotatore", () => {
+    const plain = character("p");
+    expect(characterStrength(character("s", {}, { code: "sabotage", params: { malus: 1 } }))).toBe(
+      characterStrength(plain) + 40,
+    );
   });
 });
 

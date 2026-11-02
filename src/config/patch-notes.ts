@@ -4,6 +4,7 @@ export const PATCH_NOTES = [
     date: "2 novembre 2026",
     changes: [
       "Le Minacce si fanno imprevedibili: in ogni partita una o due hanno un modificatore che cambia la carta da mandare. Colpo mirato, Anello debole, Territorio ostile e Sottovalutati si scoprono insieme alla Minaccia. L'Emergenza resta senza.",
+      "Bot più forti: Difficile e Super Pro scendono in campo con i personaggi migliori del catalogo. Facile e Medio non cambiano, e in Conquista i bot tengono squadre normali.",
     ],
   },
   {

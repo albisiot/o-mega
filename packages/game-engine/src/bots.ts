@@ -311,10 +311,24 @@ function planHardPlay(view: BotView, rng: Rng): string {
   return characters[bestForCurrent].id;
 }
 
-function spread(character: Character): number {
-  const values = Object.values(character.stats);
-  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
-  return Math.sqrt(values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length);
+/**
+ * Share of the strongest characters Hard and Super Pro build their teams from.
+ * With the same play, such teams win about 62% (Hard) and 65% (Super Pro) of
+ * the matches against random teams (simulation on the 104-character catalog).
+ */
+const STRONG_TEAM_SHARE: Partial<Record<BotDifficulty, number>> = { hard: 0.4, super_pro: 0.15 };
+
+/** What one point of Sabotatore malus is worth in characterStrength. */
+const SABOTAGE_STRENGTH = 40;
+
+/**
+ * How strong a character is in a match, estimated without playing: peaks win
+ * rounds, flat values rarely do, so the sum of squared values. It ranks the
+ * characters like simulated matches do (correlation 0.84); rarity much less (0.37).
+ */
+export function characterStrength(character: Character): number {
+  const peaks = Object.values(character.stats).reduce((sum, value) => sum + value * value, 0);
+  return peaks + abilityMalusFrom(character) * SABOTAGE_STRENGTH;
 }
 
 /** The bot's team: distinct characters from the catalog (SPEC §5.9). */
@@ -326,28 +340,10 @@ export function buildBotTeam(
 ): Character[] {
   const distinct = [...new Map(catalog.map((character) => [character.definitionId, character])).values()];
   if (distinct.length < size) throw new Error("Not enough characters for a bot team");
-  if (difficulty !== "hard" && difficulty !== "super_pro") return shuffle(rng, distinct).slice(0, size);
+  const share = STRONG_TEAM_SHARE[difficulty];
+  if (share === undefined) return shuffle(rng, distinct).slice(0, size);
 
-  // Hard and Super Pro: specialists that cover different peaks, plus a couple of generalists.
-  const bySpread = [...distinct].sort((x, y) => spread(y) - spread(x));
-  const third = Math.max(size, Math.floor(bySpread.length / 3));
-  const specialists = bySpread.slice(0, third);
-  const generalists = bySpread.slice(-third).reverse();
-  const specialistCount = Math.ceil(size * 0.6);
-
-  const team: Character[] = [];
-  const coverage = (candidate: Character) =>
-    Object.keys(candidate.stats).reduce(
-      (sum, ability) => sum + Math.max(candidate.stats[ability], ...team.map((c) => c.stats[ability] ?? 0)),
-      0,
-    );
-  while (team.length < specialistCount) {
-    const options = specialists.filter((c) => !team.includes(c)).sort((x, y) => coverage(y) - coverage(x));
-    team.push(pickOne(rng, options.slice(0, 3)));
-  }
-  while (team.length < size) {
-    const options = generalists.filter((c) => !team.includes(c) && !team.some((t) => t.definitionId === c.definitionId));
-    team.push(pickOne(rng, options.slice(0, 4)));
-  }
-  return shuffle(rng, team);
+  // Hard and Super Pro: random picks among the strongest, so their teams still vary.
+  const strongest = [...distinct].sort((x, y) => characterStrength(y) - characterStrength(x));
+  return shuffle(rng, strongest.slice(0, Math.max(size * 2, Math.round(strongest.length * share)))).slice(0, size);
 }

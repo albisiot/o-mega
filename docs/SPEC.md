@@ -218,7 +218,9 @@ Il giocatore può sfidare un bot scegliendo la difficoltà. Le partite contro bo
 | **Difficile** | Valuta anche le Minacce future: tiene da parte gli specialisti per i livelli bassi e i generalisti per quelli alti, e non spreca un personaggio forte su un round già perso. |
 | **Super Pro** | Simulazione Monte Carlo: per ogni scelta possibile simula molte volte il resto della partita, estraendo Minacce plausibili dal catalogo e squadre avversarie plausibili (coerenti con i personaggi già visti), e gioca la mossa con la probabilità di vittoria più alta. |
 
-- Il bot costruisce la propria squadra in modo coerente con la difficoltà (es. Facile con squadre casuali, Super Pro con squadre equilibrate).
+- Il bot costruisce la propria squadra in modo coerente con la difficoltà. Facile e Medio: squadra casuale. Difficile: 5 personaggi a caso tra il 40% più forte del catalogo. Super Pro: tra il 15% più forte. La forza si stima dai valori, perché i picchi vincono i round e i valori piatti quasi mai (somma dei quadrati, più il Sabotatore).
+- Le simulazioni mostrano che, con le sole informazioni concesse, giocare meglio conta poco: Difficile e Super Pro battevano Medio poco più della metà delle volte a parità di squadra, e anche chi conoscesse in anticipo Minacce e squadra avversaria vincerebbe il 75%. La difficoltà quindi cresce soprattutto con la squadra. Contro un giocatore che manda sempre la carta col punteggio più alto e ha una squadra casuale, i bot vincono: Facile 27%, Medio 50%, Difficile 63%, Super Pro 69%.
+- **In Conquista** (§6.5) il bot gioca al livello sorteggiato ma con una squadra casuale, come Medio: una squadra più forte costerebbe carte ai giocatori.
 - Le partite scelte contro un bot sono sempre **Amichevoli**: nessuna conquista di carte. L'unica eccezione è la Conquista dopo l'attesa (§6.5).
 - Ricompense in monete contro bot: da definire con l'economia (§8).
 - In futuro il matchmaking potrà inserire bot quando mancano avversari umani: in quel caso la difficoltà sarà scelta dal sistema in base al livello del giocatore.
