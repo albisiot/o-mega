@@ -15,6 +15,11 @@ do $$
 begin
   assert (select count(*) from public.card_variants where style = 'neon') = 20, 'neon series should have 20 variants';
   assert (select count(*) from public.card_variants where style = 'epic') = 10, 'epic series should have 10 variants';
+  assert (
+    select jsonb_object_agg(style, n) from (
+      select style, count(*) as n from public.card_variants where style in ('cinema', 'pastel', 'gold') group by style
+    ) s
+  ) = '{"cinema": 5, "pastel": 5, "gold": 5}'::jsonb, 'cinema, pastel and gold series should have 5 variants each';
   assert not exists (
     select 1 from public.card_variants v
     join public.card_definitions d on d.id = v.definition_id
@@ -68,7 +73,7 @@ begin
       where d.code = v_card ->> 'code'
     ) then
       v_seen := v_seen + 1;
-      assert v_card -> 'variant' ->> 'name' in ('Neon', 'Epica'), 'variant missing from the pack payload';
+      assert v_card -> 'variant' ->> 'name' in (select style_name from public.card_variants), 'variant missing from the pack payload';
       assert v_card ->> 'art_url' = '/cards/variants/' || (v_card ->> 'code') || '-' || (v_card -> 'variant' ->> 'style') || '.webp',
         'variant art missing';
     else
