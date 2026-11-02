@@ -57,13 +57,13 @@ begin
   assert not exists (select 1 from public.level_unlocks where user_id = v_a), 'unlocked too early';
   assert public.match_state_payload(v_match, 'a') -> 'level_unlocks' = '[]'::jsonb, 'empty unlocks in the state';
 
-  -- Reaching level 3 grants Nico Icaro, once, bound to the account and logged.
+  -- Reaching level 3 grants Nadir (P061), once, bound to the account and logged.
   update public.profiles set xp = 290 where id = v_a;
   v_match := public.match_create_bot(v_a, 'easy', v_team, v_bot, v_threats);
   perform public.finish_match(v_match, 'a', 'completed');
   assert (select level from public.profiles where id = v_a) = 3, 'level 3 not reached';
   v_state := public.match_state_payload(v_match, 'a');
-  assert v_state -> 'level_unlocks' = '[{"name": "Nico Icaro", "level": 3}]'::jsonb,
+  assert v_state -> 'level_unlocks' = '[{"name": "Nadir", "level": 3}]'::jsonb,
     format('state %s', v_state -> 'level_unlocks');
   assert (
     select count(*) = 1 and bool_and(is_starter) and bool_and(acquired_via = 'level_unlock')
@@ -98,7 +98,7 @@ begin
   assert not exists (
     select 1 from public.level_unlocks u join public.card_definitions d on d.id = u.definition_id
     where u.user_id = v_a and d.code = 'P078'
-  ), 'Stella Nova unlocks at level 10';
+  ), 'Novissima (P078) unlocks at level 10';
 end $$;
 
 set local role authenticated;
