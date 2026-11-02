@@ -20,6 +20,7 @@ describe("cardEffects", () => {
     expect(cardEffects(card(5, "P080"), "lg")).toContain("aura");
     expect(cardEffects(card(5, "P092"), "lg")).toContain("aura");
     expect(cardEffects(card(5, "P104"), "lg")).toContain("glitch");
+    expect(cardEffects(card(5, "P114"), "lg")).toContain("bolts");
   });
 
   it("keeps small cards calm", () => {

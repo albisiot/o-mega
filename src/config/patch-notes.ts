@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "2 novembre 2026",
     changes: [
+      "10 nuovi personaggi dal compendio THE FRACTURE, da trovare nei pacchetti: da Maroon, il tecnico alieno dimenticato, a Perpetuum, che regge il campo magnetico seduto sul suo trono di rame.",
       "Nuove varianti Epica: 10 personaggi hanno un disegno a fumetto luminoso, da trovare nei pacchetti come le Neon.",
       "89 personaggi cambiano nome e prendono un nome in codice: Marta Scudo ora è Bulwark, Max Cargo è Gantry, Vox Mille è Multitude. Disegni, valori e poteri restano uguali.",
       "Le Minacce si fanno imprevedibili: in ogni partita una o due hanno un modificatore che cambia la carta da mandare. Colpo mirato, Anello debole, Territorio ostile e Sottovalutati si scoprono insieme alla Minaccia. L'Emergenza resta senza.",

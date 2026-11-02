@@ -257,6 +257,23 @@ Da P093 a P104: l'Ora Zero non ha aperto solo gli scavi. Dallo strappo arriva ch
 | P103 | Alfa, Neutrali | **Sibilla:** intelligenza artificiale cresciuta nel tempio oracolare, vede cosa succederà. | FOR 0, VEL 0 |
 | P104 | Omega, Cattivi | **Aion:** quello che resta del tempo dopo la fine, arrivato dallo strappo. | FOR 0 |
 
+### Dal compendio
+
+Da P105 a P114: dieci schede prese dal compendio *THE FRACTURE* (`THE_FRACTURE_Compendio_v4.1.xlsx`) e portate a Nuova Megara. Dal compendio vengono nome in codice, aspetto, colori, potere e frase, che diventa il testo di colore. Le dodici statistiche del compendio sono riportate in scala sui valori della carta: Tenuta Mentale diventa Volontà, Controllo diventa Percezione, Agilità diventa Furtività e la Potenza Anomala va a Energia, Magia o Psiche secondo il tipo di potere. Il livello di potere del compendio decide la rarità (Ω-I Delta, Ω-II Gamma, Ω-III Beta, Ω-IV Alfa, Ω-V Omega). Nel compendio molti vengono da altre Terre: qui sono arrivati dallo strappo dell'Ora Zero. Si trovano tutti nei pacchetti.
+
+| Carta | Scheda | Rarità e fazione | Personaggio | Il difetto nei valori |
+|---|---|---|---|---|
+| P105 | TF-256 | Delta, Eroi | **Maroon:** tecnico alieno lasciato indietro dalla sua flotta, ripara qualunque macchina toccandola. | MAG 0 |
+| P106 | TF-066 | Delta, Neutrali | **Futures:** esattore del porto ed ex pugile, per novanta secondi ha di nuovo ventidue anni. | MAG 0, PSI 0 |
+| P107 | TF-657 | Delta, Cattivi | **Procura:** gestore di un motel, imita voce e firma di chi ascolta abbastanza a lungo. | MAG 0 |
+| P108 | TF-057 | Gamma, Cattivi | **Semaphore:** dirigente della Compagnia Lete, i suoi specchi ti fanno credere tue le sue idee. | FOR 1, MAG 1 |
+| P109 | TF-447 | Gamma, Eroi | **Parallasse:** ufficiale scientifico alieno, prende su di sé la paura degli altri e la sente il giorno dopo. | FOR 1, COM 1 |
+| P110 | TF-141 | Gamma, Neutrali | **Cursor:** atleta e corriera, sulle linee antiche della città corre più veloce di un treno. | PSI 0 |
+| P111 | TF-054 | Beta, Cattivi | **Antiphon:** eresiarca dei Figli dell'Ultima, ripete al contrario le formule e le ritorce contro chi le ha dette. | ENE 0, FOR 1 |
+| P112 | TF-293 | Beta, Eroi | **Plinth:** colonna vivente più antica della città, regge i crolli finché i soccorsi finiscono. | TEC 0, VEL 1 |
+| P113 | TF-353 | Alfa, Neutrali | **Harrow:** mietitrebbia senza guidatore venerata come un dio dei campi fuori città. | FUR 0, VEL 1 |
+| P114 | TF-387 | Omega, Eroi | **Perpetuum:** regge da solo il campo magnetico sotto la centrale, seduto sul suo trono di rame. | VEL 0, FUR 0 |
+
 ## 6. Minacce
 
 Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richiede Forza e Tecnologia. Molti nomi attuali funzionano già e vanno solo ambientati a Nuova Megara. Il testo di colore può usare il tono di un bollettino del sismografo.
