@@ -19,7 +19,9 @@ export default function MatchPage() {
 }
 
 function MatchPageContent() {
-  const id = useSearchParams().get("id");
+  const params = useSearchParams();
+  const id = params.get("id");
+  const story = params.get("storia") === "1";
   const { session } = useRequireSignedIn();
   const [view, setView] = useState<MatchView | null>(() => (id ? cachedMatchView(id) : null));
   const [error, setError] = useState<string | null>(null);
@@ -50,5 +52,5 @@ function MatchPageContent() {
     );
   }
   if (!view) return <LoadingScreen label="Caricamento della partita…" />;
-  return <MatchScreen key={view.id} initial={view} />;
+  return <MatchScreen key={view.id} initial={view} story={story} />;
 }

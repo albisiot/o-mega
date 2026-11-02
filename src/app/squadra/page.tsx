@@ -10,6 +10,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { TeamPicker } from "@/components/team-picker";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
+import { startStoryMission, storyMatchHref } from "@/lib/story";
 import {
   createLobby,
   DIFFICULTY_LABELS,
@@ -31,6 +32,7 @@ const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
 // /squadra/?mode=conquest                       (Conquest, random opponent)
 // /squadra/?mode=lobby                          (create a friend code)
 // /squadra/?mode=join&code=ABC234               (join a friend)
+// /squadra/?story=C1M1                          (a story mission)
 export default function TeamPage() {
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -57,9 +59,12 @@ type Mode =
   | { kind: "queue" }
   | { kind: "conquest" }
   | { kind: "lobby" }
-  | { kind: "join"; code: string };
+  | { kind: "join"; code: string }
+  | { kind: "story"; mission: string };
 
 function readMode(params: URLSearchParams): Mode {
+  const story = params.get("story");
+  if (story) return { kind: "story", mission: story };
   const mode = params.get("mode");
   if (mode === "queue" || mode === "lobby" || mode === "conquest") return { kind: mode };
   if (mode === "join") return { kind: "join", code: (params.get("code") ?? "").toUpperCase() };
@@ -76,6 +81,7 @@ const COPY: Record<Mode["kind"], { subtitle: (mode: Mode) => string; start: (mod
   conquest: { subtitle: () => "Conquista: le carte in palio si possono perdere", start: () => "Cerca un avversario" },
   lobby: { subtitle: () => "Amichevole con un amico", start: () => "Crea il codice" },
   join: { subtitle: (mode) => `Entri con il codice ${(mode as { code: string }).code}`, start: () => "Entra nella partita" },
+  story: { subtitle: () => "Missione della Storia", start: () => "Inizia la missione" },
 };
 
 function TeamPageContent() {
@@ -116,6 +122,11 @@ function TeamPageContent() {
           router.push(`/partita/?id=${view.id}`);
           break;
         }
+        case "story": {
+          const view = await startStoryMission(mode.mission, cardInstanceIds);
+          router.push(storyMatchHref(view.id));
+          break;
+        }
         case "join": {
           const view = await joinLobby(mode.code, cardInstanceIds);
           router.push(`/partita/?id=${view.id}`);
@@ -142,7 +153,10 @@ function TeamPageContent() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader backHref="/gioca" backLabel="Gioca" title="La tua squadra" subtitle={COPY[mode.kind].subtitle(mode)} />
+      <PageHeader
+        backHref={mode.kind === "story" ? "/storia" : "/gioca"}
+        backLabel={mode.kind === "story" ? "Storia" : "Gioca"}
+        title="La tua squadra" subtitle={COPY[mode.kind].subtitle(mode)} />
 
       <main className="flex flex-1 flex-col gap-3 px-3">
         <p className="text-sm font-medium text-muted">

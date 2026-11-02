@@ -7,6 +7,7 @@ import { Silhouette } from "@/components/card-view";
 import { ComicBurst } from "@/components/comic-parts";
 import { ConquestPanel } from "@/components/conquest-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { StoryRewardPanel } from "@/components/story-reward";
 import { ThreatDiorama } from "@/components/threat-diorama";
 import { balance } from "@/config/balance";
 import { withBasePath } from "@/lib/base-path";
@@ -45,7 +46,7 @@ function lastResolvedRound(view: MatchView): number {
 }
 
 /** A match (against a bot or a player) from the first threat to the final result. */
-export function MatchScreen({ initial }: { initial: MatchView }) {
+export function MatchScreen({ initial, story = false }: { initial: MatchView; story?: boolean }) {
   const [view, setView] = useState(initial);
   // Server time minus device time: countdowns follow the server clock.
   const [offset, setOffset] = useState(() => Date.parse(initial.server_now) - Date.now());
@@ -266,7 +267,7 @@ export function MatchScreen({ initial }: { initial: MatchView }) {
           finished={view.status === "finished"}
         />
       ) : view.status === "finished" ? (
-        <MatchResult view={view} serverNow={now + offset} onUpdate={apply} abilities={abilities} />
+        <MatchResult view={view} serverNow={now + offset} onUpdate={apply} abilities={abilities} story={story} />
       ) : current ? (
         <ChoosePhase
           view={view}
@@ -712,11 +713,13 @@ function MatchResult({
   serverNow,
   onUpdate,
   abilities,
+  story,
 }: {
   view: MatchView;
   serverNow: number;
   onUpdate: (next: MatchView) => void;
   abilities: AbilityInfo[];
+  story: boolean;
 }) {
   const title =
     view.end_reason === "forfeit" && view.result === "loss"
@@ -769,6 +772,8 @@ function MatchResult({
         ))}
       </section>
 
+      {story && <StoryRewardPanel matchId={view.id} />}
+
       {view.conquest && (
         <ConquestPanel
           matchId={view.id}
@@ -803,12 +808,18 @@ function MatchResult({
       </ol>
 
       <div className="flex flex-col gap-2">
-        <Link
-          href={view.mode === "bot" ? `/squadra/?difficulty=${view.bot_difficulty ?? "easy"}` : "/gioca"}
-          className="btn btn-primary"
-        >
-          {view.mode === "bot" ? "Rivincita" : "Gioca ancora"}
-        </Link>
+        {story ? (
+          <Link href="/storia" className="btn btn-primary">
+            Torna alla Storia
+          </Link>
+        ) : (
+          <Link
+            href={view.mode === "bot" ? `/squadra/?difficulty=${view.bot_difficulty ?? "easy"}` : "/gioca"}
+            className="btn btn-primary"
+          >
+            {view.mode === "bot" ? "Rivincita" : "Gioca ancora"}
+          </Link>
+        )}
         <Link href="/" className="btn btn-ghost">
           Torna alla home
         </Link>

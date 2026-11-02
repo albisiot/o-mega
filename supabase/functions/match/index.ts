@@ -65,6 +65,8 @@ const CLIENT_ERRORS = new Set([
   "emergency_already_played",
   "emergency_not_started",
   "invalid_emergency_squad",
+  "story_mission_not_found",
+  "story_mission_locked",
 ]);
 
 class GameError extends Error {}
@@ -371,6 +373,16 @@ async function playBotMatchRound(userId: string, body: Record<string, unknown>) 
   return stateFor(matchId, "a");
 }
 
+/** A story mission: the database builds the match from the mission, then it plays as any bot match. */
+async function startStoryMission(userId: string, body: Record<string, unknown>) {
+  if (typeof body.mission !== "string") throw new GameError("invalid_request");
+  const cards = cardIds(body.card_instance_ids);
+  const matchId = check(
+    await admin.rpc("story_create_match", { p_user: userId, p_mission_code: body.mission, p_card_instance_ids: cards }),
+  ) as string;
+  return stateFor(matchId, "a");
+}
+
 // ---------------------------------------------------------------------------
 // Matches between players
 // ---------------------------------------------------------------------------
@@ -560,6 +572,8 @@ Deno.serve(async (req) => {
         return json(await startBotMatch(userId, body));
       case "play":
         return json(await playBotMatchRound(userId, body));
+      case "story_start":
+        return json(await startStoryMission(userId, body));
       case "join_lobby":
         return json(await joinLobby(userId, body));
       case "queue":

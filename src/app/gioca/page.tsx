@@ -26,6 +26,7 @@ const BOTS = [
 ] as const;
 
 const MODES = [
+  { key: "story", label: "Storia", detail: "Missioni a Nuova Megara, con carte in premio", color: "rays-gold" },
   { key: "bot", label: "Contro bot", detail: "Allenati senza rischiare nulla", color: "bg-comic-cyan" },
   { key: "friendly", label: "Amichevole online", detail: "Sfida un giocatore o un amico", color: "bg-comic-yellow" },
   { key: "conquest", label: "Conquista", detail: "Chi vince prende una carta", color: "bg-comic-magenta" },
@@ -33,6 +34,26 @@ const MODES = [
 ] as const;
 
 type ModeKey = (typeof MODES)[number]["key"];
+
+function StorySection({ disabled }: { disabled: boolean }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm font-medium text-muted">
+        Missioni contro gli avversari di Nuova Megara, con squadre e Minacce preparate. La prima vittoria di ogni
+        missione dà monete, e il boss di fine capitolo una carta.
+      </p>
+      <Link href={disabled ? "#" : "/storia"} aria-disabled={disabled} className={`row-link ${disabled ? "pointer-events-none opacity-40" : ""}`}>
+        <div>
+          <p className="font-display text-xl uppercase">Apri la Storia</p>
+          <p className="text-sm font-medium text-muted">Capitolo 1: Il porto</p>
+        </div>
+        <span className="font-display text-2xl text-comic-yellow" aria-hidden>
+          →
+        </span>
+      </Link>
+    </div>
+  );
+}
 
 function BotSection({ disabled }: { disabled: boolean }) {
   return (
@@ -281,6 +302,7 @@ export default function PlayPage() {
                   {open ? "↓" : "→"}
                 </span>
               </button>
+              {open && mode.key === "story" && <StorySection disabled={blocked} />}
               {open && mode.key === "bot" && <BotSection disabled={blocked} />}
               {open && mode.key === "friendly" && <FriendlySection disabled={blocked} />}
               {open && mode.key === "conquest" && <ConquestSection status={conquest} disabled={blocked} />}

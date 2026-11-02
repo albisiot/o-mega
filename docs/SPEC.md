@@ -253,6 +253,28 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 
 **Soglie:** simulate sul catalogo reale. Con tutta la collezione a disposizione, invece di 8 personaggi, chi ha molte carte supera quasi sempre tutte le Minacce; con la squadra limitata contano di più le scelte. In simulazione lo starter set supera in media 4,3 Minacce e una squadra ben costruita 5,8, con 8 su 8 raro (circa 5%).
 
+### 5.11 Storia
+
+Capitoli di missioni da giocare da soli contro gli avversari di Nuova Megara. **Testi segnaposto** finché l'universo non è definito.
+
+- **Missione:** una partita contro un bot con squadra, 5 Minacce e modificatori scelti a mano (`story_missions`), non sorteggiati. Il giocatore vede in anticipo solo i livelli, come in ogni partita. Le regole sono quelle di §5.
+- **Ordine:** la prima missione è aperta; ogni altra si apre completando quella prima, anche tra un capitolo e l'altro.
+- **Premi solo alla prima vittoria**, pagati dal database nella stessa transazione che chiude la partita: monete a ogni missione, e una carta per il boss di fine capitolo. Le missioni si possono rigiocare senza premi. Sconfitte e abbandoni non pagano.
+- **Carte premio:** copie normali (`acquired_via = 'story'`), conquistabili come quelle dei pacchetti. Mai Omega.
+- Esperienza e statistiche come una partita contro bot. Le squadre avversarie e le Minacce restano segrete: il client legge solo `get_story` e `get_story_reward`.
+
+**Capitolo 1, Il porto:**
+
+| Missione | Avversario | Bot | Livelli | Premio |
+|---|---|---|---|---|
+| 1. Primo incarico | La banda di Foundling (5 Delta) | Facile | 1·2·3·4·5 | 30 monete |
+| 2. Il pugile di vetro | Gli esattori di Cullet | Medio | 1·2·3·4·5 | 40 monete |
+| 3. Blackout | Gli ingegneri di Blackbody | Medio | 1·2·3·4·5 | 50 monete |
+| 4. La notte delle campane | I Figli dell'Ultima | Difficile | 1·2·3·4·5 | 60 monete |
+| 5. Il caveau della Compagnia | Vetrix e la Compagnia Lete (2 Alfa) | Super Pro | 1·2·3·4·6 | 80 monete e la carta Vetrix (Alfa) |
+
+Squadre e Minacce sono tarate con la simulazione. La prima Minaccia di ogni missione è a tema, le altre sono scelte perché un giocatore con una squadra casuale che manda sempre la carta col punteggio più alto vinca circa l'81%, 57%, 55%, 50% e 34% delle volte. Minacce tutte "a tema", cioè quelle in cui gli avversari sono più forti, rendevano anche la prima missione quasi impossibile (circa 20%).
+
 ## 6. Conquista delle carte
 
 ### 6.1 Regola base

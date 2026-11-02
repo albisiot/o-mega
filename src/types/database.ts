@@ -1413,6 +1413,8 @@ export type Database = {
       next_reset_at: { Args: { p_at?: string }; Returns: string }
       redeem_bonus_code: { Args: { p_code: string }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
+      get_story: { Args: never; Returns: Json }
+      get_story_reward: { Args: { p_match_id: string }; Returns: Json }
       admin_list_bonus_codes: { Args: never; Returns: Json }
       admin_create_bonus_code: {
         Args: {
