@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState, type MouseEvent } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { ArtViewerButton } from "@/components/art-viewer";
 import { CopiesPanel, MissingCard, VariantsPanel } from "@/components/card-details";
@@ -67,31 +67,38 @@ function CardPageContent() {
     };
   }, [id, session, reloadKey]);
 
+  const close = useCallback(() => {
+    // Opened from the album: going back returns to the same place in it.
+    if (savedAlbumScroll() !== null && window.history.length > 1) router.back();
+    else router.push("/collezione");
+  }, [router]);
+
+  // Escape closes the card too, unless a dialog (drawing, 3D) is open: Escape closes that first.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !document.querySelector("dialog[open]")) close();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [close]);
+
+  // A tap on the empty page around the card closes it; the card, buttons and panels do not.
+  const closeOnBackground = (event: MouseEvent) => {
+    if (event.target === event.currentTarget) close();
+  };
+
   if (error) return <Message text={error} />;
   if (!loaded) return <LoadingScreen />;
   if (!loaded.card) return <Message text="Carta non trovata." />;
 
   const { card, owned, abilities } = loaded;
   return (
-    <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between px-4 py-2">
-        <Link
-          href="/collezione"
-          onClick={(event) => {
-            // Opened from the album: going back returns to the same place in it.
-            if (savedAlbumScroll() !== null && window.history.length > 1) {
-              event.preventDefault();
-              router.back();
-            }
-          }}
-          className="flex min-h-11 items-center text-sm font-bold"
-        >
-          ← Collezione
-        </Link>
+    <div className="flex flex-1 flex-col" onClick={closeOnBackground}>
+      <header className="flex min-h-15 items-center justify-end px-4 py-2" onClick={closeOnBackground}>
         <span className="text-sm font-bold text-muted">N. {card.code.replace(/^\D+/, "")}</span>
       </header>
 
-      <main className="flex flex-1 flex-col items-center gap-5 px-4 pb-6">
+      <main className="flex flex-1 flex-col items-center gap-5 px-4 pb-6" onClick={closeOnBackground}>
         {owned ? (
           <>
             <div className="rounded-xl shadow-[6px_6px_0_var(--comic-magenta)]">
