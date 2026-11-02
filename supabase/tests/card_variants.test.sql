@@ -13,7 +13,8 @@ insert into auth.users (id, aud, role, email, raw_user_meta_data, created_at, up
 -- The catalog: no variant on a level card, which no pack can give.
 do $$
 begin
-  assert (select count(*) from public.card_variants) = 20, 'first series should have 20 variants';
+  assert (select count(*) from public.card_variants where style = 'neon') = 20, 'neon series should have 20 variants';
+  assert (select count(*) from public.card_variants where style = 'epic') = 10, 'epic series should have 10 variants';
   assert not exists (
     select 1 from public.card_variants v
     join public.card_definitions d on d.id = v.definition_id
@@ -22,7 +23,8 @@ begin
   assert (select variant_count from public.card_catalog where code = 'P072') = 1, 'catalog count of a variant';
   assert (select variant_count from public.card_catalog where code = 'P002') = 0, 'catalog count without a variant';
   assert (public.get_pack_odds() ->> 'variant_chance_percent')::integer = 10, 'published chance';
-  assert (public.get_pack_odds() ->> 'characters_with_variants')::integer = 20, 'published characters';
+  assert (public.get_pack_odds() ->> 'characters_with_variants')::integer =
+    (select count(distinct definition_id) from public.card_variants where is_active), 'published characters';
 end $$;
 
 -- The draw follows the configured chance, and only for characters with a variant.
@@ -66,8 +68,9 @@ begin
       where d.code = v_card ->> 'code'
     ) then
       v_seen := v_seen + 1;
-      assert v_card -> 'variant' ->> 'name' = 'Neon', 'variant missing from the pack payload';
-      assert v_card ->> 'art_url' = '/cards/variants/' || (v_card ->> 'code') || '-neon.webp', 'variant art missing';
+      assert v_card -> 'variant' ->> 'name' in ('Neon', 'Epica'), 'variant missing from the pack payload';
+      assert v_card ->> 'art_url' = '/cards/variants/' || (v_card ->> 'code') || '-' || (v_card -> 'variant' ->> 'style') || '.webp',
+        'variant art missing';
     else
       assert v_card -> 'variant' = 'null'::jsonb, 'a base card came with a variant';
       assert v_card ->> 'art_url' not like '/cards/variants/%', 'a base card showed a variant art';

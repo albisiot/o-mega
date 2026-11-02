@@ -133,6 +133,7 @@ Le carte base restano nello stile attuale. Una **variante** è la stessa carta c
 - **In squadra** viene schierata la copia base, a meno che il giocatore non scelga la variante.
 - **In Conquista** una variante schierata è in palio come ogni altra carta non starter e passa al vincitore con il suo disegno. Contro un bot, se presa, esce dal gioco.
 - **Non si converte** in monete e non rende doppione l'unica copia base.
+- **Stili:** Neon (20 personaggi) ed Epica (10 personaggi). Se un personaggio ha più varianti, il server ne sceglie una a caso.
 
 ## 5. Il minigioco — Regolamento
 
