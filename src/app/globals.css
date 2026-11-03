@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* A window too short for a screen's full layout (Safari on a small phone): it gets compact.
+   A home-screen app is never this short: its window is the whole screen, 667px and up. */
+@custom-variant short (@media (max-height: 639px));
+
+/* Inside a size container (a panel sized by the room left) whose content box came out low. */
+@custom-variant cramped (@container (max-height: 167px));
+
 :root {
   --background: #0b0b0f;
   --foreground: #fff8e7;
@@ -171,6 +178,14 @@ html.screen-locked body {
     flex-direction: column;
     height: calc(100dvh - var(--safe-top));
     margin-bottom: calc(-1 * env(safe-area-inset-bottom));
+    overflow: hidden;
+  }
+
+  /* The home fits the phone the same way, above the bottom bar and its spacer. */
+  .home-shell {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - var(--safe-top) - 4rem - env(safe-area-inset-bottom));
     overflow: hidden;
   }
 
