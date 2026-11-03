@@ -24,6 +24,11 @@ import {
 import { formatCountdown, useNow } from "@/lib/use-now";
 
 const SEARCH_LINE_SECONDS = 4;
+// The server ignores a queue entry not refreshed for queueStaleSeconds:
+// refreshing at 2/5 of that leaves room for one lost request.
+const QUEUE_REFRESH_MS = (balance.matchmaking.queueStaleSeconds * 1000 * 2) / 5;
+// A friend code's host learns of the match from the broadcast; this is the fallback.
+const LOBBY_CHECK_MS = 12_000;
 
 // /attesa/?mode=queue | /attesa/?mode=lobby
 export default function WaitingPage() {
@@ -52,29 +57,34 @@ function WaitingContent() {
   );
 }
 
-/** Goes to the match as soon as the server says it started. */
-function useMatchStart(userId: string, onStart: (matchId: string) => void) {
+/** Goes to the player's running match, if there is one. */
+function goToActiveMatch(onStart: (matchId: string) => void) {
+  fetchActiveMatch()
+    .then((match) => {
+      if (match) onStart(match.id);
+    })
+    .catch(() => {});
+}
+
+/**
+ * Goes to the match as soon as the server says it started. `checkEveryMs`
+ * also asks the server now and then, in case a broadcast is missed.
+ */
+function useMatchStart(userId: string, onStart: (matchId: string) => void, checkEveryMs: number | null) {
   const onStartRef = useRef(onStart);
   useEffect(() => {
     onStartRef.current = onStart;
   });
   useEffect(() => {
-    const check = () =>
-      fetchActiveMatch()
-        .then((match) => {
-          if (match) onStartRef.current(match.id);
-        })
-        .catch(() => {});
     const unsubscribe = subscribeToUpdates(`player:${userId}`, (payload) => {
       if (payload.kind === "match_started" && typeof payload.match_id === "string") onStartRef.current(payload.match_id);
     });
-    // Fallback in case a broadcast is missed.
-    const timer = setInterval(check, 4000);
+    const timer = checkEveryMs === null ? undefined : setInterval(() => goToActiveMatch(onStartRef.current), checkEveryMs);
     return () => {
       unsubscribe();
       clearInterval(timer);
     };
-  }, [userId]);
+  }, [userId, checkEveryMs]);
 }
 
 function QueueWait({ userId, queueMode }: { userId: string; queueMode: QueueMode }) {
@@ -90,30 +100,43 @@ function QueueWait({ userId, queueMode }: { userId: string; queueMode: QueueMode
     matched.current = true;
     router.replace(`/partita/?id=${matchId}`);
   };
-  useMatchStart(userId, goToMatch);
+  // Joining tells us about the match itself: no other check is needed.
+  useMatchStart(userId, goToMatch, null);
 
-  // Joining again refreshes our place in the queue and retries the pairing.
+  // Joining again refreshes our place in the queue and retries the pairing,
+  // once the previous attempt has answered. In Conquest one attempt also comes
+  // right after the wait for a bot is over.
   useEffect(() => {
     if (!team) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let stopped = false;
+    const botAt =
+      queueMode === "conquest" ? startedAt + (balance.matchmaking.conquestBotAfterSeconds + 1) * 1000 : Infinity;
+    const next = () => {
+      if (stopped || matched.current) return;
+      const untilBot = botAt - Date.now();
+      timer = setTimeout(attempt, untilBot > 0 ? Math.min(QUEUE_REFRESH_MS, untilBot) : QUEUE_REFRESH_MS);
+    };
     const attempt = () =>
       joinQueue(team, queueMode)
         .then((result) => {
           if (result.matched && result.match_id) goToMatch(result.match_id);
         })
         .catch((cause: unknown) => {
-          if (cause instanceof Error && cause.message === "match_already_active") return; // useMatchStart takes over
-          setError(describeServerError(cause));
-        });
-    const first = setTimeout(attempt, 0);
-    const timer = setInterval(attempt, 5000);
+          // Paired by someone else meanwhile.
+          if (cause instanceof Error && cause.message === "match_already_active") goToActiveMatch(goToMatch);
+          else setError(describeServerError(cause));
+        })
+        .finally(next);
+    timer = setTimeout(attempt, 0);
     return () => {
-      clearTimeout(first);
-      clearInterval(timer);
+      stopped = true;
+      clearTimeout(timer);
       if (!matched.current) leaveQueue().catch(() => {});
     };
     // goToMatch only reads refs and the router.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [team, queueMode]);
+  }, [team, queueMode, startedAt]);
 
   if (!team) {
     return (
@@ -181,11 +204,15 @@ function LobbyWait({ userId }: { userId: string }) {
   const started = useRef(false);
   const now = useNow(1000);
 
-  useMatchStart(userId, (matchId) => {
-    if (started.current) return;
-    started.current = true;
-    router.replace(`/partita/?id=${matchId}`);
-  });
+  useMatchStart(
+    userId,
+    (matchId) => {
+      if (started.current) return;
+      started.current = true;
+      router.replace(`/partita/?id=${matchId}`);
+    },
+    LOBBY_CHECK_MS,
+  );
 
   useEffect(() => {
     let cancelled = false;

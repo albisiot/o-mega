@@ -1,6 +1,7 @@
 -- Integration test for the functions rewritten so that the game holds up with
 -- many players: the cards in use read once per collection, the daily loss
--- count from an index. Service-only functions are called as the database
+-- count from an index, every duplicate converted at once, the matchmaking
+-- lock taken only to pair. Service-only functions are called as the database
 -- owner, as the Edge Function would with service_role. Runs inside a
 -- rolled-back transaction:
 --   npm run test:db
@@ -9,9 +10,15 @@ begin;
 
 insert into auth.users (id, aud, role, email, raw_user_meta_data, created_at, updated_at) values
   ('00000000-0000-4000-8000-0000000000e1', 'authenticated', 'authenticated', 'scale-a@example.test', '{"full_name": "Scala A"}', now(), now()),
-  ('00000000-0000-4000-8000-0000000000e2', 'authenticated', 'authenticated', 'scale-b@example.test', '{"full_name": "Scala B"}', now(), now());
+  ('00000000-0000-4000-8000-0000000000e2', 'authenticated', 'authenticated', 'scale-b@example.test', '{"full_name": "Scala B"}', now(), now()),
+  ('00000000-0000-4000-8000-0000000000e3', 'authenticated', 'authenticated', 'scale-c@example.test', '{"full_name": "Scala C"}', now(), now()),
+  ('00000000-0000-4000-8000-0000000000e4', 'authenticated', 'authenticated', 'scale-d@example.test', '{"full_name": "Scala D"}', now(), now());
 
 set local role authenticated;
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000e4", "role": "authenticated"}', true);
+select public.bootstrap_player();
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000e3", "role": "authenticated"}', true);
+select public.bootstrap_player();
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000e2", "role": "authenticated"}', true);
 select public.bootstrap_player();
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000e1", "role": "authenticated"}', true);
@@ -19,7 +26,8 @@ select public.bootstrap_player();
 reset role;
 
 update public.profiles set conquest_unlocked = true
-where id in ('00000000-0000-4000-8000-0000000000e1', '00000000-0000-4000-8000-0000000000e2');
+where id in ('00000000-0000-4000-8000-0000000000e1', '00000000-0000-4000-8000-0000000000e2',
+             '00000000-0000-4000-8000-0000000000e3', '00000000-0000-4000-8000-0000000000e4');
 
 create function pg_temp.give(p_user uuid, p_definition uuid) returns uuid language sql as $$
   insert into public.card_instances (definition_id, owner_id, acquired_via) values (p_definition, p_user, 'pack')
@@ -276,6 +284,89 @@ begin
   -- The locked, fielded, starter and variant copies stay.
   assert (select count(*) from public.card_instances where owner_id = v_a and definition_id = pg_temp.code('P030')) = 2,
     'P030 copies left';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Matchmaking: the lock only to pair, the Conquest bot in the same call.
+-- ---------------------------------------------------------------------------
+
+-- Whether this transaction holds the matchmaking lock (a null pid: a single-user server).
+create function pg_temp.holds_lock() returns boolean language sql as $$
+  select exists (
+    select 1 from pg_locks
+    where locktype = 'advisory' and (pid = pg_backend_pid() or pid is null)
+      and classid = ((hashtext('o-mega.matchmaking')::bigint >> 32) & 4294967295)::oid
+      and objid = (hashtext('o-mega.matchmaking')::bigint & 4294967295)::oid
+  )
+$$;
+
+do $$
+declare
+  v_c uuid := '00000000-0000-4000-8000-0000000000e3';
+  v_d uuid := '00000000-0000-4000-8000-0000000000e4';
+  v_threats uuid[] := current_setting('test.threats')::uuid[];
+  v_bot uuid[] := (select array_agg(s.id) from (
+    select id from public.card_definitions where is_active and rarity_code = 'delta' order by code limit 5) s);
+  v_waited timestamptz := now() - make_interval(secs => public.config_int('matchmaking.conquest_bot_after_seconds') + 1);
+  v_team_c uuid[];
+  v_team_d uuid[];
+  v_match uuid;
+begin
+  assert not pg_temp.holds_lock(), 'lock held before the queue';
+
+  -- Friendly: joining and refreshing with nobody waiting never takes the lock.
+  assert public.match_queue_join(v_c, 'friendly', (pg_temp.starters(v_c))[1:5], v_threats) is null, 'nobody was waiting';
+  assert public.match_queue_join(v_c, 'friendly', (pg_temp.starters(v_c))[1:5], v_threats) is null, 'refresh';
+  assert not pg_temp.holds_lock(), 'a refresh took the lock';
+  v_match := public.match_queue_join(v_d, 'friendly', (pg_temp.starters(v_d))[1:5], v_threats);
+  assert (select player_a = v_c and player_b = v_d and mode = 'friendly' from public.matches where id = v_match), 'pairing';
+  assert pg_temp.holds_lock(), 'paired without the lock';
+  perform public.finish_match(v_match, 'draw', 'forfeit');
+
+  -- Conquest: before the wait, no bot; after it, the same call starts one.
+  v_team_c := array[pg_temp.give(v_c, pg_temp.code('P025')), pg_temp.give(v_c, pg_temp.code('P026')),
+                    pg_temp.give(v_c, pg_temp.code('P027'))] || (pg_temp.starters(v_c))[1:2];
+  v_team_d := array[pg_temp.give(v_d, pg_temp.code('P025')), pg_temp.give(v_d, pg_temp.code('P026')),
+                    pg_temp.give(v_d, pg_temp.code('P027'))] || (pg_temp.starters(v_d))[1:2];
+  assert public.match_queue_join(v_c, 'conquest', v_team_c, v_threats, 'hard', v_bot) is null, 'a bot before the wait';
+  update public.matchmaking_queue set enqueued_at = v_waited where user_id = v_c;
+  assert public.match_queue_join(v_c, 'conquest', v_team_c, v_threats) is null, 'a bot without its description';
+  assert (select enqueued_at = v_waited from public.matchmaking_queue where user_id = v_c), 'the wait restarted';
+  v_match := public.match_queue_join(v_c, 'conquest', v_team_c, v_threats, 'hard', v_bot);
+  assert (select mode = 'conquest' and bot_difficulty = 'hard' and player_a = v_c and player_b is null
+          from public.matches where id = v_match), 'no bot after the wait';
+  assert (select card_instance_ids = v_team_c and definition_ids = (select array_agg(i.definition_id order by u.ord)
+            from unnest(v_team_c) with ordinality as u(id, ord) join public.card_instances i on i.id = u.id)
+          from public.match_teams where match_id = v_match and side = 'a'), 'team of the bot match';
+  assert (select definition_ids = v_bot from public.match_teams where match_id = v_match and side = 'b'), 'bot team';
+  assert not exists (select 1 from public.matchmaking_queue where user_id = v_c), 'still queued';
+  perform public.finish_match(v_match, 'draw', 'forfeit');
+
+  -- A friendly wait never turns into a Conquest bot.
+  assert public.match_queue_join(v_c, 'friendly', (pg_temp.starters(v_c))[1:5], v_threats, 'hard', v_bot) is null,
+    'friendly queue';
+  update public.matchmaking_queue set enqueued_at = v_waited where user_id = v_c;
+  assert public.match_queue_join(v_c, 'friendly', (pg_temp.starters(v_c))[1:5], v_threats, 'hard', v_bot) is null,
+    'a bot from the friendly queue';
+
+  -- A player waiting comes before the bot, even once the wait is over.
+  assert public.match_queue_join(v_c, 'conquest', v_team_c, v_threats, 'hard', v_bot) is null, 'back in the queue';
+  update public.matchmaking_queue set enqueued_at = v_waited where user_id = v_c;
+  insert into public.matchmaking_queue (user_id, mode, card_instance_ids, level, team_value)
+  values (v_d, 'conquest', v_team_d, 1, public.team_value(
+    (select array_agg(i.definition_id) from public.card_instances i where i.id = any (v_team_d))));
+  v_match := public.match_queue_join(v_c, 'conquest', v_team_c, v_threats, 'hard', v_bot);
+  assert (select mode = 'conquest' and bot_difficulty is null and player_a = v_d and player_b = v_c
+          from public.matches where id = v_match), 'the bot came before a waiting player';
+
+  -- Playing already: the client is told so, before and under the lock.
+  begin
+    perform public.match_queue_join(v_c, 'conquest', v_team_c, v_threats, 'hard', v_bot);
+    raise exception 'ASSERT: queued while playing';
+  exception when raise_exception then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    assert sqlerrm = 'match_already_active', sqlerrm;
+  end;
 end $$;
 
 rollback;

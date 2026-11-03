@@ -411,26 +411,23 @@ async function joinQueue(userId: string, body: Record<string, unknown>) {
   const cards = cardIds(body.card_instance_ids);
   const mode = body.mode === "conquest" ? "conquest" : "friendly";
   const loaded = await load();
-  const { data, error } = await admin.rpc("match_queue_join", {
-    p_user: userId,
-    p_mode: mode,
-    p_team: cards,
-    p_threat_ids: planThreats(loaded),
-  });
+  // Conquest: the bot is described on every call, and the database starts it
+  // only once the wait is over, so a refresh is a single request.
+  let args: Record<string, unknown>;
+  if (mode === "conquest") {
+    const difficulty = pickOne(rng, DIFFICULTIES);
+    const plan = planBotMatch({ rules: loaded.rules, catalog: loaded.catalog, difficulty, teamDifficulty: "medium", rng });
+    args = {
+      p_threat_ids: plan.threats.map((t) => t.id),
+      p_bot_difficulty: difficulty,
+      p_bot_definition_ids: plan.botTeam.map((c) => c.definitionId),
+    };
+  } else {
+    args = { p_threat_ids: planThreats(loaded) };
+  }
+  const { data, error } = await admin.rpc("match_queue_join", { p_user: userId, p_mode: mode, p_team: cards, ...args });
   if (error) throw new Error(error.message);
-  if (data || mode !== "conquest") return { matched: Boolean(data), match_id: data ?? null };
-
-  // Nobody yet: the database decides whether the wait is over and a bot steps in.
-  const difficulty = pickOne(rng, DIFFICULTIES);
-  const plan = planBotMatch({ rules: loaded.rules, catalog: loaded.catalog, difficulty, teamDifficulty: "medium", rng });
-  const bot = await admin.rpc("match_create_conquest_bot", {
-    p_user: userId,
-    p_difficulty: difficulty,
-    p_bot_definition_ids: plan.botTeam.map((c) => c.definitionId),
-    p_threat_ids: plan.threats.map((t) => t.id),
-  });
-  if (bot.error) throw new Error(bot.error.message);
-  return { matched: Boolean(bot.data), match_id: bot.data ?? null };
+  return { matched: Boolean(data), match_id: data ?? null };
 }
 
 /**
