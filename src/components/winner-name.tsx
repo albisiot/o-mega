@@ -52,7 +52,7 @@ export const WinnerName = memo(function WinnerName({ card, delay = 0 }: WinnerNa
 
   if (failed) {
     return (
-      <div className="flex h-[108px] items-center px-6">
+      <div className="flex h-[120px] items-center px-6">
         <CardName card={card} size="lg" as="p" className="h-14" />
       </div>
     );
@@ -69,7 +69,7 @@ export const WinnerName = memo(function WinnerName({ card, delay = 0 }: WinnerNa
       onClick={(event) => {
         if (Math.abs(event.clientX - dragStart.current) > 6) event.stopPropagation();
       }}
-      className="relative block h-[108px] w-full cursor-grab touch-pan-y"
+      className="relative block h-[120px] w-full cursor-grab touch-pan-y"
     />
   );
 });

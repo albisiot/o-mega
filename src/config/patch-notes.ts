@@ -4,8 +4,8 @@ export const PATCH_NOTES = [
     date: "3 novembre 2026",
     changes: [
       "Ogni personaggio ha il suo nome in 3D, con carattere, colori e materiale che lo ricordano: la lava di Mongibello, il vetro di Vetrix, le voci di Multitude, l'armatura vuota di Absentia. Lo vedi sulle carte, nell'album e nei pacchetti.",
-      "Quando una carta vince un round, la tua o quella dell'avversario, il suo nome si schianta al centro dello schermo in 3D, lettera per lettera, con un lampo e le scintille. Puoi girarlo con il dito. SBAM! esplode accanto al punteggio di chi vince.",
-      "Il risultato del round arriva per gradi: prima le due carte, poi i punteggi che salgono, infine il verdetto.",
+      "Quando una carta vince un round, la tua o quella dell'avversario, il suo nome si schianta al centro dello schermo in 3D, lettera per lettera, con un lampo e le scintille. Puoi girarlo con il dito.",
+      "Il risultato del round arriva per gradi: prima le due carte, poi i punteggi che salgono, poi SBAM! accanto al punteggio di chi ha vinto, infine il suo nome in 3D.",
       "Nel risultato del round il punteggio mostra solo il totale, e il potere di ogni carta compare accanto a lei con quello che ha fatto in quel round, per esempio Sfavorito +3 o Sabotatore −2 a ogni abilità rivale.",
     ],
   },

@@ -44,9 +44,10 @@ const WINNER_STYLES = {
 } as const;
 
 // The round result builds up: the two plays slide in, their scores climb from SCORES_SECONDS,
-// the verdict and the winner's 3D name land at VERDICT_SECONDS (see .animate-verdict-in).
+// SBAM! bursts next to the winning score once they stop (see .animate-burst-pop), then the
+// winner's 3D name flies in at NAME_SECONDS. SBAM! tells who won: no verdict banner.
 const SCORES_SECONDS = 0.4;
-const VERDICT_SECONDS = 1;
+const NAME_SECONDS = 1.5;
 
 function lastResolvedRound(view: MatchView): number {
   return Math.max(0, ...view.rounds.filter((r) => r.resolved).map((r) => r.round));
@@ -556,6 +557,7 @@ function RoundReveal({
 }) {
   const mine = team.find((card) => card.instance_id === round.my_play?.instance_id);
   const theirs = round.opponent_play;
+  // Read out to screen readers: on screen, SBAM! next to a score says who won.
   const banner = { me: "Round vinto!", opponent: "Round perso", none: "Round nullo" }[round.winner ?? "none"];
   const winnerCard = round.winner === "me" ? mine : round.winner === "opponent" ? theirs : null;
   const isTie = round.my_play && theirs && round.my_play.score === theirs.score;
@@ -602,8 +604,8 @@ function RoundReveal({
         />
       </section>
 
-      {/* The verdict sits on the seam between the two plays, tilted with it. It arrives once both
-          cards are in and their scores have climbed: first the plays, then who won. */}
+      {/* The winner's name sits on the seam between the two plays, tilted with it. It arrives
+          last: first the plays, then their scores, then SBAM! on the winning one. */}
       <section
         aria-label={winnerCard ? `${banner} ${winnerCard.name}` : banner}
         className="relative z-10 -my-[52px] overflow-hidden py-[26px] [clip-path:polygon(0_52px,100%_0,100%_calc(100%-52px),0_100%)]"
@@ -612,22 +614,14 @@ function RoundReveal({
           aria-hidden
           className="rays-dark animate-rays-spin absolute left-1/2 top-1/2 h-[200vmax] w-[200vmax] -translate-x-1/2 -translate-y-1/2"
         />
-        <div className="animate-verdict-in relative -rotate-[7.5deg]">
-          <p
-            className={`animate-rare-title text-sfx text-center text-[46px] uppercase leading-[48px] ${
-              round.winner === "me" ? "text-comic-yellow" : "text-foreground"
-            }`}
-            style={{ animationDelay: `${VERDICT_SECONDS}s` }}
-          >
-            {banner}
-          </p>
+        <div className="relative -rotate-[7.5deg]">
           {winnerCard ? (
-            <WinnerName key={`${round.round}-${winnerCard.code}`} card={winnerCard} delay={VERDICT_SECONDS + 0.1} />
+            <WinnerName key={`${round.round}-${winnerCard.code}`} card={winnerCard} delay={NAME_SECONDS} />
           ) : (
-            <div className="animate-burst-pop relative h-[108px]" style={{ animationDelay: `${VERDICT_SECONDS + 0.2}s` }}>
+            <div className="animate-burst-pop relative h-[120px]">
               <ComicBurst
                 fill="#ffd60a"
-                className="absolute left-1/2 top-1 h-[104px] w-[104px] -translate-x-1/2 rotate-[8deg]"
+                className="absolute left-1/2 top-2 h-[104px] w-[104px] -translate-x-1/2 rotate-[8deg]"
                 textClassName="text-[30px] tracking-wide"
               >
                 PARI!
