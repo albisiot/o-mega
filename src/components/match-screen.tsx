@@ -6,7 +6,8 @@ import { carriedBonusAfter, scorePlay, type AbilityFamilies, type ThreatModifier
 import { Silhouette } from "@/components/card-view";
 import { ComicBurst } from "@/components/comic-parts";
 import { ConquestPanel } from "@/components/conquest-panel";
-import { PlayerAvatar } from "@/components/player-avatar";
+import { HandCard } from "@/components/hand-card";
+import { InfoTip } from "@/components/info-tip";
 import { StoryRewardPanel } from "@/components/story-reward";
 import { ThreatDiorama } from "@/components/threat-diorama";
 import { WinnerName } from "@/components/winner-name";
@@ -192,78 +193,99 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
   const opponentName = view.opponent?.username ?? "Bot";
   const absentMs =
     !isBot && isActive && view.opponent?.last_seen_at ? now + offset - Date.parse(view.opponent.last_seen_at) : 0;
+  // While choosing, the whole match fits the screen: nothing scrolls.
+  const choosing = !shownRound && view.status !== "finished" && Boolean(current);
 
   return (
-    <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between gap-3 px-3 py-2">
-        <div className="flex min-w-0 items-center gap-2.5">
-          {view.opponent && <PlayerAvatar username={view.opponent.username} avatarUrl={view.opponent.avatar_url} />}
-          <div className="min-w-0">
-            <p className="truncate text-xs font-semibold text-muted">
-              {view.mode === "bot"
-                ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}`
-                : `${view.mode === "conquest" ? "Conquista" : "Amichevole"} · ${
-                    isBot ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}` : opponentName
-                  }`}
-            </p>
-            <p className="flex items-baseline gap-1.5 text-sm font-bold">
-              Tu
-              <span className="shrink-0 font-display text-2xl text-comic-yellow">
-                {view.rounds_won.me} – {view.rounds_won.opponent}
-              </span>
-              <span className="truncate">{isBot ? "Bot" : opponentName}</span>
-            </p>
-          </div>
+    <div className={choosing ? "game-shell" : "flex flex-1 flex-col"}>
+      {/* One strip: the score, the threat levels (with what each round revealed) and the way out. */}
+      <header className="relative flex items-center gap-1.5 px-3 py-1">
+        <div className="min-w-0 max-w-[6.5rem] shrink-0 leading-none">
+          <p className="truncate text-[10px] font-bold text-muted">
+            {view.mode === "bot"
+              ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}`
+              : `${view.mode === "conquest" ? "Conquista" : "Amichevole"} · ${
+                  isBot ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}` : opponentName
+                }`}
+          </p>
+          <p className="mt-0.5 flex items-baseline gap-1 text-[11px] font-extrabold uppercase">
+            Tu
+            <span className="shrink-0 font-display text-2xl leading-6 text-comic-yellow">
+              {view.rounds_won.me}–{view.rounds_won.opponent}
+            </span>
+            <span className="truncate">{isBot ? "Bot" : opponentName}</span>
+          </p>
         </div>
+        <LevelTrack view={view} opponentName={opponentName} abilities={abilities} />
         {view.status === "active" ? (
-          <button type="button" onClick={() => setConfirmForfeit(true)} className="btn btn-ghost shrink-0 px-3">
-            Abbandona
+          <button
+            type="button"
+            onClick={() => setConfirmForfeit(true)}
+            aria-label="Abbandona"
+            className="btn btn-ghost h-11 w-11 shrink-0 px-0"
+          >
+            <svg viewBox="0 0 18 20" className="h-5 w-[18px]" aria-hidden>
+              <path d="M2 1v18" stroke="currentColor" strokeWidth={2.5} />
+              <path d="M3 2h12l-3 4 3 4H3z" fill="currentColor" />
+            </svg>
           </button>
         ) : (
-          <Link href="/" className="flex min-h-11 items-center text-sm font-bold">
-            Home
+          <Link href="/" aria-label="Home" className="btn btn-ghost h-11 w-11 shrink-0 px-0">
+            <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.4} aria-hidden>
+              <path d="M2 10 10 3l8 7M5 8v9h4v-5h2v5h4V8" strokeLinejoin="round" />
+            </svg>
           </Link>
+        )}
+        {absentMs > 20_000 && (
+          <div className="absolute inset-x-3 top-full z-20 mt-1 flex items-center justify-between gap-3 bg-comic-yellow p-2.5 text-black shadow-[4px_4px_0_#000]">
+            <p className="text-xs font-semibold">
+              {opponentName} non risponde. Allo scadere del tempo il server sceglie al posto suo.
+            </p>
+            {absentMs > balance.match.reconnectGraceSeconds * 1000 && (
+              <button
+                type="button"
+                onClick={claim}
+                disabled={busy}
+                className="btn shrink-0 bg-black px-3 text-sm font-bold text-comic-yellow"
+              >
+                Rivendica la vittoria
+              </button>
+            )}
+          </div>
         )}
       </header>
 
-      <LevelTrack view={view} />
-
       {confirmForfeit && (
-        <div className="mx-3 mt-3 flex flex-col gap-2 bg-comic-magenta p-3 text-black">
-          <p className="text-sm font-bold">Abbandonare conta come sconfitta, senza monete.</p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={forfeit}
-              disabled={busy}
-              className="btn flex-1 bg-black font-display text-lg uppercase tracking-wide text-comic-yellow"
-            >
-              Abbandona
-            </button>
-            <button type="button" onClick={() => setConfirmForfeit(false)} className="btn btn-ghost">
-              Continua a giocare
-            </button>
+        <>
+          <button
+            type="button"
+            aria-label="Continua a giocare"
+            onClick={() => setConfirmForfeit(false)}
+            className="fixed inset-0 z-30 bg-black/60"
+          />
+          <div
+            role="alertdialog"
+            aria-label="Abbandonare la partita?"
+            className="fixed inset-x-0 bottom-0 z-40 flex flex-col gap-2 bg-comic-magenta px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 text-black"
+          >
+            <p className="text-sm font-bold">Abbandonare conta come sconfitta, senza monete.</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={forfeit}
+                disabled={busy}
+                className="btn flex-1 bg-black font-display text-lg uppercase tracking-wide text-comic-yellow"
+              >
+                Abbandona
+              </button>
+              <button type="button" onClick={() => setConfirmForfeit(false)} className="btn btn-ghost">
+                Continua a giocare
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
-      {error && <p className="mx-3 mt-3 text-sm font-semibold text-comic-magenta">{error}</p>}
-      {absentMs > 20_000 && (
-        <div className="mx-3 mt-3 flex items-center justify-between gap-3 bg-comic-yellow p-3 text-black">
-          <p className="text-sm font-semibold">
-            {opponentName} non risponde. Allo scadere del tempo il server sceglie al posto suo.
-          </p>
-          {absentMs > balance.match.reconnectGraceSeconds * 1000 && (
-            <button
-              type="button"
-              onClick={claim}
-              disabled={busy}
-              className="btn shrink-0 bg-black px-3 text-sm font-bold text-comic-yellow"
-            >
-              Rivendica la vittoria
-            </button>
-          )}
-        </div>
-      )}
+      {error && <p className="mx-3 mt-1 text-sm font-semibold text-comic-magenta">{error}</p>}
 
       {shownRound ? (
         <RoundReveal
@@ -294,28 +316,112 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
   );
 }
 
-function LevelTrack({ view }: { view: MatchView }) {
+/**
+ * The five levels. A cell also carries what its round revealed: the card the opponent
+ * played (a thumbnail) or the threat a power lets the player foresee (an eye). A tap shows it.
+ */
+function LevelTrack({ view, opponentName, abilities }: { view: MatchView; opponentName: string; abilities: AbilityInfo[] }) {
+  // An open cell closes by itself when the match moves on (a round resolves, the match ends).
+  const phase = `${view.status}:${view.current_round}`;
+  const [opened, setOpened] = useState<{ cell: number; phase: string } | null>(null);
+  const open = opened?.phase === phase ? opened.cell : null;
+  const setOpen = (cell: number | null) => setOpened(cell === null ? null : { cell, phase });
+  const abilityName = (code: string) => abilities.find((a) => a.code === code)?.name ?? code;
+  const openRound = open === null ? null : open + 1;
+  const openPlay = openRound === null ? null : view.rounds.find((r) => r.round === openRound)?.opponent_play ?? null;
+  const openThreat = openRound === null ? null : view.foreseen_threats?.find((t) => t.round === openRound) ?? null;
+
   return (
-    <ol className="flex gap-1.5 px-3" aria-label="Livelli delle Minacce">
-      {view.threat_levels.map((level, i) => {
-        const round = view.rounds.find((r) => r.round === i + 1);
-        const isCurrent = view.status === "active" && view.current_round === i + 1;
-        const style = isCurrent
-          ? "bg-comic-yellow text-black"
-          : round?.winner
-            ? WINNER_STYLES[round.winner]
-            : "border-2 border-line text-foreground";
-        return (
-          <li
-            key={i}
-            aria-label={`Livello ${level}`}
-            className={`flex h-10 flex-1 -skew-x-8 items-center justify-center font-display text-[22px] ${style}`}
+    <>
+      <ol className="flex min-w-0 flex-1 gap-1" aria-label="Livelli delle Minacce">
+        {view.threat_levels.map((level, i) => {
+          const round = view.rounds.find((r) => r.round === i + 1);
+          const played = round?.opponent_play ?? null;
+          const foreseen = view.foreseen_threats?.find((t) => t.round === i + 1) ?? null;
+          const isCurrent = view.status === "active" && view.current_round === i + 1;
+          const style = isCurrent
+            ? "bg-comic-yellow text-black"
+            : round?.winner
+              ? WINNER_STYLES[round.winner]
+              : "border-2 border-line text-foreground";
+          const label = `Livello ${level}${played ? `, ${opponentName} ha giocato ${played.name}` : ""}${
+            foreseen ? `, Minaccia prevista: ${foreseen.name}` : ""
+          }`;
+          const cell = `relative flex h-11 w-full -skew-x-8 items-center justify-center font-display text-[21px] ${style}`;
+          const marks = (
+            <>
+              {level}
+              {played?.art_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={withBasePath(played.art_url)}
+                  alt=""
+                  className="absolute -bottom-[3px] -right-[3px] h-[22px] w-[17px] border-2 border-black object-cover object-top"
+                />
+              )}
+              {foreseen && (
+                <svg viewBox="0 0 16 10" className="absolute right-0.5 top-0.5 h-2.5 w-4" aria-hidden>
+                  <path d="M1 5c2-3 4.5-4 7-4s5 1 7 4c-2 3-4.5 4-7 4S3 8 1 5z" fill="currentColor" />
+                  <circle cx="8" cy="5" r="2" fill="var(--background)" />
+                </svg>
+              )}
+            </>
+          );
+          return (
+            <li key={i} className="min-w-0 flex-1">
+              {played || foreseen ? (
+                <button
+                  type="button"
+                  onClick={() => setOpen(open === i ? null : i)}
+                  aria-expanded={open === i}
+                  aria-label={label}
+                  className={cell}
+                >
+                  {marks}
+                </button>
+              ) : (
+                <span aria-label={label} className={cell}>
+                  {marks}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      {/* Positioned against the header strip. */}
+      {openRound !== null && (openPlay || openThreat) && (
+        <>
+          <button type="button" aria-label="Chiudi" onClick={() => setOpen(null)} className="fixed inset-0 z-20 cursor-default" />
+          <div
+            role="status"
+            className="absolute right-3 top-full z-30 mt-1 w-60 bg-foreground px-3 py-2 text-xs font-semibold text-black shadow-[4px_4px_0_#000]"
           >
-            {level}
-          </li>
-        );
-      })}
-    </ol>
+            {openPlay && (
+              <p className="border-l-4 pl-2" style={{ borderColor: openPlay.rarity.color }}>
+                <span className="block text-[11px] font-extrabold text-black/60">
+                  Round {openRound} · {opponentName} ha già giocato
+                </span>
+                <span className="font-display text-base uppercase">{openPlay.name}</span>
+              </p>
+            )}
+            {openThreat && (
+              <p className={openPlay ? "mt-2" : ""}>
+                <span className="block text-[11px] font-extrabold text-black/60">
+                  Round {openThreat.round} · Livello {openThreat.level} · Minaccia prevista
+                </span>
+                <span className="block font-display text-base uppercase">{openThreat.name}</span>
+                {openThreat.abilities.map(abilityName).join(" · ")}
+                {openThreat.modifier && (
+                  <span className="mt-0.5 block font-bold">
+                    {modifierLine(openThreat.modifier, abilityName(openThreat.abilities[0]))}
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
@@ -369,39 +475,43 @@ function ChoosePhase({
     }))
     .sort((a, b) => b.score.total - a.score.total);
   const chosen = available.find((card) => card.instance_id === selected);
-  const opponentPlayed = view.rounds.filter((r) => r.opponent_play).map((r) => ({ round: r.round, card: r.opponent_play! }));
+  const chosenScore = previews.find(({ card }) => card === chosen)?.score;
   const abilityName = (code: string) => abilities.find((a) => a.code === code);
+  const previewNote = "Il punteggio è un'anteprima: lo calcola il server quando giochi.";
 
   return (
-    <main className="flex flex-1 flex-col gap-3 px-3 pb-28 pt-3">
-      <section className="cut-bottom relative overflow-hidden bg-comic-magenta px-4 pb-6 pt-3 text-black">
+    <main className="flex min-h-0 flex-1 flex-col">
+      <section className="cut-bottom relative mx-3 mt-1 flex min-h-0 flex-1 flex-col overflow-hidden bg-comic-magenta px-4 pb-5 text-black">
         <div aria-hidden className="halftone absolute inset-0 [mask-image:linear-gradient(135deg,transparent_45%,#000_100%)]" />
+        {/* The diorama gets the room the screen has left, above the threat's name. */}
+        <div className="relative -mx-4 min-h-9 flex-1">
+          <ThreatDiorama key={round.round} name={round.threat.name} level={round.level} fill />
+        </div>
         <div className="relative">
-          <ThreatDiorama key={round.round} name={round.threat.name} level={round.level} />
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-end justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-sm font-extrabold">
+              <p className="text-xs font-extrabold">
                 Round {round.round} · Livello {round.level}
               </p>
-              <p className="mt-0.5 font-display text-[34px] uppercase leading-10">{round.threat.name}</p>
+              <p className="font-display text-[30px] uppercase leading-8">{round.threat.name}</p>
             </div>
             <p
               role="timer"
               aria-label={`${Math.min(seconds, timer)} secondi rimasti`}
-              className={`flex h-14 w-14 shrink-0 rotate-3 items-center justify-center font-display text-3xl ${
+              className={`mb-0.5 flex h-12 w-12 shrink-0 rotate-3 items-center justify-center font-display text-[28px] ${
                 seconds <= 10 ? "bg-comic-yellow text-black" : "bg-black text-comic-yellow"
               }`}
             >
               {Math.min(seconds, timer)}
             </p>
           </div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <div className="mt-1.5 flex flex-wrap gap-1">
             {round.threat.abilities.map((code, index) => {
               const ability = abilityName(code);
               return (
                 <span
                   key={code}
-                  className="bg-black px-2 py-1 text-[13px] font-extrabold"
+                  className="bg-black px-1.5 py-0.5 text-xs font-extrabold"
                   style={{ color: ability?.family.color ?? "#d8d3c5" }}
                 >
                   {ability?.name ?? code}
@@ -411,102 +521,73 @@ function ChoosePhase({
             })}
           </div>
           {round.modifier && <ModifierBanner modifier={round.modifier} firstAbility={abilityName(round.threat.abilities[0])?.name ?? round.threat.abilities[0]} />}
-          <div className="mt-2.5 h-2 bg-black" aria-hidden>
+          <div className="mt-2 h-1.5 bg-black" aria-hidden>
             <div
               className={`h-full transition-[width] duration-200 ${seconds <= 10 ? "bg-foreground" : "bg-comic-yellow"}`}
               style={{ width: `${Math.min(100, (remainingMs / 1000 / timer) * 100)}%` }}
             />
           </div>
-          {carried > 0 && <p className="mt-2 text-sm font-bold">Riscossa: +{carried} al personaggio di questo round.</p>}
+          {carried > 0 && <p className="mt-1.5 text-xs font-bold">Riscossa: +{carried} al personaggio di questo round.</p>}
           {!isBot && (
-            <p className="mt-2 text-sm font-bold">
+            <p className="mt-1.5 text-xs font-bold">
               {round.opponent_has_chosen ? `${opponentName} ha scelto.` : `${opponentName} sta scegliendo…`}
             </p>
           )}
         </div>
       </section>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="section-title">Scegli chi mandare</h2>
-        {previews.map(({ card, score }) => {
-          const isSelected = card.instance_id === selected;
-          return (
-            <button
-              key={card.instance_id}
-              type="button"
-              onClick={() => onSelect(card.instance_id)}
+      {/* The hand: the best predicted score first, as before. */}
+      <div role="group" aria-label="Scegli chi mandare" className="flex justify-center gap-1.5 px-3 pb-1.5 pt-3">
+        {previews.map(({ card, score }) => (
+          <div key={card.instance_id} className="w-[calc((100%-1.5rem)/5)]">
+            <HandCard
+              card={card}
+              score={score.total}
+              bonus={score.bonus}
+              selected={card.instance_id === selected}
               disabled={busy}
-              className={`flex items-center justify-between gap-3 border-[3px] bg-panel px-3 py-2 text-left ${
-                isSelected ? "border-comic-yellow shadow-[4px_4px_0_var(--comic-magenta)]" : "border-panel-raised"
-              }`}
-              aria-pressed={isSelected}
-            >
-              <div className="min-w-0">
-                <p className="flex items-center gap-1.5">
-                  <span
-                    className="flex h-[22px] w-[22px] shrink-0 items-center justify-center text-sm font-black text-black"
-                    style={{ background: rarityFrame(card.rarity) }}
-                  >
-                    {rarityLetter(card.rarity)}
-                  </span>
-                  <span className="truncate font-display text-xl uppercase">{card.name}</span>
-                </p>
-                <p className="text-xs font-semibold text-muted">
-                  {round.threat.abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ")}
-                </p>
-                {card.power && (
-                  <p className="truncate text-xs font-semibold" style={{ color: card.rarity.color }}>
-                    {card.power.name}: {card.power.text}
-                  </p>
-                )}
-              </div>
-              <div className="shrink-0 text-right">
-                <p className={`font-display text-4xl ${isSelected ? "text-comic-yellow" : ""}`}>{score.total}</p>
-                {score.bonus > 0 && <p className="text-xs font-bold text-comic-cyan">+{score.bonus} bonus</p>}
-                {score.bonus < 0 && <p className="text-xs font-bold text-comic-magenta">{score.bonus} malus</p>}
-              </div>
-            </button>
-          );
-        })}
-        <p className="text-xs font-medium text-faint">Il punteggio è un&apos;anteprima: lo calcola il server quando giochi.</p>
-      </section>
-
-      {view.foreseen_threats && view.foreseen_threats.length > 0 && (
-        <section className="flex flex-col gap-1.5">
-          <h2 className="section-title">Le prossime Minacce</h2>
-          <ul className="flex flex-col gap-0.5">
-            {view.foreseen_threats.map((threat) => (
-              <li key={threat.round} className="bg-panel px-3 py-2 text-sm font-semibold">
-                <span className="text-muted">Round {threat.round} · </span>
-                {threat.name}
-                <p className="text-xs font-medium text-muted">
-                  {threat.abilities.map((code) => abilityName(code)?.name ?? code).join(" · ")}
-                </p>
-                {threat.modifier && (
-                  <p className="text-xs font-bold text-comic-yellow">
-                    {modifierLine(threat.modifier, abilityName(threat.abilities[0])?.name ?? threat.abilities[0])}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {opponentPlayed.length > 0 && (
-        <section className="flex flex-col gap-1.5">
-          <h2 className="section-title">{opponentName} ha già giocato</h2>
-          <div className="flex flex-wrap gap-1.5">
-            {opponentPlayed.map(({ round: r, card }) => (
-              <span key={r} className="border-2 bg-panel px-2.5 py-1 text-xs font-bold" style={{ borderColor: card.rarity.color }}>
-                {card.name} <span className="font-medium text-muted">· round {r}</span>
-              </span>
-            ))}
+              onSelect={() => onSelect(card.instance_id)}
+            />
           </div>
-        </section>
-      )}
+        ))}
+      </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t-[3px] border-foreground bg-black px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+      {/* The chosen card's details stay above the button, at a fixed height. */}
+      <div className="border-t-[3px] border-foreground bg-black px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
+        <div className="mb-2 min-h-[74px]">
+          {chosen && chosenScore ? (
+            <>
+              <p className="flex items-center gap-1.5">
+                <span
+                  className="flex h-5 w-5 shrink-0 items-center justify-center text-xs font-black text-black"
+                  style={{ background: rarityFrame(chosen.rarity) }}
+                >
+                  {rarityLetter(chosen.rarity)}
+                </span>
+                <span className="truncate font-display text-xl uppercase leading-6">{chosen.name}</span>
+                <span className="ml-auto shrink-0 text-xs font-bold text-muted">
+                  <span className="font-display text-xl text-comic-yellow">{chosenScore.total}</span> punti
+                  {chosenScore.bonus > 0 && <span className="text-comic-cyan"> · +{chosenScore.bonus} bonus</span>}
+                  {chosenScore.bonus < 0 && <span className="text-comic-magenta"> · {chosenScore.bonus} malus</span>}
+                </span>
+                <InfoTip text={previewNote} />
+              </p>
+              <p className="mt-0.5 text-xs font-semibold text-muted">
+                {round.threat.abilities.map((code) => `${code} ${chosen.stats[code] ?? 0}`).join(" · ")}
+              </p>
+              {chosen.power && (
+                <p className="line-clamp-2 text-xs font-semibold leading-[15px]" style={{ color: chosen.rarity.color }}>
+                  {chosen.power.name}: {chosen.power.text}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="flex items-center justify-between gap-2 pt-1 text-sm font-semibold text-muted">
+              Tocca una carta per vederne abilità e potere.
+              <InfoTip text={previewNote} />
+            </p>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => chosen && onPlay(chosen.instance_id)}
@@ -531,7 +612,7 @@ function ChoosePhase({
 function ModifierBanner({ modifier, firstAbility }: { modifier: ThreatModifier; firstAbility: string }) {
   const { name, text } = describeThreatModifier(modifier, firstAbility);
   return (
-    <p className="mt-2 -skew-x-3 bg-comic-yellow px-3 py-1.5 text-sm font-bold text-black">
+    <p className="mt-1.5 -skew-x-3 bg-comic-yellow px-2.5 py-1 text-[13px] font-bold leading-4 text-black">
       <span className="font-display uppercase">{name}:</span> {text}
     </p>
   );

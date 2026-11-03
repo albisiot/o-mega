@@ -6,8 +6,17 @@ import { threatScene } from "@/lib/threat-scene";
 /**
  * The threat's 3D diorama. Purely decorative: without an environment for this
  * threat, or without WebGL, the panel simply stays as it is.
+ * With `fill` it covers its positioned parent instead of taking its own height.
  */
-export const ThreatDiorama = memo(function ThreatDiorama({ name, level }: { name: string; level: number }) {
+export const ThreatDiorama = memo(function ThreatDiorama({
+  name,
+  level,
+  fill = false,
+}: {
+  name: string;
+  level: number;
+  fill?: boolean;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [failed, setFailed] = useState(false);
   const scene = threatScene(name);
@@ -39,7 +48,9 @@ export const ThreatDiorama = memo(function ThreatDiorama({ name, level }: { name
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="relative -mx-4 mb-1 block h-[clamp(130px,24svh,200px)] w-[calc(100%+2rem)] cursor-grab touch-pan-y"
+      className={`block cursor-grab touch-pan-y ${
+        fill ? "absolute inset-0 h-full w-full" : "relative -mx-4 mb-1 h-[clamp(130px,24svh,200px)] w-[calc(100%+2rem)]"
+      }`}
     />
   );
 });

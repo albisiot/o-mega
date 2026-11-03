@@ -157,6 +157,16 @@ body {
     text-shadow: 4px 4px 0 #000;
   }
 
+  /* A screen that fits the phone without scrolling (a match while choosing). It fills the
+     body below the top safe area and runs into the bottom one, which its last bar pads. */
+  .game-shell {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - var(--safe-top));
+    margin-bottom: calc(-1 * env(safe-area-inset-bottom));
+    overflow: hidden;
+  }
+
   .cut-bottom {
     clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), 0 100%);
   }
