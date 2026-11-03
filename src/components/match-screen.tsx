@@ -20,9 +20,10 @@ import {
   DIFFICULTY_LABELS,
   fetchMatchState,
   forfeitMatch,
+  pingMatch,
+  pingShowsChange,
   playRound,
   resolvePvpRound,
-  sendHeartbeat,
   submitChoice,
   subscribeToUpdates,
   toCharacter,
@@ -52,6 +53,11 @@ const SCORES_SECONDS = 0.4;
 const NAME_SECONDS = 1.5;
 // When the 3D names start downloading after the match opens (see prefetchWinnerNames).
 const NAMES_PREFETCH_SECONDS = 2;
+// Against a player, a ping marks us present at this pace and brings the opponent's last sign
+// of life: we look absent at most twice this late, well before the 20 s absence notice.
+const PING_MS = 7_500;
+// While broadcasts cannot arrive, the whole state is read at this pace instead.
+const OFFLINE_POLL_MS = 5_000;
 
 /** Who the player faced, as the end of a match names them. */
 function rivalName(view: MatchView): string {
@@ -137,8 +143,9 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
     [apply, view.id, isBot],
   );
 
-  // Against a player: follow the server's broadcasts (with a slow poll in case
-  // one is missed) and tell the server we are still here.
+  // Against a player: follow the server's broadcasts and ping it. The ping tells
+  // the server we are still here, and shows a change a missed broadcast hid;
+  // the whole state is read only then, on a broadcast, or while none can arrive.
   const refreshing = useRef(false);
   const refresh = useCallback(async () => {
     if (refreshing.current) return;
@@ -146,25 +153,49 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
     try {
       apply(await fetchMatchState(view.id));
     } catch {
-      // The next broadcast or poll will try again.
+      // The next broadcast, ping or poll will try again.
     } finally {
       refreshing.current = false;
     }
   }, [apply, view.id]);
 
+  const latest = useRef(view);
+  useEffect(() => {
+    latest.current = view;
+  });
+
   useEffect(() => {
     if (isBot || !(isActive || conquestOpen)) return;
-    const unsubscribe = subscribeToUpdates(`match:${view.id}`, () => {
-      refresh();
-    });
-    const poll = setInterval(refresh, 5000);
-    const beat = () => sendHeartbeat(view.id).catch(() => {});
-    beat();
-    const heartbeat = setInterval(beat, 10_000);
+    let live = false;
+    const unsubscribe = subscribeToUpdates(
+      `match:${view.id}`,
+      () => {
+        refresh();
+      },
+      (nowLive) => {
+        // Listening (again): catch up on what may have changed meanwhile.
+        if (nowLive && !live) refresh();
+        live = nowLive;
+      },
+    );
+    const poll = setInterval(() => {
+      if (!live) refresh();
+    }, OFFLINE_POLL_MS);
+    const ping = () =>
+      pingMatch(view.id)
+        .then((answer) => {
+          setView((shown) =>
+            shown.opponent ? { ...shown, opponent: { ...shown.opponent, last_seen_at: answer.opponent_last_seen_at } } : shown,
+          );
+          if (pingShowsChange(latest.current, answer)) refresh();
+        })
+        .catch(() => {});
+    ping();
+    const pinger = setInterval(ping, PING_MS);
     return () => {
       unsubscribe();
       clearInterval(poll);
-      clearInterval(heartbeat);
+      clearInterval(pinger);
     };
   }, [isBot, isActive, conquestOpen, view.id, refresh]);
 

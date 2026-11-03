@@ -1380,8 +1380,11 @@ export type Database = {
         }
         Returns: string
       }
+      match_ping: { Args: { p_match_id: string }; Returns: Json }
       match_queue_join: {
         Args: {
+          p_bot_definition_ids?: string[]
+          p_bot_difficulty?: string
           p_mode: string
           p_team: string[]
           p_threat_ids: string[]

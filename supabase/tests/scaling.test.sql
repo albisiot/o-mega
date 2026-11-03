@@ -367,6 +367,95 @@ begin
     if sqlerrm like 'ASSERT:%' then raise; end if;
     assert sqlerrm = 'match_already_active', sqlerrm;
   end;
+  perform set_config('test.pvp', v_match::text, true);
+  -- D was last seen 15 seconds ago.
+  update public.match_teams set last_seen_at = now() - interval '15 seconds' where match_id = v_match and side = 'a';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- The ping of a match between players: presence, and what the full state
+-- would show about the changes a client must not miss.
+-- ---------------------------------------------------------------------------
+
+-- The ping's view of the state, from the full payload of the same side.
+create function pg_temp.ping_from_payload(p_match uuid, p_side text) returns jsonb language sql as $$
+  select jsonb_build_object(
+    'status', s ->> 'status',
+    'current_round', (s ->> 'current_round')::integer,
+    'opponent_has_chosen', coalesce((
+      select (r ->> 'opponent_has_chosen')::boolean from jsonb_array_elements(s -> 'rounds') r
+      where (r ->> 'round')::integer = (s ->> 'current_round')::integer
+    ), false),
+    'conquest_settled', case when s -> 'conquest' = 'null'::jsonb then null
+                             else ((s -> 'conquest' ->> 'resolved')::boolean
+                                   or (s -> 'conquest' ->> 'deadline_at')::timestamptz < now()) end,
+    'opponent_last_seen_at', (s -> 'opponent' ->> 'last_seen_at')::timestamptz
+  )
+  from (select public.match_state_payload(p_match, p_side) as s) x
+$$;
+
+create function pg_temp.ping_as(p_user uuid) returns jsonb language plpgsql as $$
+declare
+  v_ping jsonb;
+begin
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', p_user, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  v_ping := public.match_ping(current_setting('test.pvp')::uuid);
+  reset role;
+  return v_ping;
+end;
+$$;
+
+do $$
+declare
+  v_c uuid := '00000000-0000-4000-8000-0000000000e3';
+  v_d uuid := '00000000-0000-4000-8000-0000000000e4';
+  v_match uuid := current_setting('test.pvp')::uuid;
+  v_ping jsonb;
+  v_failed boolean;
+begin
+  -- C is side b: the ping marks C present and tells when D was last seen.
+  update public.match_teams set last_seen_at = null where match_id = v_match and side = 'b';
+  v_ping := pg_temp.ping_as(v_c);
+  assert (select last_seen_at = now() from public.match_teams where match_id = v_match and side = 'b'), 'C not marked present';
+  assert (v_ping ->> 'opponent_last_seen_at')::timestamptz = now() - interval '15 seconds', format('D last seen %s', v_ping);
+  assert (v_ping - 'server_now') = pg_temp.ping_from_payload(v_match, 'b'), format('ping %s', v_ping);
+  assert v_ping ->> 'status' = 'active' and (v_ping ->> 'current_round')::integer = 1
+    and not (v_ping ->> 'opponent_has_chosen')::boolean and v_ping -> 'conquest_settled' = 'null'::jsonb, 'fresh match';
+
+  -- D chooses: C learns that D has chosen, never what.
+  perform public.match_submit_play(v_d, v_match, 1,
+    (select card_instance_ids[1] from public.match_teams where match_id = v_match and side = 'a'));
+  v_ping := pg_temp.ping_as(v_c);
+  assert (v_ping ->> 'opponent_has_chosen')::boolean, 'the choice of D is missing';
+  assert not (v_ping ? 'opponent_play') and (v_ping - 'server_now') = pg_temp.ping_from_payload(v_match, 'b'),
+    format('ping after the choice %s', v_ping);
+  -- D's own ping: C has not chosen.
+  v_ping := pg_temp.ping_as(v_d);
+  assert not (v_ping ->> 'opponent_has_chosen')::boolean, 'C has not chosen';
+  assert (v_ping - 'server_now') = pg_temp.ping_from_payload(v_match, 'a'), format('ping of D %s', v_ping);
+
+  -- Someone else's match.
+  v_failed := false;
+  begin perform pg_temp.ping_as('00000000-0000-4000-8000-0000000000e1');
+  exception when others then v_failed := sqlerrm = 'match_not_found'; end;
+  reset role;
+  assert v_failed, 'a ping from outside the match';
+
+  -- D wins: the match is over, the pick open. A ping no longer marks presence.
+  perform public.finish_match(v_match, 'a', 'completed');
+  update public.match_teams set last_seen_at = now() - interval '1 minute' where match_id = v_match and side = 'b';
+  v_ping := pg_temp.ping_as(v_c);
+  assert v_ping ->> 'status' = 'finished' and not (v_ping ->> 'conquest_settled')::boolean, format('pick open %s', v_ping);
+  assert (v_ping - 'server_now') = pg_temp.ping_from_payload(v_match, 'b'), format('ping during the pick %s', v_ping);
+  assert (select last_seen_at < now() from public.match_teams where match_id = v_match and side = 'b'),
+    'presence marked after the end';
+
+  -- Once the pick's time is up, the ping says so before anyone settles it.
+  update public.conquest_claims set deadline_at = now() - interval '1 second' where match_id = v_match;
+  v_ping := pg_temp.ping_as(v_c);
+  assert (v_ping ->> 'conquest_settled')::boolean, 'the expired pick looks open';
+  assert not (public.match_state_payload(v_match, 'b') -> 'conquest' ->> 'resolved')::boolean, 'settled by the ping';
 end $$;
 
 rollback;

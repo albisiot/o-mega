@@ -246,10 +246,33 @@ export async function leaveQueue(): Promise<void> {
   if (error) throw error;
 }
 
-/** Tells the server the player is still here (SPEC §5.7). */
-export async function sendHeartbeat(matchId: string): Promise<void> {
-  const { error } = await getSupabase().rpc("match_heartbeat", { p_match_id: matchId });
+/** What a ping tells about a match between players, beside marking the player present. */
+export type MatchPing = {
+  status: MatchView["status"];
+  current_round: number;
+  opponent_has_chosen: boolean;
+  /** null without a Conquest pick; true once it is settled or its time is up. */
+  conquest_settled: boolean | null;
+  opponent_last_seen_at: string | null;
+  server_now: string;
+};
+
+/** Tells the server the player is still here (SPEC §5.7), and learns whether the view is current. */
+export async function pingMatch(matchId: string): Promise<MatchPing> {
+  const { data, error } = await getSupabase().rpc("match_ping", { p_match_id: matchId });
   if (error) throw error;
+  return data as unknown as MatchPing;
+}
+
+/** Whether a ping shows a change the view has not caught up with, as after a missed broadcast. */
+export function pingShowsChange(view: MatchView, ping: MatchPing): boolean {
+  const current = view.rounds.find((r) => r.round === view.current_round);
+  return (
+    ping.status !== view.status ||
+    ping.current_round !== view.current_round ||
+    (ping.status === "active" && ping.opponent_has_chosen !== Boolean(current?.opponent_has_chosen)) ||
+    ping.conquest_settled !== (view.conquest ? view.conquest.resolved : null)
+  );
 }
 
 export async function claimVictory(matchId: string): Promise<MatchView> {
@@ -260,14 +283,19 @@ export async function claimVictory(matchId: string): Promise<MatchView> {
 
 /**
  * Listens to the server's "something changed" broadcasts on a topic
- * ("match:<id>" or "player:<user id>"). Returns the unsubscribe function.
+ * ("match:<id>" or "player:<user id>"). `onLive` hears whether broadcasts can
+ * arrive, each time that changes. Returns the unsubscribe function.
  */
-export function subscribeToUpdates(topic: string, onUpdate: (payload: Record<string, unknown>) => void): () => void {
+export function subscribeToUpdates(
+  topic: string,
+  onUpdate: (payload: Record<string, unknown>) => void,
+  onLive?: (live: boolean) => void,
+): () => void {
   const supabase = getSupabase();
   const channel = supabase
     .channel(topic, { config: { private: false } })
     .on("broadcast", { event: "update" }, (message) => onUpdate((message.payload ?? {}) as Record<string, unknown>))
-    .subscribe();
+    .subscribe((status) => onLive?.(status === "SUBSCRIBED"));
   return () => {
     supabase.removeChannel(channel);
   };
