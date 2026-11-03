@@ -194,12 +194,15 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
   const opponentName = view.opponent?.username ?? "Bot";
   const absentMs =
     !isBot && isActive && view.opponent?.last_seen_at ? now + offset - Date.parse(view.opponent.last_seen_at) : 0;
-  // While choosing, the whole match fits the screen: nothing scrolls.
+  // The choice, the round result and a plain final result fit the screen: nothing scrolls.
+  // A conquest or a story reward still makes the final result a longer page.
   const choosing = !shownRound && view.status !== "finished" && Boolean(current);
-  useLockedScreen(choosing);
+  const fitted =
+    choosing || Boolean(shownRound) || (view.status === "finished" && !view.conquest && !story);
+  useLockedScreen(fitted);
 
   return (
-    <div className={choosing ? "game-shell" : "flex flex-1 flex-col"}>
+    <div className={fitted ? "game-shell" : "flex flex-1 flex-col"}>
       {/* One strip: the score, the threat levels (with what each round revealed) and the way out. */}
       <header className="relative flex items-center gap-1.5 px-3 py-1">
         <div className="min-w-0 max-w-[6.5rem] shrink-0 leading-none">
@@ -667,13 +670,15 @@ function RoundReveal({
       })
     : [];
 
+  // The halves never shrink below their content: on a screen too short for an unusual
+  // round (several notes at once), the result scrolls inside instead of being cut.
   return (
-    <main className="relative mt-3 flex flex-1 cursor-pointer flex-col" onClick={onContinue}>
+    <main className="relative mt-1 flex min-h-0 flex-1 cursor-pointer flex-col overflow-y-auto" onClick={onContinue}>
       <section
         aria-label="La tua giocata"
-        className="animate-play-in-top relative flex flex-1 flex-col overflow-hidden bg-comic-cyan px-4 pb-4 pt-3 text-black [clip-path:polygon(0_0,100%_0,100%_calc(100%-52px),0_100%)]"
+        className="animate-play-in-top relative flex flex-[1_0_auto] flex-col overflow-hidden bg-comic-cyan px-4 pb-2 pt-2.5 text-black [clip-path:polygon(0_0,100%_0,100%_calc(100%-52px),0_100%)]"
       >
-        <p className="text-sm font-extrabold">
+        <p className="text-[13px] font-extrabold leading-4">
           Round {round.round} · {round.threat.name}
         </p>
         <PlaySide
@@ -716,7 +721,7 @@ function RoundReveal({
 
       <section
         aria-label={`La giocata di ${opponentName}`}
-        className="animate-play-in-bottom halftone relative flex flex-1 flex-col justify-end overflow-hidden bg-comic-magenta px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-11 text-black [clip-path:polygon(0_52px,100%_0,100%_100%,0_100%)]"
+        className="animate-play-in-bottom halftone relative flex flex-[1_0_auto] flex-col justify-end overflow-hidden bg-comic-magenta px-4 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-9 text-black [clip-path:polygon(0_52px,100%_0,100%_100%,0_100%)]"
       >
         <PlaySide
           label={opponentName}
@@ -727,9 +732,9 @@ function RoundReveal({
           won={round.winner === "opponent"}
           notes={theirNotes}
         />
-        <div className="relative mt-3 flex flex-col gap-2">
+        <div className="relative mt-2 flex flex-col gap-1.5">
           {round.modifier && (
-            <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
+            <p className="bg-black px-3 py-1 text-center text-xs font-semibold leading-4 text-foreground">
               {modifierLine(
                 round.modifier,
                 abilities.find((a) => a.code === round.threat.abilities[0])?.name ?? round.threat.abilities[0],
@@ -737,25 +742,30 @@ function RoundReveal({
             </p>
           )}
           {round.my_play?.auto_played && (
-            <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
+            <p className="bg-black px-3 py-1 text-center text-xs font-semibold leading-4 text-foreground">
               Tempo scaduto: il server ha scelto per te.
             </p>
           )}
           {theirs?.auto_played && (
-            <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
+            <p className="bg-black px-3 py-1 text-center text-xs font-semibold leading-4 text-foreground">
               {opponentName} non ha scelto in tempo.
             </p>
           )}
           {round.winner === "none" && (
-            <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
+            <p className="bg-black px-3 py-1 text-center text-xs font-semibold leading-4 text-foreground">
               Stesso punteggio e stesso valore più alto.
             </p>
           )}
-          <button
-            type="button"
-            className="btn min-h-14 bg-comic-yellow font-display text-[22px] uppercase tracking-wide text-black shadow-[4px_4px_0_#000]"
-          >
-            {finished ? "Vedi il risultato" : "Continua"}
+          {/* The whole screen continues; this stays as the hint and the keyboard's way on. */}
+          <button type="button" className="mx-auto flex h-8 items-center gap-1.5 px-3 text-xs font-extrabold uppercase tracking-wide">
+            <svg viewBox="0 0 14 16" className="h-4 w-3.5" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden>
+              <path
+                d="M5 9V2.5c0-.8 1.8-.8 1.8 0V9m0-1.5c0-.8 1.8-.8 1.8 0V9m0-1c0-.8 1.8-.8 1.8 0v3.5c0 2.5-1.6 3.8-3.8 3.8S3.2 14 2.2 12L1 9.6c-.4-.8.6-1.4 1.2-.8L5 11"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {finished ? "Tocca per vedere il risultato" : "Tocca per continuare"}
           </button>
         </div>
       </section>
@@ -778,7 +788,7 @@ function CountUp({ value }: { value: number }) {
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
   }, [value]);
-  return <span className="font-display text-[68px] leading-[72px]">{shown}</span>;
+  return <span className="font-display text-[58px] leading-[60px]">{shown}</span>;
 }
 
 function PlaySide({
@@ -803,8 +813,9 @@ function PlaySide({
   const isLeft = side === "left";
   return (
     <div className={`relative flex ${isLeft ? "justify-start" : "justify-end text-right"}`}>
+      {/* The art grows with the screen: 23% of its height, at most the old 176 px. */}
       {card && (
-        <div className={`absolute bottom-0 h-44 w-32 ${isLeft ? "right-0" : "left-0"}`}>
+        <div className={`absolute bottom-0 aspect-[32/44] h-[clamp(108px,23dvh,176px)] ${isLeft ? "right-0" : "left-0"}`}>
           {card.art_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -816,16 +827,16 @@ function PlaySide({
             <Silhouette
               faction={card.faction}
               accent={card.rarity.color}
-              className="absolute bottom-0 left-1/2 h-44 -translate-x-1/2"
+              className="absolute bottom-0 left-1/2 h-full -translate-x-1/2"
             />
           )}
         </div>
       )}
-      <div className="relative max-w-[62%]">
-        <p className="truncate text-sm font-extrabold">{label}</p>
-        <p className="truncate font-display text-3xl uppercase">{card?.name ?? "?"}</p>
+      <div className="relative max-w-[64%]">
+        <p className="truncate text-xs font-extrabold leading-4">{label}</p>
+        <p className="truncate font-display text-[28px] uppercase leading-8">{card?.name ?? "?"}</p>
         {card && (
-          <p className="text-[13px] font-bold">{abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ")}</p>
+          <p className="text-xs font-bold leading-4">{abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ")}</p>
         )}
         {notes.length > 0 && (
           <div className={`mt-1 flex flex-wrap gap-1 ${isLeft ? "" : "justify-end"}`}>
@@ -848,8 +859,8 @@ function PlaySide({
             {won && (
               <ComicBurst
                 fill="#ffd60a"
-                className={`animate-burst-pop relative h-[68px] w-[68px] shrink-0 ${isLeft ? "rotate-[10deg]" : "-rotate-[10deg]"}`}
-                textClassName="text-[19px] tracking-wide"
+                className={`animate-burst-pop relative h-[60px] w-[60px] shrink-0 ${isLeft ? "rotate-[10deg]" : "-rotate-[10deg]"}`}
+                textClassName="text-[17px] tracking-wide"
               >
                 SBAM!
               </ComicBurst>
@@ -880,12 +891,13 @@ function MatchResult({
       : { win: "Vittoria!", loss: "Sconfitta", draw: "Pareggio" }[view.result ?? "draw"];
   const coins = view.reward_coins ?? 0;
   const xp = matchXp(view);
-  const nameOf = (instanceId: string | null | undefined) => view.my_team.find((c) => c.instance_id === instanceId)?.name ?? "—";
+  const cardOf = (instanceId: string | null | undefined) => view.my_team.find((c) => c.instance_id === instanceId);
 
+  // On a fitted screen the banner takes the room left; the rest keeps its size.
   return (
-    <main className="flex flex-1 flex-col gap-5 px-3 pb-6 pt-3">
+    <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
       <section
-        className={`cut-bottom relative -mx-3 flex flex-col items-center gap-2 overflow-hidden px-4 pb-8 pt-5 text-center ${
+        className={`cut-bottom relative -mx-3 flex flex-[1_0_auto] flex-col items-center justify-center gap-2 overflow-hidden px-4 pb-8 pt-5 text-center ${
           view.result === "win" ? "rays-gold" : view.result === "loss" ? "halftone bg-comic-magenta" : "bg-panel-raised"
         }`}
       >
@@ -940,25 +952,57 @@ function MatchResult({
         />
       )}
 
-      <ol className="flex flex-col gap-0.5">
-        {view.rounds
-          .filter((r) => r.resolved)
-          .map((r) => (
-            <li key={r.round} className="flex items-center justify-between gap-2 bg-panel px-3 py-2 text-sm font-semibold">
-              <span className="min-w-0">
-                <span className="text-muted">{r.round}. </span>
-                {nameOf(r.my_play?.instance_id)} <span className="text-muted">vs</span> {r.opponent_play?.name ?? "—"}
-              </span>
-              <span
-                className={`shrink-0 font-display text-lg ${
-                  r.winner === "me" ? "text-comic-cyan" : r.winner === "opponent" ? "text-comic-magenta" : "text-muted"
-                }`}
-              >
-                {r.my_play?.score} – {r.opponent_play?.score}
-              </span>
-            </li>
-          ))}
-      </ol>
+      {/* One tile per round: your card, the score and who it faced. */}
+      <section className="flex flex-col gap-1.5">
+        <h2 className="section-title text-base leading-5">Round per round</h2>
+        <ol className="grid grid-cols-5 gap-1.5">
+          {view.rounds
+            .filter((r) => r.resolved)
+            .map((r) => {
+              const mine = cardOf(r.my_play?.instance_id);
+              const tone =
+                r.winner === "me" ? "text-comic-cyan" : r.winner === "opponent" ? "text-comic-magenta" : "text-muted";
+              const frame =
+                r.winner === "me" ? "border-comic-cyan" : r.winner === "opponent" ? "border-comic-magenta" : "border-line";
+              return (
+                <li
+                  key={r.round}
+                  aria-label={`Round ${r.round}: ${mine?.name ?? "—"} contro ${r.opponent_play?.name ?? "—"}, ${
+                    r.my_play?.score ?? "—"
+                  } a ${r.opponent_play?.score ?? "—"}`}
+                  className="flex min-w-0 flex-col text-center"
+                >
+                  <span aria-hidden className={`relative block aspect-square overflow-hidden border-[3px] bg-panel-raised ${frame}`}>
+                    {mine?.art_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={withBasePath(mine.art_url)} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
+                    ) : (
+                      mine && (
+                        <Silhouette
+                          faction={mine.faction}
+                          accent={mine.rarity.color}
+                          className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2"
+                        />
+                      )
+                    )}
+                    <span className="absolute left-0.5 top-0.5 -skew-x-8 bg-black px-1 font-display text-[13px] leading-4 text-foreground">
+                      {r.round}
+                    </span>
+                  </span>
+                  <span aria-hidden className="mt-0.5 truncate font-display text-[11px] uppercase leading-[14px]">
+                    {mine?.name ?? "—"}
+                  </span>
+                  <span aria-hidden className={`font-display text-lg leading-5 ${tone}`}>
+                    {r.my_play?.score}–{r.opponent_play?.score}
+                  </span>
+                  <span aria-hidden className="truncate text-[10.5px] font-bold text-muted">
+                    vs {r.opponent_play?.name ?? "—"}
+                  </span>
+                </li>
+              );
+            })}
+        </ol>
+      </section>
 
       <div className="flex flex-col gap-2">
         {story ? (
