@@ -2,30 +2,49 @@ import { Silhouette } from "@/components/card-view";
 import { withBasePath } from "@/lib/base-path";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 
+const SCORE_TONES = { pass: "text-comic-cyan", fail: "text-faint" } as const;
+
 type HandCardProps = {
   card: { name: string; faction: string; art_url: string | null; rarity: { name: string; rank: number; color: string } };
   /** Predicted score, shown big on the card. */
   score: number;
   bonus: number;
+  /** Emergenza: whether the score beats the threat, told by the number's color. */
+  tone?: keyof typeof SCORE_TONES;
+  /** A short tag above the card (Emergenza: a lower target for this card). */
+  note?: string;
+  /** A wider crop of the art, for a hand on two rows. */
+  short?: boolean;
   selected: boolean;
   disabled: boolean;
   onSelect: () => void;
 };
 
 /** A card in the hand of the choice phase: portrait art, name and the predicted score. */
-export function HandCard({ card, score, bonus, selected, disabled, onSelect }: HandCardProps) {
+export function HandCard({ card, score, bonus, tone, note, short = false, selected, disabled, onSelect }: HandCardProps) {
+  const outcome = tone === "pass" ? ", la supera" : tone === "fail" ? ", non basta" : "";
   return (
     <button
       type="button"
       onClick={onSelect}
       disabled={disabled}
       aria-pressed={selected}
-      aria-label={`${card.name}, ${score} punti${bonus ? `, ${bonus > 0 ? "+" : ""}${bonus} ${bonus > 0 ? "bonus" : "malus"}` : ""}`}
+      aria-label={`${card.name}, ${score} punti${bonus ? `, ${bonus > 0 ? "+" : ""}${bonus} ${bonus > 0 ? "bonus" : "malus"}` : ""}${outcome}${
+        note ? `, ${note}` : ""
+      }`}
       className={`relative flex w-full min-w-0 flex-col border-[3px] bg-panel text-left ${
         selected ? "-translate-y-1.5 border-comic-yellow shadow-[4px_4px_0_var(--comic-magenta)]" : "border-panel-raised"
       }`}
     >
-      <span className="relative block aspect-[3/4] bg-panel-raised">
+      {note && (
+        <span
+          aria-hidden
+          className="absolute -top-2.5 left-1/2 z-[2] -translate-x-1/2 -skew-x-8 whitespace-nowrap bg-comic-yellow px-1 text-[9.5px] font-extrabold leading-[13px] text-black"
+        >
+          {note}
+        </span>
+      )}
+      <span className={`relative block bg-panel-raised ${short ? "aspect-[4/3]" : "aspect-[3/4]"}`}>
         {card.art_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={withBasePath(card.art_url)} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
@@ -42,7 +61,9 @@ export function HandCard({ card, score, bonus, selected, disabled, onSelect }: H
         <span
           aria-hidden
           className={`absolute -bottom-3 left-1/2 z-[1] min-w-10 -translate-x-1/2 -skew-x-8 border-2 px-1.5 text-center font-display text-[25px] leading-[28px] ${
-            selected ? "border-black bg-comic-yellow text-black" : "border-panel-raised bg-black text-foreground"
+            selected
+              ? "border-black bg-comic-yellow text-black"
+              : `border-panel-raised bg-black ${tone ? SCORE_TONES[tone] : "text-foreground"}`
           }`}
         >
           {score}

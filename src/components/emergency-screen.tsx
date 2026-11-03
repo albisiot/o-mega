@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { resolveEmergencyPlay, type AbilityFamilies, type EmergencyRules } from "@o-mega/game-engine";
 import { ComicBurst, PageHeader } from "@/components/comic-parts";
+import { HandCard } from "@/components/hand-card";
+import { InfoTip } from "@/components/info-tip";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { TeamPicker } from "@/components/team-picker";
@@ -24,6 +26,7 @@ import {
 import { describeServerError } from "@/lib/errors";
 import { fetchInstanceDefinitions, fetchOwnedInstances, toCharacter, type VariantCopy } from "@/lib/match";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
+import { useLockedScreen } from "@/lib/use-locked-screen";
 
 /** Today's challenge from the levels to the final result. */
 export function EmergencyScreen({ initial }: { initial: EmergencyView }) {
@@ -43,10 +46,27 @@ export function EmergencyScreen({ initial }: { initial: EmergencyView }) {
   }
 
   const run = view.run;
+  // Choosing fits the screen: nothing scrolls, and one strip replaces the page header.
+  const choosing = Boolean(run && !revealing && run.status !== "finished");
+  useLockedScreen(choosing);
+
   return (
-    <div className="flex flex-1 flex-col">
-      <PageHeader backHref="/gioca" backLabel="Gioca" title="Emergenza" subtitle="La sfida di oggi, uguale per tutti" />
-      <LevelTrack view={view} />
+    <div className={choosing ? "game-shell" : "flex flex-1 flex-col"}>
+      {choosing ? (
+        <header className="relative flex items-center gap-1.5 px-3 py-1">
+          <Link href="/gioca" aria-label="Torna a Gioca" className="btn btn-ghost h-11 w-11 shrink-0 px-0">
+            <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.6} aria-hidden>
+              <path d="M12 3 5 10l7 7M5 10h13" strokeLinejoin="round" />
+            </svg>
+          </Link>
+          <LevelTrack view={view} abilities={abilities} inline />
+        </header>
+      ) : (
+        <>
+          <PageHeader backHref="/gioca" backLabel="Gioca" title="Emergenza" subtitle="La sfida di oggi, uguale per tutti" />
+          <LevelTrack view={view} abilities={abilities} />
+        </>
+      )}
       {!run ? (
         <Briefing view={view} onStarted={setView} />
       ) : revealing ? (
@@ -65,32 +85,79 @@ export function EmergencyScreen({ initial }: { initial: EmergencyView }) {
   );
 }
 
-function LevelTrack({ view }: { view: EmergencyView }) {
+/**
+ * The day's levels. `inline` puts them in the choice strip; a threat foreseen with a
+ * power gets an eye on its cell, and a tap shows it.
+ */
+function LevelTrack({ view, abilities, inline = false }: { view: EmergencyView; abilities: AbilityInfo[]; inline?: boolean }) {
   const run = view.run;
+  // An open cell closes by itself when the run moves on.
+  const phase = `${run?.status}:${run?.current_round}`;
+  const [opened, setOpened] = useState<{ cell: number; phase: string } | null>(null);
+  const open = opened?.phase === phase ? opened.cell : null;
+  const openThreat = open === null ? null : (run?.foreseen_threats.find((t) => t.round === open + 1) ?? null);
+  const abilityName = (code: string) => abilities.find((a) => a.code === code)?.name ?? code;
+
   return (
-    <ol className="flex gap-1 px-3" aria-label="Livelli delle Minacce">
-      {view.threat_levels.map((level, i) => {
-        const play = run?.plays.find((p) => p.round === i + 1);
-        const isCurrent = run?.status === "active" && run.current_round === i + 1;
-        const style = isCurrent
-          ? "bg-comic-yellow text-black"
-          : play?.passed
-            ? "bg-comic-cyan text-black"
-            : play
-              ? "bg-comic-magenta text-black"
-              : "border-2 border-line text-foreground";
-        const outcome = play ? (play.passed ? ", superata" : ", fallita") : "";
-        return (
-          <li
-            key={i}
-            aria-label={`Livello ${level}${outcome}`}
-            className={`flex h-10 flex-1 -skew-x-8 items-center justify-center font-display text-[20px] ${style}`}
+    <div className={inline ? "min-w-0 flex-1" : "relative px-3"}>
+      <ol className="flex gap-1" aria-label="Livelli delle Minacce">
+        {view.threat_levels.map((level, i) => {
+          const play = run?.plays.find((p) => p.round === i + 1);
+          const foreseen = run?.foreseen_threats.find((t) => t.round === i + 1);
+          const isCurrent = run?.status === "active" && run.current_round === i + 1;
+          const style = isCurrent
+            ? "bg-comic-yellow text-black"
+            : play?.passed
+              ? "bg-comic-cyan text-black"
+              : play
+                ? "bg-comic-magenta text-black"
+                : "border-2 border-line text-foreground";
+          const outcome = play ? (play.passed ? ", superata" : ", fallita") : "";
+          const label = `Livello ${level}${outcome}${foreseen ? `, Minaccia prevista: ${foreseen.name}` : ""}`;
+          const cell = `relative flex w-full -skew-x-8 items-center justify-center font-display ${
+            inline ? "h-11 text-lg" : "h-10 text-[20px]"
+          } ${style}`;
+          return (
+            <li key={i} className="min-w-0 flex-1">
+              {foreseen ? (
+                <button
+                  type="button"
+                  onClick={() => setOpened(open === i ? null : { cell: i, phase })}
+                  aria-expanded={open === i}
+                  aria-label={label}
+                  className={cell}
+                >
+                  {level}
+                  <svg viewBox="0 0 16 10" className="absolute right-0.5 top-0.5 h-2.5 w-4" aria-hidden>
+                    <path d="M1 5c2-3 4.5-4 7-4s5 1 7 4c-2 3-4.5 4-7 4S3 8 1 5z" fill="currentColor" />
+                    <circle cx="8" cy="5" r="2" fill="var(--background)" />
+                  </svg>
+                </button>
+              ) : (
+                <span aria-label={label} className={cell}>
+                  {level}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      {openThreat && (
+        <>
+          <button type="button" aria-label="Chiudi" onClick={() => setOpened(null)} className="fixed inset-0 z-20 cursor-default" />
+          <div
+            role="status"
+            className="absolute right-3 top-full z-30 mt-1 w-60 bg-foreground px-3 py-2 text-xs font-semibold text-black shadow-[4px_4px_0_#000]"
           >
-            {level}
-          </li>
-        );
-      })}
-    </ol>
+            <span className="block text-[11px] font-extrabold text-black/60">
+              {openThreat.round}ª Minaccia · Livello {openThreat.level} · prevista
+            </span>
+            <span className="block font-display text-base uppercase">{openThreat.name}</span>
+            {openThreat.abilities.map(abilityName).join(" · ")}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -278,33 +345,42 @@ function ChoosePhase({
     }
   }
 
+  const chosenOutcome = previews.find(({ card }) => card === chosen)?.outcome;
+  const previewNote = "Il punteggio è un'anteprima: lo calcola il server quando giochi.";
+
   return (
-    <main className="flex flex-1 flex-col gap-3 px-3 pb-28 pt-3">
-      <section className="cut-bottom relative overflow-hidden bg-comic-magenta px-4 pb-6 pt-3 text-black">
+    <main className="flex min-h-0 flex-1 flex-col">
+      <section className="cut-bottom relative mx-3 mt-1 flex min-h-0 flex-1 flex-col overflow-hidden bg-comic-magenta px-4 pb-5 text-black">
         <div aria-hidden className="halftone absolute inset-0 [mask-image:linear-gradient(135deg,transparent_45%,#000_100%)]" />
+        {/* The diorama gets the room the screen has left, above the threat's name. */}
+        <div className="relative -mx-4 min-h-9 flex-1">
+          <ThreatDiorama key={threat.round} name={threat.name} level={threat.level} fill />
+        </div>
         <div className="relative">
-          <ThreatDiorama key={threat.round} name={threat.name} level={threat.level} />
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-end justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-sm font-extrabold">
+              <p className="text-xs font-extrabold">
                 Minaccia {threat.round} di {view.rules.threats_per_run} · Livello {threat.level}
               </p>
-              <p className="mt-0.5 font-display text-[34px] uppercase leading-10">{threat.name}</p>
+              <p className="font-display text-[30px] uppercase leading-8">{threat.name}</p>
             </div>
             <p
               aria-label={`Servono ${baseTarget} punti`}
-              className="flex h-14 w-14 shrink-0 rotate-3 flex-col items-center justify-center bg-black font-display text-3xl leading-none text-comic-yellow"
+              className="mb-0.5 flex h-12 w-12 shrink-0 rotate-3 flex-col items-center justify-center bg-black font-display text-[26px] leading-none text-comic-yellow"
             >
               {baseTarget}
+              <span aria-hidden className="mt-0.5 font-sans text-[8px] font-extrabold uppercase tracking-wide text-foreground">
+                servono
+              </span>
             </p>
           </div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <div className="mt-1.5 flex flex-wrap gap-1">
             {threat.abilities.map((code) => {
               const ability = abilityName(code);
               return (
                 <span
                   key={code}
-                  className="bg-black px-2 py-1 text-[13px] font-extrabold"
+                  className="bg-black px-1.5 py-0.5 text-xs font-extrabold"
                   style={{ color: ability?.family.color ?? "#d8d3c5" }}
                 >
                   {ability?.name ?? code}
@@ -312,83 +388,76 @@ function ChoosePhase({
               );
             })}
           </div>
-          <p className="mt-2 text-sm font-bold">
-            Superate {run.passed} · Fallite {run.failed} su {view.rules.max_failures}
+          <p className="mt-1.5 text-xs font-bold">
+            <span className="font-extrabold uppercase">Emergenza</span> · Superate {run.passed} · Fallite {run.failed} su{" "}
+            {view.rules.max_failures}
           </p>
         </div>
       </section>
 
-      {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
+      {error && <p className="mx-3 mt-1 text-sm font-semibold text-comic-magenta">{error}</p>}
 
-      <section className="flex flex-col gap-2">
-        <h2 className="section-title">Chi mandi?</h2>
-        {previews.map(({ card, outcome }) => {
-          const isSelected = card.instance_id === selected;
-          return (
-            <button
-              key={card.instance_id}
-              type="button"
-              onClick={() => setSelected(card.instance_id)}
-              disabled={busy}
-              aria-pressed={isSelected}
-              className={`flex items-center justify-between gap-3 border-[3px] bg-panel px-3 py-2 text-left ${
-                isSelected ? "border-comic-yellow shadow-[4px_4px_0_var(--comic-magenta)]" : "border-panel-raised"
-              }`}
-            >
-              <div className="min-w-0">
-                <p className="flex items-center gap-1.5">
-                  <span
-                    className="flex h-[22px] w-[22px] shrink-0 items-center justify-center text-sm font-black text-black"
-                    style={{ background: rarityFrame(card.rarity) }}
-                  >
-                    {rarityLetter(card.rarity)}
-                  </span>
-                  <span className="truncate font-display text-xl uppercase">{card.name}</span>
-                </p>
-                <p className="text-xs font-semibold text-muted">
-                  {threat.abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ")}
-                </p>
-                {card.power && (
-                  <p className="truncate text-xs font-semibold" style={{ color: card.rarity.color }}>
-                    {card.power.name}: {card.power.text}
-                  </p>
-                )}
-              </div>
-              <div className="shrink-0 text-right">
-                <p className={`font-display text-4xl ${outcome.passed ? "text-comic-cyan" : "text-faint"}`}>
-                  {outcome.score.total}
-                </p>
-                {outcome.score.bonus > 0 && <p className="text-xs font-bold text-comic-cyan">+{outcome.score.bonus} bonus</p>}
-                {outcome.required !== baseTarget && (
-                  <p className="text-xs font-bold text-comic-yellow">gliene bastano {outcome.required}</p>
-                )}
-              </div>
-            </button>
-          );
-        })}
-        <p className="text-xs font-medium text-faint">Il punteggio è un&apos;anteprima: lo calcola il server quando giochi.</p>
-      </section>
+      {/* The hand on two rows: the widest margin over the target first, as before. */}
+      <div role="group" aria-label="Chi mandi?" className="grid grid-cols-4 gap-x-1.5 gap-y-3.5 px-3 pb-1.5 pt-3.5">
+        {previews.map(({ card, outcome }) => (
+          <HandCard
+            key={card.instance_id}
+            card={card}
+            score={outcome.score.total}
+            bonus={outcome.score.bonus}
+            tone={outcome.passed ? "pass" : "fail"}
+            note={outcome.required !== baseTarget ? `basta ${outcome.required}` : undefined}
+            short
+            selected={card.instance_id === selected}
+            disabled={busy}
+            onSelect={() => setSelected(card.instance_id)}
+          />
+        ))}
+      </div>
 
-      {run.foreseen_threats.length > 0 && (
-        <section className="flex flex-col gap-1.5">
-          <h2 className="section-title">Le prossime Minacce</h2>
-          <ul className="flex flex-col gap-0.5">
-            {run.foreseen_threats.map((next) => (
-              <li key={next.round} className="bg-panel px-3 py-2 text-sm font-semibold">
-                <span className="text-muted">
-                  {next.round}ª · Livello {next.level} ·{" "}
+      {/* The chosen card's details stay above the button, at a fixed height. */}
+      <div className="border-t-[3px] border-foreground bg-black px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
+        <div className="mb-2 min-h-[74px]">
+          {chosen && chosenOutcome ? (
+            <>
+              <p className="flex items-center gap-1.5">
+                <span
+                  className="flex h-5 w-5 shrink-0 items-center justify-center text-xs font-black text-black"
+                  style={{ background: rarityFrame(chosen.rarity) }}
+                >
+                  {rarityLetter(chosen.rarity)}
                 </span>
-                {next.name}
-                <p className="text-xs font-medium text-muted">
-                  {next.abilities.map((code) => abilityName(code)?.name ?? code).join(" · ")}
+                <span className="truncate font-display text-xl uppercase leading-6">{chosen.name}</span>
+                <span className="ml-auto shrink-0 text-xs font-bold text-muted">
+                  <span className={`font-display text-xl ${chosenOutcome.passed ? "text-comic-cyan" : "text-faint"}`}>
+                    {chosenOutcome.score.total}
+                  </span>{" "}
+                  punti
+                  {chosenOutcome.score.bonus > 0 && <span className="text-comic-cyan"> · +{chosenOutcome.score.bonus} bonus</span>}
+                </span>
+                <InfoTip text={previewNote} />
+              </p>
+              <p className="mt-0.5 text-xs font-semibold text-muted">
+                {threat.abilities.map((code) => `${code} ${chosen.stats[code] ?? 0}`).join(" · ")} ·{" "}
+                {chosenOutcome.required !== baseTarget ? (
+                  <span className="text-comic-yellow">gliene bastano {chosenOutcome.required}</span>
+                ) : (
+                  `servono ${baseTarget}`
+                )}
+              </p>
+              {chosen.power && (
+                <p className="line-clamp-2 text-xs font-semibold leading-[15px]" style={{ color: chosen.rarity.color }}>
+                  {chosen.power.name}: {chosen.power.text}
                 </p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t-[3px] border-foreground bg-black px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+              )}
+            </>
+          ) : (
+            <p className="flex items-center justify-between gap-2 pt-1 text-sm font-semibold text-muted">
+              Tocca una carta per vederne abilità e potere.
+              <InfoTip text={previewNote} />
+            </p>
+          )}
+        </div>
         <button type="button" onClick={play} disabled={!chosen || busy} className="btn btn-primary w-full">
           {busy ? "Invio…" : chosen ? `Manda ${chosen.name}` : "Scegli un personaggio"}
         </button>
