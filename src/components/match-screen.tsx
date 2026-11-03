@@ -34,6 +34,7 @@ import { matchXp } from "@/lib/progression";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { carriedInto, roundPowerNotes, type PowerNote } from "@/lib/round-powers";
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
+import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow } from "@/lib/use-now";
 
 type TeamCard = MatchView["my_team"][number];
@@ -195,6 +196,7 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
     !isBot && isActive && view.opponent?.last_seen_at ? now + offset - Date.parse(view.opponent.last_seen_at) : 0;
   // While choosing, the whole match fits the screen: nothing scrolls.
   const choosing = !shownRound && view.status !== "finished" && Boolean(current);
+  useLockedScreen(choosing);
 
   return (
     <div className={choosing ? "game-shell" : "flex flex-1 flex-col"}>

@@ -47,6 +47,13 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* While a screen fits the phone (.game-shell), the page stays still: no scroll, no iOS bounce. */
+html.screen-locked,
+html.screen-locked body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 /* Comic page: ink gutters, flat color panels, slanted edges, hard shadows. */
 
 @layer components {
