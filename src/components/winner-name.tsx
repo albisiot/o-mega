@@ -47,8 +47,8 @@ export const WinnerName = memo(function WinnerName({ card }: WinnerNameProps) {
 
   if (failed) {
     return (
-      <div className="flex h-[88px] items-center">
-        <CardName card={card} size="lg" as="p" className="h-12" />
+      <div className="flex h-[108px] items-center px-6">
+        <CardName card={card} size="lg" as="p" className="h-14" />
       </div>
     );
   }
@@ -64,7 +64,7 @@ export const WinnerName = memo(function WinnerName({ card }: WinnerNameProps) {
       onClick={(event) => {
         if (Math.abs(event.clientX - dragStart.current) > 6) event.stopPropagation();
       }}
-      className="relative -mx-4 block h-[88px] w-[calc(100%+2rem)] cursor-grab touch-pan-y"
+      className="relative block h-[108px] w-full cursor-grab touch-pan-y"
     />
   );
 });

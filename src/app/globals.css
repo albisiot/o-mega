@@ -292,6 +292,11 @@ body {
   100% { transform: none; }
 }
 
+@keyframes burst-pop {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
 @keyframes bam {
   0% { transform: scale(0.2); opacity: 0; }
   15% { transform: scale(1.2); opacity: 1; }
@@ -306,6 +311,8 @@ body {
 .animate-card-slam { animation: card-slam 0.5s ease-out both; }
 /* Hidden at rest: without motion it must not stay on top of the card. */
 .animate-bam { opacity: 0; animation: bam 1.4s ease-out 0.15s both; }
+/* Lands once the winner's 3D name is in place, and stays. */
+.animate-burst-pop { animation: burst-pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) 0.9s both; }
 .animate-coin-bump { animation: coin-bump 0.7s ease-out; }
 .animate-new-pop { animation: new-pop 0.5s ease-out both; }
 
@@ -513,6 +520,7 @@ body {
   .animate-search-burst,
   .animate-card-slam,
   .animate-bam,
+  .animate-burst-pop,
   .speed-lines-moving::before,
   .animate-coin-bump,
   .animate-new-pop,

@@ -557,27 +557,66 @@ function RoundReveal({
     <main className="relative mt-3 flex flex-1 cursor-pointer flex-col" onClick={onContinue}>
       <section
         aria-label="La tua giocata"
-        className="relative min-h-[290px] flex-1 overflow-hidden bg-comic-cyan px-4 pt-3 text-black [clip-path:polygon(0_0,100%_0,100%_calc(100%-52px),0_100%)]"
+        className="relative flex flex-1 flex-col overflow-hidden bg-comic-cyan px-4 pb-4 pt-3 text-black [clip-path:polygon(0_0,100%_0,100%_calc(100%-52px),0_100%)]"
       >
         <p className="text-sm font-extrabold">
           Round {round.round} · {round.threat.name}
         </p>
-        <p
-          className={`animate-rare-title text-sfx mt-1 text-[56px] uppercase leading-[60px] ${
-            round.winner === "me" ? "text-comic-yellow" : "text-foreground"
-          }`}
-        >
-          {banner}
-        </p>
-        {winnerCard && <WinnerName key={`${round.round}-${winnerCard.code}`} card={winnerCard} />}
-        <PlaySide label="Tu" card={mine ?? null} play={round.my_play} abilities={round.threat.abilities} side="left" />
+        <PlaySide
+          label="Tu"
+          card={mine ?? null}
+          play={round.my_play}
+          abilities={round.threat.abilities}
+          side="left"
+          won={round.winner === "me"}
+        />
+      </section>
+
+      {/* The verdict sits on the seam between the two plays, tilted with it. */}
+      <section
+        aria-label={winnerCard ? `${banner} ${winnerCard.name}` : banner}
+        className="relative z-10 -my-[52px] overflow-hidden py-[30px] [clip-path:polygon(0_52px,100%_0,100%_calc(100%-52px),0_100%)]"
+      >
+        <div
+          aria-hidden
+          className="rays-dark animate-rays-spin absolute left-1/2 top-1/2 h-[200vmax] w-[200vmax] -translate-x-1/2 -translate-y-1/2"
+        />
+        <div className="relative -rotate-[7.5deg]">
+          <p
+            className={`animate-rare-title text-sfx text-center text-[46px] uppercase leading-[48px] ${
+              round.winner === "me" ? "text-comic-yellow" : "text-foreground"
+            }`}
+          >
+            {banner}
+          </p>
+          {winnerCard ? (
+            <WinnerName key={`${round.round}-${winnerCard.code}`} card={winnerCard} />
+          ) : (
+            <div className="relative h-[108px]">
+              <ComicBurst
+                fill="#ffd60a"
+                className="animate-burst-pop absolute left-1/2 top-1 h-[104px] w-[104px] -translate-x-1/2 rotate-[8deg]"
+                textClassName="text-[30px] tracking-wide"
+              >
+                PARI!
+              </ComicBurst>
+            </div>
+          )}
+        </div>
       </section>
 
       <section
         aria-label={`La giocata di ${opponentName}`}
-        className="halftone relative -mt-[42px] flex min-h-[340px] flex-1 flex-col justify-end overflow-hidden bg-comic-magenta px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-16 text-black [clip-path:polygon(0_52px,100%_0,100%_100%,0_100%)]"
+        className="halftone relative flex flex-1 flex-col justify-end overflow-hidden bg-comic-magenta px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-11 text-black [clip-path:polygon(0_52px,100%_0,100%_100%,0_100%)]"
       >
-        <PlaySide label={opponentName} card={theirs} play={theirs} abilities={round.threat.abilities} side="right" />
+        <PlaySide
+          label={opponentName}
+          card={theirs}
+          play={theirs}
+          abilities={round.threat.abilities}
+          side="right"
+          won={round.winner === "opponent"}
+        />
         <div className="relative mt-3 flex flex-col gap-2">
           {round.modifier && (
             <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
@@ -625,14 +664,6 @@ function RoundReveal({
           </button>
         </div>
       </section>
-
-      <ComicBurst
-        fill="#ffd60a"
-        className="absolute left-1/2 top-[calc(50%-92px)] h-32 w-32 -translate-x-1/2 -rotate-[8deg]"
-        textClassName="text-[34px] tracking-wide"
-      >
-        {round.winner === "none" ? "PARI!" : "SBAM!"}
-      </ComicBurst>
     </main>
   );
 }
@@ -661,31 +692,48 @@ function PlaySide({
   play,
   abilities,
   side,
+  won,
 }: {
   label: string;
   card: MatchCard | null;
-  play: { base: number; bonus: number; score: number } | null;
+  play: { score: number } | null;
   abilities: string[];
   side: "left" | "right";
+  /** The winning card takes the hit: SBAM! lands on its picture. */
+  won: boolean;
 }) {
   const isLeft = side === "left";
   return (
     <div className={`relative flex ${isLeft ? "justify-start" : "justify-end text-right"}`}>
-      {card?.art_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={withBasePath(card.art_url)}
-          alt=""
-          className={`absolute bottom-0 h-44 w-32 border-[3px] border-black object-cover object-top ${isLeft ? "right-0" : "left-0"}`}
-        />
-      ) : (
-        card && (
-          <Silhouette
-            faction={card.faction}
-            accent={card.rarity.color}
-            className={`absolute bottom-0 h-44 ${isLeft ? "-right-3" : "-left-3"}`}
-          />
-        )
+      {card && (
+        <div className={`absolute bottom-0 h-44 w-32 ${isLeft ? "right-0" : "left-0"}`}>
+          {card.art_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={withBasePath(card.art_url)}
+              alt=""
+              className="h-full w-full border-[3px] border-black object-cover object-top"
+            />
+          ) : (
+            <Silhouette
+              faction={card.faction}
+              accent={card.rarity.color}
+              className="absolute bottom-0 left-1/2 h-44 -translate-x-1/2"
+            />
+          )}
+          {won && (
+            <ComicBurst
+              fill="#ffd60a"
+              // Stamped on the picture, on the side away from the verdict in the middle.
+              className={`animate-burst-pop absolute left-1/2 h-20 w-20 -translate-x-1/2 ${
+                isLeft ? "top-2 rotate-[10deg]" : "bottom-2 -rotate-[10deg]"
+              }`}
+              textClassName="text-[22px] tracking-wide"
+            >
+              SBAM!
+            </ComicBurst>
+          )}
+        </div>
       )}
       <div className="relative max-w-[62%]">
         <p className="truncate text-sm font-extrabold">{label}</p>
@@ -696,13 +744,6 @@ function PlaySide({
         {play && (
           <p>
             <CountUp value={play.score} />
-            {play.bonus !== 0 && (
-              <span className="text-sm font-extrabold">
-                {" "}
-                ({play.base} {play.bonus > 0 ? "+" : ""}
-                {play.bonus})
-              </span>
-            )}
           </p>
         )}
       </div>
