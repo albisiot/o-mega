@@ -1,7 +1,8 @@
 -- Integration test for the functions rewritten so that the game holds up with
--- many players: the cards in use read once per collection. Service-only
--- functions are called as the database owner, as the Edge Function would with
--- service_role. Runs inside a rolled-back transaction:
+-- many players: the cards in use read once per collection, the daily loss
+-- count from an index. Service-only functions are called as the database
+-- owner, as the Edge Function would with service_role. Runs inside a
+-- rolled-back transaction:
 --   npm run test:db
 
 begin;
@@ -163,6 +164,31 @@ begin
   assert pg_temp.summary(v_b) = pg_temp.summary_before(v_b), 'summary of the winner differs after the pick';
   assert pg_temp.convertible(v_a, v_twin_definition) = 1, 'the copy stayed in use after the pick';
   assert not exists (select 1 from public.busy_instance_ids(v_a)), 'cards in use after the pick';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Cards lost today: the game day's bounds instead of the day of every row.
+-- ---------------------------------------------------------------------------
+
+do $$
+declare
+  v_b uuid := '00000000-0000-4000-8000-0000000000e2';
+  v_midnight timestamptz := timezone(public.config_text('time.daily_reset_time_zone'), public.game_day()::timestamp);
+  v_cards uuid[] := (select array_agg(s.id) from (
+    select id from public.card_instances where owner_id = v_b order by acquired_at, id limit 5) s);
+  v_before integer;
+begin
+  insert into public.card_transfers (instance_id, from_user, to_user, reason, created_at) values
+    (v_cards[1], v_b, null, 'conquest', v_midnight - interval '1 microsecond'),
+    (v_cards[2], v_b, null, 'conquest', v_midnight),
+    (v_cards[3], v_b, null, 'conquest', now()),
+    (v_cards[4], v_b, null, 'conversion', now()),
+    (v_cards[5], v_b, null, 'conquest', v_midnight + interval '1 day');
+  -- The previous definition.
+  select count(*) into v_before from public.card_transfers
+  where from_user = v_b and reason = 'conquest' and public.game_day(created_at) = public.game_day();
+  assert v_before = 2, format('previous count %s', v_before);
+  assert public.cards_lost_today(v_b) = v_before, format('cards lost today %s', public.cards_lost_today(v_b));
 end $$;
 
 rollback;
