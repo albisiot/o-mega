@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { resolveEmergencyPlay, type AbilityFamilies, type EmergencyRules } from "@o-mega/game-engine";
+import { Silhouette } from "@/components/card-view";
 import { ComicBurst, PageHeader } from "@/components/comic-parts";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
@@ -11,6 +12,7 @@ import { PlayerAvatar } from "@/components/player-avatar";
 import { TeamPicker } from "@/components/team-picker";
 import { ThreatDiorama } from "@/components/threat-diorama";
 import { balance } from "@/config/balance";
+import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
 import {
@@ -20,6 +22,7 @@ import {
   startEmergency,
   type EmergencyLeaderboard,
   type EmergencyPlay,
+  type EmergencyRank,
   type EmergencyRun,
   type EmergencyView,
 } from "@/lib/emergency";
@@ -47,21 +50,29 @@ export function EmergencyScreen({ initial }: { initial: EmergencyView }) {
   }
 
   const run = view.run;
-  // Picking the squad and choosing fit the screen: nothing scrolls, and one strip with the
-  // levels replaces the page header.
+  // Picking the squad, choosing and the final result fit the screen: nothing scrolls.
+  // While playing, one strip with the levels replaces the page header.
   const choosing = Boolean(run && !revealing && run.status !== "finished");
-  const fitted = choosing || (!run && picking);
+  const finished = Boolean(run && !revealing && run.status === "finished");
+  const fitted = choosing || (!run && picking) || finished;
   useLockedScreen(fitted);
 
   return (
     <div className={fitted ? "game-shell" : "flex flex-1 flex-col"}>
-      {fitted ? (
+      {finished ? (
+        <>
+          <header className="flex items-center gap-2.5 px-3 py-1">
+            <BackToPlay />
+            <h1 className="font-display text-[25px] uppercase leading-7 text-comic-yellow">Emergenza</h1>
+            <p className="ml-auto max-w-[8.5rem] text-right text-[11px] font-bold leading-[13px] text-muted">
+              La sfida di oggi, uguale per tutti
+            </p>
+          </header>
+          <LevelTrack view={view} abilities={abilities} />
+        </>
+      ) : fitted ? (
         <header className="relative flex items-center gap-1.5 px-3 py-1">
-          <Link href="/gioca" aria-label="Torna a Gioca" className="btn btn-ghost h-11 w-11 shrink-0 px-0">
-            <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.6} aria-hidden>
-              <path d="M12 3 5 10l7 7M5 10h13" strokeLinejoin="round" />
-            </svg>
-          </Link>
+          <BackToPlay />
           <LevelTrack view={view} abilities={abilities} inline />
         </header>
       ) : (
@@ -85,6 +96,16 @@ export function EmergencyScreen({ initial }: { initial: EmergencyView }) {
         <ChoosePhase view={view} run={run} abilities={abilities} onPlayed={applyPlay} onStale={setView} />
       )}
     </div>
+  );
+}
+
+function BackToPlay() {
+  return (
+    <Link href="/gioca" aria-label="Torna a Gioca" className="btn btn-ghost h-11 w-11 shrink-0 px-0">
+      <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.6} aria-hidden>
+        <path d="M12 3 5 10l7 7M5 10h13" strokeLinejoin="round" />
+      </svg>
+    </Link>
   );
 }
 
@@ -524,59 +545,106 @@ function PlayReveal({
 }
 
 function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["rules"] }) {
+  const [tab, setTab] = useState<"day" | "board">("day");
+  // Loaded once, whichever tab is open.
+  const { board, failed } = useLeaderboard();
   const complete = run.passed === rules.threats_per_run;
-  const nameOf = (instanceId: string) => run.squad.find((c) => c.instance_id === instanceId)?.name ?? "—";
+  const cardOf = (instanceId: string) => run.squad.find((c) => c.instance_id === instanceId);
+
+  // The outcome keeps its size; the day and the ranking share the room left, one tab at a time.
   return (
-    <main className="flex flex-1 flex-col gap-5 px-3 pb-6 pt-3">
-      <section
-        className={`cut-bottom relative -mx-3 flex flex-col items-center gap-2 overflow-hidden px-4 pb-8 pt-5 text-center ${
-          complete ? "rays-gold" : "bg-panel-raised"
-        }`}
-      >
-        <p className={`text-sfx relative text-6xl uppercase ${complete ? "text-comic-magenta" : "text-foreground"}`}>
-          {complete ? "Città salva!" : `${run.passed} su ${rules.threats_per_run}`}
-        </p>
-        <p className="relative -skew-x-8 bg-black px-3 py-1 text-sm font-extrabold text-comic-yellow">
-          {run.passed} Minacce superate · {run.total_score} punti
-        </p>
-        {run.coins > 0 && (
-          <p className="relative -skew-x-8 bg-black px-3 py-1 text-sm font-extrabold text-comic-yellow">+{run.coins} monete</p>
-        )}
-        <p className="relative text-sm font-semibold">Una nuova Emergenza arriva dopo la mezzanotte.</p>
-      </section>
+    <>
+      <main className="flex min-h-0 flex-1 flex-col px-3 pt-2">
+        <section
+          className={`cut-bottom relative -mx-3 flex shrink-0 flex-col items-center gap-1.5 overflow-hidden px-4 pb-6 pt-2.5 text-center ${
+            complete ? "rays-gold" : "bg-panel-raised"
+          }`}
+        >
+          <p className={`text-sfx relative text-6xl uppercase ${complete ? "text-comic-magenta" : "text-foreground"}`}>
+            {complete ? "Città salva!" : `${run.passed} su ${rules.threats_per_run}`}
+          </p>
+          <div className="relative flex flex-wrap justify-center gap-1.5">
+            <p className="-skew-x-8 bg-black px-2.5 py-0.5 text-[13px] font-extrabold text-comic-yellow">
+              {run.passed} Minacce superate · {run.total_score} punti
+            </p>
+            {run.coins > 0 && (
+              <p className="-skew-x-8 bg-black px-2.5 py-0.5 text-[13px] font-extrabold text-comic-yellow">+{run.coins} monete</p>
+            )}
+          </div>
+          <p className="relative text-[13px] font-semibold">Una nuova Emergenza arriva dopo la mezzanotte.</p>
+        </section>
 
-      <Leaderboard />
-
-      <section className="flex flex-col gap-1.5">
-        <h2 className="section-title">La tua giornata</h2>
-        <ol className="flex flex-col gap-0.5">
-          {run.plays.map((play) => (
-            <li key={play.round} className="flex items-center justify-between gap-2 bg-panel px-3 py-2 text-sm font-semibold">
-              <span className="min-w-0">
-                <span className="text-muted">{play.round}. </span>
-                {nameOf(play.instance_id)} <span className="text-muted">contro</span> {play.threat.name}
-              </span>
-              <span className={`shrink-0 font-display text-lg ${play.passed ? "text-comic-cyan" : "text-comic-magenta"}`}>
-                {play.score}/{play.required}
-              </span>
-            </li>
+        <div role="tablist" aria-label="Risultato" className="mt-2.5 grid shrink-0 grid-cols-2 gap-1.5">
+          {(["day", "board"] as const).map((key) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              onClick={() => setTab(key)}
+              className={`h-11 -skew-x-8 border-2 font-display text-lg uppercase ${
+                tab === key ? "border-comic-yellow bg-comic-yellow text-black" : "border-line text-foreground"
+              }`}
+            >
+              {key === "day" ? "La tua giornata" : "Classifica"}
+            </button>
           ))}
-        </ol>
-      </section>
+        </div>
 
-      <div className="flex flex-col gap-2">
-        <Link href="/gioca" className="btn btn-primary">
+        <div role="tabpanel" className="mt-1.5 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2">
+          {tab === "day" ? (
+            <ol className="flex flex-col gap-0.5">
+              {run.plays.map((play) => {
+                const card = cardOf(play.instance_id);
+                return (
+                  <li key={play.round} className="flex h-9 items-center gap-2.5 bg-panel pr-3 text-[13px] font-semibold">
+                    <span aria-hidden className="relative h-full w-8 shrink-0 overflow-hidden bg-panel-raised">
+                      {card?.art_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={withBasePath(card.art_url)} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
+                      ) : (
+                        card && (
+                          <Silhouette
+                            faction={card.faction}
+                            accent={card.rarity.color}
+                            className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2"
+                          />
+                        )
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">
+                      <span className="text-muted">{play.round}. </span>
+                      {card?.name ?? "—"} <span className="text-muted">contro</span> {play.threat.name}
+                    </span>
+                    <span className={`shrink-0 font-display text-lg ${play.passed ? "text-comic-cyan" : "text-comic-magenta"}`}>
+                      {play.score}/{play.required}
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <Podium board={board} failed={failed} />
+          )}
+        </div>
+      </main>
+
+      <div className="flex gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
+        <Link href="/gioca" className="btn btn-primary flex-1">
           Gioca ancora
         </Link>
-        <Link href="/" className="btn btn-ghost">
-          Torna alla home
+        <Link href="/" aria-label="Torna alla home" className="btn btn-ghost w-14 shrink-0 px-0">
+          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.4} aria-hidden>
+            <path d="M2 10 10 3l8 7M5 8v9h4v-5h2v5h4V8" strokeLinejoin="round" />
+          </svg>
         </Link>
       </div>
-    </main>
+    </>
   );
 }
 
-function Leaderboard() {
+/** Today's ranking, loaded once; `failed` when it could not be loaded. */
+function useLeaderboard() {
   const [board, setBoard] = useState<EmergencyLeaderboard | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -595,6 +663,33 @@ function Leaderboard() {
     };
   }, []);
 
+  return { board, failed };
+}
+
+/** A place in the ranking; `compact` fits the result's tab, with a smaller avatar. */
+function RankRow({ entry, compact = false }: { entry: EmergencyRank; compact?: boolean }) {
+  return (
+    <li
+      className={`flex items-center justify-between gap-2 px-3 text-sm font-semibold ${compact ? "h-9" : "py-1.5"} ${
+        entry.is_me ? "bg-comic-yellow text-black" : "bg-panel"
+      }`}
+    >
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="w-6 shrink-0 font-display text-lg">{entry.rank}</span>
+        <PlayerAvatar username={entry.username} avatarUrl={entry.avatar_url} size={compact ? "xs" : "sm"} />
+        <span className="truncate">{entry.username}</span>
+      </span>
+      <span className="shrink-0 font-display text-lg">
+        {entry.passed} <span className="font-sans text-xs font-semibold">· {entry.total_score} pt</span>
+      </span>
+    </li>
+  );
+}
+
+/** Before the attempt: today's ranking as it stands. */
+function Leaderboard() {
+  const { board, failed } = useLeaderboard();
+
   if (failed) return null;
   const meOutsideTop = board?.me && !board.top.some((entry) => entry.is_me) ? board.me : null;
   const rows = board ? [...board.top, ...(meOutsideTop ? [meOutsideTop] : [])] : [];
@@ -607,23 +702,44 @@ function Leaderboard() {
       )}
       <ol className="flex flex-col gap-0.5">
         {rows.map((entry) => (
-          <li
-            key={entry.rank}
-            className={`flex items-center justify-between gap-2 px-3 py-1.5 text-sm font-semibold ${
-              entry.is_me ? "bg-comic-yellow text-black" : "bg-panel"
-            }`}
-          >
-            <span className="flex min-w-0 items-center gap-2">
-              <span className="w-6 shrink-0 font-display text-lg">{entry.rank}</span>
-              <PlayerAvatar username={entry.username} avatarUrl={entry.avatar_url} />
-              <span className="truncate">{entry.username}</span>
-            </span>
-            <span className="shrink-0 font-display text-lg">
-              {entry.passed} <span className="font-sans text-xs font-semibold">· {entry.total_score} pt</span>
-            </span>
-          </li>
+          <RankRow key={entry.rank} entry={entry} />
         ))}
       </ol>
     </section>
+  );
+}
+
+/** After the attempt: the day's podium and, when lower down, the player's own place. */
+function Podium({ board, failed }: { board: EmergencyLeaderboard | null; failed: boolean }) {
+  if (failed) return <p className="text-sm font-medium text-muted">La classifica non è disponibile ora.</p>;
+  if (!board) return null;
+  const podium = board.top.slice(0, 3);
+  const me = board.me ?? board.top.find((entry) => entry.is_me) ?? null;
+  const meBelow = me && !podium.some((entry) => entry.is_me) ? me : null;
+  if (podium.length === 0) return <p className="text-sm font-medium text-muted">Nessuno ha ancora finito: puoi essere il primo.</p>;
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <ol className="flex flex-col gap-0.5">
+        {podium.map((entry) => (
+          <RankRow key={entry.rank} entry={entry} compact />
+        ))}
+      </ol>
+      {meBelow && (
+        <>
+          {meBelow.rank > podium.length + 1 && (
+            <p aria-hidden className="text-center font-display leading-4 tracking-[0.4em] text-faint">
+              ···
+            </p>
+          )}
+          <ol start={meBelow.rank}>
+            <RankRow entry={meBelow} compact />
+          </ol>
+        </>
+      )}
+      <p className="mt-1 text-center text-xs font-semibold text-muted">
+        {board.players === 1 ? "1 giocatore oggi" : `${board.players} giocatori oggi`}
+      </p>
+    </div>
   );
 }
