@@ -99,6 +99,10 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
   const isBot = view.bot_difficulty !== null;
   const isActive = view.status === "active";
   const conquestOpen = Boolean(view.conquest && !view.conquest.resolved);
+  // The winner of a Conquest picks a card on a timer that starts when the match ends.
+  const pickOpen =
+    view.status === "finished" &&
+    Boolean(view.conquest && !view.conquest.resolved && view.conquest.role === "winner" && view.conquest.offered);
   const current = isActive ? view.rounds.find((r) => r.round === view.current_round && !r.resolved) : undefined;
   const deadline = current ? Date.parse(current.deadline_at) : null;
 
@@ -174,12 +178,13 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
     return () => clearTimeout(timer);
   }, [round, deadline, offset, submit]);
 
-  // A round result stays on screen for the reveal pause, then the next threat.
+  // A round result stays on screen for the reveal pause, then the next threat. The last one
+  // waits for a tap, unless the conquest pick follows: its timer is already running.
   useEffect(() => {
-    if (revealing === null || view.status !== "active") return;
+    if (revealing === null || (view.status !== "active" && !pickOpen)) return;
     const timer = setTimeout(() => setRevealing(null), balance.match.revealPauseSeconds * 1000);
     return () => clearTimeout(timer);
-  }, [revealing, view.status]);
+  }, [revealing, view.status, pickOpen]);
 
   async function forfeit() {
     setBusy(true);
@@ -205,10 +210,11 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
   // The choice, the round result, the conquest pick and a plain final result fit the screen:
   // nothing scrolls. A conquest or a story reward still makes the final result a longer page.
   const choosing = !shownRound && view.status !== "finished" && Boolean(current);
-  const picking =
-    !shownRound &&
-    view.status === "finished" &&
-    Boolean(view.conquest && !view.conquest.resolved && view.conquest.role === "winner" && view.conquest.offered);
+  const picking = !shownRound && pickOpen;
+  const pickSeconds =
+    pickOpen && view.conquest
+      ? Math.max(0, Math.ceil((Date.parse(view.conquest.deadline_at) - (now + offset)) / 1000))
+      : null;
   const fitted =
     choosing || Boolean(shownRound) || picking || (view.status === "finished" && !view.conquest && !story);
   useLockedScreen(fitted);
@@ -314,6 +320,7 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
           opponentName={opponentName}
           onContinue={() => setRevealing(null)}
           finished={view.status === "finished"}
+          pickSeconds={pickSeconds}
         />
       ) : picking && view.conquest ? (
         <ConquestPick
@@ -661,6 +668,7 @@ function RoundReveal({
   opponentName,
   onContinue,
   finished,
+  pickSeconds,
 }: {
   round: MatchRound;
   /** The round before, for the Riscossa a card received from it. */
@@ -670,6 +678,8 @@ function RoundReveal({
   opponentName: string;
   onContinue: () => void;
   finished: boolean;
+  /** After the last round of a won Conquest: the seconds left to pick a card. */
+  pickSeconds: number | null;
 }) {
   const mine = team.find((card) => card.instance_id === round.my_play?.instance_id);
   const theirs = round.opponent_play;
@@ -787,7 +797,12 @@ function RoundReveal({
             </p>
           )}
           {/* The whole screen continues; this stays as the hint and the keyboard's way on. */}
-          <button type="button" className="mx-auto flex h-8 items-center gap-1.5 px-3 text-xs font-extrabold uppercase tracking-wide">
+          <button
+            type="button"
+            className={`mx-auto flex h-8 items-center gap-1.5 px-3 text-xs font-extrabold uppercase ${
+              pickSeconds === null ? "tracking-wide" : "-skew-x-8 bg-black text-comic-yellow"
+            }`}
+          >
             <svg viewBox="0 0 14 16" className="h-4 w-3.5" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden>
               <path
                 d="M5 9V2.5c0-.8 1.8-.8 1.8 0V9m0-1.5c0-.8 1.8-.8 1.8 0V9m0-1c0-.8 1.8-.8 1.8 0v3.5c0 2.5-1.6 3.8-3.8 3.8S3.2 14 2.2 12L1 9.6c-.4-.8.6-1.4 1.2-.8L5 11"
@@ -795,7 +810,16 @@ function RoundReveal({
                 strokeLinejoin="round"
               />
             </svg>
-            {finished ? "Tocca per vedere il risultato" : "Tocca per continuare"}
+            {pickSeconds !== null ? (
+              <>
+                Tocca per scegliere la conquista
+                <span className="normal-case">· {pickSeconds} s</span>
+              </>
+            ) : finished ? (
+              "Tocca per vedere il risultato"
+            ) : (
+              "Tocca per continuare"
+            )}
           </button>
         </div>
       </section>
