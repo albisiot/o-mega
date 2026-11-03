@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { carriedBonusAfter, scorePlay, type AbilityFamilies, type ThreatModifier } from "@o-mega/game-engine";
 import { Silhouette } from "@/components/card-view";
 import { ComicBurst } from "@/components/comic-parts";
-import { ConquestPanel } from "@/components/conquest-panel";
+import { ConquestPanel, ConquestPick } from "@/components/conquest-panel";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
 import { StoryRewardPanel } from "@/components/story-reward";
@@ -51,6 +51,11 @@ const WINNER_STYLES = {
 const SCORES_SECONDS = 0.4;
 const NAME_SECONDS = 1.5;
 
+/** Who the player faced, as the end of a match names them. */
+function rivalName(view: MatchView): string {
+  return view.bot_difficulty ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty]}` : (view.opponent?.username ?? "L'avversario");
+}
+
 function lastResolvedRound(view: MatchView): number {
   return Math.max(0, ...view.rounds.filter((r) => r.resolved).map((r) => r.round));
 }
@@ -66,6 +71,8 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
   const [error, setError] = useState<string | null>(null);
   const [abilities, setAbilities] = useState<AbilityInfo[]>([]);
   const [confirmForfeit, setConfirmForfeit] = useState(false);
+  // Whether the conquest pick was still open on this screen: only then the conquered card celebrates.
+  const [conquestLive, setConquestLive] = useState(() => Boolean(initial.conquest && !initial.conquest.resolved));
   const now = useNow(250);
 
   useEffect(() => {
@@ -80,6 +87,7 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
   const apply = useCallback((next: MatchView) => {
     setView(next);
     setOffset(Date.parse(next.server_now) - Date.now());
+    if (next.conquest && !next.conquest.resolved) setConquestLive(true);
     const newest = lastResolvedRound(next);
     if (newest > revealedUpTo.current) {
       revealedUpTo.current = newest;
@@ -194,17 +202,22 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
   const opponentName = view.opponent?.username ?? "Bot";
   const absentMs =
     !isBot && isActive && view.opponent?.last_seen_at ? now + offset - Date.parse(view.opponent.last_seen_at) : 0;
-  // The choice, the round result and a plain final result fit the screen: nothing scrolls.
-  // A conquest or a story reward still makes the final result a longer page.
+  // The choice, the round result, the conquest pick and a plain final result fit the screen:
+  // nothing scrolls. A conquest or a story reward still makes the final result a longer page.
   const choosing = !shownRound && view.status !== "finished" && Boolean(current);
+  const picking =
+    !shownRound &&
+    view.status === "finished" &&
+    Boolean(view.conquest && !view.conquest.resolved && view.conquest.role === "winner" && view.conquest.offered);
   const fitted =
-    choosing || Boolean(shownRound) || (view.status === "finished" && !view.conquest && !story);
+    choosing || Boolean(shownRound) || picking || (view.status === "finished" && !view.conquest && !story);
   useLockedScreen(fitted);
 
   return (
     <div className={fitted ? "game-shell" : "flex flex-1 flex-col"}>
-      {/* One strip: the score, the threat levels (with what each round revealed) and the way out. */}
-      <header className="relative flex items-center gap-1.5 px-3 py-1">
+      {/* One strip: the score, the threat levels (with what each round revealed) and the way out.
+          The conquest pick has a header of its own. */}
+      <header className={picking ? "hidden" : "relative flex items-center gap-1.5 px-3 py-1"}>
         <div className="min-w-0 max-w-[6.5rem] shrink-0 leading-none">
           <p className="truncate text-[10px] font-bold text-muted">
             {view.mode === "bot"
@@ -302,8 +315,25 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
           onContinue={() => setRevealing(null)}
           finished={view.status === "finished"}
         />
+      ) : picking && view.conquest ? (
+        <ConquestPick
+          matchId={view.id}
+          conquest={view.conquest}
+          opponentName={rivalName(view)}
+          roundsWon={view.rounds_won}
+          serverNow={now + offset}
+          onUpdate={apply}
+          abilities={abilities}
+        />
       ) : view.status === "finished" ? (
-        <MatchResult view={view} serverNow={now + offset} onUpdate={apply} abilities={abilities} story={story} />
+        <MatchResult
+          view={view}
+          serverNow={now + offset}
+          onUpdate={apply}
+          abilities={abilities}
+          story={story}
+          conquestLive={conquestLive}
+        />
       ) : current ? (
         <ChoosePhase
           view={view}
@@ -878,12 +908,14 @@ function MatchResult({
   onUpdate,
   abilities,
   story,
+  conquestLive,
 }: {
   view: MatchView;
   serverNow: number;
   onUpdate: (next: MatchView) => void;
   abilities: AbilityInfo[];
   story: boolean;
+  conquestLive: boolean;
 }) {
   const title =
     view.end_reason === "forfeit" && view.result === "loss"
@@ -943,12 +975,11 @@ function MatchResult({
         <ConquestPanel
           matchId={view.id}
           conquest={view.conquest}
-          opponentName={
-            view.bot_difficulty ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty]}` : (view.opponent?.username ?? "L'avversario")
-          }
+          opponentName={rivalName(view)}
           serverNow={serverNow}
           onUpdate={onUpdate}
           abilities={abilities}
+          live={conquestLive}
         />
       )}
 

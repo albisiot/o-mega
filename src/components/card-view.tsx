@@ -25,10 +25,12 @@ type CardViewProps = {
   abilities?: AbilityInfo[] | null;
   size?: "lg" | "sm";
   glow?: boolean;
+  /** Small layout only: the card takes the height it is given and the art grows to fill it. */
+  fill?: boolean;
 };
 
 /** A character card. The frame and art treatment grow with the rarity; without art it shows a placeholder silhouette. */
-export function CardView({ card, abilities, size = "lg", glow = false }: CardViewProps) {
+export function CardView({ card, abilities, size = "lg", glow = false, fill = false }: CardViewProps) {
   const color = card.rarity.color;
   const large = size === "lg";
   const effects = cardEffects(card, size);
@@ -41,11 +43,11 @@ export function CardView({ card, abilities, size = "lg", glow = false }: CardVie
   const article = (
     <article
       style={style}
-      className={`rounded-xl ${large ? "w-[300px] p-[7px]" : "w-full p-1"} ${effects.includes("aura") ? "fx-aura" : ""} ${
+      className={`rounded-xl ${large ? "w-[300px] p-[7px]" : `w-full p-1 ${fill ? "flex h-full flex-col" : ""}`} ${effects.includes("aura") ? "fx-aura" : ""} ${
         glow ? "animate-rare-glow" : ""
       }`}
     >
-      <div className="relative z-[1] flex flex-col overflow-hidden rounded-md bg-panel text-foreground">
+      <div className={`relative z-[1] flex flex-col overflow-hidden rounded-md bg-panel text-foreground ${fill ? "min-h-0 flex-1" : ""}`}>
         <header className={`relative z-[2] flex items-center justify-between gap-2 ${large ? "h-12 px-2.5" : "h-8 px-1.5"}`}>
           <CardName card={card} size={size} />
           <RarityTag rarity={card.rarity} compact={!large} />
@@ -56,7 +58,7 @@ export function CardView({ card, abilities, size = "lg", glow = false }: CardVie
           faction={card.faction}
           artUrl={card.art_url}
           effects={effects}
-          className={large ? "h-44" : "h-24"}
+          className={fill ? "min-h-0 flex-1" : large ? "h-44" : "h-24"}
         >
           {card.variant && <VariantTag name={card.variant.name} compact={!large} />}
           <span
