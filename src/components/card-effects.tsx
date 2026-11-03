@@ -32,15 +32,26 @@ export const CARD_TOUCH_HANDLERS = {
 };
 
 /** The layers an effect paints over the art. */
-export function CardArtEffects({ effects, artUrl }: { effects: CardEffect[]; artUrl?: string | null }) {
+export function CardArtEffects({
+  effects,
+  artUrl,
+  srcSet,
+  sizes,
+}: {
+  effects: CardEffect[];
+  artUrl?: string | null;
+  /** Same choice of files as the art underneath, so the glitch copies match it. */
+  srcSet?: string;
+  sizes?: string;
+}) {
   return (
     <>
       {effects.includes("glitch") && artUrl && (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={withBasePath(artUrl)} alt="" loading="lazy" className="fx-glitch fx-glitch-a" />
+          <img src={withBasePath(artUrl)} srcSet={srcSet} sizes={sizes} alt="" loading="lazy" className="fx-glitch fx-glitch-a" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={withBasePath(artUrl)} alt="" loading="lazy" className="fx-glitch fx-glitch-b" />
+          <img src={withBasePath(artUrl)} srcSet={srcSet} sizes={sizes} alt="" loading="lazy" className="fx-glitch fx-glitch-b" />
         </>
       )}
       {effects.includes("holo") && <span aria-hidden className="fx-layer fx-holo" />}

@@ -6,3 +6,11 @@
 export function fullArtUrl(artUrl: string): string {
   return artUrl.replace(/^\/cards\//, "/cards/full/");
 }
+
+/**
+ * The 360px copy of a card drawing, for album tiles and small cards shown in
+ * a grid (scripts/generate-thumbs.mjs). Every drawing has one.
+ */
+export function thumbArtUrl(artUrl: string): string {
+  return artUrl.replace(/^\/cards\//, "/cards/thumb/");
+}

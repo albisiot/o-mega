@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { CARD_TOUCH_HANDLERS, CardArtEffects } from "@/components/card-effects";
 import { CardName } from "@/components/card-name";
+import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { cardEffects, type CardEffect } from "@/lib/card-effects";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
@@ -27,10 +28,16 @@ type CardViewProps = {
   glow?: boolean;
   /** Small layout only: the card takes the height it is given and the art grows to fill it. */
   fill?: boolean;
+  /**
+   * Small layout only: the art's displayed width, as an <img sizes> value. Lets the
+   * browser pick the 360px thumbnail on phones. Leave it off where the same card is
+   * also shown large, so the drawing already downloaded is reused.
+   */
+  thumbSizes?: string;
 };
 
 /** A character card. The frame and art treatment grow with the rarity; without art it shows a placeholder silhouette. */
-export function CardView({ card, abilities, size = "lg", glow = false, fill = false }: CardViewProps) {
+export function CardView({ card, abilities, size = "lg", glow = false, fill = false, thumbSizes }: CardViewProps) {
   const color = card.rarity.color;
   const large = size === "lg";
   const effects = cardEffects(card, size);
@@ -57,6 +64,7 @@ export function CardView({ card, abilities, size = "lg", glow = false, fill = fa
           rarity={card.rarity}
           faction={card.faction}
           artUrl={card.art_url}
+          thumbSizes={large ? undefined : thumbSizes}
           effects={effects}
           className={fill ? "min-h-0 flex-1" : large ? "h-44" : "h-24"}
         >
@@ -124,6 +132,7 @@ export function CardArt({
   rarity,
   faction,
   artUrl,
+  thumbSizes,
   effects = [],
   className,
   children,
@@ -131,16 +140,26 @@ export function CardArt({
   rarity: CardData["rarity"];
   faction: string;
   artUrl?: string | null;
+  /** Displayed width of the art (<img sizes>): offers the 360px thumbnail next to the 600px drawing. */
+  thumbSizes?: string;
   effects?: CardEffect[];
   className: string;
   children?: ReactNode;
 }) {
+  const srcSet = artUrl && thumbSizes ? `${withBasePath(thumbArtUrl(artUrl))} 360w, ${withBasePath(artUrl)} 600w` : undefined;
   return (
     <div className={`@container relative overflow-hidden ${className}`} style={rarityArt(rarity)} aria-hidden={!children}>
       {artUrl ? (
         // Plain <img>: the static export has no image optimization.
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={withBasePath(artUrl)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-top" />
+        <img
+          src={withBasePath(artUrl)}
+          srcSet={srcSet}
+          sizes={thumbSizes}
+          alt=""
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover object-top"
+        />
       ) : (
         <>
           {isFoil(rarity) && (
@@ -158,7 +177,7 @@ export function CardArt({
           />
         </>
       )}
-      <CardArtEffects effects={effects} artUrl={artUrl} />
+      <CardArtEffects effects={effects} artUrl={artUrl} srcSet={srcSet} sizes={thumbSizes} />
       {children}
     </div>
   );

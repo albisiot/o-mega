@@ -308,6 +308,8 @@ function AlbumTile({
           rarity={card.rarity}
           faction={card.faction}
           artUrl={ownedArt(card, owned).art_url}
+          // Three tiles per row inside the page padding, minus each tile's 4px frame.
+          thumbSizes="calc((100vw - 72px) / 3)"
           effects={cardEffects(card, "sm")}
           className="h-24 rounded-t"
         >

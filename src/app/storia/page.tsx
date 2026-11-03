@@ -129,7 +129,7 @@ function MissionRow({ mission, open, onToggle }: { mission: StoryMission; open: 
           <div className="flex items-center gap-3">
             {mission.reward_card && (
               <div className="w-24 shrink-0">
-                <CardView card={mission.reward_card} size="sm" />
+                <CardView card={mission.reward_card} size="sm" thumbSizes="88px" />
               </div>
             )}
             <p className="text-sm font-bold">
