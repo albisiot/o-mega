@@ -13,6 +13,7 @@ import { fetchCatalog, fetchCollection, seenCatalog, seenCollection } from "@/li
 import { fetchActiveMatch, type ActiveMatch } from "@/lib/match";
 import { fetchPackOdds, seenPackOdds } from "@/lib/packs";
 import { countOwnedCards, type Profile } from "@/lib/player";
+import { useLockedScreen, usePageFits } from "@/lib/use-locked-screen";
 import { usePackStatus } from "@/lib/use-pack-status";
 import { fetchCoinHistory, seenCoinHistory } from "@/lib/wallet";
 
@@ -70,11 +71,15 @@ export function HomeScreen({ profile }: { profile: Profile }) {
     };
   }, []);
 
+  // The home fills the screen above the bottom bar: the pack panel and Gioca share the room
+  // left. Where even their smallest sizes do not fit (Safari on a small phone), it scrolls.
+  useLockedScreen(usePageFits());
+
   return (
     <div className="flex flex-1 flex-col">
       <WorldIntro next={<FirstRunTutorial />} />
-      <header className="flex items-center justify-between px-4 py-2">
-        <span className="-skew-x-8 font-display text-[34px] leading-10 tracking-wide text-comic-yellow [text-shadow:3px_3px_0_var(--comic-magenta)]">
+      <header className="flex shrink-0 items-center justify-between px-4 py-1">
+        <span className="-skew-x-8 font-display text-[30px] leading-9 tracking-wide text-comic-yellow [text-shadow:3px_3px_0_var(--comic-magenta)]">
           O-MEGA
         </span>
         <div className="flex items-center gap-3">
@@ -85,50 +90,61 @@ export function HomeScreen({ profile }: { profile: Profile }) {
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col gap-3 px-3 pb-3">
+      <main className="flex flex-1 flex-col gap-2 px-3 pb-2">
         {activeMatch && (
           <Link
             href={`/partita/?id=${activeMatch.id}`}
-            className="flex min-h-14 items-center justify-between gap-3 bg-comic-cyan px-4 py-2.5 text-black"
+            className="flex min-h-12 shrink-0 items-center justify-between gap-3 bg-comic-cyan px-3.5 py-1 text-black"
           >
-            <div>
-              <p className="font-display text-lg uppercase">Hai una partita in corso</p>
-              <p className="text-sm font-semibold">Round {activeMatch.current_round}: tocca per riprenderla.</p>
-            </div>
-            <span className="font-display text-2xl" aria-hidden>
-              →
+            <span className="font-display text-[17px] uppercase leading-5">Hai una partita in corso</span>
+            <span className="flex items-center gap-2 whitespace-nowrap text-[13px] font-extrabold">
+              Round {activeMatch.current_round} · riprendi
+              <span className="font-display text-[22px] font-normal" aria-hidden>
+                →
+              </span>
             </span>
           </Link>
         )}
 
-        <PackPanel status={packs.status} now={packs.now} resetsAt={packs.resetsAt} onFailed={packs.refresh} />
-        {packs.error && <p className="text-sm font-semibold text-comic-magenta">{packs.error}</p>}
+        <PackPanel
+          status={packs.status}
+          now={packs.now}
+          resetsAt={packs.resetsAt}
+          loadError={packs.error}
+          onFailed={packs.refresh}
+        />
 
+        {/* Sized by its share of the room: the lettering follows its height. */}
         <Link
           href="/gioca"
-          className="cut-both speed-lines-moving flex min-h-[116px] items-center justify-between bg-comic-magenta px-5 py-2 text-black"
+          className="cut-both speed-lines-moving flex min-h-21 flex-[1_1_0] items-center justify-between gap-3 bg-comic-magenta px-[18px] py-2 text-black [container-type:size]"
         >
           <div>
-            <p className="-skew-x-8 font-display text-6xl uppercase">Gioca</p>
-            <p className="mt-1 text-sm font-extrabold">Sfide 1 contro 1 da 3 minuti</p>
+            <p className="-skew-x-8 font-display text-[length:clamp(46px,min(46cqh,27cqw),104px)] uppercase leading-[0.95]">
+              Gioca
+            </p>
+            <p className="mt-1 text-sm font-extrabold leading-[18px]">Sfide 1 contro 1 da 3 minuti</p>
           </div>
-          <span aria-hidden className="flex h-14 w-14 -skew-x-8 items-center justify-center bg-black">
-            <svg viewBox="0 0 24 24" className="h-8 w-8 fill-comic-magenta">
+          <span
+            aria-hidden
+            className="flex size-[clamp(50px,34cqh,76px)] shrink-0 -skew-x-8 items-center justify-center bg-black"
+          >
+            <svg viewBox="0 0 24 24" className="size-[56%] fill-comic-magenta">
               <path d="M6 4l14 8-14 8z" />
             </svg>
           </span>
         </Link>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Link href="/collezione" className="flex min-h-24 flex-col gap-1 bg-comic-cyan px-3.5 py-3 text-black">
-            <span className="font-display text-2xl uppercase">Collezione</span>
-            <span className="text-sm font-bold">
+        <div className="grid shrink-0 grid-cols-2 gap-2">
+          <Link href="/collezione" className="flex min-h-[70px] flex-col justify-center gap-0.5 bg-comic-cyan px-3 py-2 text-black">
+            <span className="font-display text-[22px] uppercase leading-[26px]">Collezione</span>
+            <span className="text-[13px] font-bold leading-[17px]">
               {cardCount === null ? "…" : cardCount} {cardCount === 1 ? "carta" : "carte"} · album e doppioni
             </span>
           </Link>
-          <Link href="/negozio" className="flex min-h-24 flex-col gap-1 bg-foreground px-3.5 py-3 text-black">
-            <span className="font-display text-2xl uppercase">Negozio</span>
-            <span className="text-sm font-bold">Pacchetti e probabilità</span>
+          <Link href="/negozio" className="flex min-h-[70px] flex-col justify-center gap-0.5 bg-foreground px-3 py-2 text-black">
+            <span className="font-display text-[22px] uppercase leading-[26px]">Negozio</span>
+            <span className="text-[13px] font-bold leading-[17px]">Pacchetti e probabilità</span>
           </Link>
         </div>
       </main>
