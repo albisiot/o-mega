@@ -5,12 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import type { BotDifficulty } from "@o-mega/game-engine";
 import { useRequireSignedIn } from "@/components/auth-provider";
-import { PageHeader } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { TeamPicker } from "@/components/team-picker";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
 import { startStoryMission, storyMatchHref } from "@/lib/story";
+import { useLockedScreen } from "@/lib/use-locked-screen";
 import {
   createLobby,
   DIFFICULTY_LABELS,
@@ -93,6 +93,8 @@ function TeamPageContent() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  // The page fits the screen: only the card grid scrolls, inside the team picker.
+  useLockedScreen(true);
 
   useEffect(() => {
     if (!session) return;
@@ -152,17 +154,24 @@ function TeamPageContent() {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
-      <PageHeader
-        backHref={mode.kind === "story" ? "/storia" : "/gioca"}
-        backLabel={mode.kind === "story" ? "Storia" : "Gioca"}
-        title="La tua squadra" subtitle={COPY[mode.kind].subtitle(mode)} />
+    <div className="game-shell">
+      <header className="flex items-center gap-2.5 px-3 py-1">
+        <Link
+          href={mode.kind === "story" ? "/storia" : "/gioca"}
+          aria-label={`Torna a ${mode.kind === "story" ? "Storia" : "Gioca"}`}
+          className="btn btn-ghost h-11 w-11 shrink-0 px-0"
+        >
+          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.6} aria-hidden>
+            <path d="M12 3 5 10l7 7M5 10h13" strokeLinejoin="round" />
+          </svg>
+        </Link>
+        <div className="min-w-0">
+          <h1 className="font-display text-[22px] uppercase leading-6 text-comic-yellow">La tua squadra</h1>
+          <p className="truncate text-[11px] font-bold text-muted">{COPY[mode.kind].subtitle(mode)}</p>
+        </div>
+      </header>
 
-      <main className="flex flex-1 flex-col gap-3 px-3">
-        <p className="text-sm font-medium text-muted">
-          Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello
-          basso e i generalisti per quelle alte.
-        </p>
+      <main className="flex min-h-0 flex-1 flex-col px-3 pt-1.5">
         {error && (
           <p className="text-sm font-semibold text-comic-magenta">
             {error}{" "}
@@ -186,6 +195,7 @@ function TeamPageContent() {
             startLabel={COPY[mode.kind].start(mode)}
             starting={starting}
             onStart={start}
+            intro="Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello basso e i generalisti per quelle alte."
           />
         ) : (
           !error && <LoadingScreen label="Caricamento della collezione…" />

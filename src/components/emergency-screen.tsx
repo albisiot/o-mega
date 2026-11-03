@@ -33,6 +33,7 @@ export function EmergencyScreen({ initial }: { initial: EmergencyView }) {
   const [view, setView] = useState(initial);
   const [revealing, setRevealing] = useState<EmergencyPlay | null>(null);
   const [abilities, setAbilities] = useState<AbilityInfo[]>([]);
+  const [picking, setPicking] = useState(false);
 
   useEffect(() => {
     fetchAbilities()
@@ -46,13 +47,15 @@ export function EmergencyScreen({ initial }: { initial: EmergencyView }) {
   }
 
   const run = view.run;
-  // Choosing fits the screen: nothing scrolls, and one strip replaces the page header.
+  // Picking the squad and choosing fit the screen: nothing scrolls, and one strip with the
+  // levels replaces the page header.
   const choosing = Boolean(run && !revealing && run.status !== "finished");
-  useLockedScreen(choosing);
+  const fitted = choosing || (!run && picking);
+  useLockedScreen(fitted);
 
   return (
-    <div className={choosing ? "game-shell" : "flex flex-1 flex-col"}>
-      {choosing ? (
+    <div className={fitted ? "game-shell" : "flex flex-1 flex-col"}>
+      {fitted ? (
         <header className="relative flex items-center gap-1.5 px-3 py-1">
           <Link href="/gioca" aria-label="Torna a Gioca" className="btn btn-ghost h-11 w-11 shrink-0 px-0">
             <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.6} aria-hidden>
@@ -68,7 +71,7 @@ export function EmergencyScreen({ initial }: { initial: EmergencyView }) {
         </>
       )}
       {!run ? (
-        <Briefing view={view} onStarted={setView} />
+        <Briefing view={view} picking={picking} onPick={() => setPicking(true)} onStarted={setView} />
       ) : revealing ? (
         <PlayReveal
           play={revealing}
@@ -169,9 +172,18 @@ type Collection = {
 };
 
 /** Before the attempt: the rules, the day's levels, then the squad. */
-function Briefing({ view, onStarted }: { view: EmergencyView; onStarted: (next: EmergencyView) => void }) {
+function Briefing({
+  view,
+  picking,
+  onPick,
+  onStarted,
+}: {
+  view: EmergencyView;
+  picking: boolean;
+  onPick: () => void;
+  onStarted: (next: EmergencyView) => void;
+}) {
   const [collection, setCollection] = useState<Collection | null>(null);
-  const [picking, setPicking] = useState(false);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { threats_per_run: size, max_failures: maxFailures, targets, rewards } = view.rules;
@@ -204,8 +216,8 @@ function Briefing({ view, onStarted }: { view: EmergencyView; onStarted: (next: 
 
   if (picking) {
     return (
-      <main className="flex flex-1 flex-col gap-3 px-3 pt-3">
-        <p className="text-sm font-medium text-muted">
+      <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pt-1.5">
+        <p className="text-xs font-medium text-muted">
           Scegli {size} personaggi diversi guardando i livelli qui sopra: ognuno affronterà una sola Minaccia. Una volta
           iniziata, la squadra non si cambia e il tentativo di oggi è quello.
         </p>
@@ -269,7 +281,7 @@ function Briefing({ view, onStarted }: { view: EmergencyView; onStarted: (next: 
 
       <Leaderboard />
 
-      <button type="button" onClick={() => setPicking(true)} className="btn btn-primary">
+      <button type="button" onClick={onPick} className="btn btn-primary">
         Scegli la squadra
       </button>
     </main>

@@ -1,10 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Silhouette } from "@/components/card-view";
+import { InfoTip } from "@/components/info-tip";
 import { balance } from "@/config/balance";
+import { withBasePath } from "@/lib/base-path";
 import type { CatalogCard } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
 import { deleteFormation, saveFormation, type Formation, type VariantCopy } from "@/lib/match";
+import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 
 const LAST_TEAM_KEY = "o-mega.last-team";
 
@@ -36,17 +40,25 @@ type TeamPickerProps = {
   onStart: (cardInstanceIds: string[]) => void;
   /** Emergenza: a larger squad, which formations (always a match team) cannot hold. */
   squadSize?: number;
+  /** The advice on how to choose, behind an "i". */
+  intro?: string;
 };
 
-/** Pick different characters among the owned ones (a match team by default); load or save formations. */
+/**
+ * Pick different characters among the owned ones (a match team by default); load or save formations.
+ * It fills the screen: the squad and the start button stay put while the cards scroll between them.
+ */
 export function TeamPicker(props: TeamPickerProps) {
-  const { catalog, owned, conquerable, atRiskCopies, variantCopies, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart, squadSize } = props;
+  const { catalog, owned, conquerable, atRiskCopies, variantCopies, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart, squadSize, intro } = props;
   const size = squadSize ?? balance.match.teamSize;
   const lastTeamKey = squadSize ? `${LAST_TEAM_KEY}.${squadSize}` : LAST_TEAM_KEY;
   const [selected, setSelected] = useState<string[]>(() => loadLastTeam(lastTeamKey, owned).slice(0, size));
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState("");
   const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  // The squad slot whose choices (Conquest stake, artwork variant) are open: a definition id.
+  const [optionsOf, setOptionsOf] = useState<string | null>(null);
 
   const cards = useMemo(
     () =>
@@ -70,6 +82,17 @@ export function TeamPicker(props: TeamPickerProps) {
   // The variant the player can switch to; none when the default copy already is that one.
   const switchableVariant = (definitionId: string) =>
     variantCopies.get(definitionId)?.find((copy) => copy.id !== owned.get(definitionId));
+
+  // Conquest: field the pack copy of a character also owned as starter, or back.
+  const canStake = (definitionId: string) => Boolean(atRiskCopies?.has(definitionId)) && !variantChoice.has(definitionId);
+
+  function toggleStake(definitionId: string) {
+    setStaked((current) => {
+      const next = new Set(current);
+      if (!next.delete(definitionId)) next.add(definitionId);
+      return next;
+    });
+  }
 
   function toggleVariant(definitionId: string, copy: VariantCopy) {
     setVariantChoice((current) => {
@@ -165,33 +188,62 @@ export function TeamPicker(props: TeamPickerProps) {
     onStart(instanceIds);
   }
 
+  const optionsCard = optionsOf ? byId.get(optionsOf) : null;
+  const optionsVariant = optionsOf ? switchableVariant(optionsOf) : undefined;
+
   return (
-    <div className="flex flex-col gap-4 pb-28">
-      <section className={squadSize ? "grid grid-cols-4 gap-1.5" : "flex gap-1.5"}>
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* The squad. A slot with choices (Conquest stake, artwork variant) opens them; otherwise a tap removes the card. */}
+      <section className={`grid gap-1.5 ${squadSize ? "grid-cols-4" : "grid-cols-5"}`}>
         {Array.from({ length: size }, (_, i) => {
           const card = selected[i] ? byId.get(selected[i]) : null;
+          const height = squadSize ? "h-14" : "h-[72px]";
+          if (!card) {
+            return (
+              <div
+                key={i}
+                aria-label={`Posto ${i + 1} libero`}
+                className={`flex ${height} -skew-x-8 items-center justify-center border-2 border-dashed border-line bg-panel font-display text-xl text-faint`}
+              >
+                {i + 1}
+              </div>
+            );
+          }
+          const hasOptions = canStake(card.id) || Boolean(switchableVariant(card.id));
+          const mark = variantChoice.has(card.id) ? "★" : staked.has(card.id) ? "Palio" : hasOptions ? "⋯" : null;
           return (
             <button
               key={i}
               type="button"
-              disabled={!card}
-              onClick={() => card && toggle(card.id)}
-              className="flex h-16 min-w-0 flex-1 -skew-x-8 flex-col items-center justify-center border-2 bg-panel px-1 text-center"
-              style={{ borderColor: card ? card.rarity.color : "var(--line)", borderStyle: card ? "solid" : "dashed" }}
-              aria-label={card ? `Togli ${card.name}` : `Posto ${i + 1} libero`}
+              onClick={() => (hasOptions ? setOptionsOf(card.id) : toggle(card.id))}
+              aria-label={hasOptions ? `${card.name}: scelte` : `Togli ${card.name}`}
+              className={`relative ${height} min-w-0 -skew-x-8 overflow-hidden border-2 bg-panel-raised`}
+              style={{ borderColor: card.rarity.color }}
             >
-              {card ? (
-                <span className="line-clamp-2 font-display text-xs uppercase leading-tight">{card.name}</span>
-              ) : (
-                <span className="font-display text-xl text-faint">{i + 1}</span>
+              {card.art_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={withBasePath(card.art_url)} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
               )}
+              <span className="absolute left-1 top-0.5 bg-comic-yellow px-1 font-display text-[13px] leading-4 text-black">{i + 1}</span>
+              {mark && (
+                <span
+                  className={`absolute right-1 top-0.5 px-1 text-[9px] font-extrabold uppercase leading-[13px] ${
+                    mark === "⋯" ? "bg-black text-foreground" : "bg-comic-magenta text-black"
+                  }`}
+                >
+                  {mark}
+                </span>
+              )}
+              <span className="absolute inset-x-0 bottom-0 truncate bg-black/75 px-0.5 text-center font-display text-[10.5px] uppercase leading-[15px]">
+                {card.name}
+              </span>
             </button>
           );
         })}
       </section>
 
       {conquerable && (
-        <section className="flex flex-col gap-1 bg-comic-magenta p-3 text-sm font-semibold text-black">
+        <section className="mt-2 flex flex-col gap-0.5 bg-comic-magenta px-3 py-1.5 text-xs font-semibold text-black">
           <p>
             Carte in palio: <span className="font-extrabold">{atRisk}</span> (minimo {minConquerable}). Se perdi, il
             vincitore può prendertene una. Le starter sono protette.
@@ -207,136 +259,160 @@ export function TeamPicker(props: TeamPickerProps) {
         </section>
       )}
 
-      <section className={squadSize ? "hidden" : "flex flex-col gap-2"}>
-        <div className="flex items-center justify-between">
-          <h2 className="section-title">Formazioni</h2>
-          {!naming && (
-            <button
-              type="button"
-              disabled={selected.length < size || formations.length >= balance.formations.maxPerPlayer}
-              onClick={() => setNaming(true)}
-              className="min-h-11 text-sm font-bold text-comic-yellow disabled:text-faint"
-            >
-              + Salva questa squadra
-            </button>
-          )}
-        </div>
-        {naming && (
-          <div className="flex gap-2">
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              maxLength={30}
-              placeholder="Nome della formazione"
-              className="input-comic min-w-0 flex-1"
-            />
-            <button type="button" onClick={save} disabled={!name.trim()} className="btn btn-outline">
-              Salva
-            </button>
-            <button type="button" onClick={() => setNaming(false)} className="btn btn-ghost px-3">
-              Annulla
-            </button>
-          </div>
+      <div className="relative mt-2.5 flex min-h-11 items-center gap-2">
+        <h2 className="section-title text-base leading-5">Le tue carte · {cards.length}</h2>
+        {intro && <InfoTip text={intro} />}
+        {!squadSize && (
+          <button
+            type="button"
+            onClick={() => setMenuOpen((shown) => !shown)}
+            aria-expanded={menuOpen}
+            className="btn btn-ghost ml-auto min-h-11 gap-1.5 px-3 text-[13px]"
+          >
+            Formazioni
+            <svg viewBox="0 0 10 7" className="h-[7px] w-2.5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+              <path d="M1 1l4 4 4-4" />
+            </svg>
+          </button>
         )}
-        {formations.length === 0 ? (
-          <p className="text-sm font-medium text-muted">Nessuna formazione salvata.</p>
-        ) : (
-          <div className="-mx-3 flex gap-1.5 overflow-x-auto px-3 pb-1">
-            {formations.map((formation) => (
-              <span key={formation.id} className="flex shrink-0 items-center border-2 border-line bg-panel">
-                <button type="button" onClick={() => loadFormation(formation)} className="min-h-10 pl-3 pr-1 text-sm font-bold">
-                  {formation.name}
-                </button>
+        {menuOpen && (
+          <>
+            <button type="button" aria-label="Chiudi" onClick={() => setMenuOpen(false)} className="fixed inset-0 z-20 cursor-default" />
+            <div className="absolute right-0 top-full z-30 mt-1 flex w-72 max-w-full flex-col gap-1.5 border-2 border-foreground bg-panel p-2 shadow-[5px_5px_0_#000]">
+              {formations.length === 0 ? (
+                <p className="px-1 text-sm font-medium text-muted">Nessuna formazione salvata.</p>
+              ) : (
+                formations.map((formation) => (
+                  <span key={formation.id} className="flex items-center bg-panel-raised">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        loadFormation(formation);
+                        setMenuOpen(false);
+                      }}
+                      className="min-h-11 min-w-0 flex-1 truncate px-3 text-left text-sm font-bold"
+                    >
+                      {formation.name}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => remove(formation)}
+                      aria-label={`Elimina ${formation.name}`}
+                      className="min-h-11 px-3 text-sm font-bold text-muted"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))
+              )}
+              {naming ? (
+                <div className="flex gap-1.5">
+                  <input
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    maxLength={30}
+                    placeholder="Nome della formazione"
+                    className="input-comic min-w-0 flex-1"
+                  />
+                  <button type="button" onClick={save} disabled={!name.trim()} className="btn btn-outline px-3">
+                    Salva
+                  </button>
+                </div>
+              ) : (
                 <button
                   type="button"
-                  onClick={() => remove(formation)}
-                  aria-label={`Elimina ${formation.name}`}
-                  className="min-h-10 px-2.5 text-sm font-bold text-muted"
+                  disabled={selected.length < size || formations.length >= balance.formations.maxPerPlayer}
+                  onClick={() => setNaming(true)}
+                  className="min-h-11 border-2 border-dashed border-line px-3 text-left text-sm font-bold text-comic-yellow disabled:text-faint"
                 >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-        {message && (
-          <p className={`text-sm font-semibold ${message.isError ? "text-comic-magenta" : "text-comic-cyan"}`}>{message.text}</p>
-        )}
-      </section>
-
-      <ul className="grid grid-cols-2 gap-2">
-        {cards.map((card) => {
-          const position = selected.indexOf(card.id);
-          const variant = switchableVariant(card.id);
-          const usesVariant = variantChoice.has(card.id);
-          const top = Object.entries(card.stats)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 3);
-          return (
-            <li key={card.id}>
-              <button
-                type="button"
-                onClick={() => toggle(card.id)}
-                className={`relative flex w-full flex-col gap-0.5 border-[3px] bg-panel p-2 text-left ${
-                  position >= 0 ? "shadow-[4px_4px_0_var(--comic-magenta)]" : ""
-                }`}
-                style={{ borderColor: position >= 0 ? "var(--comic-yellow)" : card.rarity.color }}
-                aria-pressed={position >= 0}
-              >
-                {position >= 0 && (
-                  <span className="absolute right-1 top-1 flex h-6 w-6 -skew-x-8 items-center justify-center bg-comic-yellow font-display text-sm text-black">
-                    {position + 1}
-                  </span>
-                )}
-                <span className="truncate pr-6 font-display text-base uppercase">{card.name}</span>
-                <span className="text-xs font-semibold" style={{ color: card.rarity.color }}>
-                  {card.rarity.name}
-                  {card.power && <span className="text-muted"> · {card.power.name}</span>}
-                </span>
-                {conquerable && (
-                  <span className={`text-xs font-bold ${isAtRisk(card.id) ? "text-comic-magenta" : "text-comic-cyan"}`}>
-                    {isAtRisk(card.id) ? "In palio" : "Protetta"}
-                  </span>
-                )}
-                <span className="text-xs font-medium text-muted">
-                  {top.map(([code, value]) => `${code} ${value}`).join(" · ")}
-                </span>
-              </button>
-              {atRiskCopies?.has(card.id) && position >= 0 && !usesVariant && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setStaked((current) => {
-                      const next = new Set(current);
-                      if (!next.delete(card.id)) next.add(card.id);
-                      return next;
-                    })
-                  }
-                  className="mt-1 min-h-11 w-full border-2 border-line bg-panel px-2 text-xs font-bold"
-                >
-                  {staked.has(card.id) ? "Usa la copia starter" : "Metti in palio il doppione"}
+                  + Salva questa squadra
                 </button>
               )}
-              {variant && position >= 0 && (
+              {message && (
+                <p className={`text-xs font-semibold ${message.isError ? "text-comic-magenta" : "text-comic-cyan"}`}>{message.text}</p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+      {message && !menuOpen && (
+        <p className={`text-xs font-semibold ${message.isError ? "text-comic-magenta" : "text-comic-cyan"}`}>{message.text}</p>
+      )}
+
+      {/* Only the cards scroll; the fade at the bottom says there are more. */}
+      <div className="relative mt-1 min-h-0 flex-1">
+        <ul className="absolute inset-0 grid grid-cols-3 content-start gap-x-1.5 gap-y-2 overflow-y-auto overscroll-contain pb-8 pr-1 pt-1">
+          {cards.map((card) => {
+            const position = selected.indexOf(card.id);
+            const top = Object.entries(card.stats)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 3);
+            return (
+              <li key={card.id} className="min-w-0">
                 <button
                   type="button"
-                  onClick={() => toggleVariant(card.id, variant)}
-                  aria-pressed={usesVariant}
-                  className={`mt-1 min-h-11 w-full border-2 px-2 text-xs font-bold ${
-                    usesVariant ? "border-comic-magenta bg-comic-magenta text-black" : "border-line bg-panel"
+                  onClick={() => toggle(card.id)}
+                  aria-pressed={position >= 0}
+                  className={`relative flex w-full flex-col border-[3px] bg-panel text-left ${
+                    position >= 0 ? "shadow-[4px_4px_0_var(--comic-magenta)]" : ""
                   }`}
+                  style={{ borderColor: position >= 0 ? "var(--comic-yellow)" : card.rarity.color }}
                 >
-                  {usesVariant
-                    ? `★ Variante ${variant.name} schierata${conquerable ? ": puoi perderla" : ""}`
-                    : `★ Schiera la variante ${variant.name}`}
+                  <span className="relative block aspect-square bg-panel-raised">
+                    {card.art_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={withBasePath(card.art_url)}
+                        alt=""
+                        loading="lazy"
+                        className="absolute inset-0 h-full w-full object-cover object-top"
+                      />
+                    ) : (
+                      <Silhouette
+                        faction={card.faction}
+                        accent={card.rarity.color}
+                        className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2"
+                      />
+                    )}
+                    <span
+                      aria-hidden
+                      className="absolute left-0.5 top-0.5 flex h-4 w-4 items-center justify-center text-[11px] font-black text-black"
+                      style={{ background: rarityFrame(card.rarity) }}
+                    >
+                      {rarityLetter(card.rarity)}
+                    </span>
+                    {position >= 0 && (
+                      <span className="absolute right-0.5 top-0.5 flex h-6 w-6 -skew-x-8 items-center justify-center bg-comic-yellow font-display text-sm text-black">
+                        {position + 1}
+                      </span>
+                    )}
+                  </span>
+                  <span className="truncate px-1.5 pt-1 font-display text-[13px] uppercase leading-4">{card.name}</span>
+                  <span className="truncate px-1.5 text-[10px] font-bold leading-[13px]" style={{ color: card.rarity.color }}>
+                    {card.rarity.name}
+                    {card.power && <span className="text-muted"> · {card.power.name}</span>}
+                  </span>
+                  {conquerable && (
+                    <span
+                      className={`px-1.5 text-[10px] font-bold leading-[13px] ${
+                        isAtRisk(card.id) ? "text-comic-magenta" : "text-comic-cyan"
+                      }`}
+                    >
+                      {isAtRisk(card.id) ? "In palio" : "Protetta"}
+                    </span>
+                  )}
+                  <span className="truncate px-1.5 pb-1 text-[10px] font-medium leading-[13px] text-muted">
+                    {top.map(([code, value]) => `${code} ${value}`).join(" · ")}
+                  </span>
                 </button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+              </li>
+            );
+          })}
+        </ul>
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-8 [background:linear-gradient(to_top,var(--background),transparent)]" />
+      </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t-[3px] border-foreground bg-black px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+      <div className="-mx-3 border-t-[3px] border-foreground bg-black px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
         <button
           type="button"
           onClick={start}
@@ -352,6 +428,60 @@ export function TeamPicker(props: TeamPickerProps) {
                 : startLabel}
         </button>
       </div>
+
+      {optionsCard && (
+        <>
+          <button type="button" aria-label="Chiudi" onClick={() => setOptionsOf(null)} className="fixed inset-0 z-30 bg-black/60" />
+          <div
+            role="dialog"
+            aria-label={optionsCard.name}
+            className="fixed inset-x-0 bottom-0 z-40 flex flex-col gap-2 border-t-[3px] border-foreground bg-panel px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3"
+          >
+            <p className="font-display text-xl uppercase">{optionsCard.name}</p>
+            {canStake(optionsCard.id) && (
+              <button
+                type="button"
+                onClick={() => toggleStake(optionsCard.id)}
+                aria-pressed={staked.has(optionsCard.id)}
+                className={`min-h-11 border-2 px-3 text-left text-sm font-bold ${
+                  staked.has(optionsCard.id) ? "border-comic-magenta bg-comic-magenta text-black" : "border-line bg-panel-raised"
+                }`}
+              >
+                {staked.has(optionsCard.id) ? "Doppione in palio: usa la copia starter" : "Metti in palio il doppione"}
+              </button>
+            )}
+            {optionsVariant && (
+              <button
+                type="button"
+                onClick={() => toggleVariant(optionsCard.id, optionsVariant)}
+                aria-pressed={variantChoice.has(optionsCard.id)}
+                className={`min-h-11 border-2 px-3 text-left text-sm font-bold ${
+                  variantChoice.has(optionsCard.id) ? "border-comic-magenta bg-comic-magenta text-black" : "border-line bg-panel-raised"
+                }`}
+              >
+                {variantChoice.has(optionsCard.id)
+                  ? `★ Variante ${optionsVariant.name} schierata${conquerable ? ": puoi perderla" : ""}`
+                  : `★ Schiera la variante ${optionsVariant.name}`}
+              </button>
+            )}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  toggle(optionsCard.id);
+                  setOptionsOf(null);
+                }}
+                className="btn btn-ghost flex-1"
+              >
+                Togli dalla squadra
+              </button>
+              <button type="button" onClick={() => setOptionsOf(null)} className="btn btn-outline px-5">
+                Fatto
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
