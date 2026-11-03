@@ -5,13 +5,17 @@ import { CardName } from "@/components/card-name";
 import { withBasePath } from "@/lib/base-path";
 import { nameStyle } from "@/lib/card-names";
 
-type WinnerNameProps = { card: { code?: string; name: string; faction: string } };
+type WinnerNameProps = {
+  card: { code?: string; name: string; faction: string };
+  /** Seconds to wait, from when the screen appears, before the letters fly in. */
+  delay?: number;
+};
 
 /**
  * The name of the card that won the round, as 3D letters in its own style (winner-name-3d.ts).
  * Without WebGL it falls back to the flat card name.
  */
-export const WinnerName = memo(function WinnerName({ card }: WinnerNameProps) {
+export const WinnerName = memo(function WinnerName({ card, delay = 0 }: WinnerNameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [failed, setFailed] = useState(false);
   const dragStart = useRef(0);
@@ -22,6 +26,7 @@ export const WinnerName = memo(function WinnerName({ card }: WinnerNameProps) {
     let cancelled = false;
     let unmount: (() => void) | undefined;
     const style = nameStyle(card);
+    const startAt = performance.now() + delay * 1000;
     // Three.js and the letter outlines are downloaded only when a round is won.
     Promise.all([
       import("@/lib/winner-name-3d"),
@@ -31,7 +36,7 @@ export const WinnerName = memo(function WinnerName({ card }: WinnerNameProps) {
       }),
     ])
       .then(([{ mountWinnerName }, font]) => {
-        if (!cancelled) unmount = mountWinnerName(canvas, { name: card.name, style, font }, () => setFailed(true));
+        if (!cancelled) unmount = mountWinnerName(canvas, { name: card.name, style, font, startAt }, () => setFailed(true));
       })
       .catch((cause: unknown) => {
         console.error("Winner name failed", cause);
@@ -43,7 +48,7 @@ export const WinnerName = memo(function WinnerName({ card }: WinnerNameProps) {
     };
     // The card is identified by its code, name and faction.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [card.code, card.name, card.faction]);
+  }, [card.code, card.name, card.faction, delay]);
 
   if (failed) {
     return (

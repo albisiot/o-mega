@@ -31,6 +31,7 @@ import {
 } from "@/lib/match";
 import { matchXp } from "@/lib/progression";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
+import { carriedInto, roundPowerNotes, type PowerNote } from "@/lib/round-powers";
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { useNow } from "@/lib/use-now";
 
@@ -41,6 +42,11 @@ const WINNER_STYLES = {
   opponent: "bg-panel-raised text-muted",
   none: "bg-panel-raised text-faint",
 } as const;
+
+// The round result builds up: the two plays slide in, their scores climb from SCORES_SECONDS,
+// the verdict and the winner's 3D name land at VERDICT_SECONDS (see .animate-verdict-in).
+const SCORES_SECONDS = 0.4;
+const VERDICT_SECONDS = 1;
 
 function lastResolvedRound(view: MatchView): number {
   return Math.max(0, ...view.rounds.filter((r) => r.resolved).map((r) => r.round));
@@ -261,6 +267,7 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
       {shownRound ? (
         <RoundReveal
           round={shownRound}
+          previous={view.rounds.find((r) => r.round === shownRound.round - 1) ?? null}
           team={view.my_team}
           abilities={abilities}
           opponentName={opponentName}
@@ -531,6 +538,7 @@ function ModifierBanner({ modifier, firstAbility }: { modifier: ThreatModifier; 
 
 function RoundReveal({
   round,
+  previous,
   team,
   abilities,
   opponentName,
@@ -538,6 +546,8 @@ function RoundReveal({
   finished,
 }: {
   round: MatchRound;
+  /** The round before, for the Riscossa a card received from it. */
+  previous: MatchRound | null;
   abilities: AbilityInfo[];
   team: TeamCard[];
   opponentName: string;
@@ -553,11 +563,30 @@ function RoundReveal({
   const tieWonBy =
     isTie && winnerCard?.power?.code === "relentless" && mine?.power?.code !== theirs?.power?.code ? winnerCard.name : null;
 
+  // Each card's power is told next to that card, in its own half of the screen.
+  const threat = { level: round.level, abilities: round.threat.abilities, modifier: round.modifier };
+  const previousMine = team.find((card) => card.instance_id === previous?.my_play?.instance_id);
+  const myNotes =
+    mine && round.my_play
+      ? roundPowerNotes(mine, round.my_play, threat, {
+          carried: carriedInto(previousMine, previous?.winner === "opponent"),
+          lost: round.winner === "opponent",
+          wonTie: Boolean(tieWonBy) && round.winner === "me",
+        })
+      : [];
+  const theirNotes = theirs
+    ? roundPowerNotes(theirs, theirs, threat, {
+        carried: carriedInto(previous?.opponent_play, previous?.winner === "me"),
+        lost: round.winner === "me",
+        wonTie: Boolean(tieWonBy) && round.winner === "opponent",
+      })
+    : [];
+
   return (
     <main className="relative mt-3 flex flex-1 cursor-pointer flex-col" onClick={onContinue}>
       <section
         aria-label="La tua giocata"
-        className="relative flex flex-1 flex-col overflow-hidden bg-comic-cyan px-4 pb-4 pt-3 text-black [clip-path:polygon(0_0,100%_0,100%_calc(100%-52px),0_100%)]"
+        className="animate-play-in-top relative flex flex-1 flex-col overflow-hidden bg-comic-cyan px-4 pb-4 pt-3 text-black [clip-path:polygon(0_0,100%_0,100%_calc(100%-52px),0_100%)]"
       >
         <p className="text-sm font-extrabold">
           Round {round.round} · {round.threat.name}
@@ -569,33 +598,36 @@ function RoundReveal({
           abilities={round.threat.abilities}
           side="left"
           won={round.winner === "me"}
+          notes={myNotes}
         />
       </section>
 
-      {/* The verdict sits on the seam between the two plays, tilted with it. */}
+      {/* The verdict sits on the seam between the two plays, tilted with it. It arrives once both
+          cards are in and their scores have climbed: first the plays, then who won. */}
       <section
         aria-label={winnerCard ? `${banner} ${winnerCard.name}` : banner}
-        className="relative z-10 -my-[52px] overflow-hidden py-[30px] [clip-path:polygon(0_52px,100%_0,100%_calc(100%-52px),0_100%)]"
+        className="relative z-10 -my-[52px] overflow-hidden py-[26px] [clip-path:polygon(0_52px,100%_0,100%_calc(100%-52px),0_100%)]"
       >
         <div
           aria-hidden
           className="rays-dark animate-rays-spin absolute left-1/2 top-1/2 h-[200vmax] w-[200vmax] -translate-x-1/2 -translate-y-1/2"
         />
-        <div className="relative -rotate-[7.5deg]">
+        <div className="animate-verdict-in relative -rotate-[7.5deg]">
           <p
             className={`animate-rare-title text-sfx text-center text-[46px] uppercase leading-[48px] ${
               round.winner === "me" ? "text-comic-yellow" : "text-foreground"
             }`}
+            style={{ animationDelay: `${VERDICT_SECONDS}s` }}
           >
             {banner}
           </p>
           {winnerCard ? (
-            <WinnerName key={`${round.round}-${winnerCard.code}`} card={winnerCard} />
+            <WinnerName key={`${round.round}-${winnerCard.code}`} card={winnerCard} delay={VERDICT_SECONDS + 0.1} />
           ) : (
-            <div className="relative h-[108px]">
+            <div className="animate-burst-pop relative h-[108px]" style={{ animationDelay: `${VERDICT_SECONDS + 0.2}s` }}>
               <ComicBurst
                 fill="#ffd60a"
-                className="animate-burst-pop absolute left-1/2 top-1 h-[104px] w-[104px] -translate-x-1/2 rotate-[8deg]"
+                className="absolute left-1/2 top-1 h-[104px] w-[104px] -translate-x-1/2 rotate-[8deg]"
                 textClassName="text-[30px] tracking-wide"
               >
                 PARI!
@@ -607,7 +639,7 @@ function RoundReveal({
 
       <section
         aria-label={`La giocata di ${opponentName}`}
-        className="halftone relative flex flex-1 flex-col justify-end overflow-hidden bg-comic-magenta px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-11 text-black [clip-path:polygon(0_52px,100%_0,100%_100%,0_100%)]"
+        className="animate-play-in-bottom halftone relative flex flex-1 flex-col justify-end overflow-hidden bg-comic-magenta px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-11 text-black [clip-path:polygon(0_52px,100%_0,100%_100%,0_100%)]"
       >
         <PlaySide
           label={opponentName}
@@ -616,6 +648,7 @@ function RoundReveal({
           abilities={round.threat.abilities}
           side="right"
           won={round.winner === "opponent"}
+          notes={theirNotes}
         />
         <div className="relative mt-3 flex flex-col gap-2">
           {round.modifier && (
@@ -641,21 +674,6 @@ function RoundReveal({
               Stesso punteggio e stesso valore più alto.
             </p>
           )}
-          {theirs?.power?.code === "sabotage" && (
-            <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
-              Sabotatore: le abilità di {mine?.name ?? "chi hai giocato"} valgono {theirs.power.params.malus} in meno.
-            </p>
-          )}
-          {mine?.power?.code === "sabotage" && (
-            <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
-              Sabotatore: le abilità di {theirs?.name ?? "chi ha giocato"} valgono {mine.power.params.malus} in meno.
-            </p>
-          )}
-          {tieWonBy && (
-            <p className="bg-black px-3 py-1.5 text-center text-sm font-semibold text-foreground">
-              Implacabile: {tieWonBy} vince la parità di punteggio.
-            </p>
-          )}
           <button
             type="button"
             className="btn min-h-14 bg-comic-yellow font-display text-[22px] uppercase tracking-wide text-black shadow-[4px_4px_0_#000]"
@@ -668,22 +686,22 @@ function RoundReveal({
   );
 }
 
-/** The score climbs to its value when a round is revealed. */
+/** The score climbs to its value when a round is revealed, once the cards are in. */
 function CountUp({ value }: { value: number }) {
   const [shown, setShown] = useState(0);
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const start = performance.now();
+    const start = performance.now() + (reduced ? 0 : SCORES_SECONDS * 1000);
     let frame = 0;
     const step = (time: number) => {
-      const progress = reduced ? 1 : Math.min(1, (time - start) / 600);
+      const progress = reduced ? 1 : Math.min(1, Math.max(0, (time - start) / 600));
       setShown(Math.round(value * progress));
       if (progress < 1) frame = requestAnimationFrame(step);
     };
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
   }, [value]);
-  return <span className="font-display text-[80px] leading-[88px]">{shown}</span>;
+  return <span className="font-display text-[68px] leading-[72px]">{shown}</span>;
 }
 
 function PlaySide({
@@ -693,14 +711,17 @@ function PlaySide({
   abilities,
   side,
   won,
+  notes,
 }: {
   label: string;
   card: MatchCard | null;
   play: { score: number } | null;
   abilities: string[];
   side: "left" | "right";
-  /** The winning card takes the hit: SBAM! lands on its picture. */
+  /** SBAM! bursts next to the winning score. */
   won: boolean;
+  /** What the card's power did this round (dimmed when it did nothing). */
+  notes: PowerNote[];
 }) {
   const isLeft = side === "left";
   return (
@@ -721,18 +742,6 @@ function PlaySide({
               className="absolute bottom-0 left-1/2 h-44 -translate-x-1/2"
             />
           )}
-          {won && (
-            <ComicBurst
-              fill="#ffd60a"
-              // Stamped on the picture, on the side away from the verdict in the middle.
-              className={`animate-burst-pop absolute left-1/2 h-20 w-20 -translate-x-1/2 ${
-                isLeft ? "top-2 rotate-[10deg]" : "bottom-2 -rotate-[10deg]"
-              }`}
-              textClassName="text-[22px] tracking-wide"
-            >
-              SBAM!
-            </ComicBurst>
-          )}
         </div>
       )}
       <div className="relative max-w-[62%]">
@@ -741,10 +750,34 @@ function PlaySide({
         {card && (
           <p className="text-[13px] font-bold">{abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ")}</p>
         )}
+        {notes.length > 0 && (
+          <div className={`mt-1 flex flex-wrap gap-1 ${isLeft ? "" : "justify-end"}`}>
+            {notes.map((note, index) => (
+              <span
+                key={index}
+                className={`-skew-x-8 bg-black px-1.5 py-px text-[11px] font-bold leading-4 ${
+                  note.active ? "text-comic-yellow" : "text-faint"
+                }`}
+              >
+                <span className="font-extrabold uppercase">{note.name}</span>
+                {note.effect && ` ${note.effect}`}
+              </span>
+            ))}
+          </div>
+        )}
         {play && (
-          <p>
+          <div className={`flex items-center gap-1 ${isLeft ? "" : "flex-row-reverse"}`}>
             <CountUp value={play.score} />
-          </p>
+            {won && (
+              <ComicBurst
+                fill="#ffd60a"
+                className={`animate-burst-pop relative h-[68px] w-[68px] shrink-0 ${isLeft ? "rotate-[10deg]" : "-rotate-[10deg]"}`}
+                textClassName="text-[19px] tracking-wide"
+              >
+                SBAM!
+              </ComicBurst>
+            )}
+          </div>
         )}
       </div>
     </div>

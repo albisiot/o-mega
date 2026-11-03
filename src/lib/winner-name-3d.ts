@@ -37,7 +37,13 @@ import { NAME_FONTS, type NameStyle } from "@/lib/card-names";
  * with a flash and sparks, then sways under a passing glint and can be turned with a finger,
  * like the threat dioramas. Returns the cleanup function. Throws if WebGL is not available.
  */
-export type WinnerNameInput = { name: string; style: NameStyle; font: FontData };
+export type WinnerNameInput = {
+  name: string;
+  style: NameStyle;
+  font: FontData;
+  /** performance.now() time at which the letters start flying in; until then the strip is empty. */
+  startAt?: number;
+};
 
 const POP_SECONDS = 0.5;
 const LETTER_DELAY = 0.065;
@@ -447,7 +453,8 @@ export function mountWinnerName(canvas: HTMLCanvasElement, input: WinnerNameInpu
   };
   canvas.addEventListener("webglcontextlost", onLost);
 
-  start = previous = performance.now();
+  previous = performance.now();
+  start = Math.max(previous, input.startAt ?? 0);
   const still = reduced ? new ResizeObserver(() => draw(start, true)) : null;
   if (still) still.observe(canvas);
   else frame = requestAnimationFrame(loop);

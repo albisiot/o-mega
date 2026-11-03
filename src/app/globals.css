@@ -292,6 +292,21 @@ body {
   100% { transform: none; }
 }
 
+@keyframes play-in-top {
+  from { transform: translateY(-40px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes play-in-bottom {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes verdict-in {
+  from { transform: scale(1.3); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
 @keyframes burst-pop {
   from { transform: scale(0); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
@@ -311,8 +326,12 @@ body {
 .animate-card-slam { animation: card-slam 0.5s ease-out both; }
 /* Hidden at rest: without motion it must not stay on top of the card. */
 .animate-bam { opacity: 0; animation: bam 1.4s ease-out 0.15s both; }
-/* Lands once the winner's 3D name is in place, and stays. */
-.animate-burst-pop { animation: burst-pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) 0.9s both; }
+/* The round result builds up (match-screen.tsx): the plays slide in, then the verdict lands
+   at 1s, the winner's 3D name with it, and SBAM! once the name is in place, to stay. */
+.animate-play-in-top { animation: play-in-top 0.4s ease-out both; }
+.animate-play-in-bottom { animation: play-in-bottom 0.4s ease-out 0.1s both; }
+.animate-verdict-in { animation: verdict-in 0.35s cubic-bezier(0.2, 1.3, 0.4, 1) 1s both; }
+.animate-burst-pop { animation: burst-pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) 2s both; }
 .animate-coin-bump { animation: coin-bump 0.7s ease-out; }
 .animate-new-pop { animation: new-pop 0.5s ease-out both; }
 
@@ -521,6 +540,9 @@ body {
   .animate-card-slam,
   .animate-bam,
   .animate-burst-pop,
+  .animate-play-in-top,
+  .animate-play-in-bottom,
+  .animate-verdict-in,
   .speed-lines-moving::before,
   .animate-coin-bump,
   .animate-new-pop,
