@@ -33,7 +33,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Fires INITIAL_SESSION once the client has restored the session (or
     // completed the PKCE code exchange on /auth/callback).
     const { data } = getSupabase().auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
+      // Supabase announces the session again each time the app comes back to the
+      // foreground (SIGNED_IN) and at every hourly token refresh. Pages reload their
+      // data when `session` changes, so keep the same object while the player is the
+      // same: it only says who is signed in, and requests take the fresh token from
+      // the Supabase client, never from here.
+      setSession((current) => (current && nextSession && current.user.id === nextSession.user.id ? current : nextSession));
       setSessionKnown(true);
       if (!nextSession) {
         forgetEverything();
