@@ -43,6 +43,10 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
 
+      # Each deploy gets its own shell cache; art keeps its cache across deploys.
+      - name: Stamp the service worker
+        run: node scripts/stamp-sw.mjs out "${GITHUB_SHA::12}"
+
       - uses: actions/upload-pages-artifact@v5
         with:
           path: out
