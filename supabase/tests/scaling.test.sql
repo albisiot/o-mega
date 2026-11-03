@@ -191,6 +191,93 @@ begin
   assert public.cards_lost_today(v_b) = v_before, format('cards lost today %s', public.cards_lost_today(v_b));
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- Converting every duplicate in one statement: the same copies, coins and
+-- ledger rows as one conversion per character.
+-- ---------------------------------------------------------------------------
+
+do $$
+declare
+  v_a uuid := '00000000-0000-4000-8000-0000000000e1';
+  v_b uuid := '00000000-0000-4000-8000-0000000000e2';
+  v_variant public.card_variants := (select v from public.card_variants v order by v.definition_id, v.style limit 1);
+  v_p030 uuid := pg_temp.code('P030');
+  v_fielded uuid;
+  v_expected uuid[];
+begin
+  -- P030: five base copies of different ages, one locked, one fielded in a running match.
+  for i in 1..5 loop
+    v_fielded := pg_temp.give(v_a, v_p030);
+    update public.card_instances set acquired_at = now() - make_interval(hours => i) where id = v_fielded;
+  end loop;
+  update public.card_instances set locked_until = now() + interval '1 day'
+  where id = (select id from public.card_instances where owner_id = v_a and definition_id = v_p030
+              order by acquired_at desc limit 1);
+  v_fielded := (select id from public.card_instances where owner_id = v_a and definition_id = v_p030
+                order by acquired_at limit 1);
+  -- A character with a variant: two base copies and the variant.
+  perform pg_temp.give(v_a, v_variant.definition_id);
+  perform pg_temp.give(v_a, v_variant.definition_id);
+  insert into public.card_instances (definition_id, owner_id, acquired_via, variant_id)
+  values (v_variant.definition_id, v_a, 'pack', v_variant.id);
+
+  perform public.create_pvp_match('friendly', v_a, array[v_fielded] || (pg_temp.starters(v_a))[2:5],
+    v_b, (pg_temp.starters(v_b))[1:5], current_setting('test.threats')::uuid[]);
+  assert pg_temp.convertible(v_a, v_p030) = 3, format('P030 convertible %s', pg_temp.convertible(v_a, v_p030));
+
+  -- What one conversion per character picked: the newest free base copies.
+  select array_agg(c.id order by c.id) into v_expected
+  from jsonb_array_elements(pg_temp.summary_before(v_a)) e
+  cross join lateral (
+    select i.id from public.card_instances i
+    where i.owner_id = v_a and i.definition_id = (e ->> 'definition_id')::uuid
+      and not i.is_starter and i.variant_id is null
+      and (i.locked_until is null or i.locked_until <= now())
+      and not public.instance_in_active_match(i.id)
+    order by i.acquired_at desc, i.id
+    limit (e ->> 'convertible_copies')::integer
+  ) c;
+  assert cardinality(v_expected) >= 6, format('only %s copies to convert', cardinality(v_expected));
+  perform set_config('test.expected', v_expected::text, true);
+  perform set_config('test.expected_coins', (
+    select sum(r.duplicate_coin_value)::text
+    from unnest(v_expected) as u(id)
+    join public.card_instances i on i.id = u.id
+    join public.card_definitions d on d.id = i.definition_id
+    join public.rarity_definitions r on r.code = d.rarity_code
+  ), true);
+  perform set_config('test.balance', public.coin_balance(v_a)::text, true);
+end $$;
+
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000e1", "role": "authenticated"}', true);
+select set_config('test.result', public.convert_all_duplicates()::text, true);
+reset role;
+
+do $$
+declare
+  v_a uuid := '00000000-0000-4000-8000-0000000000e1';
+  v_expected uuid[] := current_setting('test.expected')::uuid[];
+  v_coins integer := current_setting('test.expected_coins')::integer;
+  v_result jsonb := current_setting('test.result')::jsonb;
+begin
+  assert (v_result ->> 'converted')::integer = cardinality(v_expected), format('converted %s', v_result);
+  assert (v_result ->> 'coins')::integer = v_coins, format('coins %s, expected %s', v_result ->> 'coins', v_coins);
+  assert (v_result ->> 'coin_balance')::integer = current_setting('test.balance')::integer + v_coins, 'balance';
+  assert (select array_agg(id order by id) from public.card_instances
+          where id = any (v_expected) and owner_id is null and converted_at is not null) = v_expected, 'converted copies';
+  assert (select array_agg(instance_id order by instance_id) from public.card_transfers
+          where reason = 'conversion' and from_user = v_a and to_user is null) = v_expected, 'transfer rows';
+  assert (select array_agg(ref_id order by ref_id) from public.coin_ledger
+          where reason = 'duplicate_conversion' and user_id = v_a) = v_expected, 'ledger rows';
+  assert (select sum(amount) from public.coin_ledger where reason = 'duplicate_conversion' and user_id = v_a) = v_coins,
+    'ledger amounts';
+  assert not exists (select 1 from public.collection_summary(v_a) where convertible_copies > 0), 'duplicates left';
+  -- The locked, fielded, starter and variant copies stay.
+  assert (select count(*) from public.card_instances where owner_id = v_a and definition_id = pg_temp.code('P030')) = 2,
+    'P030 copies left';
+end $$;
+
 rollback;
 
 select 'scaling: all assertions passed' as result;
