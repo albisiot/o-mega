@@ -259,6 +259,15 @@ end $$;
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000e1", "role": "authenticated"}', true);
+-- One character at a time stays one character: no character, nothing converted.
+do $$
+begin
+  perform public.convert_duplicates(null);
+  raise exception 'ASSERT: converted with no character';
+exception when raise_exception then
+  if sqlerrm like 'ASSERT:%' then raise; end if;
+  assert sqlerrm = 'nothing_to_convert', sqlerrm;
+end $$;
 select set_config('test.result', public.convert_all_duplicates()::text, true);
 reset role;
 

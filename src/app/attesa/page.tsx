@@ -28,7 +28,7 @@ const SEARCH_LINE_SECONDS = 4;
 // refreshing at 2/5 of that leaves room for one lost request.
 const QUEUE_REFRESH_MS = (balance.matchmaking.queueStaleSeconds * 1000 * 2) / 5;
 // A friend code's host learns of the match from the broadcast; this is the fallback.
-const LOBBY_CHECK_MS = 12_000;
+const LOBBY_CHECK_MS = 10_000;
 
 // /attesa/?mode=queue | /attesa/?mode=lobby
 export default function WaitingPage() {
@@ -104,30 +104,38 @@ function QueueWait({ userId, queueMode }: { userId: string; queueMode: QueueMode
   useMatchStart(userId, goToMatch, null);
 
   // Joining again refreshes our place in the queue and retries the pairing,
-  // once the previous attempt has answered. In Conquest one attempt also comes
-  // right after the wait for a bot is over.
+  // QUEUE_REFRESH_MS after the previous attempt started (one that does not
+  // answer by then is given up). In Conquest one attempt also comes right
+  // after the wait for a bot is over, counted from the first entry stored.
   useEffect(() => {
     if (!team) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let stopped = false;
-    const botAt =
-      queueMode === "conquest" ? startedAt + (balance.matchmaking.conquestBotAfterSeconds + 1) * 1000 : Infinity;
-    const next = () => {
+    let botAt = Infinity;
+    const next = (attemptedAt: number) => {
       if (stopped || matched.current) return;
-      const untilBot = botAt - Date.now();
-      timer = setTimeout(attempt, untilBot > 0 ? Math.min(QUEUE_REFRESH_MS, untilBot) : QUEUE_REFRESH_MS);
+      const now = Date.now();
+      const refresh = Math.max(0, attemptedAt + QUEUE_REFRESH_MS - now);
+      const untilBot = botAt - now;
+      timer = setTimeout(attempt, untilBot > 0 ? Math.min(refresh, untilBot) : refresh);
     };
-    const attempt = () =>
-      joinQueue(team, queueMode)
+    const attempt = () => {
+      const attemptedAt = Date.now();
+      joinQueue(team, queueMode, QUEUE_REFRESH_MS)
         .then((result) => {
+          setError(null);
           if (result.matched && result.match_id) goToMatch(result.match_id);
+          else if (queueMode === "conquest" && botAt === Infinity) {
+            botAt = Date.now() + (balance.matchmaking.conquestBotAfterSeconds + 1) * 1000;
+          }
         })
         .catch((cause: unknown) => {
           // Paired by someone else meanwhile.
           if (cause instanceof Error && cause.message === "match_already_active") goToActiveMatch(goToMatch);
           else setError(describeServerError(cause));
         })
-        .finally(next);
+        .finally(() => next(attemptedAt));
+    };
     timer = setTimeout(attempt, 0);
     return () => {
       stopped = true;
@@ -136,7 +144,7 @@ function QueueWait({ userId, queueMode }: { userId: string; queueMode: QueueMode
     };
     // goToMatch only reads refs and the router.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [team, queueMode, startedAt]);
+  }, [team, queueMode]);
 
   if (!team) {
     return (

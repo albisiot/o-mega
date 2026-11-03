@@ -54,6 +54,47 @@ begin
 end;
 $$;
 
+-- Same as before: one character only. A null character now means every one
+-- to convert_definition_duplicates, so it is refused here, as it was.
+create or replace function public.convert_duplicates(p_definition_id uuid, p_count integer default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_result record;
+begin
+  if v_uid is null then
+    raise exception 'not_authenticated' using errcode = '42501';
+  end if;
+  if p_count is not null and p_count < 1 then
+    raise exception 'invalid_count' using errcode = '22023';
+  end if;
+
+  -- Serializes conversions and purchases of the same player.
+  perform 1 from public.profiles where id = v_uid for update;
+  if not found then
+    raise exception 'profile_not_found' using errcode = 'P0002';
+  end if;
+  if p_definition_id is null then
+    raise exception 'nothing_to_convert';
+  end if;
+
+  select * into v_result from public.convert_definition_duplicates(v_uid, p_definition_id, p_count);
+  if v_result.converted = 0 then
+    raise exception 'nothing_to_convert';
+  end if;
+
+  return jsonb_build_object(
+    'converted', v_result.converted,
+    'coins', v_result.coins,
+    'coin_balance', public.coin_balance(v_uid)
+  );
+end;
+$$;
+
 -- Same as before, in one conversion.
 create or replace function public.convert_all_duplicates()
 returns jsonb

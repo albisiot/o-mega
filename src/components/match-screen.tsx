@@ -54,8 +54,9 @@ const NAME_SECONDS = 1.5;
 // When the 3D names start downloading after the match opens (see prefetchWinnerNames).
 const NAMES_PREFETCH_SECONDS = 2;
 // Against a player, a ping marks us present at this pace and brings the opponent's last sign
-// of life: we look absent at most twice this late, well before the 20 s absence notice.
-const PING_MS = 7_500;
+// of life: we look absent at most twice this late, so even after a lost ping (three times)
+// still before the 20 s absence notice.
+const PING_MS = 6_000;
 // While broadcasts cannot arrive, the whole state is read at this pace instead.
 const OFFLINE_POLL_MS = 5_000;
 

@@ -112,9 +112,12 @@ function remember(view: MatchView): MatchView {
   return view;
 }
 
-/** Calls the "match" Edge Function and surfaces its error code as the message. */
-export async function invokeFunction<T>(body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await getSupabase().functions.invoke("match", { body });
+/**
+ * Calls the "match" Edge Function and surfaces its error code as the message.
+ * `timeoutMs` gives up on an answer that does not come.
+ */
+export async function invokeFunction<T>(body: Record<string, unknown>, timeoutMs?: number): Promise<T> {
+  const { data, error } = await getSupabase().functions.invoke("match", { body, timeout: timeoutMs });
   if (error) {
     if (error instanceof FunctionsHttpError) {
       const payload = await error.context.json().catch(() => null);
@@ -170,8 +173,9 @@ export function joinLobby(code: string, cardInstanceIds: string[]): Promise<Matc
 export function joinQueue(
   cardInstanceIds: string[],
   mode: QueueMode,
+  timeoutMs?: number,
 ): Promise<{ matched: boolean; match_id: string | null }> {
-  return invokeFunction({ action: "queue", mode, card_instance_ids: cardInstanceIds });
+  return invokeFunction({ action: "queue", mode, card_instance_ids: cardInstanceIds }, timeoutMs);
 }
 
 export type QueueMode = "friendly" | "conquest";
