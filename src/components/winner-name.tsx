@@ -1,15 +1,41 @@
 "use client";
 
 import { memo, useEffect, useRef, useState } from "react";
+import type { FontData } from "three/addons/loaders/FontLoader.js";
 import { CardName } from "@/components/card-name";
 import { withBasePath } from "@/lib/base-path";
 import { nameStyle } from "@/lib/card-names";
 
+type NameCard = { code?: string; name: string; faction: string };
+
 type WinnerNameProps = {
-  card: { code?: string; name: string; faction: string };
+  card: NameCard;
   /** Seconds to wait, from when the screen appears, before the letters fly in. */
   delay?: number;
 };
+
+// Letter outlines by font, downloaded once per session.
+const outlines = new Map<string, Promise<FontData>>();
+
+function loadOutlines(font: string): Promise<FontData> {
+  let pending = outlines.get(font);
+  if (!pending) {
+    pending = fetch(withBasePath(`/fonts/names/${font}.json`)).then((response) => {
+      if (!response.ok) throw new Error(`Letter outlines: HTTP ${response.status}`);
+      return response.json() as Promise<FontData>;
+    });
+    // A failed download is tried again next time.
+    pending.catch(() => outlines.delete(font));
+    outlines.set(font, pending);
+  }
+  return pending;
+}
+
+/** Downloads ahead what the 3D names of these cards need, so a won round shows its name on time. */
+export function prefetchWinnerNames(cards: NameCard[]) {
+  import("@/lib/winner-name-3d").catch(() => {});
+  for (const card of cards) loadOutlines(nameStyle(card).font).catch(() => {});
+}
 
 /**
  * The name of the card that won the round, as 3D letters in its own style (winner-name-3d.ts).
@@ -28,13 +54,7 @@ export const WinnerName = memo(function WinnerName({ card, delay = 0 }: WinnerNa
     const style = nameStyle(card);
     const startAt = performance.now() + delay * 1000;
     // Three.js and the letter outlines are downloaded only when a round is won.
-    Promise.all([
-      import("@/lib/winner-name-3d"),
-      fetch(withBasePath(`/fonts/names/${style.font}.json`)).then((response) => {
-        if (!response.ok) throw new Error(`Letter outlines: HTTP ${response.status}`);
-        return response.json();
-      }),
-    ])
+    Promise.all([import("@/lib/winner-name-3d"), loadOutlines(style.font)])
       .then(([{ mountWinnerName }, font]) => {
         if (!cancelled) unmount = mountWinnerName(canvas, { name: card.name, style, font, startAt }, () => setFailed(true));
       })

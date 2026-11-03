@@ -10,7 +10,7 @@ import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
 import { StoryRewardPanel } from "@/components/story-reward";
 import { ThreatDiorama } from "@/components/threat-diorama";
-import { WinnerName } from "@/components/winner-name";
+import { prefetchWinnerNames, WinnerName } from "@/components/winner-name";
 import { balance } from "@/config/balance";
 import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
@@ -50,6 +50,8 @@ const WINNER_STYLES = {
 // winner's 3D name flies in at NAME_SECONDS. SBAM! tells who won: no verdict banner.
 const SCORES_SECONDS = 0.4;
 const NAME_SECONDS = 1.5;
+// When the 3D names start downloading after the match opens (see prefetchWinnerNames).
+const NAMES_PREFETCH_SECONDS = 2;
 
 /** Who the player faced, as the end of a match names them. */
 function rivalName(view: MatchView): string {
@@ -80,6 +82,14 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
       .then(setAbilities)
       .catch((cause: unknown) => console.error("Abilities failed", cause));
   }, []);
+
+  // While the first choice is made, get what the 3D name of a won round needs: it then
+  // arrives on time even on a slow network. The first screen's own downloads go first.
+  useEffect(() => {
+    if (initial.status !== "active") return;
+    const timer = setTimeout(() => prefetchWinnerNames(initial.my_team), NAMES_PREFETCH_SECONDS * 1000);
+    return () => clearTimeout(timer);
+  }, [initial]);
 
   // Every newly resolved round is revealed, however we learned about it
   // (our own play, the opponent's broadcast, a refresh).
