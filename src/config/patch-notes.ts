@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "4 novembre 2026",
+    changes: [
+      "Nove nuovi stili di variante, ciascuno su 5 personaggi: Poster, Inferno, Grafite, Marmo, Gotico, Tarocco, Inchiostro, Fantasy e Prisma. Ora quasi ogni personaggio dei pacchetti ha una variante, e ogni carta ha il 5% di probabilità di uscire con un disegno speciale (prima il 10%): resta circa un pacchetto su quattro con una variante.",
+    ],
+  },
+  {
     date: "3 novembre 2026",
     changes: [
       "Ogni personaggio ha il suo nome in 3D, con carattere, colori e materiale che lo ricordano: la lava di Mongibello, il vetro di Vetrix, le voci di Multitude, l'armatura vuota di Absentia. Lo vedi sulle carte, nell'album e nei pacchetti.",

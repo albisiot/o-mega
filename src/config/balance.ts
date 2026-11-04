@@ -109,7 +109,7 @@ export const balance = {
     dailyFreePacks: 1,
     standardPackPrice: 150,
     /** Chance that a drawn card with an artwork variant comes with that art. */
-    variantChancePercent: 10,
+    variantChancePercent: 5,
     /** Cards of this rarity rank or higher get the special reveal (4 = Alfa). */
     specialRevealMinRarityRank: 4,
   },

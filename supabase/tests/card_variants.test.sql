@@ -19,7 +19,7 @@ begin
     select jsonb_object_agg(style, n) from (
       select style, count(*) as n from public.card_variants where style not in ('neon', 'epic') group by style
     ) s
-  ) = '{"cinema": 5, "pastel": 5, "gold": 5, "classic": 5, "retro": 5, "oil": 5, "cartoon": 5}'::jsonb,
+  ) = '{"cinema": 5, "pastel": 5, "gold": 5, "classic": 5, "retro": 5, "oil": 5, "cartoon": 5, "poster": 5, "inferno": 5, "graphite": 5, "marble": 5, "gothic": 5, "tarot": 5, "ink": 5, "fantasy": 5, "prism": 5}'::jsonb,
     'every later series should have 5 variants';
   assert not exists (
     select 1 from public.card_variants v
@@ -27,8 +27,9 @@ begin
     where d.unlock_level is not null
   ), 'a level card cannot be found in packs';
   assert (select variant_count from public.card_catalog where code = 'P072') = 1, 'catalog count of a variant';
-  assert (select variant_count from public.card_catalog where code = 'P002') = 0, 'catalog count without a variant';
-  assert (public.get_pack_odds() ->> 'variant_chance_percent')::integer = 10, 'published chance';
+  -- Level cards never come from packs, so they never get a variant.
+  assert (select variant_count from public.card_catalog where code = 'P061') = 0, 'catalog count without a variant';
+  assert (public.get_pack_odds() ->> 'variant_chance_percent')::integer = 5, 'published chance';
   assert (public.get_pack_odds() ->> 'characters_with_variants')::integer =
     (select count(distinct definition_id) from public.card_variants where is_active), 'published characters';
 end $$;
@@ -40,7 +41,7 @@ declare
   v_without uuid;
 begin
   select id into v_with from public.card_definitions where code = 'P072';
-  select id into v_without from public.card_definitions where code = 'P002';
+  select id into v_without from public.card_definitions where code = 'P061';
 
   update public.game_config set value = '0' where key = 'packs.variant_chance_percent';
   for i in 1..50 loop

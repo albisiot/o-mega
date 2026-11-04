@@ -134,12 +134,12 @@ I doppioni restano istanze normali: si possono usare in partita e quindi rischia
 
 Le carte base restano nello stile attuale. Una **variante** è la stessa carta con un disegno diverso e più raro: nome, valori, potere e rarità non cambiano. È un dato della singola istanza (`card_instances.variant_id`), definito nel catalogo `card_variants`.
 
-- **Si trova solo nei pacchetti.** Dopo aver estratto rarità e personaggio, il server tira a sorte la variante (`packs.variant_chance_percent`, default 10%), quindi le probabilità delle rarità non cambiano. La probabilità è visibile nel negozio.
+- **Si trova solo nei pacchetti.** Dopo aver estratto rarità e personaggio, il server tira a sorte la variante (`packs.variant_chance_percent`, 5% da quando quasi ogni personaggio ha una variante; prima 10%), quindi le probabilità delle rarità non cambiano. La probabilità è visibile nel negozio.
 - **Niente varianti** per starter, carte sbloccate a livello e carte dei bot.
 - **In squadra** viene schierata la copia base, a meno che il giocatore non scelga la variante.
 - **In Conquista** una variante schierata è in palio come ogni altra carta non starter e passa al vincitore con il suo disegno. Contro un bot, se presa, esce dal gioco.
 - **Non si converte** in monete e non rende doppione l'unica copia base.
-- **Stili:** Neon (20 personaggi), Epica (10), Cinema, Pastello, Oro, Classico, Retrò, Olio e Animato (5 ciascuno). Se un personaggio ha più varianti, il server ne sceglie una a caso.
+- **Stili:** Neon (20 personaggi), Epica (10), Cinema, Pastello, Oro, Classico, Retrò, Olio, Animato, Poster, Inferno, Grafite, Marmo, Gotico, Tarocco, Inchiostro, Fantasy e Prisma (5 ciascuno). Se un personaggio ha più varianti, il server ne sceglie una a caso.
 
 ## 5. Il minigioco — Regolamento
 
