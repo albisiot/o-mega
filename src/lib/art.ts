@@ -1,12 +1,15 @@
 import { withBasePath } from "@/lib/base-path";
+import { FULL_ART } from "@/lib/full-art";
 
 /**
  * The larger copy of a card drawing, for the full-screen view. Cards and lists
  * use the 600px images; the full ones live under cards/full/ with the same
- * path. Older drawings have no larger copy: the viewer falls back to art_url.
+ * path. Older drawings have no larger copy: null, and the viewer shows art_url
+ * without asking for a file that is not there.
  */
-export function fullArtUrl(artUrl: string): string {
-  return artUrl.replace(/^\/cards\//, "/cards/full/");
+export function fullArtUrl(artUrl: string): string | null {
+  const path = artUrl.replace(/^\/cards\//, "");
+  return path !== artUrl && FULL_ART.has(path) ? `/cards/full/${path}` : null;
 }
 
 /**

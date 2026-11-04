@@ -8,9 +8,10 @@ import { withBasePath } from "@/lib/base-path";
 export function ArtViewerButton({ artUrl, name, label = "Guarda il disegno" }: { artUrl: string; name: string; label?: string }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
-  // The larger copy may not exist for older drawings: fall back to the card image.
+  // Older drawings have no larger copy; one that fails to load also falls back to the card image.
+  const full = fullArtUrl(artUrl);
   const [fallback, setFallback] = useState(false);
-  const src = withBasePath(fallback ? artUrl : fullArtUrl(artUrl));
+  const src = withBasePath(fallback || !full ? artUrl : full);
 
   return (
     <>

@@ -1,6 +1,8 @@
 import { existsSync, readdirSync } from "node:fs";
+import { sep } from "node:path";
 import { describe, expect, it } from "vitest";
 import { fullArtUrl, thumbArtUrl } from "./art";
+import { FULL_ART } from "./full-art";
 
 describe("fullArtUrl", () => {
   it("points base cards and variants to their larger copy", () => {
@@ -8,8 +10,17 @@ describe("fullArtUrl", () => {
     expect(fullArtUrl("/cards/variants/P072-neon.webp")).toBe("/cards/full/variants/P072-neon.webp");
   });
 
-  it("leaves other paths alone", () => {
-    expect(fullArtUrl("/world/citta.webp")).toBe("/world/citta.webp");
+  it("is null for drawings without a larger copy and for other paths", () => {
+    expect(fullArtUrl("/cards/P030.webp")).toBeNull();
+    expect(fullArtUrl("/world/citta.webp")).toBeNull();
+  });
+
+  it("knows exactly the larger copies in public/cards/full", () => {
+    const files = readdirSync(new URL("../../public/cards/full/", import.meta.url), { recursive: true, encoding: "utf8" })
+      .map((file) => file.split(sep).join("/"))
+      .filter((file) => file.endsWith(".webp"))
+      .sort();
+    expect([...FULL_ART].sort(), "run node scripts/list-full-art.mjs").toEqual(files);
   });
 });
 
