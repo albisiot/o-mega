@@ -7,7 +7,9 @@ import { preloadWorldIntro } from "@/components/world-intro";
 import { WORLD_INTRO, WORLD_LOADING_LINES } from "@/config/world";
 import { withBasePath } from "@/lib/base-path";
 
-const MIN_VISIBLE_MS = 1500;
+// The splash leaves as soon as the home is ready: this only spares a flash when everything is
+// cached. Counted from the page load, since the splash is in the static HTML and shows before React.
+const MIN_VISIBLE_MS = 500;
 // Past this, the app opens anyway: a slow network must never trap the player here.
 const MAX_VISIBLE_MS = 5000;
 const FADE_MS = 400;
@@ -46,7 +48,7 @@ function Splash({ onGone }: { onGone: () => void }) {
     preloadWorldIntro();
     const onHomeReady = () => setHomeReady(true);
     window.addEventListener(HOME_READY_EVENT, onHomeReady);
-    const minTimer = setTimeout(() => setMinElapsed(true), MIN_VISIBLE_MS);
+    const minTimer = setTimeout(() => setMinElapsed(true), Math.max(0, MIN_VISIBLE_MS - performance.now()));
     const maxTimer = setTimeout(() => setTimedOut(true), MAX_VISIBLE_MS);
     const lineTimer = setInterval(() => setLine((current) => current + 1), LINE_MS);
     return () => {
