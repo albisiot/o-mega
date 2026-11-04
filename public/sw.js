@@ -1,17 +1,22 @@
 // Service worker: makes the app installable, keeps the last visited pages
-// available offline and keeps the art on the device across visits and deploys.
-// Only same-origin GET requests are handled; Supabase calls (other origin)
-// always go straight to the network.
+// available offline and keeps the art and the app's code on the device across
+// visits and deploys. Only same-origin GET requests are handled; Supabase calls
+// (other origin) always go straight to the network.
 
-// Both values are filled in at deploy time by scripts/stamp-sw.mjs.
+// These values are filled in at deploy time by scripts/stamp-sw.mjs.
 // The commit the site was built from: each deploy gets its own shell cache.
 const BUILD = "__BUILD_ID__";
 // Content hash of every file under cards/, world/, fonts/ and models/.
 const ASSET_VERSIONS = {} /* __ASSET_VERSIONS__ */;
+// Every file of this build under _next/static/, as a path inside that folder.
+const NEXT_FILES = [] /* __NEXT_FILES__ */;
 
 const SHELL_CACHE = `o-mega-shell-${BUILD}`;
 // Survives deploys and holds only the current version of each file.
 const ASSET_CACHE = "o-mega-assets";
+// The build's JS, CSS and fonts also survive deploys: their names carry a content hash,
+// so a file a deploy did not change keeps its name and its saved copy.
+const NEXT_CACHE = "o-mega-next";
 // Scope path, e.g. "/o-mega/" on GitHub Pages or "/" locally.
 const SCOPE = new URL(self.registration.scope).pathname;
 const ASSET_DIRS = ["cards/", "world/", "fonts/", "models/"];
@@ -33,12 +38,20 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       // Shells of older deploys and the old single cache (o-mega-v3) go away.
+      const kept = [SHELL_CACHE, ASSET_CACHE, NEXT_CACHE];
       const names = await caches.keys();
-      await Promise.all(names.filter((name) => name !== SHELL_CACHE && name !== ASSET_CACHE).map((name) => caches.delete(name)));
+      await Promise.all(names.filter((name) => !kept.includes(name)).map((name) => caches.delete(name)));
       // So do the saved copies of files that were redrawn or removed since.
       const assets = await caches.open(ASSET_CACHE);
       const saved = await assets.keys();
       await Promise.all(saved.filter((key) => key.url !== assetKey(new URL(key.url))).map((key) => assets.delete(key)));
+      // And the build files this deploy no longer uses (all kept when not stamped: local preview).
+      if (NEXT_FILES.length > 0) {
+        const current = new Set(NEXT_FILES.map((file) => `${self.location.origin}${SCOPE}_next/static/${file}`));
+        const code = await caches.open(NEXT_CACHE);
+        const savedCode = await code.keys();
+        await Promise.all(savedCode.filter((key) => !current.has(key.url)).map((key) => code.delete(key)));
+      }
       await self.clients.claim();
     })(),
   );
@@ -51,9 +64,10 @@ self.addEventListener("fetch", (event) => {
   // The OAuth callback carries one-time codes: never cache it.
   if (url.pathname.startsWith(`${SCOPE}auth/`)) return;
 
-  // Hashed build assets never change: serve this deploy's copy when present.
+  // Hashed build assets never change: the saved copy is used as it is, whichever deploy saved it.
   if (url.pathname.startsWith(`${SCOPE}_next/static/`)) {
-    event.respondWith(caches.match(request).then((cached) => cached ?? fetchAndCache(SHELL_CACHE, request, request)));
+    const key = url.origin + url.pathname;
+    event.respondWith(caches.match(key, { cacheName: NEXT_CACHE }).then((cached) => cached ?? fetchAndCache(NEXT_CACHE, request, key)));
     return;
   }
 
