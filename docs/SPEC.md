@@ -125,6 +125,12 @@ Poteri implementati:
 | Sfavorito | Distintivo | +2 o +3 se l'avversario ha vinto più round |
 | Sabotatore | Distintivo | -1 a ogni abilità del personaggio avversario nel round, senza scendere sotto 0. Vale anche per lo spareggio. Pesa di più sulle Minacce di livello alto |
 | Veggente | Distintivo | Dopo averlo giocato, il giocatore vede tutte le Minacce dei round successivi. Non dà punti |
+| Schermato | Semplice | Immune a Sabotatore, e +1 se il personaggio avversario ce l'ha |
+| Nemesi | Semplice | +3 se il personaggio avversario è della fazione opposta (Eroi contro Cattivi). I Neutrali non hanno nemesi e non sono nemesi di nessuno |
+| Tuttofare | Semplice | +3 se tutte le abilità richieste valgono almeno 5, contate dopo Sabotatore |
+| Spia | Semplice | Dopo averlo giocato, il giocatore vede un personaggio a caso che l'avversario non ha ancora giocato. Il server lo estrae una volta sola. Non dà punti |
+
+In Emergenza non c'è un personaggio avversario: Schermato, Nemesi e Spia non hanno effetto, Tuttofare sì.
 
 ### 4.5 Doppioni
 

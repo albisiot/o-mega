@@ -128,17 +128,17 @@ Testo di colore (una frase):
 | P041, Cattivi | RES 10, COM 10, PER 1 | Ultimo baluardo | **Gavel** (Compagnia Lete): esattore che incassa ogni colpo e ci vede pochissimo. |
 | P042, Neutrali | VEL 8, COM 8, INT 1 | Apripista | **Postmark** (Sciolti): corriere su moto elettrica truccata. |
 | P043, Eroi | PSI 10, PER 10, INT 1 | Terreno favorevole | **Fathom** (Lanterne): sente i pensieri, ma non sempre li capisce. |
-| P044, Cattivi | ENE 8, MAG 8, INT 1 | Affinità (Potere) | **Kiln** (Figli dell'Ultima): piromane. |
+| P044, Cattivi | ENE 8, MAG 8, INT 1 | Nemesi | **Kiln** (Figli dell'Ultima): piromane. |
 | P045, Eroi | FOR 10, RES 10, INT 1 | Legame | **Apostate** (Custodi): ex campione di lotta. |
 | P046, Cattivi | VEL 10, FUR 10, RES 1 | Legame | **Larceny** (Sciolti, schierata con i Cattivi): la ladra più rapida di Nuova Megara. |
-| P047, Neutrali | INT 8, TEC 8, ENE 1 | Affinità (Mente) | **Actuary** (Banco): analista. |
+| P047, Neutrali | INT 8, TEC 8, ENE 1 | Spia | **Actuary** (Banco): analista. |
 | P048, Eroi | MAG 10, PSI 10, PER 1 | Terreno favorevole | **Hapax** (Lanterne): mago di strada quasi cieco. |
-| P049, Cattivi | ENE 8, RES 8, FUR 1 | Affinità (Potere) | **Blackbody** (Compagnia Lete): dirigente, è un reattore che cammina. |
+| P049, Cattivi | ENE 8, RES 8, FUR 1 | Schermato | **Blackbody** (Compagnia Lete): dirigente, è un reattore che cammina. |
 | P050, Eroi | PSI 10, VOL 10, COM 1 | Terreno favorevole | **Parley** (Custodi): negoziatrice telepatica. |
 
 ### Gamma: professionisti di quartiere
 
-Hanno il potere Specialità (+2 contro le Minacce che richiedono la prima abilità indicata), tranne: Milewright e Rubicon (Apripista), Bulwark (Ultimo baluardo), Ambit e Swarf (Legame), Malleus e Collateral (Implacabile). Tra le carte aggiunte dopo, Truss ha Implacabile, Novissima ed Effigy hanno Veggente.
+Hanno il potere Specialità (+2 contro le Minacce che richiedono la prima abilità indicata), tranne: Milewright e Rubicon (Apripista), Bulwark (Ultimo baluardo), Aerie (Nemesi), Sordina (Spia), Ambit e Swarf (Legame), Malleus e Collateral (Implacabile). Tra le carte aggiunte dopo, Truss ha Implacabile, Novissima ed Effigy hanno Veggente. Dopo il secondo gruppo di poteri: Errata ha Nemesi, Dredge, Heirloom e Cursor hanno Tuttofare, Carillon ha Schermato.
 
 | Carta | Valori chiave | Personaggio |
 |---|---|---|

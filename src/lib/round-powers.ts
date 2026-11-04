@@ -10,6 +10,8 @@ export type RoundOutcome = {
   lost: boolean;
   /** Implacabile settled a tie in this card's favor. */
   wonTie: boolean;
+  /** The opposing card had Schermato, which Sabotatore cannot touch. */
+  opponentShielded?: boolean;
 };
 
 /**
@@ -29,7 +31,14 @@ export function roundPowerNotes(
     const character = toCharacter(card, card.definition_id);
     switch (power.code) {
       case "sabotage":
-        notes.push({ name: power.name, effect: `−${power.params.malus} a ogni abilità rivale`, active: true });
+        notes.push(
+          outcome.opponentShielded
+            ? { name: power.name, effect: null, active: false }
+            : { name: power.name, effect: `−${power.params.malus} a ogni abilità rivale`, active: true },
+        );
+        break;
+      case "spy":
+        notes.push({ name: power.name, effect: "svela un personaggio rivale", active: true });
         break;
       case "relentless":
         notes.push({ name: power.name, effect: outcome.wonTie ? "vince la parità" : null, active: outcome.wonTie });

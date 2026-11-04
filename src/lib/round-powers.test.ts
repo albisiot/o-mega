@@ -60,3 +60,17 @@ describe("carriedInto", () => {
     expect(carriedInto(null, true)).toBe(0);
   });
 });
+
+describe("roundPowerNotes for Spia and Schermato", () => {
+  it("tells what Spia does, and dims Sabotatore against Schermato", () => {
+    const spy = card({ code: "spy", params: {}, name: "Spia", text: "" });
+    expect(roundPowerNotes(spy, { bonus: 0 }, threat, calm)[0]).toMatchObject({ effect: "svela un personaggio rivale", active: true });
+    const sabotage = card({ code: "sabotage", params: { malus: 1 }, name: "Sabotatore", text: "" });
+    expect(roundPowerNotes(sabotage, { bonus: 0 }, threat, { ...calm, opponentShielded: true })[0].active).toBe(false);
+  });
+
+  it("counts Schermato's point like any other bonus", () => {
+    const shielded = card({ code: "shielded", params: { bonus: 1 }, name: "Schermato", text: "" });
+    expect(roundPowerNotes(shielded, { bonus: 1 }, threat, calm)[0]).toMatchObject({ effect: "+1", active: true });
+  });
+});

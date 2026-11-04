@@ -102,6 +102,7 @@ export function resolveRound(
       round: currentRoundNumber(state),
       team: state.teams[side],
       abilityMalus: abilityMalusFrom(chosen[otherSide(side)]),
+      opponent: chosen[otherSide(side)],
     });
     plays[side] = { ...score, autoPlayed: choices[side].autoPlayed };
   }

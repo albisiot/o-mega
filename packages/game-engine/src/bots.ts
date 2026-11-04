@@ -118,9 +118,18 @@ function currentContext(view: BotView): ScoreContext {
   };
 }
 
-/** A character's score plus what Sabotatore would take from the opposing character. */
-function effectiveScore(character: Character, threat: Threat, context: ScoreContext): number {
-  return scorePlay(character, threat, context).total + abilityMalusFrom(character) * threat.level;
+/**
+ * A character's score plus what Sabotatore would take from the opposing character,
+ * and, when the possible opponents are known, the bonuses that depend on who they are
+ * (Nemesi, Schermato) weighted by how many of them would pay it.
+ */
+function effectiveScore(character: Character, threat: Threat, context: ScoreContext, opponents?: readonly Character[]): number {
+  let score = scorePlay(character, threat, context).total + abilityMalusFrom(character) * threat.level;
+  if (opponents?.length && (character.power?.code === "nemesis" || character.power?.code === "shielded")) {
+    const expected = opponents.reduce((sum, opponent) => sum + scorePlay(character, threat, { ...context, opponent }).total, 0);
+    score += expected / opponents.length - scorePlay(character, threat, context).total;
+  }
+  return score;
 }
 
 /** Chooses the character the bot plays this round (its id). */
@@ -135,7 +144,7 @@ export function chooseBotPlay(difficulty: BotDifficulty, view: BotView, rng: Rng
       return pickWeighted(rng, view.available, (character) => (scoreOf(character) + 1) ** 2).id;
     case "medium": {
       // Greedy: best score for the current threat, no planning.
-      const value = (character: Character) => effectiveScore(character, view.currentThreat, context);
+      const value = (character: Character) => effectiveScore(character, view.currentThreat, context, view.opponentPool);
       const best = Math.max(...view.available.map(value));
       return pickOne(rng, view.available.filter((character) => value(character) === best)).id;
     }
@@ -192,8 +201,16 @@ function playOut(view: BotView, first: Character, opponents: Character[], threat
     ownPick = null;
     round += 1;
 
-    const ownScore = scorePlay(ownCharacter, threat, { ...ownContext, abilityMalus: abilityMalusFrom(theirCharacter) });
-    const theirScore = scorePlay(theirCharacter, threat, { ...theirContext, abilityMalus: abilityMalusFrom(ownCharacter) });
+    const ownScore = scorePlay(ownCharacter, threat, {
+      ...ownContext,
+      abilityMalus: abilityMalusFrom(theirCharacter),
+      opponent: theirCharacter,
+    });
+    const theirScore = scorePlay(theirCharacter, threat, {
+      ...theirContext,
+      abilityMalus: abilityMalusFrom(ownCharacter),
+      opponent: ownCharacter,
+    });
     const winner = compareScores(ownScore, theirScore);
     lead += ownScore.total - theirScore.total;
     if (winner === "a") won += 1;
@@ -270,7 +287,7 @@ function planHardPlay(view: BotView, rng: Rng): string {
 
   const expectedWins = (character: Character, roundIndex: number): number => {
     if (roundIndex === 0) {
-      const score = effectiveScore(character, view.currentThreat, context);
+      const score = effectiveScore(character, view.currentThreat, context, view.opponentPool);
       return winChance(score, view.currentThreat, view.abilityMeans);
     }
     const level = view.futureLevels[roundIndex - 1];
@@ -279,7 +296,7 @@ function planHardPlay(view: BotView, rng: Rng): string {
     if (threats.length === 0) return 0.5;
     const atRound = { ...futureContext, round: view.round + roundIndex };
     const total = threats.reduce(
-      (sum, threat) => sum + winChance(effectiveScore(character, threat, atRound), threat, view.abilityMeans),
+      (sum, threat) => sum + winChance(effectiveScore(character, threat, atRound, view.opponentPool), threat, view.abilityMeans),
       0,
     );
     return total / threats.length;

@@ -13,6 +13,8 @@ export type ScoreContext = {
   team: readonly Character[];
   /** Taken from each of the character's abilities this round (Sabotatore). */
   abilityMalus?: number;
+  /** The opposing character of this round, when it is known (the server resolving a round). */
+  opponent?: Character;
 };
 
 function numberParam(character: Character, key: string): number {
@@ -67,6 +69,19 @@ export function abilityMalusFrom(character: Character): number {
   return character.power?.code === "sabotage" ? numberParam(character, "malus") : 0;
 }
 
+/** Spia: once played, its side sees one character the opponent has not played yet. */
+export function revealsOpponentCharacter(character: Character): boolean {
+  return character.power?.code === "spy";
+}
+
+/** Nemesi acts between Heroes and Villains: Neutrals have no nemesis. */
+const NEMESIS: Record<string, string> = { heroes: "villains", villains: "heroes" };
+
+/** Whether Nemesi pays against an opposing character of this faction. */
+export function isNemesisOf(character: Character, opponentFaction: string): boolean {
+  return NEMESIS[character.faction] === opponentFaction;
+}
+
 /** Veggente: once played, its side sees every threat of the following rounds. */
 export function revealsFutureThreats(character: Character): boolean {
   return character.power?.code === "foresight";
@@ -97,10 +112,22 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
       const allies = context.team.filter((c) => c.id !== character.id && c.faction === character.faction).length;
       return allies * numberParam(character, "bonus");
     }
+    case "shielded":
+      return context.opponent && abilityMalusFrom(context.opponent) > 0 ? numberParam(character, "bonus") : 0;
+    case "nemesis":
+      return context.opponent && isNemesisOf(character, context.opponent.faction) ? numberParam(character, "bonus") : 0;
+    case "all_rounder": {
+      const min = numberParam(character, "min_value");
+      const malus = context.abilityMalus ?? 0;
+      return threat.abilities.every((ability) => abilityValue(character, ability, malus) >= min)
+        ? numberParam(character, "bonus")
+        : 0;
+    }
     case "comeback": // acts after the round: see carriedBonusAfter
     case "sabotage": // acts on the opposing character: see abilityMalusFrom
     case "foresight": // gives information, not points: see revealsFutureThreats
     case "relentless": // acts on ties: see compareScores
+    case "spy": // gives information, not points: see revealsOpponentCharacter
       return 0;
     default:
       // A power the engine does not implement must never be silently ignored.
@@ -109,6 +136,8 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
 }
 
 export function scorePlay(character: Character, threat: Threat, context: ScoreContext): PlayScore {
+  // Schermato: immune to Sabotatore.
+  if (character.power?.code === "shielded") context = { ...context, abilityMalus: 0 };
   const malus = context.abilityMalus ?? 0;
   const base = baseScore(character, threat, malus);
   // A malus cannot bring the score below 0: the bonus stays the difference from the base.

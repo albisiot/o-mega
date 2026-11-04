@@ -556,6 +556,10 @@ function ChoosePhase({
   const abilityName = (code: string) => abilities.find((a) => a.code === code);
   const previewNote = "Il punteggio è un'anteprima: lo calcola il server quando giochi.";
 
+  // Spia: the revealed characters the opponent still holds.
+  const opponentPlayedIds = new Set(view.rounds.map((r) => r.opponent_play?.definition_id).filter(Boolean));
+  const spiedLeft = (view.spied_cards ?? []).filter((card) => !opponentPlayedIds.has(card.definition_id));
+
   return (
     <main className="flex min-h-0 flex-1 flex-col">
       <section className="cut-bottom relative mx-3 mt-1 flex min-h-0 flex-1 flex-col overflow-hidden bg-comic-magenta px-4 pb-5 text-black">
@@ -592,6 +596,11 @@ function ChoosePhase({
           {round.modifier && <ModifierBanner modifier={round.modifier} firstAbility={abilityName(round.threat.abilities[0])?.name ?? round.threat.abilities[0]} />}
           <TimerBar key={deadline} deadline={deadline} offset={offset} />
           {carried > 0 && <p className="mt-1.5 text-xs font-bold">Riscossa: +{carried} al personaggio di questo round.</p>}
+          {spiedLeft.length > 0 && (
+            <p className="mt-1.5 text-xs font-bold">
+              Spia: {opponentName} ha ancora {spiedLeft.map((card) => card.name).join(" e ")}.
+            </p>
+          )}
           {!isBot && (
             <p className="mt-1.5 text-xs font-bold">
               {round.opponent_has_chosen ? `${opponentName} ha scelto.` : `${opponentName} sta scegliendo…`}
@@ -803,6 +812,7 @@ function RoundReveal({
           carried: carriedInto(previousMine, previous?.winner === "opponent"),
           lost: round.winner === "opponent",
           wonTie: Boolean(tieWonBy) && round.winner === "me",
+          opponentShielded: theirs?.power?.code === "shielded",
         })
       : [];
   const theirNotes = theirs
@@ -810,6 +820,7 @@ function RoundReveal({
         carried: carriedInto(previous?.opponent_play, previous?.winner === "me"),
         lost: round.winner === "me",
         wonTie: Boolean(tieWonBy) && round.winner === "opponent",
+        opponentShielded: mine?.power?.code === "shielded",
       })
     : [];
 

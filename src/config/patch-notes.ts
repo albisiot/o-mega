@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "4 novembre 2026",
     changes: [
+      "4 nuovi poteri: Schermato (immune a Sabotatore), Nemesi (+3 contro la fazione opposta), Tuttofare (+3 se tutte le abilità richieste valgono almeno 5) e Spia (dopo averla giocata vedi un personaggio avversario non ancora giocato). 10 carte Gamma e Beta cambiano potere.",
       "Nove nuovi stili di variante, ciascuno su 5 personaggi: Poster, Inferno, Grafite, Marmo, Gotico, Tarocco, Inchiostro, Fantasy e Prisma. Ora quasi ogni personaggio dei pacchetti ha una variante, e ogni carta ha il 5% di probabilità di uscire con un disegno speciale (prima il 10%): resta circa un pacchetto su quattro con una variante.",
     ],
   },

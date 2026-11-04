@@ -4,6 +4,7 @@ import {
   carriedBonusAfter,
   compareScores,
   revealsFutureThreats,
+  revealsOpponentCharacter,
   scorePlay,
   type ScoreContext,
 } from "./scoring.ts";
@@ -180,5 +181,46 @@ describe("compareScores", () => {
     expect(compareScores(score(10, 7), score(10, 6))).toBe("a");
     expect(compareScores(score(10, 6), score(10, 7))).toBe("b");
     expect(compareScores(score(10, 6), score(10, 6))).toBeNull();
+  });
+});
+
+describe("Schermato, Nemesi, Tuttofare and Spia", () => {
+  const sabotage = { code: "sabotage", params: { malus: 1 } };
+  const two = threat("t", ["FOR", "VEL"]);
+
+  it("Schermato ignores Sabotatore and gains its bonus against it", () => {
+    const shielded = character("s", { FOR: 5, VEL: 5 }, { code: "shielded", params: { bonus: 1 } });
+    const saboteur = character("x", {}, sabotage);
+    const score = scorePlay(shielded, two, { ...context, abilityMalus: 1, opponent: saboteur });
+    expect(score.base).toBe(10);
+    expect(score.bonus).toBe(1);
+    expect(scorePlay(shielded, two, { ...context, opponent: character("y") }).bonus).toBe(0);
+  });
+
+  it("Nemesi pays only between Heroes and Villains", () => {
+    const hero = { ...character("h", {}, { code: "nemesis", params: { bonus: 3 } }), faction: "heroes" };
+    const villain = { ...character("v"), faction: "villains" };
+    const neutral = { ...character("n"), faction: "neutrals" };
+    expect(scorePlay(hero, two, { ...context, opponent: villain }).bonus).toBe(3);
+    expect(scorePlay(hero, two, { ...context, opponent: { ...villain, faction: "heroes" } }).bonus).toBe(0);
+    expect(scorePlay(hero, two, { ...context, opponent: neutral }).bonus).toBe(0);
+    // Unknown opponent (a preview, Emergenza): no bonus.
+    expect(scorePlay(hero, two, context).bonus).toBe(0);
+    const neutralNemesis = { ...hero, faction: "neutrals" };
+    expect(scorePlay(neutralNemesis, two, { ...context, opponent: villain }).bonus).toBe(0);
+  });
+
+  it("Tuttofare needs every required ability at the minimum, after Sabotatore", () => {
+    const allRounder = character("a", { FOR: 5, VEL: 6 }, { code: "all_rounder", params: { bonus: 3, min_value: 5 } });
+    expect(scorePlay(allRounder, two, context).bonus).toBe(3);
+    expect(scorePlay(allRounder, threat("t", ["FOR", "VEL", "RES"]), context).bonus).toBe(0); // RES 4
+    expect(scorePlay(allRounder, two, { ...context, abilityMalus: 1 }).bonus).toBe(0);
+  });
+
+  it("Spia reveals and gives no points", () => {
+    const spy = character("s", {}, { code: "spy", params: {} });
+    expect(revealsOpponentCharacter(spy)).toBe(true);
+    expect(revealsOpponentCharacter(character("x"))).toBe(false);
+    expect(scorePlay(spy, two, context).bonus).toBe(0);
   });
 });

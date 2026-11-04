@@ -104,3 +104,21 @@ describe("Riscossa (comeback)", () => {
     expect(carriedBonus(state, "a")).toBe(0);
   });
 });
+
+describe("powers that read the opposing character", () => {
+  it("resolveRound applies Nemesi and Schermato against the character actually played", () => {
+    const nemesis = { ...character("a1", {}, { code: "nemesis", params: { bonus: 3 } }, 4), faction: "heroes" };
+    const saboteur = { ...character("b1", {}, { code: "sabotage", params: { malus: 1 } }, 4), faction: "villains" };
+    const shielded = character("a2", {}, { code: "shielded", params: { bonus: 1 } }, 4);
+    const threats = [threat("t1", ["FOR", "VEL"]), threat("t2", ["FOR", "VEL"])];
+    let state = newState([nemesis, shielded], [saboteur, character("b2")], threats);
+
+    const first = resolveRound(state, { a: { characterId: "a1", autoPlayed: false }, b: { characterId: "b1", autoPlayed: false } }, FAMILIES);
+    // Nemesi +3 against a Villain, Sabotatore -1 on both required abilities.
+    expect(first.round.plays.a).toMatchObject({ base: 6, total: 9 });
+    state = first.state;
+
+    const second = resolveRound(state, { a: { characterId: "a2", autoPlayed: false }, b: { characterId: "b2", autoPlayed: false } }, FAMILIES);
+    expect(second.round.plays.a).toMatchObject({ base: 8, bonus: 0, total: 8 });
+  });
+});

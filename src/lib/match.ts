@@ -80,6 +80,8 @@ export type MatchView = {
   level_rewards: { level: number; coins: number }[];
   level_unlocks?: { name: string; level: number }[];
   /** Veggente: the threats of the following rounds, once the player has played it. */
+  /** Spia: opposing characters it revealed, each with the round the Spia was played in. */
+  spied_cards?: (MatchCard & { round: number })[];
   foreseen_threats?: { round: number; level: number; name: string; abilities: string[]; modifier: ThreatModifier | null }[];
   server_now: string;
   my_team: (MatchCard & { instance_id: string; played_round: number | null })[];
