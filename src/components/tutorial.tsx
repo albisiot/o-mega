@@ -41,7 +41,7 @@ export function FirstRunTutorial() {
 }
 
 /** Replays the tutorial: a row on the Profile screen, a header button (`compact`) on the Play one. */
-export function TutorialButton({ compact = false }: { compact?: boolean }) {
+export function TutorialButton({ compact = false, className = "" }: { compact?: boolean; className?: string }) {
   const [replaying, setReplaying] = useState(false);
 
   return (
@@ -52,7 +52,7 @@ export function TutorialButton({ compact = false }: { compact?: boolean }) {
           Come si gioca
         </button>
       ) : (
-        <button type="button" onClick={() => setReplaying(true)} className="row-link w-full text-left">
+        <button type="button" onClick={() => setReplaying(true)} className={`row-link w-full text-left ${className}`}>
           <span className="font-display text-xl uppercase">Come si gioca</span>
           <span className="font-display text-2xl text-comic-yellow" aria-hidden>
             →

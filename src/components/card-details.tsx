@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Silhouette } from "@/components/card-view";
+import { Sheet } from "@/components/sheet";
 import { convertDuplicates, type CatalogCard, type OwnedSummary } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
 
@@ -152,26 +153,10 @@ export function CopiesSheet({
           </svg>
         </span>
       </button>
-      <dialog
-        ref={sheet}
-        aria-label={`Copie di ${card.name}`}
-        // The sheet's content fills it: a click on the dialog itself is on the backdrop.
-        onClick={(event) => {
-          if (event.target === sheet.current) sheet.current.close();
-        }}
-        className="m-0 mt-auto w-full max-w-none border-0 border-t-[3px] border-foreground bg-background p-0 text-foreground backdrop:bg-black/70"
-      >
-        <div className="mx-auto flex max-w-sm flex-col gap-3 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="min-w-0 truncate font-display text-2xl uppercase text-comic-yellow">Copie di {card.name}</h2>
-            <button type="button" onClick={() => sheet.current?.close()} className="btn btn-ghost shrink-0">
-              Chiudi
-            </button>
-          </div>
-          <CopiesPanel card={card} owned={owned} onConverted={onConverted} />
-          <MissingVariants card={card} found={found} />
-        </div>
-      </dialog>
+      <Sheet sheetRef={sheet} title={`Copie di ${card.name}`}>
+        <CopiesPanel card={card} owned={owned} onConverted={onConverted} />
+        <MissingVariants card={card} found={found} />
+      </Sheet>
     </>
   );
 }
