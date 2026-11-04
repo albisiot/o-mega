@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { resolveEmergencyPlay, type AbilityFamilies, type EmergencyRules } from "@o-mega/game-engine";
 import { Silhouette } from "@/components/card-view";
-import { ComicBurst, PageHeader } from "@/components/comic-parts";
+import { ComicBurst } from "@/components/comic-parts";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
 import { LoadingScreen } from "@/components/loading-screen";
@@ -50,16 +50,14 @@ export function EmergencyScreen({ initial }: { initial: EmergencyView }) {
   }
 
   const run = view.run;
-  // Picking the squad, choosing and the final result fit the screen: nothing scrolls.
-  // While playing, one strip with the levels replaces the page header.
-  const choosing = Boolean(run && !revealing && run.status !== "finished");
-  const finished = Boolean(run && !revealing && run.status === "finished");
-  const fitted = choosing || (!run && picking) || finished;
-  useLockedScreen(fitted);
+  // Every step fits the screen: nothing scrolls. Before and after the attempt the page
+  // has its title; while playing, one strip with the levels replaces it.
+  const titled = run ? !revealing && run.status === "finished" : !picking;
+  useLockedScreen(true);
 
   return (
-    <div className={fitted ? "game-shell" : "flex flex-1 flex-col"}>
-      {finished ? (
+    <div className="game-shell">
+      {titled ? (
         <>
           <header className="flex items-center gap-2.5 px-3 py-1">
             <BackToPlay />
@@ -70,16 +68,11 @@ export function EmergencyScreen({ initial }: { initial: EmergencyView }) {
           </header>
           <LevelTrack view={view} abilities={abilities} />
         </>
-      ) : fitted ? (
+      ) : (
         <header className="relative flex items-center gap-1.5 px-3 py-1">
           <BackToPlay />
           <LevelTrack view={view} abilities={abilities} inline />
         </header>
-      ) : (
-        <>
-          <PageHeader backHref="/gioca" backLabel="Gioca" title="Emergenza" subtitle="La sfida di oggi, uguale per tutti" />
-          <LevelTrack view={view} abilities={abilities} />
-        </>
       )}
       {!run ? (
         <Briefing view={view} picking={picking} onPick={() => setPicking(true)} onStarted={setView} />
@@ -263,49 +256,56 @@ function Briefing({
     );
   }
 
+  // The rules keep their size; the ranking takes the room left and scrolls inside it.
   return (
-    <main className="flex flex-1 flex-col gap-5 px-3 pb-6 pt-4">
-      <section className="flex flex-col gap-2 text-sm font-medium text-muted">
-        <p>
-          {size} Minacce colpiscono Nuova Megara, le stesse per tutti. Per ora conosci solo i loro livelli. Scegli{" "}
-          {size} personaggi, poi mandane uno contro ogni Minaccia che si svela.
-        </p>
-        <p>
-          Ogni Minaccia chiede un punteggio minimo. Alla {maxFailures}ª fallita l&apos;Emergenza finisce. Non rischi
-          nessuna carta, ma hai un solo tentativo al giorno.
-        </p>
-      </section>
+    <>
+      <main className="flex min-h-0 flex-1 flex-col gap-3 px-3 pt-3 short:gap-2 short:pt-2">
+        <section className="flex shrink-0 flex-col gap-1.5 text-[13px] font-medium leading-[18px] text-muted short:gap-1">
+          <p>
+            {size} Minacce colpiscono Nuova Megara, le stesse per tutti. Per ora conosci solo i loro livelli. Scegli{" "}
+            {size} personaggi, poi mandane uno contro ogni Minaccia che si svela.
+          </p>
+          <p>
+            Ogni Minaccia chiede un punteggio minimo. Alla {maxFailures}ª fallita l&apos;Emergenza finisce. Non rischi
+            nessuna carta, ma hai un solo tentativo al giorno.
+          </p>
+        </section>
 
-      <section className="flex flex-col gap-1.5">
-        <h2 className="section-title">Punteggio richiesto</h2>
-        <ul className="grid grid-cols-6 gap-1">
-          {Object.entries(targets).map(([level, target]) => (
-            <li key={level} className="flex flex-col items-center bg-panel py-1.5">
-              <span className="text-xs font-semibold text-muted">Liv. {level}</span>
-              <span className="font-display text-xl">{target}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+        <section className="flex shrink-0 flex-col gap-1">
+          <h2 className="section-title">Punteggio richiesto</h2>
+          <ul className="grid grid-cols-6 gap-1">
+            {Object.entries(targets).map(([level, target]) => (
+              <li key={level} className="flex flex-col items-center bg-panel py-1 short:py-0.5">
+                <span className="text-xs font-semibold text-muted">Liv. {level}</span>
+                <span className="font-display text-xl leading-6">{target}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-      <section className="flex flex-col gap-1.5">
-        <h2 className="section-title">Premi</h2>
-        <ul className="flex flex-col gap-0.5">
-          {rewards.map((reward) => (
-            <li key={reward.passed} className="flex justify-between bg-panel px-3 py-2 text-sm font-semibold">
-              <span>{reward.passed} Minacce superate</span>
-              <span className="text-comic-yellow">+{reward.coins} monete</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+        <section className="flex shrink-0 flex-col gap-1">
+          <h2 className="section-title">Premi</h2>
+          <ul className="grid grid-cols-3 gap-1">
+            {rewards.map((reward) => (
+              <li key={reward.passed} className="flex flex-col items-center bg-panel py-1 short:py-0.5">
+                <span className="text-xs font-semibold text-muted">{reward.passed} Minacce superate</span>
+                <span className="font-display text-xl leading-6 text-comic-yellow">
+                  +{reward.coins} <span className="font-sans text-xs font-bold">monete</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-      <Leaderboard />
+        <Leaderboard />
+      </main>
 
-      <button type="button" onClick={onPick} className="btn btn-primary">
-        Scegli la squadra
-      </button>
-    </main>
+      <div className="px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
+        <button type="button" onClick={onPick} className="btn btn-primary w-full">
+          Scegli la squadra
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -511,36 +511,42 @@ function PlayReveal({
   onContinue: () => void;
 }) {
   const card = run.squad.find((c) => c.instance_id === play.instance_id);
+  // The outcome takes the room above the button, like the threat while choosing.
   return (
-    <main className="flex flex-1 flex-col gap-4 px-3 pb-6 pt-3">
-      <section
-        className={`cut-bottom relative flex flex-col items-center gap-2 overflow-hidden px-4 pb-8 pt-5 text-center text-black ${
-          play.passed ? "bg-comic-cyan" : "halftone bg-comic-magenta"
-        }`}
-      >
-        <p className="relative text-sm font-extrabold">{play.threat.name}</p>
-        <p className="animate-rare-title text-sfx relative text-5xl uppercase text-foreground">
-          {play.passed ? "Superata!" : "Fallita"}
-        </p>
-        <ComicBurst fill="#ffd60a" className="relative mt-1 h-28 w-28 -rotate-[8deg]" textClassName="text-[34px] tracking-wide">
-          {play.score}
-        </ComicBurst>
-        <p className="relative font-bold">
-          {card?.name ?? "?"}: servivano {play.required} punti
-        </p>
-        {play.bonus > 0 && (
-          <p className="relative text-sm font-bold">
-            {play.base} dalle abilità, +{play.bonus} dal bonus
+    <>
+      <main className="flex min-h-0 flex-1 flex-col gap-3 px-3 pt-1">
+        <section
+          className={`cut-bottom relative flex min-h-0 flex-1 flex-col items-center justify-center gap-2 overflow-hidden px-4 pb-8 pt-5 text-center text-black ${
+            play.passed ? "bg-comic-cyan" : "halftone bg-comic-magenta"
+          }`}
+        >
+          <p className="relative text-sm font-extrabold">{play.threat.name}</p>
+          <p className="animate-rare-title text-sfx relative text-5xl uppercase text-foreground">
+            {play.passed ? "Superata!" : "Fallita"}
           </p>
-        )}
-      </section>
-      <p className="text-center text-sm font-semibold text-muted">
-        Superate {run.passed} · Fallite {run.failed} su {maxFailures}
-      </p>
-      <button type="button" onClick={onContinue} className="btn btn-primary">
-        {run.status === "finished" ? "Vedi il risultato" : "Prossima Minaccia"}
-      </button>
-    </main>
+          <ComicBurst fill="#ffd60a" className="relative mt-1 h-28 w-28 -rotate-[8deg]" textClassName="text-[34px] tracking-wide">
+            {play.score}
+          </ComicBurst>
+          <p className="relative font-bold">
+            {card?.name ?? "?"}: servivano {play.required} punti
+          </p>
+          {play.bonus > 0 && (
+            <p className="relative text-sm font-bold">
+              {play.base} dalle abilità, +{play.bonus} dal bonus
+            </p>
+          )}
+        </section>
+        <p className="text-center text-sm font-semibold text-muted">
+          Superate {run.passed} · Fallite {run.failed} su {maxFailures}
+        </p>
+      </main>
+
+      <div className="px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
+        <button type="button" onClick={onContinue} className="btn btn-primary w-full">
+          {run.status === "finished" ? "Vedi il risultato" : "Prossima Minaccia"}
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -666,17 +672,17 @@ function useLeaderboard() {
   return { board, failed };
 }
 
-/** A place in the ranking; `compact` fits the result's tab, with a smaller avatar. */
-function RankRow({ entry, compact = false }: { entry: EmergencyRank; compact?: boolean }) {
+/** A place in the ranking, low enough for the lists that fit the screen. */
+function RankRow({ entry }: { entry: EmergencyRank }) {
   return (
     <li
-      className={`flex items-center justify-between gap-2 px-3 text-sm font-semibold ${compact ? "h-9" : "py-1.5"} ${
+      className={`flex h-9 shrink-0 items-center justify-between gap-2 px-3 text-sm font-semibold ${
         entry.is_me ? "bg-comic-yellow text-black" : "bg-panel"
       }`}
     >
       <span className="flex min-w-0 items-center gap-2">
         <span className="w-6 shrink-0 font-display text-lg">{entry.rank}</span>
-        <PlayerAvatar username={entry.username} avatarUrl={entry.avatar_url} size={compact ? "xs" : "sm"} />
+        <PlayerAvatar username={entry.username} avatarUrl={entry.avatar_url} size="xs" />
         <span className="truncate">{entry.username}</span>
       </span>
       <span className="shrink-0 font-display text-lg">
@@ -686,7 +692,7 @@ function RankRow({ entry, compact = false }: { entry: EmergencyRank; compact?: b
   );
 }
 
-/** Before the attempt: today's ranking as it stands. */
+/** Before the attempt: today's ranking as it stands, scrolling in the room it gets. */
 function Leaderboard() {
   const { board, failed } = useLeaderboard();
 
@@ -695,12 +701,12 @@ function Leaderboard() {
   const rows = board ? [...board.top, ...(meOutsideTop ? [meOutsideTop] : [])] : [];
 
   return (
-    <section className="flex flex-col gap-1.5">
+    <section className="flex min-h-0 flex-1 flex-col gap-1">
       <h2 className="section-title">Classifica di oggi</h2>
       {board && rows.length === 0 && (
         <p className="text-sm font-medium text-muted">Nessuno ha ancora finito: puoi essere il primo.</p>
       )}
-      <ol className="flex flex-col gap-0.5">
+      <ol className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain">
         {rows.map((entry) => (
           <RankRow key={entry.rank} entry={entry} />
         ))}
@@ -722,7 +728,7 @@ function Podium({ board, failed }: { board: EmergencyLeaderboard | null; failed:
     <div className="flex flex-col gap-0.5">
       <ol className="flex flex-col gap-0.5">
         {podium.map((entry) => (
-          <RankRow key={entry.rank} entry={entry} compact />
+          <RankRow key={entry.rank} entry={entry} />
         ))}
       </ol>
       {meBelow && (
@@ -733,7 +739,7 @@ function Podium({ board, failed }: { board: EmergencyLeaderboard | null; failed:
             </p>
           )}
           <ol start={meBelow.rank}>
-            <RankRow entry={meBelow} compact />
+            <RankRow entry={meBelow} />
           </ol>
         </>
       )}
