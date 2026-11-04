@@ -22,6 +22,27 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const SAVED_PROFILE_KEY = "o-mega.profile";
+
+/** The profile last loaded on this device, if it belongs to this player. For display only. */
+function savedProfile(userId: string): Profile | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SAVED_PROFILE_KEY) ?? "null") as Profile | null;
+    return saved?.id === userId ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveProfile(profile: Profile | null) {
+  try {
+    if (profile) localStorage.setItem(SAVED_PROFILE_KEY, JSON.stringify(profile));
+    else localStorage.removeItem(SAVED_PROFILE_KEY);
+  } catch {
+    // Without storage the home simply waits for bootstrap_player on the next visit.
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [sessionKnown, setSessionKnown] = useState(!isSupabaseConfigured);
   const [session, setSession] = useState<Session | null>(null);
@@ -40,8 +61,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // the Supabase client, never from here.
       setSession((current) => (current && nextSession && current.user.id === nextSession.user.id ? current : nextSession));
       setSessionKnown(true);
-      if (!nextSession) {
+      if (nextSession) {
+        // A returning player gets the home at once with the profile saved last time, and its
+        // requests start next to bootstrap_player instead of after it. A new player has nothing
+        // saved and waits: bootstrap_player creates the profile and the starter cards.
+        const userId = nextSession.user.id;
+        setProfile((current) => (current?.id === userId ? current : savedProfile(userId)));
+      } else {
         forgetEverything();
+        saveProfile(null);
         setProfile(null);
         setError(null);
       }
@@ -69,6 +97,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, [userId]);
+
+  // Every fresh profile (bootstrap, statistics, username) is the one shown at the next launch.
+  useEffect(() => {
+    if (profile) saveProfile(profile);
+  }, [profile]);
 
   const signInWithGoogle = useCallback(async () => {
     const { error: signInError } = await getSupabase().auth.signInWithOAuth({
