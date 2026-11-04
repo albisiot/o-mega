@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { CARD_TOUCH_HANDLERS, CardArtEffects } from "@/components/card-effects";
 import { CardName } from "@/components/card-name";
-import { thumbArtUrl } from "@/lib/art";
+import { artSrcSet } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { cardEffects, type CardEffect } from "@/lib/card-effects";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
@@ -146,7 +146,7 @@ export function CardArt({
   className: string;
   children?: ReactNode;
 }) {
-  const srcSet = artUrl && thumbSizes ? `${withBasePath(thumbArtUrl(artUrl))} 360w, ${withBasePath(artUrl)} 600w` : undefined;
+  const srcSet = artUrl && thumbSizes ? artSrcSet(artUrl) : undefined;
   return (
     <div className={`@container relative overflow-hidden ${className}`} style={rarityArt(rarity)} aria-hidden={!children}>
       {artUrl ? (
@@ -158,6 +158,7 @@ export function CardArt({
           sizes={thumbSizes}
           alt=""
           loading="lazy"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-cover object-top"
         />
       ) : (

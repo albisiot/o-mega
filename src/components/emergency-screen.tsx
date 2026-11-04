@@ -12,6 +12,7 @@ import { PlayerAvatar } from "@/components/player-avatar";
 import { TeamPicker } from "@/components/team-picker";
 import { ThreatDiorama } from "@/components/threat-diorama";
 import { balance } from "@/config/balance";
+import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
@@ -441,6 +442,8 @@ function ChoosePhase({
             tone={outcome.passed ? "pass" : "fail"}
             note={outcome.required !== baseTarget ? `basta ${outcome.required}` : undefined}
             short
+            // Four to a row inside the page padding and the gaps, minus each card's 3px frame.
+            artSizes="calc((100vw - 66px) / 4)"
             selected={card.instance_id === selected}
             disabled={busy}
             onSelect={() => setSelected(card.instance_id)}
@@ -607,7 +610,13 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
                     <span aria-hidden className="relative h-full w-8 shrink-0 overflow-hidden bg-panel-raised">
                       {card?.art_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={withBasePath(card.art_url)} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
+                        <img
+                          src={withBasePath(thumbArtUrl(card.art_url))}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className="absolute inset-0 h-full w-full object-cover object-top"
+                        />
                       ) : (
                         card && (
                           <Silhouette

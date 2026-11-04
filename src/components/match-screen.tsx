@@ -12,6 +12,7 @@ import { StoryRewardPanel, useStoryReward } from "@/components/story-reward";
 import { ThreatDiorama } from "@/components/threat-diorama";
 import { prefetchWinnerNames, WinnerName } from "@/components/winner-name";
 import { balance } from "@/config/balance";
+import { artSrcSet, thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
@@ -437,8 +438,9 @@ function LevelTrack({ view, opponentName, abilities }: { view: MatchView; oppone
               {played?.art_url && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={withBasePath(played.art_url)}
+                  src={withBasePath(thumbArtUrl(played.art_url))}
                   alt=""
+                  decoding="async"
                   className="absolute -bottom-[3px] -right-[3px] h-[22px] w-[17px] border-2 border-black object-cover object-top"
                 />
               )}
@@ -627,6 +629,8 @@ function ChoosePhase({
               card={card}
               score={score.total}
               bonus={score.bonus}
+              // Five to a row inside the page padding and the gaps, minus each card's 3px frame.
+              artSizes="calc((100vw - 78px) / 5)"
               selected={card.instance_id === selected}
               disabled={busy}
               onSelect={() => onSelect(card.instance_id)}
@@ -908,14 +912,16 @@ function PlaySide({
   const isLeft = side === "left";
   return (
     <div className={`relative flex ${isLeft ? "justify-start" : "justify-end text-right"}`}>
-      {/* The art grows with the screen: 23% of its height, at most the old 176 px. */}
+      {/* The art grows with the screen: 23% of its height, at most the old 176 px. Even then the
+          drawing is at most 128 px wide, so the thumbnail the hand already loaded does. */}
       {card && (
         <div className={`absolute bottom-0 aspect-[32/44] h-[clamp(108px,23dvh,176px)] ${isLeft ? "right-0" : "left-0"}`}>
           {card.art_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={withBasePath(card.art_url)}
+              src={withBasePath(thumbArtUrl(card.art_url))}
               alt=""
+              decoding="async"
               className="h-full w-full border-[3px] border-black object-cover object-top"
             />
           ) : (
@@ -1102,7 +1108,15 @@ function MatchResult({
                   <span aria-hidden className={`relative block aspect-square overflow-hidden border-[3px] bg-panel-raised ${frame}`}>
                     {mine?.art_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={withBasePath(mine.art_url)} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
+                      <img
+                        src={withBasePath(mine.art_url)}
+                        srcSet={artSrcSet(mine.art_url)}
+                        // Five tiles per row inside the page padding and the gaps, minus each tile's 3px frame.
+                        sizes="calc((100vw - 78px) / 5)"
+                        alt=""
+                        decoding="async"
+                        className="absolute inset-0 h-full w-full object-cover object-top"
+                      />
                     ) : (
                       mine && (
                         <Silhouette

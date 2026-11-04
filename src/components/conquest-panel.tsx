@@ -172,7 +172,14 @@ export function ConquestPick({
                     isSelected ? "-rotate-1 shadow-[0_0_0_3px_var(--comic-yellow),5px_5px_0_3px_var(--comic-magenta)]" : ""
                   }`}
                 >
-                  <CardView card={card} size="sm" fill />
+                  <CardView
+                    card={card}
+                    size="sm"
+                    fill
+                    // Three to a row inside the padding and the gaps; on a taller screen the two rows
+                    // grow taller than the drawing, which then gets wider than the tile.
+                    thumbSizes="max(calc((100vw - 64px) / 3), calc(37.7vh - 124px))"
+                  />
                   {card.eligible && (
                     <span className="absolute bottom-2 right-2 z-[3] flex h-[22px] w-[22px] items-center justify-center rounded-full bg-black/70 p-[5px] text-foreground">
                       {MAGNIFIER}

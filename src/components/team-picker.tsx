@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Silhouette } from "@/components/card-view";
 import { InfoTip } from "@/components/info-tip";
 import { balance } from "@/config/balance";
+import { artSrcSet } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import type { CatalogCard } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
@@ -222,7 +223,14 @@ export function TeamPicker(props: TeamPickerProps) {
             >
               {card.art_url && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={withBasePath(card.art_url)} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
+                <img
+                  src={withBasePath(card.art_url)}
+                  srcSet={artSrcSet(card.art_url)}
+                  sizes={squadSize ? "calc((100vw - 58px) / 4)" : "calc((100vw - 68px) / 5)"}
+                  alt=""
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-cover object-top"
+                />
               )}
               <span className="absolute left-1 top-0.5 bg-comic-yellow px-1 font-display text-[13px] leading-4 text-black">{i + 1}</span>
               {mark && (
@@ -363,8 +371,12 @@ export function TeamPicker(props: TeamPickerProps) {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={withBasePath(card.art_url)}
+                        srcSet={artSrcSet(card.art_url)}
+                        // Three tiles per row inside the page padding and the gaps, minus each tile's 3px frame.
+                        sizes="calc((100vw - 58px) / 3)"
                         alt=""
                         loading="lazy"
+                        decoding="async"
                         className="absolute inset-0 h-full w-full object-cover object-top"
                       />
                     ) : (

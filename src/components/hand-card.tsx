@@ -1,4 +1,5 @@
 import { Silhouette } from "@/components/card-view";
+import { artSrcSet } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 
@@ -15,13 +16,15 @@ type HandCardProps = {
   note?: string;
   /** A wider crop of the art, for a hand on two rows. */
   short?: boolean;
+  /** The art's displayed width, as an <img sizes> value: phones get the thumbnail. */
+  artSizes: string;
   selected: boolean;
   disabled: boolean;
   onSelect: () => void;
 };
 
 /** A card in the hand of the choice phase: portrait art, name and the predicted score. */
-export function HandCard({ card, score, bonus, tone, note, short = false, selected, disabled, onSelect }: HandCardProps) {
+export function HandCard({ card, score, bonus, tone, note, short = false, artSizes, selected, disabled, onSelect }: HandCardProps) {
   const outcome = tone === "pass" ? ", la supera" : tone === "fail" ? ", non basta" : "";
   return (
     <button
@@ -47,7 +50,14 @@ export function HandCard({ card, score, bonus, tone, note, short = false, select
       <span className={`relative block bg-panel-raised ${short ? "aspect-[4/3]" : "aspect-[3/4]"}`}>
         {card.art_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={withBasePath(card.art_url)} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
+          <img
+            src={withBasePath(card.art_url)}
+            srcSet={artSrcSet(card.art_url)}
+            sizes={artSizes}
+            alt=""
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover object-top"
+          />
         ) : (
           <Silhouette faction={card.faction} accent={card.rarity.color} className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2" />
         )}
