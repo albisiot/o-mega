@@ -8,7 +8,7 @@ import { ComicBurst } from "@/components/comic-parts";
 import { ConquestPanel, ConquestPick } from "@/components/conquest-panel";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
-import { StoryRewardPanel } from "@/components/story-reward";
+import { StoryRewardPanel, useStoryReward } from "@/components/story-reward";
 import { ThreatDiorama } from "@/components/threat-diorama";
 import { prefetchWinnerNames, WinnerName } from "@/components/winner-name";
 import { balance } from "@/config/balance";
@@ -249,16 +249,15 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
   const opponentName = view.opponent?.username ?? "Bot";
   const absentMs =
     !isBot && isActive && view.opponent?.last_seen_at ? now + offset - Date.parse(view.opponent.last_seen_at) : 0;
-  // The choice, the round result, the conquest pick and a plain final result fit the screen:
-  // nothing scrolls. A conquest or a story reward still makes the final result a longer page.
+  // Every step fits the screen and nothing scrolls: the choice, the round result, the conquest
+  // pick and the final result, with or without a conquered card or a story reward.
   const choosing = !shownRound && view.status !== "finished" && Boolean(current);
   const picking = !shownRound && pickOpen;
   const pickSeconds =
     pickOpen && view.conquest
       ? Math.max(0, Math.ceil((Date.parse(view.conquest.deadline_at) - (now + offset)) / 1000))
       : null;
-  const fitted =
-    choosing || Boolean(shownRound) || picking || (view.status === "finished" && !view.conquest && !story);
+  const fitted = choosing || Boolean(shownRound) || picking || view.status === "finished";
   useLockedScreen(fitted);
 
   return (
@@ -990,57 +989,88 @@ function MatchResult({
   const coins = view.reward_coins ?? 0;
   const xp = matchXp(view);
   const cardOf = (instanceId: string | null | undefined) => view.my_team.find((c) => c.instance_id === instanceId);
+  const storyReward = useStoryReward(view.id, story);
+  const conquest = view.conquest;
 
-  // On a fitted screen the banner takes the room left; the rest keeps its size.
+  // A Conquest or a mission has more to tell: the banner gets compact, its rows on one line.
+  // A card won or lost then takes the room left; otherwise the banner does.
+  const compact = Boolean(conquest) || story;
+  const prizeCard =
+    Boolean(conquest?.resolved && conquest.bonus_coins === 0 && conquest.chosen) ||
+    Boolean(storyReward?.completed_now && storyReward.card);
+  const chip = `relative -skew-x-8 py-1 font-extrabold ${compact ? "px-2 text-xs" : "px-3 text-sm"}`;
+  const score = (
+    <p className={`${chip} bg-black text-comic-yellow`}>
+      Round {view.rounds_won.me} – {view.rounds_won.opponent} · punti {view.total_score.me} – {view.total_score.opponent}
+    </p>
+  );
+  const gains = (
+    <>
+      {xp > 0 && <p className={`${chip} bg-black text-foreground`}>+{xp} XP</p>}
+      {coins > 0 && <p className={`${chip} bg-black text-comic-yellow`}>+{coins} monete</p>}
+    </>
+  );
+  const levels = (
+    <>
+      {view.level_rewards.map((reward) => (
+        <p key={reward.level} className={`${chip} bg-comic-cyan text-black`}>
+          Livello {reward.level}! +{reward.coins} monete
+        </p>
+      ))}
+      {view.level_unlocks?.map((unlock) => (
+        <p key={unlock.name} className={`${chip} bg-comic-yellow text-black`}>
+          Sbloccato: {unlock.name}!
+        </p>
+      ))}
+    </>
+  );
+
+  // What a very short window cannot fit scrolls inside, rather than being cut.
   return (
-    <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
+    <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
       <section
-        className={`cut-bottom relative -mx-3 flex flex-[1_0_auto] flex-col items-center justify-center gap-2 overflow-hidden px-4 pb-8 pt-5 text-center ${
+        className={`cut-bottom relative -mx-3 flex flex-col items-center justify-center overflow-hidden px-4 text-center ${
+          prizeCard ? "shrink-0" : "flex-[1_0_auto]"
+        } ${compact ? "gap-1.5 pb-5 pt-2.5" : "gap-2 pb-8 pt-5"} ${
           view.result === "win" ? "rays-gold" : view.result === "loss" ? "halftone bg-comic-magenta" : "bg-panel-raised"
         }`}
       >
         {view.result === "win" && (
           <span
             aria-hidden
-            className="animate-rare-burst pointer-events-none absolute left-1/2 top-4 -ml-12 h-24 w-24 rounded-full bg-comic-magenta/40 [animation-iteration-count:2]"
+            className={`animate-rare-burst pointer-events-none absolute left-1/2 -ml-12 h-24 w-24 rounded-full bg-comic-magenta/40 [animation-iteration-count:2] ${
+              compact ? "top-1" : "top-4"
+            }`}
           />
         )}
         <p
-          className={`animate-rare-title text-sfx relative text-7xl uppercase ${
+          className={`animate-rare-title text-sfx relative uppercase ${compact ? "text-[52px] leading-[52px]" : "text-7xl"} ${
             view.result === "win" ? "text-comic-magenta" : "text-foreground"
           }`}
         >
           {title}
         </p>
-        <p className="relative -skew-x-8 bg-black px-3 py-1 text-sm font-extrabold text-comic-yellow">
-          Round {view.rounds_won.me} – {view.rounds_won.opponent} · punti {view.total_score.me} – {view.total_score.opponent}
-        </p>
-        {(xp > 0 || coins > 0) && (
-          <div className="relative flex gap-2">
-            {xp > 0 && <p className="-skew-x-8 bg-black px-3 py-1 text-sm font-extrabold text-foreground">+{xp} XP</p>}
-            {coins > 0 && (
-              <p className="-skew-x-8 bg-black px-3 py-1 text-sm font-extrabold text-comic-yellow">+{coins} monete</p>
-            )}
+        {compact ? (
+          <div className="relative flex flex-wrap justify-center gap-1.5">
+            {score}
+            {gains}
+            {levels}
           </div>
+        ) : (
+          <>
+            {score}
+            {(xp > 0 || coins > 0) && <div className="relative flex gap-2">{gains}</div>}
+            {levels}
+          </>
         )}
-        {view.level_rewards.map((reward) => (
-          <p key={reward.level} className="relative -skew-x-8 bg-comic-cyan px-3 py-1 text-sm font-extrabold text-black">
-            Livello {reward.level}! +{reward.coins} monete
-          </p>
-        ))}
-        {view.level_unlocks?.map((unlock) => (
-          <p key={unlock.name} className="relative -skew-x-8 bg-comic-yellow px-3 py-1 text-sm font-extrabold text-black">
-            Sbloccato: {unlock.name}!
-          </p>
-        ))}
       </section>
 
-      {story && <StoryRewardPanel matchId={view.id} />}
+      {storyReward && <StoryRewardPanel reward={storyReward} abilities={abilities} />}
 
-      {view.conquest && (
+      {conquest && (
         <ConquestPanel
           matchId={view.id}
-          conquest={view.conquest}
+          conquest={conquest}
           opponentName={rivalName(view)}
           serverNow={serverNow}
           onUpdate={onUpdate}
@@ -1050,7 +1080,7 @@ function MatchResult({
       )}
 
       {/* One tile per round: your card, the score and who it faced. */}
-      <section className="flex flex-col gap-1.5">
+      <section className="flex shrink-0 flex-col gap-1.5">
         <h2 className="section-title text-base leading-5">Round per round</h2>
         <ol className="grid grid-cols-5 gap-1.5">
           {view.rounds
@@ -1101,20 +1131,21 @@ function MatchResult({
         </ol>
       </section>
 
-      <div className="flex flex-col gap-2">
+      {/* Side by side: the room above goes to the result. */}
+      <div className="flex shrink-0 gap-2">
         {story ? (
-          <Link href="/storia" className="btn btn-primary">
+          <Link href="/storia" className="btn btn-primary min-w-0 flex-1">
             Torna alla Storia
           </Link>
         ) : (
           <Link
             href={view.mode === "bot" ? `/squadra/?difficulty=${view.bot_difficulty ?? "easy"}` : "/gioca"}
-            className="btn btn-primary"
+            className="btn btn-primary min-w-0 flex-1"
           >
             {view.mode === "bot" ? "Rivincita" : "Gioca ancora"}
           </Link>
         )}
-        <Link href="/" className="btn btn-ghost">
+        <Link href="/" className="btn btn-ghost shrink-0">
           Torna alla home
         </Link>
       </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { CardView } from "@/components/card-view";
-import { ComicBurst } from "@/components/comic-parts";
+import { CardZoom, MAGNIFIER, PrizeCard, ZoomHint } from "@/components/card-zoom";
 import { balance } from "@/config/balance";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
@@ -44,21 +44,16 @@ function useConquestDeadline(
 /**
  * End of a Conquest match: what the winner took, what the loser lost, the bonus, or the loser's wait.
  * `live` says the pick was still open on this screen: only that moment celebrates the conquered card.
+ * The card takes the room the result leaves (see PrizeCard).
  */
 export function ConquestPanel({ matchId, conquest, opponentName, serverNow, onUpdate, abilities, live }: ConquestProps & { live: boolean }) {
   const celebrate = live && conquest.resolved && conquest.role === "winner" && Boolean(conquest.chosen);
-  const conquered = useRef<HTMLDivElement>(null);
   const deadline = useConquestDeadline(matchId, conquest, serverNow, onUpdate);
-
-  useEffect(() => {
-    // The page opens at the top: the new card may be off screen.
-    if (celebrate) conquered.current?.scrollIntoView({ block: "center" });
-  }, [celebrate]);
 
   if (conquest.resolved) {
     if (conquest.bonus_coins > 0) {
       return (
-        <section className="bg-panel p-4 text-center">
+        <section className="shrink-0 bg-panel px-4 py-3 text-center">
           <p className="font-display text-xl uppercase text-comic-yellow">Nessuna carta conquistabile</p>
           <p className="mt-1 text-sm font-medium text-muted">
             {conquest.role === "winner"
@@ -71,47 +66,29 @@ export function ConquestPanel({ matchId, conquest, opponentName, serverNow, onUp
     if (!conquest.chosen) return null;
     const won = conquest.role === "winner";
     return (
-      <section className="flex flex-col items-center gap-3 text-center">
-        <p className={`font-display text-3xl uppercase ${won ? "text-comic-cyan" : "text-comic-magenta"}`}>
+      <PrizeCard card={conquest.chosen} abilities={abilities} glow={won} celebrate={celebrate} className="flex-[1_1_0]">
+        <p className={`font-display text-[28px] uppercase leading-8 ${won ? "text-comic-cyan" : "text-comic-magenta"}`}>
           {won ? "Carta conquistata!" : "Carta persa"}
         </p>
-        <div ref={conquered} className={`relative ${celebrate ? "animate-card-slam" : ""}`}>
-          <CardView card={conquest.chosen} abilities={abilities} glow={won} />
-          {celebrate && (
-            <ComicBurst
-              fill="#ffd60a"
-              className="animate-bam absolute left-1/2 top-1/2 z-20 h-48 w-48 -translate-x-1/2 -translate-y-1/2 -rotate-[8deg]"
-              textClassName="text-[64px] tracking-wide"
-            >
-              BAM!
-            </ComicBurst>
-          )}
-        </div>
-        <p className="text-sm font-medium text-muted">
+        <p className="mt-1.5 text-sm font-medium text-muted">
           {conquest.auto_assigned ? "Tempo scaduto: l'ha assegnata il server. " : ""}
           {won
             ? `Non potrai schierarla in Conquista per ${balance.conquest.conqueredCardLockHours} ore.`
             : `L'ha presa ${opponentName}.`}
         </p>
-      </section>
+        <ZoomHint />
+      </PrizeCard>
     );
   }
 
   const seconds = Math.max(0, Math.ceil((deadline - serverNow) / 1000));
   return (
-    <section className="flex flex-col items-center gap-2 bg-comic-magenta p-4 text-center text-black">
+    <section className="flex shrink-0 flex-col items-center gap-2 bg-comic-magenta p-4 text-center text-black">
       <p className="font-display text-xl uppercase">{opponentName} sta scegliendo una delle tue carte…</p>
       <p className="font-display text-4xl">{seconds}</p>
     </section>
   );
 }
-
-const MAGNIFIER = (
-  <svg viewBox="0 0 13 13" className="h-full w-full" fill="none" stroke="currentColor" aria-hidden>
-    <circle cx="5.5" cy="5.5" r="4" strokeWidth={2} />
-    <path d="m8.5 8.5 3.5 3.5" strokeWidth={2.2} />
-  </svg>
-);
 
 /**
  * The winner's pick, a screen of its own that fits the phone: the loser's cards in a grid,
@@ -217,22 +194,13 @@ export function ConquestPick({
         </ul>
 
         {zoomed && chosen && (
-          <div className="absolute inset-0 z-10 overflow-y-auto bg-background/90 px-3 pb-3 pt-4">
-            <button type="button" aria-label="Torna alle carte" onClick={() => setZoomed(false)} className="absolute inset-0 cursor-default" />
-            <div className="relative mx-auto w-fit">
-              <CardView card={chosen} abilities={abilities} />
-              <button
-                type="button"
-                onClick={() => setZoomed(false)}
-                aria-label="Chiudi la carta"
-                className="absolute -right-2.5 -top-3.5 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-foreground text-black shadow-[3px_3px_0_#000]"
-              >
-                <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" stroke="currentColor" strokeWidth={2.6} aria-hidden>
-                  <path d="M1 1l12 12M13 1 1 13" />
-                </svg>
-              </button>
-            </div>
-          </div>
+          <CardZoom
+            card={chosen}
+            abilities={abilities}
+            onClose={() => setZoomed(false)}
+            backLabel="Torna alle carte"
+            className="absolute inset-0 z-10 px-3 pb-3 pt-4"
+          />
         )}
       </main>
 
