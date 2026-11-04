@@ -1,18 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { markHomeReady } from "@/components/app-splash";
 import { CoinBadge } from "@/components/coin-badge";
 import { PackPanel } from "@/components/pack-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
-import { FirstRunTutorial } from "@/components/tutorial";
 import { WorldIntro } from "@/components/world-intro";
 import { fetchAbilities, seenAbilities } from "@/lib/catalog";
 import { fetchCatalog, fetchCollection, seenCatalog, seenCollection } from "@/lib/collection";
 import { fetchActiveMatch, type ActiveMatch } from "@/lib/match";
 import { fetchPackOdds, seenPackOdds } from "@/lib/packs";
 import { countOwnedCards, type Profile } from "@/lib/player";
+import { hasSeenTutorial } from "@/lib/tutorial-seen";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { usePackStatus } from "@/lib/use-pack-status";
 import { fetchCoinHistory, seenCoinHistory } from "@/lib/wallet";
@@ -37,6 +37,21 @@ export function HomeScreen({ profile }: { profile: Profile }) {
   const [cardCount, setCardCount] = useState<number | null>(null);
   const packs = usePackStatus();
   const [activeMatch, setActiveMatch] = useState<ActiveMatch | null>(null);
+  const [Tutorial, setTutorial] = useState<ComponentType | null>(null);
+
+  // Only a player who has not seen the tutorial downloads it, while the world intro is still up.
+  useEffect(() => {
+    if (hasSeenTutorial()) return;
+    let cancelled = false;
+    import("@/components/tutorial")
+      .then(({ FirstRunTutorial }) => {
+        if (!cancelled) setTutorial(() => FirstRunTutorial);
+      })
+      .catch((error: unknown) => console.error("Tutorial failed", error));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const packsSettled = Boolean(packs.status || packs.error);
   useEffect(() => {
@@ -77,7 +92,7 @@ export function HomeScreen({ profile }: { profile: Profile }) {
 
   return (
     <div className="home-shell">
-      <WorldIntro next={<FirstRunTutorial />} />
+      <WorldIntro next={Tutorial && <Tutorial />} />
       <header className="flex shrink-0 items-center justify-between px-4 py-1 short:py-0">
         <span className="-skew-x-8 font-display text-[30px] leading-9 tracking-wide text-comic-yellow [text-shadow:3px_3px_0_var(--comic-magenta)]">
           O-MEGA

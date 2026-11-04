@@ -22,26 +22,9 @@ import {
 } from "@/config/tutorial";
 import { withBasePath } from "@/lib/base-path";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
+import { hasSeenTutorial, markTutorialSeen } from "@/lib/tutorial-seen";
 
-const SEEN_KEY = "o-mega.tutorial-seen";
-
-function hasSeenTutorial() {
-  try {
-    return localStorage.getItem(SEEN_KEY) !== null;
-  } catch {
-    return true;
-  }
-}
-
-function markTutorialSeen() {
-  try {
-    localStorage.setItem(SEEN_KEY, "1");
-  } catch {
-    // Without storage the tutorial simply shows again on the next visit.
-  }
-}
-
-/** Shown once per device, right after the world intro. */
+/** Shown once per device, right after the world intro. The home loads it only when needed. */
 export function FirstRunTutorial() {
   const [open, setOpen] = useState(() => !hasSeenTutorial());
 
