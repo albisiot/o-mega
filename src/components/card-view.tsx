@@ -34,10 +34,12 @@ type CardViewProps = {
    * also shown large, so the drawing already downloaded is reused.
    */
   thumbSizes?: string;
+  /** The card the screen is about (a pack's card as it flips): its art loads at once, first. */
+  priority?: boolean;
 };
 
 /** A character card. The frame and art treatment grow with the rarity; without art it shows a placeholder silhouette. */
-export function CardView({ card, abilities, size = "lg", glow = false, fill = false, thumbSizes }: CardViewProps) {
+export function CardView({ card, abilities, size = "lg", glow = false, fill = false, thumbSizes, priority = false }: CardViewProps) {
   const color = card.rarity.color;
   const large = size === "lg";
   const effects = cardEffects(card, size);
@@ -65,6 +67,7 @@ export function CardView({ card, abilities, size = "lg", glow = false, fill = fa
           faction={card.faction}
           artUrl={card.art_url}
           thumbSizes={large ? undefined : thumbSizes}
+          priority={priority}
           effects={effects}
           className={fill ? "min-h-0 flex-1" : large ? "h-44" : "h-24"}
         >
@@ -133,6 +136,7 @@ export function CardArt({
   faction,
   artUrl,
   thumbSizes,
+  priority = false,
   effects = [],
   className,
   children,
@@ -142,6 +146,8 @@ export function CardArt({
   artUrl?: string | null;
   /** Displayed width of the art (<img sizes>): offers the 360px thumbnail next to the 600px drawing. */
   thumbSizes?: string;
+  /** Loads the art at once and ahead of other images, instead of lazily. */
+  priority?: boolean;
   effects?: CardEffect[];
   className: string;
   children?: ReactNode;
@@ -157,7 +163,8 @@ export function CardArt({
           srcSet={srcSet}
           sizes={thumbSizes}
           alt=""
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : undefined}
           decoding="async"
           className="absolute inset-0 h-full w-full object-cover object-top"
         />

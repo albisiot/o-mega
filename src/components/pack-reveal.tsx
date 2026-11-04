@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { CardView } from "@/components/card-view";
 import { PackArt } from "@/components/comic-parts";
 import { balance } from "@/config/balance";
+import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { packRevealHref, type PackCard, type PackOpening } from "@/lib/packs";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -44,6 +45,26 @@ export function PackReveal({ opening, nextIds = [] }: { opening: PackOpening; ne
       if (timer.current) clearTimeout(timer.current);
     };
   }, []);
+
+  // The drawings download while the pack is still sealed, so each one is there the moment its
+  // card flips, even on a slow network. One at a time, in the order the cards flip: all at once,
+  // they would share the bandwidth and the first card would wait for the others. Same URLs as
+  // the card and the summary.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      for (const card of cards) {
+        if (cancelled) return;
+        if (!card.art_url) continue;
+        const image = new Image();
+        image.src = withBasePath(card.art_url);
+        await image.decode().catch(() => {});
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [cards]);
 
   function later(ms: number, next: Stage) {
     if (timer.current) clearTimeout(timer.current);
@@ -138,7 +159,7 @@ export function PackReveal({ opening, nextIds = [] }: { opening: PackOpening; ne
             </span>
           )}
           <div className={`rounded-xl ${rare ? "shadow-[8px_8px_0_#000]" : "shadow-[6px_6px_0_var(--comic-magenta)]"}`}>
-            <CardView card={card} abilities={abilities} />
+            <CardView card={card} abilities={abilities} priority />
           </div>
         </div>
         <div className="flex flex-col items-center gap-2">
