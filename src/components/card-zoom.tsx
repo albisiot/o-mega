@@ -50,15 +50,16 @@ export function CardZoom({
 }
 
 /**
- * A card won or lost at the end of a match, next to what it means: the card is as tall as
- * the room the row gets, never lower than the text, and a tap shows it whole with its
- * abilities. `celebrate` slams it in with BAM!.
+ * A card won or lost at the end of a match, or a mission's prize, next to what it means: the
+ * card is as tall as the room the row gets, never lower than the text, and a tap shows it
+ * whole with its abilities. `celebrate` slams it in with BAM!.
  */
 export function PrizeCard({
   card,
   abilities,
   glow = false,
   celebrate = false,
+  backLabel = "Torna al risultato",
   className = "",
   children,
 }: {
@@ -66,6 +67,8 @@ export function PrizeCard({
   abilities: AbilityInfo[] | null;
   glow?: boolean;
   celebrate?: boolean;
+  /** Names what closing the whole card goes back to. */
+  backLabel?: string;
   className?: string;
   children: ReactNode;
 }) {
@@ -100,7 +103,7 @@ export function PrizeCard({
           card={card}
           abilities={abilities}
           onClose={() => setZoomed(false)}
-          backLabel="Torna al risultato"
+          backLabel={backLabel}
           className="fixed inset-0 z-30 flex flex-col px-3 pb-4 pt-[calc(var(--safe-top)+16px)]"
         />
       )}

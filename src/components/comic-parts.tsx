@@ -26,6 +26,17 @@ export function PageHeader({
   );
 }
 
+/** The arrow back of a screen that fits the phone, at the start of its one-row header. */
+export function BackLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link href={href} aria-label={label} className="btn btn-ghost h-11 w-11 shrink-0 px-0">
+      <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.6} aria-hidden>
+        <path d="M12 3 5 10l7 7M5 10h13" strokeLinejoin="round" />
+      </svg>
+    </Link>
+  );
+}
+
 const BURST_POINTS =
   "50,0 59.3,15.2 75,6.7 75.5,24.5 93.3,25 84.8,40.7 100,50 84.8,59.3 93.3,75 75.5,75.5 75,93.3 59.3,84.8 50,100 40.7,84.8 25,93.3 24.5,75.5 6.7,75 15.2,59.3 0,50 15.2,40.7 6.7,25 24.5,24.5 25,6.7 40.7,15.2";
 
