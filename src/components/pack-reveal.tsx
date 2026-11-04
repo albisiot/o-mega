@@ -7,6 +7,7 @@ import { PackArt } from "@/components/comic-parts";
 import { balance } from "@/config/balance";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { packRevealHref, type PackCard, type PackOpening } from "@/lib/packs";
+import { useLockedScreen } from "@/lib/use-locked-screen";
 
 type Stage =
   | { kind: "sealed" }
@@ -33,6 +34,7 @@ export function PackReveal({ opening, nextIds = [] }: { opening: PackOpening; ne
   const [abilities, setAbilities] = useState<AbilityInfo[] | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cards = opening.cards;
+  useLockedScreen(stage.kind === "summary");
 
   useEffect(() => {
     fetchAbilities()
@@ -157,35 +159,42 @@ export function PackReveal({ opening, nextIds = [] }: { opening: PackOpening; ne
     );
   }
 
+  // The summary fits the screen with the button fixed at the bottom: the five cards of a pack
+  // fit, and the longer list a bonus code can give scrolls inside.
   return (
-    <main className="flex flex-1 flex-col gap-5 px-4 py-6">
-      <header>
+    <main className="game-shell gap-4 px-4 pt-4">
+      <header className="shrink-0">
         <h1 className="font-display text-4xl uppercase text-comic-yellow">
           {opening.pack_type === "bonus" ? "Le tue carte" : "Il tuo pacchetto"}
         </h1>
         <p className="mt-1 text-sm font-semibold text-muted">Le carte sono già nella tua collezione.</p>
       </header>
-      <div className="grid grid-cols-2 gap-3">
-        {[...cards].reverse().map((card) => (
-          <div key={card.instance_id} className="relative">
-            {card.is_new && (
-              <span className="absolute -top-2 right-2 z-10 -skew-x-8 bg-comic-cyan px-2 font-display text-xs uppercase leading-5 text-black">
-                Nuova
-              </span>
-            )}
-            <CardView card={card} size="sm" />
-          </div>
-        ))}
+      {/* Room above for the "Nuova" tags and at the sides for the rare cards' glow. */}
+      <div className="-mx-4 min-h-0 flex-1 overflow-y-auto px-4 pt-2">
+        <div className="grid grid-cols-2 gap-3">
+          {[...cards].reverse().map((card) => (
+            <div key={card.instance_id} className="relative">
+              {card.is_new && (
+                <span className="absolute -top-2 right-2 z-10 -skew-x-8 bg-comic-cyan px-2 font-display text-xs uppercase leading-5 text-black">
+                  Nuova
+                </span>
+              )}
+              <CardView card={card} size="sm" />
+            </div>
+          ))}
+        </div>
       </div>
-      {nextIds.length > 0 ? (
-        <Link href={packRevealHref(nextIds)} className="btn btn-primary mt-2">
-          {nextIds.length === 1 ? "Apri l'ultimo pacchetto" : `Apri il prossimo (ne restano ${nextIds.length})`}
-        </Link>
-      ) : (
-        <Link href="/" className="btn btn-primary mt-2">
-          Torna alla home
-        </Link>
-      )}
+      <div className="flex shrink-0 flex-col pb-[calc(env(safe-area-inset-bottom)+16px)]">
+        {nextIds.length > 0 ? (
+          <Link href={packRevealHref(nextIds)} className="btn btn-primary">
+            {nextIds.length === 1 ? "Apri l'ultimo pacchetto" : `Apri il prossimo (ne restano ${nextIds.length})`}
+          </Link>
+        ) : (
+          <Link href="/" className="btn btn-primary">
+            Torna alla home
+          </Link>
+        )}
+      </div>
     </main>
   );
 }
