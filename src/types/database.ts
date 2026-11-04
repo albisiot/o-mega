@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       ability_definitions: {
@@ -89,6 +64,133 @@ export type Database = {
           color?: string
           name?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      admin_users: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_users_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bonus_code_failed_attempts: {
+        Row: {
+          attempted_at: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          attempted_at?: string
+          id?: never
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bonus_code_failed_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bonus_code_redemptions: {
+        Row: {
+          code_id: string
+          id: string
+          opening_ids: string[]
+          redeemed_at: string
+          user_id: string
+        }
+        Insert: {
+          code_id: string
+          id?: string
+          opening_ids?: string[]
+          redeemed_at?: string
+          user_id: string
+        }
+        Update: {
+          code_id?: string
+          id?: string
+          opening_ids?: string[]
+          redeemed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bonus_code_redemptions_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "bonus_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bonus_code_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bonus_codes: {
+        Row: {
+          card_definition_ids: string[]
+          code: string
+          coins: number
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          note: string | null
+          packs: number
+        }
+        Insert: {
+          card_definition_ids?: string[]
+          code: string
+          coins?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          note?: string | null
+          packs?: number
+        }
+        Update: {
+          card_definition_ids?: string[]
+          code?: string
+          coins?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          note?: string | null
+          packs?: number
         }
         Relationships: []
       }
@@ -470,6 +572,168 @@ export type Database = {
           },
         ]
       }
+      emergency_days: {
+        Row: {
+          created_at: string
+          day: string
+          threat_ids: string[]
+          threat_levels: number[]
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          threat_ids: string[]
+          threat_levels: number[]
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          threat_ids?: string[]
+          threat_levels?: number[]
+        }
+        Relationships: []
+      }
+      emergency_plays: {
+        Row: {
+          base_score: number
+          bonus: number
+          card_instance_id: string
+          created_at: string
+          definition_id: string
+          passed: boolean
+          required_score: number
+          round: number
+          run_id: string
+          score: number
+          threat_id: string
+        }
+        Insert: {
+          base_score: number
+          bonus: number
+          card_instance_id: string
+          created_at?: string
+          definition_id: string
+          passed: boolean
+          required_score: number
+          round: number
+          run_id: string
+          score: number
+          threat_id: string
+        }
+        Update: {
+          base_score?: number
+          bonus?: number
+          card_instance_id?: string
+          created_at?: string
+          definition_id?: string
+          passed?: boolean
+          required_score?: number
+          round?: number
+          run_id?: string
+          score?: number
+          threat_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_plays_card_instance_id_fkey"
+            columns: ["card_instance_id"]
+            isOneToOne: false
+            referencedRelation: "card_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_plays_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_plays_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_plays_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "emergency_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_plays_threat_id_fkey"
+            columns: ["threat_id"]
+            isOneToOne: false
+            referencedRelation: "threat_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emergency_runs: {
+        Row: {
+          card_instance_ids: string[]
+          coins: number
+          created_at: string
+          current_round: number
+          day: string
+          definition_ids: string[]
+          failed: number
+          finished_at: string | null
+          id: string
+          passed: number
+          status: string
+          total_score: number
+          user_id: string
+        }
+        Insert: {
+          card_instance_ids: string[]
+          coins?: number
+          created_at?: string
+          current_round?: number
+          day: string
+          definition_ids: string[]
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          passed?: number
+          status?: string
+          total_score?: number
+          user_id: string
+        }
+        Update: {
+          card_instance_ids?: string[]
+          coins?: number
+          created_at?: string
+          current_round?: number
+          day?: string
+          definition_ids?: string[]
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          passed?: number
+          status?: string
+          total_score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_runs_day_fkey"
+            columns: ["day"]
+            isOneToOne: false
+            referencedRelation: "emergency_days"
+            referencedColumns: ["day"]
+          },
+          {
+            foreignKeyName: "emergency_runs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formations: {
         Row: {
           card_instance_ids: string[]
@@ -764,8 +1028,10 @@ export type Database = {
           rounds_won_a: number
           rounds_won_b: number
           status: string
+          story_mission_id: string | null
           threat_ids: string[]
           threat_levels: number[]
+          threat_modifiers: Json
           total_score_a: number
           total_score_b: number
         }
@@ -785,8 +1051,10 @@ export type Database = {
           rounds_won_a?: number
           rounds_won_b?: number
           status?: string
+          story_mission_id?: string | null
           threat_ids: string[]
           threat_levels: number[]
+          threat_modifiers?: Json
           total_score_a?: number
           total_score_b?: number
         }
@@ -806,8 +1074,10 @@ export type Database = {
           rounds_won_a?: number
           rounds_won_b?: number
           status?: string
+          story_mission_id?: string | null
           threat_ids?: string[]
           threat_levels?: number[]
+          threat_modifiers?: Json
           total_score_a?: number
           total_score_b?: number
         }
@@ -824,6 +1094,13 @@ export type Database = {
             columns: ["player_b"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_story_mission_id_fkey"
+            columns: ["story_mission_id"]
+            isOneToOne: false
+            referencedRelation: "story_missions"
             referencedColumns: ["id"]
           },
         ]
@@ -1137,6 +1414,190 @@ export type Database = {
           },
         ]
       }
+      spy_reveals: {
+        Row: {
+          definition_id: string
+          match_id: string
+          round: number
+          side: string
+        }
+        Insert: {
+          definition_id: string
+          match_id: string
+          round: number
+          side: string
+        }
+        Update: {
+          definition_id?: string
+          match_id?: string
+          round?: number
+          side?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spy_reveals_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spy_reveals_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spy_reveals_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_chapters: {
+        Row: {
+          chapter: number
+          intro: string
+          title: string
+        }
+        Insert: {
+          chapter: number
+          intro: string
+          title: string
+        }
+        Update: {
+          chapter?: number
+          intro?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      story_missions: {
+        Row: {
+          bot_definition_ids: string[]
+          bot_difficulty: string
+          chapter: number
+          code: string
+          id: string
+          intro: string
+          opponent: string
+          ord: number
+          reward_coins: number
+          reward_definition_id: string | null
+          threat_ids: string[]
+          threat_modifiers: Json
+          title: string
+        }
+        Insert: {
+          bot_definition_ids: string[]
+          bot_difficulty: string
+          chapter: number
+          code: string
+          id?: string
+          intro: string
+          opponent: string
+          ord: number
+          reward_coins: number
+          reward_definition_id?: string | null
+          threat_ids: string[]
+          threat_modifiers: Json
+          title: string
+        }
+        Update: {
+          bot_definition_ids?: string[]
+          bot_difficulty?: string
+          chapter?: number
+          code?: string
+          id?: string
+          intro?: string
+          opponent?: string
+          ord?: number
+          reward_coins?: number
+          reward_definition_id?: string | null
+          threat_ids?: string[]
+          threat_modifiers?: Json
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_missions_chapter_fkey"
+            columns: ["chapter"]
+            isOneToOne: false
+            referencedRelation: "story_chapters"
+            referencedColumns: ["chapter"]
+          },
+          {
+            foreignKeyName: "story_missions_reward_definition_id_fkey"
+            columns: ["reward_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_missions_reward_definition_id_fkey"
+            columns: ["reward_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_progress: {
+        Row: {
+          card_instance_id: string | null
+          completed_at: string
+          match_id: string
+          mission_id: string
+          user_id: string
+        }
+        Insert: {
+          card_instance_id?: string | null
+          completed_at?: string
+          match_id: string
+          mission_id: string
+          user_id: string
+        }
+        Update: {
+          card_instance_id?: string | null
+          completed_at?: string
+          match_id?: string
+          mission_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_progress_card_instance_id_fkey"
+            columns: ["card_instance_id"]
+            isOneToOne: false
+            referencedRelation: "card_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_progress_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_progress_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "story_missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       threat_definitions: {
         Row: {
           art_url: string | null
@@ -1204,6 +1665,24 @@ export type Database = {
       }
     }
     Functions: {
+      admin_bonus_codes_payload: { Args: never; Returns: Json }
+      admin_create_bonus_code: {
+        Args: {
+          p_card_codes?: string[]
+          p_code: string
+          p_coins?: number
+          p_expires_on?: string
+          p_max_uses?: number
+          p_note?: string
+          p_packs?: number
+        }
+        Returns: Json
+      }
+      admin_list_bonus_codes: { Args: never; Returns: Json }
+      admin_set_bonus_code_active: {
+        Args: { p_id: string; p_is_active: boolean }
+        Returns: Json
+      }
       bootstrap_player: {
         Args: never
         Returns: {
@@ -1235,6 +1714,12 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      busy_instance_ids: {
+        Args: { p_user: string }
+        Returns: {
+          instance_id: string
+        }[]
+      }
       buy_pack: { Args: never; Returns: Json }
       cancel_lobby: { Args: never; Returns: undefined }
       card_payload:
@@ -1244,6 +1729,14 @@ export type Database = {
             Returns: Json
           }
       cards_lost_today: { Args: { p_user: string }; Returns: number }
+      check_conquest_team: {
+        Args: { p_instance_ids: string[]; p_user: string }
+        Returns: string[]
+      }
+      check_team: {
+        Args: { p_instance_ids: string[]; p_user: string }
+        Returns: string[]
+      }
       claim_conquest_card: {
         Args: { p_card_instance_id: string; p_match_id: string }
         Returns: Json
@@ -1281,6 +1774,18 @@ export type Database = {
         Args: { p_count?: number; p_definition_id: string }
         Returns: Json
       }
+      create_bonus_code: {
+        Args: {
+          p_card_codes?: string[]
+          p_code: string
+          p_coins?: number
+          p_expires_at?: string
+          p_max_uses?: number
+          p_note?: string
+          p_packs?: number
+        }
+        Returns: string
+      }
       create_lobby: { Args: { p_card_instance_ids: string[] }; Returns: Json }
       create_pvp_match: {
         Args: {
@@ -1299,6 +1804,7 @@ export type Database = {
         Returns: string[]
       }
       draw_rarity_rank: { Args: { p_min_rank: number }; Returns: number }
+      draw_threat_modifiers: { Args: { p_levels: number[] }; Returns: Json }
       draw_variant: { Args: { p_definition_id: string }; Returns: string }
       eligible_rarities: {
         Args: never
@@ -1310,6 +1816,40 @@ export type Database = {
           rank: number
         }[]
       }
+      emergency_ensure_day: {
+        Args: { p_threat_ids: string[] }
+        Returns: undefined
+      }
+      emergency_play_context: { Args: { p_user: string }; Returns: Json }
+      emergency_record_play: {
+        Args: {
+          p_base: number
+          p_bonus: number
+          p_card_instance_id: string
+          p_required: number
+          p_round: number
+          p_score: number
+          p_user: string
+        }
+        Returns: undefined
+      }
+      emergency_record_play_state: {
+        Args: {
+          p_base: number
+          p_bonus: number
+          p_card_instance_id: string
+          p_required: number
+          p_round: number
+          p_score: number
+          p_user: string
+        }
+        Returns: Json
+      }
+      emergency_start: {
+        Args: { p_card_instance_ids: string[]; p_user: string }
+        Returns: string
+      }
+      emergency_state_payload: { Args: { p_user: string }; Returns: Json }
       finish_match: {
         Args: { p_match_id: string; p_reason: string; p_result: string }
         Returns: undefined
@@ -1335,6 +1875,8 @@ export type Database = {
       get_pack_odds: { Args: never; Returns: Json }
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
       get_pack_status: { Args: never; Returns: Json }
+      get_story: { Args: never; Returns: Json }
+      get_story_reward: { Args: { p_match_id: string }; Returns: Json }
       grant_level_rewards: {
         Args: { p_match_id: string; p_user: string }
         Returns: undefined
@@ -1345,10 +1887,35 @@ export type Database = {
       }
       grant_starter_set: { Args: { p_user: string }; Returns: number }
       has_active_match: { Args: { p_user: string }; Returns: boolean }
+      insert_conquest_bot_match: {
+        Args: {
+          p_bot_definition_ids: string[]
+          p_definitions: string[]
+          p_difficulty: string
+          p_team: string[]
+          p_threat_ids: string[]
+          p_user: string
+        }
+        Returns: string
+      }
+      insert_pvp_match: {
+        Args: {
+          p_definitions_a: string[]
+          p_definitions_b: string[]
+          p_mode: string
+          p_player_a: string
+          p_player_b: string
+          p_team_a: string[]
+          p_team_b: string[]
+          p_threat_ids: string[]
+        }
+        Returns: string
+      }
       instance_in_active_match: {
         Args: { p_instance_id: string }
         Returns: boolean
       }
+      is_admin: { Args: never; Returns: boolean }
       leave_queue: { Args: never; Returns: undefined }
       level_for_xp: { Args: { p_xp: number }; Returns: number }
       match_create_bot: {
@@ -1403,6 +1970,26 @@ export type Database = {
         }
         Returns: undefined
       }
+      match_record_round_state: {
+        Args: {
+          p_match_id: string
+          p_play_a: Json
+          p_play_b: Json
+          p_result: string
+          p_round: number
+          p_side: string
+          p_winner_side: string
+        }
+        Returns: Json
+      }
+      match_round_context: {
+        Args: { p_match_id: string; p_user: string }
+        Returns: Json
+      }
+      match_state_for_user: {
+        Args: { p_match_id: string; p_user: string }
+        Returns: Json
+      }
       match_state_payload: {
         Args: { p_match_id: string; p_side: string }
         Returns: Json
@@ -1417,27 +2004,6 @@ export type Database = {
         Returns: string
       }
       next_reset_at: { Args: { p_at?: string }; Returns: string }
-      redeem_bonus_code: { Args: { p_code: string }; Returns: Json }
-      is_admin: { Args: never; Returns: boolean }
-      get_story: { Args: never; Returns: Json }
-      get_story_reward: { Args: { p_match_id: string }; Returns: Json }
-      admin_list_bonus_codes: { Args: never; Returns: Json }
-      admin_create_bonus_code: {
-        Args: {
-          p_code: string
-          p_coins?: number
-          p_packs?: number
-          p_card_codes?: string[]
-          p_max_uses?: number
-          p_expires_on?: string
-          p_note?: string
-        }
-        Returns: Json
-      }
-      admin_set_bonus_code_active: {
-        Args: { p_id: string; p_is_active: boolean }
-        Returns: Json
-      }
       notify_match: {
         Args: { p_kind: string; p_match_id: string }
         Returns: undefined
@@ -1459,6 +2025,31 @@ export type Database = {
         Args: { p_params: Json; p_power_code: string }
         Returns: string
       }
+      queue_candidates: {
+        Args: {
+          p_level: number
+          p_mode: string
+          p_since: string
+          p_user: string
+          p_value: number
+        }
+        Returns: {
+          card_instance_ids: string[]
+          enqueued_at: string
+          level: number
+          mode: string
+          refreshed_at: string
+          team_value: number
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "matchmaking_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      redeem_bonus_code: { Args: { p_code: string }; Returns: Json }
       resolve_conquest_claim: {
         Args: { p_auto: boolean; p_instance_id: string; p_match_id: string }
         Returns: undefined
@@ -1516,6 +2107,21 @@ export type Database = {
         }
       }
       settle_expired_claims: { Args: { p_user: string }; Returns: undefined }
+      story_create_match: {
+        Args: {
+          p_card_instance_ids: string[]
+          p_mission_code: string
+          p_user: string
+        }
+        Returns: string
+      }
+      story_mission_unlocked: {
+        Args: {
+          p_mission: Database["public"]["Tables"]["story_missions"]["Row"]
+          p_user: string
+        }
+        Returns: boolean
+      }
       team_value: { Args: { p_definition_ids: string[] }; Returns: number }
       username_base: { Args: { p_source: string }; Returns: string }
       validate_conquest_team: {
@@ -1654,9 +2260,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
