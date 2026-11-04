@@ -26,6 +26,38 @@ export function PageHeader({
   );
 }
 
+/** Tabs of a screen that fits the phone: the panel under them shows one part at a time. */
+export function TabBar<T extends string>({
+  tabs,
+  current,
+  onPick,
+  label,
+}: {
+  tabs: { key: T; label: string }[];
+  current: T;
+  onPick: (key: T) => void;
+  label: string;
+}) {
+  return (
+    <div role="tablist" aria-label={label} className="flex shrink-0 gap-1.5">
+      {tabs.map((tab) => (
+        <button
+          key={tab.key}
+          type="button"
+          role="tab"
+          aria-selected={tab.key === current}
+          onClick={() => onPick(tab.key)}
+          className={`min-h-11 min-w-0 flex-1 -skew-x-8 px-1 font-display text-[17px] uppercase ${
+            tab.key === current ? "bg-comic-magenta text-black" : "bg-panel text-muted"
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** The arrow back of a screen that fits the phone, at the start of its one-row header. */
 export function BackLink({ href, label }: { href: string; label: string }) {
   return (

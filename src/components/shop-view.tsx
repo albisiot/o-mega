@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { PageHeader, PackArt } from "@/components/comic-parts";
+import { PackArt, TabBar } from "@/components/comic-parts";
 import { balance } from "@/config/balance";
 import { describeServerError } from "@/lib/errors";
 import {
@@ -15,6 +15,7 @@ import {
   type PackOdds,
   type PackStatus,
 } from "@/lib/packs";
+import { useLockedScreen } from "@/lib/use-locked-screen";
 import { COIN_REASON_LABELS, type CoinMovement } from "@/lib/wallet";
 
 const percent = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 1 });
@@ -28,91 +29,108 @@ type ShopViewProps = {
   onRedeemed: () => void;
 };
 
-/** Balance, standard pack purchase, bonus codes, published odds and coin history. */
+type ShopTab = "odds" | "history" | "codes";
+
+const TABS: { key: ShopTab; label: string }[] = [
+  { key: "odds", label: "Probabilità" },
+  { key: "history", label: "Movimenti" },
+  { key: "codes", label: "Codici" },
+];
+
+/**
+ * Balance, standard pack purchase, bonus codes, published odds and coin history. The page fits
+ * the screen above the bottom bar and never scrolls (see .home-shell): the purchase stays on
+ * top, and the rest shares the room below as tabs, the coin history scrolling inside its own.
+ */
 export function ShopView({ status, odds, history, onFailed, onRedeemed }: ShopViewProps) {
+  const [tab, setTab] = useState<ShopTab>("odds");
+  useLockedScreen(true);
+
   return (
-    <div className="flex flex-1 flex-col">
-      <PageHeader title="Negozio" />
+    <div className="home-shell">
+      <header className="flex shrink-0 items-center justify-between gap-3 px-4 pb-1 pt-2">
+        <h1 className="font-display text-4xl uppercase text-comic-yellow">Negozio</h1>
+        <p className="-skew-x-8 bg-black px-3 py-0.5 font-display text-3xl text-comic-yellow">
+          <span className="sr-only">Il tuo saldo: </span>
+          {status.coin_balance} <span className="text-sm uppercase">monete</span>
+        </p>
+      </header>
 
-      <main className="flex flex-1 flex-col gap-5 px-3 pb-6">
-        <section className="flex items-center justify-between bg-black px-4 py-3">
-          <p className="font-display text-xl uppercase">Il tuo saldo</p>
-          <p className="font-display text-4xl text-comic-yellow">
-            {status.coin_balance} <span className="text-base uppercase">monete</span>
-          </p>
-        </section>
-
+      <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-3 pt-1">
         <BuySection price={odds.standard_pack_price} balance={status.coin_balance} odds={odds} onFailed={onFailed} />
 
-        <BonusCodeSection onRedeemed={onRedeemed} />
+        <TabBar tabs={TABS} current={tab} onPick={setTab} label="Negozio" />
 
-        <section className="flex flex-col gap-2">
-          <h2 className="section-title">Probabilità per carta</h2>
-          <ul className="flex flex-col gap-0.5">
-            {odds.odds.map((rarity) => (
-              <li key={rarity.code} className="flex items-center justify-between bg-panel px-4 py-2.5">
-                <span className="flex items-center gap-2">
-                  <span className="h-3 w-3 -skew-x-8" style={{ backgroundColor: rarity.color }} aria-hidden />
-                  <span className="font-display text-lg uppercase" style={{ color: rarity.color }}>
-                    {rarity.name}
-                  </span>
-                </span>
-                <span className="font-display text-xl">{percent.format(rarity.probability)}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-sm font-medium text-muted">
-            Ogni carta del pacchetto viene estratta con queste probabilità. Se le prime{" "}
-            {odds.cards_per_pack - 1} non contengono una {odds.guaranteed_rarity_name} o superiore, l&apos;ultima è
-            garantita di quella rarità o superiore. Le estrazioni avvengono sul server.
-          </p>
-          <p className="text-sm font-medium text-muted">
-            Varianti: {odds.characters_with_variants} personaggi hanno anche un disegno più raro. Quando ne esce uno, ha
-            il {odds.variant_chance_percent}% di probabilità di avere quel disegno. Valori e poteri restano uguali.
-          </p>
-        </section>
-
-        <section className="flex flex-col gap-2">
-          <h2 className="section-title">Come guadagnare monete</h2>
-          <ul className="flex flex-col gap-1.5 text-sm font-medium">
-            <li>
-              <Link href="/collezione" className="font-bold underline">
-                Converti i doppioni
-              </Link>{" "}
-              della collezione.
-            </li>
-            <li>Perdi una sfida di Conquista: +{balance.conquest.loserCoins} (chi vince prende una carta).</li>
-            <li>
-              Vinci in Conquista quando nessuna carta è conquistabile: +{balance.conquest.noCardBonusCoins} al posto
-              della carta.
-            </li>
-          </ul>
-        </section>
-
-        <section className="flex flex-col gap-2">
-          <h2 className="section-title">Movimenti</h2>
-          {history.length === 0 ? (
-            <p className="text-sm font-medium text-muted">Nessun movimento ancora.</p>
-          ) : (
-            <ul className="flex flex-col gap-0.5">
-              {history.map((movement) => (
-                <li key={movement.key} className="flex items-center justify-between bg-panel px-4 py-2.5">
-                  <div>
-                    <p className="text-sm font-semibold">
-                      {COIN_REASON_LABELS[movement.reason] ?? movement.reason}
-                      {movement.count > 1 && <span className="text-muted"> ×{movement.count}</span>}
-                    </p>
-                    <p className="text-xs font-medium text-faint">{dateTime.format(new Date(movement.created_at))}</p>
-                  </div>
-                  <span className={`font-display text-xl ${movement.amount > 0 ? "text-comic-cyan" : "text-muted"}`}>
-                    {movement.amount > 0 ? "+" : ""}
-                    {movement.amount}
-                  </span>
-                </li>
-              ))}
-            </ul>
+        <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain">
+          {tab === "odds" && (
+            <>
+              <ul className="flex shrink-0 gap-1" aria-label="Probabilità per carta">
+                {odds.odds.map((rarity) => (
+                  <li key={rarity.code} className="flex min-w-0 flex-1 flex-col items-center bg-panel py-1.5">
+                    <span className="max-w-full truncate px-0.5 font-display text-sm uppercase" style={{ color: rarity.color }}>
+                      {rarity.name}
+                    </span>
+                    <span className="font-display text-xl">{percent.format(rarity.probability)}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs font-medium text-muted">
+                Ogni carta del pacchetto viene estratta con queste probabilità. Se le prime {odds.cards_per_pack - 1} non
+                contengono una {odds.guaranteed_rarity_name} o superiore, l&apos;ultima è garantita di quella rarità o
+                superiore. Le estrazioni avvengono sul server.
+              </p>
+              <p className="text-xs font-medium text-muted">
+                Varianti: {odds.characters_with_variants} personaggi hanno anche un disegno più raro. Quando ne esce
+                uno, ha il {odds.variant_chance_percent}% di probabilità di avere quel disegno. Valori e poteri restano
+                uguali.
+              </p>
+            </>
           )}
-        </section>
+
+          {tab === "history" && (
+            <>
+              <section className="shrink-0 bg-black px-3 py-2 text-xs font-medium leading-4">
+                <h2 className="font-display text-base uppercase text-comic-yellow">Come guadagnare monete</h2>
+                <ul className="flex flex-col gap-0.5">
+                  <li>
+                    <Link href="/collezione" className="font-bold underline">
+                      Converti i doppioni
+                    </Link>{" "}
+                    della collezione.
+                  </li>
+                  <li>Perdi una sfida di Conquista: +{balance.conquest.loserCoins} (chi vince prende una carta).</li>
+                  <li>
+                    Vinci in Conquista quando nessuna carta è conquistabile: +{balance.conquest.noCardBonusCoins} al
+                    posto della carta.
+                  </li>
+                </ul>
+              </section>
+              {history.length === 0 ? (
+                <p className="text-sm font-medium text-muted">Nessun movimento ancora.</p>
+              ) : (
+                <ul className="flex flex-col gap-0.5" aria-label="Movimenti">
+                  {history.map((movement) => (
+                    <li key={movement.key} className="flex items-center justify-between bg-panel px-4 py-1.5">
+                      <div>
+                        <p className="text-sm font-semibold">
+                          {COIN_REASON_LABELS[movement.reason] ?? movement.reason}
+                          {movement.count > 1 && <span className="text-muted"> ×{movement.count}</span>}
+                        </p>
+                        <p className="text-xs font-medium text-faint">{dateTime.format(new Date(movement.created_at))}</p>
+                      </div>
+                      <span className={`font-display text-xl ${movement.amount > 0 ? "text-comic-cyan" : "text-muted"}`}>
+                        {movement.amount > 0 ? "+" : ""}
+                        {movement.amount}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+
+          {tab === "codes" && <BonusCodeSection onRedeemed={onRedeemed} />}
+        </div>
       </main>
     </div>
   );
@@ -213,20 +231,20 @@ function BuySection({
   }
 
   return (
-    <section className="cut-bottom relative flex flex-col gap-3 overflow-hidden bg-comic-yellow px-4 pb-7 pt-4 text-black">
-      <PackArt body="#ff2e6c" omega="#ffd60a" className="absolute -right-3 -top-1 h-36 rotate-[9deg]" />
-      <div className="relative max-w-[62%]">
-        <p className="font-display text-3xl uppercase">Pacchetto standard</p>
-        <p className="mt-1 text-sm font-semibold">
+    <section className="cut-bottom relative flex shrink-0 flex-col gap-2.5 overflow-hidden bg-comic-yellow px-4 pb-6 pt-3 text-black">
+      <PackArt body="#ff2e6c" omega="#ffd60a" className="absolute -right-2 -top-1 h-28 rotate-[9deg]" />
+      <div className="relative max-w-[66%]">
+        <p className="font-display text-[26px] uppercase leading-7">Pacchetto standard</p>
+        <p className="text-[13px] font-semibold leading-4">
           {odds.cards_per_pack} carte, almeno una {odds.guaranteed_rarity_name} o superiore
         </p>
-        <p className="mt-1 font-display text-2xl">{price} monete</p>
+        <p className="font-display text-xl">{price} monete</p>
       </div>
       <button
         type="button"
         onClick={buy}
         disabled={missing > 0 || buying}
-        className="btn relative min-h-14 bg-black font-display text-[22px] uppercase tracking-wide text-comic-yellow shadow-[4px_4px_0_var(--comic-magenta)] disabled:shadow-none disabled:opacity-70"
+        className="btn relative min-h-13 bg-black font-display text-[22px] uppercase tracking-wide text-comic-yellow shadow-[4px_4px_0_var(--comic-magenta)] disabled:shadow-none disabled:opacity-70"
       >
         {buying ? "Acquisto…" : missing > 0 ? `Ti mancano ${missing} monete` : "Acquista e apri"}
       </button>
