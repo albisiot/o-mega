@@ -28,6 +28,8 @@ type CardViewProps = {
   glow?: boolean;
   /** Small layout only: the card takes the height it is given and the art grows to fill it. */
   fill?: boolean;
+  /** Large layout only: inside a flex column, the art gives up height so the card fits the room it gets. */
+  fit?: boolean;
   /**
    * Small layout only: the art's displayed width, as an <img sizes> value. Lets the
    * browser pick the 360px thumbnail on phones. Leave it off where the same card is
@@ -39,7 +41,16 @@ type CardViewProps = {
 };
 
 /** A character card. The frame and art treatment grow with the rarity; without art it shows a placeholder silhouette. */
-export function CardView({ card, abilities, size = "lg", glow = false, fill = false, thumbSizes, priority = false }: CardViewProps) {
+export function CardView({
+  card,
+  abilities,
+  size = "lg",
+  glow = false,
+  fill = false,
+  fit = false,
+  thumbSizes,
+  priority = false,
+}: CardViewProps) {
   const color = card.rarity.color;
   const large = size === "lg";
   const effects = cardEffects(card, size);
@@ -52,12 +63,12 @@ export function CardView({ card, abilities, size = "lg", glow = false, fill = fa
   const article = (
     <article
       style={style}
-      className={`rounded-xl ${large ? "w-[300px] p-[7px]" : `w-full p-1 ${fill ? "flex h-full flex-col" : ""}`} ${effects.includes("aura") ? "fx-aura" : ""} ${
-        glow ? "animate-rare-glow" : ""
-      }`}
+      className={`rounded-xl ${large ? `w-[300px] p-[7px] ${fit ? "flex min-h-0 flex-col" : ""}` : `w-full p-1 ${fill ? "flex h-full flex-col" : ""}`} ${
+        effects.includes("aura") ? "fx-aura" : ""
+      } ${glow ? "animate-rare-glow" : ""}`}
     >
-      <div className={`relative z-[1] flex flex-col overflow-hidden rounded-md bg-panel text-foreground ${fill ? "min-h-0 flex-1" : ""}`}>
-        <header className={`relative z-[2] flex items-center justify-between gap-2 ${large ? "h-12 px-2.5" : "h-8 px-1.5"}`}>
+      <div className={`relative z-[1] flex flex-col overflow-hidden rounded-md bg-panel text-foreground ${fill ? "min-h-0 flex-1" : fit ? "min-h-0" : ""}`}>
+        <header className={`relative z-[2] flex shrink-0 items-center justify-between gap-2 ${large ? "h-12 px-2.5" : "h-8 px-1.5"}`}>
           <CardName card={card} size={size} />
           <RarityTag rarity={card.rarity} compact={!large} />
         </header>
@@ -69,7 +80,7 @@ export function CardView({ card, abilities, size = "lg", glow = false, fill = fa
           thumbSizes={large ? undefined : thumbSizes}
           priority={priority}
           effects={effects}
-          className={fill ? "min-h-0 flex-1" : large ? "h-44" : "h-24"}
+          className={fill ? "min-h-0 flex-1" : large ? `h-44 ${fit ? "min-h-24" : ""}` : "h-24"}
         >
           {card.variant && <VariantTag name={card.variant.name} compact={!large} />}
           <span
@@ -83,7 +94,7 @@ export function CardView({ card, abilities, size = "lg", glow = false, fill = fa
         </CardArt>
 
         {large && card.power && (
-          <div className="border-t-2 px-2.5 py-1.5" style={{ borderColor: color }}>
+          <div className="shrink-0 border-t-2 px-2.5 py-1.5" style={{ borderColor: color }}>
             <p className="font-display text-sm uppercase" style={{ color }}>
               {card.power.name}
             </p>
@@ -98,7 +109,7 @@ export function CardView({ card, abilities, size = "lg", glow = false, fill = fa
 
   if (!effects.includes("tilt")) return article;
   return (
-    <div className="fx-tilt" {...CARD_TOUCH_HANDLERS}>
+    <div className={`fx-tilt ${fit ? "flex min-h-0 flex-col" : ""}`} {...CARD_TOUCH_HANDLERS}>
       {article}
     </div>
   );
@@ -203,7 +214,7 @@ function AbilityGrid({ stats, abilities }: { stats: Record<string, number>; abil
   );
 
   return (
-    <div className="grid grid-cols-4 gap-1.5 bg-background px-2 pb-2 pt-1.5">
+    <div className="grid shrink-0 grid-cols-4 gap-1.5 bg-background px-2 pb-2 pt-1.5">
       {families.map(({ family, items }) => (
         <div key={family.code} className="flex min-w-0 flex-col gap-0.5">
           <p className="truncate text-[10px] font-extrabold uppercase leading-[14px]" style={{ color: family.color }}>

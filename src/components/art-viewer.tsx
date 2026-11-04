@@ -5,7 +5,18 @@ import { fullArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 
 /** A button that opens the whole vertical drawing of a card, full screen. */
-export function ArtViewerButton({ artUrl, name, label = "Guarda il disegno" }: { artUrl: string; name: string; label?: string }) {
+export function ArtViewerButton({
+  artUrl,
+  name,
+  label = "Guarda il disegno",
+  className = "w-full max-w-sm",
+}: {
+  artUrl: string;
+  name: string;
+  label?: string;
+  /** Sizes the button where it sits. */
+  className?: string;
+}) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
   // Older drawings have no larger copy; one that fails to load also falls back to the card image.
@@ -22,7 +33,7 @@ export function ArtViewerButton({ artUrl, name, label = "Guarda il disegno" }: {
           setOpen(true);
           dialog.current?.showModal();
         }}
-        className="btn btn-outline w-full max-w-sm"
+        className={`btn btn-outline ${className}`}
       >
         {label}
       </button>

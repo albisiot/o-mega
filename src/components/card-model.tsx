@@ -29,7 +29,7 @@ async function downloadModel(url: string, signal: AbortSignal, onProgress: (shar
 }
 
 /** The button that opens a card's 3D model. Purely decorative: other cards show nothing. */
-export function CardModelButton({ code, name }: { code: string; name: string }) {
+export function CardModelButton({ code, name, className = "w-full max-w-sm" }: { code: string; name: string; className?: string }) {
   const sheet = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
 
@@ -45,7 +45,7 @@ export function CardModelButton({ code, name }: { code: string; name: string }) 
           setOpen(true);
           sheet.current?.showModal();
         }}
-        className="btn btn-primary w-full max-w-sm"
+        className={`btn btn-primary ${className}`}
       >
         Guarda in 3D
       </button>

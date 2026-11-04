@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ArtViewerButton } from "@/components/art-viewer";
-import { CardView, Silhouette } from "@/components/card-view";
+import { useRef, useState } from "react";
+import { Silhouette } from "@/components/card-view";
 import { convertDuplicates, type CatalogCard, type OwnedSummary } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
 
@@ -111,29 +110,83 @@ export function CopiesPanel({
   );
 }
 
-/** The variants this player found, one per style, and how many are still to find. */
-export function VariantsPanel({ card, owned }: { card: CatalogCard; owned: OwnedSummary }) {
-  const found = [...new Map(owned.variants.map((variant) => [variant.style, variant])).values()];
-  const missing = Math.max(0, card.variantCount - found.length);
-  if (card.variantCount === 0) return null;
+/**
+ * The copies of a character on one row, under its card. A tap opens them in full in a sheet
+ * from the bottom: protected and locked copies, the conversion of duplicates and the
+ * variants still to find. The variants found are shown on the card itself.
+ */
+export function CopiesSheet({
+  card,
+  owned,
+  onConverted,
+}: {
+  card: CatalogCard;
+  owned: OwnedSummary;
+  onConverted: () => void;
+}) {
+  const sheet = useRef<HTMLDialogElement>(null);
+  const found = new Set(owned.variants.map((variant) => variant.style)).size;
+  const counts = [
+    { label: "Copie", value: `${owned.copies}`, lit: false },
+    { label: "Doppioni", value: `${owned.convertible_copies}`, lit: owned.convertible_copies > 0 },
+    ...(card.variantCount > 0 ? [{ label: "Varianti", value: `${found}/${card.variantCount}`, lit: false }] : []),
+  ];
+
   return (
-    <section className="flex w-full max-w-sm flex-col items-center gap-3">
-      <h2 className="section-title self-start">Varianti</h2>
-      {found.map((variant) => (
-        <div key={variant.style} className="flex w-full flex-col items-center gap-2">
-          <CardView card={{ ...card, art_url: variant.art_url, variant: { name: variant.name } }} />
-          <ArtViewerButton artUrl={variant.art_url} name={`${card.name} · ${variant.name}`} label={`Guarda il disegno ${variant.name}`} />
+    <>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={() => sheet.current?.showModal()}
+        className="flex w-full max-w-sm shrink-0 gap-1 text-left"
+      >
+        {counts.map(({ label, value, lit }) => (
+          <span key={label} className="flex min-w-0 flex-1 flex-col bg-panel px-3 py-1">
+            <span className="text-[13px] font-semibold leading-[17px] text-muted">{label}</span>
+            <span className={`font-display text-2xl leading-7 ${lit ? "text-comic-yellow" : ""}`}>{value}</span>
+          </span>
+        ))}
+        <span aria-hidden className="flex w-11 shrink-0 items-center justify-center bg-panel text-comic-yellow">
+          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={3}>
+            <path d="m8 3 7 7-7 7" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </button>
+      <dialog
+        ref={sheet}
+        aria-label={`Copie di ${card.name}`}
+        // The sheet's content fills it: a click on the dialog itself is on the backdrop.
+        onClick={(event) => {
+          if (event.target === sheet.current) sheet.current.close();
+        }}
+        className="m-0 mt-auto w-full max-w-none border-0 border-t-[3px] border-foreground bg-background p-0 text-foreground backdrop:bg-black/70"
+      >
+        <div className="mx-auto flex max-w-sm flex-col gap-3 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="min-w-0 truncate font-display text-2xl uppercase text-comic-yellow">Copie di {card.name}</h2>
+            <button type="button" onClick={() => sheet.current?.close()} className="btn btn-ghost shrink-0">
+              Chiudi
+            </button>
+          </div>
+          <CopiesPanel card={card} owned={owned} onConverted={onConverted} />
+          <MissingVariants card={card} found={found} />
         </div>
-      ))}
-      {missing > 0 && (
-        <p className="self-start text-sm font-semibold text-muted">
-          {missing === 1
-            ? "Esiste una variante di questa carta che non hai ancora trovato."
-            : `Esistono ${missing} varianti di questa carta che non hai ancora trovato.`}{" "}
-          Si trovano nei pacchetti.
-        </p>
-      )}
-    </section>
+      </dialog>
+    </>
+  );
+}
+
+/** How many artwork variants of this character the player has still to find, if any. */
+function MissingVariants({ card, found }: { card: CatalogCard; found: number }) {
+  const missing = Math.max(0, card.variantCount - found);
+  if (missing === 0) return null;
+  return (
+    <p className="text-sm font-semibold text-muted">
+      {missing === 1
+        ? "Esiste una variante di questa carta che non hai ancora trovato."
+        : `Esistono ${missing} varianti di questa carta che non hai ancora trovato.`}{" "}
+      Si trovano nei pacchetti.
+    </p>
   );
 }
 

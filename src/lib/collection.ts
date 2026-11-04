@@ -33,6 +33,17 @@ export function ownedArt(card: CatalogCard, owned: OwnedSummary): Pick<CatalogCa
   return only ? { art_url: only.art_url, variant: { name: only.name } } : { art_url: card.art_url, variant: null };
 }
 
+/** A drawing a character's page can show: the base one, or a variant the player found. */
+export type CardLook = { key: string; label: string; art_url: CatalogCard["art_url"]; variant: { name: string } | null };
+
+/** The drawings of a character's page, one per style found: the base first, unless the player has only variants. */
+export function ownedLooks(card: CatalogCard, owned: OwnedSummary): CardLook[] {
+  const styles = [...new Map(owned.variants.map((variant) => [variant.style, variant])).values()];
+  const looks = styles.map((v) => ({ key: v.style, label: v.name, art_url: v.art_url, variant: { name: v.name } }));
+  if (owned.variants.length === owned.copies) return looks;
+  return [{ key: "base", label: "Base", art_url: card.art_url, variant: null }, ...looks];
+}
+
 export type ConversionResult = { converted: number; coins: number; coin_balance: number };
 
 let catalogPromise: Promise<CatalogCard[]> | null = null;
