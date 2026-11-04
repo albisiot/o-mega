@@ -19,6 +19,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
+import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 const POP_SECONDS = 0.45;
@@ -37,13 +38,13 @@ function easeOutBack(x: number): number {
 }
 
 /**
- * Loads a card's model on the canvas in the comic style of the threat dioramas:
+ * Shows a card's model (the bytes of its .glb file) on the canvas in the comic style of the threat dioramas:
  * it sways on its own and turns when dragged. Returns the cleanup function.
  * Throws if WebGL is not available.
  */
 export function mountCardModel(
   canvas: HTMLCanvasElement,
-  url: string,
+  model: ArrayBuffer,
   onLoaded: () => void,
   onFailed: () => void,
 ): () => void {
@@ -76,8 +77,10 @@ export function mountCardModel(
   let sways = !reduced;
   let redraw = true;
 
-  new GLTFLoader().load(
-    url,
+  // The models are meshopt-compressed by scripts/compress-card-model.mjs.
+  new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parse(
+    model,
+    "",
     (gltf) => {
       if (disposed) return;
       const model = gltf.scene;
@@ -106,7 +109,6 @@ export function mountCardModel(
       redraw = true;
       onLoaded();
     },
-    undefined,
     (cause) => {
       console.error("Card model failed", cause);
       if (!disposed) onFailed();

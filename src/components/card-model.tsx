@@ -5,30 +5,42 @@ import { withBasePath } from "@/lib/base-path";
 
 /** Cards that have a 3D model in public/models. */
 const CARD_MODELS = new Set(["P001", "P030", "P060"]);
-const PRELOAD_DELAY_MS = 600;
+
+/** Three.js and the viewer: downloaded only by players who ask for a model. */
+const loadViewer = () => import("@/lib/card-model");
+
+/** The model's bytes, reporting the share received so far when the size is known. */
+async function downloadModel(url: string, signal: AbortSignal, onProgress: (share: number) => void): Promise<ArrayBuffer> {
+  const response = await fetch(url, { signal });
+  if (!response.ok) throw new Error(`Model download failed: ${response.status}`);
+  const total = Number(response.headers.get("content-length"));
+  if (!response.body || !total) return response.arrayBuffer();
+  const reader = response.body.getReader();
+  const chunks: Uint8Array<ArrayBuffer>[] = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    onProgress(Math.min(1, received / total));
+  }
+  return new Blob(chunks).arrayBuffer();
+}
 
 /** The button that opens a card's 3D model. Purely decorative: other cards show nothing. */
 export function CardModelButton({ code, name }: { code: string; name: string }) {
   const sheet = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
-  const hasModel = CARD_MODELS.has(code);
 
-  // Starts the download as soon as the page is quiet, so that the button feels instant.
-  useEffect(() => {
-    if (!hasModel) return;
-    const timer = setTimeout(() => {
-      void import("@/lib/card-model").catch(() => {});
-      void fetch(withBasePath(`/models/${code}.glb`)).catch(() => {});
-    }, PRELOAD_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [code, hasModel]);
-
-  if (!hasModel) return null;
+  if (!CARD_MODELS.has(code)) return null;
   return (
     <>
       <button
         type="button"
         aria-haspopup="dialog"
+        // The press comes a moment before the tap: enough to start fetching the viewer's code.
+        onPointerDown={() => void loadViewer().catch(() => {})}
         onClick={() => {
           setOpen(true);
           sheet.current?.showModal();
@@ -64,29 +76,38 @@ export function CardModelButton({ code, name }: { code: string; name: string }) 
 function ModelStage({ code }: { code: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "failed">("loading");
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     let cancelled = false;
     let unmount: (() => void) | undefined;
-    // Three.js and the model are downloaded only when the player asks for them.
-    import("@/lib/card-model")
-      .then(({ mountCardModel }) => {
+    const download = new AbortController();
+    // The model and the viewer download side by side, once the player has asked for them.
+    Promise.all([
+      loadViewer(),
+      downloadModel(withBasePath(`/models/${code}.glb`), download.signal, (share) => {
+        if (!cancelled) setProgress(share);
+      }),
+    ])
+      .then(([{ mountCardModel }, model]) => {
         if (cancelled) return;
         unmount = mountCardModel(
           canvas,
-          withBasePath(`/models/${code}.glb`),
+          model,
           () => setStatus("ready"),
           () => setStatus("failed"),
         );
       })
       .catch((cause: unknown) => {
+        if (cancelled) return;
         console.error("Card model failed", cause);
         setStatus("failed");
       });
     return () => {
       cancelled = true;
+      download.abort();
       unmount?.();
     };
   }, [code]);
@@ -94,14 +115,18 @@ function ModelStage({ code }: { code: string }) {
   return (
     <div className="relative">
       <canvas ref={canvasRef} aria-hidden className="block h-[62svh] w-full cursor-grab touch-pan-y" />
-      {status !== "ready" && (
-        <p
-          className={`absolute inset-0 flex items-center justify-center text-sm font-semibold ${
-            status === "failed" ? "text-comic-magenta" : "text-muted"
-          }`}
-        >
-          {status === "failed" ? "Modello non disponibile." : "Caricamento…"}
+      {status === "failed" && (
+        <p className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-comic-magenta">
+          Modello non disponibile.
         </p>
+      )}
+      {status === "loading" && (
+        <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-10">
+          <p className="text-sm font-semibold text-muted">Caricamento del modello…</p>
+          <div className="h-1 w-full max-w-48 bg-panel-raised" aria-hidden>
+            <div className="h-full bg-comic-magenta transition-[width] duration-200" style={{ width: `${progress * 100}%` }} />
+          </div>
+        </div>
       )}
       <p className="text-center text-xs font-semibold text-muted">Trascina per girarlo</p>
     </div>
