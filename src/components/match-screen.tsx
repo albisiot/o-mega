@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { carriedBonusAfter, scorePlay, type AbilityFamilies, type ThreatModifier } from "@o-mega/game-engine";
 import { Silhouette } from "@/components/card-view";
 import { ComicBurst } from "@/components/comic-parts";
-import { ConquestPanel, ConquestPick } from "@/components/conquest-panel";
+import { ConquestPanel, ConquestPick, SecondsLeft } from "@/components/conquest-panel";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
 import { StoryRewardPanel, useStoryReward } from "@/components/story-reward";
@@ -37,7 +37,7 @@ import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { carriedInto, roundPowerNotes, type PowerNote } from "@/lib/round-powers";
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { useLockedScreen } from "@/lib/use-locked-screen";
-import { useNow } from "@/lib/use-now";
+import { useNow, useSecondsLeft } from "@/lib/use-now";
 
 type TeamCard = MatchView["my_team"][number];
 
@@ -83,7 +83,8 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
   const [confirmForfeit, setConfirmForfeit] = useState(false);
   // Whether the conquest pick was still open on this screen: only then the conquered card celebrates.
   const [conquestLive, setConquestLive] = useState(() => Boolean(initial.conquest && !initial.conquest.resolved));
-  const now = useNow(250);
+  // The countdowns tick in small components of their own (RoundTimer, TimerBar, SecondsLeft,
+  // OpponentAbsent): the rest of the screen does not re-render with the clock.
 
   useEffect(() => {
     fetchAbilities()
@@ -248,16 +249,11 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
   );
   const shownRound = revealing === null ? null : view.rounds.find((r) => r.round === revealing) ?? null;
   const opponentName = view.opponent?.username ?? "Bot";
-  const absentMs =
-    !isBot && isActive && view.opponent?.last_seen_at ? now + offset - Date.parse(view.opponent.last_seen_at) : 0;
   // Every step fits the screen and nothing scrolls: the choice, the round result, the conquest
   // pick and the final result, with or without a conquered card or a story reward.
   const choosing = !shownRound && view.status !== "finished" && Boolean(current);
   const picking = !shownRound && pickOpen;
-  const pickSeconds =
-    pickOpen && view.conquest
-      ? Math.max(0, Math.ceil((Date.parse(view.conquest.deadline_at) - (now + offset)) / 1000))
-      : null;
+  const pickDeadline = pickOpen && view.conquest ? Date.parse(view.conquest.deadline_at) : null;
   const fitted = choosing || Boolean(shownRound) || picking || view.status === "finished";
   useLockedScreen(fitted);
 
@@ -302,22 +298,14 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
             </svg>
           </Link>
         )}
-        {absentMs > 20_000 && (
-          <div className="absolute inset-x-3 top-full z-20 mt-1 flex items-center justify-between gap-3 bg-comic-yellow p-2.5 text-black shadow-[4px_4px_0_#000]">
-            <p className="text-xs font-semibold">
-              {opponentName} non risponde. Allo scadere del tempo il server sceglie al posto suo.
-            </p>
-            {absentMs > balance.match.reconnectGraceSeconds * 1000 && (
-              <button
-                type="button"
-                onClick={claim}
-                disabled={busy}
-                className="btn shrink-0 bg-black px-3 text-sm font-bold text-comic-yellow"
-              >
-                Rivendica la vittoria
-              </button>
-            )}
-          </div>
+        {!isBot && isActive && view.opponent?.last_seen_at && (
+          <OpponentAbsent
+            lastSeenAt={view.opponent.last_seen_at}
+            offset={offset}
+            opponentName={opponentName}
+            busy={busy}
+            onClaim={claim}
+          />
         )}
       </header>
 
@@ -362,7 +350,8 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
           opponentName={opponentName}
           onContinue={() => setRevealing(null)}
           finished={view.status === "finished"}
-          pickSeconds={pickSeconds}
+          pickDeadline={pickDeadline}
+          offset={offset}
         />
       ) : picking && view.conquest ? (
         <ConquestPick
@@ -370,14 +359,14 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
           conquest={view.conquest}
           opponentName={rivalName(view)}
           roundsWon={view.rounds_won}
-          serverNow={now + offset}
+          offset={offset}
           onUpdate={apply}
           abilities={abilities}
         />
       ) : view.status === "finished" ? (
         <MatchResult
           view={view}
-          serverNow={now + offset}
+          offset={offset}
           onUpdate={apply}
           abilities={abilities}
           story={story}
@@ -389,7 +378,8 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
           round={current}
           families={families}
           abilities={abilities}
-          remainingMs={deadline === null ? 0 : deadline - (now + offset)}
+          deadline={deadline!}
+          offset={offset}
           selected={selected ?? current.my_pending_instance_id}
           onSelect={setSelected}
           busy={busy}
@@ -515,7 +505,8 @@ function ChoosePhase({
   round,
   families,
   abilities,
-  remainingMs,
+  deadline,
+  offset,
   selected,
   onSelect,
   busy,
@@ -525,7 +516,10 @@ function ChoosePhase({
   round: MatchRound;
   families: AbilityFamilies;
   abilities: AbilityInfo[];
-  remainingMs: number;
+  /** When the round's time is up, in server time (ms). */
+  deadline: number;
+  /** Server time minus device time. */
+  offset: number;
   selected: string | null;
   onSelect: (id: string) => void;
   busy: boolean;
@@ -534,8 +528,6 @@ function ChoosePhase({
   const isBot = view.bot_difficulty !== null;
   const opponentName = view.opponent?.username ?? "Il bot";
   const pending = round.my_pending_instance_id;
-  const timer = balance.match.roundTimerSeconds;
-  const seconds = Math.max(0, Math.ceil(remainingMs / 1000));
   const threat = { id: "current", level: round.level, abilities: round.threat.abilities, modifier: round.modifier };
 
   // Riscossa: bonus earned by losing the previous round with a comeback character.
@@ -580,15 +572,7 @@ function ChoosePhase({
               </p>
               <p className="font-display text-[30px] uppercase leading-8">{round.threat.name}</p>
             </div>
-            <p
-              role="timer"
-              aria-label={`${Math.min(seconds, timer)} secondi rimasti`}
-              className={`mb-0.5 flex h-12 w-12 shrink-0 rotate-3 items-center justify-center font-display text-[28px] ${
-                seconds <= 10 ? "bg-comic-yellow text-black" : "bg-black text-comic-yellow"
-              }`}
-            >
-              {Math.min(seconds, timer)}
-            </p>
+            <RoundTimer key={deadline} deadline={deadline} offset={offset} />
           </div>
           <div className="mt-1.5 flex flex-wrap gap-1">
             {round.threat.abilities.map((code, index) => {
@@ -606,12 +590,7 @@ function ChoosePhase({
             })}
           </div>
           {round.modifier && <ModifierBanner modifier={round.modifier} firstAbility={abilityName(round.threat.abilities[0])?.name ?? round.threat.abilities[0]} />}
-          <div className="mt-2 h-1.5 bg-black" aria-hidden>
-            <div
-              className={`h-full transition-[width] duration-200 ${seconds <= 10 ? "bg-foreground" : "bg-comic-yellow"}`}
-              style={{ width: `${Math.min(100, (remainingMs / 1000 / timer) * 100)}%` }}
-            />
-          </div>
+          <TimerBar key={deadline} deadline={deadline} offset={offset} />
           {carried > 0 && <p className="mt-1.5 text-xs font-bold">Riscossa: +{carried} al personaggio di questo round.</p>}
           {!isBot && (
             <p className="mt-1.5 text-xs font-bold">
@@ -696,6 +675,82 @@ function ChoosePhase({
   );
 }
 
+/** The round's seconds left, the only part of the choice that re-renders as they tick. */
+function RoundTimer({ deadline, offset }: { deadline: number; offset: number }) {
+  const seconds = useSecondsLeft(deadline, offset);
+  const shown = Math.min(seconds, balance.match.roundTimerSeconds);
+  return (
+    <p
+      role="timer"
+      aria-label={`${shown} secondi rimasti`}
+      className={`mb-0.5 flex h-12 w-12 shrink-0 rotate-3 items-center justify-center font-display text-[28px] ${
+        seconds <= 10 ? "bg-comic-yellow text-black" : "bg-black text-comic-yellow"
+      }`}
+    >
+      {shown}
+    </p>
+  );
+}
+
+/**
+ * The round's time as a bar that empties over its last roundTimerSeconds: one animation
+ * of the time left, so the bar moves without re-rendering. Only its colour waits on the clock.
+ */
+function TimerBar({ deadline, offset }: { deadline: number; offset: number }) {
+  const bar = useRef<HTMLDivElement>(null);
+  const low = useSecondsLeft(deadline, offset) <= 10;
+  useLayoutEffect(() => {
+    const total = balance.match.roundTimerSeconds * 1000;
+    const left = Math.max(0, deadline - (Date.now() + offset));
+    const animation = bar.current?.animate(
+      [{ transform: `scaleX(${Math.min(1, left / total)})` }, { transform: "scaleX(0)" }],
+      { duration: Math.min(left, total), delay: Math.max(0, left - total), easing: "linear", fill: "both" },
+    );
+    return () => animation?.cancel();
+  }, [deadline, offset]);
+  return (
+    <div className="mt-2 h-1.5 bg-black" aria-hidden>
+      <div ref={bar} className={`h-full origin-left ${low ? "bg-foreground" : "bg-comic-yellow"}`} />
+    </div>
+  );
+}
+
+/** Against a player: says when the opponent has not been seen for 20 s, and lets the player claim the win past the reconnect grace. */
+function OpponentAbsent({
+  lastSeenAt,
+  offset,
+  opponentName,
+  busy,
+  onClaim,
+}: {
+  lastSeenAt: string;
+  offset: number;
+  opponentName: string;
+  busy: boolean;
+  onClaim: () => void;
+}) {
+  const now = useNow(1000);
+  const absentMs = now + offset - Date.parse(lastSeenAt);
+  if (absentMs <= 20_000) return null;
+  return (
+    <div className="absolute inset-x-3 top-full z-20 mt-1 flex items-center justify-between gap-3 bg-comic-yellow p-2.5 text-black shadow-[4px_4px_0_#000]">
+      <p className="text-xs font-semibold">
+        {opponentName} non risponde. Allo scadere del tempo il server sceglie al posto suo.
+      </p>
+      {absentMs > balance.match.reconnectGraceSeconds * 1000 && (
+        <button
+          type="button"
+          onClick={onClaim}
+          disabled={busy}
+          className="btn shrink-0 bg-black px-3 text-sm font-bold text-comic-yellow"
+        >
+          Rivendica la vittoria
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ModifierBanner({ modifier, firstAbility }: { modifier: ThreatModifier; firstAbility: string }) {
   const { name, text } = describeThreatModifier(modifier, firstAbility);
   return (
@@ -713,7 +768,8 @@ function RoundReveal({
   opponentName,
   onContinue,
   finished,
-  pickSeconds,
+  pickDeadline,
+  offset,
 }: {
   round: MatchRound;
   /** The round before, for the Riscossa a card received from it. */
@@ -723,8 +779,10 @@ function RoundReveal({
   opponentName: string;
   onContinue: () => void;
   finished: boolean;
-  /** After the last round of a won Conquest: the seconds left to pick a card. */
-  pickSeconds: number | null;
+  /** After the last round of a won Conquest: when the time to pick a card is up (server time, ms). */
+  pickDeadline: number | null;
+  /** Server time minus device time. */
+  offset: number;
 }) {
   const mine = team.find((card) => card.instance_id === round.my_play?.instance_id);
   const theirs = round.opponent_play;
@@ -845,7 +903,7 @@ function RoundReveal({
           <button
             type="button"
             className={`mx-auto flex h-8 items-center gap-1.5 px-3 text-xs font-extrabold uppercase ${
-              pickSeconds === null ? "tracking-wide" : "-skew-x-8 bg-black text-comic-yellow"
+              pickDeadline === null ? "tracking-wide" : "-skew-x-8 bg-black text-comic-yellow"
             }`}
           >
             <svg viewBox="0 0 14 16" className="h-4 w-3.5" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden>
@@ -855,10 +913,12 @@ function RoundReveal({
                 strokeLinejoin="round"
               />
             </svg>
-            {pickSeconds !== null ? (
+            {pickDeadline !== null ? (
               <>
                 Tocca per scegliere la conquista
-                <span className="normal-case">· {pickSeconds} s</span>
+                <span className="normal-case">
+                  · <SecondsLeft key={pickDeadline} deadline={pickDeadline} offset={offset} /> s
+                </span>
               </>
             ) : finished ? (
               "Tocca per vedere il risultato"
@@ -975,14 +1035,15 @@ function PlaySide({
 
 function MatchResult({
   view,
-  serverNow,
+  offset,
   onUpdate,
   abilities,
   story,
   conquestLive,
 }: {
   view: MatchView;
-  serverNow: number;
+  /** Server time minus device time. */
+  offset: number;
   onUpdate: (next: MatchView) => void;
   abilities: AbilityInfo[];
   story: boolean;
@@ -1078,7 +1139,7 @@ function MatchResult({
           matchId={view.id}
           conquest={conquest}
           opponentName={rivalName(view)}
-          serverNow={serverNow}
+          offset={offset}
           onUpdate={onUpdate}
           abilities={abilities}
           live={conquestLive}

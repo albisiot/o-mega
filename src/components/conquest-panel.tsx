@@ -7,12 +7,14 @@ import { balance } from "@/config/balance";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
 import { claimConquestCard, type ConquestState, type MatchView } from "@/lib/match";
+import { useSecondsLeft } from "@/lib/use-now";
 
 type ConquestProps = {
   matchId: string;
   conquest: ConquestState;
   opponentName: string;
-  serverNow: number;
+  /** Server time minus device time. */
+  offset: number;
   onUpdate: (next: MatchView) => void;
   abilities: AbilityInfo[];
 };
@@ -21,23 +23,21 @@ type ConquestProps = {
 function useConquestDeadline(
   matchId: string,
   conquest: ConquestState,
-  serverNow: number,
+  offset: number,
   onUpdate: (next: MatchView) => void,
 ): number {
   const deadline = Date.parse(conquest.deadline_at);
   const resolved = conquest.resolved;
   useEffect(() => {
     if (resolved) return;
-    const delay = deadline + (balance.match.timeoutGraceSeconds + 0.5) * 1000 - serverNow;
+    const delay = deadline + (balance.match.timeoutGraceSeconds + 0.5) * 1000 - (Date.now() + offset);
     const timer = setTimeout(() => {
       claimConquestCard(matchId, null)
         .then(onUpdate)
         .catch((cause: unknown) => console.error("Settling the pick failed", cause));
     }, Math.max(0, delay));
     return () => clearTimeout(timer);
-    // serverNow ticks constantly: the deadline alone decides when to run.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolved, deadline, matchId, onUpdate]);
+  }, [resolved, deadline, offset, matchId, onUpdate]);
   return deadline;
 }
 
@@ -46,9 +46,9 @@ function useConquestDeadline(
  * `live` says the pick was still open on this screen: only that moment celebrates the conquered card.
  * The card takes the room the result leaves (see PrizeCard).
  */
-export function ConquestPanel({ matchId, conquest, opponentName, serverNow, onUpdate, abilities, live }: ConquestProps & { live: boolean }) {
+export function ConquestPanel({ matchId, conquest, opponentName, offset, onUpdate, abilities, live }: ConquestProps & { live: boolean }) {
   const celebrate = live && conquest.resolved && conquest.role === "winner" && Boolean(conquest.chosen);
-  const deadline = useConquestDeadline(matchId, conquest, serverNow, onUpdate);
+  const deadline = useConquestDeadline(matchId, conquest, offset, onUpdate);
 
   if (conquest.resolved) {
     if (conquest.bonus_coins > 0) {
@@ -81,13 +81,19 @@ export function ConquestPanel({ matchId, conquest, opponentName, serverNow, onUp
     );
   }
 
-  const seconds = Math.max(0, Math.ceil((deadline - serverNow) / 1000));
   return (
     <section className="flex shrink-0 flex-col items-center gap-2 bg-comic-magenta p-4 text-center text-black">
       <p className="font-display text-xl uppercase">{opponentName} sta scegliendo una delle tue carte…</p>
-      <p className="font-display text-4xl">{seconds}</p>
+      <p className="font-display text-4xl">
+        <SecondsLeft key={deadline} deadline={deadline} offset={offset} />
+      </p>
     </section>
   );
+}
+
+/** A countdown's seconds as plain text: only this re-renders as they tick. Key it on the deadline. */
+export function SecondsLeft({ deadline, offset }: { deadline: number; offset: number }) {
+  return useSecondsLeft(deadline, offset);
 }
 
 /**
@@ -98,7 +104,7 @@ export function ConquestPick({
   matchId,
   conquest,
   opponentName,
-  serverNow,
+  offset,
   onUpdate,
   abilities,
   roundsWon,
@@ -107,8 +113,7 @@ export function ConquestPick({
   const [zoomed, setZoomed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const deadline = useConquestDeadline(matchId, conquest, serverNow, onUpdate);
-  const seconds = Math.max(0, Math.ceil((deadline - serverNow) / 1000));
+  const deadline = useConquestDeadline(matchId, conquest, offset, onUpdate);
 
   const options = conquest.offered ?? [];
   const chosen = options.find((card) => card.eligible && card.instance_id === selected);
@@ -138,15 +143,7 @@ export function ConquestPick({
           </p>
           <h1 className="font-display text-[25px] uppercase leading-[29px]">Scegli la tua conquista</h1>
         </div>
-        <p
-          role="timer"
-          aria-label={`${seconds} secondi`}
-          className={`flex h-[52px] w-[52px] shrink-0 rotate-3 items-center justify-center font-display text-[29px] text-black ${
-            seconds <= 10 ? "bg-comic-magenta" : "bg-comic-yellow"
-          }`}
-        >
-          {seconds}
-        </p>
+        <PickTimer key={deadline} deadline={deadline} offset={offset} />
       </header>
 
       <main className="relative flex min-h-0 flex-1 flex-col px-3">
@@ -233,5 +230,21 @@ export function ConquestPick({
         </button>
       </div>
     </>
+  );
+}
+
+/** The seconds left to pick, the only part of the pick that re-renders as they tick. */
+function PickTimer({ deadline, offset }: { deadline: number; offset: number }) {
+  const seconds = useSecondsLeft(deadline, offset);
+  return (
+    <p
+      role="timer"
+      aria-label={`${seconds} secondi`}
+      className={`flex h-[52px] w-[52px] shrink-0 rotate-3 items-center justify-center font-display text-[29px] text-black ${
+        seconds <= 10 ? "bg-comic-magenta" : "bg-comic-yellow"
+      }`}
+    >
+      {seconds}
+    </p>
   );
 }
