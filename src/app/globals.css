@@ -181,7 +181,7 @@ html.screen-locked body {
     overflow: hidden;
   }
 
-  /* The home fits the phone the same way, above the bottom bar and its spacer. */
+  /* The home and the Play page fit the phone the same way, above the bottom bar and its spacer. */
   .home-shell {
     display: flex;
     flex-direction: column;
