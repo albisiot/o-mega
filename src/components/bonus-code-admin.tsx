@@ -46,11 +46,22 @@ export function BonusCodeAdmin({ data, onChange }: BonusCodeAdminProps) {
   );
 }
 
+/** "Vetrix" or "Vetrix · Neon" for a chosen card, written as "P051" or "P051:neon". */
+function cardLabel(cards: AdminBonusCodes["cards"], cardCode: string): string {
+  const [code, style] = cardCode.split(":");
+  const card = cards.find((entry) => entry.code === code);
+  const variant = style ? card?.variants.find((entry) => entry.style === style) : null;
+  return `${card?.name ?? code}${variant ? ` · ${variant.name}` : ""}`;
+}
+
 function NewCodeForm({ cards, onChange }: { cards: AdminBonusCodes["cards"]; onChange: BonusCodeAdminProps["onChange"] }) {
   const [code, setCode] = useState("");
   const [coins, setCoins] = useState("");
   const [packs, setPacks] = useState("");
   const [cardCodes, setCardCodes] = useState<string[]>([]);
+  const [pendingCard, setPendingCard] = useState<string | null>(null);
+  const [pendingStyle, setPendingStyle] = useState("");
+  const pending = cards.find((card) => card.code === pendingCard) ?? null;
   const [maxUses, setMaxUses] = useState("");
   const [expiresOn, setExpiresOn] = useState("");
   const [note, setNote] = useState("");
@@ -140,8 +151,11 @@ function NewCodeForm({ cards, onChange }: { cards: AdminBonusCodes["cards"]; onC
         <select
           value=""
           onChange={(event) => {
-            const picked = event.target.value;
-            if (picked) setCardCodes((current) => [...current, picked]);
+            const picked = cards.find((card) => card.code === event.target.value);
+            if (!picked) return;
+            // A card with variants waits for the choice of drawing.
+            if (picked.variants.length > 0) setPendingCard(picked.code);
+            else setCardCodes((current) => [...current, picked.code]);
           }}
           className={INPUT}
         >
@@ -153,20 +167,61 @@ function NewCodeForm({ cards, onChange }: { cards: AdminBonusCodes["cards"]; onC
           ))}
         </select>
       </label>
+      {pending && (
+        <div className="flex flex-col gap-2 bg-panel p-3">
+          <label className={LABEL}>
+            Disegno di {pending.name}
+            <select value={pendingStyle} onChange={(event) => setPendingStyle(event.target.value)} className={INPUT}>
+              <option value="">Base</option>
+              {pending.variants.map((variant) => (
+                <option key={variant.style} value={variant.style}>
+                  Variante {variant.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCardCodes((current) => [...current, pendingStyle ? `${pending.code}:${pendingStyle}` : pending.code]);
+                setPendingCard(null);
+                setPendingStyle("");
+              }}
+              className="btn btn-primary flex-1"
+            >
+              Aggiungi
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingCard(null);
+                setPendingStyle("");
+              }}
+              className="btn btn-ghost"
+            >
+              Annulla
+            </button>
+          </div>
+        </div>
+      )}
       {cardCodes.length > 0 && (
         <ul className="flex flex-wrap gap-1.5">
-          {cardCodes.map((cardCode, index) => (
-            <li key={`${cardCode}-${index}`}>
-              <button
-                type="button"
-                onClick={() => setCardCodes((current) => current.filter((_, i) => i !== index))}
-                aria-label={`Togli ${cards.find((card) => card.code === cardCode)?.name}`}
-                className="min-h-11 bg-panel px-3 text-sm font-bold"
-              >
-                {cards.find((card) => card.code === cardCode)?.name} ✕
-              </button>
-            </li>
-          ))}
+          {cardCodes.map((cardCode, index) => {
+            const label = cardLabel(cards, cardCode);
+            return (
+              <li key={`${cardCode}-${index}`}>
+                <button
+                  type="button"
+                  onClick={() => setCardCodes((current) => current.filter((_, i) => i !== index))}
+                  aria-label={`Togli ${label}`}
+                  className="min-h-11 bg-panel px-3 text-sm font-bold"
+                >
+                  {label} ✕
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
       <label className={LABEL}>

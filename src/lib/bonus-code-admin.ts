@@ -15,14 +15,15 @@ export type AdminBonusCode = {
 
 export type AdminBonusCodes = {
   codes: AdminBonusCode[];
-  /** The cards a code can give. */
-  cards: { code: string; name: string; rarity: string }[];
+  /** The cards a code can give, each with the artwork variants it can come with. */
+  cards: { code: string; name: string; rarity: string; variants: { style: string; name: string }[] }[];
 };
 
 export type NewBonusCode = {
   code: string;
   coins: number;
   packs: number;
+  /** "P051" for the base drawing, "P051:neon" for that variant. */
   cardCodes: string[];
   maxUses?: number;
   /** Last valid day (YYYY-MM-DD), up to midnight Europe/Rome. */
