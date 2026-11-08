@@ -52,6 +52,8 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   bonus_code_invalid_limits: "Controlla i numeri: premi da 0 in su, giocatori da 1 in su.",
   bonus_code_invalid_expiry: "L'ultimo giorno non può essere già passato.",
   bonus_code_card_unavailable: "Una delle carte scelte non si può dare con un codice.",
+  pack_card_unavailable: "Una delle carte scelte non può uscire nei pacchetti.",
+  pack_pool_empty: "Lascia nei pacchetti almeno una carta Gamma o più rara: serve per la carta garantita.",
 };
 
 export function describeServerError(error: unknown): string {

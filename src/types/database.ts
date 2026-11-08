@@ -205,6 +205,7 @@ export type Database = {
           faction: string
           flavor: string
           id: string
+          in_packs: boolean
           is_active: boolean
           name: string
           power_code: string | null
@@ -220,6 +221,7 @@ export type Database = {
           faction: string
           flavor?: string
           id?: string
+          in_packs?: boolean
           is_active?: boolean
           name: string
           power_code?: string | null
@@ -235,6 +237,7 @@ export type Database = {
           faction?: string
           flavor?: string
           id?: string
+          in_packs?: boolean
           is_active?: boolean
           name?: string
           power_code?: string | null
@@ -1685,8 +1688,13 @@ export type Database = {
         Returns: Json
       }
       admin_list_bonus_codes: { Args: never; Returns: Json }
+      admin_list_pack_cards: { Args: never; Returns: Json }
       admin_set_bonus_code_active: {
         Args: { p_id: string; p_is_active: boolean }
+        Returns: Json
+      }
+      admin_set_cards_in_packs: {
+        Args: { p_card_codes: string[]; p_in_packs: boolean }
         Returns: Json
       }
       bootstrap_player: {

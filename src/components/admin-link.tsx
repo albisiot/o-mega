@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { fetchIsAdmin } from "@/lib/bonus-code-admin";
 
-/** Discreet way into the admin page: nothing at all for everyone else. */
+const LINK = "flex min-h-11 items-center text-xs font-semibold text-faint underline";
+
+/** Discreet way into the admin pages: nothing at all for everyone else. */
 export function AdminLink() {
   const { session } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -25,8 +27,13 @@ export function AdminLink() {
 
   if (!session || !isAdmin) return null;
   return (
-    <Link href="/gestione-codici" className="flex min-h-11 items-center justify-center text-xs font-semibold text-faint underline">
-      Gestione codici
-    </Link>
+    <nav aria-label="Amministrazione" className="flex justify-center gap-4">
+      <Link href="/gestione-codici" className={LINK}>
+        Gestione codici
+      </Link>
+      <Link href="/gestione-pacchetti" className={LINK}>
+        Carte nei pacchetti
+      </Link>
+    </nav>
   );
 }
