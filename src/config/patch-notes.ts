@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "8 novembre 2026",
+    changes: [
+      "4 nuovi poteri su 8 nuovi personaggi, da trovare nei pacchetti: Annullatore (annulla il potere del personaggio avversario nel round) con Codicil e Attainder, Davide (+3 contro un personaggio più raro di almeno 2 gradi) con Subsong e Lure, Crescendo (+3 se la Minaccia è di livello più alto della precedente) con Gradus e Xenolith, e Slancio (se vince il round, il prossimo personaggio ha +2) con Impetus e Katabatic.",
+    ],
+  },
+  {
     date: "4 novembre 2026",
     changes: [
       "4 nuovi poteri: Schermato (immune a Sabotatore), Nemesi (+3 contro la fazione opposta), Tuttofare (+3 se tutte le abilità richieste valgono almeno 5) e Spia (dopo averla giocata vedi un personaggio avversario non ancora giocato). 10 carte Gamma e Beta cambiano potere.",

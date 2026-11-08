@@ -274,6 +274,21 @@ Da P105 a P114: dieci schede prese dal compendio *THE FRACTURE* (`THE_FRACTURE_C
 | P113 | TF-353 | Alfa, Neutrali | **Harrow:** mietitrebbia senza guidatore venerata come un dio dei campi fuori città. | FUR 0, VEL 1 |
 | P114 | TF-387 | Omega, Eroi | **Perpetuum:** regge da solo il campo magnetico sotto la centrale, seduto sul suo trono di rame. | VEL 0, FUR 0 |
 
+### Per i nuovi poteri
+
+Da P115 a P122: otto personaggi creati per i quattro poteri nuovi, due per potere, senza togliere il potere alle carte che già ce l'hanno. Il potere sceglie la rarità (Annullatore e Crescendo semplici su Gamma e Beta, Slancio distintivo su Alfa) e il personaggio nasce dal potere: chi annulla è un burocrate, chi batte i giganti è piccolo, chi cresce paga ogni gradino. I nomi in codice vengono dal compendio *THE FRACTURE* quando c'era un ruolo simile (Codicil, Attainder, Subsong, Lure, Xenolith, Katabatic); Gradus e Impetus sono nuovi. Si trovano tutti nei pacchetti.
+
+| Carta | Rarità e fazione | Potere | Personaggio | Il difetto nei valori |
+|---|---|---|---|---|
+| P115 | Beta, Eroi | Annullatore | **Codicil** (Custodi): archivista del Comune, aggiunge una clausola a quello che sta succedendo e lo fa finire. | FOR 1 |
+| P116 | Beta, Cattivi | Annullatore | **Attainder** (Compagnia Lete): esecutore dei decreti, chi viene nominato perde il nome e quello che sapeva fare. | FUR 1 |
+| P117 | Gamma, Eroi | Davide | **Subsong** (Lanterne): traduttrice dei richiami dei colossi, mente ai giganti con gli infrasuoni. | FOR 0, MAG 1, COM 1, TEC 1 |
+| P118 | Gamma, Neutrali | Davide | **Lure** (Sciolti): esca vivente pagata per farsi inseguire dai colossi lontano dalla città. | PSI 0, MAG 1, TEC 1 |
+| P119 | Gamma, Neutrali | Crescendo | **Gradus** (Banco): facchino che porta i clienti su per gli undici piani del Banco; ogni rampa gli costa un ricordo. | MAG 1 |
+| P120 | Beta, Neutrali | Crescendo | **Xenolith** (Sciolti): cavatore con una pietra degli scavi nel petto, che cresce a ogni uso. | FUR 1 |
+| P121 | Alfa, Eroi | Slancio | **Impetus** (Custodi): parte piano, ma dopo la prima vittoria non si ferma più. | MAG 0, PSI 0, INT 1, TEC 1 |
+| P122 | Alfa, Cattivi | Slancio | **Katabatic** (Compagnia Lete): il vento che scende dal vulcano, venduto alla città come servizio climatico. | TEC 0, FUR 0, PSI 1, COM 1 |
+
 ## 6. Minacce
 
 Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richiede Forza e Tecnologia. Molti nomi attuali funzionano già e vanno solo ambientati a Nuova Megara. Il testo di colore può usare il tono di un bollettino del sismografo.

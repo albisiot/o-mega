@@ -1177,6 +1177,80 @@ const STYLES: Record<string, NameStyle> = {
     side: ["#7a2e0a", "#1f0800"],
     glow: "rgb(120 220 255 / 0.4)",
   },
+
+  // --- Made for the new powers ---
+  // Codicil: adds one clause and the matter ends, ink on parchment with a ruled line.
+  P115: {
+    font: "elegant",
+    fill: layers(stripes("rgb(60 40 10 / 0.18)", 180, 0.02), grad("#fffaf0", "#f1e2bf 55%", "#c9a86a")),
+    rim: "#1a1206",
+    side: ["#6a5228", "#1a1206"],
+    line: "#2a1a06",
+  },
+  // Attainder: a name that nobody can say any more, letters crumbling to ash.
+  P116: {
+    font: "gothic",
+    fill: layers(cracks("rgb(0 0 0 / 0.55)"), grad("#f2f2f2 0 20%", "#9a9a9a 45%", "#8a0a1a 75%", "#3a0008")),
+    rim: "#050002",
+    side: ["#3a0a10", "#050002"],
+    split: ["transparent", "rgb(150 150 150 / 0.35)"],
+    haze: true,
+  },
+  // Subsong: whispers to giants, infrasound rings.
+  P117: {
+    font: "anton",
+    fill: layers(waves("rgb(255 160 80 / 0.5)"), grad("#ffffff", "#bff3ec 45%", "#2aa79b")),
+    rim: "#00201c",
+    side: ["#0f6a60", "#00201c"],
+    tracking: 0.04,
+  },
+  // Lure: the bait colossi chase, hazard stripes in glowing yellow.
+  P118: {
+    font: "stencil",
+    fill: layers(stripes("rgb(30 20 0 / 0.55)", 135, 0.1), grad("#fffbd0", "#ffe14a 45%", "#ff8a00")),
+    rim: "#241000",
+    side: ["#a34a00", "#241000"],
+    glow: "rgb(255 220 60 / 0.45)",
+    slant: 10,
+  },
+  // Gradus: the porter who climbs the Banco's eleven floors, marble steps.
+  P119: {
+    font: "myth",
+    fill: layers(veins("rgb(40 50 90 / 0.35)"), grad("#ffffff", "#e8ecf6 50%", "#9aa6c4")),
+    rim: "#0a0f24",
+    side: ["#1c2a5a", "#0a0f24"],
+    depth: 11,
+    angle: 90,
+    jitter: [[0, -0.06], [0, -0.03], [0, 0], [0, 0.03], [0, 0.06], [0, 0.09]],
+  },
+  // Xenolith: the stone in his chest grows, basalt with violet seams.
+  P120: {
+    font: "block",
+    fill: layers(cracks("rgb(190 120 255 / 0.85)"), grad("#cfcfd6", "#6a6a74 45%", "#2a2a30")),
+    rim: "#08060c",
+    side: ["#3a2a4a", "#08060c"],
+    glow: "rgb(170 90 255 / 0.4)",
+    depth: 10,
+  },
+  // Impetus: once he wins he does not stop, molten copper trails.
+  P121: {
+    font: "speed",
+    fill: layers(speedLines("rgb(255 220 180 / 0.55)"), metal("#ffe6d2", "#e8875a", "#7a2e0a", "#c0602a", "#ffd1b8")),
+    rim: "#1f0800",
+    side: ["#8a3a14", "#1f0800"],
+    angle: 175,
+    slant: 18,
+  },
+  // Katabatic: the wind that falls from the volcano, ash turning to ice.
+  P122: {
+    font: "scifi",
+    fill: layers(speedLines("rgb(255 255 255 / 0.4)"), grad("#ffffff", "#d8ecff 40%", "#8a96a6 70%", "#ff7a2a")),
+    rim: "#0a0c10",
+    side: ["#3a4250", "#0a0c10"],
+    split: ["rgb(200 230 255 / 0.4)", "transparent"],
+    haze: true,
+    slant: -8,
+  },
 };
 
 const FACTION_LOOK: Record<string, Pick<NameStyle, "fill" | "side">> = {

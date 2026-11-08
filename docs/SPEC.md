@@ -129,8 +129,14 @@ Poteri implementati:
 | Nemesi | Semplice | +3 se il personaggio avversario è della fazione opposta (Eroi contro Cattivi). I Neutrali non hanno nemesi e non sono nemesi di nessuno |
 | Tuttofare | Semplice | +3 se tutte le abilità richieste valgono almeno 5, contate dopo Sabotatore |
 | Spia | Semplice | Dopo averlo giocato, il giocatore vede un personaggio a caso che l'avversario non ha ancora giocato. Il server lo estrae una volta sola. Non dà punti |
+| Annullatore | Semplice | Nel round annulla il potere del personaggio avversario: niente bonus, Sabotatore, Implacabile, Riscossa o Slancio per il round dopo, niente rivelazioni di Veggente e Spia. Il bonus già ricevuto dal round prima resta. Due Annullatori si annullano a vicenda |
+| Davide | Semplice | +3 se il personaggio avversario lo supera di almeno 2 gradi di rarità (un Gamma contro Alfa e Omega) |
+| Crescendo | Semplice | +3 se la Minaccia ha un livello più alto di quella del round prima. Mai nel round 1 |
+| Slancio | Distintivo | Se vince il round, il personaggio successivo ottiene +2. È lo specchio di Riscossa; un round nullo non conta |
 
-In Emergenza non c'è un personaggio avversario: Schermato, Nemesi e Spia non hanno effetto, Tuttofare sì.
+In Emergenza non c'è un personaggio avversario: Schermato, Nemesi, Spia, Annullatore e Davide non hanno effetto, Tuttofare e Crescendo sì.
+
+Annullatore, Davide, Crescendo e Slancio sono nati per personaggi nuovi (P115-P122, due per potere), senza togliere poteri alle carte esistenti. Da simulazione sul catalogo a 122 personaggi (20.000 partite Difficile contro Difficile, squadre casuali, con i modificatori), una squadra che ha la carta vince: Slancio 53%, Davide 50%, Annullatore 49%, Crescendo 49%; nelle stesse condizioni Sabotatore 59% e una squadra senza poteri 49%. Con due sole carte, l'Annullatore incontra di rado Sabotatore: da solo non ne riduce la forza media.
 
 ### 4.5 Doppioni
 
@@ -261,6 +267,9 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 | Sabotatore | Abbassa la soglia della Minaccia di 1 per ogni abilità richiesta |
 | Implacabile | Gli basta un punto in meno della soglia |
 | Veggente | Dopo averlo giocato, il giocatore vede tutte le Minacce successive |
+| Slancio | Se supera la Minaccia, il personaggio successivo ottiene il bonus |
+| Crescendo | Bonus se la Minaccia ha un livello più alto della precedente |
+| Annullatore, Davide, Schermato, Nemesi, Spia | Nessun effetto: non c'è un avversario |
 | Gli altri | Come in partita, contando la Minaccia come round: Ultimo baluardo vale dalla 4ª o 5ª all'ultima |
 
 **Soglie:** simulate sul catalogo reale. Con tutta la collezione a disposizione, invece di 8 personaggi, chi ha molte carte supera quasi sempre tutte le Minacce; con la squadra limitata contano di più le scelte. In simulazione lo starter set supera in media 4,3 Minacce e una squadra ben costruita 5,8, con 8 su 8 raro (circa 5%). Misure fatte prima dei budget per rarità (§4.3): lo starter set (tutto Delta) non cambia, le squadre con carte rare ora superano qualche Minaccia in più.
