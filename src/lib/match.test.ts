@@ -1,5 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { pingShowsChange, type MatchPing, type MatchRound, type MatchView } from "./match";
+import { pingShowsChange, switchableVariants, type MatchPing, type MatchRound, type MatchView } from "./match";
+
+describe("switchableVariants", () => {
+  const neon = { id: "n1", name: "Neon" };
+  const neonCopy = { id: "n2", name: "Neon" };
+  const gold = { id: "g1", name: "Oro" };
+
+  it("offers every style the player owns, with a base copy fielded by default", () => {
+    expect(switchableVariants([neon, gold], "base")).toEqual([neon, gold]);
+  });
+
+  it("offers one copy per style, the oldest", () => {
+    expect(switchableVariants([neon, neonCopy, gold], "base")).toEqual([neon, gold]);
+  });
+
+  it("leaves out the style of a default copy that is itself a variant", () => {
+    expect(switchableVariants([neon, neonCopy, gold], "n1")).toEqual([gold]);
+    expect(switchableVariants([neon, neonCopy], "n1")).toEqual([]);
+  });
+
+  it("offers nothing without variant copies", () => {
+    expect(switchableVariants(undefined, "base")).toEqual([]);
+  });
+});
 
 const round = (n: number, patch: Partial<MatchRound> = {}): MatchRound => ({
   round: n,

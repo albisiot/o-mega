@@ -367,6 +367,20 @@ function collectVariantCopy(copies: Map<string, VariantCopy[]>, definitionId: st
 }
 
 /**
+ * The artwork variants a player can field instead of a character's default
+ * copy: one copy per style, the oldest, since copies of a style look the same.
+ * The default copy's own style is left out when that copy is a variant.
+ */
+export function switchableVariants(copies: VariantCopy[] | undefined, defaultId: string | undefined): VariantCopy[] {
+  const defaultStyle = copies?.find((copy) => copy.id === defaultId)?.name;
+  const byStyle = new Map<string, VariantCopy>();
+  for (const copy of copies ?? []) {
+    if (copy.name !== defaultStyle && !byStyle.has(copy.name)) byStyle.set(copy.name, copy);
+  }
+  return [...byStyle.values()];
+}
+
+/**
  * One instance per owned character (any copy works outside Conquest), a base
  * one when there is one. `variantCopies` lists the copies with a variant.
  */

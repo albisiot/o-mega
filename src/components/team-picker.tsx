@@ -8,7 +8,7 @@ import { artSrcSet } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import type { CatalogCard } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
-import { deleteFormation, saveFormation, type Formation, type VariantCopy } from "@/lib/match";
+import { deleteFormation, saveFormation, switchableVariants, type Formation, type VariantCopy } from "@/lib/match";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 
 const LAST_TEAM_KEY = "o-mega.last-team";
@@ -80,9 +80,13 @@ export function TeamPicker(props: TeamPickerProps) {
   );
   const isAtRisk = (definitionId: string) =>
     Boolean(conquerable?.has(definitionId)) || staked.has(definitionId) || variantChoice.has(definitionId);
-  // The variant the player can switch to; none when the default copy already is that one.
-  const switchableVariant = (definitionId: string) =>
-    variantCopies.get(definitionId)?.find((copy) => copy.id !== owned.get(definitionId));
+  // The variants the player can switch to, one per style; none of the default copy's own style.
+  const variantOptions = (definitionId: string) => switchableVariants(variantCopies.get(definitionId), owned.get(definitionId));
+  // The style of the variant copy the player chose to field, if any.
+  const chosenStyle = (definitionId: string) => {
+    const id = variantChoice.get(definitionId);
+    return id ? variantCopies.get(definitionId)?.find((copy) => copy.id === id)?.name : undefined;
+  };
 
   // Conquest: field the pack copy of a character also owned as starter, or back.
   const canStake = (definitionId: string) => Boolean(atRiskCopies?.has(definitionId)) && !variantChoice.has(definitionId);
@@ -95,10 +99,13 @@ export function TeamPicker(props: TeamPickerProps) {
     });
   }
 
+  // Field this variant instead of the default copy or of another variant, or go back to the default copy.
   function toggleVariant(definitionId: string, copy: VariantCopy) {
+    const fielded = chosenStyle(definitionId) === copy.name;
     setVariantChoice((current) => {
       const next = new Map(current);
-      if (!next.delete(definitionId)) next.set(definitionId, copy.id);
+      if (fielded) next.delete(definitionId);
+      else next.set(definitionId, copy.id);
       return next;
     });
     setStaked((current) => {
@@ -190,7 +197,7 @@ export function TeamPicker(props: TeamPickerProps) {
   }
 
   const optionsCard = optionsOf ? byId.get(optionsOf) : null;
-  const optionsVariant = optionsOf ? switchableVariant(optionsOf) : undefined;
+  const optionsVariants = optionsOf ? variantOptions(optionsOf) : [];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -210,7 +217,7 @@ export function TeamPicker(props: TeamPickerProps) {
               </div>
             );
           }
-          const hasOptions = canStake(card.id) || Boolean(switchableVariant(card.id));
+          const hasOptions = canStake(card.id) || variantOptions(card.id).length > 0;
           const mark = variantChoice.has(card.id) ? "★" : staked.has(card.id) ? "Palio" : hasOptions ? "⋯" : null;
           return (
             <button
@@ -462,20 +469,24 @@ export function TeamPicker(props: TeamPickerProps) {
                 {staked.has(optionsCard.id) ? "Doppione in palio: usa la copia starter" : "Metti in palio il doppione"}
               </button>
             )}
-            {optionsVariant && (
-              <button
-                type="button"
-                onClick={() => toggleVariant(optionsCard.id, optionsVariant)}
-                aria-pressed={variantChoice.has(optionsCard.id)}
-                className={`min-h-11 border-2 px-3 text-left text-sm font-bold ${
-                  variantChoice.has(optionsCard.id) ? "border-comic-magenta bg-comic-magenta text-black" : "border-line bg-panel-raised"
-                }`}
-              >
-                {variantChoice.has(optionsCard.id)
-                  ? `★ Variante ${optionsVariant.name} schierata${conquerable ? ": puoi perderla" : ""}`
-                  : `★ Schiera la variante ${optionsVariant.name}`}
-              </button>
-            )}
+            {optionsVariants.map((copy) => {
+              const fielded = chosenStyle(optionsCard.id) === copy.name;
+              return (
+                <button
+                  key={copy.id}
+                  type="button"
+                  onClick={() => toggleVariant(optionsCard.id, copy)}
+                  aria-pressed={fielded}
+                  className={`min-h-11 border-2 px-3 text-left text-sm font-bold ${
+                    fielded ? "border-comic-magenta bg-comic-magenta text-black" : "border-line bg-panel-raised"
+                  }`}
+                >
+                  {fielded
+                    ? `★ Variante ${copy.name} schierata${conquerable ? ": puoi perderla" : ""}`
+                    : `★ Schiera la variante ${copy.name}`}
+                </button>
+              );
+            })}
             <div className="flex gap-2">
               <button
                 type="button"
