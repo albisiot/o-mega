@@ -141,7 +141,7 @@ Squadre avversarie, Minacce e difficoltà si tarano con la simulazione, come nel
 
 ### Capitolo 2 — Il sismografo
 
-*Atto I. Albo* Il sismografo.
+*Atto I. Albo* Il sismografo. *Testi nel database (migrazione `20261109100000_chapter_two_story.sql`); squadre e Minacce tarate con la simulazione (SPEC §5.11).*
 
 - **In una riga:** le scosse sotto la metropolitana non sono casuali, e i Figli dell'Ultima lo sanno già.
 - **Luogo:** la linea che attraversa la necropoli e le gallerie degli scavi.
@@ -152,13 +152,15 @@ Squadre avversarie, Minacce e difficoltà si tarano con la simulazione, come nel
 - **Rivelazione:** Longwave mette in fila le scosse e scopre che seguono l'ordine dell'alfabeto. La Ζ non è sepolta: è nel petto di Xenolith, il cavatore che l'ha trovata e se l'è tenuta. I Figli vogliono estrargliela.
 - **Gancio:** Vera Kross, sconfitta, ride: *"L'Ultima sa già come finisce."* Xenolith sparisce con le Lanterne. La scossa successiva non arriva da uno scavo: arriva dalla torre del Banco.
 
-| # | Missione | Situazione | Carte principali |
+| # | Missione | Situazione | Squadra avversaria (definitiva) |
 |---|---|---|---|
-| 1 | Ultima corsa | Un treno si ferma in galleria e dalle pareti esce la muffa | Patina, Epigone, Falx |
-| 2 | Il cane a tre teste | Qualcuno ha aizzato Cerbero contro chi scende negli scavi | Cerbero, Belladonna, Kiln |
-| 3 | Onde corte | I Figli vogliono la radio di Longwave, che ascolta il sismografo | Lullaby, Credo, Tacet |
-| 4 | Due Reggenti | Il Comune manda anche Ottavia: chi risolve viene pagato | Postmark, Ferryman, Lure |
-| 5 | Chi trova | Vera Kross è arrivata a Xenolith prima di te | Vera Kross, Antiphon, Kiln |
+| 1 | Ultima corsa | Un treno si ferma in galleria e dalle pareti esce la muffa | Patina, Epigone, Falx, Quicklime, Odonate |
+| 2 | Il cane a tre teste | Qualcuno ha aizzato Cerbero contro chi scende negli scavi | Cerbero, Belladonna, Kiln, Cineris, Procura |
+| 3 | Onde corte | I Figli vogliono la radio di Longwave, che ascolta il sismografo | Lullaby, Credo, Tacet, Gazetteer, Epigone |
+| 4 | Due Reggenti | Il Comune manda anche Ottavia: chi risolve viene pagato | Postmark, Ferryman, Lure, Cursor, Sordina |
+| 5 | Chi trova | Vera Kross è arrivata a Xenolith prima di te | Vera Kross, Antiphon, Kiln, Credo, Belladonna |
+
+**Testo finale:** Longwave mette in fila le scosse: seguono l'alfabeto, e dopo l'epsilon toccava alla zeta, che è nel petto di Xenolith. Vera Kross, sconfitta, ride (*"L'Ultima sa già come finisce"*), Xenolith sparisce con le Lanterne, la scossa successiva arriva dalla torre del Banco. Il registro delle lettere (§2) non cambia.
 
 ### Capitolo 3 — Undici piani
 

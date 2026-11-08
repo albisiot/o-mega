@@ -299,6 +299,18 @@ Capitoli di missioni da giocare da soli contro gli avversari di Nuova Megara. La
 
 Squadre e Minacce sono tarate con la simulazione. La prima Minaccia di ogni missione è a tema, le altre sono scelte perché un giocatore con una squadra casuale che manda sempre la carta col punteggio più alto vinca circa l'81%, 57%, 55%, 50% e 34% delle volte. Con i budget per rarità (§4.3) la squadra casuale è più forte e le percentuali diventano circa 87%, 73%, 66%, 52% e 33%: le missioni 2 e 3, con avversari quasi tutti Delta e Gamma, sono più facili di prima. Minacce tutte "a tema", cioè quelle in cui gli avversari sono più forti, rendevano anche la prima missione quasi impossibile (circa 20%).
 
+**Capitolo 2, Il sismografo:**
+
+| Missione | Avversario | Bot | Livelli | Premio |
+|---|---|---|---|---|
+| 1. Ultima corsa | Patina e le nuove reclute (5 Delta) | Medio | 2·1·3·5·4 | 40 monete |
+| 2. Il cane a tre teste | Cerbero e i Figli dell'Ultima | Medio | 4·1·5·2·3 | 50 monete |
+| 3. Onde corte | Lullaby e Credo | Difficile | 2·6·1·4·3 | 60 monete |
+| 4. Due Reggenti | Ottavia e gli Sciolti | Difficile | 2·4·1·6·3 | 70 monete |
+| 5. Chi trova | Vera Kross e i Figli (1 Alfa, Vera Kross) | Super Pro | 1·3·6·2·4 | 90 monete e la carta Vera Kross (Alfa) |
+
+Stesso metodo del Capitolo 1, sul catalogo a 122 personaggi (10.000 partite per missione con il bot Medio, 6.000 con Difficile, 2.800 con Super Pro): il giocatore con la squadra casuale vince circa l'81%, 69%, 61%, 45% e 26% delle volte. Il Capitolo 1, rimisurato nelle stesse condizioni, dà 86%, 74%, 73%, 53% e 29%: ogni missione è un po' più dura della corrispondente, e la prima resta la più facile del capitolo. La prima Minaccia di ogni missione è a tema; i Figli sono forti in mente e magia, e con più Minacce di quel tipo il boss scendeva sotto il 10%.
+
 ## 6. Conquista delle carte
 
 ### 6.1 Regola base
