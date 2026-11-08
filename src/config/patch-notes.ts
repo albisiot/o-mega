@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "9 novembre 2026",
+    changes: [
+      "In partita tieni premuta una carta per vederla intera: nome, rarità, fazione, potere, le 12 abilità e il testo. Vale in ogni modalità, Storia ed Emergenza comprese: per le carte della mano, quelle del risultato del round (anche la carta avversaria), quelle svelate da Spia e quelle della scelta della squadra. Il tocco breve sceglie la carta come prima; la finestra si chiude toccando fuori o con Chiudi.",
+    ],
+  },
+  {
     date: "8 novembre 2026",
     changes: [
       "4 nuovi poteri su 8 nuovi personaggi, da trovare nei pacchetti: Annullatore (annulla il potere del personaggio avversario nel round) con Codicil e Attainder, Davide (+3 contro un personaggio più raro di almeno 2 gradi) con Subsong e Lure, Crescendo (+3 se la Minaccia è di livello più alto della precedente) con Gradus e Xenolith, e Slancio (se vince il round, il prossimo personaggio ha +2) con Impetus e Katabatic.",
