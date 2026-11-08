@@ -303,11 +303,12 @@ Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richi
 
 ### Stagione 1: *Il Rintocco*
 
-1. **Il Reggente:** un novellino riceve la licenza e perde subito la sua lastra migliore.
-2. **Rissa al porto:** i Custodi non bastano più e il Banco ci guadagna.
-3. **Il sismografo:** le scosse seguono uno schema, quello dell'alfabeto.
-4. **Multitude:** il nemico è dentro la testa di chi ti è vicino.
-5. **Mongibello:** i Figli dell'Ultima svegliano il vulcano e l'ultima pagina apre l'espansione.
+La trama, i capitoli e il cast ricorrente sono in `docs/STORY.md`. Ogni capitolo della modalità Storia ha il suo albo; i cinque albi previsti all'inizio sono confluiti lì:
+
+1. **Il Reggente** e **Rissa al porto:** Capitolo 1, *Il porto*.
+2. **Il sismografo:** Capitolo 2.
+3. **Multitude:** Capitolo 4.
+4. **Mongibello:** Capitolo 6, finale di stagione.
 
 ### Formato del copione
 
@@ -332,7 +333,7 @@ RENATA (fuori campo): Però è tuo. Finché non lo perdi.
 - Una vignetta porta una sola azione.
 - Ogni albo presenta 2-3 carte, così chi legge vuole trovarle nei pacchetti.
 - Al massimo 25 parole per vignetta, perché si legge da telefono.
-- Gli albi sono pagine da leggere: una modalità storia non è prevista dalla SPEC e non cambia nessuna regola.
+- Gli albi accompagnano i capitoli della modalità Storia (SPEC §5.11) e non cambiano nessuna regola.
 
 ## 8. Guida di stile delle immagini
 

@@ -101,6 +101,13 @@ export default function StoryPage() {
                 </li>
               ))}
             </ol>
+            {/* The server sends it only once every mission of the chapter is completed. */}
+            {chapter?.outro && (
+              <section className="shrink-0 bg-panel px-3 py-2.5">
+                <p className="text-xs font-extrabold uppercase text-comic-yellow">Com&apos;è finita</p>
+                <p className="mt-1 text-sm font-medium">{chapter.outro}</p>
+              </section>
+            )}
             {allDone && shown === chapters.length - 1 && (
               <p className="text-sm font-semibold text-comic-cyan">
                 Hai finito tutti i capitoli disponibili. Il prossimo arriva presto.

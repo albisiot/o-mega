@@ -278,10 +278,11 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 
 ### 5.11 Storia
 
-Capitoli di missioni da giocare da soli contro gli avversari di Nuova Megara. **Testi segnaposto** finché l'universo non è definito.
+Capitoli di missioni da giocare da soli contro gli avversari di Nuova Megara. La trama dei capitoli è in `docs/STORY.md`; i testi nel database restano **segnaposto** finché non vengono riscritti su quella base.
 
 - **Missione:** una partita contro un bot con squadra, 5 Minacce e modificatori scelti a mano (`story_missions`), non sorteggiati. Il giocatore vede in anticipo solo i livelli, come in ogni partita. Le regole sono quelle di §5.
 - **Ordine:** la prima missione è aperta; ogni altra si apre completando quella prima, anche tra un capitolo e l'altro.
+- **Finale del capitolo:** un testo (`story_chapters.outro`) che il server manda solo a chi ha completato tutte le missioni del capitolo; la pagina Storia lo mostra sotto l'elenco.
 - **Premi solo alla prima vittoria**, pagati dal database nella stessa transazione che chiude la partita: monete a ogni missione, e una carta per il boss di fine capitolo. Le missioni si possono rigiocare senza premi. Sconfitte e abbandoni non pagano.
 - **Carte premio:** copie normali (`acquired_via = 'story'`), conquistabili come quelle dei pacchetti. Mai Omega.
 - Esperienza e statistiche come una partita contro bot. Le squadre avversarie e le Minacce restano segrete: il client legge solo `get_story` e `get_story_reward`.
@@ -293,8 +294,8 @@ Capitoli di missioni da giocare da soli contro gli avversari di Nuova Megara. **
 | 1. Primo incarico | La banda di Foundling (5 Delta) | Facile | 1·2·3·4·5 | 30 monete |
 | 2. Il pugile di vetro | Gli esattori di Cullet | Medio | 1·2·3·4·5 | 40 monete |
 | 3. Blackout | Gli ingegneri di Blackbody | Medio | 1·2·3·4·5 | 50 monete |
-| 4. La notte delle campane | I Figli dell'Ultima | Difficile | 1·2·3·4·5 | 60 monete |
-| 5. Il caveau della Compagnia | Vetrix e la Compagnia Lete (2 Alfa) | Super Pro | 1·2·3·4·6 | 80 monete e la carta Vetrix (Alfa) |
+| 4. Campane a mezzanotte | I Figli dell'Ultima | Difficile | 1·2·3·4·5 | 60 monete |
+| 5. Il caveau | Ottavia e la Compagnia Lete (2 Alfa, tra cui Vetrix) | Super Pro | 1·2·3·4·6 | 80 monete e la carta Vetrix (Alfa) |
 
 Squadre e Minacce sono tarate con la simulazione. La prima Minaccia di ogni missione è a tema, le altre sono scelte perché un giocatore con una squadra casuale che manda sempre la carta col punteggio più alto vinca circa l'81%, 57%, 55%, 50% e 34% delle volte. Con i budget per rarità (§4.3) la squadra casuale è più forte e le percentuali diventano circa 87%, 73%, 66%, 52% e 33%: le missioni 2 e 3, con avversari quasi tutti Delta e Gamma, sono più facili di prima. Minacce tutte "a tema", cioè quelle in cui gli avversari sono più forti, rendevano anche la prima missione quasi impossibile (circa 20%).
 

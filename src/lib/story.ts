@@ -18,7 +18,14 @@ export type StoryMission = {
   unlocked: boolean;
 };
 
-export type StoryChapter = { chapter: number; title: string; intro: string; missions: StoryMission[] };
+export type StoryChapter = {
+  chapter: number;
+  title: string;
+  intro: string;
+  /** How the chapter ends: only once all its missions are completed. */
+  outro: string | null;
+  missions: StoryMission[];
+};
 
 export type StoryReward = {
   mission: string;

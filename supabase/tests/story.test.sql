@@ -26,6 +26,7 @@ begin
   assert jsonb_array_length(v_missions -> 0 -> 'threat_levels') = 5, 'threat levels';
   assert v_missions -> 4 -> 'reward_card' ->> 'code' = 'P051', 'boss card';
   assert not (v_missions -> 0 ? 'bot_definition_ids') and not (v_missions -> 0 ? 'threat_ids'), 'secrets reached the client';
+  assert v_story -> 0 -> 'outro' = 'null'::jsonb, 'ending of a chapter not completed';
 
   begin
     perform count(*) from public.story_missions;
@@ -125,6 +126,7 @@ begin
   assert (v_reward ->> 'coins')::integer = 0 and v_reward -> 'card' = 'null'::jsonb, 'replay paid';
   assert (select bool_and((m ->> 'completed')::boolean) from jsonb_array_elements(public.get_story() -> 0 -> 'missions') as m),
     'chapter not completed';
+  assert public.get_story() -> 0 ->> 'outro' like 'Nel caveau%', 'ending of the completed chapter';
 end $$;
 
 rollback;

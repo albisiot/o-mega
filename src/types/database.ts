@@ -1464,16 +1464,19 @@ export type Database = {
         Row: {
           chapter: number
           intro: string
+          outro: string | null
           title: string
         }
         Insert: {
           chapter: number
           intro: string
+          outro?: string | null
           title: string
         }
         Update: {
           chapter?: number
           intro?: string
+          outro?: string | null
           title?: string
         }
         Relationships: []
