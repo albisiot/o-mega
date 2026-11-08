@@ -365,6 +365,12 @@ Dopo **60 secondi** in coda Conquista senza avversari, il giocatore sfida un bot
 - Apertura animata: carte rivelate una alla volta, animazione speciale per Alfa, Omega e varianti (§4.6).
 - Le carte vengono inserite automaticamente nella collezione.
 
+**Carte nei pacchetti.** Ogni personaggio ha il flag `card_definitions.in_packs` (di default sì): un pacchetto pesca solo le carte attive, non da sblocco di livello e con il flag attivo (`is_pack_card`). Serve per tenere da parte personaggi nuovi o di eventi, che si possono comunque dare con un codice bonus (§8.1). Le varianti seguono la loro carta. Le carte da sblocco di livello restano fuori dai pacchetti qualunque sia il flag; le carte premio della Storia e quelle dei bot invece sono normali carte da pacchetto finché non si toglie la spunta.
+
+- **Rarità senza carte:** se tutte le carte di una rarità sono escluse, quella rarità non si pesca e il suo peso si ridistribuisce sulle altre in proporzione. Le probabilità del Negozio vengono dalla stessa funzione (`eligible_rarities`), quindi mostrano sempre quelle vere: cambiano solo in questo caso. La garanzia resta "almeno una carta di rango Gamma o superiore", scelta tra le rarità rimaste.
+- **Limite:** il server rifiuta una modifica che lascerebbe i pacchetti senza nessuna carta di rango Gamma o superiore (`pack_pool_empty`), perché nessun pacchetto si potrebbe aprire.
+- **Gestione dall'app:** gli amministratori (`admin_users`) trovano in fondo all'informativa sulla privacy, accanto a *Gestione codici*, il link *Carte nei pacchetti* (`/gestione-pacchetti`): elenco di tutte le carte per rarità con miniatura, nome e codice, ricerca, spunta "Nei pacchetti" e i comandi "Seleziona tutte" / "Deseleziona tutte" per rarità, con il conteggio delle carte attive. Il flag cambia solo con la funzione `admin_set_cards_in_packs`, che verifica l'amministratore.
+
 ## 8. Economia
 
 *Valori ancora da decidere: i numeri sotto sono provvisori, servono solo per far funzionare l'MVP e vanno tenuti in configurazione.*
