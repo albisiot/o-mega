@@ -2,6 +2,7 @@ import { Silhouette } from "@/components/card-view";
 import { artSrcSet } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
+import { LONG_PRESS_CLASS, type LongPressHandlers } from "@/lib/use-long-press";
 
 const SCORE_TONES = { pass: "text-comic-cyan", fail: "text-faint" } as const;
 
@@ -21,21 +22,24 @@ type HandCardProps = {
   selected: boolean;
   disabled: boolean;
   onSelect: () => void;
+  /** Long-press handlers that open the card's detail; a tap still selects it. */
+  press?: LongPressHandlers;
 };
 
 /** A card in the hand of the choice phase: portrait art, name and the predicted score. */
-export function HandCard({ card, score, bonus, tone, note, short = false, artSizes, selected, disabled, onSelect }: HandCardProps) {
+export function HandCard({ card, score, bonus, tone, note, short = false, artSizes, selected, disabled, onSelect, press }: HandCardProps) {
   const outcome = tone === "pass" ? ", la supera" : tone === "fail" ? ", non basta" : "";
   return (
     <button
       type="button"
+      {...press}
       onClick={onSelect}
       disabled={disabled}
       aria-pressed={selected}
       aria-label={`${card.name}, ${score} punti${bonus ? `, ${bonus > 0 ? "+" : ""}${bonus} ${bonus > 0 ? "bonus" : "malus"}` : ""}${outcome}${
         note ? `, ${note}` : ""
       }`}
-      className={`relative flex w-full min-w-0 flex-col border-[3px] bg-panel text-left ${
+      className={`relative flex w-full min-w-0 flex-col border-[3px] bg-panel text-left ${LONG_PRESS_CLASS} ${
         selected ? "-translate-y-1.5 border-comic-yellow shadow-[4px_4px_0_var(--comic-magenta)]" : "border-panel-raised"
       }`}
     >

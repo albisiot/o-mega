@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import type { BotDifficulty } from "@o-mega/game-engine";
 import { useRequireSignedIn } from "@/components/auth-provider";
+import { CardDetailProvider } from "@/components/card-detail";
 import { LoadingScreen } from "@/components/loading-screen";
 import { TeamPicker } from "@/components/team-picker";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
@@ -183,20 +184,23 @@ function TeamPageContent() {
           </p>
         )}
         {loaded ? (
-          <TeamPicker
-            catalog={loaded.catalog}
-            owned={loaded.owned}
-            conquerable={loaded.conquerable}
-            atRiskCopies={loaded.atRiskCopies}
-            variantCopies={loaded.variantCopies}
-            instanceDefinitions={loaded.instanceDefinitions}
-            formations={loaded.formations}
-            onFormationsChanged={(formations) => setLoaded({ ...loaded, formations })}
-            startLabel={COPY[mode.kind].start(mode)}
-            starting={starting}
-            onStart={start}
-            intro="Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello basso e i generalisti per quelle alte."
-          />
+          // A long press on a card shows it whole (CardDetailProvider).
+          <CardDetailProvider>
+            <TeamPicker
+              catalog={loaded.catalog}
+              owned={loaded.owned}
+              conquerable={loaded.conquerable}
+              atRiskCopies={loaded.atRiskCopies}
+              variantCopies={loaded.variantCopies}
+              instanceDefinitions={loaded.instanceDefinitions}
+              formations={loaded.formations}
+              onFormationsChanged={(formations) => setLoaded({ ...loaded, formations })}
+              startLabel={COPY[mode.kind].start(mode)}
+              starting={starting}
+              onStart={start}
+              intro="Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello basso e i generalisti per quelle alte. Con una pressione lunga su una carta la vedi intera."
+            />
+          </CardDetailProvider>
         ) : (
           !error && <LoadingScreen label="Caricamento della collezione…" />
         )}

@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useCardDetail } from "@/components/card-detail";
 import { CardView } from "@/components/card-view";
 import { CardZoom, MAGNIFIER, PrizeCard, ZoomHint } from "@/components/card-zoom";
 import { balance } from "@/config/balance";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
 import { claimConquestCard, type ConquestState, type MatchView } from "@/lib/match";
+import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
 import { useSecondsLeft } from "@/lib/use-now";
 
 type ConquestProps = {
@@ -116,6 +118,7 @@ export function ConquestPick({
   const deadline = useConquestDeadline(matchId, conquest, offset, onUpdate);
 
   const options = conquest.offered ?? [];
+  const detail = useCardDetail();
   const chosen = options.find((card) => card.eligible && card.instance_id === selected);
 
   async function pick() {
@@ -158,6 +161,7 @@ export function ConquestPick({
               <li key={card.instance_id} className="min-h-0">
                 <button
                   type="button"
+                  {...detail.press(card)}
                   disabled={!card.eligible || busy}
                   onClick={() => {
                     setSelected(card.instance_id);
@@ -165,7 +169,7 @@ export function ConquestPick({
                   }}
                   aria-pressed={isSelected}
                   aria-label={card.eligible ? card.name : `${card.name}, non conquistabile`}
-                  className={`relative h-full w-full rounded-xl text-left disabled:opacity-35 ${
+                  className={`relative h-full w-full rounded-xl text-left disabled:opacity-35 ${LONG_PRESS_CLASS} ${
                     isSelected ? "-rotate-1 shadow-[0_0_0_3px_var(--comic-yellow),5px_5px_0_3px_var(--comic-magenta)]" : ""
                   }`}
                 >

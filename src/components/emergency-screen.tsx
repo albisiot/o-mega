@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { resolveEmergencyPlay, type AbilityFamilies, type EmergencyRules } from "@o-mega/game-engine";
+import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { Silhouette } from "@/components/card-view";
 import { BackLink, ComicBurst } from "@/components/comic-parts";
 import { HandCard } from "@/components/hand-card";
@@ -31,9 +32,19 @@ import { describeServerError } from "@/lib/errors";
 import { fetchInstanceDefinitions, fetchOwnedInstances, toCharacter, type VariantCopy } from "@/lib/match";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { useLockedScreen } from "@/lib/use-locked-screen";
+import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
 
 /** Today's challenge from the levels to the final result. */
 export function EmergencyScreen({ initial }: { initial: EmergencyView }) {
+  // A long press on any card the challenge shows opens its detail, over every step.
+  return (
+    <CardDetailProvider>
+      <EmergencySteps initial={initial} />
+    </CardDetailProvider>
+  );
+}
+
+function EmergencySteps({ initial }: { initial: EmergencyView }) {
   const [view, setView] = useState(initial);
   const [revealing, setRevealing] = useState<EmergencyPlay | null>(null);
   const [abilities, setAbilities] = useState<AbilityInfo[]>([]);
@@ -224,7 +235,7 @@ function Briefing({
       <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pt-1.5">
         <p className="text-xs font-medium text-muted">
           Scegli {size} personaggi diversi guardando i livelli qui sopra: ognuno affronterà una sola Minaccia. Una volta
-          iniziata, la squadra non si cambia e il tentativo di oggi è quello.
+          iniziata, la squadra non si cambia e il tentativo di oggi è quello. Tieni premuta una carta per vederla intera.
         </p>
         {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
         {collection ? (
@@ -317,6 +328,7 @@ function ChoosePhase({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const threat = run.current_threat!;
+  const detail = useCardDetail();
 
   const families: AbilityFamilies = useMemo(
     () => Object.fromEntries(abilities.map((a) => [a.code, a.family.code])),
@@ -441,6 +453,7 @@ function ChoosePhase({
             selected={card.instance_id === selected}
             disabled={busy}
             onSelect={() => setSelected(card.instance_id)}
+            press={detail.press(card)}
           />
         ))}
       </div>
@@ -483,7 +496,7 @@ function ChoosePhase({
             </>
           ) : (
             <p className="flex items-center justify-between gap-2 pt-1 text-sm font-semibold text-muted">
-              Tocca una carta per vederne abilità e potere.
+              Tocca una carta per sceglierla, tienila premuta per vederla intera.
               <InfoTip text={previewNote} />
             </p>
           )}
@@ -508,12 +521,14 @@ function PlayReveal({
   onContinue: () => void;
 }) {
   const card = run.squad.find((c) => c.instance_id === play.instance_id);
+  const detail = useCardDetail();
   // The outcome takes the room above the button, like the threat while choosing.
   return (
     <>
       <main className="flex min-h-0 flex-1 flex-col gap-3 px-3 pt-1">
         <section
-          className={`cut-bottom relative flex min-h-0 flex-1 flex-col items-center justify-center gap-2 overflow-hidden px-4 pb-8 pt-5 text-center text-black ${
+          {...(card ? detail.press(card) : {})}
+          className={`cut-bottom relative flex min-h-0 flex-1 flex-col items-center justify-center gap-2 overflow-hidden px-4 pb-8 pt-5 text-center text-black ${LONG_PRESS_CLASS} ${
             play.passed ? "bg-comic-cyan" : "halftone bg-comic-magenta"
           }`}
         >
@@ -553,6 +568,7 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
   const { board, failed } = useLeaderboard();
   const complete = run.passed === rules.threats_per_run;
   const cardOf = (instanceId: string) => run.squad.find((c) => c.instance_id === instanceId);
+  const detail = useCardDetail();
 
   // The outcome keeps its size; the day and the ranking share the room left, one tab at a time.
   return (
@@ -600,7 +616,11 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
               {run.plays.map((play) => {
                 const card = cardOf(play.instance_id);
                 return (
-                  <li key={play.round} className="flex h-9 items-center gap-2.5 bg-panel pr-3 text-[13px] font-semibold">
+                  <li
+                    key={play.round}
+                    {...(card ? detail.press(card) : {})}
+                    className={`flex h-9 items-center gap-2.5 bg-panel pr-3 text-[13px] font-semibold ${LONG_PRESS_CLASS}`}
+                  >
                     <span aria-hidden className="relative h-full w-8 shrink-0 overflow-hidden bg-panel-raised">
                       {card?.art_url ? (
                         // eslint-disable-next-line @next/next/no-img-element

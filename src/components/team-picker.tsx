@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useCardDetail } from "@/components/card-detail";
 import { Silhouette } from "@/components/card-view";
 import { InfoTip } from "@/components/info-tip";
 import { balance } from "@/config/balance";
@@ -10,6 +11,7 @@ import type { CatalogCard } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
 import { deleteFormation, saveFormation, switchableVariants, type Formation, type VariantCopy } from "@/lib/match";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
+import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
 
 const LAST_TEAM_KEY = "o-mega.last-team";
 
@@ -60,6 +62,8 @@ export function TeamPicker(props: TeamPickerProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   // The squad slot whose choices (Conquest stake, artwork variant) are open: a definition id.
   const [optionsOf, setOptionsOf] = useState<string | null>(null);
+  // A long press on a card, in the squad or in the list, shows it whole without picking it.
+  const detail = useCardDetail();
 
   const cards = useMemo(
     () =>
@@ -223,9 +227,10 @@ export function TeamPicker(props: TeamPickerProps) {
             <button
               key={i}
               type="button"
+              {...detail.press(card)}
               onClick={() => (hasOptions ? setOptionsOf(card.id) : toggle(card.id))}
               aria-label={hasOptions ? `${card.name}: scelte` : `Togli ${card.name}`}
-              className={`relative ${height} min-w-0 -skew-x-8 overflow-hidden border-2 bg-panel-raised`}
+              className={`relative ${height} min-w-0 -skew-x-8 overflow-hidden border-2 bg-panel-raised ${LONG_PRESS_CLASS}`}
               style={{ borderColor: card.rarity.color }}
             >
               {card.art_url && (
@@ -366,9 +371,10 @@ export function TeamPicker(props: TeamPickerProps) {
               <li key={card.id} className="min-w-0">
                 <button
                   type="button"
+                  {...detail.press(card)}
                   onClick={() => toggle(card.id)}
                   aria-pressed={position >= 0}
-                  className={`relative flex w-full flex-col border-[3px] bg-panel text-left ${
+                  className={`relative flex w-full flex-col border-[3px] bg-panel text-left ${LONG_PRESS_CLASS} ${
                     position >= 0 ? "shadow-[4px_4px_0_var(--comic-magenta)]" : ""
                   }`}
                   style={{ borderColor: position >= 0 ? "var(--comic-yellow)" : card.rarity.color }}

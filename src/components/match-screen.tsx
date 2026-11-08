@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   abilityMalusFrom,
   immuneToSabotage,
@@ -10,6 +10,7 @@ import {
   type AbilityFamilies,
   type ThreatModifier,
 } from "@o-mega/game-engine";
+import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { Silhouette } from "@/components/card-view";
 import { ComicBurst } from "@/components/comic-parts";
 import { ConquestPanel, ConquestPick, SecondsLeft } from "@/components/conquest-panel";
@@ -44,6 +45,7 @@ import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { carriedInto, outcomeOf, playedBefore, roundPowerNotes, wasNullified, type PowerNote } from "@/lib/round-powers";
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { useLockedScreen } from "@/lib/use-locked-screen";
+import { LONG_PRESS_CLASS, type LongPressHandlers } from "@/lib/use-long-press";
 import { useNow, useSecondsLeft } from "@/lib/use-now";
 
 type TeamCard = MatchView["my_team"][number];
@@ -78,7 +80,16 @@ function lastResolvedRound(view: MatchView): number {
 }
 
 /** A match (against a bot or a player) from the first threat to the final result. */
-export function MatchScreen({ initial, story = false }: { initial: MatchView; story?: boolean }) {
+export function MatchScreen(props: { initial: MatchView; story?: boolean }) {
+  // A long press on any card the match shows opens its detail, over every step.
+  return (
+    <CardDetailProvider>
+      <MatchSteps {...props} />
+    </CardDetailProvider>
+  );
+}
+
+function MatchSteps({ initial, story = false }: { initial: MatchView; story?: boolean }) {
   const [view, setView] = useState(initial);
   // Server time minus device time: countdowns follow the server clock.
   const [offset, setOffset] = useState(() => Date.parse(initial.server_now) - Date.now());
@@ -412,6 +423,7 @@ function LevelTrack({ view, opponentName, abilities }: { view: MatchView; oppone
   const openRound = open === null ? null : open + 1;
   const openPlay = openRound === null ? null : view.rounds.find((r) => r.round === openRound)?.opponent_play ?? null;
   const openThreat = openRound === null ? null : view.foreseen_threats?.find((t) => t.round === openRound) ?? null;
+  const detail = useCardDetail();
 
   return (
     <>
@@ -455,10 +467,12 @@ function LevelTrack({ view, opponentName, abilities }: { view: MatchView; oppone
               {played || foreseen ? (
                 <button
                   type="button"
+                  // A long press on the opponent's thumbnail shows that card whole.
+                  {...(played ? detail.press(played) : {})}
                   onClick={() => setOpen(open === i ? null : i)}
                   aria-expanded={open === i}
                   aria-label={label}
-                  className={cell}
+                  className={`${cell} ${LONG_PRESS_CLASS}`}
                 >
                   {marks}
                 </button>
@@ -570,6 +584,7 @@ function ChoosePhase({
   // Spia: the revealed characters the opponent still holds.
   const opponentPlayedIds = new Set(view.rounds.map((r) => r.opponent_play?.definition_id).filter(Boolean));
   const spiedLeft = (view.spied_cards ?? []).filter((card) => !opponentPlayedIds.has(card.definition_id));
+  const detail = useCardDetail();
 
   return (
     <main className="flex min-h-0 flex-1 flex-col">
@@ -609,7 +624,23 @@ function ChoosePhase({
           {carried > 0 && <p className="mt-1.5 text-xs font-bold">Riscossa: +{carried} al personaggio di questo round.</p>}
           {spiedLeft.length > 0 && (
             <p className="mt-1.5 text-xs font-bold">
-              Spia: {opponentName} ha ancora {spiedLeft.map((card) => card.name).join(" e ")}.
+              Spia: {opponentName} ha ancora{" "}
+              {spiedLeft.map((card, index) => (
+                <Fragment key={card.definition_id}>
+                  {index > 0 && " e "}
+                  {/* A tap has nothing else to do here: it opens the card's detail too. */}
+                  <button
+                    type="button"
+                    {...detail.press(card)}
+                    onClick={() => detail.open(card)}
+                    aria-haspopup="dialog"
+                    className={`font-extrabold underline decoration-dotted underline-offset-2 ${LONG_PRESS_CLASS}`}
+                  >
+                    {card.name}
+                  </button>
+                </Fragment>
+              ))}
+              .
             </p>
           )}
           {!isBot && (
@@ -633,6 +664,7 @@ function ChoosePhase({
               selected={card.instance_id === selected}
               disabled={busy}
               onSelect={() => onSelect(card.instance_id)}
+              press={detail.press(card)}
             />
           </div>
         ))}
@@ -669,7 +701,7 @@ function ChoosePhase({
             </>
           ) : (
             <p className="flex items-center justify-between gap-2 pt-1 text-sm font-semibold text-muted">
-              Tocca una carta per vederne abilità e potere.
+              Tocca una carta per sceglierla, tienila premuta per vederla intera.
               <InfoTip text={previewNote} />
             </p>
           )}
@@ -809,6 +841,7 @@ function RoundReveal({
 }) {
   const mine = team.find((card) => card.instance_id === round.my_play?.instance_id);
   const theirs = round.opponent_play;
+  const detail = useCardDetail();
   // Read out to screen readers: on screen, SBAM! next to a score says who won.
   const banner = { me: "Round vinto!", opponent: "Round perso", none: "Round nullo" }[round.winner ?? "none"];
   const winnerCard = round.winner === "me" ? mine : round.winner === "opponent" ? theirs : null;
@@ -879,6 +912,7 @@ function RoundReveal({
           side="left"
           won={round.winner === "me"}
           notes={myNotes}
+          press={mine ? detail.press(mine) : undefined}
         />
       </section>
 
@@ -921,6 +955,7 @@ function RoundReveal({
           side="right"
           won={round.winner === "opponent"}
           notes={theirNotes}
+          press={theirs ? detail.press(theirs) : undefined}
         />
         <div className="relative mt-2 flex flex-col gap-1.5">
           {round.modifier && (
@@ -1005,6 +1040,7 @@ function PlaySide({
   side,
   won,
   notes,
+  press,
 }: {
   label: string;
   card: MatchCard | null;
@@ -1015,10 +1051,12 @@ function PlaySide({
   won: boolean;
   /** What the card's power did this round (dimmed when it did nothing). */
   notes: PowerNote[];
+  /** A long press on this side shows the card whole; a tap still goes on. */
+  press?: LongPressHandlers;
 }) {
   const isLeft = side === "left";
   return (
-    <div className={`relative flex ${isLeft ? "justify-start" : "justify-end text-right"}`}>
+    <div {...press} className={`relative flex ${isLeft ? "justify-start" : "justify-end text-right"} ${LONG_PRESS_CLASS}`}>
       {/* The art grows with the screen: 23% of its height, at most the old 176 px. Even then the
           drawing is at most 128 px wide, so the thumbnail the hand already loaded does. */}
       {card && (
@@ -1105,6 +1143,7 @@ function MatchResult({
   const cardOf = (instanceId: string | null | undefined) => view.my_team.find((c) => c.instance_id === instanceId);
   const storyReward = useStoryReward(view.id, story);
   const conquest = view.conquest;
+  const detail = useCardDetail();
 
   // A Conquest or a mission has more to tell: the banner gets compact, its rows on one line.
   // A card won or lost then takes the room left; otherwise the banner does.
@@ -1211,9 +1250,14 @@ function MatchResult({
                   aria-label={`Round ${r.round}: ${mine?.name ?? "—"} contro ${r.opponent_play?.name ?? "—"}, ${
                     r.my_play?.score ?? "—"
                   } a ${r.opponent_play?.score ?? "—"}`}
-                  className="flex min-w-0 flex-col text-center"
+                  className={`flex min-w-0 flex-col text-center ${LONG_PRESS_CLASS}`}
                 >
-                  <span aria-hidden className={`relative block aspect-square overflow-hidden border-[3px] bg-panel-raised ${frame}`}>
+                  {/* A long press on the tile shows your card whole; on "vs", the opponent's. */}
+                  <span
+                    aria-hidden
+                    {...(mine ? detail.press(mine) : {})}
+                    className={`relative block aspect-square overflow-hidden border-[3px] bg-panel-raised ${frame}`}
+                  >
                     {mine?.art_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -1244,7 +1288,11 @@ function MatchResult({
                   <span aria-hidden className={`font-display text-lg leading-5 ${tone}`}>
                     {r.my_play?.score}–{r.opponent_play?.score}
                   </span>
-                  <span aria-hidden className="truncate text-[10.5px] font-bold text-muted">
+                  <span
+                    aria-hidden
+                    {...(r.opponent_play ? detail.press(r.opponent_play) : {})}
+                    className="truncate text-[10.5px] font-bold text-muted"
+                  >
                     vs {r.opponent_play?.name ?? "—"}
                   </span>
                 </li>
