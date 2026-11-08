@@ -15,7 +15,12 @@ export type ScoreContext = {
   abilityMalus?: number;
   /** The opposing character of this round, when it is known (the server resolving a round). */
   opponent?: Character;
+  /** Level of the previous round's threat; none in the first round (Crescendo). */
+  previousLevel?: number;
 };
+
+/** How a round ended for one side: a void round is neither won nor lost. */
+export type PlayOutcome = "won" | "lost" | "void";
 
 function numberParam(character: Character, key: string): number {
   const value = Number(character.power?.params[key]);
@@ -82,6 +87,19 @@ export function isNemesisOf(character: Character, opponentFaction: string): bool
   return NEMESIS[character.faction] === opponentFaction;
 }
 
+/** Annullatore: the opposing character's power does not act in this round. */
+export function nullifiesPower(character: Character): boolean {
+  return character.power?.code === "nullifier";
+}
+
+/**
+ * The character as it plays against `opponent`: without its power when the
+ * opponent is an Annullatore. Two Annullatori cancel each other.
+ */
+export function asPlayedAgainst(character: Character, opponent: Character | null | undefined): Character {
+  return opponent && nullifiesPower(opponent) && character.power ? { ...character, power: null } : character;
+}
+
 /** Veggente: once played, its side sees every threat of the following rounds. */
 export function revealsFutureThreats(character: Character): boolean {
   return character.power?.code === "foresight";
@@ -123,7 +141,15 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
         ? numberParam(character, "bonus")
         : 0;
     }
+    case "giant_slayer":
+      return context.opponent && context.opponent.rarityRank - character.rarityRank >= numberParam(character, "min_gap")
+        ? numberParam(character, "bonus")
+        : 0;
+    case "crescendo":
+      return context.previousLevel !== undefined && threat.level > context.previousLevel ? numberParam(character, "bonus") : 0;
     case "comeback": // acts after the round: see carriedBonusAfter
+    case "momentum": // acts after the round: see carriedBonusAfter
+    case "nullifier": // acts on the opposing character: see asPlayedAgainst
     case "sabotage": // acts on the opposing character: see abilityMalusFrom
     case "foresight": // gives information, not points: see revealsFutureThreats
     case "relentless": // acts on ties: see compareScores
@@ -153,11 +179,15 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
 }
 
 /**
- * Riscossa: when a character with "comeback" loses its round, the next
- * character of the same side gets the bonus. A void round is not a loss.
+ * Bonus the next character of the same side gets: Riscossa after a lost round,
+ * Slancio after a won one. A void round is neither. Pass the character as it
+ * played (asPlayedAgainst): an Annullatore stops the bonus too.
  */
-export function carriedBonusAfter(character: Character, lost: boolean): number {
-  return lost && character.power?.code === "comeback" ? numberParam(character, "bonus") : 0;
+export function carriedBonusAfter(character: Character, outcome: PlayOutcome): number {
+  const code = character.power?.code;
+  if (code === "comeback" && outcome === "lost") return numberParam(character, "bonus");
+  if (code === "momentum" && outcome === "won") return numberParam(character, "bonus");
+  return 0;
 }
 
 /** Higher total wins; then Implacabile; then the higher single required value; otherwise void (SPEC §5.6). */

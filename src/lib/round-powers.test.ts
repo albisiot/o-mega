@@ -55,9 +55,41 @@ describe("roundPowerNotes", () => {
 describe("carriedInto", () => {
   it("passes Riscossa on only after a lost round", () => {
     const comeback = card({ code: "comeback", params: { bonus: 2 }, name: "Riscossa", text: "" });
-    expect(carriedInto(comeback, true)).toBe(2);
-    expect(carriedInto(comeback, false)).toBe(0);
-    expect(carriedInto(null, true)).toBe(0);
+    expect(carriedInto(comeback, "lost")).toEqual({ points: 2, from: "Riscossa" });
+    expect(carriedInto(comeback, "won").points).toBe(0);
+    expect(carriedInto(null, "lost").points).toBe(0);
+  });
+
+  it("passes Slancio on only after a won round, and nothing past an Annullatore", () => {
+    const momentum = card({ code: "momentum", params: { bonus: 2 }, name: "Slancio", text: "" });
+    const nullifier = card({ code: "nullifier", params: {}, name: "Annullatore", text: "" });
+    expect(carriedInto(momentum, "won")).toEqual({ points: 2, from: "Slancio" });
+    expect(carriedInto(momentum, "void").points).toBe(0);
+    expect(carriedInto(momentum, "won", nullifier).points).toBe(0);
+  });
+});
+
+describe("roundPowerNotes for Annullatore and Slancio", () => {
+  it("dims a power an Annullatore took away, and tells what the Annullatore did", () => {
+    const opener = card({ code: "opener", params: { bonus: 3, max_round: 2 }, name: "Apripista", text: "" });
+    expect(roundPowerNotes(opener, { bonus: 0 }, threat, { ...calm, nullified: true })).toEqual([
+      { name: "Apripista", effect: "annullato", active: false },
+    ]);
+    const nullifier = card({ code: "nullifier", params: {}, name: "Annullatore", text: "" });
+    expect(roundPowerNotes(nullifier, { bonus: 0 }, threat, { ...calm, opponentHasPower: true })[0]).toMatchObject({
+      effect: "annulla il potere rivale",
+      active: true,
+    });
+    expect(roundPowerNotes(nullifier, { bonus: 0 }, threat, calm)[0].active).toBe(false);
+  });
+
+  it("names the power that passed the bonus", () => {
+    const momentum = card({ code: "momentum", params: { bonus: 2 }, name: "Slancio", text: "" });
+    expect(roundPowerNotes(momentum, { bonus: 0 }, threat, { ...calm, won: true })[0].effect).toBe("+2 al prossimo");
+    const plain = card(null);
+    expect(roundPowerNotes(plain, { bonus: 2 }, threat, { ...calm, carried: 2, carriedFrom: "Slancio" })).toEqual([
+      { name: "Slancio", effect: "+2", active: true },
+    ]);
   });
 });
 

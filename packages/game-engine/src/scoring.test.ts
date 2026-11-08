@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   abilityMalusFrom,
+  asPlayedAgainst,
   carriedBonusAfter,
   compareScores,
   revealsFutureThreats,
@@ -163,9 +164,17 @@ describe("new powers", () => {
 describe("carriedBonusAfter", () => {
   it("gives Riscossa's bonus only after a lost round", () => {
     const hero = character("h", {}, { code: "comeback", params: { bonus: 2 } });
-    expect(carriedBonusAfter(hero, true)).toBe(2);
-    expect(carriedBonusAfter(hero, false)).toBe(0);
-    expect(carriedBonusAfter(character("x"), true)).toBe(0);
+    expect(carriedBonusAfter(hero, "lost")).toBe(2);
+    expect(carriedBonusAfter(hero, "won")).toBe(0);
+    expect(carriedBonusAfter(character("x"), "lost")).toBe(0);
+  });
+
+  it("gives Slancio's bonus only after a won round, and nothing after a void one", () => {
+    const hero = character("h", {}, { code: "momentum", params: { bonus: 2 } });
+    expect(carriedBonusAfter(hero, "won")).toBe(2);
+    expect(carriedBonusAfter(hero, "lost")).toBe(0);
+    expect(carriedBonusAfter(hero, "void")).toBe(0);
+    expect(carriedBonusAfter({ ...hero, power: { code: "comeback", params: { bonus: 2 } } }, "void")).toBe(0);
   });
 });
 
@@ -222,5 +231,40 @@ describe("Schermato, Nemesi, Tuttofare and Spia", () => {
     expect(revealsOpponentCharacter(spy)).toBe(true);
     expect(revealsOpponentCharacter(character("x"))).toBe(false);
     expect(scorePlay(spy, two, context).bonus).toBe(0);
+  });
+});
+
+describe("Annullatore, Davide, Crescendo and Slancio", () => {
+  const two = threat("t", ["FOR", "VEL"]);
+
+  it("Annullatore takes away the opposing power, and two of them cancel each other", () => {
+    const nullifier = character("n", {}, { code: "nullifier", params: {} });
+    const specialist = character("s", {}, { code: "ability_bonus", params: { ability: "FOR", bonus: 2 } });
+    expect(asPlayedAgainst(specialist, nullifier).power).toBeNull();
+    expect(asPlayedAgainst(specialist, character("x"))).toBe(specialist);
+    expect(asPlayedAgainst(specialist, undefined)).toBe(specialist);
+    expect(asPlayedAgainst(nullifier, { ...nullifier, id: "m" }).power).toBeNull();
+    expect(scorePlay(nullifier, two, { ...context, opponent: specialist }).bonus).toBe(0);
+  });
+
+  it("Davide pays against a character at least two ranks rarer", () => {
+    const slayer = { ...character("d", {}, { code: "giant_slayer", params: { bonus: 3, min_gap: 2 } }), rarityRank: 2 };
+    expect(scorePlay(slayer, two, { ...context, opponent: { ...character("a"), rarityRank: 4 } }).bonus).toBe(3);
+    expect(scorePlay(slayer, two, { ...context, opponent: { ...character("o"), rarityRank: 5 } }).bonus).toBe(3);
+    expect(scorePlay(slayer, two, { ...context, opponent: { ...character("b"), rarityRank: 3 } }).bonus).toBe(0);
+    expect(scorePlay(slayer, two, context).bonus).toBe(0);
+  });
+
+  it("Crescendo pays when the threat is higher than the previous one, never in the first round", () => {
+    const rising = character("c", {}, { code: "crescendo", params: { bonus: 3 } });
+    expect(scorePlay(rising, two, { ...context, previousLevel: 1 }).bonus).toBe(3);
+    expect(scorePlay(rising, two, { ...context, previousLevel: 2 }).bonus).toBe(0);
+    expect(scorePlay(rising, two, { ...context, previousLevel: 5 }).bonus).toBe(0);
+    expect(scorePlay(rising, two, context).bonus).toBe(0);
+  });
+
+  it("Slancio gives no points in its own round", () => {
+    const momentum = character("m", {}, { code: "momentum", params: { bonus: 2 } });
+    expect(scorePlay(momentum, two, context).bonus).toBe(0);
   });
 });

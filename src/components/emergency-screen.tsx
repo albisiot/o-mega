@@ -329,10 +329,13 @@ function ChoosePhase({
     threatLevels: { ...balance.match.threatLevels, ...balance.emergency.threatLevels },
   };
   const squad = run.squad.map((card) => toCharacter(card, card.instance_id));
-  const attempts = run.plays.map((play) => ({
-    character: squad.find((c) => c.id === play.instance_id)!,
-    passed: play.passed,
-  }));
+  const attempts = [...run.plays]
+    .sort((a, b) => a.round - b.round)
+    .map((play) => ({
+      character: squad.find((c) => c.id === play.instance_id)!,
+      passed: play.passed,
+      level: play.level,
+    }));
   const previews = run.squad
     .filter((card) => card.played_round === null)
     .map((card) => ({

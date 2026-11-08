@@ -80,22 +80,22 @@ describe("resolveEmergencyPlay", () => {
   it("Riscossa carries its bonus only after a failed threat", () => {
     const comeback = withPower({ code: "comeback", params: { bonus: 3 } });
     const next = character("next", { FOR: 4 });
-    expect(resolve(next, FOR_THREAT, [{ character: comeback, passed: false }]).score.bonus).toBe(3);
-    expect(resolve(next, FOR_THREAT, [{ character: comeback, passed: true }]).score.bonus).toBe(0);
+    expect(resolve(next, FOR_THREAT, [{ character: comeback, passed: false, level: 1 }]).score.bonus).toBe(3);
+    expect(resolve(next, FOR_THREAT, [{ character: comeback, passed: true, level: 1 }]).score.bonus).toBe(0);
   });
 
   it("Sfavorito counts failures as rounds lost", () => {
     const hero = withPower({ code: "underdog", params: { bonus: 2 } });
     const other = character("other");
-    const failed = [{ character: other, passed: false }];
-    const even = [...failed, { character: other, passed: true }];
+    const failed = [{ character: other, passed: false, level: 1 }];
+    const even = [...failed, { character: other, passed: true, level: 1 }];
     expect(resolve(hero, FOR_THREAT, failed).score.bonus).toBe(2);
     expect(resolve(hero, FOR_THREAT, even).score.bonus).toBe(0);
   });
 
   it("Apripista and Ultimo baluardo read the position in the run", () => {
     const other = character("other");
-    const seven = Array.from({ length: 7 }, () => ({ character: other, passed: true }));
+    const seven = Array.from({ length: 7 }, () => ({ character: other, passed: true, level: 1 }));
     const opener = withPower({ code: "opener", params: { max_round: 2, bonus: 3 } });
     const lastStand = withPower({ code: "last_stand", params: { min_round: 4, bonus: 3 } });
     expect(resolve(opener).score.bonus).toBe(3);
@@ -114,8 +114,8 @@ describe("resolveEmergencyPlay", () => {
 describe("isEmergencyFinished", () => {
   const other = character("other");
   const attempts = (passed: number, failed: number): EmergencyAttempt[] => [
-    ...Array.from({ length: passed }, () => ({ character: other, passed: true })),
-    ...Array.from({ length: failed }, () => ({ character: other, passed: false })),
+    ...Array.from({ length: passed }, () => ({ character: other, passed: true, level: 1 })),
+    ...Array.from({ length: failed }, () => ({ character: other, passed: false, level: 1 })),
   ];
 
   it("ends at the failure limit or at the last threat", () => {
@@ -123,5 +123,22 @@ describe("isEmergencyFinished", () => {
     expect(isEmergencyFinished(attempts(1, 3), RULES)).toBe(true);
     expect(isEmergencyFinished(attempts(8, 0), RULES)).toBe(true);
     expect(isEmergencyFinished(attempts(6, 2), RULES)).toBe(true);
+  });
+});
+
+describe("Crescendo and Slancio in Emergenza", () => {
+  it("Crescendo reads the level of the previous threat", () => {
+    const rising = character("c", { FOR: 4 }, { code: "crescendo", params: { bonus: 3 } });
+    const other = character("o");
+    expect(resolve(rising, FOR_THREAT, [{ character: other, passed: true, level: 3 }]).score.bonus).toBe(0);
+    expect(resolve(rising, threat("t", ["FOR", "VEL", "RES", "INT"]), [{ character: other, passed: true, level: 3 }]).score.bonus).toBe(3);
+    expect(resolve(rising, FOR_THREAT).score.bonus).toBe(0);
+  });
+
+  it("Slancio passes its bonus after a passed threat", () => {
+    const momentum = character("m", {}, { code: "momentum", params: { bonus: 2 } });
+    const next = character("n", { FOR: 4 });
+    expect(resolve(next, FOR_THREAT, [{ character: momentum, passed: true, level: 1 }]).score.bonus).toBe(2);
+    expect(resolve(next, FOR_THREAT, [{ character: momentum, passed: false, level: 1 }]).score.bonus).toBe(0);
   });
 });

@@ -527,9 +527,11 @@ async function playEmergency(userId: string, body: Record<string, unknown>) {
   const character = squad.find((c) => c.id === choice);
   if (!character || plays.some((p) => p.card_instance_id === choice)) throw new GameError("character_not_available");
 
-  const attempts: EmergencyAttempt[] = plays.map((p) => ({
+  // Plays come in round order: play i answered the threat of round i + 1.
+  const attempts: EmergencyAttempt[] = plays.map((p, i) => ({
     character: squad.find((c) => c.id === p.card_instance_id)!,
     passed: p.passed,
+    level: loaded.threats.get(threatIds[i])!.level,
   }));
   const outcome = resolveEmergencyPlay({
     character,

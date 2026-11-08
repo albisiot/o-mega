@@ -1,4 +1,4 @@
-import { abilityMalusFrom, carriedBonusAfter, compareScores, scorePlay } from "./scoring.ts";
+import { abilityMalusFrom, asPlayedAgainst, carriedBonusAfter, compareScores, scorePlay, type PlayOutcome } from "./scoring.ts";
 import type {
   AbilityFamilies,
   Character,
@@ -45,13 +45,30 @@ export function availableCharacters(state: MatchState, side: Side): Character[] 
   return state.teams[side].filter((character) => !used.has(character.id));
 }
 
-/** Bonus a side carries into the next round (Riscossa after a lost round). */
+/** How a round ended for `side`. */
+export function outcomeFor(winner: Side | null, side: Side): PlayOutcome {
+  return winner === null ? "void" : winner === side ? "won" : "lost";
+}
+
+/** The character a side played in a resolved round, as it played: without its power against an Annullatore. */
+export function playedIn(state: MatchState, round: RoundRecord, side: Side): Character | undefined {
+  const find = (s: Side) => state.teams[s].find((c) => c.id === round.plays[s].characterId);
+  const character = find(side);
+  return character && asPlayedAgainst(character, find(otherSide(side)));
+}
+
+/** Bonus a side carries into the next round (Riscossa after a lost round, Slancio after a won one). */
 export function carriedBonus(state: MatchState, side: Side): number {
   const last = state.rounds.at(-1);
   if (!last) return 0;
-  const character = state.teams[side].find((c) => c.id === last.plays[side].characterId);
+  const character = playedIn(state, last, side);
   if (!character) return 0;
-  return carriedBonusAfter(character, last.winner === otherSide(side));
+  return carriedBonusAfter(character, outcomeFor(last.winner, side));
+}
+
+/** Level of the previous round's threat, none before the first round (Crescendo). */
+export function previousLevel(state: MatchState): number | undefined {
+  return state.rounds.length > 0 ? state.threats[state.rounds.length - 1]?.level : undefined;
 }
 
 /** Ends as soon as a side reaches the rounds to win, or after the last threat. */
@@ -92,17 +109,21 @@ export function resolveRound(
     chosen[side] = character;
   }
 
+  // Annullatore: each character plays without its power against one.
+  const acting = { a: asPlayedAgainst(chosen.a, chosen.b), b: asPlayedAgainst(chosen.b, chosen.a) };
+
   const plays = {} as Record<Side, PlayRecord>;
   for (const side of SIDES) {
-    const score = scorePlay(chosen[side], threat, {
+    const score = scorePlay(acting[side], threat, {
       families,
       roundsWon: won[side],
       opponentRoundsWon: won[otherSide(side)],
       carriedBonus: carriedBonus(state, side),
       round: currentRoundNumber(state),
       team: state.teams[side],
-      abilityMalus: abilityMalusFrom(chosen[otherSide(side)]),
-      opponent: chosen[otherSide(side)],
+      abilityMalus: abilityMalusFrom(acting[otherSide(side)]),
+      opponent: acting[otherSide(side)],
+      previousLevel: previousLevel(state),
     });
     plays[side] = { ...score, autoPlayed: choices[side].autoPlayed };
   }

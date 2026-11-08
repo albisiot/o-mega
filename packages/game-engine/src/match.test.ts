@@ -122,3 +122,54 @@ describe("powers that read the opposing character", () => {
     expect(second.round.plays.a).toMatchObject({ base: 8, bonus: 0, total: 8 });
   });
 });
+
+describe("Annullatore, Crescendo and Slancio in a match", () => {
+  const nullifier = character("a1", {}, { code: "nullifier", params: {} }, 4);
+
+  it("Annullatore stops Sabotatore, Implacabile and the opposing bonus", () => {
+    const saboteur = character("b1", {}, { code: "sabotage", params: { malus: 1 } }, 4);
+    const { round } = resolveRound(
+      newState([nullifier], [saboteur], [threat("t1", ["FOR", "VEL"])]),
+      { a: { characterId: "a1", autoPlayed: false }, b: { characterId: "b1", autoPlayed: false } },
+      FAMILIES,
+    );
+    expect(round.plays.a).toMatchObject({ base: 8, total: 8 });
+
+    const relentless = character("b1", {}, { code: "relentless", params: {} }, 4);
+    const tie = resolveRound(
+      newState([nullifier], [relentless], [threat("t1", ["FOR", "VEL"])]),
+      { a: { characterId: "a1", autoPlayed: false }, b: { characterId: "b1", autoPlayed: false } },
+      FAMILIES,
+    );
+    expect(tie.round.plays.b.relentless).toBeUndefined();
+    expect(tie.round.winner).toBeNull();
+  });
+
+  it("Annullatore stops the Riscossa that would follow a lost round", () => {
+    const comeback = character("b1", {}, { code: "comeback", params: { bonus: 3 } }, 1);
+    let state = newState([nullifier, character("a2")], [comeback, character("b2")], threats);
+    state = play(state, "a1", "b1");
+    expect(state.rounds[0].winner).toBe("a");
+    expect(carriedBonus(state, "b")).toBe(0);
+  });
+
+  it("Slancio carries its bonus after a won round", () => {
+    const momentum = character("a1", {}, { code: "momentum", params: { bonus: 2 } }, 6);
+    let state = newState([momentum, character("a2")], team("b", [4, 4]), threats);
+    state = play(state, "a1", "b1");
+    expect(state.rounds[0].winner).toBe("a");
+    expect(carriedBonus(state, "a")).toBe(2);
+    state = play(state, "a2", "b2");
+    expect(state.rounds[1].plays.a).toMatchObject({ base: 8, bonus: 2, total: 10 });
+  });
+
+  it("Crescendo compares with the previous round's threat", () => {
+    const rising = character("a2", {}, { code: "crescendo", params: { bonus: 3 } }, 4);
+    const first = character("a1", {}, { code: "crescendo", params: { bonus: 3 } }, 4);
+    let state = newState([first, rising], team("b", [4, 4]), threats);
+    state = play(state, "a1", "b1");
+    expect(state.rounds[0].plays.a.bonus).toBe(0); // no previous round
+    state = play(state, "a2", "b2");
+    expect(state.rounds[1].plays.a.bonus).toBe(3); // level 2 after level 1
+  });
+});

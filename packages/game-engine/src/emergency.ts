@@ -18,7 +18,7 @@ export type EmergencyRules = {
 };
 
 /** A threat already answered: what later plays need to know about it. */
-export type EmergencyAttempt = { character: Character; passed: boolean };
+export type EmergencyAttempt = { character: Character; passed: boolean; /** Level of its threat (Crescendo). */ level: number };
 
 export type EmergencyOutcome = {
   score: PlayScore;
@@ -37,7 +37,7 @@ export function drawEmergencyThreats(rng: Rng, catalog: readonly Threat[], rules
  * The score a character needs. There is no opposing character, so the two
  * powers that act on one act on the threat: Sabotatore takes its malus off
  * every required ability, and Implacabile is satisfied one point short (the
- * tie it would win against an opponent).
+ * tie it would win against an opponent). Annullatore and Davide do nothing.
  */
 export function requiredScore(character: Character, threat: Threat, rules: EmergencyRules): number {
   const target = rules.targets[threat.level];
@@ -62,9 +62,10 @@ export function resolveEmergencyPlay(params: {
     families,
     roundsWon: attempts.filter((a) => a.passed).length,
     opponentRoundsWon: attempts.filter((a) => !a.passed).length,
-    carriedBonus: last ? carriedBonusAfter(last.character, !last.passed) : 0,
+    carriedBonus: last ? carriedBonusAfter(last.character, last.passed ? "won" : "lost") : 0,
     round: attempts.length + 1,
     team: squad,
+    previousLevel: last?.level,
   });
   const required = requiredScore(character, threat, rules);
   return { score, required, passed: score.total >= required };

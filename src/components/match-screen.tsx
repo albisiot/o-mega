@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { carriedBonusAfter, scorePlay, type AbilityFamilies, type ThreatModifier } from "@o-mega/game-engine";
+import { scorePlay, type AbilityFamilies, type ThreatModifier } from "@o-mega/game-engine";
 import { Silhouette } from "@/components/card-view";
 import { ComicBurst } from "@/components/comic-parts";
 import { ConquestPanel, ConquestPick, SecondsLeft } from "@/components/conquest-panel";
@@ -34,7 +34,7 @@ import {
 } from "@/lib/match";
 import { matchXp } from "@/lib/progression";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
-import { carriedInto, roundPowerNotes, type PowerNote } from "@/lib/round-powers";
+import { carriedInto, outcomeOf, roundPowerNotes, wasNullified, type PowerNote } from "@/lib/round-powers";
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow, useSecondsLeft } from "@/lib/use-now";
@@ -530,12 +530,10 @@ function ChoosePhase({
   const pending = round.my_pending_instance_id;
   const threat = { id: "current", level: round.level, abilities: round.threat.abilities, modifier: round.modifier };
 
-  // Riscossa: bonus earned by losing the previous round with a comeback character.
+  // Riscossa or Slancio: bonus earned in the previous round, unless an Annullatore stopped it.
   const previous = view.rounds.find((r) => r.round === round.round - 1);
   const previousCard = previous?.my_play && view.my_team.find((c) => c.instance_id === previous.my_play?.instance_id);
-  const carried = previousCard
-    ? carriedBonusAfter(toCharacter(previousCard, previousCard.instance_id), previous?.winner === "opponent")
-    : 0;
+  const carried = carriedInto(previousCard, outcomeOf(previous?.winner, "me"), previous?.opponent_play).points;
 
   const available = view.my_team.filter((card) => card.played_round === null);
   const previews = available
@@ -548,6 +546,7 @@ function ChoosePhase({
         carriedBonus: carried,
         round: round.round,
         team: view.my_team.map((member) => toCharacter(member, member.instance_id)),
+        previousLevel: previous?.level,
       }),
     }))
     .sort((a, b) => b.score.total - a.score.total);
@@ -799,28 +798,41 @@ function RoundReveal({
   const banner = { me: "Round vinto!", opponent: "Round perso", none: "Round nullo" }[round.winner ?? "none"];
   const winnerCard = round.winner === "me" ? mine : round.winner === "opponent" ? theirs : null;
   const isTie = round.my_play && theirs && round.my_play.score === theirs.score;
-  // With Implacabile on both sides the tie is settled as usual, by the highest value.
+  // With Implacabile on both sides, or against an Annullatore, the tie is settled as usual, by the highest value.
+  const loserCard = winnerCard === mine ? theirs : mine;
   const tieWonBy =
-    isTie && winnerCard?.power?.code === "relentless" && mine?.power?.code !== theirs?.power?.code ? winnerCard.name : null;
+    isTie && winnerCard?.power?.code === "relentless" && loserCard?.power?.code !== "relentless" && !wasNullified(winnerCard, loserCard)
+      ? winnerCard.name
+      : null;
 
   // Each card's power is told next to that card, in its own half of the screen.
   const threat = { level: round.level, abilities: round.threat.abilities, modifier: round.modifier };
   const previousMine = team.find((card) => card.instance_id === previous?.my_play?.instance_id);
+  const myCarried = carriedInto(previousMine, outcomeOf(previous?.winner, "me"), previous?.opponent_play);
+  const theirCarried = carriedInto(previous?.opponent_play, outcomeOf(previous?.winner, "opponent"), previousMine);
   const myNotes =
     mine && round.my_play
       ? roundPowerNotes(mine, round.my_play, threat, {
-          carried: carriedInto(previousMine, previous?.winner === "opponent"),
+          carried: myCarried.points,
+          carriedFrom: myCarried.from,
           lost: round.winner === "opponent",
+          won: round.winner === "me",
           wonTie: Boolean(tieWonBy) && round.winner === "me",
-          opponentShielded: theirs?.power?.code === "shielded",
+          opponentShielded: theirs?.power?.code === "shielded" && !wasNullified(theirs, mine),
+          nullified: wasNullified(mine, theirs),
+          opponentHasPower: Boolean(theirs?.power),
         })
       : [];
   const theirNotes = theirs
     ? roundPowerNotes(theirs, theirs, threat, {
-        carried: carriedInto(previous?.opponent_play, previous?.winner === "me"),
+        carried: theirCarried.points,
+        carriedFrom: theirCarried.from,
         lost: round.winner === "me",
+        won: round.winner === "opponent",
         wonTie: Boolean(tieWonBy) && round.winner === "opponent",
-        opponentShielded: mine?.power?.code === "shielded",
+        opponentShielded: mine?.power?.code === "shielded" && !wasNullified(mine, theirs),
+        nullified: wasNullified(theirs, mine),
+        opponentHasPower: Boolean(mine?.power),
       })
     : [];
 
