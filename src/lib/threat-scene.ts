@@ -12,7 +12,13 @@ export type ThreatEnvironment =
   | "swamp"
   | "prison"
   | "battlefield"
-  | "rift";
+  | "rift"
+  // The places beyond Nuova Megara.
+  | "desert"
+  | "jungle"
+  | "sunken"
+  | "ice"
+  | "japan";
 export type ThreatActor =
   | "robot"
   | "golem"
@@ -28,7 +34,22 @@ export type ThreatActor =
   | "mirrors"
   | "flames"
   | "virus"
-  | "core";
+  | "core"
+  | "trap"
+  | "mummy"
+  | "sphinx"
+  | "ballgame"
+  | "calendar"
+  | "serpent"
+  | "song"
+  | "guardian"
+  | "temple"
+  | "hut"
+  | "base"
+  | "beast"
+  | "swordsman"
+  | "fox"
+  | "kaiju";
 export type ThreatScene = { environment: ThreatEnvironment; actor?: ThreatActor };
 
 // The match state exposes the threat's name, not its code. A threat missing
@@ -94,6 +115,26 @@ const SCENES: Record<string, ThreatScene> = {
   "Ultima battaglia": { environment: "battlefield" },
   "Portale instabile": { environment: "rift" },
   "Invasione dimensionale": { environment: "rift", actor: "shadow" },
+  // Giza
+  "Trappola della tomba": { environment: "desert", actor: "trap" },
+  "Mummia del cantiere": { environment: "desert", actor: "mummy" },
+  "Risveglio della Sfinge": { environment: "desert", actor: "sphinx" },
+  // Yucatán
+  "Gioco della palla": { environment: "jungle", actor: "ballgame" },
+  "Calendario impazzito": { environment: "jungle", actor: "calendar" },
+  "Serpente di luce": { environment: "jungle", actor: "serpent" },
+  // Atlantide
+  "Canto dagli abissi": { environment: "sunken", actor: "song" },
+  "Guardiano di oricalco": { environment: "sunken", actor: "guardian" },
+  "Atlantide riemerge": { environment: "sunken", actor: "temple" },
+  // Artico
+  Tormenta: { environment: "ice", actor: "hut" },
+  "Base sotto il ghiaccio": { environment: "ice", actor: "base" },
+  "Cosa nel ghiaccio": { environment: "ice", actor: "beast" },
+  // Giappone
+  "Spadaccino del ponte": { environment: "japan", actor: "swordsman" },
+  "Volpe a nove code": { environment: "japan", actor: "fox" },
+  "Kaiju nella baia": { environment: "japan", actor: "kaiju" },
 };
 
 export function threatScene(name: string): ThreatScene | null {

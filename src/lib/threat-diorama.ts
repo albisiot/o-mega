@@ -41,6 +41,14 @@ const CREAM = 0xfff8e7;
 const GREEN = 0x1d9e75;
 const STEEL = 0x4a4f5c;
 const DARK = 0x2c2c34;
+const SAND = 0xe2b25e;
+const STONE = 0xa89a7c;
+const BRONZE = 0xc8752e;
+const SNOW = 0xeef7fb;
+const ICE = 0xa6dcef;
+const VERMILION = 0xe4572e;
+const BLOSSOM = 0xffcad6;
+const LEAF = 0x2f8f4f;
 const TOWER_COLORS = [0x3a4a7a, 0x7a3a6a, 0x2f6f7a, 0x57406f, 0x4a4f5c, 0x6f3a3a, 0x3a6a55];
 const TOWER_SLOTS = [
   [-1.9, -0.6],
@@ -62,6 +70,19 @@ type PartOptions = {
   outline?: BufferGeometry;
 };
 type Part = { group: Group; delay: number };
+/** Sand, snow, bubbles or petals: one instanced mesh that drifts and wraps around the scene. */
+type Drift = {
+  mesh: InstancedMesh;
+  /** x, y, z of each particle at the start. */
+  start: Float32Array;
+  speed: Float32Array;
+  vx: number;
+  vy: number;
+  bottom: number;
+  top: number;
+  delay: number;
+};
+type Bob = { group: Group; base: number; height: number; speed: number };
 
 /** The same threat always gets the same skyline, for both players. */
 function seededRandom(text: string): () => number {
@@ -112,6 +133,9 @@ export function mountThreatDiorama(
   const parts: Part[] = [];
   const blinking: Object3D[] = [];
   const spinning: Object3D[] = [];
+  const drifting: Drift[] = [];
+  const bobbing: Bob[] = [];
+  const matrix = new Matrix4();
 
   function add(geometry: BufferGeometry, color: number, x: number, y: number, z: number, options: PartOptions): Group {
     geometry.computeBoundingBox();
@@ -372,6 +396,21 @@ export function mountThreatDiorama(
     if (actor === "flames") flames(delay);
     if (actor === "virus") virus(delay);
     if (actor === "core") core(delay);
+    if (actor === "trap") trap(delay);
+    if (actor === "mummy") mummy(delay);
+    if (actor === "sphinx") sphinx(delay);
+    if (actor === "ballgame") ballgame(delay);
+    if (actor === "calendar") calendar(delay);
+    if (actor === "serpent") serpent(delay);
+    if (actor === "song") song(delay);
+    if (actor === "guardian") guardian(delay);
+    if (actor === "temple") temple(delay);
+    if (actor === "hut") hut(delay);
+    if (actor === "base") base(delay);
+    if (actor === "beast") beast(delay);
+    if (actor === "swordsman") swordsman(delay);
+    if (actor === "fox") fox(delay);
+    if (actor === "kaiju") kaiju(delay);
   }
 
   function buildCity() {
@@ -626,6 +665,567 @@ export function mountThreatDiorama(
     addActor(1, 0.95);
   }
 
+  // ---------------------------------------------------------------------------
+  // The places beyond Nuova Megara
+  // ---------------------------------------------------------------------------
+
+  /** Particles that drift across the scene: they wrap around, so the flow never stops. */
+  function drift(
+    count: number,
+    color: number,
+    size: number,
+    motion: { vx: number; vy: number; bottom: number; top: number; delay: number },
+  ) {
+    const geometry = new OctahedronGeometry(size);
+    const material = new MeshBasicMaterial({ color });
+    geometries.push(geometry);
+    materials.push(material);
+    const mesh = new InstancedMesh(geometry, material, count);
+    const random = seededRandom(`${threat.name}:${color}`);
+    const start = new Float32Array(count * 3);
+    const speed = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      start[i * 3] = -2.9 + random() * 5.8;
+      start[i * 3 + 1] = motion.bottom + random() * (motion.top - motion.bottom);
+      start[i * 3 + 2] = -1.7 + random() * 3.6;
+      speed[i] = 0.6 + random() * 0.8;
+      mesh.setMatrixAt(i, matrix.makeTranslation(start[i * 3], start[i * 3 + 1], start[i * 3 + 2]));
+    }
+    mesh.visible = false;
+    root.add(mesh);
+    drifting.push({ mesh, start, speed, ...motion });
+  }
+
+  function placeDrift(item: Drift, elapsed: number) {
+    const t = Math.max(0, elapsed - item.delay);
+    const height = item.top - item.bottom;
+    for (let i = 0; i < item.speed.length; i++) {
+      const s = item.speed[i];
+      const x = item.start[i * 3] + item.vx * s * t + Math.sin(t * 1.3 + i) * 0.08;
+      const y = item.start[i * 3 + 1] + item.vy * s * t;
+      const wrappedX = ((((x + 2.9) % 5.8) + 5.8) % 5.8) - 2.9;
+      const wrappedY = item.bottom + ((((y - item.bottom) % height) + height) % height);
+      item.mesh.setMatrixAt(i, matrix.makeTranslation(wrappedX, wrappedY, item.start[i * 3 + 2]));
+    }
+    item.mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  /** Something that hops or floats in place. */
+  function bob(part: Group, height: number, speed = 0.004): Group {
+    bobbing.push({ group: part, base: part.position.y, height, speed });
+    return part;
+  }
+
+  /** A square pyramid: a four-sided cone turned to face the camera with an edge. */
+  function pyramid(radius: number, height: number, color: number, x: number, z: number, delay: number): Group {
+    return add(new ConeGeometry(radius, height, 4), color, x, 0, z, { delay, rotation: [0, Math.PI / 4, 0] });
+  }
+
+  /** Small details stuck to a part, so they pop and turn with it. */
+  function decorate(part: Group, geometry: BufferGeometry, color: number, spots: [number, number, number][]) {
+    const material = new MeshBasicMaterial({ color });
+    geometries.push(geometry);
+    materials.push(material);
+    for (const [x, y, z] of spots) {
+      const mesh = new Mesh(geometry, material);
+      mesh.position.set(x, y, z);
+      part.add(mesh);
+    }
+  }
+
+  function palm(x: number, z: number, height: number, delay: number) {
+    const lean = x > 0 ? -0.12 : 0.12;
+    cylinder(0.07, 0.11, height, 0x8a6236, x, 0, z, { delay, rotation: [0, 0, lean] });
+    const top = x - Math.sin(lean) * height;
+    [0, 1.25, 2.5, 3.75, 5].forEach((angle, i) =>
+      box(0.7, 0.05, 0.2, LEAF, top + Math.cos(angle) * 0.28, height - 0.05, z + Math.sin(angle) * 0.28, {
+        delay: delay + 0.1 + i * 0.03,
+        rotation: [0, -angle, -0.35],
+      }),
+    );
+  }
+
+  function bushyTree(x: number, z: number, height: number, canopy: number, delay: number) {
+    cylinder(0.08, 0.14, height, 0x5c3f24, x, 0, z, { delay });
+    ball(0.42, canopy, x, height - 0.15, z, { delay: delay + 0.08 });
+    ball(0.3, canopy, x + 0.3, height - 0.3, z + 0.12, { delay: delay + 0.12 });
+    ball(0.28, canopy, x - 0.28, height - 0.25, z - 0.08, { delay: delay + 0.16 });
+  }
+
+  // Giza ----------------------------------------------------------------------
+
+  function buildDesert() {
+    ground(0xc9963f);
+    ball(1.05, ORANGE, 1.6, 1.15, -2, { delay: 0.05, flat: true, noInk: true });
+    const dune = (x: number, z: number, radius: number, delay: number) => {
+      const geometry = new SphereGeometry(radius, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2);
+      geometry.scale(1.6, 0.6, 1);
+      add(geometry, SAND, x, 0, z, { delay });
+    };
+    dune(-2.1, 1.2, 0.7, 0.1);
+    dune(2.3, 1.35, 0.55, 0.14);
+    pyramid(1.55, 2.15, SAND, -1.15, -1.1, 0.16);
+    pyramid(1.05, 1.45, 0xd7a650, 1.25, -1.25, 0.24);
+    pyramid(0.55, 0.75, 0xd7a650, 2.35, -0.55, 0.3);
+    // Gold capstone and the dark doorway of the great pyramid.
+    add(new ConeGeometry(0.22, 0.3, 4), YELLOW, -1.15, 1.88, -1.1, { delay: 0.5, rotation: [0, Math.PI / 4, 0] });
+    box(0.36, 0.42, 0.1, 0x3a2a18, -1.15, 0.05, -0.05, { delay: 0.55, noInk: true });
+    box(0.16, 1.5, 0.16, 0xd7a650, -2.45, 0, 0.35, { delay: 0.4 });
+    add(new ConeGeometry(0.13, 0.22, 4), YELLOW, -2.45, 1.5, 0.35, { delay: 0.48, rotation: [0, Math.PI / 4, 0] });
+    palm(2.55, 0.85, 1.25, 0.45);
+    drift(26 + threat.level * 4, 0xf3d08a, 0.03, { vx: 0.55, vy: -0.04, bottom: 0.05, top: 1.6, delay: 0.9 });
+    addActor(1, 0.75);
+  }
+
+  function trap(delay: number) {
+    box(1.7, 0.05, 0.9, 0x8a6a3a, 0.3, 0, 0.75, { delay, noInk: true });
+    for (let i = 0; i < 5; i++) {
+      cone(0.09, 0.42 + (i % 2) * 0.12, STEEL, -0.35 + i * 0.32, 0.04, 0.55 + (i % 2) * 0.3, { delay: delay + 0.1 + i * 0.06 });
+    }
+    // The scarab on the pressure plate.
+    const shell = new SphereGeometry(0.2, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2);
+    shell.scale(1, 0.7, 1.25);
+    light(add(shell, YELLOW, 0.9, 0.05, 1.05, { delay: delay + 0.45 }));
+    box(0.04, 0.03, 0.5, DARK, 0.9, 0.18, 1.05, { delay: delay + 0.5, noInk: true });
+  }
+
+  function mummy(delay: number) {
+    const wrap = 0xeadfc4;
+    const band = 0xb9a985;
+    // The open sarcophagus behind it.
+    box(0.8, 1.7, 0.3, 0x3a2a18, 1.15, 0, -0.1, { delay, rotation: [-0.12, 0, 0] });
+    box(0.7, 1.6, 0.12, YELLOW, 1.95, 0, 0.05, { delay: delay + 0.1, rotation: [0, -0.6, 0.18] });
+    const x = 0.55;
+    const z = 0.75;
+    box(0.2, 0.62, 0.24, wrap, x - 0.15, 0, z, { delay: delay + 0.2 });
+    box(0.2, 0.62, 0.24, wrap, x + 0.15, 0, z, { delay: delay + 0.2 });
+    const torso = box(0.62, 0.75, 0.38, wrap, x, 0.6, z, { delay: delay + 0.28 });
+    decorate(torso, new BoxGeometry(0.66, 0.05, 0.42), band, [
+      [0, 0.15, 0],
+      [0, 0.38, 0],
+      [0, 0.6, 0],
+    ]);
+    box(0.17, 0.17, 0.72, wrap, x - 0.4, 1.12, z + 0.32, { delay: delay + 0.36 });
+    box(0.17, 0.17, 0.72, wrap, x + 0.4, 1.12, z + 0.32, { delay: delay + 0.36 });
+    box(0.05, 0.55, 0.03, band, x + 0.42, 0.62, z + 0.68, { delay: delay + 0.42, noInk: true, rotation: [0, 0, 0.2] });
+    ball(0.26, wrap, x, 1.38, z, { delay: delay + 0.44 });
+    light(box(0.3, 0.06, 0.05, CYAN, x, 1.6, z + 0.25, { delay: delay + 0.5, flat: true, noInk: true }));
+  }
+
+  function sphinx(delay: number) {
+    const lion = 0xc98f3e;
+    // Sizes and places are scaled from the sphinx's centre, so it stands out from the pyramids.
+    const k = 1.35;
+    const at = (x: number, y: number, z: number): [number, number, number] => [0.3 + x * k, y * k, 0.25 + z * k];
+    const part = (w: number, h: number, d: number, color: number, x: number, y: number, z: number, wait: number) =>
+      box(w * k, h * k, d * k, color, ...at(x, y, z), { delay: delay + wait });
+    part(1.4, 0.22, 2.2, 0x9a6f34, 0, 0, -0.1, 0);
+    part(0.9, 0.62, 1.5, lion, 0, 0.22, -0.4, 0.1);
+    part(0.26, 0.2, 0.7, lion, -0.3, 0.22, 0.65, 0.18);
+    part(0.26, 0.2, 0.7, lion, 0.3, 0.22, 0.65, 0.18);
+    part(0.8, 0.7, 0.55, lion, 0, 0.22, 0.25, 0.24);
+    // The striped headdress, then the face in front of it.
+    const nemes = part(0.8, 0.62, 0.4, YELLOW, 0, 0.82, 0.12, 0.32);
+    decorate(nemes, new BoxGeometry(0.82 * k, 0.06 * k, 0.42 * k), CYAN, [
+      [0, 0.16 * k, 0],
+      [0, 0.32 * k, 0],
+      [0, 0.48 * k, 0],
+    ]);
+    part(0.15, 0.5, 0.12, YELLOW, -0.3, 0.48, 0.42, 0.36);
+    part(0.15, 0.5, 0.12, YELLOW, 0.3, 0.48, 0.42, 0.36);
+    part(0.44, 0.5, 0.36, lion, 0, 0.88, 0.32, 0.42);
+    light(box(0.3 * k, 0.07, 0.04, CYAN, ...at(0, 1.16, 0.51), { delay: delay + 0.5, flat: true, noInk: true }));
+    // Its riddle: glyphs turning in the air.
+    for (let i = 0; i < 3; i++) {
+      spinning.push(
+        add(new OctahedronGeometry(0.13), CYAN, -0.75 + i * 0.55, 1.85 + (i % 2) * 0.3, 0.9, { delay: delay + 0.6 + i * 0.08 }),
+      );
+    }
+  }
+
+  // Yucatán -------------------------------------------------------------------
+
+  function buildJungle() {
+    ground(0x2c6b3a);
+    const tiers = 5;
+    for (let i = 0; i < tiers; i++) {
+      box(3.2 - i * 0.55, 0.38, 2 - i * 0.3, i % 2 ? STONE : 0x92856a, 0, i * 0.38, -1.25, { delay: 0.1 + i * 0.07 });
+    }
+    // The stair up the front face, and the temple on top.
+    box(0.62, 2, 0.08, 0xc2b594, 0, 0, -0.27, { delay: 0.48, rotation: [-0.31, 0, 0] });
+    const shrine = box(0.95, 0.6, 0.66, 0xc2b594, 0, tiers * 0.38, -1.25, { delay: 0.55 });
+    decorate(shrine, new BoxGeometry(0.3, 0.36, 0.02), 0x2a2018, [[0, 0.18, 0.34]]);
+    box(0.7, 0.32, 0.12, STONE, 0, tiers * 0.38 + 0.6, -1.4, { delay: 0.62 });
+    [-1.3, 1.3].forEach((x, i) => {
+      cylinder(0.05, 0.05, 0.42, DARK, x, 0, -0.15, { delay: 0.65 + i * 0.05 });
+      light(cone(0.09, 0.22, ORANGE, x, 0.42, -0.15, { delay: 0.7 + i * 0.05, flat: true, noInk: true }));
+    });
+    bushyTree(-2.45, -0.6, 1.5, LEAF, 0.3);
+    bushyTree(2.5, -0.85, 1.7, 0x3fa85c, 0.36);
+    palm(-2.6, 1.15, 1.1, 0.42);
+    drift(18, YELLOW, 0.035, { vx: 0.06, vy: 0.12, bottom: 0.2, top: 2.2, delay: 1 });
+    addActor(1, 0.8);
+  }
+
+  function ballgame(delay: number) {
+    [-1.45, 1.45].forEach((x, i) => {
+      box(0.45, 0.85, 1.9, STONE, x, 0, 0.75, { delay: delay + i * 0.06, rotation: [0, 0, x < 0 ? 0.32 : -0.32] });
+      ring(0.24, 0.06, CREAM, x * 0.86, 0.92, 0.75, { delay: delay + 0.2 + i * 0.06, rotation: [0, Math.PI / 2, 0] });
+    });
+    box(2.2, 0.03, 0.6, 0xc2b594, 0, 0, 0.75, { delay: delay + 0.1, noInk: true });
+    bob(ball(0.18, DARK, 0.2, 0.1, 0.9, { delay: delay + 0.3 }), 0.75, 0.005);
+  }
+
+  function calendar(delay: number) {
+    // Turned to face the camera: spinning around its own axis, it turns like a wheel.
+    const disc = cylinder(0.92, 0.92, 0.16, 0xc2b594, 0, 0.95, 0.75, { delay, rotation: [Math.PI / 2, 0, 0] });
+    decorate(
+      disc,
+      new BoxGeometry(0.16, 0.04, 0.16),
+      YELLOW,
+      Array.from({ length: 10 }, (_, i) => {
+        const angle = (i / 10) * Math.PI * 2;
+        return [Math.cos(angle) * 0.7, 0.17, Math.sin(angle) * 0.7] as [number, number, number];
+      }),
+    );
+    decorate(disc, new CylinderGeometry(0.28, 0.28, 0.05, 16), CYAN, [[0, 0.18, 0]]);
+    spinning.push(disc);
+    box(0.25, 0.95, 0.25, STONE, 0, 0, 0.6, { delay: Math.max(0, delay - 0.05) });
+  }
+
+  function serpent(delay: number) {
+    // Down the stair, then across the plaza towards the camera.
+    const path: [number, number, number][] = [];
+    for (let i = 0; i < 7; i++) path.push([0, 1.85 - i * 0.29, -0.82 + i * 0.1]);
+    for (let i = 1; i <= 5; i++) path.push([Math.sin(i * 0.9) * 0.55, 0.08, -0.2 + i * 0.3]);
+    path.forEach(([x, y, z], i) =>
+      light(ball(0.15 + i * 0.006, i % 2 ? YELLOW : CYAN, x, y, z, { delay: delay + i * 0.05, flat: true })),
+    );
+    const [hx, , hz] = path[path.length - 1];
+    ball(0.3, YELLOW, hx, 0.05, hz + 0.25, { delay: delay + 0.7 });
+    [-1, -0.5, 0, 0.5, 1].forEach((tilt, i) =>
+      cone(0.06, 0.4, i % 2 ? ORANGE : GREEN, hx + tilt * 0.22, 0.4, hz + 0.1, {
+        delay: delay + 0.75 + i * 0.03,
+        rotation: [-0.3, 0, -tilt * 0.6],
+      }),
+    );
+    light(box(0.3, 0.06, 0.04, CYAN, hx, 0.42, hz + 0.53, { delay: delay + 0.85, flat: true, noInk: true }));
+  }
+
+  // Atlantide -----------------------------------------------------------------
+
+  function column(x: number, z: number, height: number, delay: number) {
+    const shaft = cylinder(0.17, 0.2, height, CREAM, x, 0, z, { delay });
+    decorate(shaft, new BoxGeometry(0.46, 0.12, 0.46), 0xd8cfb8, [[0, height, 0]]);
+  }
+
+  function buildSunken() {
+    ground(0x0c4660);
+    // The deep water behind, with shafts of light from the surface.
+    box(6, 2.9, 0.08, 0x0a3550, 0, 0, -2.1, { delay: 0.04, flat: true });
+    [-1.9, -0.3, 1.2].forEach((x, i) =>
+      box(0.35, 2.8, 0.02, 0x1d6f8f, x, 0.05, -2.04, { delay: 0.1 + i * 0.05, flat: true, noInk: true, rotation: [0, 0, 0.25] }),
+    );
+    box(4.4, 0.04, 2.3, 0xc8b47a, 0.2, 0, 0.3, { delay: 0.08, flat: true, noInk: true });
+    column(-2.2, -1.2, 1.9, 0.18);
+    column(-1.4, -1.35, 1.25, 0.24);
+    column(2.25, -1.15, 1.6, 0.3);
+    column(1.5, -1.4, 0.7, 0.34);
+    // A fallen column on the sand.
+    add(new CylinderGeometry(0.17, 0.2, 1.4, 14), CREAM, -1.85, 0, 0.9, { delay: 0.4, rotation: [0, 0.6, Math.PI / 2] });
+    const weeds: [number, number, number, number][] = [
+      [-2.6, 0.4, 1.3, GREEN],
+      [2.6, 0.6, 1.5, LEAF],
+      [-0.6, -1.5, 1.1, GREEN],
+    ];
+    weeds.forEach(([x, z, height, color], i) =>
+      cylinder(0.04, 0.07, height, color, x, 0, z, { delay: 0.45 + i * 0.05, rotation: [0.1, 0, (i % 2 ? 1 : -1) * 0.15] }),
+    );
+    const corals: [number, number, number][] = [
+      [2.35, 1.4, ORANGE],
+      [-2.4, 1.55, YELLOW],
+      [0.9, 1.6, ORANGE],
+    ];
+    corals.forEach(([x, z, color], i) => cone(0.16, 0.45, color, x, 0, z, { delay: 0.5 + i * 0.05 }));
+    light(add(new OctahedronGeometry(0.2), BRONZE, -1.4, 1.35, -1.35, { delay: 0.6 }));
+    drift(22, 0xbfeefd, 0.045, { vx: 0.02, vy: 0.32, bottom: 0, top: 2.6, delay: 0.8 });
+    addActor(1, 0.75);
+  }
+
+  function song(delay: number) {
+    ball(0.5, STEEL, 0.2, -0.2, 0.45, { delay });
+    add(new ConeGeometry(0.3, 0.7, 9), 0xffdcc0, -0.05, 0.62, 0.75, { delay: delay + 0.12, rotation: [0.4, 0, 0.9] });
+    for (let i = 0; i < 3; i++) {
+      light(
+        ring(0.32 + i * 0.22, 0.03, CYAN, 0.1, 1.15 + i * 0.32, 0.45, {
+          delay: delay + 0.3 + i * 0.1,
+          rotation: [Math.PI / 2, 0, 0],
+        }),
+      );
+    }
+  }
+
+  function guardian(delay: number) {
+    const x = 0.35;
+    const z = 0.55;
+    box(0.36, 0.55, 0.42, 0x9a5a22, x - 0.3, 0, z, { delay });
+    box(0.36, 0.55, 0.42, 0x9a5a22, x + 0.3, 0, z, { delay });
+    const chest = box(1.05, 0.95, 0.66, BRONZE, x, 0.55, z, { delay: delay + 0.08 });
+    decorate(chest, new OctahedronGeometry(0.13), CYAN, [[0, 0.5, 0.34]]);
+    box(0.3, 0.95, 0.36, 0x9a5a22, x - 0.7, 0.5, z, { delay: delay + 0.14 });
+    box(0.3, 0.95, 0.36, 0x9a5a22, x + 0.7, 0.5, z, { delay: delay + 0.14 });
+    box(0.5, 0.42, 0.46, BRONZE, x, 1.5, z, { delay: delay + 0.2 });
+    cone(0.18, 0.32, YELLOW, x, 1.92, z, { delay: delay + 0.26 });
+    light(box(0.34, 0.07, 0.05, CYAN, x, 1.68, z + 0.24, { delay: delay + 0.3, flat: true, noInk: true }));
+    cylinder(0.04, 0.04, 2.3, DARK, x + 0.95, 0, z + 0.1, { delay: delay + 0.34 });
+    cone(0.1, 0.32, YELLOW, x + 0.95, 2.3, z + 0.1, { delay: delay + 0.4 });
+  }
+
+  function temple(delay: number) {
+    box(2.6, 0.18, 1.5, 0xd8cfb8, 0, 0, 0.2, { delay });
+    box(2.3, 0.18, 1.25, 0xe8dfc8, 0, 0.18, 0.2, { delay: delay + 0.06 });
+    [-0.95, -0.32, 0.32, 0.95].forEach((x, i) => column(x, 0.65, 1.2, delay + 0.12 + i * 0.05));
+    [-0.95, 0.95].forEach((x, i) => column(x, -0.25, 1.2, delay + 0.3 + i * 0.05));
+    box(2.4, 0.2, 1.35, CREAM, 0, 1.55, 0.2, { delay: delay + 0.45 });
+    // The pediment: a triangular prism along the front.
+    const pediment = new CylinderGeometry(1, 1, 1.3, 3);
+    pediment.rotateX(Math.PI / 2);
+    pediment.rotateZ(Math.PI);
+    pediment.scale(1.4, 0.45, 1);
+    add(pediment, 0xe8dfc8, 0, 1.75, 0.2, { delay: delay + 0.52 });
+    cylinder(0.04, 0.09, 0.7, BRONZE, 0, 2.15, 0.2, { delay: delay + 0.6 });
+    light(add(new OctahedronGeometry(0.17), YELLOW, 0, 2.82, 0.2, { delay: delay + 0.66 }));
+  }
+
+  // Artico --------------------------------------------------------------------
+
+  function buildIce() {
+    ground(0xcfe7f2);
+    box(5.6, 0.05, 3.8, SNOW, 0, 0, 0.1, { delay: 0.06, noInk: true });
+    // The polar night behind, and the aurora: ribbons of light above the horizon.
+    box(6, 2.9, 0.08, 0x162a4a, 0, 0, -2.1, { delay: 0.04, flat: true });
+    const ribbons: [number, number, number, number][] = [
+      [-1.3, 2.35, GREEN, 0.18],
+      [0.4, 2.55, CYAN, -0.12],
+      [1.9, 2.3, GREEN, 0.22],
+    ];
+    ribbons.forEach(([x, y, color, tilt], i) =>
+      light(box(1.7, 0.16, 0.04, color, x, y, -1.95, { delay: 0.1 + i * 0.07, flat: true, noInk: true, rotation: [0, 0, tilt] })),
+    );
+    const berg = (x: number, z: number, height: number, delay: number) => {
+      const geometry = new OctahedronGeometry(0.6);
+      geometry.scale(1, height, 0.8);
+      add(geometry, ICE, x, -0.2, z, { delay });
+    };
+    berg(-2.2, -1.1, 1.8, 0.2);
+    berg(-1.35, -1.45, 1.2, 0.26);
+    berg(2.3, -1.25, 1.5, 0.3);
+    box(1.1, 0.12, 0.8, ICE, 1.9, 0, 1.1, { delay: 0.36, rotation: [0, 0.4, 0] });
+    box(0.8, 0.1, 0.6, ICE, -2.1, 0, 1.3, { delay: 0.4, rotation: [0, -0.3, 0] });
+    drift(30 + threat.level * 5, 0xffffff, 0.04, { vx: 0.22, vy: -0.42, bottom: 0, top: 2.8, delay: 0.7 });
+    addActor(1, 0.7);
+  }
+
+  function hut(delay: number) {
+    box(1.3, 0.75, 0.9, ORANGE, -0.2, 0, 0.35, { delay, rotation: [0, 0.3, 0] });
+    box(1.45, 0.12, 1.05, DARK, -0.2, 0.75, 0.35, { delay: delay + 0.08, rotation: [0, 0.3, 0.08] });
+    light(box(0.28, 0.22, 0.03, YELLOW, 0.1, 0.32, 0.86, { delay: delay + 0.16, flat: true, noInk: true, rotation: [0, 0.3, 0] }));
+    ball(0.45, SNOW, -0.85, -0.15, 0.85, { delay: delay + 0.2 });
+    cylinder(0.025, 0.025, 1.5, STEEL, 1.2, 0, 0.6, { delay: delay + 0.25 });
+    box(0.42, 0.26, 0.02, YELLOW, 1.42, 1.18, 0.6, { delay: delay + 0.3 });
+    // The storm itself: a second, faster flurry.
+    drift(40, 0xffffff, 0.03, { vx: 1.6, vy: -0.25, bottom: 0, top: 2.2, delay: delay + 0.2 });
+  }
+
+  function base(delay: number) {
+    const dome = new SphereGeometry(0.85, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+    const shell = add(dome, 0x8f9bb0, 0, 0, 0.1, { delay });
+    decorate(
+      shell,
+      new BoxGeometry(0.16, 0.12, 0.05),
+      YELLOW,
+      Array.from({ length: 5 }, (_, i) => {
+        const angle = -0.9 + i * 0.45;
+        return [Math.sin(angle) * 0.74, 0.35, Math.cos(angle) * 0.74] as [number, number, number];
+      }),
+    );
+    box(0.42, 0.42, 0.42, STEEL, -0.95, 0, 0.35, { delay: delay + 0.1 });
+    cylinder(0.03, 0.04, 1.5, DARK, 0.15, 0.8, 0.1, { delay: delay + 0.18 });
+    light(box(0.08, 0.08, 0.08, ORANGE, 0.15, 2.3, 0.1, { delay: delay + 0.3, flat: true, noInk: true }));
+    cylinder(0.03, 0.03, 0.55, DARK, 1.05, 0, 0.45, { delay: delay + 0.22 });
+    add(new ConeGeometry(0.3, 0.16, 16, 1, true), CREAM, 1.05, 0.55, 0.45, {
+      delay: delay + 0.24,
+      rotation: [Math.PI - 0.5, 0, 0.3],
+      noInk: true,
+    });
+    // The hatch in the ice, lit from below.
+    light(box(0.55, 0.03, 0.4, CYAN, 0.6, 0.04, 1.25, { delay: delay + 0.36, flat: true, noInk: true }));
+  }
+
+  function beast(delay: number) {
+    const fur = 0x7a5236;
+    const x = 0.2;
+    const z = 0.1;
+    // It faces the camera: four legs, the shaggy body, then head, trunk and tusks in front.
+    [-0.45, 0.45].forEach((dx, i) =>
+      [-0.35, 0.35].forEach((dz, j) => cylinder(0.17, 0.19, 0.7, 0x5c3c26, x + dx, 0, z + dz, { delay: delay + (i + j) * 0.03 })),
+    );
+    const body = new SphereGeometry(0.8, 18, 14);
+    body.scale(1.05, 0.9, 1.15);
+    add(body, fur, x, 0.45, z, { delay: delay + 0.12 });
+    ball(0.42, 0x6a452e, x, 1.45, z - 0.2, { delay: delay + 0.18 });
+    ball(0.5, fur, x, 0.95, z + 0.85, { delay: delay + 0.22 });
+    cylinder(0.08, 0.15, 0.85, 0x6a452e, x, 0.12, z + 1.25, { delay: delay + 0.3 });
+    [-1, 1].forEach((side, i) =>
+      cylinder(0.03, 0.08, 0.85, CREAM, x + side * 0.3, 0.55, z + 1.2, {
+        delay: delay + 0.36 + i * 0.04,
+        rotation: [0.9, 0, -side * 0.35],
+      }),
+    );
+    light(box(0.5, 0.07, 0.04, CYAN, x, 1.18, z + 1.3, { delay: delay + 0.44, flat: true, noInk: true }));
+    // Shards of the ice it broke out of.
+    const shards: [number, number, number][] = [
+      [-1.6, 0.7, 0.6],
+      [1.75, 0.9, -0.4],
+      [-1.2, 1.5, 0.3],
+      [1.4, 1.6, 0.4],
+    ];
+    shards.forEach(([sx, sz, turn], i) =>
+      add(new OctahedronGeometry(0.28), ICE, sx, 0, sz, { delay: delay + 0.5 + i * 0.05, rotation: [turn, turn, 0.3] }),
+    );
+  }
+
+  // Giappone ------------------------------------------------------------------
+
+  function pagoda(x: number, z: number, size: number, delay: number) {
+    for (let i = 0; i < 3; i++) {
+      const y = i * 0.62 * size;
+      box((1.1 - i * 0.22) * size, 0.42 * size, (0.9 - i * 0.18) * size, 0x8a3a2a, x, y, z, { delay: delay + i * 0.1 });
+      box((1.65 - i * 0.3) * size, 0.1 * size, (1.35 - i * 0.25) * size, DARK, x, y + 0.42 * size, z, {
+        delay: delay + 0.05 + i * 0.1,
+      });
+    }
+    cylinder(0.03 * size, 0.05 * size, 0.6 * size, YELLOW, x, 1.86 * size, z, { delay: delay + 0.35 });
+  }
+
+  function torii(x: number, z: number, delay: number) {
+    [-0.6, 0.6].forEach((dx, i) => cylinder(0.08, 0.1, 1.7, VERMILION, x + dx, 0, z, { delay: delay + i * 0.05 }));
+    box(1.6, 0.1, 0.18, VERMILION, x, 1.3, z, { delay: delay + 0.12 });
+    box(1.95, 0.14, 0.24, DARK, x, 1.7, z, { delay: delay + 0.18 });
+  }
+
+  function lantern(x: number, z: number, delay: number) {
+    box(0.12, 0.45, 0.12, 0x9a9aa2, x, 0, z, { delay });
+    light(box(0.24, 0.22, 0.24, YELLOW, x, 0.45, z, { delay: delay + 0.06 }));
+    cone(0.24, 0.2, 0x9a9aa2, x, 0.67, z, { delay: delay + 0.1 });
+  }
+
+  function buildJapan() {
+    if (threat.scene.actor === "kaiju") return buildBay();
+    ground(0x56684a);
+    box(1.4, 0.03, 4, 0xc9c2ae, 0.35, 0, 0, { delay: 0.06, noInk: true });
+    pagoda(-1.85, -1.15, 1, 0.12);
+    torii(1.5, -1.2, 0.3);
+    bushyTree(2.55, 0.2, 1.4, BLOSSOM, 0.36);
+    bushyTree(-2.55, 0.9, 1.15, BLOSSOM, 0.42);
+    lantern(-0.75, 1.3, 0.5);
+    lantern(1.45, 1.35, 0.55);
+    drift(24, BLOSSOM, 0.04, { vx: 0.3, vy: -0.22, bottom: 0, top: 2.4, delay: 0.8 });
+    addActor(1, 0.7);
+  }
+
+  function buildBay() {
+    ground(0x0f6e96);
+    box(6, 0.25, 1.2, 0x3b3f4c, 0, 0, -1.55, { delay: 0.06 });
+    const random = seededRandom(threat.name);
+    [-2.3, -1.4, 1.5, 2.4].forEach((x, i) =>
+      tower(0.7, 1.2 + random() * 1.1, TOWER_COLORS[i], x, -1.6, random, { delay: 0.12 + i * 0.07 }),
+    );
+    pagoda(-0.55, -1.6, 0.6, 0.35);
+    // The railway along the shore, and the train it has bitten.
+    box(5.6, 0.12, 0.2, STEEL, 0, 0.25, -0.85, { delay: 0.4 });
+    box(0.9, 0.36, 0.42, CYAN, -1.9, 0.37, -0.85, { delay: 0.45 });
+    addActor(1, 0.6);
+  }
+
+  function swordsman(delay: number) {
+    // The arched bridge: two railings and the planks between them.
+    [0.45, 1.05].forEach((z, i) =>
+      add(new TorusGeometry(1.25, 0.06, 8, 26, Math.PI), VERMILION, 0, -0.05, z, {
+        delay: delay + i * 0.05,
+        outline: new TorusGeometry(1.25, 0.095, 8, 26, Math.PI),
+      }),
+    );
+    for (let i = 0; i < 7; i++) {
+      const angle = Math.PI * (0.12 + (0.76 * i) / 6);
+      box(0.4, 0.06, 0.62, 0x6b4a2a, Math.cos(angle) * 1.12, Math.sin(angle) * 1.12 - 0.08, 0.75, {
+        delay: delay + 0.1 + i * 0.03,
+        rotation: [0, 0, angle - Math.PI / 2],
+      });
+    }
+    // The swordsman on the top plank: robe, head, straw hat and the drawn blade.
+    const top = 1.06;
+    cylinder(0.17, 0.32, 0.8, DARK, 0, top, 0.75, { delay: delay + 0.4 });
+    ball(0.19, 0xe8c9a0, 0, top + 0.72, 0.75, { delay: delay + 0.48 });
+    cylinder(0.42, 0.42, 0.03, 0xd9b46a, 0, top + 0.98, 0.75, { delay: delay + 0.55 });
+    cone(0.22, 0.2, 0xd9b46a, 0, top + 1, 0.75, { delay: delay + 0.58 });
+    light(box(0.04, 0.95, 0.04, CREAM, 0.38, top + 0.3, 0.95, { delay: delay + 0.62, flat: true, rotation: [0, 0, -0.9] }));
+  }
+
+  function fox(delay: number) {
+    const x = 0.25;
+    const z = 0.55;
+    bob(add(new SphereGeometry(0.45, 16, 12), ORANGE, x, 0.3, z, { delay }), 0.1, 0.003);
+    // Nine tails, fanned out behind it, with white tips.
+    for (let i = 0; i < 9; i++) {
+      const tilt = -0.95 + (i / 8) * 1.9;
+      const tail = cone(0.16, 1.15, 0xf07a1a, x + Math.sin(tilt) * 0.2, 0.5, z - 0.4, {
+        delay: delay + 0.1 + i * 0.03,
+        rotation: [-0.45, 0, -tilt],
+      });
+      decorate(tail, new ConeGeometry(0.08, 0.3, 8), CREAM, [[0, 1, 0]]);
+    }
+    ball(0.3, ORANGE, x, 0.95, z + 0.25, { delay: delay + 0.42 });
+    cone(0.13, 0.32, CREAM, x, 0.95, z + 0.55, { delay: delay + 0.46, rotation: [Math.PI / 2, 0, 0] });
+    [-0.16, 0.16].forEach((dx, i) => cone(0.09, 0.28, ORANGE, x + dx, 1.15, z + 0.2, { delay: delay + 0.5 + i * 0.03 }));
+    light(box(0.28, 0.05, 0.04, CYAN, x, 1.03, z + 0.52, { delay: delay + 0.56, flat: true, noInk: true }));
+    // Foxfire.
+    const fires: [number, number][] = [
+      [-1.2, 1.2],
+      [1.5, 1.5],
+      [-0.6, 1.9],
+    ];
+    fires.forEach(([fx, fy], i) =>
+      bob(light(cone(0.1, 0.3, CYAN, fx, fy, 0.6, { delay: delay + 0.6 + i * 0.06, flat: true, noInk: true })), 0.2, 0.002 + i * 0.001),
+    );
+  }
+
+  function kaiju(delay: number) {
+    const hide = 0x2f6b4f;
+    const x = 0.5;
+    const z = 0.1;
+    const body = new SphereGeometry(0.75, 18, 14);
+    body.scale(1, 1.35, 0.85);
+    add(body, hide, x, -0.1, z, { delay });
+    cylinder(0.12, 0.34, 1.5, hide, x + 0.75, 0, z - 0.2, { delay: delay + 0.08, rotation: [0, 0.4, 1.25] });
+    box(0.22, 0.6, 0.24, hide, x - 0.65, 0.95, z + 0.35, { delay: delay + 0.14, rotation: [0.6, 0, -0.5] });
+    box(0.22, 0.6, 0.24, hide, x + 0.65, 0.95, z + 0.35, { delay: delay + 0.14, rotation: [0.6, 0, 0.5] });
+    box(0.62, 0.48, 0.7, hide, x, 1.85, z + 0.25, { delay: delay + 0.22 });
+    box(0.56, 0.16, 0.6, 0x24523d, x, 1.7, z + 0.4, { delay: delay + 0.28, rotation: [0.3, 0, 0] });
+    light(box(0.42, 0.07, 0.04, YELLOW, x, 2.15, z + 0.61, { delay: delay + 0.34, flat: true, noInk: true }));
+    // Dorsal plates glowing like a reactor.
+    for (let i = 0; i < 4; i++) {
+      light(
+        cone(0.12, 0.38 - i * 0.04, CYAN, x - 0.05, 2.1 - i * 0.42, z - 0.45 + i * 0.05, {
+          delay: delay + 0.4 + i * 0.05,
+          rotation: [-0.5, 0, 0],
+        }),
+      );
+    }
+    // The bitten train car, in its jaws.
+    box(0.75, 0.3, 0.34, CYAN, x - 0.55, 1.7, z + 0.62, { delay: delay + 0.55, rotation: [0, 0.3, 0.35] });
+  }
+
   const BUILDERS: Record<ThreatEnvironment, () => void> = {
     city: buildCity,
     port: buildPort,
@@ -641,6 +1241,11 @@ export function mountThreatDiorama(
     prison: buildPrison,
     battlefield: buildBattlefield,
     rift: buildRift,
+    desert: buildDesert,
+    jungle: buildJungle,
+    sunken: buildSunken,
+    ice: buildIce,
+    japan: buildJapan,
   };
   BUILDERS[threat.scene.environment]();
 
@@ -694,9 +1299,14 @@ export function mountThreatDiorama(
       const wide = 1 - (1 - eased) * 0.5;
       group.scale.set(Math.max(0.001, wide), Math.max(0.001, eased), Math.max(0.001, wide));
     }
+    for (const item of drifting) {
+      item.mesh.visible = settled || elapsed > item.delay;
+      if (item.mesh.visible) placeDrift(item, settled ? 0 : elapsed);
+    }
     if (!settled) {
       for (const part of blinking) part.visible = Math.sin(now * 0.012) > -0.6;
       for (const part of spinning) part.rotation.y = now * 0.0014;
+      for (const { group, base, height, speed } of bobbing) group.position.y = base + Math.abs(Math.sin(now * speed)) * height;
       root.position.x = shakes && elapsed > 1.2 ? Math.sin(now * 0.05) * 0.012 : 0;
       if (dragX === null) targetYaw += (REST_YAW + Math.sin(now * 0.0006) * 0.22 - targetYaw) * 0.02;
     }

@@ -83,6 +83,16 @@ export const balance = {
     underdogEliteMinRank: 4,
   },
 
+  /** The rules of the places beyond Nuova Megara, fixed for each of their threats (SPEC §5.4). */
+  places: {
+    /** Il conto lungo: points of the side that has won fewer rounds. */
+    longCountBonus: 3,
+    /** Gelo: the most a required ability counts. */
+    frostCap: 6,
+    /** Duello: how many of the highest required abilities count. */
+    duelCount: 2,
+  },
+
   conquest: {
     pickTimerSeconds: 30,
     starterSetSize: 10,

@@ -16,3 +16,24 @@ describe("describeThreatModifier", () => {
     expect(describeThreatModifier(modifier, "Forza").text).toBe("Delta +3, Alfa e Omega -3.");
   });
 });
+
+describe("the rules of the places", () => {
+  const names: Record<string, string> = { ENE: "Energia", MAG: "Magia", PSI: "Psiche" };
+
+  it("lists the abilities Abissi doubles", () => {
+    const abyss = { code: "abyss", abilities: ["ENE", "MAG", "PSI"] } as const;
+    expect(describeThreatModifier(abyss, "Forza", (code) => names[code])).toEqual({
+      name: "Abissi",
+      text: "Energia, Magia e Psiche contano doppio.",
+    });
+  });
+
+  it("tells the numbers of Gelo, Duello and Il conto lungo", () => {
+    expect(describeThreatModifier({ code: "frost", cap: 6 }, "Forza").text).toBe("Nessuna abilità conta più di 6.");
+    expect(describeThreatModifier({ code: "duel", count: 2 }, "Forza").text).toBe(
+      "Contano solo le 2 abilità più alte tra quelle richieste.",
+    );
+    expect(describeThreatModifier({ code: "long_count", bonus: 3 }, "Forza").text).toBe("+3 a chi finora ha vinto meno round.");
+    expect(describeThreatModifier({ code: "tomb_silence" }, "Forza").name).toBe("Silenzio della tomba");
+  });
+});

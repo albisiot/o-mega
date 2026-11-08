@@ -24,7 +24,7 @@ Un **nuovo mondo di supereroi e supercattivi**: la città di **Nuova Megara**, d
 
 Il catalogo dell'MVP comprende:
 - circa **60 carte personaggio** (eroi e cattivi, tutti giocabili dal giocatore), con nome, testo e immagine definitivi;
-- circa **60 carte Minaccia** (gli scenari e nemici da sconfiggere durante la partita, gestiti dal server e non collezionabili), circa 10 per ciascun livello da 1 a 6, con testi ancora segnaposto.
+- circa **60 carte Minaccia** (gli scenari e nemici da sconfiggere durante la partita, gestiti dal server e non collezionabili), circa 10 per ciascun livello da 1 a 6, con testi ancora segnaposto. A queste si aggiungono **15 Minacce oltre Nuova Megara**, in cinque luoghi del mondo con la loro regola (§5.4).
 
 Le carte personaggio appartengono a una **fazione** (es. Eroi / Cattivi / Neutrali, da definire). Nell'MVP la fazione è solo un'etichetta; gli eventuali effetti verranno decisi più avanti.
 
@@ -198,6 +198,19 @@ Ogni Minaccia ha un **livello da 1 a 6**, che corrisponde al **numero di abilit�
 | Sottovalutati | Delta +3, Alfa e Omega -3 | Le carte comuni |
 
 Il punteggio non scende sotto 0 e lo spareggio sul valore più alto usa i valori normali. Da simulazione sul catalogo a 114 personaggi con i budget per rarità (§4.3), Difficile contro Difficile, una squadra di Alfa e Omega contro una di Delta passa dal 92% all'89% di vittorie: il vantaggio delle carte rare resta. I valori sono in `balance.ts` e `game_config`.
+- **Minacce oltre Nuova Megara:** 15 Minacce in cinque luoghi del mondo, tre per luogo, con nome e testo definitivi (`threat_definitions.region`). Ogni luogo ha **la sua regola**, sempre attiva sulle sue Minacce e mai sorteggiata: si scopre insieme alla Minaccia, come un modificatore. I modificatori sorteggiati (1 o 2 per partita) vanno solo sulle Minacce di Nuova Megara, quindi una Minaccia ha al massimo una regola. Le Minacce dei luoghi si pescano come le altre: per livello sono 12 o 13 invece di 10.
+
+| Luogo | Regola | Effetto | Favorisce | Minacce (livello) |
+|---|---|---|---|---|
+| Giza | Silenzio della tomba | Nessun potere funziona nel round, per entrambi: niente bonus, Sabotatore, Implacabile, Riscossa o Slancio per il round dopo, Veggente e Spia non svelano nulla. Il bonus già ricevuto dal round prima resta (come contro un Annullatore) | Chi non dipende dai poteri | Trappola della tomba (1), Mummia del cantiere (4), Risveglio della Sfinge (6) |
+| Yucatán | Il conto lungo | +3 a chi finora ha vinto meno round; a parità nessuno | Chi è in svantaggio | Gioco della palla (2), Calendario impazzito (3), Serpente di luce (5) |
+| Atlantide | Abissi | Energia, Magia e Psiche contano doppio | Le carte di Potere | Canto dagli abissi (1), Guardiano di oricalco (3), Atlantide riemerge (5) |
+| Artico | Gelo | Nessuna abilità richiesta conta più di 6 | I generalisti | Tormenta (2), Base sotto il ghiaccio (4), Cosa nel ghiaccio (6) |
+| Giappone | Duello | Contano solo le 2 abilità richieste più alte | Gli specialisti, anche sulle Minacce grandi | Spadaccino del ponte (3), Volpe a nove code (4), Kaiju nella baia (5) |
+
+Come per i modificatori, lo spareggio usa i valori normali. I numeri (+3, 6, 2) sono in `balance.ts` (`places`) e `game_config` (`places.*`).
+
+Da simulazione sul catalogo a 122 personaggi (3.000 partite per caso, Difficile contro Difficile, stesse squadre con e senza i luoghi), i rapporti di forza non cambiano oltre il margine d'errore (±1,7): Gamma su Delta 63% → 63%, Beta su Gamma 65% → 65%, Alfa su Beta 66% → 66%, Omega su Alfa 62% → 63%, Alfa e Omega su Delta 86% → 88%; una squadra con Sabotatore 59% → 59%, le squadre di valori piatti 30% → 30%, Difficile contro Medio 50% → 50%. Nei round, quando le due carte differiscono: con Duello vince la carta col picco più alto il 94% delle volte (86% senza regola) e il minimo non conta più (50%); con Gelo il picco conta meno (67%) e il minimo di più (76%); con Silenzio della tomba la carta più rara vince il 71% (64% senza regola), perché i poteri semplici di Gamma e Beta non colmano più il distacco. Il database scrive la regola del luogo in `matches.threat_modifiers` alla creazione della partita e la ripristina se qualcuno riscrive i modificatori (una missione della Storia).
 - **Composizione dei livelli in una partita:** il server sceglie i 5 livelli in modo che la partita sia varia. Default: almeno una Minaccia di livello 1-2, almeno una di livello 5-6, somma dei livelli tra 14 e 20, ordine casuale. I parametri sono in configurazione.
 
 **Intento di design:** sapendo solo i livelli, il giocatore decide se tenere lo specialista per la Minaccia di livello 1 (dove conta un solo valore altissimo) e il generalista per quella di livello 6 (dove contano tanti valori discreti), senza però sapere quali abilità usciranno né chi schiererà l'avversario.
@@ -256,6 +269,7 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 - **Punteggio richiesto:** una Minaccia è superata se il punteggio arriva alla soglia del suo livello: 7, 13, 18, 23, 28, 32 (dal livello 1 al 6).
 - **Fine:** dopo l'ultima Minaccia o alla **terza fallita**.
 - **Livelli:** stesse regole di §5.4, con somma tra 24 e 32.
+- **Solo Nuova Megara:** l'Emergenza estrae solo le 60 Minacce di Nuova Megara, mai quelle dei luoghi (§5.4): con Gelo o Duello alcune soglie sarebbero irraggiungibili (livello 2 al massimo 12 contro 13, livello 5 al massimo 20 contro 28). Così soglie e difficoltà restano quelle tarate.
 - **Premi:** 10 monete a 3 Minacce superate, altre 15 a 5, altre 25 a 8 (massimo 50 al giorno). Si ricevono subito, quindi restano anche se il tentativo non viene finito. Nessuna esperienza e nessun effetto sulle statistiche di partita o sullo sblocco della Conquista.
 - **Classifica di giornata:** solo i tentativi finiti, per Minacce superate, poi punteggio totale, poi chi ha finito prima. Non mostra i personaggi giocati, che rivelerebbero le Minacce.
 
@@ -280,7 +294,7 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 
 Capitoli di missioni da giocare da soli contro gli avversari di Nuova Megara. La trama dei capitoli è in `docs/STORY.md`; i testi nel database restano **segnaposto** finché non vengono riscritti su quella base.
 
-- **Missione:** una partita contro un bot con squadra, 5 Minacce e modificatori scelti a mano (`story_missions`), non sorteggiati. Il giocatore vede in anticipo solo i livelli, come in ogni partita. Le regole sono quelle di §5.
+- **Missione:** una partita contro un bot con squadra, 5 Minacce e modificatori scelti a mano (`story_missions`), non sorteggiati. Il giocatore vede in anticipo solo i livelli, come in ogni partita. Le regole sono quelle di §5. Una missione con una Minaccia di un luogo ne tiene sempre la regola, qualunque modificatore scelga.
 - **Ordine:** la prima missione è aperta; ogni altra si apre completando quella prima, anche tra un capitolo e l'altro.
 - **Finale del capitolo:** un testo (`story_chapters.outro`) che il server manda solo a chi ha completato tutte le missioni del capitolo; la pagina Storia lo mostra sotto l'elenco.
 - **Premi solo alla prima vittoria**, pagati dal database nella stessa transazione che chiude la partita: monete a ogni missione, e una carta per il boss di fine capitolo. Le missioni si possono rigiocare senza premi. Sconfitte e abbandoni non pagano.
@@ -520,6 +534,7 @@ Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy
 | Squadra in Conquista | Almeno 3 carte conquistabili (non starter). Se un personaggio è posseduto sia come starter sia come doppione, il giocatore sceglie quale copia schierare (di default la starter, protetta). |
 | Sblocco Conquista | 5 partite completate o livello 3; le partite abbandonate non contano. |
 | Personaggi sbloccabili | Alcune carte hanno un livello di sblocco: non escono da pacchetti e starter set, ogni giocatore ne riceve una copia a quel livello, legata all'account (mai conquistabile né convertibile). Elenco in `docs/WORLD.md`. |
+| Minacce oltre Nuova Megara | Regola fissa per luogo, non nuovi modificatori sorteggiati; i modificatori sorteggiati restano alle Minacce di Nuova Megara; l'Emergenza non estrae le Minacce dei luoghi (§5.4, §5.10). |
 
 ### 13.2 Aperte (usare il default)
 

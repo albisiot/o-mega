@@ -48,20 +48,47 @@ function abilityValue(character: Character, ability: AbilityCode, malus: number)
 export function baseScore(character: Character, threat: Threat, malus = 0): number {
   const values = threat.abilities.map((ability) => abilityValue(character, ability, malus));
   const sum = values.reduce((total, value) => total + value, 0);
-  switch (threat.modifier?.code) {
+  const modifier = threat.modifier;
+  switch (modifier?.code) {
     case "focus":
       return sum + (values[0] ?? 0);
     case "weak_link":
       return sum + Math.min(...values);
+    case "abyss": {
+      const doubled = modifier.abilities;
+      return sum + threat.abilities.reduce((extra, ability, i) => (doubled.includes(ability) ? extra + values[i] : extra), 0);
+    }
+    case "frost": {
+      const cap = modifier.cap;
+      return values.reduce((total, value) => total + Math.min(value, cap), 0);
+    }
+    case "duel":
+      return [...values]
+        .sort((x, y) => y - x)
+        .slice(0, modifier.count)
+        .reduce((total, value) => total + value, 0);
     default:
       return sum;
   }
 }
 
-/** Points a modifier gives or takes whatever the abilities. */
-export function modifierBonus(character: Character, threat: Threat): number {
+/** Silenzio della tomba: in this round no power acts, on either side. */
+export function powersSilenced(threat: Threat | null | undefined): boolean {
+  return threat?.modifier?.code === "tomb_silence";
+}
+
+/** Rounds won so far by a side and by its opponent (Il conto lungo). */
+export type Standing = { roundsWon: number; opponentRoundsWon: number };
+
+/**
+ * Points a modifier gives or takes whatever the abilities. Il conto lungo needs the
+ * standing before the round: without it, it gives nothing.
+ */
+export function modifierBonus(character: Character, threat: Threat, standing?: Standing): number {
   const modifier = threat.modifier;
   switch (modifier?.code) {
+    case "long_count":
+      return standing && standing.roundsWon < standing.opponentRoundsWon ? modifier.bonus : 0;
     case "hostile_ground":
       if (character.faction === modifier.favored) return modifier.bonus;
       return character.faction === modifier.hindered ? -modifier.malus : 0;
@@ -74,8 +101,8 @@ export function modifierBonus(character: Character, threat: Threat): number {
 }
 
 /** The modifier's points as they count for the character: Adattabile ignores a malus. */
-export function modifierPoints(character: Character, threat: Threat): number {
-  const points = modifierBonus(character, threat);
+export function modifierPoints(character: Character, threat: Threat, standing?: Standing): number {
+  const points = modifierBonus(character, threat, standing);
   return character.power?.code === "adaptable" ? Math.max(0, points) : points;
 }
 
@@ -178,11 +205,18 @@ export function nullifiesPower(character: Character): boolean {
 }
 
 /**
- * The character as it plays against `opponent`: without its power when the
- * opponent is an Annullatore. Two Annullatori cancel each other.
+ * The character as it plays against `opponent` on `threat`: without its power when
+ * the opponent is an Annullatore, or when the threat silences every power
+ * (Silenzio della tomba). Two Annullatori cancel each other.
  */
-export function asPlayedAgainst(character: Character, opponent: Character | null | undefined): Character {
-  return opponent && nullifiesPower(opponent) && character.power ? { ...character, power: null } : character;
+export function asPlayedAgainst(
+  character: Character,
+  opponent: Character | null | undefined,
+  threat?: Threat | null,
+): Character {
+  if (!character.power) return character;
+  const silenced = powersSilenced(threat) || Boolean(opponent && !powersSilenced(threat) && nullifiesPower(opponent));
+  return silenced ? { ...character, power: null } : character;
 }
 
 /** Veggente: once played, its side sees every threat of the following rounds. */
@@ -283,6 +317,12 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
 }
 
 export function scorePlay(character: Character, threat: Threat, context: ScoreContext): PlayScore {
+  // Silenzio della tomba: no power of either side, so no Sabotatore either. A bonus
+  // received from an earlier round (Riscossa, Slancio, Capobranco) still counts.
+  if (powersSilenced(threat)) {
+    if (character.power) character = { ...character, power: null };
+    context = { ...context, abilityMalus: 0 };
+  }
   const code = character.power?.code;
   // Schermato and Riflesso: immune to Sabotatore.
   if (immuneToSabotage(character)) context = { ...context, abilityMalus: 0 };
@@ -291,7 +331,7 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
   // Sacrificio: the character gives up the round, whatever it would have scored.
   if (code === "sacrifice") return { characterId: character.id, base, bonus: -base, total: 0, highest: 0 };
   const power = powerBonus(character, threat, context) * powerMultiplier(context);
-  const modifier = modifierPoints(character, threat);
+  const modifier = modifierPoints(character, threat, context);
   // A malus cannot bring the score below 0: the bonus stays the difference from the base.
   const total = Math.max(0, base + power + packBonus(character, context.played) + context.carriedBonus + modifier);
   return {

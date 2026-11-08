@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "9 novembre 2026",
     changes: [
+      "Il sismografo registra scosse anche lontano da Nuova Megara: 15 nuove Minacce in cinque luoghi del mondo, ognuno con il suo diorama 3D e una regola sempre attiva. Giza, Silenzio della tomba: nessun potere funziona. Yucatán, Il conto lungo: +3 a chi ha vinto meno round. Atlantide, Abissi: Energia, Magia e Psiche contano doppio. Artico, Gelo: nessuna abilità conta più di 6. Giappone, Duello: contano solo le 2 abilità più alte. La regola si scopre insieme alla Minaccia; l'Emergenza resta a Nuova Megara.",
       "In partita tieni premuta una carta per vederla intera: nome, rarità, fazione, potere, le 12 abilità e il testo. Vale in ogni modalità, Storia ed Emergenza comprese: per le carte della mano, quelle del risultato del round (anche la carta avversaria), quelle svelate da Spia e quelle della scelta della squadra. Il tocco breve sceglie la carta come prima; la finestra si chiude toccando fuori o con Chiudi.",
     ],
   },

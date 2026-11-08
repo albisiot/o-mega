@@ -282,3 +282,45 @@ describe("computeAbilityMeans", () => {
     expect(means.VEL).toBe(4);
   });
 });
+
+describe("bots and the rules of the places", () => {
+  it("hard plays the generalist where Gelo caps the specialist, keeping the specialist for a level 1", () => {
+    const frozen: Threat = { ...threat("now", ["FOR", "VEL", "RES"]), modifier: { code: "frost", cap: 6 } };
+    const pool: Threat[] = [threat("f1", ["FOR"]), threat("f2", ["VEL"]), threat("f3", ["RES"])];
+    const choice = chooseBotPlay(
+      "hard",
+      view({ available: [specialist, generalist], currentThreat: frozen, futureLevels: [1], threatPool: pool }),
+      mulberry32(1),
+    );
+    expect(choice).toBe("gen");
+  });
+
+  it("medium sees that Silenzio della tomba switches Sabotatore off", () => {
+    const silent: Threat = { ...threat("now", ["FOR", "VEL", "RES", "INT"]), modifier: { code: "tomb_silence" } };
+    const saboteur = character("sab", { FOR: 4 }, { code: "sabotage", params: { malus: 1 } }, 4);
+    const plain = character("plain", { FOR: 5 }, null, 4);
+    for (let seed = 0; seed < 10; seed++) {
+      expect(chooseBotPlay("medium", view({ available: [saboteur, plain], currentThreat: silent }), mulberry32(seed))).toBe("plain");
+    }
+  });
+
+  it("every bot plays a match made of the places' threats", () => {
+    const effects = [
+      { code: "tomb_silence" },
+      { code: "long_count", bonus: 3 },
+      { code: "abyss", abilities: ["ENE", "MAG", "PSI"] },
+      { code: "frost", cap: 6 },
+      { code: "duel", count: 2 },
+    ] as const;
+    const pool = threatCatalog().map((t, i) => ({ ...t, modifier: effects[i % effects.length] }));
+    const available = Array.from({ length: 5 }, (_, i) => character(`c${i}`, { [ABILITIES[i]]: 9 }, null, 3));
+    for (const difficulty of ["easy", "medium", "hard", "super_pro"] as const) {
+      const choice = chooseBotPlay(
+        difficulty,
+        view({ available, currentThreat: pool[25], futureLevels: [1, 5, 6, 2], threatPool: pool, roundsWon: 1 }),
+        mulberry32(3),
+      );
+      expect(available.map((c) => c.id)).toContain(choice);
+    }
+  });
+});

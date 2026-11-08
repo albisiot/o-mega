@@ -50,11 +50,14 @@ export function outcomeFor(winner: Side | null, side: Side): PlayOutcome {
   return winner === null ? "void" : winner === side ? "won" : "lost";
 }
 
-/** The character a side played in a resolved round, as it played: without its power against an Annullatore. */
+/**
+ * The character a side played in a resolved round, as it played: without its power
+ * against an Annullatore or on a threat that silences powers.
+ */
 export function playedIn(state: MatchState, round: RoundRecord, side: Side): Character | undefined {
   const find = (s: Side) => state.teams[s].find((c) => c.id === round.plays[s].characterId);
   const character = find(side);
-  return character && asPlayedAgainst(character, find(otherSide(side)));
+  return character && asPlayedAgainst(character, find(otherSide(side)), state.threats[round.round - 1]);
 }
 
 /** Bonus a side carries into the next round (Riscossa after a lost round, Slancio after a won one). */
@@ -125,8 +128,8 @@ export function resolveRound(
     chosen[side] = character;
   }
 
-  // Annullatore: each character plays without its power against one.
-  const acting = { a: asPlayedAgainst(chosen.a, chosen.b), b: asPlayedAgainst(chosen.b, chosen.a) };
+  // Annullatore, Silenzio della tomba: the character plays without its power.
+  const acting = { a: asPlayedAgainst(chosen.a, chosen.b, threat), b: asPlayedAgainst(chosen.b, chosen.a, threat) };
 
   const plays = {} as Record<Side, PlayRecord>;
   for (const side of SIDES) {

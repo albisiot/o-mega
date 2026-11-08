@@ -4,7 +4,7 @@
 // or at the failure limit. Pure: the Edge Function loads and stores.
 
 import type { Rng } from "./rng.ts";
-import { abilityMalusFrom, carriedBonusAfter, scorePlay } from "./scoring.ts";
+import { abilityMalusFrom, carriedBonusAfter, powersSilenced, scorePlay } from "./scoring.ts";
 import { drawThreatLevels, pickThreats } from "./threats.ts";
 import type { AbilityFamilies, Character, MatchRules, PlayScore, Threat, ThreatLevelRules } from "./types.ts";
 
@@ -43,8 +43,11 @@ export function drawEmergencyThreats(rng: Rng, catalog: readonly Threat[], rules
 export function requiredScore(character: Character, threat: Threat, rules: EmergencyRules): number {
   const target = rules.targets[threat.level];
   if (target === undefined) throw new Error(`No target for threat level ${threat.level}`);
-  const sabotage = abilityMalusFrom(character) * threat.abilities.length;
-  const relentless = character.power?.code === "relentless" ? 1 : 0;
+  // Silenzio della tomba: no power, so no discount. Emergenza draws only threats of
+  // Nuova Megara, which have no such effect; this keeps the rule right anyway.
+  const silenced = powersSilenced(threat);
+  const sabotage = silenced ? 0 : abilityMalusFrom(character) * threat.abilities.length;
+  const relentless = !silenced && character.power?.code === "relentless" ? 1 : 0;
   return Math.max(0, target - sabotage - relentless);
 }
 

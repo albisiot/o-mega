@@ -4,6 +4,8 @@ import {
   modifierPoints,
   type Character,
   type PlayOutcome,
+  type Standing,
+  type Threat,
   type ThreatModifier,
 } from "@o-mega/game-engine";
 import { toCharacter, type MatchCard, type MatchRound } from "@/lib/match";
@@ -20,6 +22,10 @@ export type RoundOutcome = {
   won?: boolean;
   /** An opposing Annullatore took this card's power away. */
   nullified?: boolean;
+  /** Silenzio della tomba: no power acted in this round. */
+  silenced?: boolean;
+  /** Rounds won by this card's side and by the other before the round (Il conto lungo). */
+  standing?: Standing;
   /** The opposing card has a power (what an Annullatore takes away). */
   opponentHasPower?: boolean;
   /** Implacabile settled a tie in this card's favor. */
@@ -45,7 +51,9 @@ export function roundPowerNotes(
 ): PowerNote[] {
   const notes: PowerNote[] = [];
   const power = card.power;
-  if (power && outcome.nullified) {
+  if (power && outcome.silenced) {
+    notes.push({ name: power.name, effect: "zittito dalla tomba", active: false });
+  } else if (power && outcome.nullified) {
     notes.push({ name: power.name, effect: "annullato", active: false });
   } else if (power) {
     const character = toCharacter(card, card.definition_id);
@@ -101,7 +109,10 @@ export function roundPowerNotes(
         break;
       default: {
         const points =
-          play.bonus - outcome.carried - (outcome.pack ?? 0) - modifierPoints(character, { id: "round", ...threat });
+          play.bonus -
+          outcome.carried -
+          (outcome.pack ?? 0) -
+          modifierPoints(character, { id: "round", ...threat }, outcome.standing);
         notes.push({
           name: power.name,
           effect: points ? `${points > 0 ? "+" : "−"}${Math.abs(points)}` : null,
@@ -135,28 +146,47 @@ export function playedBefore(
       const theirs = r.opponent_play;
       const [own, other] = side === "me" ? [mine, theirs] : [theirs, mine];
       if (!own) return [];
-      return [asPlayedAgainst(toCharacter(own, own.definition_id), other ? toCharacter(other, "opponent") : null)];
+      const character = toCharacter(own, own.definition_id);
+      return [asPlayedAgainst(character, other ? toCharacter(other, "opponent") : null, roundThreat(r))];
     });
 }
 
-/** Whether an opposing Annullatore took `card`'s power away in a round. */
-export function wasNullified(card: MatchCard | null | undefined, opponent: MatchCard | null | undefined): boolean {
-  return Boolean(card?.power && opponent?.power?.code === "nullifier");
+/** A round's threat as the rules engine reads it. */
+export function roundThreat(round: Pick<MatchRound, "level" | "threat" | "modifier">): Threat {
+  return { id: "round", level: round.level, abilities: round.threat.abilities, modifier: round.modifier };
+}
+
+/** Silenzio della tomba: no power acted in a round with this modifier. */
+export function wasSilenced(card: MatchCard | null | undefined, modifier: ThreatModifier | null | undefined): boolean {
+  return Boolean(card?.power && modifier?.code === "tomb_silence");
+}
+
+/**
+ * Whether an opposing Annullatore took `card`'s power away in a round. On a threat
+ * that silences every power the Annullatore has none to use: see wasSilenced.
+ */
+export function wasNullified(
+  card: MatchCard | null | undefined,
+  opponent: MatchCard | null | undefined,
+  modifier?: ThreatModifier | null,
+): boolean {
+  return Boolean(card?.power && opponent?.power?.code === "nullifier" && modifier?.code !== "tomb_silence");
 }
 
 /**
  * The bonus a side's card receives from the card that side played in the previous
  * round (Riscossa after a loss, Slancio after a win), and the power that gave it.
- * Nothing when an opposing Annullatore stopped that power.
+ * Nothing when an opposing Annullatore, or Silenzio della tomba, stopped that power.
  */
 export function carriedInto(
   previousCard: MatchCard | null | undefined,
   previousOutcome: PlayOutcome,
   previousOpponent?: MatchCard | null,
+  previousThreat?: Threat | null,
 ): { points: number; from: string | undefined } {
   if (!previousCard) return { points: 0, from: undefined };
   const opponent = previousOpponent ? toCharacter(previousOpponent, "opponent") : null;
-  const character = asPlayedAgainst(toCharacter(previousCard, previousCard.definition_id), opponent);
+  const character = asPlayedAgainst(toCharacter(previousCard, previousCard.definition_id), opponent, previousThreat);
   const points = carriedBonusAfter(character, previousOutcome);
   return { points, from: points > 0 ? previousCard.power?.name : undefined };
 }

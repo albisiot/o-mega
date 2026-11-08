@@ -11,6 +11,7 @@ import {
   drawThreatLevels,
   pickOne,
   pickThreats,
+  placeModifier,
   planBotMatch,
   playBotRound,
   playPvpRound,
@@ -112,6 +113,8 @@ type Loaded = {
   emergency: EmergencyRules;
   graceSeconds: number;
   catalog: BotMatchCatalog;
+  /** Threats of Nuova Megara only: Emergenza never draws the places beyond it. */
+  emergencyCatalog: Threat[];
   definitions: Map<string, Definition>;
   threats: Map<string, Threat>;
 };
@@ -134,7 +137,9 @@ async function load(): Promise<Loaded> {
   const [definitions, rarities, threats, abilities, config] = await Promise.all([
     admin.from("card_definitions").select("id, faction, rarity_code, stats, power_code, power_params, is_active"),
     admin.from("rarity_definitions").select("code, rank"),
-    admin.from("threat_definitions").select("id, level, required_abilities, is_active"),
+    admin
+      .from("threat_definitions")
+      .select("id, level, required_abilities, is_active, region, modifier_code, modifier_params"),
     admin.from("ability_definitions").select("code, family"),
     admin.from("game_config").select("key, value"),
   ]);
@@ -149,9 +154,31 @@ async function load(): Promise<Loaded> {
   const definitionRows = (check(definitions) as (Omit<Definition, "rarity_rank"> & { rarity_code: string; is_active: boolean })[]).map(
     (d) => ({ ...d, rarity_rank: ranks.get(d.rarity_code) ?? 1 }),
   );
-  const threatRows = check(threats) as { id: string; level: number; required_abilities: string[]; is_active: boolean }[];
+  const threatRows = check(threats) as {
+    id: string;
+    level: number;
+    required_abilities: string[];
+    is_active: boolean;
+    region: string;
+    modifier_code: string | null;
+    modifier_params: Record<string, unknown> | null;
+  }[];
   const activeCharacters = definitionRows.filter((d) => d.is_active).map((d) => toCharacter(d));
-  const threatList = threatRows.map((t) => ({ id: t.id, level: t.level, abilities: t.required_abilities, active: t.is_active }));
+  const places = {
+    longCountBonus: value("places.long_count_bonus"),
+    frostCap: value("places.frost_cap"),
+    duelCount: value("places.duel_count"),
+  };
+  const threatList = threatRows.map((t) => ({
+    id: t.id,
+    level: t.level,
+    abilities: t.required_abilities,
+    active: t.is_active,
+    region: t.region,
+    // A place's own rule: the bots plan future rounds knowing it.
+    modifier: placeModifier(t.modifier_code, t.modifier_params, places),
+  }));
+  const activeThreats = threatList.filter((t) => t.active);
 
   const loaded: Loaded = {
     rules: {
@@ -183,10 +210,13 @@ async function load(): Promise<Loaded> {
     graceSeconds: value("match.timeout_grace_seconds"),
     catalog: {
       characters: activeCharacters,
-      threatCatalog: threatList.filter((t) => t.active).map(({ id, level, abilities }) => ({ id, level, abilities })),
+      threatCatalog: activeThreats.map(({ id, level, abilities, modifier }) => ({ id, level, abilities, modifier })),
       families: Object.fromEntries(check(abilities).map((a) => [a.code, a.family])),
       abilityMeans: computeAbilityMeans(activeCharacters),
     },
+    emergencyCatalog: activeThreats
+      .filter((t) => t.region === "megara")
+      .map(({ id, level, abilities }) => ({ id, level, abilities })),
     definitions: new Map(definitionRows.map((d) => [d.id, d])),
     threats: new Map(threatList.map(({ id, level, abilities }) => [id, { id, level, abilities }])),
   };
@@ -477,7 +507,7 @@ async function submitChoice(userId: string, body: Record<string, unknown>) {
 
 /** The first request of the day draws the threats; the database keeps that draw for everyone. */
 async function ensureEmergencyDay(loaded: Loaded) {
-  const threats = drawEmergencyThreats(rng, loaded.catalog.threatCatalog, loaded.emergency);
+  const threats = drawEmergencyThreats(rng, loaded.emergencyCatalog, loaded.emergency);
   const { error } = await admin.rpc("emergency_ensure_day", { p_threat_ids: threats.map((t) => t.id) });
   if (error) throw new Error(error.message);
 }

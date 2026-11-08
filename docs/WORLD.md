@@ -299,6 +299,20 @@ Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richi
 | 3-4 | Un quartiere, un'istituzione | Rapina al treno blindato |
 | 5-6 | Tutta la città | Invasione dimensionale |
 
+### Oltre Nuova Megara
+
+Il sismografo comincia a registrare scosse lontane: altre pietre dell'Alfabeto affiorano nel resto del mondo, e quello che dormiva accanto a loro si sveglia. Il Banco affitta i Reggenti all'estero, si tiene la provvigione e li fa viaggiare in economy. Nessuna cultura o religione reale fa da cattivo: le Minacce sono meccanismi e creature risvegliati dall'Ora Zero. Ogni luogo ha una regola che si spiega nella storia:
+
+| Luogo | Regola | Perché |
+|---|---|---|
+| Giza | Silenzio della tomba | Nelle camere sepolte i Segni si spengono |
+| Yucatán | Il conto lungo | Il calendario di pietra rimette in pari i conti |
+| Atlantide | Abissi | Sott'acqua contano le forze antiche: Energia, Magia, Psiche |
+| Artico | Gelo | Il freddo smussa ogni talento |
+| Giappone | Duello | Uno contro uno: vince il colpo migliore |
+
+Le regole e le Minacce sono in `docs/SPEC.md` §5.4.
+
 ## 7. Sceneggiature
 
 ### Stagione 1: *Il Rintocco*

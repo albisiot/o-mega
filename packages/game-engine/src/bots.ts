@@ -17,9 +17,11 @@ import {
   abilityMalusFrom,
   abilityMalusOn,
   asPlayedAgainst,
+  baseScore,
   carriedBonusAfter,
   compareScores,
   hidesIdentity,
+  powersSilenced,
   revealsFutureThreats,
   scorePlay,
   type ScoreContext,
@@ -163,6 +165,8 @@ const OPPONENT_POWERS = new Set(["nemesis", "shielded", "giant_slayer", "counter
  */
 function effectiveScore(character: Character, threat: Threat, context: ScoreContext, opponents?: readonly Character[]): number {
   const own = scorePlay(character, threat, context).total;
+  // Silenzio della tomba: no power acts, on either side, so the score is all there is.
+  if (powersSilenced(threat)) return own;
   let score = own + abilityMalusFrom(character) * threat.level;
   const code = character.power?.code;
   if (opponents?.length && code && OPPONENT_POWERS.has(code)) {
@@ -273,8 +277,8 @@ function playOut(view: BotView, first: Character, opponents: Character[], threat
     round += 1;
     lastLevel = threat.level;
 
-    const ownActing = asPlayedAgainst(ownCharacter, theirCharacter);
-    const theirActing = asPlayedAgainst(theirCharacter, ownCharacter);
+    const ownActing = asPlayedAgainst(ownCharacter, theirCharacter, threat);
+    const theirActing = asPlayedAgainst(theirCharacter, ownCharacter, threat);
     const ownScore = scorePlay(ownActing, threat, {
       ...ownContext,
       abilityMalus: abilityMalusOn(ownActing, theirActing),
@@ -341,12 +345,22 @@ function simulateBestPlay(view: BotView, rng: Rng): string {
   return options[wins.indexOf(Math.max(...wins))].id;
 }
 
-/** Estimated chance that `score` beats a typical opponent on `threat`. */
-function winChance(score: number, threat: Threat, abilityMeans: Record<AbilityCode, number>): number {
-  const means = threat.abilities.map((ability) => abilityMeans[ability] ?? 0);
-  const doubled = threat.modifier?.code === "focus" ? means[0] : threat.modifier?.code === "weak_link" ? Math.min(...means) : 0;
-  const expected = means.reduce((sum, mean) => sum + mean, doubled);
-  const scale = 2.5 * Math.sqrt(threat.level);
+/**
+ * Estimated chance that `score` beats a typical opponent on `threat`: a character with
+ * the catalog's mean values, counted as the modifier says, plus the points the
+ * opponent gets whatever its abilities (Il conto lungo).
+ */
+function winChance(
+  score: number,
+  threat: Threat,
+  abilityMeans: Record<AbilityCode, number>,
+  opponentBonus = 0,
+): number {
+  const typical: Character = { id: "typical", definitionId: "typical", faction: "", rarityRank: 0, stats: abilityMeans, power: null };
+  const expected = baseScore(typical, threat) + opponentBonus;
+  // Duello counts fewer abilities, so scores spread less.
+  const counted = threat.modifier?.code === "duel" ? Math.min(threat.level, threat.modifier.count) : threat.level;
+  const scale = 2.5 * Math.sqrt(counted);
   return 1 / (1 + Math.exp(-(score - expected) / scale));
 }
 
@@ -365,7 +379,10 @@ function planHardPlay(view: BotView, rng: Rng): string {
   const expectedWins = (character: Character, roundIndex: number): number => {
     if (roundIndex === 0) {
       const score = effectiveScore(character, view.currentThreat, context, view.opponentPool);
-      return winChance(score, view.currentThreat, view.abilityMeans);
+      // Il conto lungo pays the opponent when the bot is ahead.
+      const modifier = view.currentThreat.modifier;
+      const opponentBonus = modifier?.code === "long_count" && view.opponentRoundsWon < view.roundsWon ? modifier.bonus : 0;
+      return winChance(score, view.currentThreat, view.abilityMeans, opponentBonus);
     }
     const level = view.futureLevels[roundIndex - 1];
     const known = view.foreseenThreats?.[roundIndex - 1];

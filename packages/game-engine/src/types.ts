@@ -28,7 +28,18 @@ export type ThreatModifier =
   | { code: "weak_link" }
   | { code: "hostile_ground"; favored: string; hindered: string; bonus: number; malus: number }
   /** Rarity up to `commonMaxRank` gains the bonus, from `eliteMinRank` takes the malus. */
-  | { code: "underdogs"; commonMaxRank: number; eliteMinRank: number; bonus: number; malus: number };
+  | { code: "underdogs"; commonMaxRank: number; eliteMinRank: number; bonus: number; malus: number }
+  // The rules of the places beyond Nuova Megara: fixed for each threat of that place, never drawn.
+  /** Silenzio della tomba (Giza): no power acts in this round, on either side. */
+  | { code: "tomb_silence" }
+  /** Il conto lungo (Yucatán): the side that has won fewer rounds so far gains the bonus. */
+  | { code: "long_count"; bonus: number }
+  /** Abissi (Atlantide): these abilities count double when required. */
+  | { code: "abyss"; abilities: readonly AbilityCode[] }
+  /** Gelo (Artico): no required ability counts more than `cap`. */
+  | { code: "frost"; cap: number }
+  /** Duello (Giappone): only the `count` highest required abilities count. */
+  | { code: "duel"; count: number };
 
 export type Threat = {
   id: string;
