@@ -13,14 +13,14 @@ insert into auth.users (id, aud, role, email, raw_user_meta_data, created_at, up
 -- The catalog: no variant on a level card, which no pack can give.
 do $$
 begin
-  assert (select count(*) from public.card_variants where style = 'neon') = 20, 'neon series should have 20 variants';
-  assert (select count(*) from public.card_variants where style = 'epic') = 10, 'epic series should have 10 variants';
+  assert (select count(*) from public.card_variants where style = 'neon') = 21, 'neon series should have 21 variants';
+  assert (select count(*) from public.card_variants where style = 'epic') = 11, 'epic series should have 11 variants';
   assert (
     select jsonb_object_agg(style, n) from (
       select style, count(*) as n from public.card_variants where style not in ('neon', 'epic') group by style
     ) s
-  ) = '{"cinema": 5, "pastel": 5, "gold": 5, "classic": 5, "retro": 5, "oil": 5, "cartoon": 5, "poster": 5, "inferno": 5, "graphite": 5, "marble": 5, "gothic": 5, "tarot": 5, "ink": 5, "fantasy": 5, "prism": 5}'::jsonb,
-    'every later series should have 5 variants';
+  ) = '{"cinema": 6, "pastel": 6, "gold": 6, "classic": 6, "retro": 6, "oil": 6, "cartoon": 6, "poster": 6, "inferno": 6, "graphite": 6, "marble": 6, "gothic": 6, "tarot": 6, "ink": 6, "fantasy": 6, "prism": 6}'::jsonb,
+    'every later series should have 6 variants';
   assert not exists (
     select 1 from public.card_variants v
     join public.card_definitions d on d.id = v.definition_id
