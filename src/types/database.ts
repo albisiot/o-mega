@@ -1689,6 +1689,7 @@ export type Database = {
       }
       admin_list_bonus_codes: { Args: never; Returns: Json }
       admin_list_pack_cards: { Args: never; Returns: Json }
+      admin_pack_cards_payload: { Args: never; Returns: Json }
       admin_set_bonus_code_active: {
         Args: { p_id: string; p_is_active: boolean }
         Returns: Json
@@ -1930,6 +1931,12 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_pack_card: {
+        Args: {
+          p_definition: Database["public"]["Tables"]["card_definitions"]["Row"]
+        }
+        Returns: boolean
+      }
       leave_queue: { Args: never; Returns: undefined }
       level_for_xp: { Args: { p_xp: number }; Returns: number }
       match_create_bot: {
