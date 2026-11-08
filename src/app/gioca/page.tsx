@@ -16,6 +16,7 @@ import {
   type ActiveMatch,
   type ConquestStatus,
 } from "@/lib/match";
+import { chapterUnlocked, fetchStory, seenStory, type StoryChapter } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const BOTS = [
@@ -55,14 +56,74 @@ function OptionRow({ href, title, detail, disabled = false }: { href: string; ti
   );
 }
 
+/** A chapter the player cannot open yet: shown, so they know what comes next. */
+function LockedRow({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="row-link py-2 opacity-60">
+      <div>
+        <p className="font-display text-xl uppercase leading-6">{title}</p>
+        <p className="text-[13px] font-medium leading-4 text-muted">{detail}</p>
+      </div>
+      <span className="shrink-0 text-xl" aria-label="Da sbloccare">
+        🔒
+      </span>
+    </div>
+  );
+}
+
+/** Every chapter, the locked ones too: each opens the Story on itself. */
 function StorySection({ disabled }: { disabled: boolean }) {
+  const [chapters, setChapters] = useState<StoryChapter[] | null>(() => seenStory());
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchStory()
+      .then((next) => {
+        if (!cancelled) setChapters(next);
+      })
+      .catch((cause: unknown) => console.error("Story failed", cause));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm font-medium text-muted">
         Missioni contro gli avversari di Nuova Megara, con squadre e Minacce preparate. La prima vittoria di ogni
         missione dà monete, e il boss di fine capitolo una carta.
       </p>
-      <OptionRow href="/storia" title="Apri la Storia" detail="Capitolo 1: Il porto" disabled={disabled} />
+      {chapters && chapters.length > 0 ? (
+        chapters.map((chapter, index) => {
+          const title = `Capitolo ${chapter.chapter}: ${chapter.title}`;
+          if (!chapterUnlocked(chapter)) {
+            const previous = chapters[index - 1];
+            return (
+              <LockedRow
+                key={chapter.chapter}
+                title={title}
+                detail={previous ? `Completa il Capitolo ${previous.chapter} per sbloccarlo.` : "Non ancora disponibile."}
+              />
+            );
+          }
+          const done = chapter.missions.filter((m) => m.completed).length;
+          return (
+            <OptionRow
+              key={chapter.chapter}
+              href={`/storia/?capitolo=${chapter.chapter}`}
+              title={title}
+              detail={
+                done === chapter.missions.length
+                  ? "Completato: rileggi com'è finita."
+                  : `${done}/${chapter.missions.length} missioni completate`
+              }
+              disabled={disabled}
+            />
+          );
+        })
+      ) : (
+        <OptionRow href="/storia" title="Apri la Storia" detail="Carico i capitoli…" disabled={disabled} />
+      )}
     </div>
   );
 }

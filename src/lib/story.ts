@@ -1,5 +1,5 @@
 import type { BotDifficulty } from "@o-mega/game-engine";
-import { forget } from "@/lib/last-seen";
+import { forget, keepSeen, lastSeen } from "@/lib/last-seen";
 import { invokeFunction, type MatchCard, type MatchView } from "@/lib/match";
 import { getSupabase } from "@/lib/supabase/client";
 
@@ -41,7 +41,15 @@ export type StoryReward = {
 export async function fetchStory(): Promise<StoryChapter[]> {
   const { data, error } = await getSupabase().rpc("get_story");
   if (error) throw error;
-  return data as unknown as StoryChapter[];
+  return keepSeen("story", data as unknown as StoryChapter[]);
+}
+
+/** The chapters as last seen in this visit, to show at once while the fresh ones load. */
+export const seenStory = () => lastSeen<StoryChapter[]>("story");
+
+/** A chapter opens once every mission before it is completed: its first mission tells. */
+export function chapterUnlocked(chapter: StoryChapter): boolean {
+  return chapter.missions[0]?.unlocked ?? false;
 }
 
 export async function startStoryMission(mission: string, cardInstanceIds: string[]): Promise<MatchView> {
@@ -54,9 +62,10 @@ export async function fetchStoryReward(matchId: string): Promise<StoryReward | n
   if (error) throw error;
   const reward = data as unknown as StoryReward | null;
   if (reward?.completed_now) {
-    // Coins and maybe a card just arrived.
+    // Coins and maybe a card just arrived, and the next mission or chapter opened.
     forget("packStatus");
     forget("coinHistory");
+    forget("story");
   }
   return reward;
 }

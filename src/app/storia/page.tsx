@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { PrizeCard, ZoomHint } from "@/components/card-zoom";
 import { BackLink } from "@/components/comic-parts";
@@ -9,11 +10,21 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { fetchAbilities, seenAbilities, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
 import { DIFFICULTY_LABELS } from "@/lib/match";
-import { fetchStory, type StoryChapter, type StoryMission } from "@/lib/story";
+import { chapterUnlocked, fetchStory, type StoryChapter, type StoryMission } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
+// /storia/?capitolo=<n> opens that chapter: query string, see CLAUDE.md (static export).
 export default function StoryPage() {
+  return (
+    <Suspense fallback={<LoadingScreen label="Apertura della Storia…" />}>
+      <StoryPageContent />
+    </Suspense>
+  );
+}
+
+function StoryPageContent() {
   const { session } = useRequireSignedIn();
+  const asked = Number(useSearchParams().get("capitolo")) || null;
   const [chapters, setChapters] = useState<StoryChapter[] | null>(null);
   const [abilities, setAbilities] = useState<AbilityInfo[] | null>(() => seenAbilities() ?? null);
   const [error, setError] = useState<string | null>(null);
@@ -30,9 +41,12 @@ export default function StoryPage() {
       .then((next) => {
         if (cancelled) return;
         setChapters(next);
-        // The next mission to play starts open, in its chapter; with all done, the last chapter shows.
-        const index = next.findIndex((c) => c.missions.some((m) => m.unlocked && !m.completed));
-        setShown(index === -1 ? Math.max(0, next.length - 1) : index);
+        // The chapter chosen in Gioca, or the one with the next mission to play; with all done, the last one.
+        // Its next mission to play starts open.
+        const chosen = next.findIndex((c) => c.chapter === asked);
+        const playing = next.findIndex((c) => c.missions.some((m) => m.unlocked && !m.completed));
+        const index = chosen !== -1 ? chosen : playing !== -1 ? playing : Math.max(0, next.length - 1);
+        setShown(index);
         setOpen(next[index]?.missions.find((m) => m.unlocked && !m.completed)?.code ?? null);
       })
       .catch((cause: unknown) => {
@@ -47,7 +61,7 @@ export default function StoryPage() {
     return () => {
       cancelled = true;
     };
-  }, [session]);
+  }, [session, asked]);
 
   if (error) {
     return (
@@ -95,7 +109,9 @@ export default function StoryPage() {
                   {/* Once, under the first locked one: the others wait behind it. */}
                   {m.code === firstLocked && (
                     <p className="-mt-1 pb-1.5 pl-15 pr-3 text-xs font-medium leading-4 text-muted">
-                      Completa la missione precedente.
+                      {m.ord === 1 && shown > 0
+                        ? `Completa il Capitolo ${chapters[shown - 1].chapter} per sbloccarlo.`
+                        : "Completa la missione precedente."}
                     </p>
                   )}
                 </li>
@@ -135,13 +151,14 @@ function ChapterBanner({
   onNext?: () => void;
 }) {
   const done = chapter.missions.filter((m) => m.completed).length;
+  const progress = chapterUnlocked(chapter) ? `${done}/${chapter.missions.length} missioni` : "da sbloccare 🔒";
   return (
     <div className={`cut-bottom relative shrink-0 overflow-hidden bg-comic-magenta px-4 text-black ${compact ? "pb-5 pt-2" : "pb-6 pt-3"}`}>
       <div aria-hidden className="halftone absolute inset-0 [mask-image:linear-gradient(135deg,transparent_45%,#000_100%)]" />
       <div className="relative">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-extrabold">
-            Capitolo {chapter.chapter} · {done}/{chapter.missions.length} missioni
+            Capitolo {chapter.chapter} · {progress}
           </p>
           {paged && (
             <div className="-my-1 flex shrink-0 gap-1.5">
