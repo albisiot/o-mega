@@ -102,7 +102,7 @@ begin
   -- For the next block, which runs as the player and cannot read these tables.
   perform set_config('story_test.first', (
     select p.match_id::text from public.story_progress p join public.story_missions m on m.id = p.mission_id
-    where m.code = 'C1M5'), true);
+    where m.code = 'C1M5' and p.user_id = v_user), true);
   perform set_config('story_test.replay', v_match::text, true);
 end $$;
 

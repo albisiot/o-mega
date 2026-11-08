@@ -115,7 +115,8 @@ begin
   assert (select count(*) from public.card_instances where is_starter) = 10, 'a starter card was converted';
 end $$;
 
--- Converted cards keep their history but have no owner.
+-- Converted cards keep their history but have no owner. Only player A's:
+-- real players convert cards too.
 reset role;
 
 do $$
@@ -123,7 +124,10 @@ begin
   assert (
     select count(*) from public.card_instances
     where owner_id is null and converted_at is not null
-      and id in (select instance_id from public.card_transfers where reason = 'conversion')
+      and id in (
+        select instance_id from public.card_transfers
+        where reason = 'conversion' and from_user = '00000000-0000-4000-8000-0000000000a1'
+      )
   ) = 3, 'converted cards were not kept as history';
 end $$;
 
