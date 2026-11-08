@@ -17,6 +17,15 @@ export type ScoreContext = {
   opponent?: Character;
   /** Level of the previous round's threat; none in the first round (Crescendo). */
   previousLevel?: number;
+  /** How the side's previous round ended; none in the first round (Vendetta). */
+  previousOutcome?: PlayOutcome;
+  /** Levels of every threat of the match, in order (Grande prova). */
+  threatLevels?: readonly number[];
+  /**
+   * The side's characters already played, in order, as they played: without the
+   * power an Annullatore took away (Capobranco, Catalizzatore, Riverbero).
+   */
+  played?: readonly Character[];
 };
 
 /** How a round ended for one side: a void round is neither won nor lost. */
@@ -64,6 +73,12 @@ export function modifierBonus(character: Character, threat: Threat): number {
   }
 }
 
+/** The modifier's points as they count for the character: Adattabile ignores a malus. */
+export function modifierPoints(character: Character, threat: Threat): number {
+  const points = modifierBonus(character, threat);
+  return character.power?.code === "adaptable" ? Math.max(0, points) : points;
+}
+
 /** Highest single value among the required abilities (tie-break, no bonuses). */
 export function highestRequired(character: Character, threat: Threat, malus = 0): number {
   return Math.max(0, ...threat.abilities.map((ability) => abilityValue(character, ability, malus)));
@@ -72,6 +87,76 @@ export function highestRequired(character: Character, threat: Threat, malus = 0)
 /** What a character with Sabotatore takes from each ability of the opposing character. */
 export function abilityMalusFrom(character: Character): number {
   return character.power?.code === "sabotage" ? numberParam(character, "malus") : 0;
+}
+
+/** Schermato and Riflesso: Sabotatore cannot touch them. */
+export function immuneToSabotage(character: Character): boolean {
+  const code = character.power?.code;
+  return code === "shielded" || code === "reflect";
+}
+
+/**
+ * What is taken from each ability of `character` in a round against `opponent`:
+ * the opponent's Sabotatore, unless `character` is immune, plus its own
+ * Sabotatore sent back when the opponent has Riflesso. Pass both as they play.
+ */
+export function abilityMalusOn(character: Character, opponent: Character | null | undefined): number {
+  if (!opponent) return 0;
+  const received = immuneToSabotage(character) ? 0 : abilityMalusFrom(opponent);
+  const reflected = opponent.power?.code === "reflect" ? abilityMalusFrom(character) : 0;
+  return received + reflected;
+}
+
+/** Nebbia: the opponent does not see who played it until the match is over. */
+export function hidesIdentity(character: Character): boolean {
+  return character.power?.code === "fog";
+}
+
+/**
+ * Powers Riverbero can copy: those that only add points to their own character.
+ * Powers that act on the opponent, on later rounds or on information are left out,
+ * so a copy never needs the server or the screen to know about it.
+ */
+const ECHOABLE = new Set([
+  "ability_bonus",
+  "family_bonus",
+  "level_bonus",
+  "underdog",
+  "opener",
+  "last_stand",
+  "bond",
+  "nemesis",
+  "all_rounder",
+  "giant_slayer",
+  "crescendo",
+  "scrappy",
+  "counterpunch",
+  "eclectic",
+  "lone_wolf",
+  "opportunist",
+  "vendetta",
+  "main_event",
+]);
+
+/** Riverbero: the power it copies from the side's previous character, as that one played. */
+export function echoedPower(context: ScoreContext): Character["power"] {
+  const source = context.played?.at(-1)?.power;
+  return source && ECHOABLE.has(source.code) ? source : null;
+}
+
+/** Catalizzatore: the factor the side's previous character applies to this one's power bonus. */
+export function powerMultiplier(context: ScoreContext): number {
+  const previous = context.played?.at(-1);
+  return previous?.power?.code === "catalyst" ? numberParam(previous, "multiplier") : 1;
+}
+
+/** Capobranco: +bonus from every pack leader of the same faction the side already played. */
+export function packBonus(character: Character, played: readonly Character[] = []): number {
+  return played.reduce(
+    (sum, leader) =>
+      leader.power?.code === "pack_leader" && leader.faction === character.faction ? sum + numberParam(leader, "bonus") : sum,
+    0,
+  );
 }
 
 /** Spia: once played, its side sees one character the opponent has not played yet. */
@@ -147,6 +232,42 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
         : 0;
     case "crescendo":
       return context.previousLevel !== undefined && threat.level > context.previousLevel ? numberParam(character, "bonus") : 0;
+    case "scrappy": {
+      // The required abilities below the floor count as the floor.
+      const floor = numberParam(character, "min_value");
+      const malus = context.abilityMalus ?? 0;
+      return threat.abilities.reduce((sum, ability) => sum + Math.max(0, floor - abilityValue(character, ability, malus)), 0);
+    }
+    case "counterpunch": {
+      // Counted on full values: the comparison is between the two characters, not their round.
+      const opponent = context.opponent;
+      if (!opponent) return 0;
+      const behind = threat.abilities.filter((ability) => (opponent.stats[ability] ?? 0) > (character.stats[ability] ?? 0)).length;
+      return Math.min(behind * numberParam(character, "bonus"), numberParam(character, "max"));
+    }
+    case "eclectic": {
+      const families = new Set(threat.abilities.map((ability) => context.families[ability]));
+      return families.size >= numberParam(character, "min_families") ? numberParam(character, "bonus") : 0;
+    }
+    case "lone_wolf":
+      return context.team.some((c) => c.id !== character.id && c.faction === character.faction) ? 0 : numberParam(character, "bonus");
+    case "opportunist":
+      return context.opponent && !context.opponent.power ? numberParam(character, "bonus") : 0;
+    case "vendetta":
+      return context.previousOutcome === "lost" ? numberParam(character, "bonus") : 0;
+    case "main_event":
+      return context.threatLevels?.length && threat.level >= Math.max(...context.threatLevels) ? numberParam(character, "bonus") : 0;
+    case "adaptable":
+      return threat.modifier ? numberParam(character, "bonus") : 0;
+    case "echo": {
+      const copied = echoedPower(context);
+      return copied ? powerBonus({ ...character, power: copied }, threat, context) : 0;
+    }
+    case "reflect": // acts on Sabotatore: see abilityMalusOn
+    case "sacrifice": // zeroes its score and passes a bonus: see scorePlay and carriedBonusAfter
+    case "pack_leader": // acts on the later characters: see packBonus
+    case "catalyst": // acts on the next character: see powerMultiplier
+    case "fog": // hides the character: see hidesIdentity
     case "comeback": // acts after the round: see carriedBonusAfter
     case "momentum": // acts after the round: see carriedBonusAfter
     case "nullifier": // acts on the opposing character: see asPlayedAgainst
@@ -162,31 +283,38 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
 }
 
 export function scorePlay(character: Character, threat: Threat, context: ScoreContext): PlayScore {
-  // Schermato: immune to Sabotatore.
-  if (character.power?.code === "shielded") context = { ...context, abilityMalus: 0 };
+  const code = character.power?.code;
+  // Schermato and Riflesso: immune to Sabotatore.
+  if (immuneToSabotage(character)) context = { ...context, abilityMalus: 0 };
   const malus = context.abilityMalus ?? 0;
   const base = baseScore(character, threat, malus);
+  // Sacrificio: the character gives up the round, whatever it would have scored.
+  if (code === "sacrifice") return { characterId: character.id, base, bonus: -base, total: 0, highest: 0 };
+  const power = powerBonus(character, threat, context) * powerMultiplier(context);
+  const modifier = modifierPoints(character, threat);
   // A malus cannot bring the score below 0: the bonus stays the difference from the base.
-  const total = Math.max(0, base + powerBonus(character, threat, context) + context.carriedBonus + modifierBonus(character, threat));
+  const total = Math.max(0, base + power + packBonus(character, context.played) + context.carriedBonus + modifier);
   return {
     characterId: character.id,
     base,
     bonus: total - base,
     total,
     highest: highestRequired(character, threat, malus),
-    ...(character.power?.code === "relentless" ? { relentless: true } : {}),
+    ...(code === "relentless" ? { relentless: true } : {}),
   };
 }
 
 /**
  * Bonus the next character of the same side gets: Riscossa after a lost round,
- * Slancio after a won one. A void round is neither. Pass the character as it
- * played (asPlayedAgainst): an Annullatore stops the bonus too.
+ * Slancio after a won one, Sacrificio whatever happened. A void round is neither
+ * won nor lost. Pass the character as it played (asPlayedAgainst): an Annullatore
+ * stops the bonus too.
  */
 export function carriedBonusAfter(character: Character, outcome: PlayOutcome): number {
   const code = character.power?.code;
   if (code === "comeback" && outcome === "lost") return numberParam(character, "bonus");
   if (code === "momentum" && outcome === "won") return numberParam(character, "bonus");
+  if (code === "sacrifice") return numberParam(character, "bonus");
   return 0;
 }
 

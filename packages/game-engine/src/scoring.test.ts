@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   abilityMalusFrom,
+  abilityMalusOn,
   asPlayedAgainst,
   carriedBonusAfter,
   compareScores,
+  hidesIdentity,
   revealsFutureThreats,
   revealsOpponentCharacter,
   scorePlay,
@@ -266,5 +268,129 @@ describe("Annullatore, Davide, Crescendo and Slancio", () => {
   it("Slancio gives no points in its own round", () => {
     const momentum = character("m", {}, { code: "momentum", params: { bonus: 2 } });
     expect(scorePlay(momentum, two, context).bonus).toBe(0);
+  });
+});
+
+describe("backlog powers (docs/POWERS-BACKLOG.md)", () => {
+  const two = threat("t", ["FOR", "VEL"]);
+  const power = (code: string, params: Record<string, number> = {}) => ({ code, params });
+
+  it("Arte di arrangiarsi lifts the required abilities below the floor, after Sabotatore", () => {
+    const scrappy = character("s", { FOR: 1, VEL: 6 }, power("scrappy", { min_value: 3 }));
+    expect(scorePlay(scrappy, two, context)).toMatchObject({ base: 7, bonus: 2, total: 9 });
+    expect(scorePlay(scrappy, two, { ...context, abilityMalus: 1 })).toMatchObject({ base: 5, bonus: 3, total: 8 });
+  });
+
+  it("Contrattacco pays for each required ability where the opponent is stronger, up to its cap", () => {
+    const counter = character("c", { FOR: 3, VEL: 3, RES: 3, INT: 3 }, power("counterpunch", { bonus: 1, max: 3 }));
+    const strong = character("x", {}, null, 8);
+    expect(scorePlay(counter, two, { ...context, opponent: strong }).bonus).toBe(2);
+    expect(scorePlay(counter, threat("t", ["FOR", "VEL", "RES", "INT"]), { ...context, opponent: strong }).bonus).toBe(3);
+    expect(scorePlay(counter, two, { ...context, opponent: character("y", {}, null, 2) }).bonus).toBe(0);
+    expect(scorePlay(counter, two, context).bonus).toBe(0);
+  });
+
+  it("Eclettico pays when the required abilities span enough families", () => {
+    const eclectic = character("e", {}, power("eclectic", { bonus: 3, min_families: 3 }));
+    expect(scorePlay(eclectic, two, context).bonus).toBe(0);
+    expect(scorePlay(eclectic, threat("t", ["FOR", "VEL", "INT", "PER"]), context).bonus).toBe(0);
+    expect(scorePlay(eclectic, threat("t", ["FOR", "INT", "MAG"]), context).bonus).toBe(3);
+    expect(scorePlay(eclectic, threat("t", ["FOR", "INT", "MAG", "TEC"]), context).bonus).toBe(3);
+  });
+
+  it("Lupo solitario pays only without another character of its faction in the team", () => {
+    const wolf = { ...character("w", {}, power("lone_wolf", { bonus: 3 })), faction: "heroes" };
+    const villain = { ...character("v"), faction: "villains" };
+    expect(scorePlay(wolf, two, { ...context, team: [wolf, villain] }).bonus).toBe(3);
+    expect(scorePlay(wolf, two, { ...context, team: [wolf, villain, { ...villain, id: "h", faction: "heroes" }] }).bonus).toBe(0);
+  });
+
+  it("Opportunista pays against a character without a power", () => {
+    const opportunist = character("o", {}, power("opportunist", { bonus: 3 }));
+    const opener = character("y", {}, power("opener", { bonus: 3, max_round: 2 }));
+    expect(scorePlay(opportunist, two, { ...context, opponent: character("x") }).bonus).toBe(3);
+    expect(scorePlay(opportunist, two, { ...context, opponent: opener }).bonus).toBe(0);
+    expect(scorePlay(opportunist, two, context).bonus).toBe(0);
+  });
+
+  it("Riflesso is immune to Sabotatore and sends its malus back", () => {
+    const reflect = character("r", { FOR: 5, VEL: 5 }, power("reflect"));
+    const saboteur = character("s", {}, power("sabotage", { malus: 1 }));
+    expect(abilityMalusOn(reflect, saboteur)).toBe(0);
+    expect(abilityMalusOn(saboteur, reflect)).toBe(1);
+    expect(abilityMalusOn(character("x"), saboteur)).toBe(1);
+    expect(abilityMalusOn(character("x"), reflect)).toBe(0);
+    expect(scorePlay(reflect, two, { ...context, abilityMalus: 1 }).total).toBe(10);
+  });
+
+  it("Vendetta pays after a lost round", () => {
+    const vendetta = character("v", {}, power("vendetta", { bonus: 3 }));
+    expect(scorePlay(vendetta, two, { ...context, previousOutcome: "lost" }).bonus).toBe(3);
+    expect(scorePlay(vendetta, two, { ...context, previousOutcome: "won" }).bonus).toBe(0);
+    expect(scorePlay(vendetta, two, { ...context, previousOutcome: "void" }).bonus).toBe(0);
+    expect(scorePlay(vendetta, two, context).bonus).toBe(0);
+  });
+
+  it("Grande prova pays against the highest level of the match, ties included", () => {
+    const main = character("m", {}, power("main_event", { bonus: 3 }));
+    expect(scorePlay(main, two, { ...context, threatLevels: [1, 2, 2] }).bonus).toBe(3);
+    expect(scorePlay(main, two, { ...context, threatLevels: [1, 2, 5] }).bonus).toBe(0);
+    expect(scorePlay(main, two, context).bonus).toBe(0);
+  });
+
+  it("Adattabile pays against a modifier and ignores its malus", () => {
+    const adaptable = { ...character("a", { FOR: 5, VEL: 5 }, power("adaptable", { bonus: 2 })), faction: "villains" };
+    const modifier = { code: "hostile_ground" as const, favored: "heroes", hindered: "villains", bonus: 3, malus: 2 };
+    const hostile = { ...two, modifier };
+    expect(scorePlay(adaptable, two, context).total).toBe(10);
+    expect(scorePlay(adaptable, hostile, context).total).toBe(12);
+    expect(scorePlay({ ...adaptable, faction: "heroes" }, hostile, context).total).toBe(15);
+  });
+
+  it("Sacrificio scores 0 and passes its bonus whatever the outcome", () => {
+    const sacrifice = character("s", { FOR: 9 }, power("sacrifice", { bonus: 5 }));
+    expect(scorePlay(sacrifice, two, { ...context, carriedBonus: 2 })).toMatchObject({ base: 13, bonus: -13, total: 0, highest: 0 });
+    for (const outcome of ["won", "lost", "void"] as const) expect(carriedBonusAfter(sacrifice, outcome)).toBe(5);
+  });
+
+  it("Capobranco gives every later character of its faction its bonus", () => {
+    const leader = { ...character("l", {}, power("pack_leader", { bonus: 1 })), faction: "heroes" };
+    const hero = { ...character("h"), faction: "heroes" };
+    const villain = { ...character("v"), faction: "villains" };
+    expect(scorePlay(hero, two, { ...context, played: [leader] }).bonus).toBe(1);
+    expect(scorePlay(hero, two, { ...context, played: [leader, { ...leader, id: "l2" }] }).bonus).toBe(2);
+    expect(scorePlay(villain, two, { ...context, played: [leader] }).bonus).toBe(0);
+    // Stopped by an Annullatore in its round: played without its power.
+    expect(scorePlay(hero, two, { ...context, played: [{ ...leader, power: null }] }).bonus).toBe(0);
+  });
+
+  it("Catalizzatore multiplies the power bonus of the next character only", () => {
+    const catalyst = character("c", {}, power("catalyst", { multiplier: 2 }));
+    const opener = character("o", {}, power("opener", { bonus: 3, max_round: 5 }));
+    expect(scorePlay(opener, two, { ...context, played: [catalyst] }).bonus).toBe(6);
+    expect(scorePlay(opener, two, { ...context, played: [catalyst, character("x")] }).bonus).toBe(3);
+    // The bonus carried from the round before is not multiplied.
+    expect(scorePlay(opener, two, { ...context, played: [catalyst], carriedBonus: 2 }).bonus).toBe(8);
+  });
+
+  it("Riverbero copies the points power of the previous character, never the others", () => {
+    const echo = character("e", {}, power("echo"));
+    const opener = character("o", {}, power("opener", { bonus: 3, max_round: 5 }));
+    const saboteur = character("s", {}, power("sabotage", { malus: 1 }));
+    expect(scorePlay(echo, two, { ...context, played: [opener] }).bonus).toBe(3);
+    expect(scorePlay(echo, two, { ...context, played: [saboteur] }).bonus).toBe(0);
+    expect(scorePlay(echo, two, { ...context, played: [{ ...opener, power: null }] }).bonus).toBe(0);
+    expect(scorePlay(echo, two, context).bonus).toBe(0);
+    // The copied power reads the echo's own situation: Lupo solitario looks at the echo's faction.
+    const wolf = { ...character("w", {}, power("lone_wolf", { bonus: 3 })), faction: "heroes" };
+    const villainEcho = { ...echo, faction: "villains" };
+    expect(scorePlay(villainEcho, two, { ...context, played: [wolf], team: [wolf, villainEcho] }).bonus).toBe(3);
+  });
+
+  it("Nebbia hides its character and gives no points", () => {
+    const fog = character("f", {}, power("fog"));
+    expect(hidesIdentity(fog)).toBe(true);
+    expect(hidesIdentity(character("x"))).toBe(false);
+    expect(scorePlay(fog, two, context).bonus).toBe(0);
   });
 });

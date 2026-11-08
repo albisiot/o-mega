@@ -347,6 +347,7 @@ function ChoosePhase({
         attempts,
         rules,
         families,
+        threatLevels: view.threat_levels,
       }),
     }))
     .sort((a, b) => b.outcome.score.total - b.outcome.required - (a.outcome.score.total - a.outcome.required));

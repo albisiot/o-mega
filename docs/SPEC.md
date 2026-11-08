@@ -138,7 +138,7 @@ In Emergenza non c'è un personaggio avversario: Schermato, Nemesi, Spia, Annull
 
 Annullatore, Davide, Crescendo e Slancio sono nati per personaggi nuovi (P115-P122, due per potere), senza togliere poteri alle carte esistenti. Da simulazione sul catalogo a 122 personaggi (20.000 partite Difficile contro Difficile, squadre casuali, con i modificatori), una squadra che ha la carta vince: Slancio 53%, Davide 50%, Annullatore 49%, Crescendo 49%; nelle stesse condizioni Sabotatore 59% e una squadra senza poteri 49%. Con due sole carte, l'Annullatore incontra di rado Sabotatore: da solo non ne riduce la forza media.
 
-I poteri progettati per i prossimi aggiornamenti, non ancora implementati, sono in `docs/POWERS-BACKLOG.md`.
+I poteri dei prossimi aggiornamenti sono in `docs/POWERS-BACKLOG.md`: 14 sono già pronti nel motore di regole e nel database, ma nessuna carta li ha ancora.
 
 ### 4.5 Doppioni
 

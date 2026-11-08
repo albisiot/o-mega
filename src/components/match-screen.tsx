@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { scorePlay, type AbilityFamilies, type ThreatModifier } from "@o-mega/game-engine";
+import {
+  abilityMalusFrom,
+  immuneToSabotage,
+  packBonus,
+  scorePlay,
+  type AbilityFamilies,
+  type ThreatModifier,
+} from "@o-mega/game-engine";
 import { Silhouette } from "@/components/card-view";
 import { ComicBurst } from "@/components/comic-parts";
 import { ConquestPanel, ConquestPick, SecondsLeft } from "@/components/conquest-panel";
@@ -34,7 +41,7 @@ import {
 } from "@/lib/match";
 import { matchXp } from "@/lib/progression";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
-import { carriedInto, outcomeOf, roundPowerNotes, wasNullified, type PowerNote } from "@/lib/round-powers";
+import { carriedInto, outcomeOf, playedBefore, roundPowerNotes, wasNullified, type PowerNote } from "@/lib/round-powers";
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow, useSecondsLeft } from "@/lib/use-now";
@@ -345,6 +352,7 @@ export function MatchScreen({ initial, story = false }: { initial: MatchView; st
         <RoundReveal
           round={shownRound}
           previous={view.rounds.find((r) => r.round === shownRound.round - 1) ?? null}
+          rounds={view.rounds}
           team={view.my_team}
           abilities={abilities}
           opponentName={opponentName}
@@ -536,6 +544,7 @@ function ChoosePhase({
   const carried = carriedInto(previousCard, outcomeOf(previous?.winner, "me"), previous?.opponent_play).points;
 
   const available = view.my_team.filter((card) => card.played_round === null);
+  const myPlayed = playedBefore(view.rounds, view.my_team, round.round, "me");
   const previews = available
     .map((card) => ({
       card,
@@ -547,6 +556,9 @@ function ChoosePhase({
         round: round.round,
         team: view.my_team.map((member) => toCharacter(member, member.instance_id)),
         previousLevel: previous?.level,
+        previousOutcome: previous ? outcomeOf(previous.winner, "me") : undefined,
+        threatLevels: view.threat_levels,
+        played: myPlayed,
       }),
     }))
     .sort((a, b) => b.score.total - a.score.total);
@@ -771,6 +783,7 @@ function ModifierBanner({ modifier, firstAbility }: { modifier: ThreatModifier; 
 function RoundReveal({
   round,
   previous,
+  rounds,
   team,
   abilities,
   opponentName,
@@ -782,6 +795,8 @@ function RoundReveal({
   round: MatchRound;
   /** The round before, for the Riscossa a card received from it. */
   previous: MatchRound | null;
+  /** Every round of the match, for the Capobranco bonus a card received. */
+  rounds: MatchRound[];
   abilities: AbilityInfo[];
   team: TeamCard[];
   opponentName: string;
@@ -810,6 +825,11 @@ function RoundReveal({
   const previousMine = team.find((card) => card.instance_id === previous?.my_play?.instance_id);
   const myCarried = carriedInto(previousMine, outcomeOf(previous?.winner, "me"), previous?.opponent_play);
   const theirCarried = carriedInto(previous?.opponent_play, outcomeOf(previous?.winner, "opponent"), previousMine);
+  // As the cards played: an Annullatore takes the power away.
+  const myActing = mine && !wasNullified(mine, theirs) ? toCharacter(mine, mine.definition_id) : null;
+  const theirActing = theirs && !wasNullified(theirs, mine) ? toCharacter(theirs, theirs.definition_id) : null;
+  const myPack = mine ? packBonus(toCharacter(mine, mine.definition_id), playedBefore(rounds, team, round.round, "me")) : 0;
+  const theirPack = theirs ? packBonus(toCharacter(theirs, theirs.definition_id), playedBefore(rounds, team, round.round, "opponent")) : 0;
   const myNotes =
     mine && round.my_play
       ? roundPowerNotes(mine, round.my_play, threat, {
@@ -818,7 +838,9 @@ function RoundReveal({
           lost: round.winner === "opponent",
           won: round.winner === "me",
           wonTie: Boolean(tieWonBy) && round.winner === "me",
-          opponentShielded: theirs?.power?.code === "shielded" && !wasNullified(theirs, mine),
+          opponentShielded: theirActing !== null && immuneToSabotage(theirActing),
+          opponentSabotage: theirActing ? abilityMalusFrom(theirActing) : 0,
+          pack: myPack,
           nullified: wasNullified(mine, theirs),
           opponentHasPower: Boolean(theirs?.power),
         })
@@ -830,7 +852,9 @@ function RoundReveal({
         lost: round.winner === "me",
         won: round.winner === "opponent",
         wonTie: Boolean(tieWonBy) && round.winner === "opponent",
-        opponentShielded: mine?.power?.code === "shielded" && !wasNullified(mine, theirs),
+        opponentShielded: myActing !== null && immuneToSabotage(myActing),
+        opponentSabotage: myActing ? abilityMalusFrom(myActing) : 0,
+        pack: theirPack,
         nullified: wasNullified(theirs, mine),
         opponentHasPower: Boolean(mine?.power),
       })

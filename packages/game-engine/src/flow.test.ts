@@ -52,7 +52,8 @@ describe("playBotRound", () => {
         expect(new Set(botIds).size).toBe(botIds.length);
       }
     }
-  });
+    // 120 whole matches, Super Pro simulating a thousand per move: slow next to the other files.
+  }, 20_000);
 
   it("auto-plays a random available character when the timer expired", () => {
     const state = startMatch(3, "medium");

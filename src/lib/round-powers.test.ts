@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MatchCard } from "./match";
-import { carriedInto, roundPowerNotes } from "./round-powers";
+import { carriedInto, playedBefore, roundPowerNotes } from "./round-powers";
 
 const card = (power: MatchCard["power"], faction = "heroes", rank = 2): MatchCard => ({
   definition_id: "d1",
@@ -104,5 +104,64 @@ describe("roundPowerNotes for Spia and Schermato", () => {
   it("counts Schermato's point like any other bonus", () => {
     const shielded = card({ code: "shielded", params: { bonus: 1 }, name: "Schermato", text: "" });
     expect(roundPowerNotes(shielded, { bonus: 1 }, threat, calm)[0]).toMatchObject({ effect: "+1", active: true });
+  });
+});
+
+describe("roundPowerNotes for the backlog powers", () => {
+  const power = (code: string, name: string, params: Record<string, number> = {}) => card({ code, params, name, text: "" });
+
+  it("tells what Riflesso sends back, and nothing without a Sabotatore", () => {
+    const reflect = power("reflect", "Riflesso");
+    expect(roundPowerNotes(reflect, { bonus: 0 }, threat, { ...calm, opponentSabotage: 1 })[0]).toMatchObject({
+      effect: "rimanda −1 a ogni abilità",
+      active: true,
+    });
+    expect(roundPowerNotes(reflect, { bonus: 0 }, threat, calm)[0].active).toBe(false);
+  });
+
+  it("tells Sacrificio, Catalizzatore, Capobranco and Nebbia", () => {
+    expect(roundPowerNotes(power("sacrifice", "Sacrificio", { bonus: 5 }), { bonus: -10 }, threat, calm)[0].effect).toBe("+5 al prossimo");
+    expect(roundPowerNotes(power("catalyst", "Catalizzatore", { multiplier: 2 }), { bonus: 0 }, threat, calm)[0].effect).toBe(
+      "×2 al potere del prossimo",
+    );
+    expect(roundPowerNotes(power("pack_leader", "Capobranco", { bonus: 1 }), { bonus: 0 }, threat, calm)[0].active).toBe(true);
+    expect(roundPowerNotes(power("fog", "Nebbia"), { bonus: 0 }, threat, calm)[0].active).toBe(true);
+  });
+
+  it("shows the Capobranco bonus apart from the card's own power", () => {
+    const opener = power("opener", "Apripista", { bonus: 3, max_round: 2 });
+    expect(roundPowerNotes(opener, { bonus: 4 }, threat, { ...calm, pack: 1 })).toEqual([
+      { name: "Apripista", effect: "+3", active: true },
+      { name: "Capobranco", effect: "+1", active: true },
+    ]);
+    expect(roundPowerNotes(card(null), { bonus: 1 }, threat, { ...calm, pack: 1 })).toEqual([
+      { name: "Capobranco", effect: "+1", active: true },
+    ]);
+  });
+
+  it("lists a side's played cards in order, without powers an Annullatore took", () => {
+    const leader = { ...power("pack_leader", "Capobranco", { bonus: 1 }), instance_id: "i1" };
+    const second = { ...card(null), instance_id: "i2" };
+    const play = { base: 0, bonus: 0, score: 0, highest: 0, auto_played: false };
+    const round = (n: number, mine: string, opponent: typeof leader | null) => ({
+      round: n,
+      level: 1,
+      modifier: null,
+      threat: { name: "", abilities: [], flavor: "" },
+      deadline_at: "",
+      resolved: true,
+      winner: null,
+      my_play: { ...play, instance_id: mine, definition_id: "d1" },
+      opponent_play: opponent && { ...opponent, ...play },
+      my_pending_instance_id: null,
+      opponent_has_chosen: false,
+    });
+    const nullifier = { ...power("nullifier", "Annullatore"), instance_id: "x" };
+    const rounds = [round(2, "i2", null), round(1, "i1", null)];
+    expect(playedBefore(rounds, [leader, second], 3, "me").map((c) => c.power?.code ?? null)).toEqual(["pack_leader", null]);
+    expect(playedBefore(rounds, [leader, second], 2, "me")).toHaveLength(1);
+    const stopped = [round(1, "i1", nullifier)];
+    expect(playedBefore(stopped, [leader, second], 2, "me")[0].power).toBeNull();
+    expect(playedBefore(stopped, [leader, second], 2, "opponent")[0].power?.code).toBe("nullifier");
   });
 });

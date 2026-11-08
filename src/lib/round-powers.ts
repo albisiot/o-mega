@@ -1,5 +1,12 @@
-import { asPlayedAgainst, carriedBonusAfter, modifierBonus, type PlayOutcome, type ThreatModifier } from "@o-mega/game-engine";
-import { toCharacter, type MatchCard } from "@/lib/match";
+import {
+  asPlayedAgainst,
+  carriedBonusAfter,
+  modifierPoints,
+  type Character,
+  type PlayOutcome,
+  type ThreatModifier,
+} from "@o-mega/game-engine";
+import { toCharacter, type MatchCard, type MatchRound } from "@/lib/match";
 
 /** One line about a power on the round result, shown next to the card it belongs to. */
 export type PowerNote = { name: string; effect: string | null; active: boolean };
@@ -17,8 +24,12 @@ export type RoundOutcome = {
   opponentHasPower?: boolean;
   /** Implacabile settled a tie in this card's favor. */
   wonTie: boolean;
-  /** The opposing card had Schermato, which Sabotatore cannot touch. */
+  /** The opposing card had Schermato or Riflesso, which Sabotatore cannot touch. */
   opponentShielded?: boolean;
+  /** What the opposing card's Sabotatore takes from each ability (what Riflesso sends back). */
+  opponentSabotage?: number;
+  /** Bonus this card received from Capobranco cards its side played before. */
+  pack?: number;
 };
 
 /**
@@ -69,8 +80,28 @@ export function roundPowerNotes(
       case "foresight":
         notes.push({ name: power.name, effect: "svela le prossime Minacce", active: true });
         break;
+      case "reflect":
+        notes.push(
+          outcome.opponentSabotage
+            ? { name: power.name, effect: `rimanda −${outcome.opponentSabotage} a ogni abilità`, active: true }
+            : { name: power.name, effect: null, active: false },
+        );
+        break;
+      case "sacrifice":
+        notes.push({ name: power.name, effect: `+${power.params.bonus} al prossimo`, active: true });
+        break;
+      case "catalyst":
+        notes.push({ name: power.name, effect: `×${power.params.multiplier} al potere del prossimo`, active: true });
+        break;
+      case "pack_leader":
+        notes.push({ name: power.name, effect: `+${power.params.bonus} ai prossimi della fazione`, active: true });
+        break;
+      case "fog":
+        notes.push({ name: power.name, effect: "nasconde chi l'ha giocato", active: true });
+        break;
       default: {
-        const points = play.bonus - outcome.carried - modifierBonus(character, { id: "round", ...threat });
+        const points =
+          play.bonus - outcome.carried - (outcome.pack ?? 0) - modifierPoints(character, { id: "round", ...threat });
         notes.push({
           name: power.name,
           effect: points ? `${points > 0 ? "+" : "−"}${Math.abs(points)}` : null,
@@ -82,7 +113,30 @@ export function roundPowerNotes(
   if (outcome.carried > 0) {
     notes.push({ name: outcome.carriedFrom ?? "Riscossa", effect: `+${outcome.carried}`, active: true });
   }
+  if (outcome.pack) notes.push({ name: "Capobranco", effect: `+${outcome.pack}`, active: true });
   return notes;
+}
+
+/**
+ * The cards a side played in the rounds before `round`, in order, as they played:
+ * without the power an opposing Annullatore took away (Capobranco, Catalizzatore, Riverbero).
+ */
+export function playedBefore(
+  rounds: readonly MatchRound[],
+  team: readonly (MatchCard & { instance_id: string })[],
+  round: number,
+  side: "me" | "opponent",
+): Character[] {
+  return [...rounds]
+    .filter((r) => r.resolved && r.round < round)
+    .sort((x, y) => x.round - y.round)
+    .flatMap((r) => {
+      const mine = team.find((card) => card.instance_id === r.my_play?.instance_id);
+      const theirs = r.opponent_play;
+      const [own, other] = side === "me" ? [mine, theirs] : [theirs, mine];
+      if (!own) return [];
+      return [asPlayedAgainst(toCharacter(own, own.definition_id), other ? toCharacter(other, "opponent") : null)];
+    });
 }
 
 /** Whether an opposing Annullatore took `card`'s power away in a round. */

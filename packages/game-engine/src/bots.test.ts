@@ -25,6 +25,8 @@ function view(overrides: Partial<BotView>): BotView {
     team: overrides.available ?? [],
     opponentSeen: [],
     foreseenThreats: null,
+    threatLevels: [1, 2, 3, 4, 5],
+    played: [],
     ...overrides,
   };
 }
@@ -201,6 +203,24 @@ describe("bots and the new powers", () => {
     expect(botView(played, "a", knowledge).foreseenThreats?.map((t) => t.id)).toEqual(["t3"]);
     // Seeing the opponent's Veggente played gives the other side nothing.
     expect(botView(played, "b", knowledge).foreseenThreats).toBeNull();
+  });
+
+  it("does not see an opposing character played under Nebbia", () => {
+    const fog = character("b1", {}, { code: "fog", params: {} });
+    const threats = [threat("t1", ["FOR"]), threat("t2", ["VEL"])];
+    const knowledge = { characters: [fog, character("b2")], threatCatalog: threatCatalog(), families: FAMILIES, abilityMeans: MEANS };
+    const pick = (id: string) => ({ characterId: id, base: 4, bonus: 0, total: 4, highest: 4, autoPlayed: false });
+    const state: MatchState = {
+      ...newState([character("a1"), character("a2")], [fog, character("b2")], threats),
+      rounds: [{ round: 1, threatId: "t1", plays: { a: pick("a1"), b: pick("b1") }, winner: null }],
+    };
+    const view = botView(state, "a", knowledge);
+    expect(view.opponentSeen).toEqual([]);
+    expect(view.opponentPool.map((c) => c.id)).toContain("b1");
+    // Against an Annullatore, Nebbia does not act.
+    const nullifier = character("a1", {}, { code: "nullifier", params: {} });
+    const stopped = { ...state, teams: { ...state.teams, a: [nullifier, character("a2")] } };
+    expect(botView(stopped, "a", knowledge).opponentSeen.map((c) => c.id)).toEqual(["b1"]);
   });
 });
 

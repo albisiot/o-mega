@@ -37,7 +37,8 @@ export function drawEmergencyThreats(rng: Rng, catalog: readonly Threat[], rules
  * The score a character needs. There is no opposing character, so the two
  * powers that act on one act on the threat: Sabotatore takes its malus off
  * every required ability, and Implacabile is satisfied one point short (the
- * tie it would win against an opponent). Annullatore and Davide do nothing.
+ * tie it would win against an opponent). Annullatore, Davide, Contrattacco,
+ * Opportunista, Riflesso and Nebbia need an opposing character: they do nothing.
  */
 export function requiredScore(character: Character, threat: Threat, rules: EmergencyRules): number {
   const target = rules.targets[threat.level];
@@ -55,8 +56,10 @@ export function resolveEmergencyPlay(params: {
   attempts: readonly EmergencyAttempt[];
   rules: EmergencyRules;
   families: AbilityFamilies;
+  /** Levels of the day's threats, in order (Grande prova). */
+  threatLevels?: readonly number[];
 }): EmergencyOutcome {
-  const { character, threat, squad, attempts, rules, families } = params;
+  const { character, threat, squad, attempts, rules, families, threatLevels } = params;
   const last = attempts.at(-1);
   const score = scorePlay(character, threat, {
     families,
@@ -66,6 +69,10 @@ export function resolveEmergencyPlay(params: {
     round: attempts.length + 1,
     team: squad,
     previousLevel: last?.level,
+    previousOutcome: last ? (last.passed ? "won" : "lost") : undefined,
+    threatLevels,
+    // No opponent, so no Annullatore: every character played with its power.
+    played: attempts.map((a) => a.character),
   });
   const required = requiredScore(character, threat, rules);
   return { score, required, passed: score.total >= required };

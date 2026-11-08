@@ -540,6 +540,7 @@ async function playEmergency(userId: string, body: Record<string, unknown>) {
     attempts,
     rules: loaded.emergency,
     families: loaded.catalog.families,
+    threatLevels: threatIds.map((id) => loaded.threats.get(id)!.level),
   });
 
   return check(

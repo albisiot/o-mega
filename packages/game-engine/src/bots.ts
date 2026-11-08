@@ -4,21 +4,27 @@ import {
   currentRoundNumber,
   currentThreat,
   otherSide,
+  playedBy,
   playedIn,
   previousLevel,
+  previousOutcome,
   roundsWon,
+  threatLevels,
   totalScores,
 } from "./match.ts";
 import { pickOne, pickWeighted, randomInt, shuffle, type Rng } from "./rng.ts";
 import {
   abilityMalusFrom,
+  abilityMalusOn,
   asPlayedAgainst,
   carriedBonusAfter,
   compareScores,
+  hidesIdentity,
   revealsFutureThreats,
   scorePlay,
   type ScoreContext,
 } from "./scoring.ts";
+import type { PlayOutcome } from "./scoring.ts";
 import type { AbilityCode, AbilityFamilies, Character, MatchState, Side, Threat } from "./types.ts";
 
 export type BotDifficulty = "easy" | "medium" | "hard" | "super_pro";
@@ -61,6 +67,12 @@ export type BotView = {
   foreseenThreats: Threat[] | null;
   /** Level of the previous round's threat (Crescendo). */
   previousLevel?: number;
+  /** How the bot's previous round ended (Vendetta). */
+  previousOutcome?: PlayOutcome;
+  /** Levels of every threat of the match (Grande prova). */
+  threatLevels: number[];
+  /** Own characters already played, as they played (Capobranco, Catalizzatore, Riverbero). */
+  played: Character[];
 };
 
 export type BotKnowledge = {
@@ -75,7 +87,13 @@ export function botView(state: MatchState, side: Side, knowledge: BotKnowledge):
   const revealed = new Set(state.threats.slice(0, state.rounds.length + 1).map((threat) => threat.id));
   const won = roundsWon(state);
   const opponent = otherSide(side);
-  const played = new Set(state.rounds.map((round) => round.plays[opponent].characterId));
+  // Nebbia: a character played under it stays hidden, unless an Annullatore stopped it.
+  const played = new Set(
+    state.rounds
+      .map((round) => playedIn(state, round, opponent))
+      .filter((c): c is Character => c !== undefined && !hidesIdentity(c))
+      .map((c) => c.id),
+  );
   const opponentSeen = state.teams[opponent].filter((c) => played.has(c.id));
   const seen = new Set(opponentSeen.map((c) => c.definitionId));
   const totals = totalScores(state);
@@ -86,6 +104,9 @@ export function botView(state: MatchState, side: Side, knowledge: BotKnowledge):
   });
   return {
     previousLevel: previousLevel(state),
+    previousOutcome: previousOutcome(state, side),
+    threatLevels: threatLevels(state),
+    played: playedBy(state, side),
     round: currentRoundNumber(state),
     team: state.teams[side],
     opponentSeen,
@@ -125,16 +146,19 @@ function currentContext(view: BotView): ScoreContext {
     round: view.round,
     team: view.team,
     previousLevel: view.previousLevel,
+    previousOutcome: view.previousOutcome,
+    threatLevels: view.threatLevels,
+    played: view.played,
   };
 }
 
 /** Powers whose bonus depends on who the opposing character is. */
-const OPPONENT_POWERS = new Set(["nemesis", "shielded", "giant_slayer"]);
+const OPPONENT_POWERS = new Set(["nemesis", "shielded", "giant_slayer", "counterpunch", "opportunist"]);
 
 /**
  * A character's score plus what Sabotatore would take from the opposing character,
  * and, when the possible opponents are known, the bonuses that depend on who they are
- * (Nemesi, Schermato, Davide) weighted by how many of them would pay it. Annullatore
+ * (Nemesi, Schermato, Davide, Contrattacco, Opportunista) weighted by how many of them would pay it. Annullatore
  * counts what it would take away: the average gain an opposing power brings.
  */
 function effectiveScore(character: Character, threat: Threat, context: ScoreContext, opponents?: readonly Character[]): number {
@@ -215,12 +239,34 @@ function playOut(view: BotView, first: Character, opponents: Character[], threat
   let ownPick: Character | null = first;
   let round = view.round;
   let lastLevel = view.previousLevel;
+  let ownOutcome = view.previousOutcome;
   const theirTeam = [...view.opponentSeen, ...opponents];
+  const ownPlayed = [...view.played];
+  // What the opponent played before is only partly known: their seen characters stand in for it.
+  const theirPlayed = [...view.opponentSeen];
+  const flip = (outcome: PlayOutcome | undefined): PlayOutcome | undefined =>
+    outcome === "won" ? "lost" : outcome === "lost" ? "won" : outcome;
 
   for (const threat of threats) {
-    const shared = { families: view.families, round, previousLevel: lastLevel };
-    const ownContext = { ...shared, roundsWon: won, opponentRoundsWon: lost, carriedBonus: ownCarried, team: view.team };
-    const theirContext = { ...shared, roundsWon: lost, opponentRoundsWon: won, carriedBonus: theirCarried, team: theirTeam };
+    const shared = { families: view.families, round, previousLevel: lastLevel, threatLevels: view.threatLevels };
+    const ownContext = {
+      ...shared,
+      roundsWon: won,
+      opponentRoundsWon: lost,
+      carriedBonus: ownCarried,
+      team: view.team,
+      previousOutcome: ownOutcome,
+      played: ownPlayed,
+    };
+    const theirContext = {
+      ...shared,
+      roundsWon: lost,
+      opponentRoundsWon: won,
+      carriedBonus: theirCarried,
+      team: theirTeam,
+      previousOutcome: flip(ownOutcome),
+      played: theirPlayed,
+    };
     const ownCharacter: Character = ownPick ?? takeBest(own, threat, ownContext, rng);
     const theirCharacter = takeBest(theirs, threat, theirContext, rng);
     ownPick = null;
@@ -231,20 +277,23 @@ function playOut(view: BotView, first: Character, opponents: Character[], threat
     const theirActing = asPlayedAgainst(theirCharacter, ownCharacter);
     const ownScore = scorePlay(ownActing, threat, {
       ...ownContext,
-      abilityMalus: abilityMalusFrom(theirActing),
+      abilityMalus: abilityMalusOn(ownActing, theirActing),
       opponent: theirActing,
     });
     const theirScore = scorePlay(theirActing, threat, {
       ...theirContext,
-      abilityMalus: abilityMalusFrom(ownActing),
+      abilityMalus: abilityMalusOn(theirActing, ownActing),
       opponent: ownActing,
     });
     const winner = compareScores(ownScore, theirScore);
     lead += ownScore.total - theirScore.total;
     if (winner === "a") won += 1;
     if (winner === "b") lost += 1;
-    ownCarried = carriedBonusAfter(ownActing, winner === null ? "void" : winner === "a" ? "won" : "lost");
-    theirCarried = carriedBonusAfter(theirActing, winner === null ? "void" : winner === "b" ? "won" : "lost");
+    ownOutcome = winner === null ? "void" : winner === "a" ? "won" : "lost";
+    ownCarried = carriedBonusAfter(ownActing, ownOutcome);
+    theirCarried = carriedBonusAfter(theirActing, flip(ownOutcome) ?? "void");
+    ownPlayed.push(ownActing);
+    theirPlayed.push(theirActing);
     if (won >= view.roundsToWin || lost >= view.roundsToWin) break;
   }
 

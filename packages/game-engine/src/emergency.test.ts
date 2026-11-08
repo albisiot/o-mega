@@ -142,3 +142,26 @@ describe("Crescendo and Slancio in Emergenza", () => {
     expect(resolve(next, FOR_THREAT, [{ character: momentum, passed: false, level: 1 }]).score.bonus).toBe(0);
   });
 });
+
+describe("backlog powers in Emergenza", () => {
+  it("Vendetta pays after a failed threat, Grande prova on the day's highest level", () => {
+    const vendetta = withPower({ code: "vendetta", params: { bonus: 3 } });
+    const failed: EmergencyAttempt[] = [{ character: character("x"), passed: false, level: 1 }];
+    expect(resolve(vendetta, FOR_THREAT, failed).score.bonus).toBe(3);
+    expect(resolve(vendetta, FOR_THREAT, [{ ...failed[0], passed: true }]).score.bonus).toBe(0);
+
+    const main = withPower({ code: "main_event", params: { bonus: 3 } });
+    const play = (levels: number[]) =>
+      resolveEmergencyPlay({ character: main, threat: FOR_THREAT, squad: [main], attempts: [], rules: RULES, families: FAMILIES, threatLevels: levels });
+    expect(play([1, 1]).score.bonus).toBe(3);
+    expect(play([1, 4]).score.bonus).toBe(0);
+  });
+
+  it("Sacrificio fails its threat and passes its bonus", () => {
+    const sacrifice = withPower({ code: "sacrifice", params: { bonus: 5 } }, { FOR: 10 });
+    expect(resolve(sacrifice).passed).toBe(false);
+    const after = resolve(character("next", { FOR: 2 }), FOR_THREAT, [{ character: sacrifice, passed: false, level: 1 }]);
+    expect(after.score.total).toBe(7);
+    expect(after.passed).toBe(true);
+  });
+});

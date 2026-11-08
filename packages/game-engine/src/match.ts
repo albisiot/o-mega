@@ -1,4 +1,4 @@
-import { abilityMalusFrom, asPlayedAgainst, carriedBonusAfter, compareScores, scorePlay, type PlayOutcome } from "./scoring.ts";
+import { abilityMalusOn, asPlayedAgainst, carriedBonusAfter, compareScores, scorePlay, type PlayOutcome } from "./scoring.ts";
 import type {
   AbilityFamilies,
   Character,
@@ -66,6 +66,22 @@ export function carriedBonus(state: MatchState, side: Side): number {
   return carriedBonusAfter(character, outcomeFor(last.winner, side));
 }
 
+/** The characters a side has played so far, in order, as they played (Capobranco, Catalizzatore, Riverbero). */
+export function playedBy(state: MatchState, side: Side): Character[] {
+  return state.rounds.map((round) => playedIn(state, round, side)).filter((c): c is Character => c !== undefined);
+}
+
+/** How a side's previous round ended, none before the first round (Vendetta). */
+export function previousOutcome(state: MatchState, side: Side): PlayOutcome | undefined {
+  const last = state.rounds.at(-1);
+  return last ? outcomeFor(last.winner, side) : undefined;
+}
+
+/** Levels of every threat of the match (Grande prova): public from the start. */
+export function threatLevels(state: MatchState): number[] {
+  return state.threats.slice(0, state.rules.threatsPerMatch).map((threat) => threat.level);
+}
+
 /** Level of the previous round's threat, none before the first round (Crescendo). */
 export function previousLevel(state: MatchState): number | undefined {
   return state.rounds.length > 0 ? state.threats[state.rounds.length - 1]?.level : undefined;
@@ -121,9 +137,12 @@ export function resolveRound(
       carriedBonus: carriedBonus(state, side),
       round: currentRoundNumber(state),
       team: state.teams[side],
-      abilityMalus: abilityMalusFrom(acting[otherSide(side)]),
+      abilityMalus: abilityMalusOn(acting[side], acting[otherSide(side)]),
       opponent: acting[otherSide(side)],
       previousLevel: previousLevel(state),
+      previousOutcome: previousOutcome(state, side),
+      threatLevels: threatLevels(state),
+      played: playedBy(state, side),
     });
     plays[side] = { ...score, autoPlayed: choices[side].autoPlayed };
   }

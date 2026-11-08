@@ -173,3 +173,64 @@ describe("Annullatore, Crescendo and Slancio in a match", () => {
     expect(state.rounds[1].plays.a.bonus).toBe(3); // level 2 after level 1
   });
 });
+
+describe("backlog powers in a match", () => {
+  it("Riflesso sends Sabotatore back to the opposing character", () => {
+    const reflect = character("a1", {}, { code: "reflect", params: {} }, 5);
+    const saboteur = character("b1", {}, { code: "sabotage", params: { malus: 1 } }, 5);
+    const state = play(newState([reflect], [saboteur], threats), "a1", "b1");
+    expect(state.rounds[0].plays.a.total).toBe(5);
+    expect(state.rounds[0].plays.b.total).toBe(4);
+    expect(state.rounds[0].winner).toBe("a");
+  });
+
+  it("Vendetta pays after a lost round, Grande prova on the highest level", () => {
+    const vendetta = character("a2", {}, { code: "vendetta", params: { bonus: 3 } }, 4);
+    const main = character("a3", {}, { code: "main_event", params: { bonus: 3 } }, 4);
+    let state = newState([character("a1", {}, null, 1), vendetta, main], team("b", [5, 4, 4]), threats);
+    state = play(state, "a1", "b1");
+    state = play(state, "a2", "b2");
+    expect(state.rounds[1].plays.a.bonus).toBe(3);
+    state = play(state, "a3", "b3");
+    expect(state.rounds[2].plays.a.bonus).toBe(0); // level 3, the match's highest is 5
+  });
+
+  it("Capobranco boosts later characters of its faction, unless an Annullatore stopped it", () => {
+    const leader = { ...character("a1", {}, { code: "pack_leader", params: { bonus: 1 } }, 4), faction: "heroes" };
+    const follower = { ...character("a2", {}, null, 4), faction: "heroes" };
+    let state = newState([leader, follower], team("b", [4, 4]), threats);
+    state = play(state, "a1", "b1");
+    state = play(state, "a2", "b2");
+    expect(state.rounds[1].plays.a.bonus).toBe(1);
+
+    const nullifier = character("b1", {}, { code: "nullifier", params: {} }, 4);
+    let stopped = newState([leader, follower], [nullifier, character("b2")], threats);
+    stopped = play(stopped, "a1", "b1");
+    stopped = play(stopped, "a2", "b2");
+    expect(stopped.rounds[1].plays.a.bonus).toBe(0);
+  });
+
+  it("Sacrificio gives up its round and passes its bonus", () => {
+    const sacrifice = character("a1", {}, { code: "sacrifice", params: { bonus: 5 } }, 9);
+    let state = newState([sacrifice, character("a2")], team("b", [1, 4]), threats);
+    state = play(state, "a1", "b1");
+    expect(state.rounds[0].winner).toBe("b");
+    expect(carriedBonus(state, "a")).toBe(5);
+    state = play(state, "a2", "b2");
+    expect(state.rounds[1].plays.a.total).toBe(13);
+  });
+
+  it("Catalizzatore and Riverbero work on the next character", () => {
+    const opener = character("a1", {}, { code: "opener", params: { bonus: 3, max_round: 5 } }, 4);
+    const echo = character("a2", {}, { code: "echo", params: {} }, 4);
+    const catalyst = character("a3", {}, { code: "catalyst", params: { multiplier: 2 } }, 4);
+    const second = character("a4", {}, { code: "opener", params: { bonus: 3, max_round: 5 } }, 4);
+    let state = newState([opener, echo, catalyst, second], team("b", [4, 4, 4, 4]), threats);
+    state = play(state, "a1", "b1");
+    state = play(state, "a2", "b2");
+    expect(state.rounds[1].plays.a.bonus).toBe(3); // copies Apripista
+    state = play(state, "a3", "b3");
+    state = play(state, "a4", "b4");
+    expect(state.rounds[3].plays.a.bonus).toBe(6); // Apripista doubled
+  });
+});
