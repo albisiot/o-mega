@@ -17,7 +17,7 @@ begin
     select jsonb_object_agg(rarity_code, n) from (
       select rarity_code, count(*) as n from public.card_definitions group by rarity_code
     ) s
-  ) = '{"delta": 43, "gamma": 35, "beta": 24, "alfa": 13, "omega": 8}'::jsonb,
+  ) = '{"delta": 43, "gamma": 35, "beta": 23, "alfa": 13, "omega": 8}'::jsonb,
     'unexpected rarity distribution';
 
   -- Rarer cards have more ability points: every card has exactly the budget of its rarity.
@@ -144,7 +144,7 @@ select set_config('request.jwt.claims',
 do $$
 begin
   assert (select count(*) from public.card_definitions) = 122, 'players cannot read the full catalog';
-  assert (select count(*) from public.power_definitions) = 15, 'players cannot read powers';
+  assert (select count(*) from public.power_definitions) = 19, 'players cannot read powers';
   begin
     perform 1 from public.threat_definitions;
     raise exception 'ASSERT: players can read the threat catalog';
@@ -156,7 +156,7 @@ set local role anon;
 
 do $$
 begin
-  assert (select count(*) from public.power_definitions) = 15, 'anon cannot read powers';
+  assert (select count(*) from public.power_definitions) = 19, 'anon cannot read powers';
   begin
     perform 1 from public.threat_definitions;
     raise exception 'ASSERT: anon can read the threat catalog';

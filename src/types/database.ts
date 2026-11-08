@@ -158,6 +158,7 @@ export type Database = {
       bonus_codes: {
         Row: {
           card_definition_ids: string[]
+          card_variant_ids: string[]
           code: string
           coins: number
           created_at: string
@@ -170,6 +171,7 @@ export type Database = {
         }
         Insert: {
           card_definition_ids?: string[]
+          card_variant_ids?: string[]
           code: string
           coins?: number
           created_at?: string
@@ -182,6 +184,7 @@ export type Database = {
         }
         Update: {
           card_definition_ids?: string[]
+          card_variant_ids?: string[]
           code?: string
           coins?: number
           created_at?: string
@@ -2011,6 +2014,10 @@ export type Database = {
       notify_player: {
         Args: { p_kind: string; p_match_id: string; p_user: string }
         Returns: undefined
+      }
+      nullified_in_round: {
+        Args: { p_match_id: string; p_round: number; p_side: string }
+        Returns: boolean
       }
       open_conquest_claim: {
         Args: { p_match_id: string; p_winner_side: string }
