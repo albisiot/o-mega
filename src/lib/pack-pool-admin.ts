@@ -33,18 +33,6 @@ export async function setCardsInPacks(cardCodes: string[], inPacks: boolean): Pr
   return data as unknown as PackPool;
 }
 
-/** Lower case without accents, so "eco" finds "Écho". */
-function fold(text: string): string {
-  return text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
-}
-
-/** Cards whose name or code contains the search, in the list's order. */
-export function searchPackCards(cards: PackPoolCard[], query: string): PackPoolCard[] {
-  const needle = fold(query);
-  if (!needle) return cards;
-  return cards.filter((card) => fold(card.name).includes(needle) || fold(card.code).includes(needle));
-}
-
 /** How many cards of a rarity packs can give, out of how many there are. */
 export function rarityCount(cards: PackPoolCard[], rarityCode: string): { inPacks: number; total: number } {
   const ofRarity = cards.filter((card) => card.rarity_code === rarityCode);

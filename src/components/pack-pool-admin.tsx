@@ -1,14 +1,15 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { CardSortToggle } from "@/components/card-sort-toggle";
 import { PageHeader } from "@/components/comic-parts";
 import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
+import { searchCards, sortCards, type CardOrder } from "@/lib/card-sort";
 import { describeServerError } from "@/lib/errors";
 import {
   fetchPackPool,
   rarityCount,
-  searchPackCards,
   setCardsInPacks,
   type PackPool,
   type PackPoolCard,
@@ -21,6 +22,7 @@ const CHIP = "flex min-h-11 shrink-0 items-center gap-1.5 border-2 px-3 text-sm 
 export function PackPoolAdmin({ initial }: { initial: PackPool }) {
   const [pool, setPool] = useState(initial);
   const [query, setQuery] = useState("");
+  const [order, setOrder] = useState<CardOrder>("name");
   const [rarityFilter, setRarityFilter] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Only the answer to the latest change is shown: an older one would undo newer ticks.
@@ -49,7 +51,7 @@ export function PackPoolAdmin({ initial }: { initial: PackPool }) {
     }
   }
 
-  const found = searchPackCards(pool.cards, query);
+  const found = sortCards(searchCards(pool.cards, query), order);
   const shownRarities = pool.rarities.filter((rarity) => rarityFilter === null || rarity.code === rarityFilter);
   const inPacks = pool.cards.filter((card) => card.in_packs).length;
 
@@ -64,17 +66,20 @@ export function PackPoolAdmin({ initial }: { initial: PackPool }) {
           Togli la spunta per tenere una carta fuori dai pacchetti; puoi sempre darla con un codice bonus. Le carte
           dei livelli non escono mai e non sono in elenco. Le varianti seguono la loro carta.
         </p>
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Cerca per nome o codice"
-          aria-label="Cerca una carta"
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-          className="input-comic w-full min-w-0 placeholder:text-faint"
-        />
+        <div className="flex gap-2">
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Cerca nome o numero"
+            aria-label="Cerca una carta"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            className="input-comic min-w-0 flex-1 placeholder:text-faint"
+          />
+          <CardSortToggle order={order} onChange={setOrder} />
+        </div>
         <div className="-mx-3 flex gap-1.5 overflow-x-auto px-3 pb-1" role="group" aria-label="Filtra per rarità">
           <button
             type="button"

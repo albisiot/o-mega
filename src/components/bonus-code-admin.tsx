@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { CardSortToggle } from "@/components/card-sort-toggle";
 import { PageHeader } from "@/components/comic-parts";
+import { searchCards, sortCards, type CardOrder } from "@/lib/card-sort";
 import { describeBonusReward } from "@/lib/packs";
 import {
   bonusCodeState,
@@ -59,6 +61,9 @@ function NewCodeForm({ cards, onChange }: { cards: AdminBonusCodes["cards"]; onC
   const [coins, setCoins] = useState("");
   const [packs, setPacks] = useState("");
   const [cardCodes, setCardCodes] = useState<string[]>([]);
+  const [cardQuery, setCardQuery] = useState("");
+  const [cardOrder, setCardOrder] = useState<CardOrder>("name");
+  const shownCards = sortCards(searchCards(cards, cardQuery), cardOrder);
   const [pendingCard, setPendingCard] = useState<string | null>(null);
   const [pendingStyle, setPendingStyle] = useState("");
   const pending = cards.find((card) => card.code === pendingCard) ?? null;
@@ -146,10 +151,25 @@ function NewCodeForm({ cards, onChange }: { cards: AdminBonusCodes["cards"]; onC
           />
         </label>
       </div>
-      <label className={LABEL}>
-        Carte
+      <div className={LABEL}>
+        <span id="bonus-cards-label">Carte</span>
+        <div className="flex gap-2">
+          <input
+            type="search"
+            value={cardQuery}
+            onChange={(event) => setCardQuery(event.target.value)}
+            placeholder="Cerca nome o numero"
+            aria-label="Cerca una carta da aggiungere"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            className={`${INPUT} flex-1 placeholder:text-faint`}
+          />
+          <CardSortToggle order={cardOrder} onChange={setCardOrder} />
+        </div>
         <select
           value=""
+          aria-labelledby="bonus-cards-label"
           onChange={(event) => {
             const picked = cards.find((card) => card.code === event.target.value);
             if (!picked) return;
@@ -159,14 +179,20 @@ function NewCodeForm({ cards, onChange }: { cards: AdminBonusCodes["cards"]; onC
           }}
           className={INPUT}
         >
-          <option value="">Aggiungi una carta…</option>
-          {cards.map((card) => (
+          <option value="">
+            {shownCards.length === 0
+              ? "Nessuna carta trovata"
+              : `Aggiungi una carta… (${shownCards.length})`}
+          </option>
+          {shownCards.map((card) => (
             <option key={card.code} value={card.code}>
-              {card.name} ({card.rarity})
+              {cardOrder === "number"
+                ? `${card.code} · ${card.name} (${card.rarity})`
+                : `${card.name} (${card.rarity}) · ${card.code}`}
             </option>
           ))}
         </select>
-      </label>
+      </div>
       {pending && (
         <div className="flex flex-col gap-2 bg-panel p-3">
           <label className={LABEL}>
