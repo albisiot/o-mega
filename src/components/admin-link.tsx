@@ -27,12 +27,15 @@ export function AdminLink() {
 
   if (!session || !isAdmin) return null;
   return (
-    <nav aria-label="Amministrazione" className="flex justify-center gap-4">
+    <nav aria-label="Amministrazione" className="flex flex-wrap justify-center gap-x-4">
       <Link href="/gestione-codici" className={LINK}>
         Gestione codici
       </Link>
       <Link href="/gestione-pacchetti" className={LINK}>
         Carte nei pacchetti
+      </Link>
+      <Link href="/gestione-eventi" className={LINK}>
+        Gestione eventi
       </Link>
     </nav>
   );

@@ -6,6 +6,7 @@ import { resolveEmergencyPlay, type AbilityFamilies, type EmergencyRules } from 
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { Silhouette } from "@/components/card-view";
 import { BackLink, ComicBurst } from "@/components/comic-parts";
+import { useEventPointsFor } from "@/components/event-banner";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
 import { LoadingScreen } from "@/components/loading-screen";
@@ -569,6 +570,7 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
   const complete = run.passed === rules.threats_per_run;
   const cardOf = (instanceId: string) => run.squad.find((c) => c.instance_id === instanceId);
   const detail = useCardDetail();
+  const eventPoints = useEventPointsFor(null);
 
   // The outcome keeps its size; the day and the ranking share the room left, one tab at a time.
   return (
@@ -588,6 +590,11 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
             </p>
             {run.coins > 0 && (
               <p className="-skew-x-8 bg-black px-2.5 py-0.5 text-[13px] font-extrabold text-comic-yellow">+{run.coins} monete</p>
+            )}
+            {eventPoints && (
+              <p className="-skew-x-8 bg-comic-yellow px-2.5 py-0.5 text-[13px] font-extrabold text-black">
+                +{eventPoints.points} punti evento{eventPoints.new_rewards > 0 && " · premio ottenuto!"}
+              </p>
             )}
           </div>
           <p className="relative text-[13px] font-semibold">Una nuova Emergenza arriva dopo la mezzanotte.</p>

@@ -740,6 +740,203 @@ export type Database = {
           },
         ]
       }
+      event_points: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          kind: string
+          opponent_id: string | null
+          outcome: string
+          points: number
+          ref_id: string
+          round: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          kind: string
+          opponent_id?: string | null
+          outcome: string
+          points: number
+          ref_id: string
+          round?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          kind?: string
+          opponent_id?: string | null
+          outcome?: string
+          points?: number
+          ref_id?: string
+          round?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_points_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_points_opponent_id_fkey"
+            columns: ["opponent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_points_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_rewards: {
+        Row: {
+          coins: number
+          event_id: string
+          granted_at: string
+          id: string
+          opening_ids: string[]
+          packs: number
+          seen_at: string | null
+          tier: number
+          user_id: string
+        }
+        Insert: {
+          coins: number
+          event_id: string
+          granted_at?: string
+          id?: string
+          opening_ids?: string[]
+          packs: number
+          seen_at?: string | null
+          tier: number
+          user_id: string
+        }
+        Update: {
+          coins?: number
+          event_id?: string
+          granted_at?: string
+          id?: string
+          opening_ids?: string[]
+          packs?: number
+          seen_at?: string | null
+          tier?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_rewards_event_id_tier_fkey"
+            columns: ["event_id", "tier"]
+            isOneToOne: false
+            referencedRelation: "event_tiers"
+            referencedColumns: ["event_id", "tier"]
+          },
+          {
+            foreignKeyName: "event_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_tiers: {
+        Row: {
+          card_definition_ids: string[]
+          card_variant_ids: string[]
+          coins: number
+          event_id: string
+          packs: number
+          points: number
+          tier: number
+        }
+        Insert: {
+          card_definition_ids?: string[]
+          card_variant_ids?: string[]
+          coins?: number
+          event_id: string
+          packs?: number
+          points: number
+          tier: number
+        }
+        Update: {
+          card_definition_ids?: string[]
+          card_variant_ids?: string[]
+          coins?: number
+          event_id?: string
+          packs?: number
+          points?: number
+          tier?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_tiers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          daily_cap: number | null
+          description: string
+          ends_at: string
+          id: string
+          is_active: boolean
+          points: Json
+          starts_at: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          daily_cap?: number | null
+          description?: string
+          ends_at: string
+          id?: string
+          is_active?: boolean
+          points: Json
+          starts_at: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          daily_cap?: number | null
+          description?: string
+          ends_at?: string
+          id?: string
+          is_active?: boolean
+          points?: Json
+          starts_at?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formations: {
         Row: {
           card_instance_ids: string[]
@@ -1619,6 +1816,7 @@ export type Database = {
           modifier_code: string | null
           modifier_params: Json
           name: string
+          region: string
           required_abilities: string[]
         }
         Insert: {
@@ -1632,6 +1830,7 @@ export type Database = {
           modifier_code?: string | null
           modifier_params?: Json
           name: string
+          region?: string
           required_abilities: string[]
         }
         Update: {
@@ -1645,6 +1844,7 @@ export type Database = {
           modifier_code?: string | null
           modifier_params?: Json
           name?: string
+          region?: string
           required_abilities?: string[]
         }
         Relationships: []
@@ -1687,9 +1887,25 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_delete_event: { Args: { p_id: string }; Returns: Json }
+      admin_events_payload: { Args: never; Returns: Json }
       admin_list_bonus_codes: { Args: never; Returns: Json }
+      admin_list_events: { Args: never; Returns: Json }
       admin_list_pack_cards: { Args: never; Returns: Json }
       admin_pack_cards_payload: { Args: never; Returns: Json }
+      admin_save_event: {
+        Args: {
+          p_daily_cap?: number
+          p_description: string
+          p_ends_at: string
+          p_id?: string
+          p_points: Json
+          p_starts_at: string
+          p_tiers: Json
+          p_title: string
+        }
+        Returns: Json
+      }
       admin_set_bonus_code_active: {
         Args: { p_id: string; p_is_active: boolean }
         Returns: Json
@@ -1697,6 +1913,22 @@ export type Database = {
       admin_set_cards_in_packs: {
         Args: { p_card_codes: string[]; p_in_packs: boolean }
         Returns: Json
+      }
+      admin_set_event_active: {
+        Args: { p_active: boolean; p_id: string }
+        Returns: Json
+      }
+      award_event_points: {
+        Args: {
+          p_kind: string
+          p_opponent: string
+          p_outcome: string
+          p_ref_id: string
+          p_round: number
+          p_started_at: string
+          p_user: string
+        }
+        Returns: number
       }
       bootstrap_player: {
         Args: never
@@ -1813,7 +2045,9 @@ export type Database = {
         }
         Returns: string
       }
+      current_event_id: { Args: { p_at?: string }; Returns: string }
       delete_formation: { Args: { p_formation_id: string }; Returns: undefined }
+      draw_match_modifiers: { Args: { p_threat_ids: string[] }; Returns: Json }
       draw_pack_definitions: {
         Args: { p_count: number; p_guaranteed_min_rank: number }
         Returns: string[]
@@ -1865,6 +2099,15 @@ export type Database = {
         Returns: string
       }
       emergency_state_payload: { Args: { p_user: string }; Returns: Json }
+      event_payload: {
+        Args: { p_event_id: string; p_user: string }
+        Returns: Json
+      }
+      event_points_rules: { Args: { p_points: Json }; Returns: Json }
+      event_reward_cards: {
+        Args: { p_card_codes: string[] }
+        Returns: Record<string, unknown>
+      }
       finish_match: {
         Args: { p_match_id: string; p_reason: string; p_result: string }
         Returns: undefined
@@ -1885,6 +2128,8 @@ export type Database = {
       get_conquest_history: { Args: never; Returns: Json }
       get_conquest_status: { Args: never; Returns: Json }
       get_emergency_leaderboard: { Args: { p_limit?: number }; Returns: Json }
+      get_event: { Args: never; Returns: Json }
+      get_event_points_for: { Args: { p_ref_id: string }; Returns: Json }
       get_match_history: { Args: { p_limit?: number }; Returns: Json }
       get_match_state: { Args: { p_match_id: string }; Returns: Json }
       get_pack_odds: { Args: never; Returns: Json }
@@ -1892,6 +2137,13 @@ export type Database = {
       get_pack_status: { Args: never; Returns: Json }
       get_story: { Args: never; Returns: Json }
       get_story_reward: { Args: { p_match_id: string }; Returns: Json }
+      grant_event_tier: {
+        Args: {
+          p_tier: Database["public"]["Tables"]["event_tiers"]["Row"]
+          p_user: string
+        }
+        Returns: undefined
+      }
       grant_level_rewards: {
         Args: { p_match_id: string; p_user: string }
         Returns: undefined
@@ -1939,6 +2191,10 @@ export type Database = {
       }
       leave_queue: { Args: never; Returns: undefined }
       level_for_xp: { Args: { p_xp: number }; Returns: number }
+      mark_event_rewards_seen: {
+        Args: { p_event_id: string }
+        Returns: undefined
+      }
       match_create_bot: {
         Args: {
           p_bot_definition_ids: string[]
@@ -2046,6 +2302,10 @@ export type Database = {
         Returns: string
       }
       pack_opening_payload: { Args: { p_opening_id: string }; Returns: Json }
+      place_modifier: {
+        Args: { p_code: string; p_params: Json }
+        Returns: Json
+      }
       power_text: {
         Args: { p_params: Json; p_power_code: string }
         Returns: string
@@ -2156,6 +2416,10 @@ export type Database = {
       validate_team: {
         Args: { p_instance_ids: string[]; p_user: string }
         Returns: string[]
+      }
+      with_place_modifiers: {
+        Args: { p_modifiers: Json; p_threat_ids: string[] }
+        Returns: Json
       }
     }
     Enums: {

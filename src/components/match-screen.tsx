@@ -16,6 +16,7 @@ import { ComicBurst } from "@/components/comic-parts";
 import { ConquestPanel, ConquestPick, SecondsLeft } from "@/components/conquest-panel";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
+import { useEventPointsFor } from "@/components/event-banner";
 import { StoryRewardPanel, useStoryReward } from "@/components/story-reward";
 import { ThreatDiorama } from "@/components/threat-diorama";
 import { prefetchWinnerNames, WinnerName } from "@/components/winner-name";
@@ -1185,6 +1186,7 @@ function MatchResult({
   const xp = matchXp(view);
   const cardOf = (instanceId: string | null | undefined) => view.my_team.find((c) => c.instance_id === instanceId);
   const storyReward = useStoryReward(view.id, story);
+  const eventPoints = useEventPointsFor(view.id);
   const conquest = view.conquest;
   const detail = useCardDetail();
 
@@ -1204,6 +1206,11 @@ function MatchResult({
     <>
       {xp > 0 && <p className={`${chip} bg-black text-foreground`}>+{xp} XP</p>}
       {coins > 0 && <p className={`${chip} bg-black text-comic-yellow`}>+{coins} monete</p>}
+      {eventPoints && (
+        <p className={`${chip} bg-comic-yellow text-black`}>
+          +{eventPoints.points} punti evento{eventPoints.new_rewards > 0 && " · premio ottenuto!"}
+        </p>
+      )}
     </>
   );
   const levels = (
@@ -1255,7 +1262,7 @@ function MatchResult({
         ) : (
           <>
             {score}
-            {(xp > 0 || coins > 0) && <div className="relative flex gap-2">{gains}</div>}
+            {(xp > 0 || coins > 0 || eventPoints) && <div className="relative flex flex-wrap justify-center gap-2">{gains}</div>}
             {levels}
           </>
         )}

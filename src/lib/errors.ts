@@ -54,6 +54,16 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   bonus_code_card_unavailable: "Una delle carte scelte non si può dare con un codice.",
   pack_card_unavailable: "Una delle carte scelte non può uscire nei pacchetti.",
   pack_pool_empty: "Lascia nei pacchetti almeno una carta Gamma o più rara: serve per la carta garantita.",
+  event_not_found: "Evento non trovato.",
+  event_ended: "L'evento è già concluso: duplicalo per ripeterlo.",
+  event_invalid_text: "Il titolo deve avere da 3 a 60 caratteri, la descrizione al massimo 500.",
+  event_invalid_period: "Controlla le date: la fine deve venire dopo l'inizio, non essere già passata, e l'evento dura al massimo 90 giorni.",
+  event_overlap: "In quel periodo c'è già un altro evento.",
+  event_invalid_points: "Controlla i punti: numeri interi da 0 a 1000, tetto giornaliero da 1 in su.",
+  event_invalid_tiers: "Controlla i traguardi: da 1 a 5, ognuno con più punti del precedente, fino a 10 pacchetti e 10 carte.",
+  event_tier_no_reward: "Ogni traguardo deve dare almeno un premio: monete, pacchetti o carte.",
+  event_invalid_card: "Una delle carte scelte non si può dare come premio.",
+  event_has_points: "Qualcuno ha già punti in questo evento: disattivalo invece di eliminarlo.",
 };
 
 export function describeServerError(error: unknown): string {

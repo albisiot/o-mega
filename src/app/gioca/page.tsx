@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
+import { EventBanner } from "@/components/event-banner";
 import { LoadingScreen } from "@/components/loading-screen";
 import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
@@ -365,6 +366,7 @@ export default function PlayPage() {
       <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 pb-3 pt-1">
         {error && <p className="shrink-0 text-sm font-semibold text-comic-magenta">{error}</p>}
         {active && <ActiveMatchBanner match={active} onForfeit={() => setConfirmForfeit(true)} />}
+        {!opened && <EventBanner />}
 
         {opened ? (
           <section className="flex flex-col gap-2">

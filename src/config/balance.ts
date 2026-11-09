@@ -129,6 +129,15 @@ export const balance = {
     maxFailedAttemptsPerHour: 10,
   },
 
+  /** Timed events (SPEC §8.2). Points, targets and rewards belong to each event, not here. */
+  events: {
+    /** Matches against the same player that earn event points within the window. */
+    sameOpponentMatches: 3,
+    sameOpponentWindowHours: 24,
+    /** Targets an event can have. */
+    maxTiers: 5,
+  },
+
   matchmaking: {
     friendCodeMinutes: 10,
     /** Queue entries not refreshed by the waiting client for this long are ignored. */

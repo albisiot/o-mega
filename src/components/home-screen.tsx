@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, type ComponentType } from "react";
 import { markHomeReady } from "@/components/app-splash";
 import { CoinBadge } from "@/components/coin-badge";
+import { EventBanner } from "@/components/event-banner";
 import { PackPanel } from "@/components/pack-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { WorldIntro } from "@/components/world-intro";
@@ -120,6 +121,8 @@ export function HomeScreen({ profile }: { profile: Profile }) {
             </span>
           </Link>
         )}
+
+        <EventBanner />
 
         <PackPanel
           status={packs.status}

@@ -18,8 +18,8 @@ export type PackCard = {
 /** Cards come least rare first, so the best one is revealed last. */
 export type PackOpening = {
   id: string;
-  /** "bonus": the cards chosen for a bonus code, shown like a pack. */
-  pack_type: "daily" | "standard" | "bonus";
+  /** "bonus" and "event": the cards chosen for a bonus code or an event target, shown like a pack. */
+  pack_type: "daily" | "standard" | "bonus" | "event";
   opened_at: string;
   cards: PackCard[];
 };

@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "9 novembre 2026",
     changes: [
+      "Arrivano gli eventi a tempo: per un periodo deciso in anticipo ogni partita dà punti evento, in Amichevole, Conquista, contro i bot, nella Storia e in Emergenza. Raggiungi i traguardi per ottenere premi speciali, anche carte con disegni rari: arrivano da soli appena tocchi il traguardo. Trovi l'evento in corso nella home e in Gioca, con il conto alla rovescia e la tua barra dei punti. Le partite abbandonate non danno punti.",
       "Il sismografo registra scosse anche lontano da Nuova Megara: 15 nuove Minacce in cinque luoghi del mondo, ognuno con il suo diorama 3D e una regola sempre attiva. Giza, Silenzio della tomba: nessun potere funziona. Yucatán, Il conto lungo: +3 a chi ha vinto meno round. Atlantide, Abissi: Energia, Magia e Psiche contano doppio. Artico, Gelo: nessuna abilità conta più di 6. Giappone, Duello: contano solo le 2 abilità più alte. La regola si scopre insieme alla Minaccia; l'Emergenza resta a Nuova Megara.",
       "In partita tieni premuta una carta per vederla intera: nome, rarità, fazione, potere, le 12 abilità e il testo. Vale in ogni modalità, Storia ed Emergenza comprese: per le carte della mano, quelle del risultato del round (anche la carta avversaria), quelle svelate da Spia e quelle della scelta della squadra. Il tocco breve sceglie la carta come prima; la finestra si chiude toccando fuori o con Chiudi.",
     ],

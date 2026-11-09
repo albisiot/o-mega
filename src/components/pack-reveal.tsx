@@ -27,6 +27,7 @@ const PACK_TITLES: Record<PackOpening["pack_type"], string> = {
   daily: "Pacchetto del giorno",
   standard: "Pacchetto standard",
   bonus: "Carte bonus",
+  event: "Premio evento",
 };
 
 /** Sealed pack → cards revealed one at a time → summary, then the next pack if any. */
@@ -186,7 +187,7 @@ export function PackReveal({ opening, nextIds = [] }: { opening: PackOpening; ne
     <main className="game-shell gap-4 px-4 pt-4">
       <header className="shrink-0">
         <h1 className="font-display text-4xl uppercase text-comic-yellow">
-          {opening.pack_type === "bonus" ? "Le tue carte" : "Il tuo pacchetto"}
+          {opening.pack_type === "bonus" || opening.pack_type === "event" ? "Le tue carte" : "Il tuo pacchetto"}
         </h1>
         <p className="mt-1 text-sm font-semibold text-muted">Le carte sono già nella tua collezione.</p>
       </header>

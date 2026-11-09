@@ -428,6 +428,30 @@ select public.create_bonus_code('NATALE26',
 
 Disattivazione: `update public.bonus_codes set is_active = false where code = 'NATALE26';`
 
+### 8.2 Eventi a tempo
+
+Tra un inizio e una fine decisi da un amministratore, le partite danno **punti evento**; ogni **traguardo** di punti raggiunto paga il suo premio. Un evento alla volta: il server rifiuta date che si sovrappongono a un altro evento attivo.
+
+- **Orari:** inizio e fine si scelgono in ora italiana (`Europe/Rome`) e si mostrano così a tutti. La durata è libera (scorciatoie 24 ore, 48 ore, 3 e 7 giorni), al massimo 90 giorni.
+- **Punti:** decisi evento per evento, per tipo di partita ed esito. Valori di partenza del modulo:
+
+| Partita | Vittoria | Pareggio | Sconfitta |
+|---|---|---|---|
+| Amichevole online | 30 | 15 | 10 |
+| Conquista (anche contro il bot dopo l'attesa, §6.5) | 40 | 20 | 15 |
+| Contro bot | 10 | 5 | 3 |
+| Storia (anche le missioni rigiocate) | 10 | 5 | 3 |
+| Emergenza | 5 per Minaccia superata | | |
+
+  0 vuol dire che quel tipo di partita non dà punti.
+- **Quali partite contano:** quelle iniziate e finite durante l'evento, chiuse normalmente. Le partite **abbandonate** (`end_reason = 'forfeit'`) non danno punti a nessuno dei due, nemmeno a chi vince: altrimenti due amici potrebbero far abbandonare uno dei due per accumulare vittorie. In Emergenza contano le Minacce superate durante l'evento.
+- **Limiti contro gli abusi:** facoltativo, un **tetto di punti al giorno** per evento (reset a mezzanotte `Europe/Rome`): l'ultima partita prende solo i punti che restano. Contro lo **stesso giocatore** danno punti al massimo 3 partite ogni 24 ore (`balance.ts` `events`, `game_config` `events.*`).
+- **Traguardi:** da 1 a 5, ognuno con più punti del precedente. Il premio è quello dei codici bonus (§8.1): monete, pacchetti standard e carte scelte, con il disegno base o una variante, mai personaggi da sblocco di livello. Le carte sono copie normali (`acquired_via = 'event'`), conquistabili.
+- **Pagamento automatico:** il premio si paga appena il totale raggiunge il traguardo, nella stessa transazione che chiude la partita (o registra la Minaccia superata): non c'è niente da riscattare e nulla si perde alla fine dell'evento. Ogni traguardo paga una sola volta (`event_rewards`). Le carte e i pacchetti si mostrano con l'apertura dei pacchetti.
+- **Dati:** `events` (date, punti in `points`, tetto), `event_tiers` (traguardi e premi), `event_points` (registro dei punti: una riga per partita o Minaccia, unica, quindi la stessa partita non conta due volte; il totale di un giocatore è sempre la somma), `event_rewards`. Nessun client legge le tabelle: i punti li scrivono i trigger su `matches` ed `emergency_plays`, monete e carte passano da `coin_ledger` (`event_reward`) e `card_transfers` (`event`).
+- **Il giocatore vede:** in Home e in Gioca un banner con titolo, conto alla rovescia e barra verso il prossimo traguardo (o "Evento in arrivo" con il tempo all'inizio); a premio ottenuto il banner diventa "Premio evento ottenuto! Aprilo". La pagina `/evento` mostra descrizione, date, punti totali e di oggi, i traguardi con le carte premio e la tabella dei punti. Il risultato di una partita e il riepilogo dell'Emergenza mostrano "+N punti evento".
+- **Gestione dall'app:** in fondo all'informativa sulla privacy, accanto a *Gestione codici* e *Carte nei pacchetti*, gli amministratori trovano *Gestione eventi* (`/gestione-eventi`): crea un evento, elenca quelli in corso, programmati e conclusi con i giocatori e quanti hanno raggiunto ogni traguardo, e permette di modificarli, disattivarli, eliminarli (solo se nessuno ha punti) e **duplicarli** per ripeterli con nuove date (il progresso riparte da zero). Un evento iniziato cambia solo titolo, descrizione e fine, così le regole non cambiano a chi sta giocando; uno concluso non cambia più. Ogni funzione verifica l'amministratore sul server.
+
 ## 9. Collezione e album
 
 - Album con tutte le carte del catalogo: possedute e mancanti (sagoma).

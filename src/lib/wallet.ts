@@ -11,6 +11,7 @@ export const COIN_REASON_LABELS: Record<string, string> = {
   emergency_reward: "Premio Emergenza",
   bonus_code: "Codice bonus",
   story_reward: "Premio Storia",
+  event_reward: "Premio evento",
   admin_adjustment: "Rettifica",
 };
 
