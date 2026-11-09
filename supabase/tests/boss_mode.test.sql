@@ -9,8 +9,7 @@ begin;
 -- The tables below are drawn with the default numbers (balance.ts): admins may have
 -- changed them on the live database (/gestione-minaccia).
 update public.game_config c set value = to_jsonb(d.value)
-from (values ('boss.hot_fronts', 2), ('boss.hot_value', 2), ('boss.base_value', 1),
-             ('boss.growth', 1), ('boss.extra_fronts', 2), ('boss.extra_growth', 1)) as d(key, value)
+from (values ('boss.hot_fronts', 2), ('boss.hot_value', 2), ('boss.hot_growth', 1), ('boss.base_value', 1)) as d(key, value)
 where c.key = d.key;
 
 insert into auth.users (id, aud, role, email, raw_user_meta_data, created_at, updated_at) values
@@ -51,19 +50,20 @@ begin
   assert not exists (
     select 1 from public.boss_fronts f join public.threat_definitions t on t.id = f.threat_id where t.region <> 'megara'
   ), 'a front beyond Nuova Megara';
-  assert (select count(*) from public.game_config where key like 'boss.%') = 8, 'boss configuration';
+  assert (select count(*) from public.game_config where key like 'boss.%') = 6, 'boss configuration';
   assert not exists (select 1 from public.game_config where key like 'boss.targets.%'), 'no presidio target';
 end $$;
 
 -- The points table: the same rules as the engine.
 do $$
 begin
-  assert public.valid_boss_values('[[2,2,1,1,1],[3,4,2,3,2],[5,5,4,4,3],[6,7,5,5,5],[8,8,6,7,6]]'), 'a valid table';
-  assert not public.valid_boss_values('[[2,2,1,1,1],[3,4,2,3,2],[5,5,4,4,3],[6,7,5,5,5]]'), 'four turns';
-  assert not public.valid_boss_values('[[2,2,2,1,1],[3,3,4,2,2],[4,5,5,3,3],[6,6,6,4,4],[7,7,7,6,6]]'), 'three hot fronts';
-  assert not public.valid_boss_values('[[2,2,1,1,1],[3,4,2,3,2],[5,5,4,4,3],[6,7,5,5,5],[8,8,6,7,7]]'), 'three extra fronts';
-  assert not public.valid_boss_values('[[2,2,1,1,1],[3,4,2,3,2],[5,5,4,4,3],[6,7,5,5,5],[8,8,6,7,"6"]]'), 'a text value';
-  assert not public.valid_boss_values('[[2,2,1,1,1],[3,4,2,3,2],[5,5,4,4,3],[6,7,5,5,5],[8,8,6,7,6,1]]'), 'six fronts';
+  assert public.valid_boss_values('[[2,2,1,1,1],[1,1,3,3,1],[4,1,1,1,4],[1,5,5,1,1],[1,1,1,6,6]]'), 'a valid table';
+  assert not public.valid_boss_values('[[2,2,1,1,1],[1,1,3,3,1],[4,1,1,1,4],[1,5,5,1,1]]'), 'four turns';
+  assert not public.valid_boss_values('[[2,2,2,1,1],[1,1,3,3,1],[4,1,1,1,4],[1,5,5,1,1],[1,1,1,6,6]]'), 'three hot fronts';
+  assert not public.valid_boss_values('[[2,2,1,1,1],[1,1,3,3,1],[1,1,4,1,4],[1,5,5,1,1],[1,1,1,6,6]]'), 'a front hot two turns in a row';
+  assert not public.valid_boss_values('[[2,2,1,1,1],[1,1,2,2,1],[4,1,1,1,4],[1,5,5,1,1],[1,1,1,6,6]]'), 'a hot front that did not grow';
+  assert not public.valid_boss_values('[[2,2,1,1,1],[1,1,3,3,1],[4,1,1,1,4],[1,5,5,1,1],[1,1,1,6,"6"]]'), 'a text value';
+  assert not public.valid_boss_values('[[2,2,1,1,1],[1,1,3,3,1],[4,1,1,1,4],[1,5,5,1,1],[1,1,1,6,6,1]]'), 'six fronts';
   assert not public.valid_boss_values(null), 'no table';
 end $$;
 
@@ -76,7 +76,7 @@ declare
   v_defs uuid[];
   v_bot uuid[] := (select array_agg(s.id) from (
     select id from public.card_definitions where rarity_code in ('beta', 'alfa') order by code limit 5) s);
-  v_values jsonb := '[[2,2,1,1,1],[3,4,2,3,2],[5,5,4,4,3],[6,7,5,5,5],[8,8,6,7,6]]';
+  v_values jsonb := '[[2,2,1,1,1],[1,1,3,3,1],[4,1,1,1,4],[1,5,5,1,1],[1,1,1,6,6]]';
   v_boss uuid := (select id from public.boss_definitions where code = 'B01');
   v_match uuid;
   v_row public.matches;
@@ -177,9 +177,9 @@ begin
 
   -- Turn 2: a on front 2 (7), b alone on front 5 (13). Front 1 stays a's and pays again.
   play_a := jsonb_build_object('card_instance_id', v_team[2], 'definition_id', v_defs[2], 'front_slot', 2,
-    'base', 7, 'bonus', 0, 'score', 7, 'highest', 4, 'auto_played', false, 'points', 7);
+    'base', 7, 'bonus', 0, 'score', 7, 'highest', 4, 'auto_played', false, 'points', 2);
   play_b := jsonb_build_object('card_instance_id', null, 'definition_id', v_bot[2], 'front_slot', 5,
-    'base', 13, 'bonus', 0, 'score', 13, 'highest', 4, 'auto_played', false, 'points', 2);
+    'base', 13, 'bonus', 0, 'score', 13, 'highest', 4, 'auto_played', false, 'points', 1);
   v_failed := false;
   begin perform public.match_record_boss_turn_state(v_match, 2, play_a || '{"front_slot": 1}', play_b, '["a", null, null, null, "b"]', null, 'a');
   exception when others then v_failed := sqlerrm = 'invalid_front'; end;
@@ -190,7 +190,7 @@ begin
   exception when others then v_failed := sqlerrm = 'character_already_played'; end;
   assert v_failed, 'a character played twice';
   v_failed := false;
-  begin perform public.match_record_boss_turn_state(v_match, 2, play_a || '{"points": 4}', play_b, '["a", "a", null, null, "b"]', null, 'a');
+  begin perform public.match_record_boss_turn_state(v_match, 2, play_a || '{"points": 1}', play_b, '["a", "a", null, null, "b"]', null, 'a');
   exception when others then v_failed := sqlerrm = 'invalid_points'; end;
   assert v_failed, 'a front held earlier that did not pay again';
   perform public.match_record_boss_turn_state(v_match, 2, play_a, play_b, '["a", "a", null, null, "b"]', null, 'a');
@@ -199,10 +199,10 @@ begin
   for t in 3 .. 5 loop
     play_a := jsonb_build_object('card_instance_id', v_team[t], 'definition_id', v_defs[t], 'front_slot', t,
       'base', 10, 'bonus', 0, 'score', 10, 'highest', 5, 'auto_played', false,
-      'points', case t when 3 then 14 when 4 then 23 else 29 end);
+      'points', case t when 3 then 6 when 4 then 12 else 9 end);
     play_b := jsonb_build_object('card_instance_id', null, 'definition_id', v_bot[t], 'front_slot', t - 1,
       'base', 0, 'bonus', 0, 'score', 0, 'highest', 0, 'auto_played', true,
-      'points', case t when 3 then 3 when 4 then 5 else 6 end);
+      'points', case t when 3 then 4 when 4 then 1 else 6 end);
     v_holders := case t
       when 3 then '["a", "a", "a", null, "b"]'
       when 4 then '["a", "a", "a", "a", "b"]'
@@ -219,7 +219,7 @@ begin
   end loop;
 
   assert v_state ->> 'status' = 'finished' and v_state ->> 'result' = 'win', format('end %s', v_state ->> 'result');
-  assert v_state -> 'points' = '{"me": 75, "opponent": 16}'::jsonb, format('final points %s', v_state -> 'points');
+  assert v_state -> 'points' = '{"me": 31, "opponent": 12}'::jsonb, format('final points %s', v_state -> 'points');
   assert v_state -> 'fronts_taken' = '{"me": 14, "opponent": 4}'::jsonb, format('fronts held %s', v_state -> 'fronts_taken');
   assert (select bot_wins from public.profiles where id = v_a) = v_bot_wins + 1, 'bot statistics';
   assert (select count(*) from public.match_rounds where match_id = v_match) = 5, 'five turns';
@@ -227,7 +227,7 @@ begin
   set local role authenticated;
   perform set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000e1", "role": "authenticated"}', true);
   assert (public.get_match_history() -> 0 ->> 'format') = 'boss', 'history format';
-  assert (public.get_match_history() -> 0 ->> 'points_me')::integer = 75, 'history points';
+  assert (public.get_match_history() -> 0 ->> 'points_me')::integer = 31, 'history points';
   assert (public.get_match_history() -> 0 ->> 'boss_name') = 'Il Colosso del porto', 'history boss';
   assert (public.get_match_state(v_match) ->> 'format') = 'boss', 'the player reads the boss payload';
   reset role;
@@ -268,7 +268,7 @@ declare
     select id from public.card_instances where owner_id = v_a order by acquired_at, id limit 5) s);
   v_team_b uuid[] := (select array_agg(s.id) from (
     select id from public.card_instances where owner_id = v_b order by acquired_at, id limit 5) s);
-  v_values jsonb := '[[1,2,1,2,1],[2,4,3,3,2],[3,5,5,4,4],[5,6,6,5,6],[6,8,7,7,7]]';
+  v_values jsonb := '[[1,2,1,2,1],[3,1,3,1,1],[1,4,1,4,1],[5,1,1,1,5],[1,6,6,1,1]]';
   v_lobby jsonb;
   v_match uuid;
   v_row public.matches;
@@ -334,9 +334,9 @@ begin
   where match_id = v_match and side = 'b';
   play_a := jsonb_build_object('card_instance_id', v_team_a[2],
     'definition_id', (select definition_id from public.card_instances where id = v_team_a[2]), 'front_slot', 1,
-    'base', 1, 'bonus', 0, 'score', 1, 'highest', 1, 'auto_played', true, 'points', 6);
+    'base', 1, 'bonus', 0, 'score', 1, 'highest', 1, 'auto_played', true, 'points', 4);
   play_b := jsonb_build_object('card_instance_id', v_inst, 'definition_id', v_nullifier, 'front_slot', 2,
-    'base', 1, 'bonus', 0, 'score', 1, 'highest', 1, 'auto_played', true, 'points', 3);
+    'base', 1, 'bonus', 0, 'score', 1, 'highest', 1, 'auto_played', true, 'points', 1);
   update public.match_rounds set deadline_at = now() - interval '1 hour' where match_id = v_match and round = 2;
   perform public.match_record_boss_turn(v_match, 2, play_a, play_b, '["a", "a", null, "b", null]', null);
   assert not public.nullified_in_round(v_match, 2, 'a'), 'an Annullatore on another front';
@@ -356,7 +356,7 @@ declare
     select id from public.card_instances where owner_id = v_b order by acquired_at, id limit 5) s);
   v_team_c uuid[] := (select array_agg(s.id) from (
     select id from public.card_instances where owner_id = v_c order by acquired_at, id limit 5) s);
-  v_values jsonb := '[[2,2,1,1,1],[3,4,2,3,2],[5,5,4,4,3],[6,7,5,5,5],[8,8,6,7,6]]';
+  v_values jsonb := '[[2,2,1,1,1],[1,1,3,3,1],[4,1,1,1,4],[1,5,5,1,1],[1,1,1,6,6]]';
   v_threats uuid[];
   v_match uuid;
   v_failed boolean;

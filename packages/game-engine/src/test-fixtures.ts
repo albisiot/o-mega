@@ -58,10 +58,8 @@ export const BOSS_RULES: BossRules = {
   fronts: 5,
   hotFronts: 2,
   hotValue: 2,
+  hotGrowth: 1,
   baseValue: 1,
-  growth: 1,
-  extraFronts: 2,
-  extraGrowth: 1,
 };
 
 /** Levels 1, 2, 3, 4, 6: valid as a match (one low, one high, sum 16). */
@@ -73,12 +71,13 @@ export const FRONTS: Threat[] = [
   threat("f6", ["FOR", "VEL", "RES", "INT", "VOL", "PER"]),
 ];
 
+/** Two hot fronts per turn, worth 2, 3, 4, 5, 6, never hot two turns in a row. */
 export const VALUES = [
   [2, 2, 1, 1, 1],
-  [3, 4, 2, 3, 2],
-  [5, 5, 4, 4, 3],
-  [6, 7, 5, 5, 5],
-  [8, 8, 6, 7, 6],
+  [1, 1, 3, 3, 1],
+  [4, 1, 1, 1, 4],
+  [1, 5, 5, 1, 1],
+  [1, 1, 1, 6, 6],
 ];
 
 export function bossState(teamA: Character[], teamB: Character[], values = VALUES): BossState {

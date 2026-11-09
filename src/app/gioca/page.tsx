@@ -152,7 +152,7 @@ function BossSection({ disabled }: { disabled: boolean }) {
   return (
     <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
       <p className="text-sm font-medium text-muted">
-        Il Boss ha cinque fronti, tutti visibili, e ogni turno valgono di più. Ogni turno metti un personaggio su un tuo
+        Il Boss ha cinque fronti, tutti visibili: ogni turno due sono caldi e valgono di più, sempre diversi. Ogni turno metti un personaggio su un tuo
         fronte libero e resta lì fino alla fine: ogni fronte occupato paga a ogni turno, a chi è da solo o a chi fa più
         punti. Nessuna carta in gioco e nessuna moneta.
       </p>

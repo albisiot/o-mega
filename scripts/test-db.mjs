@@ -41,7 +41,7 @@ const config = supabase(["db", "query", "--linked", '"select key, value from pub
 const rows = config.status === 0 ? JSON.parse(config.stdout).rows : null;
 // Keys admins change from the app (the Grande Minaccia table, /gestione-minaccia):
 // balance.ts holds their defaults, so a different live value is reported, not a failure.
-const ADMIN_KEYS = new Set(["boss.hot_fronts", "boss.hot_value", "boss.base_value", "boss.growth", "boss.extra_fronts", "boss.extra_growth"]);
+const ADMIN_KEYS = new Set(["boss.hot_fronts", "boss.hot_value", "boss.hot_growth", "boss.base_value"]);
 const describe = (row) =>
   `${row.key}: database ${JSON.stringify(row.value)}, balance.ts ${flat.has(row.key) ? JSON.stringify(flat.get(row.key)) : "missing"}`;
 const differs = (row) => !flat.has(row.key) || flat.get(row.key) !== row.value;

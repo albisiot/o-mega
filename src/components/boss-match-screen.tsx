@@ -815,8 +815,8 @@ function BossTable({ view }: { view: BossView }) {
         <span className="italic">{view.boss.flavor}</span>
       </p>
       <p className="text-sm font-medium text-muted">
-        Ogni turno i fronti valgono di più, alcuni più degli altri. A ogni turno ogni fronte occupato paga il suo valore: a
-        chi è da solo, o a chi ha il punteggio più alto.
+        Ogni turno alcuni fronti sono caldi e valgono di più, mai gli stessi del turno prima; gli altri valgono poco. A
+        ogni turno ogni fronte occupato paga il suo valore: a chi è da solo, o a chi ha il punteggio più alto.
       </p>
       <table className="w-full table-fixed border-collapse text-center text-sm">
         <thead>
@@ -877,7 +877,10 @@ function BossTutorial({ onClose }: { onClose: () => void }) {
       >
         <h2 className="font-display text-3xl uppercase">Grande Minaccia</h2>
         <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm font-semibold leading-5">
-          <li>Il Boss ha 5 fronti, tutti visibili. La tabella dice quanti punti vale ogni fronte in ogni turno.</li>
+          <li>
+            Il Boss ha 5 fronti, tutti visibili. La tabella dice quanti punti vale ogni fronte in ogni turno: ogni turno due
+            fronti sono caldi e valgono di più (2, poi 3, 4…), mai gli stessi del turno prima; gli altri valgono 1.
+          </li>
           <li>Ogni turno metti in segreto un personaggio su uno dei tuoi fronti liberi. L&apos;avversario fa lo stesso sui suoi.</li>
           <li>Il personaggio resta lì fino alla fine, con il punteggio che ha fatto entrando, e quel fronte non è più libero per te.</li>
           <li>

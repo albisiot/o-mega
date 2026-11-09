@@ -222,10 +222,8 @@ async function load(): Promise<Loaded> {
       fronts: value("boss.fronts"),
       hotFronts: value("boss.hot_fronts"),
       hotValue: value("boss.hot_value"),
+      hotGrowth: value("boss.hot_growth"),
       baseValue: value("boss.base_value"),
-      growth: value("boss.growth"),
-      extraFronts: value("boss.extra_fronts"),
-      extraGrowth: value("boss.extra_growth"),
     },
     graceSeconds: value("match.timeout_grace_seconds"),
     catalog: {

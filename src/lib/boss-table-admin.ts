@@ -7,15 +7,13 @@ export type BossTableSettings = {
   fronts: number;
   hot_fronts: number;
   hot_value: number;
+  hot_growth: number;
   base_value: number;
-  growth: number;
-  extra_fronts: number;
-  extra_growth: number;
   updated_at: string | null;
 };
 
 /** The numbers an admin can change, with the limits the server checks. */
-export type BossTableNumbers = Pick<BossTableSettings, "hot_fronts" | "hot_value" | "base_value" | "growth" | "extra_fronts" | "extra_growth">;
+export type BossTableNumbers = Pick<BossTableSettings, "hot_fronts" | "hot_value" | "hot_growth" | "base_value">;
 export const BOSS_VALUE_MAX = 20;
 
 export async function fetchBossTable(): Promise<BossTableSettings> {
@@ -28,10 +26,8 @@ export async function saveBossTable(numbers: BossTableNumbers): Promise<BossTabl
   const { data, error } = await getSupabase().rpc("admin_save_boss_table", {
     p_hot_fronts: numbers.hot_fronts,
     p_hot_value: numbers.hot_value,
+    p_hot_growth: numbers.hot_growth,
     p_base_value: numbers.base_value,
-    p_growth: numbers.growth,
-    p_extra_fronts: numbers.extra_fronts,
-    p_extra_growth: numbers.extra_growth,
   });
   if (error) throw error;
   return data as unknown as BossTableSettings;
@@ -41,8 +37,8 @@ export async function saveBossTable(numbers: BossTableNumbers): Promise<BossTabl
 export function bossTableProblem(numbers: BossTableNumbers, fronts: number): string | null {
   const values = Object.values(numbers);
   if (values.some((value) => !Number.isInteger(value) || value < 0)) return "Usa numeri interi da 0 in su.";
-  if (numbers.hot_fronts > fronts || numbers.extra_fronts > fronts) return `I fronti sono ${fronts}: non puoi indicarne di più.`;
-  if ([numbers.hot_value, numbers.base_value, numbers.growth, numbers.extra_growth].some((value) => value > BOSS_VALUE_MAX)) {
+  if (numbers.hot_fronts > fronts) return `I fronti sono ${fronts}: non puoi indicarne di più.`;
+  if ([numbers.hot_value, numbers.hot_growth, numbers.base_value].some((value) => value > BOSS_VALUE_MAX)) {
     return `Ogni valore va da 0 a ${BOSS_VALUE_MAX}.`;
   }
   if (numbers.hot_fronts * numbers.hot_value + (fronts - numbers.hot_fronts) * numbers.base_value === 0) {
@@ -58,10 +54,8 @@ export function exampleBossTable(settings: Pick<BossTableSettings, "turns" | "fr
     fronts: settings.fronts,
     hotFronts: settings.hot_fronts,
     hotValue: settings.hot_value,
+    hotGrowth: settings.hot_growth,
     baseValue: settings.base_value,
-    growth: settings.growth,
-    extraFronts: settings.extra_fronts,
-    extraGrowth: settings.extra_growth,
   };
   return drawBossValues(mulberry32(2026), rules);
 }

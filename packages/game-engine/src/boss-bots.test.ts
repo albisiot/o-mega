@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { bossResult, resolveBossTurn, type BossState } from "./boss.ts";
+import { bossResult, drawBossValues, resolveBossTurn, type BossState } from "./boss.ts";
 import { bossBotView, chooseBossBotPlay, playBossBotTurn } from "./boss-bots.ts";
 import { computeAbilityMeans, type BotDifficulty, type BotKnowledge } from "./bots.ts";
 import { mulberry32, randomInt, shuffle, type Rng } from "./rng.ts";
-import { ABILITIES, bossState, character, FAMILIES, FRONTS } from "./test-fixtures.ts";
+import { ABILITIES, BOSS_RULES, bossState, character, FAMILIES, FRONTS } from "./test-fixtures.ts";
 import type { Character } from "./types.ts";
 
 /** 40 characters with uneven values, like the real catalog: a few peaks, many middling values. */
@@ -77,17 +77,9 @@ describe("chooseBossBotPlay", () => {
   });
 });
 
-/** A match between two bots with the same team; 1 if side a wins, 0.5 on a draw. */
+/** A match between two bots; 1 if side a wins, 0.5 on a draw. */
 function botMatch(rng: Rng, team: Character[], other: Character[], a: BotDifficulty, b: BotDifficulty, characters: Character[]): number {
-  const values = shuffle(rng, [0, 1, 2, 3, 4]);
-  // A table drawn like the real one: two hot fronts, then +1 and +2.
-  let row: number[] = [0, 1, 2, 3, 4].map((f) => (values.indexOf(f) < 2 ? 2 : 1));
-  const table = [row];
-  for (let t = 1; t < 5; t++) {
-    const extra = shuffle(rng, [0, 1, 2, 3, 4]).slice(0, 2);
-    row = row.map((v, f) => v + 1 + (extra.includes(f) ? 1 : 0));
-    table.push(row);
-  }
+  const table = drawBossValues(rng, BOSS_RULES);
   let state = bossState(team, other.map((c) => ({ ...c, id: `${c.id}-b` })), table);
   const k = knowledge(characters);
   while (state.turns.length < 5) {

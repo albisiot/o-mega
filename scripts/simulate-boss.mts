@@ -57,10 +57,8 @@ const rules: BossRules = {
   fronts: b.fronts,
   hotFronts: b.hotFronts,
   hotValue: b.hotValue,
+  hotGrowth: b.hotGrowth,
   baseValue: b.baseValue,
-  growth: b.growth,
-  extraFronts: b.extraFronts,
-  extraGrowth: b.extraGrowth,
 };
 const matchRules = { threatsPerMatch: b.fronts, threatLevels: balance.match.threatLevels } as MatchRules;
 

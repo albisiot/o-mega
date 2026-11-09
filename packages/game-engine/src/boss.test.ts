@@ -37,8 +37,11 @@ describe("drawBossValues", () => {
     for (let i = 0; i < 200; i++) {
       const values = drawBossValues(rng, BOSS_RULES);
       expect(values).toHaveLength(5);
-      expect([...values[0]].sort()).toEqual([1, 1, 1, 2, 2]);
-      for (let t = 1; t < 5; t++) expect(values[t].map((v, f) => v - values[t - 1][f]).sort()).toEqual([1, 1, 1, 2, 2]);
+      for (let t = 0; t < 5; t++) {
+        expect([...values[t]].sort((x, y) => x - y)).toEqual([1, 1, 1, t + 2, t + 2]);
+        // A hot front is never hot in the next turn.
+        if (t > 0) values[t].forEach((v, f) => expect(v > 1 && values[t - 1][f] > 1).toBe(false));
+      }
       expect(isValidBossValues(values, BOSS_RULES)).toBe(true);
     }
   });
@@ -47,6 +50,10 @@ describe("drawBossValues", () => {
     expect(isValidBossValues(VALUES, BOSS_RULES)).toBe(true);
     expect(isValidBossValues(VALUES.slice(0, 4), BOSS_RULES)).toBe(false);
     expect(isValidBossValues([[2, 2, 2, 1, 1], ...VALUES.slice(1)], BOSS_RULES)).toBe(false);
+    // Front 2 hot in turns 2 and 3.
+    expect(isValidBossValues([VALUES[0], VALUES[1], [1, 1, 4, 1, 4], VALUES[3], VALUES[4]], BOSS_RULES)).toBe(false);
+    // A hot front worth what the previous turn's were.
+    expect(isValidBossValues([VALUES[0], [1, 1, 2, 2, 1], ...VALUES.slice(2)], BOSS_RULES)).toBe(false);
     const flat = VALUES.map((row, t) => (t === 4 ? row.map((v, f) => (f === 0 ? v + 1 : v)) : row));
     expect(isValidBossValues(flat, BOSS_RULES)).toBe(false);
   });
@@ -212,8 +219,8 @@ describe("timer", () => {
     const rng = mulberry32(5);
     for (let i = 0; i < 20; i++) expect([0, 1]).toContain(autoBossChoice(state, "a", rng).front);
     state = play(state, [team[0], 0], [team[0], 2]).state;
-    // Front 0 is taken: of the free fronts, front 1 is worth the most in turn 2.
-    for (let i = 0; i < 20; i++) expect(autoBossChoice(state, "a", rng).front).toBe(1);
+    // Turn 2: fronts 2 and 3 are worth the most.
+    for (let i = 0; i < 20; i++) expect([2, 3]).toContain(autoBossChoice(state, "a", rng).front);
     const resolved = playBossPvpTurn({ state, choices: { a: null, b: { characterId: "b", front: 3 } }, families: FAMILIES, rng });
     expect(resolved.turn.plays.a.autoPlayed).toBe(true);
     expect(resolved.turn.plays.b).toMatchObject({ autoPlayed: false, front: 3 });

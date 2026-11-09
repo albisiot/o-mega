@@ -28,7 +28,7 @@ begin
   exception when others then v_failed := sqlerrm = 'not_admin'; end;
   assert v_failed, 'a player read the boss table settings';
   v_failed := false;
-  begin perform public.admin_save_boss_table(2, 3, 1, 1, 2, 1);
+  begin perform public.admin_save_boss_table(2, 3, 1, 1);
   exception when others then v_failed := sqlerrm = 'not_admin'; end;
   assert v_failed, 'a player changed the boss table';
 end $$;
@@ -43,29 +43,28 @@ begin
   v_table := public.admin_get_boss_table();
   assert v_table ->> 'turns' = '5' and v_table ->> 'fronts' = '5', format('fixed numbers %s', v_table);
   -- The current numbers are whatever the admin last saved: only their presence is checked.
-  assert (v_table ->> 'hot_value') is not null and (v_table ->> 'extra_growth') is not null, 'current numbers';
+  assert (v_table ->> 'hot_value') is not null and (v_table ->> 'hot_growth') is not null, 'current numbers';
 
   v_failed := false;
-  begin perform public.admin_save_boss_table(6, 3, 1, 1, 2, 1);
+  begin perform public.admin_save_boss_table(6, 3, 1, 1);
   exception when others then v_failed := sqlerrm = 'invalid_boss_table'; end;
   assert v_failed, 'six hot fronts on five';
   v_failed := false;
-  begin perform public.admin_save_boss_table(2, 21, 1, 1, 2, 1);
+  begin perform public.admin_save_boss_table(2, 21, 1, 1);
   exception when others then v_failed := sqlerrm = 'invalid_boss_table'; end;
   assert v_failed, 'a value above 20';
   v_failed := false;
-  begin perform public.admin_save_boss_table(2, 0, 0, 1, 2, 1);
+  begin perform public.admin_save_boss_table(2, 0, 1, 0);
   exception when others then v_failed := sqlerrm = 'invalid_boss_table'; end;
   assert v_failed, 'a first turn that pays nothing';
   v_failed := false;
-  begin perform public.admin_save_boss_table(2, 3, null, 1, 2, 1);
+  begin perform public.admin_save_boss_table(2, 3, null, 1);
   exception when others then v_failed := sqlerrm = 'invalid_boss_table'; end;
   assert v_failed, 'a missing number';
 
-  v_table := public.admin_save_boss_table(1, 4, 2, 2, 3, 1);
+  v_table := public.admin_save_boss_table(1, 4, 2, 2);
   assert (v_table ->> 'hot_fronts')::integer = 1 and (v_table ->> 'hot_value')::integer = 4
-     and (v_table ->> 'base_value')::integer = 2 and (v_table ->> 'growth')::integer = 2
-     and (v_table ->> 'extra_fronts')::integer = 3 and (v_table ->> 'extra_growth')::integer = 1,
+     and (v_table ->> 'hot_growth')::integer = 2 and (v_table ->> 'base_value')::integer = 2,
     format('saved numbers %s', v_table);
 end $$;
 reset role;
@@ -73,9 +72,9 @@ reset role;
 do $$
 begin
   assert public.config_int('boss.hot_value') = 4, 'game_config follows';
-  -- One hot front worth 4, the others 2; then +2 everywhere and +1 more on three fronts.
-  assert public.valid_boss_values('[[4,2,2,2,2],[7,5,4,4,5],[10,8,7,6,7],[12,11,10,9,9],[15,14,12,12,11]]'), 'a table of the new numbers';
-  assert not public.valid_boss_values('[[2,2,1,1,1],[3,4,2,3,2],[5,5,4,4,3],[6,7,5,5,5],[8,8,6,7,6]]'), 'a table of the old numbers';
+  -- One hot front each turn, worth 4, 6, 8, 10, 12, never twice in a row; the others 2.
+  assert public.valid_boss_values('[[4,2,2,2,2],[2,6,2,2,2],[8,2,2,2,2],[2,2,10,2,2],[2,2,2,12,2]]'), 'a table of the new numbers';
+  assert not public.valid_boss_values('[[2,2,1,1,1],[1,1,3,3,1],[4,1,1,1,4],[1,5,5,1,1],[1,1,1,6,6]]'), 'a table of the old numbers';
 end $$;
 
 rollback;

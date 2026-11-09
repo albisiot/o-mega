@@ -2004,10 +2004,8 @@ export type Database = {
       admin_save_boss_table: {
         Args: {
           p_base_value: number
-          p_extra_fronts: number
-          p_extra_growth: number
-          p_growth: number
           p_hot_fronts: number
+          p_hot_growth: number
           p_hot_value: number
         }
         Returns: Json

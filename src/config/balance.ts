@@ -79,14 +79,15 @@ export const balance = {
   boss: {
     turns: 5,
     fronts: 5,
-    /** Turn 1: `hotFronts` random fronts are worth `hotValue`, the others `baseValue`. */
+    /**
+     * Each turn `hotFronts` random fronts are hot, never the ones hot in the turn before:
+     * worth `hotValue` in turn 1 and `hotGrowth` more each turn (2, 3, 4, 5, 6). The
+     * others are worth `baseValue`. Defaults: admins change them from /gestione-minaccia.
+     */
     hotFronts: 2,
     hotValue: 2,
+    hotGrowth: 1,
     baseValue: 1,
-    /** Every later turn: all fronts +growth, and `extraFronts` random ones +extraGrowth more. */
-    growth: 1,
-    extraFronts: 2,
-    extraGrowth: 1,
   },
 
   /** Twists on the threats of a match; Emergenza has none. Tuned by simulation (SPEC §5.4). */

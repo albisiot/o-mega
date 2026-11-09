@@ -45,7 +45,8 @@ describe("balance config", () => {
     expect(balance.boss.turns).toBe(balance.match.teamSize);
     expect(balance.boss.turns).toBeLessThanOrEqual(balance.boss.fronts);
     expect(balance.boss.hotFronts).toBeLessThanOrEqual(balance.boss.fronts);
-    expect(balance.boss.extraFronts).toBeLessThanOrEqual(balance.boss.fronts);
+    // The hot fronts of two turns in a row can all be different.
+    expect(balance.boss.hotFronts * 2).toBeLessThanOrEqual(balance.boss.fronts);
   });
 
   it("allows the Emergenza level sums with the levels of a match", () => {

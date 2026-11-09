@@ -11,47 +11,52 @@ import {
   type BossTableSettings,
 } from "@/lib/boss-table-admin";
 import { describeServerError } from "@/lib/errors";
+import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const FIELDS: { key: keyof BossTableNumbers; label: string; hint: string }[] = [
-  { key: "hot_fronts", label: "Fronti caldi al turno 1", hint: "Quanti fronti partono con il valore alto" },
-  { key: "hot_value", label: "Valore dei fronti caldi", hint: "Punti di un fronte caldo al turno 1" },
-  { key: "base_value", label: "Valore degli altri fronti", hint: "Punti degli altri fronti al turno 1" },
-  { key: "growth", label: "Crescita a ogni turno", hint: "Punti in più per tutti i fronti, ogni turno" },
-  { key: "extra_fronts", label: "Fronti con crescita extra", hint: "Quanti fronti a caso crescono di più ogni turno" },
-  { key: "extra_growth", label: "Crescita extra", hint: "Punti in più per quei fronti" },
+  { key: "hot_fronts", label: "Fronti caldi per turno", hint: "Mai caldi due turni di fila" },
+  { key: "hot_value", label: "Valore caldo al turno 1", hint: "Punti di un fronte caldo all'inizio" },
+  { key: "hot_growth", label: "Crescita per turno", hint: "Punti in più del fronte caldo, ogni turno" },
+  { key: "base_value", label: "Valore degli altri fronti", hint: "Punti dei fronti non caldi, sempre" },
 ];
 
 const DEFAULTS: BossTableNumbers = {
   hot_fronts: balance.boss.hotFronts,
   hot_value: balance.boss.hotValue,
+  hot_growth: balance.boss.hotGrowth,
   base_value: balance.boss.baseValue,
-  growth: balance.boss.growth,
-  extra_fronts: balance.boss.extraFronts,
-  extra_growth: balance.boss.extraGrowth,
 };
 
-function numbersOf(settings: BossTableSettings): BossTableNumbers {
-  const { hot_fronts, hot_value, base_value, growth, extra_fronts, extra_growth } = settings;
-  return { hot_fronts, hot_value, base_value, growth, extra_fronts, extra_growth };
+type Draft = Record<keyof BossTableNumbers, string>;
+
+function draftOf(numbers: BossTableNumbers): Draft {
+  return {
+    hot_fronts: String(numbers.hot_fronts),
+    hot_value: String(numbers.hot_value),
+    hot_growth: String(numbers.hot_growth),
+    base_value: String(numbers.base_value),
+  };
 }
 
 /**
  * The Grande Minaccia points table: how much each front is worth in each turn. Saved on the
- * server for the matches created afterwards; a match in progress keeps its own table.
+ * server for the matches created afterwards; a match in progress keeps its own table. The
+ * page fits the phone and never scrolls (see .game-shell).
  */
 export function BossTableAdmin({ initial }: { initial: BossTableSettings }) {
+  useLockedScreen(true);
   const [saved, setSaved] = useState(initial);
-  const [draft, setDraft] = useState<Record<keyof BossTableNumbers, string>>(() =>
-    Object.fromEntries(Object.entries(numbersOf(initial)).map(([key, value]) => [key, String(value)])) as Record<
-      keyof BossTableNumbers,
-      string
-    >,
-  );
+  const [draft, setDraft] = useState<Draft>(() => draftOf(initial));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const numbers = Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, value.trim() === "" ? NaN : Number(value)])) as BossTableNumbers;
+  const numbers: BossTableNumbers = {
+    hot_fronts: draft.hot_fronts.trim() === "" ? NaN : Number(draft.hot_fronts),
+    hot_value: draft.hot_value.trim() === "" ? NaN : Number(draft.hot_value),
+    hot_growth: draft.hot_growth.trim() === "" ? NaN : Number(draft.hot_growth),
+    base_value: draft.base_value.trim() === "" ? NaN : Number(draft.base_value),
+  };
   const problem = bossTableProblem(numbers, saved.fronts);
   const changed = FIELDS.some(({ key }) => numbers[key] !== saved[key]);
   const example = problem ? null : exampleBossTable({ turns: saved.turns, fronts: saved.fronts, ...numbers });
@@ -77,7 +82,7 @@ export function BossTableAdmin({ initial }: { initial: BossTableSettings }) {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="game-shell">
       <header className="flex shrink-0 items-center gap-2.5 px-3 pb-1 pt-2">
         <BackLink href="/privacy" label="Torna all'informativa" />
         <div className="min-w-0">
@@ -85,84 +90,88 @@ export function BossTableAdmin({ initial }: { initial: BossTableSettings }) {
           <p className="text-xs font-semibold leading-4 text-muted">Quanti punti vale ogni fronte in ogni turno.</p>
         </div>
       </header>
-      <main className="flex flex-col gap-3 px-3 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-1">
-        <p className="text-xs font-medium leading-4 text-muted">
-          Ogni partita ha {saved.turns} turni e {saved.fronts} fronti. Al turno 1 alcuni fronti a caso sono caldi; a ogni turno
-          dopo tutti i fronti crescono, e alcuni a caso crescono di più. La tabella si sorteggia all&apos;inizio di ogni
-          partita e i giocatori la vedono tutta. Le modifiche valgono per le partite che iniziano dopo il salvataggio.
+      <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
+        <p className="shrink-0 text-xs font-medium leading-4 text-muted">
+          {saved.turns} turni, {saved.fronts} fronti. Ogni turno alcuni fronti a caso sono caldi, mai gli stessi del turno
+          prima, e valgono di più a ogni turno. Vale per le partite che iniziano dopo il salvataggio.
         </p>
 
-        <div className="flex flex-col gap-2">
+        <div className="grid shrink-0 grid-cols-2 gap-x-3 gap-y-1.5">
           {FIELDS.map(({ key, label, hint }) => (
-            <label key={key} className="grid grid-cols-[minmax(0,1fr)_4.5rem] items-center gap-2">
-              <span className="min-w-0">
-                <span className="block text-sm font-bold leading-4">{label}</span>
-                <span className="block text-[11px] font-medium leading-4 text-muted">
+            <label key={key} className="flex min-w-0 flex-col gap-0.5">
+              <span className="truncate text-[13px] font-bold leading-4">{label}</span>
+              <span className="flex items-center gap-2">
+                <input
+                  inputMode="numeric"
+                  value={draft[key]}
+                  onChange={(event) => set(key, event.target.value)}
+                  aria-label={label}
+                  className="input-comic w-16 shrink-0 text-center font-display text-xl"
+                />
+                <span className="min-w-0 text-[10.5px] font-medium leading-[13px] text-muted">
                   {hint}
                   {numbers[key] !== DEFAULTS[key] && ` · predefinito ${DEFAULTS[key]}`}
                 </span>
               </span>
-              <input
-                inputMode="numeric"
-                value={draft[key]}
-                onChange={(event) => set(key, event.target.value)}
-                aria-label={label}
-                className="input-comic text-center font-display text-xl"
-              />
             </label>
           ))}
         </div>
 
-        <div aria-live="polite" className="empty:hidden">
+        <div aria-live="polite" className="shrink-0 empty:hidden">
           {(problem ?? error) && <p className="text-sm font-bold text-comic-magenta">{problem ?? error}</p>}
           {!problem && !error && notice && <p className="text-sm font-bold text-comic-cyan">{notice}</p>}
         </div>
 
-        {example && (
-          <section aria-label="Esempio di tabella" className="flex flex-col gap-1">
-            <h2 className="section-title text-base leading-5">Un esempio</h2>
-            <table className="w-full table-fixed border-collapse text-center">
-              <thead>
-                <tr className="text-[11px] font-extrabold text-muted">
-                  <th className="w-14 text-left">Turno</th>
-                  {example[0].map((_, f) => (
-                    <th key={f}>Fronte {f + 1}</th>
-                  ))}
-                  <th className="w-12">Tot.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {example.map((row, t) => (
-                  <tr key={t}>
-                    <td className="py-1 text-left font-display text-lg">{t + 1}</td>
-                    {row.map((value, f) => (
-                      <td key={f} className="border border-line py-1 font-display text-lg">
-                        {value}
-                      </td>
+        {/* The example takes the room left; on a very short screen it scrolls inside. */}
+        <section aria-label="Esempio di tabella" className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain">
+          {example && (
+            <>
+              <h2 className="section-title text-base leading-5">Un esempio</h2>
+              <table className="w-full table-fixed border-collapse text-center">
+                <thead>
+                  <tr className="text-[11px] font-extrabold text-muted">
+                    <th className="w-12 text-left">Turno</th>
+                    {example[0].map((_, f) => (
+                      <th key={f}>F{f + 1}</th>
                     ))}
-                    <td className="py-1 font-display text-lg text-comic-yellow">{row.reduce((sum, v) => sum + v, 0)}</td>
+                    <th className="w-11">Tot.</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="text-[11px] font-medium leading-4 text-muted">
-              Quali fronti sono caldi e quali crescono di più cambia a ogni partita. Con le carte fisse, un fronte occupato
-              paga il suo valore a ogni turno: il totale di una riga è il massimo che si può incassare in quel turno.
-            </p>
-          </section>
-        )}
+                </thead>
+                <tbody>
+                  {example.map((row, t) => (
+                    <tr key={t}>
+                      <td className="py-0.5 text-left font-display text-lg">{t + 1}</td>
+                      {row.map((value, f) => (
+                        <td
+                          key={f}
+                          className={`border border-line py-0.5 font-display text-lg ${
+                            value !== numbers.base_value ? "bg-comic-yellow text-black" : ""
+                          }`}
+                        >
+                          {value}
+                        </td>
+                      ))}
+                      <td className="py-0.5 font-display text-lg text-comic-yellow">{row.reduce((sum, v) => sum + v, 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-[11px] font-medium leading-4 text-muted">
+                In giallo i fronti caldi: quali sono cambia a ogni partita. Ogni fronte occupato paga il suo valore a ogni
+                turno, quindi il totale di una riga è il massimo che si incassa in quel turno.
+              </p>
+            </>
+          )}
+        </section>
 
-        <div className="flex gap-2">
+        <div className="flex shrink-0 gap-2">
           <button type="button" onClick={save} disabled={busy || Boolean(problem) || !changed} className="btn btn-primary min-w-0 flex-1">
             {busy ? "Salvataggio…" : changed ? "Salva" : "Nessuna modifica"}
           </button>
           <button
             type="button"
             onClick={() => {
-              setDraft(Object.fromEntries(Object.entries(DEFAULTS).map(([key, value]) => [key, String(value)])) as Record<
-                keyof BossTableNumbers,
-                string
-              >);
+              setDraft(draftOf(DEFAULTS));
               setNotice(null);
             }}
             disabled={busy}

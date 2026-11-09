@@ -17,15 +17,15 @@ export type BossRules = {
   turns: number;
   /** Fronts of a boss: one place per side on each. */
   fronts: number;
-  /** Fronts worth `hotValue` in the first turn; the others are worth `baseValue`. */
+  /**
+   * Hot fronts of each turn: worth `hotValue` in the first turn, `hotGrowth` more each
+   * turn after; never hot two turns in a row (while enough fronts allow it). The
+   * other fronts are worth `baseValue`.
+   */
   hotFronts: number;
   hotValue: number;
+  hotGrowth: number;
   baseValue: number;
-  /** Every later turn each front is worth `growth` more than in the turn before... */
-  growth: number;
-  /** ...and `extraFronts` random fronts `extraGrowth` more on top of that. */
-  extraFronts: number;
-  extraGrowth: number;
 };
 
 /** A choice for one turn: who arrives, and on which of the side's free fronts (0-based). */
@@ -67,18 +67,32 @@ export type BossOccupant = { characterId: string; score: PlayScore; turn: number
 // Points table
 // ---------------------------------------------------------------------------
 
-/** Draws the points table: two hot fronts in turn 1, then all +growth and two random fronts +extra. */
+/** What a hot front is worth in a turn (0-based). */
+export function hotValueAt(rules: Pick<BossRules, "hotValue" | "hotGrowth">, turn: number): number {
+  return rules.hotValue + turn * rules.hotGrowth;
+}
+
+/** Hot fronts of two turns in a row may share only what the number of fronts forces. */
+function forcedOverlap(rules: Pick<BossRules, "fronts" | "hotFronts">): number {
+  return Math.max(0, 2 * rules.hotFronts - rules.fronts);
+}
+
+/**
+ * Draws the points table: each turn `hotFronts` random fronts are hot, chosen among
+ * those that were not hot in the turn before; the others are worth `baseValue`.
+ * Default: 2·2·1·1·1, then two of the three 1s become 3 and the 2s go back to 1, …
+ */
 export function drawBossValues(rng: Rng, rules: BossRules): number[][] {
   const fronts = Array.from({ length: rules.fronts }, (_, i) => i);
-  const hot = new Set(shuffle(rng, fronts).slice(0, rules.hotFronts));
-  const current = fronts.map((f) => (hot.has(f) ? rules.hotValue : rules.baseValue));
-  const values: number[][] = [[...current]];
-  for (let turn = 1; turn < rules.turns; turn++) {
-    const extra = new Set(shuffle(rng, fronts).slice(0, rules.extraFronts));
-    fronts.forEach((f) => {
-      current[f] += rules.growth + (extra.has(f) ? rules.extraGrowth : 0);
-    });
-    values.push([...current]);
+  const values: number[][] = [];
+  let previous = new Set<number>();
+  for (let turn = 0; turn < rules.turns; turn++) {
+    // Fronts that were not hot first, then (only if too few) some that were.
+    const fresh = shuffle(rng, fronts.filter((f) => !previous.has(f)));
+    const again = shuffle(rng, fronts.filter((f) => previous.has(f)));
+    const hot = new Set([...fresh, ...again].slice(0, rules.hotFronts));
+    values.push(fronts.map((f) => (hot.has(f) ? hotValueAt(rules, turn) : rules.baseValue)));
+    previous = hot;
   }
   return values;
 }
@@ -88,19 +102,21 @@ export function isValidBossValues(values: readonly (readonly number[])[], rules:
   if (values.length !== rules.turns || values.some((row) => row.length !== rules.fronts || !row.every(Number.isInteger))) {
     return false;
   }
-  const first = values[0];
-  const hot = first.filter((v) => v === rules.hotValue).length;
-  const base = first.filter((v) => v === rules.baseValue).length;
-  if (rules.hotValue === rules.baseValue ? base !== rules.fronts : hot !== rules.hotFronts || base !== rules.fronts - rules.hotFronts) {
-    return false;
-  }
-  for (let turn = 1; turn < values.length; turn++) {
-    const steps = values[turn].map((v, f) => v - values[turn - 1][f]);
-    const extra = steps.filter((s) => s === rules.growth + rules.extraGrowth).length;
-    const plain = steps.filter((s) => s === rules.growth).length;
-    if (rules.extraGrowth === 0 ? plain !== rules.fronts : extra !== rules.extraFronts || plain !== rules.fronts - rules.extraFronts) {
+  let previous: number[] | null = null;
+  for (let turn = 0; turn < values.length; turn++) {
+    const hotValue = hotValueAt(rules, turn);
+    const row = values[turn];
+    if (hotValue === rules.baseValue) {
+      if (row.some((v) => v !== rules.baseValue)) return false;
+      previous = null;
+      continue;
+    }
+    const hot = row.map((v, f) => (v === hotValue ? f : -1)).filter((f) => f >= 0);
+    if (hot.length !== rules.hotFronts || row.filter((v) => v === rules.baseValue).length !== rules.fronts - rules.hotFronts) {
       return false;
     }
+    if (previous && hot.filter((f) => previous!.includes(f)).length !== forcedOverlap(rules)) return false;
+    previous = hot;
   }
   return true;
 }
