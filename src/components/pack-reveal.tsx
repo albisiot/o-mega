@@ -159,7 +159,7 @@ export function PackReveal({ opening, nextIds = [] }: { opening: PackOpening; ne
             </span>
           )}
           <div className={`rounded-xl ${rare ? "shadow-[8px_8px_0_#000]" : "shadow-[6px_6px_0_var(--comic-magenta)]"}`}>
-            <CardView card={card} abilities={abilities} priority />
+            <CardView card={card} abilities={abilities} priority animated />
           </div>
         </div>
         <div className="flex flex-col items-center gap-2">

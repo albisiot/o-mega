@@ -1,8 +1,31 @@
 import { existsSync, readdirSync } from "node:fs";
 import { sep } from "node:path";
 import { describe, expect, it } from "vitest";
-import { fullArtUrl, thumbArtUrl } from "./art";
+import { fullArtUrl, motionArtUrl, thumbArtUrl } from "./art";
 import { FULL_ART } from "./full-art";
+import { MOTION_ART } from "./motion-art";
+
+describe("motionArtUrl", () => {
+  it("points an animated drawing to its looping video", () => {
+    expect(motionArtUrl("/cards/variants/P044-inferno.webp")).toBe("/cards/motion/variants/P044-inferno.mp4");
+  });
+
+  it("is null for still drawings and for other paths", () => {
+    expect(motionArtUrl("/cards/variants/P072-neon.webp")).toBeNull();
+    expect(motionArtUrl("/cards/P044.webp")).toBeNull();
+    expect(motionArtUrl("/world/citta.webp")).toBeNull();
+  });
+
+  it("knows exactly the videos in public/cards/motion, each for a drawing that exists", () => {
+    const files = readdirSync(new URL("../../public/cards/motion/", import.meta.url), { recursive: true, encoding: "utf8" })
+      .map((file) => file.split(sep).join("/"))
+      .filter((file) => file.endsWith(".mp4"))
+      .sort();
+    expect([...MOTION_ART].sort(), "run node scripts/list-motion-art.mjs").toEqual(files);
+    const orphans = files.filter((file) => !existsSync(new URL(`../../public/cards/${file.replace(/\.mp4$/, ".webp")}`, import.meta.url)));
+    expect(orphans).toEqual([]);
+  });
+});
 
 describe("fullArtUrl", () => {
   it("points base cards and variants to their larger copy", () => {

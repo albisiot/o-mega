@@ -63,6 +63,9 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
   // The OAuth callback carries one-time codes: never cache it.
   if (url.pathname.startsWith(`${SCOPE}auth/`)) return;
+  // Videos (animated drawings) are read in byte ranges, which a saved whole file
+  // cannot answer: the iPhone would not play them. They always go to the network.
+  if (request.headers.has("range") || url.pathname.endsWith(".mp4")) return;
 
   // Hashed build assets never change: the saved copy is used as it is, whichever deploy saved it.
   if (url.pathname.startsWith(`${SCOPE}_next/static/`)) {

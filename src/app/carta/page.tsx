@@ -132,7 +132,7 @@ function CardPageContent() {
           <>
             <div className="flex min-h-0 flex-1 flex-col justify-center py-1" onClick={closeOnBackground}>
               <div className="flex min-h-0 flex-col rounded-xl shadow-[6px_6px_0_var(--comic-magenta)]">
-                <CardView card={{ ...card, art_url: look.art_url, variant: look.variant }} abilities={abilities} fit />
+                <CardView card={{ ...card, art_url: look.art_url, variant: look.variant }} abilities={abilities} fit animated />
               </div>
             </div>
             {card.flavor && (

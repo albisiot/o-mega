@@ -1,5 +1,6 @@
 import { withBasePath } from "@/lib/base-path";
 import { FULL_ART } from "@/lib/full-art";
+import { MOTION_ART } from "@/lib/motion-art";
 
 /**
  * The larger copy of a card drawing, for the full-screen view. Cards and lists
@@ -10,6 +11,16 @@ import { FULL_ART } from "@/lib/full-art";
 export function fullArtUrl(artUrl: string): string | null {
   const path = artUrl.replace(/^\/cards\//, "");
   return path !== artUrl && FULL_ART.has(path) ? `/cards/full/${path}` : null;
+}
+
+/**
+ * The looping video of an animated drawing (scripts/list-motion-art.mjs): a
+ * silent 3:4 MP4 under cards/motion/ with the drawing's path. Only some
+ * variants have one; null for the others, which stay still.
+ */
+export function motionArtUrl(artUrl: string): string | null {
+  const path = artUrl.replace(/^\/cards\//, "").replace(/\.webp$/, ".mp4");
+  return path !== artUrl && MOTION_ART.has(path) ? `/cards/motion/${path}` : null;
 }
 
 /**

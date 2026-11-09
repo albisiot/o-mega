@@ -1,7 +1,8 @@
 import type { CSSProperties, ReactNode } from "react";
+import { ArtMotion } from "@/components/art-motion";
 import { CARD_TOUCH_HANDLERS, CardArtEffects } from "@/components/card-effects";
 import { CardName } from "@/components/card-name";
-import { artSrcSet } from "@/lib/art";
+import { artSrcSet, motionArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { cardEffects, type CardEffect } from "@/lib/card-effects";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
@@ -38,6 +39,8 @@ type CardViewProps = {
   thumbSizes?: string;
   /** The card the screen is about (a pack's card as it flips): its art loads at once, first. */
   priority?: boolean;
+  /** Large layout only: an animated drawing plays its looping video (only where one card fills the screen). */
+  animated?: boolean;
 };
 
 /** A character card. The frame and art treatment grow with the rarity; without art it shows a placeholder silhouette. */
@@ -50,10 +53,13 @@ export function CardView({
   fit = false,
   thumbSizes,
   priority = false,
+  animated = false,
 }: CardViewProps) {
   const color = card.rarity.color;
   const large = size === "lg";
-  const effects = cardEffects(card, size);
+  const moving = large && animated && Boolean(card.art_url && motionArtUrl(card.art_url));
+  // The glitch repeats the still drawing over the art: it would freeze a moving one.
+  const effects = cardEffects(card, size).filter((effect) => !(moving && effect === "glitch"));
   const style = {
     "--glow-color": `${color}aa`,
     "--fx-aura-color": FACTION_COLORS[card.faction] ?? "#fff8e7",
@@ -79,6 +85,7 @@ export function CardView({
           artUrl={card.art_url}
           thumbSizes={large ? undefined : thumbSizes}
           priority={priority}
+          motion={moving}
           effects={effects}
           className={fill ? "min-h-0 flex-1" : large ? `h-44 ${fit ? "min-h-24" : ""}` : "h-24"}
         >
@@ -148,6 +155,7 @@ export function CardArt({
   artUrl,
   thumbSizes,
   priority = false,
+  motion = false,
   effects = [],
   className,
   children,
@@ -159,6 +167,8 @@ export function CardArt({
   thumbSizes?: string;
   /** Loads the art at once and ahead of other images, instead of lazily. */
   priority?: boolean;
+  /** Plays the drawing's looping video over it, when it has one. */
+  motion?: boolean;
   effects?: CardEffect[];
   className: string;
   children?: ReactNode;
@@ -196,6 +206,7 @@ export function CardArt({
           />
         </>
       )}
+      {motion && artUrl && <ArtMotion artUrl={artUrl} className="absolute inset-0 h-full w-full object-cover object-top" />}
       <CardArtEffects effects={effects} artUrl={artUrl} srcSet={srcSet} sizes={thumbSizes} />
       {children}
     </div>

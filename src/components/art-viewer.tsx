@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { ArtMotion } from "@/components/art-motion";
 import { fullArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 
@@ -53,14 +54,20 @@ export function ArtViewerButton({
             </button>
           </div>
           {open && (
-            // Plain <img>: the static export has no image optimization.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={src}
-              alt={`Disegno di ${name}`}
-              onError={() => setFallback(true)}
-              className="min-h-0 w-full flex-1 object-contain pb-[env(safe-area-inset-bottom)]"
-            />
+            <div className="min-h-0 flex-1 pb-[env(safe-area-inset-bottom)]">
+              <div className="relative h-full">
+                {/* Plain <img>: the static export has no image optimization. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src}
+                  alt={`Disegno di ${name}`}
+                  onError={() => setFallback(true)}
+                  className="h-full w-full object-contain"
+                />
+                {/* An animated drawing plays its loop over the still one. */}
+                <ArtMotion artUrl={artUrl} className="absolute inset-0 h-full w-full object-contain" />
+              </div>
+            </div>
           )}
         </div>
       </dialog>
