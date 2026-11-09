@@ -88,7 +88,7 @@ function StoryPageContent() {
       </header>
 
       {/* What a short window cannot fit scrolls inside, rather than being cut. */}
-      <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
+      <main data-keep-scroll="main" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
         {chapter && (
           <ChapterBanner
             chapter={chapter}

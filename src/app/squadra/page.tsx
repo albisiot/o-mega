@@ -6,6 +6,7 @@ import { Suspense, useEffect, useState } from "react";
 import type { BotDifficulty } from "@o-mega/game-engine";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { CardDetailProvider } from "@/components/card-detail";
+import { BackLink } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { TeamPicker } from "@/components/team-picker";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
@@ -170,15 +171,7 @@ function TeamPageContent() {
   return (
     <div className="game-shell">
       <header className="flex items-center gap-2.5 px-3 py-1">
-        <Link
-          href={mode.kind === "story" ? "/storia" : "/gioca"}
-          aria-label={`Torna a ${mode.kind === "story" ? "Storia" : "Gioca"}`}
-          className="btn btn-ghost h-11 w-11 shrink-0 px-0"
-        >
-          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.6} aria-hidden>
-            <path d="M12 3 5 10l7 7M5 10h13" strokeLinejoin="round" />
-          </svg>
-        </Link>
+        <BackLink href={mode.kind === "story" ? "/storia" : "/gioca"} label={`Torna a ${mode.kind === "story" ? "Storia" : "Gioca"}`} />
         <div className="min-w-0">
           <h1 className="font-display text-[22px] uppercase leading-6 text-comic-yellow">La tua squadra</h1>
           <p className="truncate text-[11px] font-bold text-muted">

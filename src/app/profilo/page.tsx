@@ -14,6 +14,7 @@ import { describeServerError } from "@/lib/errors";
 import { fetchConquestHistory, type ConquestHistoryEntry } from "@/lib/match";
 import { bootstrapPlayer, updateUsername, type Profile } from "@/lib/player";
 import { levelProgress, xpForLevel } from "@/lib/progression";
+import { useRememberedState } from "@/lib/place-memory";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { isValidUsername } from "@/lib/username";
 
@@ -53,7 +54,8 @@ function RowLabel({ children }: { children: string }) {
 function ProfileView({ profile }: { profile: Profile }) {
   const { signOut, setProfile } = useAuth();
   const [history, setHistory] = useState<ConquestHistoryEntry[] | null>(null);
-  const [tab, setTab] = useState<ProfileTab>("stats");
+  // Back from the history, the album or the privacy page, the same tab is open.
+  const [tab, setTab] = useRememberedState<ProfileTab>("tab", "stats");
   const nameSheet = useRef<HTMLDialogElement>(null);
   const worldSheet = useRef<HTMLDialogElement>(null);
   const notesSheet = useRef<HTMLDialogElement>(null);
@@ -127,7 +129,7 @@ function ProfileView({ profile }: { profile: Profile }) {
 
         <TabBar tabs={TABS} current={tab} onPick={setTab} label="Profilo" />
 
-        <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain">
+        <div role="tabpanel" data-keep-scroll="panel" className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain">
           {tab === "stats" && (
             <section className="grid grid-cols-2 gap-1.5">
               {stats.map((stat) => (

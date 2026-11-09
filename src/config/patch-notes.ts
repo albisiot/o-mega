@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "9 novembre 2026",
     changes: [
+      "Tornando indietro ritrovi la pagina come l'avevi lasciata: allo stesso punto, con la stessa voce di Gioca aperta e la stessa scheda del Profilo. Vale per le frecce indietro dell'app e per l'indietro del telefono. Dall'informativa sulla privacy aperta dal Profilo, il tasto in fondo ora ti riporta lì.",
       "In Gioca, Contro bot e Amichevole online sono ora un'unica voce, Amichevole: dentro trovi le quattro difficoltà dei bot e, sotto, la sfida online a un giocatore o a un amico con un codice.",
       "Nuova modalità in Gioca: la Grande Minaccia. Un Boss con cinque fronti, tutti visibili, e una tabella di quanti punti vale ogni fronte in ogni turno, che sale turno dopo turno. Ogni turno due fronti sono caldi e valgono di più (2, poi 3, 4, 5, 6), mai gli stessi del turno prima; gli altri valgono 1. Ogni turno metti in segreto un personaggio su uno dei tuoi fronti liberi: resta lì fino alla fine, con il punteggio che ha fatto entrando. A ogni turno ogni fronte occupato paga il suo valore, a chi è da solo o a chi ha il punteggio più alto. Dopo 5 turni vince chi ha più punti. Si gioca contro i bot, dal Facile al Super Pro, o in amichevole contro un giocatore o un amico con un codice. Nessuna carta in gioco.",
       "Tre varianti in più per Pastello, Tarocco e 3D: Cursor, Heirloom e Postmark in Pastello; Harrow, Precinct e Sordina in Tarocco; Cicatrix, Raster e Apostate in 3D.",

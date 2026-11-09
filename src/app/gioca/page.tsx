@@ -17,6 +17,7 @@ import {
   type ActiveMatch,
   type ConquestStatus,
 } from "@/lib/match";
+import { useRememberedState } from "@/lib/place-memory";
 import { chapterUnlocked, fetchStory, seenStory, type StoryChapter } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
@@ -355,7 +356,8 @@ export default function PlayPage() {
   const [conquest, setConquest] = useState<ConquestStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmForfeit, setConfirmForfeit] = useState(false);
-  const [openMode, setOpenMode] = useState<ModeKey | null>(null);
+  // Back from a match setup or the Story, the same mode is open where it was.
+  const [openMode, setOpenMode] = useRememberedState<ModeKey | null>("mode", null);
   // The page fits the screen above the bottom bar and never scrolls (see .home-shell): the
   // modes share the room, and an open mode takes it over with its choices.
   useLockedScreen(true);
@@ -402,7 +404,7 @@ export default function PlayPage() {
       </header>
 
       {/* What a short window cannot fit scrolls inside, rather than being cut. */}
-      <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 pb-3 pt-1">
+      <main data-keep-scroll="main" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 pb-3 pt-1">
         {error && <p className="shrink-0 text-sm font-semibold text-comic-magenta">{error}</p>}
         {active && <ActiveMatchBanner match={active} onForfeit={() => setConfirmForfeit(true)} />}
         {!opened && <EventBanner />}

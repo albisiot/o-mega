@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { useId, type ReactNode } from "react";
+import { ReturnLink } from "@/components/return-link";
 
 /** Shared top bar of the inner pages. */
 export function PageHeader({
@@ -16,9 +16,9 @@ export function PageHeader({
   return (
     <header className="flex flex-col gap-1 px-4 pb-3 pt-2">
       {backHref && (
-        <Link href={backHref} className="flex min-h-11 items-center self-start text-sm font-bold">
+        <ReturnLink href={backHref} className="flex min-h-11 items-center self-start text-sm font-bold">
           ← {backLabel}
-        </Link>
+        </ReturnLink>
       )}
       {title && <h1 className="font-display text-4xl uppercase text-comic-yellow">{title}</h1>}
       {subtitle && <p className="text-sm font-semibold text-muted">{subtitle}</p>}
@@ -61,11 +61,11 @@ export function TabBar<T extends string>({
 /** The arrow back of a screen that fits the phone, at the start of its one-row header. */
 export function BackLink({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} aria-label={label} className="btn btn-ghost h-11 w-11 shrink-0 px-0">
+    <ReturnLink href={href} label={label} className="btn btn-ghost h-11 w-11 shrink-0 px-0">
       <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.6} aria-hidden>
         <path d="M12 3 5 10l7 7M5 10h13" strokeLinejoin="round" />
       </svg>
-    </Link>
+    </ReturnLink>
   );
 }
 

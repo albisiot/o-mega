@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { AdminLink } from "@/components/admin-link";
+import { ExitLink } from "@/components/exit-link";
 
 const CONTROLLER = "albisiot";
 const CONTACT_EMAIL = "albividal2@gmail.com";
@@ -135,9 +135,7 @@ export default function PrivacyPage() {
         <p>Se questa informativa cambia, aggiorniamo questa pagina e la data indicata in alto.</p>
       </Section>
 
-      <Link href="/" className="btn btn-primary mt-3">
-        Torna a O-MEGA
-      </Link>
+      <ExitLink />
       <AdminLink />
     </main>
   );

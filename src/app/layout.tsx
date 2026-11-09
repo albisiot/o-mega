@@ -18,7 +18,9 @@ import {
 import { AppSplash } from "@/components/app-splash";
 import { AuthProvider } from "@/components/auth-provider";
 import { BottomNav } from "@/components/bottom-nav";
+import { PlaceMemory } from "@/components/place-memory";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
+import { Suspense } from "react";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -88,6 +90,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <AppSplash />
         </AuthProvider>
         <ServiceWorkerRegistration />
+        <Suspense fallback={null}>
+          <PlaceMemory />
+        </Suspense>
       </body>
     </html>
   );
