@@ -155,6 +155,69 @@ export type Database = {
           },
         ]
       }
+      boss_definitions: {
+        Row: {
+          code: string
+          created_at: string
+          flavor: string
+          id: string
+          is_active: boolean
+          name: string
+          scene: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          flavor: string
+          id?: string
+          is_active?: boolean
+          name: string
+          scene: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          flavor?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          scene?: string
+        }
+        Relationships: []
+      }
+      boss_fronts: {
+        Row: {
+          boss_id: string
+          slot: number
+          threat_id: string
+        }
+        Insert: {
+          boss_id: string
+          slot: number
+          threat_id: string
+        }
+        Update: {
+          boss_id?: string
+          slot?: number
+          threat_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boss_fronts_boss_id_fkey"
+            columns: ["boss_id"]
+            isOneToOne: false
+            referencedRelation: "boss_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boss_fronts_threat_id_fkey"
+            columns: ["threat_id"]
+            isOneToOne: false
+            referencedRelation: "threat_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bonus_codes: {
         Row: {
           card_definition_ids: string[]
@@ -1098,6 +1161,7 @@ export type Database = {
           code: string
           created_at: string
           expires_at: string
+          format: string
           host_id: string
           mode: string
         }
@@ -1106,6 +1170,7 @@ export type Database = {
           code: string
           created_at?: string
           expires_at: string
+          format?: string
           host_id: string
           mode?: string
         }
@@ -1114,6 +1179,7 @@ export type Database = {
           code?: string
           created_at?: string
           expires_at?: string
+          format?: string
           host_id?: string
           mode?: string
         }
@@ -1134,7 +1200,7 @@ export type Database = {
           opened_at: string
           resolved_at: string | null
           round: number
-          threat_id: string
+          threat_id: string | null
           winner_side: string | null
         }
         Insert: {
@@ -1143,7 +1209,7 @@ export type Database = {
           opened_at?: string
           resolved_at?: string | null
           round: number
-          threat_id: string
+          threat_id: string | null
           winner_side?: string | null
         }
         Update: {
@@ -1152,7 +1218,7 @@ export type Database = {
           opened_at?: string
           resolved_at?: string | null
           round?: number
-          threat_id?: string
+          threat_id?: string | null
           winner_side?: string | null
         }
         Relationships: [
@@ -1216,15 +1282,20 @@ export type Database = {
       }
       matches: {
         Row: {
+          boss_id: string | null
+          boss_values: Json | null
           bot_difficulty: string | null
           created_at: string
           current_round: number
           end_reason: string | null
           finished_at: string | null
+          format: string
           id: string
           mode: string
           player_a: string
           player_b: string | null
+          points_a: number
+          points_b: number
           result: string | null
           reward_coins_a: number | null
           reward_coins_b: number | null
@@ -1239,15 +1310,20 @@ export type Database = {
           total_score_b: number
         }
         Insert: {
+          boss_id?: string | null
+          boss_values?: Json | null
           bot_difficulty?: string | null
           created_at?: string
           current_round?: number
           end_reason?: string | null
           finished_at?: string | null
+          format?: string
           id?: string
           mode: string
           player_a: string
           player_b?: string | null
+          points_a?: number
+          points_b?: number
           result?: string | null
           reward_coins_a?: number | null
           reward_coins_b?: number | null
@@ -1262,15 +1338,20 @@ export type Database = {
           total_score_b?: number
         }
         Update: {
+          boss_id?: string | null
+          boss_values?: Json | null
           bot_difficulty?: string | null
           created_at?: string
           current_round?: number
           end_reason?: string | null
           finished_at?: string | null
+          format?: string
           id?: string
           mode?: string
           player_a?: string
           player_b?: string | null
+          points_a?: number
+          points_b?: number
           result?: string | null
           reward_coins_a?: number | null
           reward_coins_b?: number | null
@@ -1285,6 +1366,13 @@ export type Database = {
           total_score_b?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "matches_boss_id_fkey"
+            columns: ["boss_id"]
+            isOneToOne: false
+            referencedRelation: "boss_definitions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "matches_player_a_fkey"
             columns: ["player_a"]
@@ -1312,6 +1400,7 @@ export type Database = {
         Row: {
           card_instance_ids: string[]
           enqueued_at: string
+          format: string
           level: number
           mode: string
           refreshed_at: string
@@ -1321,6 +1410,7 @@ export type Database = {
         Insert: {
           card_instance_ids: string[]
           enqueued_at?: string
+          format?: string
           level?: number
           mode?: string
           refreshed_at?: string
@@ -1330,6 +1420,7 @@ export type Database = {
         Update: {
           card_instance_ids?: string[]
           enqueued_at?: string
+          format?: string
           level?: number
           mode?: string
           refreshed_at?: string
@@ -1387,6 +1478,7 @@ export type Database = {
       pending_plays: {
         Row: {
           card_instance_id: string
+          front_slot: number | null
           match_id: string
           round: number
           side: string
@@ -1394,6 +1486,7 @@ export type Database = {
         }
         Insert: {
           card_instance_id: string
+          front_slot?: number | null
           match_id: string
           round: number
           side: string
@@ -1401,6 +1494,7 @@ export type Database = {
         }
         Update: {
           card_instance_id?: string
+          front_slot?: number | null
           match_id?: string
           round?: number
           side?: string
@@ -1554,8 +1648,11 @@ export type Database = {
           card_instance_id: string | null
           created_at: string
           definition_id: string
+          front_slot: number | null
           highest_value: number
           match_id: string
+          points: number | null
+          required: number | null
           round: number
           score: number
           side: string
@@ -1567,8 +1664,11 @@ export type Database = {
           card_instance_id?: string | null
           created_at?: string
           definition_id: string
+          front_slot?: number | null
           highest_value: number
           match_id: string
+          points?: number | null
+          required?: number | null
           round: number
           score: number
           side: string
@@ -1580,8 +1680,11 @@ export type Database = {
           card_instance_id?: string | null
           created_at?: string
           definition_id?: string
+          front_slot?: number | null
           highest_value?: number
           match_id?: string
+          points?: number | null
+          required?: number | null
           round?: number
           score?: number
           side?: string
@@ -2033,7 +2136,10 @@ export type Database = {
         }
         Returns: string
       }
-      create_lobby: { Args: { p_card_instance_ids: string[] }; Returns: Json }
+      create_lobby: {
+        Args: { p_card_instance_ids: string[]; p_format?: string }
+        Returns: Json
+      }
       create_pvp_match: {
         Args: {
           p_mode: string
@@ -2205,6 +2311,17 @@ export type Database = {
         }
         Returns: string
       }
+      match_create_boss_bot: {
+        Args: {
+          p_boss_id?: string
+          p_boss_values: Json
+          p_bot_definition_ids: string[]
+          p_card_instance_ids: string[]
+          p_difficulty: string
+          p_user: string
+        }
+        Returns: string
+      }
       match_create_conquest_bot: {
         Args: {
           p_bot_definition_ids: string[]
@@ -2217,6 +2334,7 @@ export type Database = {
       match_heartbeat: { Args: { p_match_id: string }; Returns: undefined }
       match_join_lobby: {
         Args: {
+          p_boss_values?: Json
           p_code: string
           p_guest: string
           p_team: string[]
@@ -2229,12 +2347,25 @@ export type Database = {
         Args: {
           p_bot_definition_ids?: string[]
           p_bot_difficulty?: string
+          p_boss_values?: Json
+          p_format?: string
           p_mode: string
           p_team: string[]
           p_threat_ids: string[]
           p_user: string
         }
         Returns: string
+      }
+      match_record_boss_turn_state: {
+        Args: {
+          p_match_id: string
+          p_play_a: Json
+          p_play_b: Json
+          p_result: string
+          p_side: string
+          p_turn: number
+        }
+        Returns: Json
       }
       match_record_round: {
         Args: {
@@ -2274,6 +2405,7 @@ export type Database = {
       match_submit_play: {
         Args: {
           p_card_instance_id: string
+          p_front_slot?: number
           p_match_id: string
           p_round: number
           p_user: string
