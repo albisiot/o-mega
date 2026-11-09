@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { CardSortToggle } from "@/components/card-sort-toggle";
-import { PageHeader } from "@/components/comic-parts";
+import { BackLink } from "@/components/comic-parts";
 import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { searchCards, sortCards, type CardOrder } from "@/lib/card-sort";
@@ -15,11 +15,17 @@ import {
   type PackPoolCard,
   type PackPoolRarity,
 } from "@/lib/pack-pool-admin";
+import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const CHIP = "flex min-h-11 shrink-0 items-center gap-1.5 border-2 px-3 text-sm font-bold";
 
-/** Ticks the cards packs can give; every change is saved on the server at once. */
+/**
+ * Ticks the cards packs can give; every change is saved on the server at once. The page fits
+ * the phone and never scrolls (see .game-shell): search and filters stay on top, and only the
+ * list scrolls, inside its panel.
+ */
 export function PackPoolAdmin({ initial }: { initial: PackPool }) {
+  useLockedScreen(true);
   const [pool, setPool] = useState(initial);
   const [query, setQuery] = useState("");
   const [order, setOrder] = useState<CardOrder>("name");
@@ -56,17 +62,18 @@ export function PackPoolAdmin({ initial }: { initial: PackPool }) {
   const inPacks = pool.cards.filter((card) => card.in_packs).length;
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
-      <PageHeader
-        title="Carte nei pacchetti"
-        subtitle={`${inPacks} carte su ${pool.cards.length} possono uscire nei pacchetti.`}
-      />
-      <main className="flex flex-1 flex-col gap-4 px-3 pb-6">
-        <p className="text-sm font-medium text-muted">
-          Togli la spunta per tenere una carta fuori dai pacchetti; puoi sempre darla con un codice bonus. Le carte
-          dei livelli non escono mai e non sono in elenco. Le varianti seguono la loro carta.
-        </p>
-        <div className="flex gap-2">
+    <div className="game-shell">
+      <header className="flex shrink-0 items-center gap-2.5 px-3 pb-1 pt-2">
+        <BackLink href="/privacy" label="Torna all'informativa" />
+        <div className="min-w-0">
+          <h1 className="truncate font-display text-[28px] uppercase leading-8 text-comic-yellow">Carte nei pacchetti</h1>
+          <p className="text-xs font-semibold leading-4 text-muted">
+            {inPacks} carte su {pool.cards.length} possono uscire nei pacchetti.
+          </p>
+        </div>
+      </header>
+      <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
+        <div className="flex shrink-0 gap-2">
           <input
             type="search"
             value={query}
@@ -80,7 +87,7 @@ export function PackPoolAdmin({ initial }: { initial: PackPool }) {
           />
           <CardSortToggle order={order} onChange={setOrder} />
         </div>
-        <div className="-mx-3 flex gap-1.5 overflow-x-auto px-3 pb-1" role="group" aria-label="Filtra per rarità">
+        <div className="-mx-3 flex shrink-0 gap-1.5 overflow-x-auto px-3 pb-1" role="group" aria-label="Filtra per rarità">
           <button
             type="button"
             onClick={() => setRarityFilter(null)}
@@ -109,18 +116,27 @@ export function PackPoolAdmin({ initial }: { initial: PackPool }) {
             );
           })}
         </div>
-        <div aria-live="polite">{error && <p className="text-sm font-bold text-comic-magenta">{error}</p>}</div>
-        {shownRarities.map((rarity) => (
-          <RaritySection
-            key={rarity.code}
-            rarity={rarity}
-            allCards={pool.cards}
-            shown={found.filter((card) => card.rarity_code === rarity.code)}
-            searching={query.trim() !== ""}
-            guaranteed={rarity.rank >= pool.guaranteed_min_rarity_rank}
-            onApply={apply}
-          />
-        ))}
+        <div aria-live="polite" className="shrink-0 empty:hidden">
+          {error && <p className="text-sm font-bold text-comic-magenta">{error}</p>}
+        </div>
+        {/* The list is longer than any screen: it scrolls inside, the page stays still. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain">
+          <p className="text-xs font-medium leading-4 text-muted">
+            Togli la spunta per tenere una carta fuori dai pacchetti; puoi sempre darla con un codice bonus. Le carte
+            dei livelli non escono mai e non sono in elenco. Le varianti seguono la loro carta.
+          </p>
+          {shownRarities.map((rarity) => (
+            <RaritySection
+              key={rarity.code}
+              rarity={rarity}
+              allCards={pool.cards}
+              shown={found.filter((card) => card.rarity_code === rarity.code)}
+              searching={query.trim() !== ""}
+              guaranteed={rarity.rank >= pool.guaranteed_min_rarity_rank}
+              onApply={apply}
+            />
+          ))}
+        </div>
       </main>
     </div>
   );
@@ -142,7 +158,7 @@ function RaritySection({ rarity, allCards, shown, searching, guaranteed, onApply
   const which = searching ? "trovate" : "tutte";
 
   return (
-    <section className="flex flex-col gap-2" aria-labelledby={`rarity-${rarity.code}`}>
+    <section className="flex shrink-0 flex-col gap-2" aria-labelledby={`rarity-${rarity.code}`}>
       <div className="flex items-baseline justify-between gap-2 border-b-2 pb-1" style={{ borderColor: rarity.color }}>
         <h2 id={`rarity-${rarity.code}`} className="section-title" style={{ color: rarity.color }}>
           {rarity.name}
