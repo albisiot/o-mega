@@ -164,24 +164,26 @@ Squadre avversarie, Minacce e difficoltà si tarano con la simulazione, come nel
 
 ### Capitolo 3 — Undici piani
 
-*Atto II.*
+*Atto II. Testi nel database (migrazione `20261109220000_chapter_three_story.sql`); squadre e Minacce tarate con la simulazione (SPEC §5.11).*
 
 - **In una riga:** per capire perché la torre del Banco trema bisogna salire undici piani, e ogni piano ha un prezzo.
 - **Luogo:** la torre del Banco. Gradus porta i clienti su per le rampe; la fornace è nel seminterrato.
-- **Avversari:** il Banco e gli Sciolti a contratto, schierati dai Reggenti che il Banco presta. Ottavia è tra loro: è indebitata.
+- **Avversari:** il Banco e gli Sciolti a contratto, schierati dai Reggenti che il Banco presta. Ottavia è tra loro: è indebitata. Nella terza missione i cacciatori di taglie vengono a riscuotere il suo debito; nell'ultima lo sconta difendendo la fornace con le lastre del Banco.
 - **Conflitto interno:** Collateral deve riscuotere il debito di Ottavia e sa che il prossimo debito riscosso sarà il suo. Gradus perde un ricordo a ogni rampa e non ricorda più perché lavori lì.
 - **Carte presentate:** Gradus, Collateral, Auctor.
 - **Boss:** Auctor. Ha progettato la centrale, adesso la fornace.
 - **Rivelazione:** il Banco non distrugge i doppioni: li fonde nella fornace di Auctor per colare lettere. La prima è una Η falsa, ed è lei a far tremare la torre. Lo stampo è la Ε presa nel caveau.
 - **Gancio:** Auctor, sconfitto, si lascia sfuggire che la centrale non fu costruita accanto al tempio per caso. Quella notte il Banco prova la Η falsa, e la lettera storta sveglia Multitude: nei quartieri alti i telepati cominciano a sentire pensieri che non sono di nessuno. Il sismografo, intanto, segna per la prima volta una scossa sotto il vulcano.
 
-| # | Missione | Situazione | Carte principali |
+| # | Missione | Situazione | Squadra avversaria (definitiva) |
 |---|---|---|---|
-| 1 | Lo sportello | Abeyance non trova il tuo pagamento e la fila arriva in strada | Abeyance, Futures, Glip |
-| 2 | Le rampe | Per salire serve Gradus, e ogni rampa gli costa un ricordo | Gradus, Actuary, Escrow |
-| 3 | Il debito | Tre cacciatori di taglie vengono a riscuotere Ottavia | Collateral, Warrant, Zeta Rax |
-| 4 | Il furto | La Compagnia manda gli Sciolti a riprendersi la Ε | Larceny, Latchkey, Sordina |
-| 5 | La fornace | Nel seminterrato Auctor alimenta il fuoco con le lastre | Auctor, Actuary, Derelict |
+| 1 | Lo sportello | Abeyance non trova il tuo pagamento e la fila arriva in strada | Abeyance, Futures, Glip, Publican, Huckster |
+| 2 | Le rampe | Per salire serve Gradus, e ogni rampa gli costa un ricordo | Gradus, Actuary, Escrow, Ferryman, Ephemeris |
+| 3 | Il debito | Tre cacciatori di taglie vengono a riscuotere Ottavia | Collateral, Warrant, Zeta Rax, Vulgate, Postmark |
+| 4 | Il furto | La Compagnia manda gli Sciolti a riprendersi la Ε | Larceny, Latchkey, Sordina, Facsimile, Procura |
+| 5 | La fornace | Nel seminterrato Auctor alimenta il fuoco con le lastre, e Ottavia lo difende per conto del Banco | Auctor, Actuary, Derelict, Gradus, Collateral |
+
+**Testo finale:** le lastre che il Banco compra come doppioni non vengono distrutte: Auctor le fonde e, con la epsilon del caveau come stampo, cola lettere nuove. La prima è una eta falsa, ed è lei a far tremare la torre (il dottor Spanò la chiama «una copia autorizzata»). Auctor, sconfitto, si lascia sfuggire che la centrale non fu costruita accanto al tempio per caso. Quella notte il Banco prova la eta falsa e la lettera storta sveglia Multitude: nei quartieri alti i telepati sentono pensieri che non sono di nessuno, e il sismografo segna la prima scossa sotto il vulcano. Il registro delle lettere (§2) non cambia: la Ε resta al Banco come stampo e la Η esiste solo falsa.
 
 ### Capitolo 4 — Multitude
 

@@ -21,19 +21,25 @@ declare
   v_story jsonb := public.get_story();
   v_first jsonb := v_story -> 0 -> 'missions';
   v_second jsonb := v_story -> 1 -> 'missions';
+  v_third jsonb := v_story -> 2 -> 'missions';
 begin
-  assert jsonb_array_length(v_story) = 2, 'two chapters';
-  assert (v_story -> 0 ->> 'chapter')::integer = 1 and (v_story -> 1 ->> 'chapter')::integer = 2, 'chapter order';
-  assert jsonb_array_length(v_first) = 5 and jsonb_array_length(v_second) = 5, 'five missions each';
+  assert jsonb_array_length(v_story) = 3, 'three chapters';
+  assert (v_story -> 0 ->> 'chapter')::integer = 1 and (v_story -> 1 ->> 'chapter')::integer = 2
+     and (v_story -> 2 ->> 'chapter')::integer = 3, 'chapter order';
+  assert jsonb_array_length(v_first) = 5 and jsonb_array_length(v_second) = 5 and jsonb_array_length(v_third) = 5,
+    'five missions each';
   assert (v_first -> 0 ->> 'unlocked')::boolean and not (v_first -> 1 ->> 'unlocked')::boolean, 'only the first is open';
-  assert not exists (select 1 from jsonb_array_elements(v_second) m where (m ->> 'unlocked')::boolean),
-    'chapter 2 open before chapter 1';
-  assert jsonb_array_length(v_first -> 0 -> 'threat_levels') = 5 and jsonb_array_length(v_second -> 0 -> 'threat_levels') = 5,
-    'threat levels';
+  assert not exists (select 1 from jsonb_array_elements(v_second || v_third) m where (m ->> 'unlocked')::boolean),
+    'chapter 2 or 3 open before chapter 1';
+  assert not exists (select 1 from jsonb_array_elements(v_first || v_second || v_third) m
+                     where jsonb_array_length(m -> 'threat_levels') <> 5), 'threat levels';
   assert v_first -> 4 -> 'reward_card' ->> 'code' = 'P051', 'chapter 1 boss card';
   assert v_second -> 4 -> 'reward_card' ->> 'code' = 'P054', 'chapter 2 boss card';
-  assert not (v_second -> 0 ? 'bot_definition_ids') and not (v_second -> 0 ? 'threat_ids'), 'secrets reached the client';
-  assert v_story -> 0 -> 'outro' = 'null'::jsonb and v_story -> 1 -> 'outro' = 'null'::jsonb, 'ending of a chapter not completed';
+  assert v_third -> 4 -> 'reward_card' ->> 'code' = 'P052', 'chapter 3 boss card';
+  assert not exists (select 1 from jsonb_array_elements(v_first || v_second || v_third) m
+                     where m ? 'bot_definition_ids' or m ? 'threat_ids'), 'secrets reached the client';
+  assert not exists (select 1 from jsonb_array_elements(v_story) c where c -> 'outro' is distinct from 'null'::jsonb),
+    'ending of a chapter not completed';
 
   begin
     perform count(*) from public.story_missions;
@@ -113,16 +119,20 @@ do $$
 declare
   v_story jsonb := public.get_story();
   v_second jsonb := v_story -> 1 -> 'missions';
+  v_third jsonb := v_story -> 2 -> 'missions';
 begin
   assert v_story -> 0 ->> 'outro' like 'Nel caveau%', 'ending of the completed chapter';
-  assert v_story -> 1 -> 'outro' = 'null'::jsonb, 'ending of chapter 2 before playing it';
+  assert v_story -> 1 -> 'outro' = 'null'::jsonb and v_story -> 2 -> 'outro' = 'null'::jsonb,
+    'ending of chapter 2 or 3 before playing it';
   assert (v_second -> 0 ->> 'unlocked')::boolean and not (v_second -> 1 ->> 'unlocked')::boolean, 'chapter 2 opens at its first mission';
   assert not (v_second -> 0 ->> 'completed')::boolean, 'chapter 2 already completed';
+  assert not exists (select 1 from jsonb_array_elements(v_third) m where (m ->> 'unlocked')::boolean),
+    'chapter 3 open before chapter 2';
 end $$;
 
 reset role;
 
--- Playing chapter 2, and a replay.
+-- Playing chapters 2 and 3, and a replay.
 do $$
 declare
   v_user uuid := '00000000-0000-4000-8000-0000000000e1';
@@ -130,7 +140,7 @@ declare
   v_match uuid;
   v_mission public.story_missions;
   v_balance integer;
-  v_coins integer := (select sum(reward_coins) from public.story_missions where chapter in (1, 2));
+  v_coins integer := (select sum(reward_coins) from public.story_missions where chapter in (1, 2, 3));
 begin
   select array_agg(id) into v_team from (
     select id from public.card_instances where owner_id = v_user and acquired_via <> 'story' order by acquired_at, id limit 5
@@ -143,7 +153,17 @@ begin
     assert sqlerrm = 'story_mission_locked', sqlerrm;
   end;
 
-  for v_mission in select * from public.story_missions where chapter = 2 order by ord loop
+  for v_mission in select * from public.story_missions where chapter in (2, 3) order by chapter, ord loop
+    -- Chapter 3 stays closed until the last mission of chapter 2 is won.
+    if v_mission.chapter = 2 then
+      begin
+        perform public.story_create_match(v_user, 'C3M1', v_team);
+        raise exception 'ASSERT: chapter 3 started before chapter 2 was completed';
+      exception when raise_exception then
+        assert sqlerrm = 'story_mission_locked', sqlerrm;
+      end;
+    end if;
+
     v_match := public.story_create_match(v_user, v_mission.code, v_team);
     assert (select threat_ids = v_mission.threat_ids and threat_modifiers = v_mission.threat_modifiers
                    and bot_difficulty = v_mission.bot_difficulty and story_mission_id = v_mission.id
@@ -163,20 +183,25 @@ begin
           where i.owner_id = v_user and i.acquired_via = 'story' and d.code = 'P051' and not i.is_starter) = 1, 'chapter 1 boss card';
   assert (select count(*) from public.card_instances i join public.card_definitions d on d.id = i.definition_id
           where i.owner_id = v_user and i.acquired_via = 'story' and d.code = 'P054' and not i.is_starter) = 1, 'chapter 2 boss card';
-  assert (select count(*) from public.card_transfers where to_user = v_user and reason = 'story') = 2, 'card transfers';
-  assert v_coins = 570, format('story coins in the catalog: %s', v_coins);
+  assert (select count(*) from public.card_instances i join public.card_definitions d on d.id = i.definition_id
+          where i.owner_id = v_user and i.acquired_via = 'story' and d.code = 'P052' and not i.is_starter) = 1, 'chapter 3 boss card';
+  assert (select count(*) from public.card_transfers where to_user = v_user and reason = 'story') = 3, 'card transfers';
+  assert v_coins = 930, format('story coins in the catalog: %s', v_coins);
   assert (select sum(amount) from public.coin_ledger where user_id = v_user and reason = 'story_reward') = v_coins, 'story coins';
 
   -- A replay pays nothing more.
-  v_match := public.story_create_match(v_user, 'C2M5', v_team);
+  v_match := public.story_create_match(v_user, 'C3M5', v_team);
   perform public.finish_match(v_match, 'a', 'completed');
-  assert (select count(*) from public.card_instances where owner_id = v_user and acquired_via = 'story') = 2, 'a replay gave another card';
+  assert (select count(*) from public.card_instances where owner_id = v_user and acquired_via = 'story') = 3, 'a replay gave another card';
   assert (select sum(amount) from public.coin_ledger where user_id = v_user and reason = 'story_reward') = v_coins, 'a replay paid coins';
 
   -- For the next block, which runs as the player and cannot read these tables.
   perform set_config('story_test.boss', (
     select p.match_id::text from public.story_progress p join public.story_missions m on m.id = p.mission_id
     where m.code = 'C2M5' and p.user_id = v_user), true);
+  perform set_config('story_test.boss3', (
+    select p.match_id::text from public.story_progress p join public.story_missions m on m.id = p.mission_id
+    where m.code = 'C3M5' and p.user_id = v_user), true);
   perform set_config('story_test.replay', v_match::text, true);
 end $$;
 
@@ -187,6 +212,7 @@ do $$
 declare
   v_first uuid := current_setting('story_test.first')::uuid;
   v_boss uuid := current_setting('story_test.boss')::uuid;
+  v_boss3 uuid := current_setting('story_test.boss3')::uuid;
   v_replay uuid := current_setting('story_test.replay')::uuid;
   v_reward jsonb;
   v_story jsonb := public.get_story();
@@ -199,6 +225,11 @@ begin
   v_reward := public.get_story_reward(v_boss);
   assert (v_reward ->> 'completed_now')::boolean and (v_reward ->> 'coins')::integer = 90, 'reward of the chapter 2 boss';
   assert v_reward -> 'card' ->> 'code' = 'P054' and (v_reward -> 'card' ->> 'instance_id') is not null, 'chapter 2 reward card';
+  assert not (v_reward ->> 'is_last')::boolean, 'chapter 3 follows chapter 2';
+
+  v_reward := public.get_story_reward(v_boss3);
+  assert (v_reward ->> 'completed_now')::boolean and (v_reward ->> 'coins')::integer = 100, 'reward of the chapter 3 boss';
+  assert v_reward -> 'card' ->> 'code' = 'P052' and (v_reward -> 'card' ->> 'instance_id') is not null, 'chapter 3 reward card';
   assert (v_reward ->> 'is_last')::boolean, 'last mission';
 
   v_reward := public.get_story_reward(v_replay);
@@ -209,6 +240,7 @@ begin
           from jsonb_array_elements(v_story) c, jsonb_array_elements(c -> 'missions') m), 'chapters not completed';
   assert v_story -> 0 ->> 'outro' like 'Nel caveau%', 'ending of chapter 1';
   assert v_story -> 1 ->> 'outro' like 'Longwave%', 'ending of chapter 2';
+  assert v_story -> 2 ->> 'outro' like 'Le lastre%', 'ending of chapter 3';
 end $$;
 
 rollback;

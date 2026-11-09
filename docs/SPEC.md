@@ -326,6 +326,18 @@ Squadre e Minacce sono tarate con la simulazione. La prima Minaccia di ogni miss
 
 Stesso metodo del Capitolo 1, sul catalogo a 122 personaggi (10.000 partite per missione con il bot Medio, 6.000 con Difficile, 2.800 con Super Pro): il giocatore con la squadra casuale vince circa l'81%, 69%, 61%, 45% e 26% delle volte. Il Capitolo 1, rimisurato nelle stesse condizioni, dà 86%, 74%, 73%, 53% e 29%: ogni missione è un po' più dura della corrispondente, e la prima resta la più facile del capitolo. La prima Minaccia di ogni missione è a tema; i Figli sono forti in mente e magia, e con più Minacce di quel tipo il boss scendeva sotto il 10%.
 
+**Capitolo 3, Undici piani:**
+
+| Missione | Avversario | Bot | Livelli | Premio |
+|---|---|---|---|---|
+| 1. Lo sportello | Abeyance e la fila (5 Delta) | Medio | 1·4·2·5·3 | 50 monete |
+| 2. Le rampe | Gradus e l'ufficio rischi | Medio | 3·1·5·2·4 | 60 monete |
+| 3. Il debito | Collateral e i cacciatori | Difficile | 5·2·4·1·3 | 70 monete |
+| 4. Il furto | Larceny e gli Sciolti | Difficile | 4·2·6·1·3 | 80 monete |
+| 5. La fornace | Ottavia e il Banco (1 Alfa, Auctor) | Super Pro | 5·1·3·6·2 | 100 monete e la carta Auctor (Alfa) |
+
+Stesso metodo, con il catalogo delle Minacce che il server dà ai bot dopo le Minacce dei luoghi (§5.4): 75 Minacce, con le loro regole. Il giocatore con la squadra casuale vince circa il 77%, 66%, 56%, 44% e 20% delle volte (10.000 partite con il bot Medio, 6.000 con Difficile, 4.000 con Super Pro). Nelle stesse condizioni il Capitolo 2 dà 81%, 70%, 60%, 73% e 24%: la missione 4 del Capitolo 2 era al 46% con le sole 60 Minacce di Nuova Megara, e il bot Difficile, che stima i round futuri sul catalogo, ora la gioca molto peggio. Il Capitolo 3 è tarato sul 45% previsto, quindi ogni missione resta un po' più dura della corrispondente e la prima è la più facile del capitolo. Solo Minacce di Nuova Megara, perché il capitolo non esce dalla torre; la prima di ogni missione è a tema (Terminale bloccato, Labirinto di specchi, Caccia nel buio, Colpo al caveau, Reattore in fusione).
+
 ## 6. Conquista delle carte
 
 ### 6.1 Regola base
