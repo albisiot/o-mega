@@ -9,3 +9,5 @@ export * from "./threats.ts";
 export * from "./bots.ts";
 export * from "./flow.ts";
 export * from "./emergency.ts";
+export * from "./boss.ts";
+export * from "./boss-bots.ts";

@@ -41,6 +41,16 @@ describe("balance config", () => {
     expect(maxFailures).toBeLessThan(threatsPerRun);
   });
 
+  it("sets the Grande Minaccia presidio at half the Emergenza target", () => {
+    for (const level of [1, 2, 3, 4, 5, 6] as const) {
+      const emergency = balance.emergency.targets[`level${level}`];
+      expect(balance.boss.targets[`level${level}`]).toBe(Math.ceil(emergency / 2));
+    }
+    expect(balance.boss.turns).toBe(balance.match.teamSize);
+    expect(balance.boss.hotFronts).toBeLessThanOrEqual(balance.boss.fronts);
+    expect(balance.boss.extraFronts).toBeLessThanOrEqual(balance.boss.fronts);
+  });
+
   it("allows the Emergenza level sums with the levels of a match", () => {
     const { min, max } = balance.match.threatLevels;
     const { threatsPerRun, threatLevels } = balance.emergency;

@@ -1,5 +1,6 @@
 // Shared test data for the engine tests (not part of the public API).
 
+import type { BossRules, BossState } from "./boss.ts";
 import type { AbilityFamilies, Character, MatchRules, MatchState, Power, Threat } from "./types.ts";
 
 export const ABILITIES = ["FOR", "VEL", "RES", "INT", "VOL", "PER", "ENE", "MAG", "PSI", "COM", "TEC", "FUR"];
@@ -48,4 +49,39 @@ export function threatCatalog(): Threat[] {
     }
   }
   return threats;
+}
+
+// Grande Minaccia
+
+export const BOSS_RULES: BossRules = {
+  turns: 5,
+  fronts: 5,
+  hotFronts: 2,
+  hotValue: 2,
+  baseValue: 1,
+  growth: 1,
+  extraFronts: 2,
+  extraGrowth: 1,
+  targets: { 1: 4, 2: 7, 3: 9, 4: 12, 5: 14, 6: 16 },
+};
+
+/** Levels 1, 2, 3, 4, 6: valid as a match (one low, one high, sum 16). */
+export const FRONTS: Threat[] = [
+  threat("f1", ["FOR"]),
+  threat("f2", ["VEL", "RES"]),
+  threat("f3", ["INT", "VOL", "PER"]),
+  threat("f4", ["ENE", "MAG", "PSI", "COM"]),
+  threat("f6", ["FOR", "VEL", "RES", "INT", "VOL", "PER"]),
+];
+
+export const VALUES = [
+  [2, 2, 1, 1, 1],
+  [3, 4, 2, 3, 2],
+  [5, 5, 4, 4, 3],
+  [6, 7, 5, 5, 5],
+  [8, 8, 6, 7, 6],
+];
+
+export function bossState(teamA: Character[], teamB: Character[], values = VALUES): BossState {
+  return { rules: BOSS_RULES, fronts: FRONTS, values, teams: { a: teamA, b: teamB }, turns: [] };
 }

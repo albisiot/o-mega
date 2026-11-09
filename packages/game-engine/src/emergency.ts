@@ -40,7 +40,7 @@ export function drawEmergencyThreats(rng: Rng, catalog: readonly Threat[], rules
  * tie it would win against an opponent). Annullatore, Davide, Contrattacco,
  * Opportunista, Riflesso and Nebbia need an opposing character: they do nothing.
  */
-export function requiredScore(character: Character, threat: Threat, rules: EmergencyRules): number {
+export function requiredScore(character: Character, threat: Threat, rules: Pick<EmergencyRules, "targets">): number {
   const target = rules.targets[threat.level];
   if (target === undefined) throw new Error(`No target for threat level ${threat.level}`);
   // Silenzio della tomba: no power, so no discount. Emergenza draws only threats of
