@@ -29,7 +29,7 @@ const BOTS = [
 
 const MODES = [
   { key: "story", label: "Storia", detail: "Missioni a Nuova Megara, con carte in premio", color: "rays-gold" },
-  { key: "friendly", label: "Amichevole", detail: "Contro un bot, un giocatore o un amico", color: "bg-comic-yellow" },
+  { key: "friendly", label: "Amichevole", detail: "Contro un bot, un giocatore o un amico", color: "bg-comic-cyan" },
   { key: "boss", label: "Grande Minaccia", detail: "Un Boss, cinque fronti: contro un bot o un giocatore", color: "bg-comic-orange" },
   { key: "conquest", label: "Conquista", detail: "Chi vince prende una carta", color: "bg-comic-magenta" },
   { key: "emergency", label: "Emergenza", detail: "La sfida del giorno, da solo", color: "bg-foreground" },

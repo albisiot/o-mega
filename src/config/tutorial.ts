@@ -104,7 +104,7 @@ export const TUTORIAL_POWERS = [
 export const TUTORIAL_MODES = [
   {
     name: "Amichevole",
-    color: "bg-comic-yellow",
+    color: "bg-comic-cyan",
     text: `Nessuna carta in gioco e nessuna moneta. Contro bot, per allenarti, con quattro difficoltà: Facile, Medio, Difficile e Super Pro (${progression.botWinXp} XP se vinci, ${progression.botParticipationXp} se perdi). Online, contro il primo giocatore libero o contro un amico con un codice di 6 caratteri: dà più esperienza (${progression.pvpWinXp} XP se vinci, ${progression.pvpParticipationXp} se perdi).`,
   },
   {
