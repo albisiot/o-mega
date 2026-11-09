@@ -1196,6 +1196,7 @@ export type Database = {
       match_rounds: {
         Row: {
           deadline_at: string
+          holders: Json | null
           match_id: string
           opened_at: string
           resolved_at: string | null
@@ -1205,6 +1206,7 @@ export type Database = {
         }
         Insert: {
           deadline_at: string
+          holders?: Json | null
           match_id: string
           opened_at?: string
           resolved_at?: string | null
@@ -1214,6 +1216,7 @@ export type Database = {
         }
         Update: {
           deadline_at?: string
+          holders?: Json | null
           match_id?: string
           opened_at?: string
           resolved_at?: string | null
@@ -2382,6 +2385,7 @@ export type Database = {
       }
       match_record_boss_turn: {
         Args: {
+          p_holders: Json
           p_match_id: string
           p_play_a: Json
           p_play_b: Json
@@ -2392,6 +2396,7 @@ export type Database = {
       }
       match_record_boss_turn_state: {
         Args: {
+          p_holders: Json
           p_match_id: string
           p_play_a: Json
           p_play_b: Json
