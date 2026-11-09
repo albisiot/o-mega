@@ -6,16 +6,23 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
+  buildBotTeam,
   computeAbilityMeans,
+  drawBossValues,
   drawEmergencyThreats,
   drawThreatLevels,
   pickOne,
   pickThreats,
   placeModifier,
   planBotMatch,
+  playBossBotTurn,
+  playBossPvpTurn,
   playBotRound,
   playPvpRound,
   resolveEmergencyPlay,
+  type BossRules,
+  type BossState,
+  type BossTurnRecord,
   type BotDifficulty,
   type BotMatchCatalog,
   type Character,
@@ -68,6 +75,8 @@ const CLIENT_ERRORS = new Set([
   "invalid_emergency_squad",
   "story_mission_not_found",
   "story_mission_locked",
+  "invalid_front",
+  "boss_not_found",
 ]);
 
 class GameError extends Error {}
@@ -111,6 +120,7 @@ type Definition = { id: string; faction: string; rarity_rank: number; stats: Rec
 type Loaded = {
   rules: MatchRules;
   emergency: EmergencyRules;
+  boss: BossRules;
   graceSeconds: number;
   catalog: BotMatchCatalog;
   /** Threats of Nuova Megara only: Emergenza never draws the places beyond it. */
@@ -207,6 +217,17 @@ async function load(): Promise<Loaded> {
         maxSum: value("emergency.threat_levels.max_sum"),
       },
     },
+    boss: {
+      turns: value("boss.turns"),
+      fronts: value("boss.fronts"),
+      hotFronts: value("boss.hot_fronts"),
+      hotValue: value("boss.hot_value"),
+      baseValue: value("boss.base_value"),
+      growth: value("boss.growth"),
+      extraFronts: value("boss.extra_fronts"),
+      extraGrowth: value("boss.extra_growth"),
+      targets: Object.fromEntries([1, 2, 3, 4, 5, 6].map((level) => [level, value(`boss.targets.level${level}`)])),
+    },
     graceSeconds: value("match.timeout_grace_seconds"),
     catalog: {
       characters: activeCharacters,
@@ -246,22 +267,28 @@ type PlayRow = {
   score: number;
   highest_value: number;
   auto_played: boolean;
+  /** Grande Minaccia only: 1-based front, points taken, score needed alone on the front. */
+  front_slot: number | null;
+  points: number | null;
+  required: number | null;
 };
 
 type MatchContext = {
   side: Side;
   match: {
     status: string;
+    format: "classic" | "boss";
     bot_difficulty: BotDifficulty | null;
     current_round: number;
     threat_ids: string[];
     threat_modifiers: (ThreatModifier | null)[];
+    boss_values: number[][] | null;
   };
   teams: { side: Side; card_instance_ids: string[] | null; definition_ids: string[] }[];
   rounds: { round: number; deadline_at: string; winner_side: string | null; resolved_at: string | null }[];
   plays: PlayRow[];
   /** Choices already submitted for the current round (matches between players). */
-  pending: { side: Side; card_instance_id: string }[];
+  pending: { side: Side; card_instance_id: string; front_slot: number | null }[];
 };
 
 /** Rebuilds the full engine state of a match from the database, in one request. */
@@ -284,6 +311,15 @@ async function loadMatch(userId: string, matchId: string) {
       toCharacter(definitionOf(definitionId), row.card_instance_ids?.[i] ?? definitionId),
     );
   };
+
+  const teams = { a: team("a"), b: team("b") };
+  const current = roundRows.find((r) => r.round === match.current_round)!;
+  const deadline = Date.parse(current.deadline_at);
+
+  if (match.format === "boss") {
+    const boss = bossState(loaded, match, teams, roundRows, playRows);
+    return { loaded, match, side, state: null, boss, pending, deadline };
+  }
 
   const resolved: RoundRecord[] = roundRows
     .filter((r) => r.resolved_at)
@@ -314,11 +350,103 @@ async function loadMatch(userId: string, matchId: string) {
       if (!threat) throw new Error(`Unknown threat ${id}`);
       return { ...threat, modifier: match.threat_modifiers[i] ?? null };
     }),
-    teams: { a: team("a"), b: team("b") },
+    teams,
     rounds: resolved,
   };
-  const current = roundRows.find((r) => r.round === match.current_round)!;
-  return { loaded, match, side, state, pending, deadline: Date.parse(current.deadline_at) };
+  return { loaded, match, side, state, boss: null, pending, deadline };
+}
+
+/**
+ * The engine state of a Grande Minaccia: the fronts are the match's threats, plain
+ * (no modifier), and each resolved turn says where each side played and what it took.
+ */
+function bossState(
+  loaded: Loaded,
+  match: MatchContext["match"],
+  teams: BossState["teams"],
+  roundRows: MatchContext["rounds"],
+  playRows: PlayRow[],
+): BossState {
+  if (!match.boss_values) throw new Error("A Grande Minaccia without a points table");
+  const turns: BossTurnRecord[] = roundRows
+    .filter((r) => r.resolved_at)
+    .map((r) => {
+      const rows = {
+        a: playRows.find((row) => row.round === r.round && row.side === "a")!,
+        b: playRows.find((row) => row.round === r.round && row.side === "b")!,
+      };
+      const contested = rows.a.front_slot === rows.b.front_slot;
+      const playOf = (playSide: Side) => {
+        const p = rows[playSide];
+        const other = rows[playSide === "a" ? "b" : "a"];
+        const points = p.points ?? 0;
+        return {
+          characterId: p.card_instance_id ?? p.definition_id,
+          base: p.base_score,
+          bonus: p.bonus,
+          total: p.score,
+          highest: p.highest_value,
+          autoPlayed: p.auto_played,
+          front: (p.front_slot ?? 1) - 1,
+          required: p.required,
+          points,
+          // Nobody took a contested front: void for both.
+          outcome: points > 0 ? ("won" as const) : contested && (other.points ?? 0) === 0 ? ("void" as const) : ("lost" as const),
+        };
+      };
+      return { turn: r.round, plays: { a: playOf("a"), b: playOf("b") } };
+    });
+  return {
+    rules: loaded.boss,
+    fronts: match.threat_ids.map((id) => {
+      const threat = loaded.threats.get(id);
+      if (!threat) throw new Error(`Unknown threat ${id}`);
+      return { ...threat, modifier: null };
+    }),
+    values: match.boss_values,
+    teams,
+    turns,
+  };
+}
+
+/** Stores a turn computed by the engine; answers with the match as `side` sees it. */
+function recordBossTurn(
+  matchId: string,
+  state: BossState,
+  played: { turn: BossTurnRecord; finished: boolean; result: MatchResult | null },
+  side: Side,
+) {
+  const playPayload = (playSide: Side) => {
+    const play = played.turn.plays[playSide];
+    const character = state.teams[playSide].find((c) => c.id === play.characterId)!;
+    return {
+      card_instance_id: character.id === character.definitionId ? null : character.id,
+      definition_id: character.definitionId,
+      front_slot: play.front + 1,
+      base: play.base,
+      bonus: play.bonus,
+      score: play.total,
+      highest: play.highest,
+      auto_played: play.autoPlayed,
+      points: play.points,
+      required: play.required,
+    };
+  };
+  return admin.rpc("match_record_boss_turn_state", {
+    p_match_id: matchId,
+    p_turn: played.turn.turn,
+    p_play_a: playPayload("a"),
+    p_play_b: playPayload("b"),
+    p_result: played.finished ? played.result : null,
+    p_side: side,
+  });
+}
+
+/** A front sent by the client: 0-based, or null when the timer expired. */
+function frontOf(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "number" || !Number.isInteger(value)) throw new GameError("invalid_front");
+  return value;
 }
 
 /** Stores a round computed by the engine; answers with the match as `side` sees it. */
@@ -387,7 +515,7 @@ async function playBotMatchRound(userId: string, body: Record<string, unknown>) 
 
   const { loaded, match, state, deadline } = await loadMatch(userId, matchId);
   const difficulty = match.bot_difficulty;
-  if (!difficulty) throw new GameError("match_not_found");
+  if (!difficulty || !state) throw new GameError("match_not_found");
   if (body.round !== match.current_round) throw new GameError("round_already_resolved");
 
   const expired = Date.now() > deadline + loaded.graceSeconds * 1000;
@@ -404,6 +532,60 @@ async function playBotMatchRound(userId: string, body: Record<string, unknown>) 
   let saved = await record(expired ? null : (choice as string));
   // Clocks can disagree by a moment: if the database says the time is up,
   // the round is played for the player, as the rules require.
+  if (saved.error?.message === "round_expired") saved = await record(null);
+  return check(saved);
+}
+
+// ---------------------------------------------------------------------------
+// Grande Minaccia against a bot (SPEC §5.12)
+// ---------------------------------------------------------------------------
+
+/** The database draws the boss; the engine draws the points table and the bot's team. */
+async function startBossBotMatch(userId: string, body: Record<string, unknown>) {
+  const difficulty = body.difficulty as BotDifficulty;
+  if (!DIFFICULTIES.includes(difficulty)) throw new GameError("invalid_difficulty");
+  const cards = cardIds(body.card_instance_ids);
+
+  const { rules, boss, catalog } = await load();
+  const matchId = check(
+    await admin.rpc("match_create_boss_bot", {
+      p_user: userId,
+      p_difficulty: difficulty,
+      p_card_instance_ids: cards,
+      p_bot_definition_ids: buildBotTeam(difficulty, catalog.characters, rules.teamSize, rng).map((c) => c.definitionId),
+      p_boss_values: drawBossValues(rng, boss),
+    }),
+  ) as string;
+  return stateFor(matchId, "a");
+}
+
+async function playBossBotTurnFor(userId: string, body: Record<string, unknown>) {
+  const matchId = body.match_id;
+  const choice = body.card_instance_id ?? null;
+  const front = frontOf(body.front);
+  if (typeof matchId !== "string" || (choice !== null && typeof choice !== "string") || (choice === null) !== (front === null)) {
+    throw new GameError("invalid_request");
+  }
+
+  const { loaded, match, boss, deadline } = await loadMatch(userId, matchId);
+  const difficulty = match.bot_difficulty;
+  if (!difficulty || !boss) throw new GameError("match_not_found");
+  if (body.round !== match.current_round) throw new GameError("round_already_resolved");
+
+  const expired = Date.now() > deadline + loaded.graceSeconds * 1000;
+  if (choice === null && !expired) throw new GameError("round_not_expired");
+
+  const record = (playerChoice: { characterId: string; front: number } | null) =>
+    recordBossTurn(
+      matchId,
+      boss,
+      playBossBotTurn({ state: boss, catalog: loaded.catalog, difficulty, playerSide: "a", playerChoice, rng }),
+      "a",
+    );
+
+  let saved = await record(expired ? null : { characterId: choice as string, front: front as number });
+  // Clocks can disagree by a moment: if the database says the time is up, the
+  // turn is played for the player, as the rules require.
   if (saved.error?.message === "round_expired") saved = await record(null);
   return check(saved);
 }
@@ -426,12 +608,14 @@ async function joinLobby(userId: string, body: Record<string, unknown>) {
   if (typeof body.code !== "string") throw new GameError("invalid_request");
   const cards = cardIds(body.card_instance_ids);
   const loaded = await load();
+  // The lobby says the format: both plans are sent, the database uses the right one.
   const matchId = check(
     await admin.rpc("match_join_lobby", {
       p_guest: userId,
       p_code: body.code,
       p_team: cards,
       p_threat_ids: planThreats(loaded),
+      p_boss_values: drawBossValues(rng, loaded.boss),
     }),
   ) as string;
   return stateFor(matchId, "b");
@@ -452,6 +636,9 @@ async function joinQueue(userId: string, body: Record<string, unknown>) {
       p_bot_difficulty: difficulty,
       p_bot_definition_ids: plan.botTeam.map((c) => c.definitionId),
     };
+  } else if (body.format === "boss") {
+    // A Grande Minaccia between players: the database draws the boss when it pairs them.
+    args = { p_threat_ids: planThreats(loaded), p_format: "boss", p_boss_values: drawBossValues(rng, loaded.boss) };
   } else {
     args = { p_threat_ids: planThreats(loaded) };
   }
@@ -465,18 +652,26 @@ async function joinQueue(userId: string, body: Record<string, unknown>) {
  * up. Safe to call from both clients at once: the database accepts one result.
  */
 async function resolvePvpRound(userId: string, matchId: string) {
-  const { loaded, match, side, state, pending, deadline } = await loadMatch(userId, matchId);
+  const { loaded, match, side, state, boss, pending, deadline } = await loadMatch(userId, matchId);
   if (match.bot_difficulty) throw new GameError("match_not_found");
 
-  const choices = {
-    a: pending.find((p) => p.side === "a")?.card_instance_id ?? null,
-    b: pending.find((p) => p.side === "b")?.card_instance_id ?? null,
-  };
+  const pendingOf = (pendingSide: Side) => pending.find((p) => p.side === pendingSide) ?? null;
   const expired = Date.now() > deadline + loaded.graceSeconds * 1000;
-  if ((choices.a === null || choices.b === null) && !expired) return stateFor(matchId, side);
+  if ((pendingOf("a") === null || pendingOf("b") === null) && !expired) return stateFor(matchId, side);
 
-  const played = playPvpRound({ state, choices, families: loaded.catalog.families, rng });
-  const saved = await recordRound(matchId, state, played, side);
+  let saved;
+  if (boss) {
+    const choiceOf = (choiceSide: Side) => {
+      const p = pendingOf(choiceSide);
+      return p && p.front_slot !== null ? { characterId: p.card_instance_id, front: p.front_slot - 1 } : null;
+    };
+    const played = playBossPvpTurn({ state: boss, choices: { a: choiceOf("a"), b: choiceOf("b") }, families: loaded.catalog.families, rng });
+    saved = await recordBossTurn(matchId, boss, played, side);
+  } else {
+    const choices = { a: pendingOf("a")?.card_instance_id ?? null, b: pendingOf("b")?.card_instance_id ?? null };
+    const played = playPvpRound({ state: state!, choices, families: loaded.catalog.families, rng });
+    saved = await recordRound(matchId, state!, played, side);
+  }
   if (!saved.error) return saved.data;
   // Someone else resolved it first, or our clock ran slightly ahead: fine.
   if (!["round_already_resolved", "match_not_active", "round_not_expired"].includes(saved.error.message)) {
@@ -489,12 +684,15 @@ async function submitChoice(userId: string, body: Record<string, unknown>) {
   if (typeof body.match_id !== "string" || typeof body.card_instance_id !== "string" || typeof body.round !== "number") {
     throw new GameError("invalid_request");
   }
+  // Grande Minaccia: the choice also names a front (0-based here, 1-based in the database).
+  const front = frontOf(body.front);
   const status = check(
     await admin.rpc("match_submit_play", {
       p_user: userId,
       p_match_id: body.match_id,
       p_round: body.round,
       p_card_instance_id: body.card_instance_id,
+      ...(front === null ? {} : { p_front_slot: front + 1 }),
     }),
   );
   if (status === "ready") return resolvePvpRound(userId, body.match_id);
@@ -603,6 +801,10 @@ Deno.serve(async (req) => {
         return json(await startBotMatch(userId, body));
       case "play":
         return json(await playBotMatchRound(userId, body));
+      case "boss_start":
+        return json(await startBossBotMatch(userId, body));
+      case "boss_play":
+        return json(await playBossBotTurnFor(userId, body));
       case "story_start":
         return json(await startStoryMission(userId, body));
       case "join_lobby":
