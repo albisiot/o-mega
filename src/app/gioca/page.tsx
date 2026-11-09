@@ -21,16 +21,15 @@ import { chapterUnlocked, fetchStory, seenStory, type StoryChapter } from "@/lib
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const BOTS = [
-  { difficulty: "easy", detail: "Sceglie quasi a caso. Ideale per imparare." },
-  { difficulty: "medium", detail: "Gioca sempre il personaggio migliore per la Minaccia del momento." },
-  { difficulty: "hard", detail: "Pianifica: tiene da parte specialisti e generalisti per i round giusti." },
-  { difficulty: "super_pro", detail: "Simula mille partite possibili prima di ogni mossa." },
+  { difficulty: "easy", detail: "Sceglie quasi a caso. Ideale per imparare.", short: "Ideale per imparare" },
+  { difficulty: "medium", detail: "Gioca sempre il personaggio migliore per la Minaccia del momento.", short: "Il migliore del round" },
+  { difficulty: "hard", detail: "Pianifica: tiene da parte specialisti e generalisti per i round giusti.", short: "Pianifica i round" },
+  { difficulty: "super_pro", detail: "Simula mille partite possibili prima di ogni mossa.", short: "Simula mille partite" },
 ] as const;
 
 const MODES = [
   { key: "story", label: "Storia", detail: "Missioni a Nuova Megara, con carte in premio", color: "rays-gold" },
-  { key: "bot", label: "Contro bot", detail: "Allenati senza rischiare nulla", color: "bg-comic-cyan" },
-  { key: "friendly", label: "Amichevole online", detail: "Sfida un giocatore o un amico", color: "bg-comic-yellow" },
+  { key: "friendly", label: "Amichevole", detail: "Contro un bot, un giocatore o un amico", color: "bg-comic-yellow" },
   { key: "boss", label: "Grande Minaccia", detail: "Un Boss, cinque fronti: contro un bot o un giocatore", color: "bg-comic-orange" },
   { key: "conquest", label: "Conquista", detail: "Chi vince prende una carta", color: "bg-comic-magenta" },
   { key: "emergency", label: "Emergenza", detail: "La sfida del giorno, da solo", color: "bg-foreground" },
@@ -130,23 +129,6 @@ function StorySection({ disabled }: { disabled: boolean }) {
   );
 }
 
-function BotSection({ disabled }: { disabled: boolean }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium text-muted">Per allenarti: nessuna carta in gioco e nessuna moneta.</p>
-      {BOTS.map((bot) => (
-        <OptionRow
-          key={bot.difficulty}
-          href={`/squadra/?difficulty=${bot.difficulty}`}
-          title={DIFFICULTY_LABELS[bot.difficulty]}
-          detail={bot.detail}
-          disabled={disabled}
-        />
-      ))}
-    </div>
-  );
-}
-
 /** Grande Minaccia (SPEC §5.12): against a bot, or friendly between players. */
 function BossSection({ disabled }: { disabled: boolean }) {
   return (
@@ -168,7 +150,7 @@ function BossSection({ disabled }: { disabled: boolean }) {
       <OptionRow
         href="/squadra/?mode=lobby&format=boss"
         title="Crea un codice"
-        detail="Mandalo a un amico: lo usa in Amichevole online, con Entra."
+        detail="Mandalo a un amico: lo usa in Amichevole, con Entra."
       />
     </div>
   );
@@ -235,7 +217,12 @@ function EmergencySection() {
   );
 }
 
-/** Friendly matches against other players: random opponent or friend code. */
+/** A small heading inside an open mode. */
+function GroupTitle({ children }: { children: string }) {
+  return <h3 className="pt-1 font-display text-lg uppercase leading-5 text-comic-yellow">{children}</h3>;
+}
+
+/** Friendly matches, nothing at stake: against a bot (training), a random player or a friend with a code. */
 function FriendlySection({ disabled }: { disabled: boolean }) {
   const router = useRouter();
   const [code, setCode] = useState("");
@@ -243,9 +230,25 @@ function FriendlySection({ disabled }: { disabled: boolean }) {
 
   return (
     <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
-      <p className="text-sm font-medium text-muted">
-        Solo per divertimento: nessuna carta in gioco e nessuna moneta. Con un codice sfidi un amico.
-      </p>
+      <p className="text-sm font-medium text-muted">Solo per divertimento o per allenarti: nessuna carta in gioco e nessuna moneta.</p>
+
+      <GroupTitle>Contro bot</GroupTitle>
+      <div className="grid grid-cols-2 gap-2">
+        {BOTS.map((bot) => (
+          <Link
+            key={bot.difficulty}
+            href={disabled ? "#" : `/squadra/?difficulty=${bot.difficulty}`}
+            aria-disabled={disabled}
+            aria-label={`Contro il bot ${DIFFICULTY_LABELS[bot.difficulty]}: ${bot.detail}`}
+            className="flex min-h-14 flex-col justify-center bg-comic-cyan px-3 py-1.5 text-black"
+          >
+            <span className="font-display text-xl uppercase leading-6">{DIFFICULTY_LABELS[bot.difficulty]}</span>
+            <span className="text-xs font-bold leading-4">{bot.short}</span>
+          </Link>
+        ))}
+      </div>
+
+      <GroupTitle>Online</GroupTitle>
       <Link href="/squadra/?mode=queue" className="flex min-h-14 items-center justify-between gap-3 bg-comic-yellow px-4 py-2 text-black">
         <div>
           <p className="font-display text-xl uppercase leading-6">Cerca un avversario</p>
@@ -408,7 +411,6 @@ export default function PlayPage() {
           <section className="flex flex-col gap-2">
             <ModeTile mode={opened} open onToggle={() => setOpenMode(null)} />
             {opened.key === "story" && <StorySection disabled={blocked} />}
-            {opened.key === "bot" && <BotSection disabled={blocked} />}
             {opened.key === "friendly" && <FriendlySection disabled={blocked} />}
             {opened.key === "boss" && <BossSection disabled={blocked} />}
             {opened.key === "conquest" && <ConquestSection status={conquest} disabled={blocked} />}
