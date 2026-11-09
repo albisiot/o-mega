@@ -544,21 +544,37 @@ async function playBotMatchRound(userId: string, body: Record<string, unknown>) 
 // Grande Minaccia against a bot (SPEC §5.12)
 // ---------------------------------------------------------------------------
 
+/**
+ * Calls a database function that may create a Grande Minaccia with a points table
+ * drawn here. Admins can change the table's numbers (/gestione-minaccia): while the
+ * cached ones are out of date the database refuses the table, so the configuration
+ * is read again and the call retried once with a new table.
+ */
+async function withBossTable<T>(call: (loaded: Loaded) => PromiseLike<{ data: T | null; error: { message: string } | null }>) {
+  let result = await call(await load());
+  if (result.error?.message === "invalid_boss_values") {
+    cache = null;
+    result = await call(await load());
+  }
+  return result;
+}
+
 /** The database draws the boss; the engine draws the points table and the bot's team. */
 async function startBossBotMatch(userId: string, body: Record<string, unknown>) {
   const difficulty = body.difficulty as BotDifficulty;
   if (!DIFFICULTIES.includes(difficulty)) throw new GameError("invalid_difficulty");
   const cards = cardIds(body.card_instance_ids);
 
-  const { rules, boss, catalog } = await load();
   const matchId = check(
-    await admin.rpc("match_create_boss_bot", {
-      p_user: userId,
-      p_difficulty: difficulty,
-      p_card_instance_ids: cards,
-      p_bot_definition_ids: buildBotTeam(difficulty, catalog.characters, rules.teamSize, rng).map((c) => c.definitionId),
-      p_boss_values: drawBossValues(rng, boss),
-    }),
+    await withBossTable(({ rules, boss, catalog }) =>
+      admin.rpc("match_create_boss_bot", {
+        p_user: userId,
+        p_difficulty: difficulty,
+        p_card_instance_ids: cards,
+        p_bot_definition_ids: buildBotTeam(difficulty, catalog.characters, rules.teamSize, rng).map((c) => c.definitionId),
+        p_boss_values: drawBossValues(rng, boss),
+      }),
+    ),
   ) as string;
   return stateFor(matchId, "a");
 }
@@ -611,16 +627,17 @@ async function startStoryMission(userId: string, body: Record<string, unknown>) 
 async function joinLobby(userId: string, body: Record<string, unknown>) {
   if (typeof body.code !== "string") throw new GameError("invalid_request");
   const cards = cardIds(body.card_instance_ids);
-  const loaded = await load();
   // The lobby says the format: both plans are sent, the database uses the right one.
   const matchId = check(
-    await admin.rpc("match_join_lobby", {
-      p_guest: userId,
-      p_code: body.code,
-      p_team: cards,
-      p_threat_ids: planThreats(loaded),
-      p_boss_values: drawBossValues(rng, loaded.boss),
-    }),
+    await withBossTable((loaded) =>
+      admin.rpc("match_join_lobby", {
+        p_guest: userId,
+        p_code: body.code,
+        p_team: cards,
+        p_threat_ids: planThreats(loaded),
+        p_boss_values: drawBossValues(rng, loaded.boss),
+      }),
+    ),
   ) as string;
   return stateFor(matchId, "b");
 }
@@ -628,25 +645,27 @@ async function joinLobby(userId: string, body: Record<string, unknown>) {
 async function joinQueue(userId: string, body: Record<string, unknown>) {
   const cards = cardIds(body.card_instance_ids);
   const mode = body.mode === "conquest" ? "conquest" : "friendly";
-  const loaded = await load();
   // Conquest: the bot is described on every call, and the database starts it
   // only once the wait is over, so a refresh is a single request.
-  let args: Record<string, unknown>;
-  if (mode === "conquest") {
-    const difficulty = pickOne(rng, DIFFICULTIES);
-    const plan = planBotMatch({ rules: loaded.rules, catalog: loaded.catalog, difficulty, teamDifficulty: "medium", rng });
-    args = {
-      p_threat_ids: plan.threats.map((t) => t.id),
-      p_bot_difficulty: difficulty,
-      p_bot_definition_ids: plan.botTeam.map((c) => c.definitionId),
-    };
-  } else if (body.format === "boss") {
+  const argsFor = (loaded: Loaded): Record<string, unknown> => {
+    if (mode === "conquest") {
+      const difficulty = pickOne(rng, DIFFICULTIES);
+      const plan = planBotMatch({ rules: loaded.rules, catalog: loaded.catalog, difficulty, teamDifficulty: "medium", rng });
+      return {
+        p_threat_ids: plan.threats.map((t) => t.id),
+        p_bot_difficulty: difficulty,
+        p_bot_definition_ids: plan.botTeam.map((c) => c.definitionId),
+      };
+    }
     // A Grande Minaccia between players: the database draws the boss when it pairs them.
-    args = { p_threat_ids: planThreats(loaded), p_format: "boss", p_boss_values: drawBossValues(rng, loaded.boss) };
-  } else {
-    args = { p_threat_ids: planThreats(loaded) };
-  }
-  const { data, error } = await admin.rpc("match_queue_join", { p_user: userId, p_mode: mode, p_team: cards, ...args });
+    if (body.format === "boss") {
+      return { p_threat_ids: planThreats(loaded), p_format: "boss", p_boss_values: drawBossValues(rng, loaded.boss) };
+    }
+    return { p_threat_ids: planThreats(loaded) };
+  };
+  const { data, error } = await withBossTable((loaded) =>
+    admin.rpc("match_queue_join", { p_user: userId, p_mode: mode, p_team: cards, ...argsFor(loaded) }),
+  );
   if (error) throw new Error(error.message);
   return { matched: Boolean(data), match_id: data ?? null };
 }

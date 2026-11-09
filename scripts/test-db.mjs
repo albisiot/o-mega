@@ -39,11 +39,17 @@ const flat = new Map();
 
 const config = supabase(["db", "query", "--linked", '"select key, value from public.game_config"']);
 const rows = config.status === 0 ? JSON.parse(config.stdout).rows : null;
+// Keys admins change from the app (the Grande Minaccia table, /gestione-minaccia):
+// balance.ts holds their defaults, so a different live value is reported, not a failure.
+const ADMIN_KEYS = new Set(["boss.hot_fronts", "boss.hot_value", "boss.base_value", "boss.growth", "boss.extra_fronts", "boss.extra_growth"]);
+const describe = (row) =>
+  `${row.key}: database ${JSON.stringify(row.value)}, balance.ts ${flat.has(row.key) ? JSON.stringify(flat.get(row.key)) : "missing"}`;
+const differs = (row) => !flat.has(row.key) || flat.get(row.key) !== row.value;
 const mismatches = rows
-  ? rows.filter((row) => !flat.has(row.key) || flat.get(row.key) !== row.value).map((row) =>
-      `${row.key}: database ${JSON.stringify(row.value)}, balance.ts ${flat.has(row.key) ? JSON.stringify(flat.get(row.key)) : "missing"}`,
-    )
+  ? rows.filter((row) => differs(row) && !ADMIN_KEYS.has(row.key)).map(describe)
   : [`could not read game_config: ${config.stderr}`];
+const adminChanged = rows ? rows.filter((row) => differs(row) && ADMIN_KEYS.has(row.key)).map(describe) : [];
+if (adminChanged.length > 0) console.log(`info  set by an admin, defaults in balance.ts:\n  ${adminChanged.join("\n  ")}`);
 if (mismatches.length === 0) {
   console.log(`ok    game_config matches balance.ts (${rows.length} keys)`);
 } else {

@@ -37,6 +37,9 @@ export function AdminLink() {
       <Link href="/gestione-eventi" className={LINK}>
         Gestione eventi
       </Link>
+      <Link href="/gestione-minaccia" className={LINK}>
+        Grande Minaccia
+      </Link>
     </nav>
   );
 }

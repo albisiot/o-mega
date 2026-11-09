@@ -815,9 +815,8 @@ function BossTable({ view }: { view: BossView }) {
         <span className="italic">{view.boss.flavor}</span>
       </p>
       <p className="text-sm font-medium text-muted">
-        Ogni turno tutti i fronti salgono di {balance.boss.growth}, e {balance.boss.extraFronts} a caso di{" "}
-        {balance.boss.growth + balance.boss.extraGrowth}. A ogni turno ogni fronte occupato paga il suo valore: a chi è da
-        solo, o a chi ha il punteggio più alto.
+        Ogni turno i fronti valgono di più, alcuni più degli altri. A ogni turno ogni fronte occupato paga il suo valore: a
+        chi è da solo, o a chi ha il punteggio più alto.
       </p>
       <table className="w-full table-fixed border-collapse text-center text-sm">
         <thead>

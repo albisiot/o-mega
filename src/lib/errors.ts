@@ -22,6 +22,8 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   card_not_owned: "Una delle carte scelte non è più tua.",
   invalid_difficulty: "Difficoltà non valida.",
   invalid_front: "Scegli uno dei cinque fronti.",
+  invalid_boss_table: "Numeri non validi per la tabella della Grande Minaccia.",
+  invalid_boss_values: "La tabella della Grande Minaccia è appena cambiata: riprova.",
   boss_not_found: "Nessuna Grande Minaccia disponibile in questo momento.",
   too_many_formations: "Hai raggiunto il numero massimo di formazioni.",
   invalid_formation_name: "Il nome della formazione deve avere da 1 a 30 caratteri.",

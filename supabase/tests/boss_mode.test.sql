@@ -6,6 +6,13 @@
 
 begin;
 
+-- The tables below are drawn with the default numbers (balance.ts): admins may have
+-- changed them on the live database (/gestione-minaccia).
+update public.game_config c set value = to_jsonb(d.value)
+from (values ('boss.hot_fronts', 2), ('boss.hot_value', 2), ('boss.base_value', 1),
+             ('boss.growth', 1), ('boss.extra_fronts', 2), ('boss.extra_growth', 1)) as d(key, value)
+where c.key = d.key;
+
 insert into auth.users (id, aud, role, email, raw_user_meta_data, created_at, updated_at) values
   ('00000000-0000-4000-8000-0000000000e1', 'authenticated', 'authenticated', 'boss-a@example.test',
    '{"full_name": "Boss A"}', now(), now()),

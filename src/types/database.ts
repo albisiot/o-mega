@@ -1997,7 +1997,19 @@ export type Database = {
       admin_events_payload: { Args: never; Returns: Json }
       admin_list_bonus_codes: { Args: never; Returns: Json }
       admin_list_events: { Args: never; Returns: Json }
+      admin_get_boss_table: { Args: never; Returns: Json }
       admin_list_pack_cards: { Args: never; Returns: Json }
+      admin_save_boss_table: {
+        Args: {
+          p_base_value: number
+          p_extra_fronts: number
+          p_extra_growth: number
+          p_growth: number
+          p_hot_fronts: number
+          p_hot_value: number
+        }
+        Returns: Json
+      }
       admin_pack_cards_payload: { Args: never; Returns: Json }
       admin_save_event: {
         Args: {
