@@ -19,7 +19,10 @@ export type PackCard = {
 export type PackOpening = {
   id: string;
   /** "bonus" and "event": the cards chosen for a bonus code or an event target, shown like a pack. */
-  pack_type: "daily" | "standard" | "bonus" | "event";
+  pack_type: "daily" | "standard" | "bonus" | "event" | "special";
+  /** Name and colour of a special pack; null for the others. */
+  pack_name: string | null;
+  pack_color: string | null;
   opened_at: string;
   cards: PackCard[];
 };
@@ -42,6 +45,42 @@ export type PackOdds = {
   /** Per-card probability of each rarity, as used by the server draw. */
   odds: { code: string; name: string; rank: number; color: string; probability: number }[];
 };
+
+/** A special pack on sale, with the odds the server draw uses (SPEC §7.1). */
+export type SpecialPack = {
+  id: string;
+  /** Sent back on purchase: a pack changed since the shop loaded is refused. */
+  version: number;
+  name: string;
+  description: string;
+  color: string;
+  price: number;
+  cards_per_pack: number;
+  ends_at: string | null;
+  odds_mode: "rarity" | "card";
+  guaranteed_min_rarity_rank: number | null;
+  guaranteed_rarity_name: string | null;
+  variant_chance_percent: number;
+  characters_with_variants: number;
+  /** Per-card probability of each rarity in this pack. */
+  odds: { code: string; name: string; rank: number; color: string; probability: number }[];
+  /** Every card the pack can give, rarest first, with its own per-card probability. */
+  cards: { code: string; name: string; rarity_code: string; art_url: string | null; probability: number }[];
+};
+
+export async function fetchSpecialPacks(): Promise<SpecialPack[]> {
+  const { data, error } = await getSupabase().rpc("get_special_packs");
+  if (error) throw error;
+  return keepSeen("specialPacks", data as unknown as SpecialPack[]);
+}
+
+export const seenSpecialPacks = () => lastSeen<SpecialPack[]>("specialPacks");
+
+export async function buySpecialPack(pack: Pick<SpecialPack, "id" | "version">): Promise<PackOpening> {
+  const { data, error } = await getSupabase().rpc("buy_special_pack", { p_pack_id: pack.id, p_version: pack.version });
+  if (error) throw error;
+  return remember(data as unknown as PackOpening);
+}
 
 export async function fetchPackOdds(): Promise<PackOdds> {
   const { data, error } = await getSupabase().rpc("get_pack_odds");

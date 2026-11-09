@@ -34,6 +34,9 @@ export function AdminLink() {
       <Link href="/gestione-pacchetti" className={LINK}>
         Carte nei pacchetti
       </Link>
+      <Link href="/gestione-pacchetti-speciali" className={LINK}>
+        Pacchetti speciali
+      </Link>
       <Link href="/gestione-eventi" className={LINK}>
         Gestione eventi
       </Link>

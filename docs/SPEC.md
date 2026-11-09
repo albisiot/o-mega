@@ -442,6 +442,23 @@ Dopo **60 secondi** in coda Conquista senza avversari, il giocatore sfida un bot
 - **Limite:** il server rifiuta una modifica che lascerebbe i pacchetti senza nessuna carta di rango Gamma o superiore (`pack_pool_empty`), perché nessun pacchetto si potrebbe aprire.
 - **Gestione dall'app:** gli amministratori (`admin_users`) trovano in fondo all'informativa sulla privacy, accanto a *Gestione codici*, il link *Carte nei pacchetti* (`/gestione-pacchetti`): elenco di tutte le carte per rarità con miniatura, nome e codice, ricerca, spunta "Nei pacchetti" e i comandi "Seleziona tutte" / "Deseleziona tutte" per rarità, con il conteggio delle carte attive. Il flag cambia solo con la funzione `admin_set_cards_in_packs`, che verifica l'amministratore.
 
+### 7.1 Pacchetti speciali
+
+Oltre al pacchetto standard, il Negozio vende i **pacchetti speciali** creati dagli amministratori: ognuno ha nome, prezzo in monete, numero di carte, carte che possono uscire e probabilità propri. Il pacchetto del giorno, il pacchetto standard e i pacchetti dei codici bonus e degli eventi restano quelli di sempre (`open_pack`) e non cambiano.
+
+- **Cosa si sceglie:** nome (3–40 caratteri) e descrizione facoltativa, colore (una delle 6 palette del Negozio), prezzo (1–100000 monete), carte per pacchetto (1–10, `special_packs.max_cards_per_pack`), date facoltative di inizio e fine in ora italiana, e le carte. Le carte sono scelte una per una tra quelle attive e non da sblocco di livello, anche se sono fuori dal pacchetto standard (flag `in_packs`): così un personaggio nuovo può uscire solo da un pacchetto speciale.
+- **Probabilità**, in due modi:
+  - **per rarità:** una percentuale per ogni rarità delle carte scelte; le carte di una rarità se la dividono in parti uguali;
+  - **per carta:** una percentuale per ogni carta.
+  Le percentuali hanno al massimo due decimali e devono fare **esattamente 100%**: la pagina mostra il totale mentre si scrive, il tasto "Parti uguali" divide il 100% senza resti, e per ogni valore mostra la probabilità reale (per rarità: quella di ogni carta; per carta: il totale di ogni rarità). Il server ricontrolla tutto.
+- **Carta garantita** facoltativa: "almeno una carta di rarità X o superiore", solo con almeno 2 carte per pacchetto e almeno una carta scelta di quella rarità o più rara. Funziona come nel pacchetto standard: se nessuna carta prima dell'ultima l'ha raggiunta, l'ultima si estrae solo tra le carte di rarità X o superiore, con le stesse proporzioni.
+- **Varianti:** probabilità per pacchetto da 0 a 100% (il modulo parte dal 5% del pacchetto standard; 0 = niente varianti). Si tira dopo aver estratto la carta, come in §4.6.
+- **Estrazione:** sul server con `random()`, carta per carta dalle probabilità di `special_pack_card_odds`; il risultato si salva in `pack_openings` (`pack_type = 'special'`, `special_pack_id`) prima di essere mostrato. Una carta disattivata o diventata da sblocco di livello esce dal pacchetto e la sua quota passa alle altre in proporzione; le probabilità del Negozio vengono dalla stessa funzione, quindi sono sempre quelle vere.
+- **Acquisto** (`buy_special_pack`): nella stessa transazione controlla che il pacchetto sia attivo e nelle sue date e che le monete bastino, crea le carte (`card_transfers`, motivo `pack`) e scala le monete (`coin_ledger`, motivo `pack_purchase`). Ogni modifica di un pacchetto ne alza la **versione**: l'acquisto indica la versione che il Negozio mostrava e, se nel frattempo il pacchetto è cambiato, viene rifiutato (`special_pack_changed`) senza costare nulla, così nessuno paga un prezzo o riceve probabilità diversi da quelli che ha visto.
+- **Nel Negozio:** in alto si scorrono i pacchetti in vendita, prima lo standard e poi gli speciali, ciascuno con il suo colore, nome, prezzo e scadenza ("In vendita fino a…"). La scheda *Probabilità* mostra sempre quelle del pacchetto in vista: per rarità, la regola della garanzia, le varianti e l'elenco di tutti i personaggi che possono uscire con la probabilità di ciascuno. L'apertura mostra il nome e il colore del pacchetto.
+- **Gestione dall'app:** in fondo all'informativa sulla privacy, accanto a *Carte nei pacchetti*, gli amministratori trovano *Pacchetti speciali* (`/gestione-pacchetti-speciali`). La pagina sta in uno schermo di telefono senza scorrere: scheda *Pacchetti* (elenco con stato, prezzo, carte, aperture, comandi Modifica, Duplica, Disattiva/Riattiva, Elimina) e scheda *Nuovo* in tre passi, *Dati*, *Carte* e *Probabilità*, con il totale e il tasto di salvataggio sempre in basso. Un pacchetto già aperto da qualcuno non si elimina, si disattiva. Ogni funzione (`admin_list_special_packs`, `admin_save_special_pack`, `admin_set_special_pack_active`, `admin_delete_special_pack`) verifica l'amministratore sul server.
+- **Dati:** `special_packs` (pacchetto, versione, date), `special_pack_cards` (carte, con la percentuale nel modo per carta), `special_pack_rarities` (percentuali nel modo per rarità). Nessun client legge le tabelle: il Negozio usa `get_special_packs`.
+
 ## 8. Economia
 
 *Valori ancora da decidere: i numeri sotto sono provvisori, servono solo per far funzionare l'MVP e vanno tenuti in configurazione.*
@@ -547,7 +564,9 @@ Tra un inizio e una fine decisi da un amministratore, le partite danno **punti e
 | `ability_definitions` | code, name, family, icon, sort_order (le 12 abilità, rinominabili) |
 | `card_instances` | id, definition_id, owner_id, acquired_at, acquired_via (pack/conquest/starter/trade), is_starter, locked_until |
 | `card_transfers` | id, instance_id, from_user, to_user, reason, match_id, created_at |
-| `pack_openings` | id, user_id, pack_type, is_daily, opened_at, card_instance_ids |
+| `pack_openings` | id, user_id, pack_type (daily/standard/bonus/event/special), special_pack_id, is_daily, opened_at, card_instance_ids |
+| `special_packs` | id, name, description, color, price, cards_per_pack, guaranteed_min_rarity_rank, variant_chance_percent, odds_mode (rarity/card), starts_at, ends_at, is_active, version (§7.1) |
+| `special_pack_cards` / `special_pack_rarities` | carte e percentuali di un pacchetto speciale |
 | `daily_claims` | user_id, day (data Europe/Rome), claimed |
 | `coin_ledger` | id, user_id, amount (+/−), reason, ref_id, created_at |
 | `threat_definitions` | id, name, level (1-6), required_abilities (array di codici, lunghezza = level), modifier_code, modifier_params, art_url, flavor |
@@ -558,7 +577,7 @@ Tra un inizio e una fine decisi da un amministratore, le partite danno **punti e
 | `match_rounds` | match_id, round, deadline_at, winner_id, resolved_at |
 | `game_config` | chiave/valore dei parametri di bilanciamento |
 
-Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy_pack`, `convert_duplicate`, `create_match`, `join_match`, `submit_play`, `resolve_round`, `claim_conquest_card`, `forfeit_match`.
+Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy_pack`, `buy_special_pack`, `convert_duplicate`, `create_match`, `join_match`, `submit_play`, `resolve_round`, `claim_conquest_card`, `forfeit_match`.
 
 ## 11. Schermate principali
 
@@ -571,7 +590,7 @@ Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy
 7. **Partita:** sequenza dei livelli delle Minacce, Minaccia svelata, la propria squadra, i personaggi avversari già giocati, timer, scelta segreta, rivelazione, punteggio.
 8. **Fine partita:** esito, monete, schermata di conquista (scelta della carta).
 9. **Profilo:** statistiche e storico conquiste e perdite.
-10. **Negozio:** pacchetti acquistabili con monete, probabilità visibili.
+10. **Negozio:** pacchetti acquistabili con monete (standard e speciali, §7.1), probabilità visibili per ogni pacchetto.
 11. **Tutorial:** spiega regole ed economia con un round di prova non valido ai fini del gioco. Parte una volta per dispositivo dopo l'introduzione al mondo, si può saltare e si rivede da Gioca e Profilo.
 
 ## 12. Milestone di sviluppo

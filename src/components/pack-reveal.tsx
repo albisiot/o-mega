@@ -7,6 +7,7 @@ import { PackArt } from "@/components/comic-parts";
 import { balance } from "@/config/balance";
 import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
+import { packColor } from "@/lib/pack-colors";
 import { packRevealHref, type PackCard, type PackOpening } from "@/lib/packs";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
@@ -28,6 +29,7 @@ const PACK_TITLES: Record<PackOpening["pack_type"], string> = {
   standard: "Pacchetto standard",
   bonus: "Carte bonus",
   event: "Premio evento",
+  special: "Pacchetto speciale",
 };
 
 /** Sealed pack → cards revealed one at a time → summary, then the next pack if any. */
@@ -91,11 +93,13 @@ export function PackReveal({ opening, nextIds = [] }: { opening: PackOpening; ne
   }
 
   if (stage.kind === "sealed" || stage.kind === "tearing") {
+    // A special pack looks as it does in the shop, with its own name.
+    const colors = opening.pack_type === "special" ? packColor(opening.pack_color) : null;
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-6 text-center">
         <div aria-hidden className="rays-dark fixed inset-0 -z-10" />
         <h1 className="-skew-x-8 font-display text-[44px] uppercase leading-[52px] text-comic-yellow [text-shadow:3px_3px_0_var(--comic-magenta)]">
-          {PACK_TITLES[opening.pack_type]}
+          {opening.pack_name ?? PACK_TITLES[opening.pack_type]}
         </h1>
         <button
           type="button"
@@ -105,8 +109,8 @@ export function PackReveal({ opening, nextIds = [] }: { opening: PackOpening; ne
           aria-label="Apri il pacchetto"
         >
           <PackArt
-            body="#ffd60a"
-            omega="#ff2e6c"
+            body={colors?.body ?? "#ffd60a"}
+            omega={colors?.omega ?? "#ff2e6c"}
             cards={cards.length}
             className="h-[380px] drop-shadow-[8px_8px_0_var(--comic-magenta)]"
           />

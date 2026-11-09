@@ -2,28 +2,37 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { PackArt, TabBar } from "@/components/comic-parts";
 import { balance } from "@/config/balance";
 import { describeServerError } from "@/lib/errors";
+import { formatRomeDateTime } from "@/lib/events";
+import { packColor } from "@/lib/pack-colors";
 import {
   buyPack,
+  buySpecialPack,
   describeBonusReward,
   packRevealHref,
   redeemBonusCode,
   type BonusReward,
   type PackOdds,
+  type PackOpening,
   type PackStatus,
+  type SpecialPack,
 } from "@/lib/packs";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { COIN_REASON_LABELS, type CoinMovement } from "@/lib/wallet";
 
 const percent = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 1 });
+// A single card of a special pack can be rarer than 0,1%.
+const cardPercent = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 2 });
 const dateTime = new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short" });
 
 type ShopViewProps = {
   status: PackStatus;
   odds: PackOdds;
+  /** Special packs on sale, shown after the standard pack (SPEC §7.1). */
+  specials: SpecialPack[];
   history: CoinMovement[];
   onFailed: () => void;
   onRedeemed: () => void;
@@ -38,13 +47,23 @@ const TABS: { key: ShopTab; label: string }[] = [
 ];
 
 /**
- * Balance, standard pack purchase, bonus codes, published odds and coin history. The page fits
- * the screen above the bottom bar and never scrolls (see .home-shell): the purchase stays on
- * top, and the rest shares the room below as tabs, the coin history scrolling inside its own.
+ * Balance, pack purchase, bonus codes, published odds and coin history. The page fits the screen
+ * above the bottom bar and never scrolls (see .home-shell): the purchase stays on top, and the rest
+ * shares the room below as tabs, the coin history scrolling inside its own. With special packs on
+ * sale, the purchase is a row of packs to swipe, and the odds are those of the pack in view.
  */
-export function ShopView({ status, odds, history, onFailed, onRedeemed }: ShopViewProps) {
+export function ShopView({ status, odds, specials, history, onFailed, onRedeemed }: ShopViewProps) {
   const [tab, setTab] = useState<ShopTab>("odds");
+  // 0 is the standard pack, then the special packs in order.
+  const [shown, setShown] = useState(0);
+  const carousel = useRef<HTMLDivElement>(null);
   useLockedScreen(true);
+  const special = shown > 0 ? (specials[shown - 1] ?? null) : null;
+
+  function showPack(index: number) {
+    const element = carousel.current;
+    element?.scrollTo({ left: index * element.clientWidth, behavior: "smooth" });
+  }
 
   return (
     <div className="home-shell">
@@ -57,12 +76,64 @@ export function ShopView({ status, odds, history, onFailed, onRedeemed }: ShopVi
       </header>
 
       <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-3 pt-1">
-        <BuySection price={odds.standard_pack_price} balance={status.coin_balance} odds={odds} onFailed={onFailed} />
+        <div className="relative shrink-0">
+          <div
+            ref={carousel}
+            onScroll={(event) => {
+              const element = event.currentTarget;
+              setShown(Math.round(element.scrollLeft / Math.max(1, element.clientWidth)));
+            }}
+            className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            <BuySection
+              title="Pacchetto standard"
+              detail={`${odds.cards_per_pack} carte, almeno una ${odds.guaranteed_rarity_name} o superiore`}
+              price={odds.standard_pack_price}
+              cards={odds.cards_per_pack}
+              balance={status.coin_balance}
+              colors={STANDARD_COLORS}
+              buy={buyPack}
+              onFailed={onFailed}
+            />
+            {specials.map((pack) => (
+              <BuySection
+                key={pack.id}
+                title={pack.name}
+                detail={pack.description || describeSpecialPack(pack)}
+                until={pack.ends_at}
+                price={pack.price}
+                cards={pack.cards_per_pack}
+                balance={status.coin_balance}
+                colors={packColor(pack.color)}
+                buy={() => buySpecialPack(pack)}
+                onFailed={onFailed}
+              />
+            ))}
+          </div>
+          {specials.length > 0 && (
+            <div className="absolute inset-x-0 bottom-1 flex justify-center gap-0.5" role="group" aria-label="Pacchetti in vendita">
+              {[null, ...specials].map((pack, index) => (
+                <button
+                  key={pack?.id ?? "standard"}
+                  type="button"
+                  onClick={() => showPack(index)}
+                  aria-label={pack?.name ?? "Pacchetto standard"}
+                  aria-current={index === shown}
+                  className="flex h-6 w-6 items-center justify-center"
+                >
+                  <span className={`h-2.5 w-2.5 border-2 border-black ${index === shown ? "bg-black" : "bg-transparent"}`} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <TabBar tabs={TABS} current={tab} onPick={setTab} label="Negozio" />
 
         <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain">
-          {tab === "odds" && (
+          {tab === "odds" && special && <SpecialOdds pack={special} />}
+
+          {tab === "odds" && !special && (
             <>
               <ul className="flex shrink-0 gap-1" aria-label="Probabilità per carta">
                 {odds.odds.map((rarity) => (
@@ -201,15 +272,77 @@ function BonusCodeSection({ onRedeemed }: { onRedeemed: () => void }) {
   );
 }
 
+type BuyColors = { background: string; body: string; omega: string; shadow: string };
+
+const STANDARD_COLORS: BuyColors = { background: "#ffd60a", body: "#ff2e6c", omega: "#ffd60a", shadow: "#ff2e6c" };
+
+/** "5 carte, almeno una Beta o superiore", or "3 carte" with no guarantee. */
+function describeSpecialPack(pack: SpecialPack): string {
+  const cards = `${pack.cards_per_pack} ${pack.cards_per_pack === 1 ? "carta" : "carte"}`;
+  return pack.guaranteed_rarity_name ? `${cards}, almeno una ${pack.guaranteed_rarity_name} o superiore` : cards;
+}
+
+/** The published odds of a special pack: per rarity, then card by card, as the server draws them. */
+function SpecialOdds({ pack }: { pack: SpecialPack }) {
+  const rarityOf = new Map(pack.odds.map((rarity) => [rarity.code, rarity]));
+  const each = pack.cards_per_pack === 1 ? "La carta viene estratta" : `Ognuna delle ${pack.cards_per_pack} carte viene estratta`;
+  return (
+    <>
+      <ul className="flex shrink-0 gap-1" aria-label="Probabilità per carta">
+        {pack.odds.map((rarity) => (
+          <li key={rarity.code} className="flex min-w-0 flex-1 flex-col items-center bg-panel py-1.5">
+            <span className="max-w-full truncate px-0.5 font-display text-sm uppercase" style={{ color: rarity.color }}>
+              {rarity.name}
+            </span>
+            <span className="font-display text-xl">{percent.format(rarity.probability)}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs font-medium text-muted">
+        {each} con queste probabilità, tra i {pack.cards.length} personaggi qui sotto.
+        {pack.guaranteed_rarity_name &&
+          ` Se le prime ${pack.cards_per_pack - 1} non contengono una ${pack.guaranteed_rarity_name} o superiore, l'ultima è garantita di quella rarità o superiore.`}{" "}
+        {pack.variant_chance_percent > 0 && pack.characters_with_variants > 0
+          ? `Varianti: ${pack.characters_with_variants} di questi personaggi hanno anche un disegno più raro; quando ne esce uno, ha il ${pack.variant_chance_percent}% di probabilità di avere quel disegno.`
+          : "In questo pacchetto non escono varianti."}{" "}
+        Le estrazioni avvengono sul server.
+      </p>
+      <ul className="flex flex-col gap-0.5" aria-label="Probabilità di ogni personaggio">
+        {pack.cards.map((card) => {
+          const rarity = rarityOf.get(card.rarity_code);
+          return (
+            <li key={card.code} className="flex items-center justify-between gap-2 bg-panel px-3 py-1.5">
+              <span className="min-w-0 truncate text-sm font-semibold">
+                {card.name} <span style={{ color: rarity?.color }}>· {rarity?.name}</span>
+              </span>
+              <span className="shrink-0 font-display text-lg">{cardPercent.format(card.probability)}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
 function BuySection({
+  title,
+  detail,
+  until = null,
   price,
+  cards,
   balance: coins,
-  odds,
+  colors,
+  buy: purchase,
   onFailed,
 }: {
+  title: string;
+  detail: string;
+  until?: string | null;
   price: number;
+  cards: number;
   balance: number;
-  odds: PackOdds;
+  colors: BuyColors;
+  buy: () => Promise<PackOpening>;
   onFailed: () => void;
 }) {
   const router = useRouter();
@@ -221,7 +354,7 @@ function BuySection({
     setBuying(true);
     setError(null);
     try {
-      const pack = await buyPack();
+      const pack = await purchase();
       router.push(`/pacchetto/?id=${pack.id}`);
     } catch (cause) {
       setError(describeServerError(cause));
@@ -231,20 +364,29 @@ function BuySection({
   }
 
   return (
-    <section className="cut-bottom relative flex shrink-0 flex-col gap-2.5 overflow-hidden bg-comic-yellow px-4 pb-6 pt-3 text-black">
-      <PackArt body="#ff2e6c" omega="#ffd60a" className="absolute -right-2 -top-1 h-28 rotate-[9deg]" />
+    <section
+      className="cut-bottom relative flex w-full shrink-0 snap-center flex-col gap-2.5 overflow-hidden px-4 pb-6 pt-3 text-black"
+      style={{ background: colors.background }}
+      aria-label={title}
+    >
+      <PackArt
+        body={colors.body}
+        omega={colors.omega}
+        cards={cards}
+        className="absolute -right-2 -top-1 h-28 rotate-[9deg]"
+      />
       <div className="relative max-w-[66%]">
-        <p className="font-display text-[26px] uppercase leading-7">Pacchetto standard</p>
-        <p className="text-[13px] font-semibold leading-4">
-          {odds.cards_per_pack} carte, almeno una {odds.guaranteed_rarity_name} o superiore
-        </p>
+        <p className="line-clamp-2 break-words font-display text-[26px] uppercase leading-7">{title}</p>
+        <p className="line-clamp-2 text-[13px] font-semibold leading-4">{detail}</p>
         <p className="font-display text-xl">{price} monete</p>
+        {until && <p className="text-xs font-bold leading-4">In vendita fino a {formatRomeDateTime(until)}</p>}
       </div>
       <button
         type="button"
         onClick={buy}
         disabled={missing > 0 || buying}
-        className="btn relative min-h-13 bg-black font-display text-[22px] uppercase tracking-wide text-comic-yellow shadow-[4px_4px_0_var(--comic-magenta)] disabled:shadow-none disabled:opacity-70"
+        className="btn relative min-h-13 bg-black font-display text-[22px] uppercase tracking-wide disabled:opacity-70"
+        style={{ color: colors.background, boxShadow: missing > 0 || buying ? "none" : `4px 4px 0 ${colors.shadow}` }}
       >
         {buying ? "Acquisto…" : missing > 0 ? `Ti mancano ${missing} monete` : "Acquista e apri"}
       </button>

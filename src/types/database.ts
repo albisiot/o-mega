@@ -1448,6 +1448,7 @@ export type Database = {
           new_card_instance_ids: string[]
           opened_at: string
           pack_type: string
+          special_pack_id: string | null
           user_id: string
         }
         Insert: {
@@ -1457,6 +1458,7 @@ export type Database = {
           new_card_instance_ids?: string[]
           opened_at?: string
           pack_type: string
+          special_pack_id?: string | null
           user_id: string
         }
         Update: {
@@ -1466,9 +1468,17 @@ export type Database = {
           new_card_instance_ids?: string[]
           opened_at?: string
           pack_type?: string
+          special_pack_id?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pack_openings_special_pack_id_fkey"
+            columns: ["special_pack_id"]
+            isOneToOne: false
+            referencedRelation: "special_packs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pack_openings_user_id_fkey"
             columns: ["user_id"]
@@ -1720,6 +1730,151 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "match_rounds"
             referencedColumns: ["match_id", "round"]
+          },
+        ]
+      }
+      special_pack_cards: {
+        Row: {
+          definition_id: string
+          pack_id: string
+          percent: number | null
+        }
+        Insert: {
+          definition_id: string
+          pack_id: string
+          percent?: number | null
+        }
+        Update: {
+          definition_id?: string
+          pack_id?: string
+          percent?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_pack_cards_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "special_pack_cards_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "special_pack_cards_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "special_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      special_pack_rarities: {
+        Row: {
+          pack_id: string
+          percent: number
+          rarity_code: string
+        }
+        Insert: {
+          pack_id: string
+          percent: number
+          rarity_code: string
+        }
+        Update: {
+          pack_id?: string
+          percent?: number
+          rarity_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_pack_rarities_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "special_packs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "special_pack_rarities_rarity_code_fkey"
+            columns: ["rarity_code"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["rarity_code"]
+          },
+          {
+            foreignKeyName: "special_pack_rarities_rarity_code_fkey"
+            columns: ["rarity_code"]
+            isOneToOne: false
+            referencedRelation: "rarity_definitions"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      special_packs: {
+        Row: {
+          cards_per_pack: number
+          color: string
+          created_at: string
+          created_by: string | null
+          description: string
+          ends_at: string | null
+          guaranteed_min_rarity_rank: number | null
+          id: string
+          is_active: boolean
+          name: string
+          odds_mode: string
+          price: number
+          starts_at: string | null
+          updated_at: string
+          variant_chance_percent: number
+          version: number
+        }
+        Insert: {
+          cards_per_pack: number
+          color: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          ends_at?: string | null
+          guaranteed_min_rarity_rank?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          odds_mode: string
+          price: number
+          starts_at?: string | null
+          updated_at?: string
+          variant_chance_percent: number
+          version?: number
+        }
+        Update: {
+          cards_per_pack?: number
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          ends_at?: string | null
+          guaranteed_min_rarity_rank?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          odds_mode?: string
+          price?: number
+          starts_at?: string | null
+          updated_at?: string
+          variant_chance_percent?: number
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_packs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1995,11 +2150,13 @@ export type Database = {
         Returns: Json
       }
       admin_delete_event: { Args: { p_id: string }; Returns: Json }
+      admin_delete_special_pack: { Args: { p_id: string }; Returns: Json }
       admin_events_payload: { Args: never; Returns: Json }
       admin_get_boss_table: { Args: never; Returns: Json }
       admin_list_bonus_codes: { Args: never; Returns: Json }
       admin_list_events: { Args: never; Returns: Json }
       admin_list_pack_cards: { Args: never; Returns: Json }
+      admin_list_special_packs: { Args: never; Returns: Json }
       admin_pack_cards_payload: { Args: never; Returns: Json }
       admin_save_boss_table: {
         Args: {
@@ -2023,6 +2180,24 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_save_special_pack: {
+        Args: {
+          p_cards: Json
+          p_cards_per_pack: number
+          p_color: string
+          p_description: string
+          p_ends_at?: string
+          p_guaranteed_min_rarity_rank?: number
+          p_id?: string
+          p_name: string
+          p_odds_mode: string
+          p_price: number
+          p_rarities?: Json
+          p_starts_at?: string
+          p_variant_chance_percent: number
+        }
+        Returns: Json
+      }
       admin_set_bonus_code_active: {
         Args: { p_id: string; p_is_active: boolean }
         Returns: Json
@@ -2035,6 +2210,11 @@ export type Database = {
         Args: { p_active: boolean; p_id: string }
         Returns: Json
       }
+      admin_set_special_pack_active: {
+        Args: { p_active: boolean; p_id: string }
+        Returns: Json
+      }
+      admin_special_packs_payload: { Args: never; Returns: Json }
       award_event_points: {
         Args: {
           p_kind: string
@@ -2090,6 +2270,10 @@ export type Database = {
         }[]
       }
       buy_pack: { Args: never; Returns: Json }
+      buy_special_pack: {
+        Args: { p_pack_id: string; p_version: number }
+        Returns: Json
+      }
       cancel_lobby: { Args: never; Returns: undefined }
       card_payload:
         | { Args: { p_definition_id: string }; Returns: Json }
@@ -2182,8 +2366,16 @@ export type Database = {
         Returns: string[]
       }
       draw_rarity_rank: { Args: { p_min_rank: number }; Returns: number }
+      draw_special_pack_card: {
+        Args: { p_min_rank: number; p_pack_id: string }
+        Returns: string
+      }
       draw_threat_modifiers: { Args: { p_levels: number[] }; Returns: Json }
       draw_variant: { Args: { p_definition_id: string }; Returns: string }
+      draw_variant_at: {
+        Args: { p_chance_percent: number; p_definition_id: string }
+        Returns: string
+      }
       eligible_rarities: {
         Args: never
         Returns: {
@@ -2264,6 +2456,7 @@ export type Database = {
       get_pack_odds: { Args: never; Returns: Json }
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
       get_pack_status: { Args: never; Returns: Json }
+      get_special_packs: { Args: never; Returns: Json }
       get_story: { Args: never; Returns: Json }
       get_story_reward: { Args: { p_match_id: string }; Returns: Json }
       grant_event_tier: {
@@ -2483,6 +2676,10 @@ export type Database = {
         Args: { p_pack_type: string; p_user: string }
         Returns: string
       }
+      open_special_pack: {
+        Args: { p_pack_id: string; p_user: string }
+        Returns: string
+      }
       pack_opening_payload: { Args: { p_opening_id: string }; Returns: Json }
       place_modifier: {
         Args: { p_code: string; p_params: Json }
@@ -2575,6 +2772,22 @@ export type Database = {
         }
       }
       settle_expired_claims: { Args: { p_user: string }; Returns: undefined }
+      special_pack_card_odds: {
+        Args: { p_pack_id: string }
+        Returns: {
+          definition_id: string
+          probability: number
+          rarity_rank: number
+        }[]
+      }
+      special_pack_is_open: {
+        Args: { p_pack: Database["public"]["Tables"]["special_packs"]["Row"] }
+        Returns: boolean
+      }
+      special_pack_shop_payload: {
+        Args: { p_pack: Database["public"]["Tables"]["special_packs"]["Row"] }
+        Returns: Json
+      }
       story_create_match: {
         Args: {
           p_card_instance_ids: string[]

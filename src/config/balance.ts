@@ -143,6 +143,11 @@ export const balance = {
     specialRevealMinRarityRank: 4,
   },
 
+  /** Packs an admin creates from the app (/gestione-pacchetti-speciali); price and odds are per pack. */
+  specialPacks: {
+    maxCardsPerPack: 10,
+  },
+
   bonusCodes: {
     /** Unknown codes a player can try per hour: codes cannot be found by guessing. */
     maxFailedAttemptsPerHour: 10,
