@@ -154,7 +154,7 @@ Le carte base restano nello stile attuale. Una **variante** è la stessa carta c
 - **In Conquista** una variante schierata è in palio come ogni altra carta non starter e passa al vincitore con il suo disegno. Contro un bot, se presa, esce dal gioco.
 - **Non si converte** in monete e non rende doppione l'unica copia base.
 - **Varianti animate:** alcune varianti hanno anche un breve video muto in loop (`public/cards/motion/`), che si vede solo dove una carta occupa lo schermo: pagina della carta, disegno a schermo intero e apertura del pacchetto. Altrove, e quando il telefono chiede meno movimento, resta il disegno fermo. Probabilità e regole non cambiano.
-- **Stili:** Neon (21 personaggi), Epica (11), Cinema, Pastello, Oro, Classico, Retrò, Olio, Animato, Poster, Inferno, Grafite, Marmo, Gotico, Tarocco, Inchiostro, Fantasy e Prisma (6 ciascuno), Cometa, Regale, 3D, Fenice, Manga, Vetrata, Cremisi, Spettro, Fiamma, Ombra, Incisione, Circuito, Acquerello, Tempera, Zombie e Ritratto (5 ciascuno). Se un personaggio ha più varianti, il server ne sceglie una a caso.
+- **Stili:** Neon (21 personaggi), Epica (11), Pastello e Tarocco (9 ciascuno), 3D (8), Cinema, Oro, Classico, Retrò, Olio, Animato, Poster, Inferno, Grafite, Marmo, Gotico, Inchiostro, Fantasy e Prisma (6 ciascuno), Cometa, Regale, Fenice, Manga, Vetrata, Cremisi, Spettro, Fiamma, Ombra, Incisione, Circuito, Acquerello, Tempera, Zombie e Ritratto (5 ciascuno). Se un personaggio ha più varianti, il server ne sceglie una a caso.
 
 ## 5. Il minigioco — Regolamento
 
