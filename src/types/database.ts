@@ -155,6 +155,48 @@ export type Database = {
           },
         ]
       }
+      bonus_codes: {
+        Row: {
+          card_definition_ids: string[]
+          card_variant_ids: string[]
+          code: string
+          coins: number
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          note: string | null
+          packs: number
+        }
+        Insert: {
+          card_definition_ids?: string[]
+          card_variant_ids?: string[]
+          code: string
+          coins?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          note?: string | null
+          packs?: number
+        }
+        Update: {
+          card_definition_ids?: string[]
+          card_variant_ids?: string[]
+          code?: string
+          coins?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          note?: string | null
+          packs?: number
+        }
+        Relationships: []
+      }
       boss_definitions: {
         Row: {
           code: string
@@ -217,48 +259,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      bonus_codes: {
-        Row: {
-          card_definition_ids: string[]
-          card_variant_ids: string[]
-          code: string
-          coins: number
-          created_at: string
-          expires_at: string | null
-          id: string
-          is_active: boolean
-          max_uses: number | null
-          note: string | null
-          packs: number
-        }
-        Insert: {
-          card_definition_ids?: string[]
-          card_variant_ids?: string[]
-          code: string
-          coins?: number
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          max_uses?: number | null
-          note?: string | null
-          packs?: number
-        }
-        Update: {
-          card_definition_ids?: string[]
-          card_variant_ids?: string[]
-          code?: string
-          coins?: number
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          max_uses?: number | null
-          note?: string | null
-          packs?: number
-        }
-        Relationships: []
       }
       card_definitions: {
         Row: {
@@ -1209,7 +1209,7 @@ export type Database = {
           opened_at?: string
           resolved_at?: string | null
           round: number
-          threat_id: string | null
+          threat_id?: string | null
           winner_side?: string | null
         }
         Update: {
@@ -2064,6 +2064,11 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      boss_is_playable: { Args: { p_boss_id: string }; Returns: boolean }
+      boss_state_payload: {
+        Args: { p_match_id: string; p_side: string }
+        Returns: Json
+      }
       busy_instance_ids: {
         Args: { p_user: string }
         Returns: {
@@ -2093,6 +2098,10 @@ export type Database = {
       }
       claim_daily_pack: { Args: never; Returns: Json }
       claim_victory: { Args: { p_match_id: string }; Returns: Json }
+      classic_match_state_payload: {
+        Args: { p_match_id: string; p_side: string }
+        Returns: Json
+      }
       close_abandoned_matches: { Args: { p_user: string }; Returns: undefined }
       coin_balance: { Args: { p_user: string }; Returns: number }
       collection_summary: {
@@ -2260,6 +2269,21 @@ export type Database = {
       }
       grant_starter_set: { Args: { p_user: string }; Returns: number }
       has_active_match: { Args: { p_user: string }; Returns: boolean }
+      insert_boss_match: {
+        Args: {
+          p_boss_id?: string
+          p_boss_values: Json
+          p_bot_difficulty: string
+          p_definitions_a: string[]
+          p_definitions_b: string[]
+          p_mode: string
+          p_player_a: string
+          p_player_b: string
+          p_team_a: string[]
+          p_team_b: string[]
+        }
+        Returns: string
+      }
       insert_conquest_bot_match: {
         Args: {
           p_bot_definition_ids: string[]
@@ -2301,16 +2325,6 @@ export type Database = {
         Args: { p_event_id: string }
         Returns: undefined
       }
-      match_create_bot: {
-        Args: {
-          p_bot_definition_ids: string[]
-          p_card_instance_ids: string[]
-          p_difficulty: string
-          p_threat_ids: string[]
-          p_user: string
-        }
-        Returns: string
-      }
       match_create_boss_bot: {
         Args: {
           p_boss_id?: string
@@ -2318,6 +2332,16 @@ export type Database = {
           p_bot_definition_ids: string[]
           p_card_instance_ids: string[]
           p_difficulty: string
+          p_user: string
+        }
+        Returns: string
+      }
+      match_create_bot: {
+        Args: {
+          p_bot_definition_ids: string[]
+          p_card_instance_ids: string[]
+          p_difficulty: string
+          p_threat_ids: string[]
           p_user: string
         }
         Returns: string
@@ -2345,9 +2369,9 @@ export type Database = {
       match_ping: { Args: { p_match_id: string }; Returns: Json }
       match_queue_join: {
         Args: {
+          p_boss_values?: Json
           p_bot_definition_ids?: string[]
           p_bot_difficulty?: string
-          p_boss_values?: Json
           p_format?: string
           p_mode: string
           p_team: string[]
@@ -2355,6 +2379,16 @@ export type Database = {
           p_user: string
         }
         Returns: string
+      }
+      match_record_boss_turn: {
+        Args: {
+          p_match_id: string
+          p_play_a: Json
+          p_play_b: Json
+          p_result: string
+          p_turn: number
+        }
+        Returns: undefined
       }
       match_record_boss_turn_state: {
         Args: {
@@ -2453,6 +2487,7 @@ export type Database = {
         Returns: {
           card_instance_ids: string[]
           enqueued_at: string
+          format: string
           level: number
           mode: string
           refreshed_at: string
@@ -2541,6 +2576,7 @@ export type Database = {
       }
       team_value: { Args: { p_definition_ids: string[] }; Returns: number }
       username_base: { Args: { p_source: string }; Returns: string }
+      valid_boss_values: { Args: { p_values: Json }; Returns: boolean }
       validate_conquest_team: {
         Args: { p_instance_ids: string[]; p_user: string }
         Returns: string[]
