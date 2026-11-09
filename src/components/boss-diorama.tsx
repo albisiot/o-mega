@@ -1,27 +1,21 @@
 "use client";
 
 import { memo, useEffect, useRef, useState } from "react";
-import type { BossView } from "@/lib/boss";
+import { currentHolders, type BossView } from "@/lib/boss";
 import { bossScene } from "@/lib/threat-scene";
 
 /** Beacon colours: cyan for the player, orange for the opponent (magenta would vanish on the panel). */
 const MINE = 0x16c8ff;
 const THEIRS = 0xff8a00;
 
-/** For each front, the colour of whoever took it last; null if nobody has yet. */
+/** For each front, the colour of whoever holds it after the last turn; null if nobody. */
 export function frontColors(view: Pick<BossView, "fronts" | "rounds">): (number | null)[] {
-  const colors: (number | null)[] = view.fronts.map(() => null);
-  for (const round of [...view.rounds].sort((a, b) => a.round - b.round)) {
-    if (!round.resolved) continue;
-    if (round.my_play && round.my_play.points > 0) colors[round.my_play.front] = MINE;
-    if (round.opponent_play && round.opponent_play.points > 0) colors[round.opponent_play.front] = THEIRS;
-  }
-  return colors;
+  return currentHolders(view).map((holder) => (holder === "me" ? MINE : holder === "opponent" ? THEIRS : null));
 }
 
 /**
  * The boss's 3D diorama, as big as the biggest threats, with one beacon per front that
- * lights up in the colour of whoever took it last. Purely decorative: without a known
+ * lights up in the colour of whoever holds it. Purely decorative: without a known
  * scene or WebGL, the boss's line from the seismograph fills the room instead.
  */
 export const BossDiorama = memo(function BossDiorama({ view, fill = false }: { view: BossView; fill?: boolean }) {

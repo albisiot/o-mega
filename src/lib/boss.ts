@@ -4,6 +4,7 @@
 
 import {
   bossContext,
+  frontHolder,
   previewBossPlay,
   type AbilityFamilies,
   type BossState,
@@ -20,17 +21,20 @@ import { invokeFunction, remember, toCharacter, type MatchCard, type MatchPlay }
 export type BossFront = { front: number; name: string; level: number; abilities: string[]; flavor: string };
 
 export type BossPlay = MatchPlay & {
-  /** 0-based front. */
+  /** 0-based front where the character stays. */
   front: number;
+  /** Points the side took in that turn, from every front it held. */
   points: number;
-  /** Score that held the front alone; null when both sides chose it. */
-  required: number | null;
 };
+
+export type Holder = "me" | "opponent" | null;
 
 export type BossRound = {
   round: number;
   deadline_at: string;
   resolved: boolean;
+  /** Who held each front in this turn, once resolved (null for matches under the first rules). */
+  holders: Holder[] | null;
   /** Between players: my secret choice waiting for the opponent. */
   my_pending: { instance_id: string; front: number } | null;
   /** Between players: whether the opponent has chosen (never what nor where). */
@@ -53,8 +57,6 @@ export type BossView = {
   fronts: BossFront[];
   /** values[turn][front], both 0-based: visible from the start. */
   values: number[][];
-  /** Threat level → score that holds a front alone. */
-  presidio_targets: Record<string, number>;
   points: { me: number; opponent: number };
   fronts_taken: { me: number; opponent: number };
   total_score: { me: number; opponent: number };
@@ -103,18 +105,38 @@ export function resolveBossTurn(matchId: string): Promise<BossView> {
   return invokeBoss({ action: "resolve", match_id: matchId });
 }
 
-/** How a resolved turn ended for each side: a contested front nobody took is void. */
+/** A character standing on a front, as the screen shows it. */
+export type BoardCard = { card: MatchCard; score: number; turn: number };
+
+/** Each side's character on each front, null where it has none yet. */
+export function bossBoards(view: BossView): { mine: (BoardCard | null)[]; theirs: (BoardCard | null)[] } {
+  const mine: (BoardCard | null)[] = view.fronts.map(() => null);
+  const theirs: (BoardCard | null)[] = view.fronts.map(() => null);
+  for (const round of view.rounds) {
+    if (!round.resolved) continue;
+    const card = view.my_team.find((c) => c.instance_id === round.my_play?.instance_id);
+    if (round.my_play && card) mine[round.my_play.front] = { card, score: round.my_play.score, turn: round.round };
+    if (round.opponent_play) theirs[round.opponent_play.front] = { card: round.opponent_play, score: round.opponent_play.score, turn: round.round };
+  }
+  return { mine, theirs };
+}
+
+/** Who holds each front after the last resolved turn. */
+export function currentHolders(view: Pick<BossView, "fronts" | "rounds">): Holder[] {
+  const last = [...view.rounds].reverse().find((r) => r.resolved && r.holders);
+  return last?.holders ?? view.fronts.map(() => null);
+}
+
+/** How the side's character did on its own front in a resolved turn. */
 export function turnOutcome(round: BossRound, side: "me" | "opponent"): PlayOutcome {
-  const own = side === "me" ? round.my_play : round.opponent_play;
-  const other = side === "me" ? round.opponent_play : round.my_play;
-  if (!own || !other) return "void";
-  if (own.points > 0) return "won";
-  return own.front === other.front && other.points === 0 ? "void" : "lost";
+  const play = side === "me" ? round.my_play : round.opponent_play;
+  const holder = play && round.holders ? round.holders[play.front] : null;
+  return holder === null || holder === undefined ? "void" : holder === side ? "won" : "lost";
 }
 
 /**
  * The engine state as the player knows it, with the player as side "a": the
- * opponent's team holds only the characters already played. Enough for the
+ * opponent's team holds only the characters already placed. Enough for the
  * previews of the player's own plays, never for the opponent's.
  */
 export function knownBossState(view: BossView): BossState {
@@ -130,7 +152,6 @@ export function knownBossState(view: BossView): BossState {
       highest: p.highest,
       autoPlayed: p.auto_played,
       front: p.front,
-      required: p.required,
       points: p.points,
       outcome: turnOutcome(r, side),
     });
@@ -140,6 +161,7 @@ export function knownBossState(view: BossView): BossState {
         a: play(r.my_play!, r.my_play!.instance_id ?? r.my_play!.definition_id, "me"),
         b: play(r.opponent_play!, `opponent-${r.round}`, "opponent"),
       },
+      holders: (r.holders ?? view.fronts.map(() => null)).map((h): Side | null => (h === "me" ? "a" : h === "opponent" ? "b" : null)),
     };
   });
   const b = balance.boss;
@@ -153,7 +175,6 @@ export function knownBossState(view: BossView): BossState {
       growth: b.growth,
       extraFronts: b.extraFronts,
       extraGrowth: b.extraGrowth,
-      targets: Object.fromEntries(Object.entries(view.presidio_targets).map(([level, target]) => [Number(level), target])),
     },
     fronts: view.fronts.map((front) => ({ id: `front-${front.front}`, level: front.level, abilities: front.abilities, modifier: null })),
     values: view.values,
@@ -162,9 +183,15 @@ export function knownBossState(view: BossView): BossState {
   };
 }
 
-export type BossPreview = { score: PlayScore; required: number; held: boolean };
+export type BossPreview = {
+  score: PlayScore;
+  /** The opposing character's score on that front; null if nobody is there yet. */
+  against: number | null;
+  /** Whether it would hold the front, as the board stands now. */
+  holds: boolean;
+};
 
-/** previews[instanceId][front]: each available card alone on each front this turn. */
+/** previews[instanceId][front]: each available card arriving on each front this turn. */
 export function bossPreviews(view: BossView, families: AbilityFamilies): Map<string, BossPreview[]> {
   const state = knownBossState(view);
   const previews = new Map<string, BossPreview[]>();
@@ -173,8 +200,8 @@ export function bossPreviews(view: BossView, families: AbilityFamilies): Map<str
     previews.set(
       card.instance_id,
       view.fronts.map((front) => {
-        const { score, required } = previewBossPlay(state, "a", character, front.front, families);
-        return { score, required, held: score.total >= required };
+        const { score, against } = previewBossPlay(state, "a", character, front.front, families);
+        return { score, against: against?.total ?? null, holds: frontHolder(score, against) === "a" };
       }),
     );
   }
@@ -184,11 +211,4 @@ export function bossPreviews(view: BossView, families: AbilityFamilies): Map<str
 /** The bonus the player's next character carries in (Riscossa, Slancio), as the engine counts it. */
 export function carriedIntoTurn(view: BossView, families: AbilityFamilies): number {
   return bossContext(knownBossState(view), "a", families).carriedBonus;
-}
-
-/** Who took the turn's points, from the player's side: both can, on different fronts. */
-export function turnWinner(round: BossRound): Side | "both" | null {
-  const me = (round.my_play?.points ?? 0) > 0;
-  const them = (round.opponent_play?.points ?? 0) > 0;
-  return me && them ? "both" : me ? "a" : them ? "b" : null;
 }

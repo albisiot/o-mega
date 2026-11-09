@@ -152,9 +152,9 @@ function BossSection({ disabled }: { disabled: boolean }) {
   return (
     <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
       <p className="text-sm font-medium text-muted">
-        Il Boss ha cinque fronti, tutti visibili, e ogni turno valgono di più. Scegli chi mandare e dove: sullo stesso
-        fronte dell&apos;avversario vince chi fa più punti, da solo lo prendi se arrivi alla soglia. Nessuna carta in gioco
-        e nessuna moneta.
+        Il Boss ha cinque fronti, tutti visibili, e ogni turno valgono di più. Ogni turno metti un personaggio su un tuo
+        fronte libero e resta lì fino alla fine: ogni fronte occupato paga a ogni turno, a chi è da solo o a chi fa più
+        punti. Nessuna carta in gioco e nessuna moneta.
       </p>
       {BOTS.map((bot) => (
         <OptionRow
@@ -176,9 +176,9 @@ function BossSection({ disabled }: { disabled: boolean }) {
 
 const BOSS_BOTS: Record<(typeof BOTS)[number]["difficulty"], string> = {
   easy: "Sceglie quasi a caso. Ideale per imparare.",
-  medium: "Prende ogni turno il fronte che rende di più.",
-  hard: "Pianifica tutti e cinque i turni con la tabella dei punti.",
-  super_pro: "Simula centinaia di partite e prova a indovinare dove andrai.",
+  medium: "Mette ogni turno la carta dove rende di più fino alla fine.",
+  hard: "Simula le partite possibili prima di ogni mossa.",
+  super_pro: "Simula molte più partite, con mani avversarie plausibili.",
 };
 
 function ConquestSection({ status, disabled }: { status: ConquestStatus | null; disabled: boolean }) {

@@ -82,7 +82,7 @@ function readFormat(params: URLSearchParams, mode: Mode): MatchFormat {
 }
 
 const BOSS_INTRO =
-  "Scegli 5 personaggi diversi: il Boss lo scopri dopo. Ogni personaggio gioca un turno su un fronte a tua scelta: servono specialisti per i fronti piccoli e generalisti per quelli grandi. Con una pressione lunga su una carta la vedi intera.";
+  "Scegli 5 personaggi diversi: il Boss lo scopri dopo. Ogni turno uno di loro entra su un fronte e ci resta fino alla fine, uno per fronte: servono specialisti per i fronti piccoli e generalisti per quelli grandi. Con una pressione lunga su una carta la vedi intera.";
 
 const COPY: Record<Mode["kind"], { subtitle: (mode: Mode) => string; start: (mode: Mode) => string }> = {
   bot: {

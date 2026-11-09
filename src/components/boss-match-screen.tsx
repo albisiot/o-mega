@@ -11,8 +11,10 @@ import { InfoTip } from "@/components/info-tip";
 import { Sheet } from "@/components/sheet";
 import { balance } from "@/config/balance";
 import {
+  bossBoards,
   bossPreviews,
   carriedIntoTurn,
+  currentHolders,
   playBossTurn,
   resolveBossTurn,
   submitBossChoice,
@@ -60,10 +62,12 @@ function rivalLabel(view: BossView): string {
   return view.bot_difficulty ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty]}` : (view.opponent?.username ?? "Avversario");
 }
 
-/** The front worth the most this turn, the first among equals: where the screen starts. */
+/** The player's free front worth the most this turn, the first among equals: where the screen starts. */
 function hottestFront(view: BossView): number {
   const row = view.values[view.current_round - 1] ?? view.values[0];
-  return row.indexOf(Math.max(...row));
+  const taken = bossBoards(view).mine;
+  const free = row.map((value, f) => (taken[f] ? -1 : value));
+  return free.indexOf(Math.max(...free));
 }
 
 /** A Grande Minaccia (against a bot or a player), from the first turn to the result. */
@@ -457,15 +461,19 @@ function ChooseTurn({
   const row = view.values[turn - 1];
   const previews = useMemo(() => bossPreviews(view, families), [view, families]);
   const carried = useMemo(() => carriedIntoTurn(view, families), [view, families]);
+  const { mine, theirs } = useMemo(() => bossBoards(view), [view]);
+  const holders = currentHolders(view);
   const available = view.my_team.filter((card) => card.played_round === null);
   const chosen = available.find((card) => card.instance_id === selected) ?? null;
   const target = view.fronts[front];
   const chosenPreview = chosen ? previews.get(chosen.instance_id)?.[front] : undefined;
   const pending = round.my_pending;
   const isPending = Boolean(chosen && pending && pending.instance_id === chosen.instance_id && pending.front === front);
+  const turnsLeft = view.turns - turn + 1;
+  const worthToEnd = view.values.slice(turn - 1).reduce((sum, r) => sum + r[front], 0);
   const detail = useCardDetail();
   const previewNote =
-    "Anteprima da solo sul fronte: se l'avversario sceglie lo stesso fronte, conta chi fa più punti. Il server calcola tutto quando giochi.";
+    "Anteprima contro il personaggio avversario già sul fronte: se ne arriva uno in questo turno o nei prossimi, conta chi fa più punti. Il punteggio resta quello con cui la carta entra. Il server calcola tutto quando giochi.";
 
   return (
     <main className="flex min-h-0 flex-1 flex-col">
@@ -491,11 +499,19 @@ function ChooseTurn({
         </div>
       </section>
 
-      {/* The five fronts: this turn's value, the next ones small, the preview of the chosen card. */}
+      {/* The five fronts: this turn's value, who stands there, the preview of the chosen card. */}
       <div role="radiogroup" aria-label="Scegli il fronte" className="flex gap-1 px-3 pt-2">
         {view.fronts.map((f) => {
-          const preview = chosen ? previews.get(chosen.instance_id)?.[f.front] : undefined;
-          const on = f.front === front;
+          const own = mine[f.front];
+          const their = theirs[f.front];
+          const preview = chosen && !own ? previews.get(chosen.instance_id)?.[f.front] : undefined;
+          const on = !own && f.front === front;
+          const holder = holders[f.front];
+          const frame = on
+            ? "border-comic-yellow bg-comic-yellow text-black"
+            : own
+              ? "border-panel-raised bg-panel-raised text-muted"
+              : "border-panel-raised bg-panel text-foreground";
           return (
             <button
               key={f.front}
@@ -503,14 +519,20 @@ function ChooseTurn({
               role="radio"
               aria-checked={on}
               onClick={() => onFront(f.front)}
-              disabled={busy}
+              disabled={busy || Boolean(own)}
               aria-label={`${f.name}, livello ${f.level}, vale ${row[f.front]} punti in questo turno${
-                preview ? `, ${chosen?.name} fa ${preview.score.total} su ${preview.required}` : ""
+                own ? `, c'è già il tuo ${own.card.name} con ${own.score}` : ""
+              }${their ? `, avversario ${their.card.name} con ${their.score}` : ""}${
+                preview ? `, ${chosen?.name} farebbe ${preview.score.total}` : ""
               }`}
-              className={`flex min-w-0 flex-1 flex-col items-stretch border-[3px] px-1 pb-1 pt-0.5 text-left ${
-                on ? "border-comic-yellow bg-comic-yellow text-black" : "border-panel-raised bg-panel text-foreground"
-              }`}
+              className={`relative flex min-w-0 flex-1 flex-col items-stretch border-[3px] px-1 pb-1 pt-0.5 text-left ${frame}`}
             >
+              {holder && (
+                <span
+                  aria-hidden
+                  className={`absolute -right-[3px] -top-[3px] h-2.5 w-2.5 ${holder === "me" ? "bg-comic-cyan" : "bg-comic-orange"}`}
+                />
+              )}
               <span className="flex items-baseline justify-between gap-0.5">
                 <span className={`text-[10px] font-extrabold ${on ? "text-black/70" : "text-muted"}`}>Lv {f.level}</span>
                 <span className="font-display text-[22px] leading-6">+{row[f.front]}</span>
@@ -518,19 +540,21 @@ function ChooseTurn({
               <span className="line-clamp-3 min-h-[33px] break-words text-[9.5px] font-extrabold leading-[11px] [hyphens:auto]" lang="it">
                 {f.name}
               </span>
-              <span className={`mt-0.5 truncate text-[9.5px] font-bold ${on ? "text-black/60" : "text-faint"}`}>
-                {view.values
-                  .slice(turn)
-                  .map((r) => r[f.front])
-                  .join("·") || "ultimo turno"}
+              {/* Who stands there: you above, the opponent below. */}
+              <span className={`mt-0.5 truncate text-[9.5px] font-extrabold ${own ? "text-comic-cyan" : on ? "text-black/60" : "text-faint"}`}>
+                {own ? `${own.card.name} ${own.score}` : "libero"}
+              </span>
+              <span className={`truncate text-[9.5px] font-extrabold ${their ? (on ? "text-black" : "text-comic-orange") : on ? "text-black/50" : "text-faint"}`}>
+                {their ? `${their.card.name} ${their.score}` : "—"}
               </span>
               {preview && (
                 <span
                   className={`mt-0.5 -skew-x-8 px-1 text-center font-display text-[15px] leading-5 ${
-                    preview.held ? "bg-comic-cyan text-black" : on ? "bg-black/15" : "bg-panel-raised text-faint"
+                    preview.holds ? "bg-comic-cyan text-black" : on ? "bg-black/15" : "bg-panel-raised text-faint"
                   }`}
                 >
-                  {preview.score.total}/{preview.required}
+                  {preview.score.total}
+                  {preview.against !== null && `/${preview.against}`}
                 </span>
               )}
             </button>
@@ -538,7 +562,7 @@ function ChooseTurn({
         })}
       </div>
 
-      {/* The hand: each card's score on the chosen front, cyan when it holds it alone. */}
+      {/* The hand: each card's score arriving on the chosen front, cyan when it would hold it. */}
       <div role="group" aria-label="Scegli chi mandare" className="flex justify-center gap-1.5 px-3 pb-1.5 pt-2.5">
         {available.map((card) => {
           const preview = previews.get(card.instance_id)?.[front];
@@ -548,7 +572,7 @@ function ChooseTurn({
                 card={card}
                 score={preview?.score.total ?? 0}
                 bonus={preview?.score.bonus ?? 0}
-                tone={preview ? (preview.held ? "pass" : "fail") : undefined}
+                tone={preview ? (preview.holds ? "pass" : "fail") : undefined}
                 short
                 artSizes="calc((100vw - 78px) / 5)"
                 selected={card.instance_id === selected}
@@ -566,13 +590,16 @@ function ChooseTurn({
           <p className="flex items-center gap-1.5">
             <span className="min-w-0 truncate font-display text-lg uppercase leading-6 text-comic-yellow">{target.name}</span>
             <span className="ml-auto shrink-0 text-xs font-bold text-muted">
-              vale <span className="font-display text-lg text-foreground">{row[front]}</span> · da solo serve{" "}
-              <span className="font-display text-lg text-foreground">{view.presidio_targets[String(target.level)]}</span>
+              ora <span className="font-display text-lg text-foreground">{row[front]}</span> · fino alla fine{" "}
+              <span className="font-display text-lg text-foreground">{worthToEnd}</span>
             </span>
             <InfoTip text={previewNote} />
           </p>
           <p className="text-xs font-semibold text-muted">
-            {target.abilities.map((code) => abilityLabel(abilities, code)?.name ?? code).join(" · ")}
+            {target.abilities.map((code) => abilityLabel(abilities, code)?.name ?? code).join(" · ")} ·{" "}
+            {theirs[front]
+              ? `contro ${theirs[front]!.card.name} (${theirs[front]!.score})`
+              : `nessun avversario, per ora: paga ${turnsLeft === 1 ? "questo turno" : `ognuno dei ${turnsLeft} turni`} a chi lo tiene`}
           </p>
           {chosen && chosenPreview ? (
             <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold">
@@ -583,22 +610,22 @@ function ChooseTurn({
                 {rarityLetter(chosen.rarity)}
               </span>
               <span className="truncate">
-                {chosen.name}: {target.abilities.map((code) => `${code} ${chosen.stats[code] ?? 0}`).join(" · ")}
+                {chosen.name}: {chosenPreview.score.total} punti
                 {chosenPreview.score.bonus !== 0 &&
-                  ` · ${chosenPreview.score.bonus > 0 ? "+" : ""}${chosenPreview.score.bonus} ${chosenPreview.score.bonus > 0 ? "bonus" : "malus"}`}
+                  ` (${chosenPreview.score.bonus > 0 ? "+" : ""}${chosenPreview.score.bonus} ${chosenPreview.score.bonus > 0 ? "bonus" : "malus"})`}
               </span>
-              <span className={`ml-auto shrink-0 font-bold ${chosenPreview.held ? "text-comic-cyan" : "text-faint"}`}>
-                {chosenPreview.held ? "lo tiene da solo" : "da solo non basta"}
+              <span className={`ml-auto shrink-0 font-bold ${chosenPreview.holds ? "text-comic-cyan" : "text-faint"}`}>
+                {chosenPreview.holds ? (chosenPreview.against === null ? "lo tieni" : "lo prendi") : "non basta"}
               </span>
             </p>
           ) : (
-            <p className="mt-0.5 text-xs font-semibold text-muted">Tocca un fronte e una carta, poi conferma.</p>
+            <p className="mt-0.5 text-xs font-semibold text-muted">Tocca un fronte libero e una carta: resterà lì fino alla fine.</p>
           )}
         </div>
         <button
           type="button"
           onClick={() => chosen && onPlay({ instanceId: chosen.instance_id, front })}
-          disabled={!chosen || busy || isPending}
+          disabled={!chosen || busy || isPending || Boolean(mine[front])}
           className="btn btn-primary w-full"
         >
           {busy
@@ -661,26 +688,26 @@ function OpponentAbsent({
   );
 }
 
-/** What one side did in a turn: where, with whom, the score and what it took. */
+/** What one side placed in a turn: who, where, with what score, and what the side took in all. */
 function TurnSide({
   label,
   name,
   art,
   front,
   play,
-  contested,
+  outcome,
   tone,
 }: {
   label: string;
   name: string;
   art: string | null;
   front: BossFront;
-  play: { score: number; points: number; required: number | null; auto_played: boolean };
-  contested: boolean;
+  play: { score: number; points: number; auto_played: boolean };
+  outcome: "won" | "lost" | "void";
   tone: string;
 }) {
   return (
-    <div className={`relative flex min-h-[150px] flex-1 flex-col justify-end gap-0.5 overflow-hidden px-4 py-3 ${tone}`}>
+    <div className={`relative flex min-h-[130px] flex-1 flex-col justify-end gap-0.5 overflow-hidden px-4 py-3 ${tone}`}>
       {art && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -693,13 +720,15 @@ function TurnSide({
         />
       )}
       <p className="relative max-w-[62%] text-[13px] font-extrabold leading-4">
-        {label} · {front.name} · livello {front.level}
+        {label} · entra su {front.name}
         {play.auto_played && " · tempo scaduto"}
       </p>
       <p className="relative max-w-[60%] font-display text-[30px] uppercase leading-8">{name}</p>
       <p className="relative flex items-baseline gap-2 text-sm font-bold">
         <span className="font-display text-5xl leading-[48px]">{play.score}</span>
-        <span className="max-w-[45%] leading-4">{contested ? "punti nel confronto" : `punti, ne servivano ${play.required}`}</span>
+        <span className="max-w-[45%] leading-4">
+          {outcome === "won" ? "e tiene il fronte" : outcome === "lost" ? "ma il fronte è dell'altro" : "pari: il fronte non paga"}
+        </span>
         <span className="ml-auto -skew-x-8 bg-black px-2 font-display text-3xl text-comic-yellow">+{play.points}</span>
       </p>
     </div>
@@ -722,20 +751,13 @@ function TurnReveal({
   const mine = view.my_team.find((card) => card.instance_id === round.my_play?.instance_id);
   const theirs = round.opponent_play;
   if (!round.my_play || !theirs) return null;
-  const contested = round.my_play.front === theirs.front;
-  const outcome = turnOutcome(round, "me");
-  const headline = contested
-    ? outcome === "won"
-      ? "Stesso fronte: lo prendi tu!"
-      : outcome === "void"
-        ? "Stesso fronte: pari, nessuno lo prende"
-        : `Stesso fronte: lo prende ${rival}`
-    : "Fronti diversi: ognuno presidia il suo";
+  const row = view.values[round.round - 1];
+  const holders = round.holders ?? view.fronts.map(() => null);
 
   return (
     <main className="relative mt-1 flex min-h-0 flex-1 cursor-pointer flex-col gap-1 overflow-y-auto px-3 pb-3" onClick={onContinue}>
       <p className="-skew-x-8 bg-comic-yellow px-3 py-1.5 text-center font-display text-xl uppercase text-black">
-        Turno {round.round} · {headline}
+        Turno {round.round} · ogni fronte occupato paga
       </p>
       <section aria-label="La tua giocata" className="animate-play-in-top flex flex-1 flex-col">
         <TurnSide
@@ -744,8 +766,8 @@ function TurnReveal({
           art={mine?.art_url ?? null}
           front={view.fronts[round.my_play.front]}
           play={round.my_play}
-          contested={contested}
-          tone={round.my_play.points > 0 ? "bg-comic-cyan text-black" : "bg-panel-raised text-foreground"}
+          outcome={turnOutcome(round, "me")}
+          tone="bg-comic-cyan text-black"
         />
       </section>
       <section aria-label={`La giocata di ${rival}`} className="flex flex-1 flex-col">
@@ -755,19 +777,36 @@ function TurnReveal({
           art={theirs.art_url}
           front={view.fronts[theirs.front]}
           play={theirs}
-          contested={contested}
-          tone={theirs.points > 0 ? "bg-comic-magenta text-black" : "bg-panel-raised text-foreground"}
+          outcome={turnOutcome(round, "opponent")}
+          tone="bg-comic-orange text-black"
         />
       </section>
+      {/* Every front this turn: its value and who took it. */}
+      <ol className="flex gap-1" aria-label="Chi tiene ogni fronte">
+        {view.fronts.map((f) => {
+          const holder = holders[f.front];
+          return (
+            <li
+              key={f.front}
+              aria-label={`${f.name}: ${row[f.front]} punti a ${holder === "me" ? "te" : holder === "opponent" ? rival : "nessuno"}`}
+              className={`flex min-w-0 flex-1 flex-col items-center -skew-x-8 py-1 ${
+                holder === "me" ? "bg-comic-cyan text-black" : holder === "opponent" ? "bg-comic-orange text-black" : "bg-panel-raised text-faint"
+              }`}
+            >
+              <span className="font-display text-lg leading-5">+{row[f.front]}</span>
+              <span className="text-[9px] font-extrabold uppercase">{holder === "me" ? "tuo" : holder === "opponent" ? "suo" : "—"}</span>
+            </li>
+          );
+        })}
+      </ol>
       <p className="text-center text-sm font-bold text-muted">
-        Tu {view.points.me} – {view.points.opponent} {rival} ·{" "}
-        {finished ? "tocca per il risultato" : "tocca per continuare"}
+        Tu {view.points.me} – {view.points.opponent} {rival} · {finished ? "tocca per il risultato" : "tocca per continuare"}
       </p>
     </main>
   );
 }
 
-/** The whole points table, visible from the start: what each front is worth in each turn. */
+/** The whole points table, visible from the start, coloured by who held each front in each turn. */
 function BossTable({ view }: { view: BossView }) {
   return (
     <div className="flex flex-col gap-2">
@@ -777,8 +816,8 @@ function BossTable({ view }: { view: BossView }) {
       </p>
       <p className="text-sm font-medium text-muted">
         Ogni turno tutti i fronti salgono di {balance.boss.growth}, e {balance.boss.extraFronts} a caso di{" "}
-        {balance.boss.growth + balance.boss.extraGrowth}. Da solo su un fronte lo presidi se arrivi alla soglia; sullo stesso
-        fronte vince il punteggio più alto.
+        {balance.boss.growth + balance.boss.extraGrowth}. A ogni turno ogni fronte occupato paga il suo valore: a chi è da
+        solo, o a chi ha il punteggio più alto.
       </p>
       <table className="w-full table-fixed border-collapse text-center text-sm">
         <thead>
@@ -789,9 +828,7 @@ function BossTable({ view }: { view: BossView }) {
                 <span className="line-clamp-3 break-words [hyphens:auto]" lang="it">
                   {f.name}
                 </span>
-                <span className="block text-muted">
-                  Lv {f.level} · {view.presidio_targets[String(f.level)]}
-                </span>
+                <span className="block text-muted">Lv {f.level}</span>
               </th>
             ))}
           </tr>
@@ -801,18 +838,17 @@ function BossTable({ view }: { view: BossView }) {
             const round = view.rounds.find((r) => r.round === t + 1 && r.resolved);
             const isCurrent = view.status === "active" && view.current_round === t + 1;
             return (
-              <tr key={t} className={isCurrent ? "bg-comic-yellow text-black" : ""}>
+              <tr key={t} className={isCurrent ? "outline outline-[3px] outline-comic-yellow" : ""}>
                 <td className="py-1 text-left font-display text-lg">{t + 1}</td>
                 {row.map((value, f) => {
-                  const mine = round?.my_play?.front === f;
-                  const theirs = round?.opponent_play?.front === f;
-                  const took = (mine && (round?.my_play?.points ?? 0) > 0) || (theirs && (round?.opponent_play?.points ?? 0) > 0);
+                  const holder = round?.holders?.[f];
+                  const placed = round?.my_play?.front === f || round?.opponent_play?.front === f;
                   return (
                     <td
                       key={f}
                       className={`border border-line py-1 font-display text-lg ${
-                        mine && theirs ? "bg-foreground text-black" : mine ? "bg-comic-cyan text-black" : theirs ? "bg-comic-magenta text-black" : ""
-                      } ${took ? "underline" : ""}`}
+                        holder === "me" ? "bg-comic-cyan text-black" : holder === "opponent" ? "bg-comic-orange text-black" : ""
+                      } ${placed ? "underline" : ""}`}
                     >
                       {value}
                     </td>
@@ -824,15 +860,14 @@ function BossTable({ view }: { view: BossView }) {
         </tbody>
       </table>
       <p className="text-xs font-semibold text-muted">
-        In azzurro dove hai giocato tu, in magenta l&apos;avversario, in bianco tutti e due; sottolineato chi ha preso il
-        fronte. Accanto al livello, la soglia per presidiarlo da solo.
+        In azzurro i fronti che hai tenuto, in arancione quelli dell&apos;avversario; sottolineato dove è entrata una carta in
+        quel turno.
       </p>
     </div>
   );
 }
 
 function BossTutorial({ onClose }: { onClose: () => void }) {
-  const t = balance.boss.targets;
   return (
     <>
       <button type="button" aria-label="Chiudi" onClick={onClose} className="fixed inset-0 z-40 bg-black/70" />
@@ -844,13 +879,13 @@ function BossTutorial({ onClose }: { onClose: () => void }) {
         <h2 className="font-display text-3xl uppercase">Grande Minaccia</h2>
         <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm font-semibold leading-5">
           <li>Il Boss ha 5 fronti, tutti visibili. La tabella dice quanti punti vale ogni fronte in ogni turno.</li>
-          <li>Ogni turno scegli in segreto un personaggio e un fronte. L&apos;avversario fa lo stesso.</li>
-          <li>Se scegliete lo stesso fronte, vince chi fa più punti, come in un round, e prende il valore del fronte.</li>
+          <li>Ogni turno metti in segreto un personaggio su uno dei tuoi fronti liberi. L&apos;avversario fa lo stesso sui suoi.</li>
+          <li>Il personaggio resta lì fino alla fine, con il punteggio che ha fatto entrando, e quel fronte non è più libero per te.</li>
           <li>
-            Se scegliete fronti diversi, ognuno prende il suo se arriva alla soglia di presidio: {t.level1}, {t.level2},{" "}
-            {t.level3}, {t.level4}, {t.level5} o {t.level6} punti dal livello 1 al 6.
+            A ogni turno ogni fronte occupato paga il suo valore: a chi è da solo, o a chi ha il punteggio più alto se ci
+            siete tutti e due. Chi entra presto incassa più turni.
           </li>
-          <li>I fronti non si consumano. Dopo 5 turni vince chi ha più punti.</li>
+          <li>Dopo 5 turni vince chi ha più punti.</li>
         </ul>
         <button type="button" onClick={onClose} className="btn mt-1 bg-black font-display text-lg uppercase text-comic-yellow">
           Ho capito
@@ -916,22 +951,24 @@ function BossResult({ view, rival }: { view: BossView; rival: string }) {
                 <li key={r.round} className="flex items-center gap-2 bg-panel px-2 py-1 text-xs font-semibold">
                   <span className="w-5 font-display text-lg text-comic-yellow">{r.round}</span>
                   <span className="min-w-0 flex-1 truncate">
-                    {mine?.name ?? "—"} su {view.fronts[r.my_play!.front].name}
+                    {mine?.name ?? "—"} su {view.fronts[r.my_play!.front].name} ({r.my_play!.score})
                   </span>
                   <span className={`font-display text-lg ${r.my_play!.points > 0 ? "text-comic-cyan" : "text-faint"}`}>
                     +{r.my_play!.points}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-right text-muted">
-                    {r.opponent_play!.name} su {view.fronts[r.opponent_play!.front].name}
+                    {r.opponent_play!.name} su {view.fronts[r.opponent_play!.front].name} ({r.opponent_play!.score})
                   </span>
-                  <span className={`font-display text-lg ${r.opponent_play!.points > 0 ? "text-comic-magenta" : "text-faint"}`}>
+                  <span className={`font-display text-lg ${r.opponent_play!.points > 0 ? "text-comic-orange" : "text-faint"}`}>
                     +{r.opponent_play!.points}
                   </span>
                 </li>
               );
             })}
         </ol>
-        <p className="text-xs font-semibold text-muted">A sinistra tu, a destra {rival}.</p>
+        <p className="text-xs font-semibold text-muted">
+          A sinistra tu, a destra {rival}: chi è entrato dove, con quale punteggio, e i punti di ogni turno da tutti i fronti.
+        </p>
       </section>
 
       <div className="flex shrink-0 gap-2">

@@ -115,7 +115,7 @@ export const TUTORIAL_MODES = [
   {
     name: "Grande Minaccia",
     color: "bg-comic-orange",
-    text: `Un Boss con cinque fronti, tutti visibili, e una tabella di quanti punti vale ognuno in ogni turno. Scegli chi mandare e dove: sullo stesso fronte vince chi fa più punti, da solo lo prendi se arrivi alla soglia. Contro un bot o un giocatore, senza carte in gioco.`,
+    text: `Un Boss con cinque fronti, tutti visibili, e una tabella di quanti punti vale ognuno in ogni turno. Ogni turno metti un personaggio su un tuo fronte libero: resta lì fino alla fine, e ogni turno ogni fronte occupato paga a chi è da solo o a chi fa più punti. Contro un bot o un giocatore, senza carte in gioco.`,
   },
   {
     name: "Conquista",
