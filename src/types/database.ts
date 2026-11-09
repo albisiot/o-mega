@@ -1981,6 +1981,7 @@ export type Database = {
     }
     Functions: {
       admin_bonus_codes_payload: { Args: never; Returns: Json }
+      admin_boss_table_payload: { Args: never; Returns: Json }
       admin_create_bonus_code: {
         Args: {
           p_card_codes?: string[]
@@ -1995,10 +1996,11 @@ export type Database = {
       }
       admin_delete_event: { Args: { p_id: string }; Returns: Json }
       admin_events_payload: { Args: never; Returns: Json }
+      admin_get_boss_table: { Args: never; Returns: Json }
       admin_list_bonus_codes: { Args: never; Returns: Json }
       admin_list_events: { Args: never; Returns: Json }
-      admin_get_boss_table: { Args: never; Returns: Json }
       admin_list_pack_cards: { Args: never; Returns: Json }
+      admin_pack_cards_payload: { Args: never; Returns: Json }
       admin_save_boss_table: {
         Args: {
           p_base_value: number
@@ -2010,7 +2012,6 @@ export type Database = {
         }
         Returns: Json
       }
-      admin_pack_cards_payload: { Args: never; Returns: Json }
       admin_save_event: {
         Args: {
           p_daily_cap?: number
