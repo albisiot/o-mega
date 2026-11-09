@@ -1,55 +1,14 @@
-export type ThreatEnvironment =
-  | "city"
-  | "port"
-  | "control"
-  | "lab"
-  | "ritual"
-  | "mind"
-  | "museum"
-  | "sky"
-  | "rail"
-  | "sewer"
-  | "swamp"
-  | "prison"
-  | "battlefield"
-  | "rift"
-  // The places beyond Nuova Megara.
-  | "desert"
-  | "jungle"
-  | "sunken"
-  | "ice"
-  | "japan";
-export type ThreatActor =
-  | "robot"
-  | "golem"
-  | "car"
-  | "ghost"
-  | "shadow"
-  | "witch"
-  | "monster"
-  | "drone"
-  | "fortress"
-  | "globe"
-  | "eclipse"
-  | "mirrors"
-  | "flames"
-  | "virus"
-  | "core"
-  | "trap"
-  | "mummy"
-  | "sphinx"
-  | "ballgame"
-  | "calendar"
-  | "serpent"
-  | "song"
-  | "guardian"
-  | "temple"
-  | "hut"
-  | "base"
-  | "beast"
-  | "swordsman"
-  | "fox"
-  | "kaiju";
+// The places beyond Nuova Megara start at "desert".
+export const THREAT_ENVIRONMENTS = [
+  "city", "port", "control", "lab", "ritual", "mind", "museum", "sky", "rail", "sewer", "swamp", "prison", "battlefield", "rift",
+  "desert", "jungle", "sunken", "ice", "japan",
+] as const;
+export type ThreatEnvironment = (typeof THREAT_ENVIRONMENTS)[number];
+export const THREAT_ACTORS = [
+  "robot", "golem", "car", "ghost", "shadow", "witch", "monster", "drone", "fortress", "globe", "eclipse", "mirrors", "flames", "virus", "core",
+  "trap", "mummy", "sphinx", "ballgame", "calendar", "serpent", "song", "guardian", "temple", "hut", "base", "beast", "swordsman", "fox", "kaiju",
+] as const;
+export type ThreatActor = (typeof THREAT_ACTORS)[number];
 export type ThreatScene = { environment: ThreatEnvironment; actor?: ThreatActor };
 
 // The match state exposes the threat's name, not its code. A threat missing
@@ -143,4 +102,18 @@ export function threatScene(name: string): ThreatScene | null {
 
 export function sceneThreatNames(): string[] {
   return Object.keys(SCENES);
+}
+
+/**
+ * A boss's diorama, from boss_definitions.scene ("environment:actor"): one of the
+ * threats' environments and actors, drawn at the size of the biggest threats.
+ * Null for a scene this client does not know (a newer boss): the plain panel stays.
+ */
+export function bossScene(scene: string): ThreatScene | null {
+  const [environment, actor] = scene.split(":");
+  if (!(THREAT_ENVIRONMENTS as readonly string[]).includes(environment)) return null;
+  if (actor !== undefined && !(THREAT_ACTORS as readonly string[]).includes(actor)) return null;
+  return actor === undefined
+    ? { environment: environment as ThreatEnvironment }
+    : { environment: environment as ThreatEnvironment, actor: actor as ThreatActor };
 }

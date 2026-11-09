@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { sceneThreatNames, threatScene } from "./threat-scene";
+import { bossScene, sceneThreatNames, threatScene } from "./threat-scene";
 
 const namesIn = (file: string) =>
   [...readFileSync(`supabase/migrations/${file}`, "utf8").matchAll(/\('T\d{3}', '((?:[^']|'')+)'/g)].map(([, name]) =>
@@ -23,5 +23,22 @@ describe("threatScene", () => {
 
   it("leaves unknown threats on the plain panel", () => {
     expect(threatScene("Minaccia futura")).toBeNull();
+  });
+});
+
+describe("bossScene", () => {
+  it("draws every boss of the catalog", () => {
+    const scenes = [...readFileSync("supabase/migrations/20261110090000_boss_mode.sql", "utf8").matchAll(/^ {3}'([a-z]+(?::[a-z]+)?)'\)[,;]\r?$/gm)].map(
+      ([, scene]) => scene,
+    );
+    expect(scenes).toHaveLength(6);
+    for (const scene of scenes) expect(bossScene(scene), scene).not.toBeNull();
+  });
+
+  it("reads the environment and the actor", () => {
+    expect(bossScene("port:golem")).toEqual({ environment: "port", actor: "golem" });
+    expect(bossScene("city")).toEqual({ environment: "city" });
+    expect(bossScene("moon:golem")).toBeNull();
+    expect(bossScene("port:dragon")).toBeNull();
   });
 });

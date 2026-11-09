@@ -101,12 +101,19 @@ function easeOutBack(x: number): number {
 }
 
 /**
+ * A Grande Minaccia's fronts: a row of beacons along the front edge. `colors` is read on
+ * every frame: a colour lights a beacon, null leaves it dark.
+ */
+export type BossBeacons = { count: number; colors: () => readonly (number | null)[] };
+
+/**
  * Draws a threat's comic book diorama on the canvas, rising like a pop-up book.
- * Returns the cleanup function. Throws if WebGL is not available.
+ * With `beacons` it is a boss's, with one beacon per front. Returns the cleanup
+ * function. Throws if WebGL is not available.
  */
 export function mountThreatDiorama(
   canvas: HTMLCanvasElement,
-  threat: { name: string; level: number; scene: ThreatScene },
+  threat: { name: string; level: number; scene: ThreatScene; beacons?: BossBeacons },
   onContextLost: () => void,
 ): () => void {
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1249,6 +1256,34 @@ export function mountThreatDiorama(
   };
   BUILDERS[threat.scene.environment]();
 
+  // A boss's fronts: a pedestal and a lamp each, dark until someone takes the front.
+  const beacons: MeshBasicMaterial[] = [];
+  const beaconColors: (number | null)[] = [];
+  if (threat.beacons) {
+    const { count } = threat.beacons;
+    for (let i = 0; i < count; i++) {
+      const x = (i - (count - 1) / 2) * 0.88;
+      cylinder(0.13, 0.18, 0.22, STEEL, x, 0, 1.6, { delay: 1 + i * 0.06 });
+      const lamp = ball(0.15, DARK, x, 0.22, 1.6, { delay: 1.05 + i * 0.06, flat: true });
+      beacons.push((lamp.children[0] as Mesh).material as MeshBasicMaterial);
+      beaconColors.push(null);
+    }
+  }
+  /** Lights the beacons as the match says; whether anything changed. */
+  function lightBeacons(): boolean {
+    if (!threat.beacons) return false;
+    const colors = threat.beacons.colors();
+    let changed = false;
+    beacons.forEach((material, i) => {
+      const color = colors[i] ?? null;
+      if (color === beaconColors[i]) return;
+      beaconColors[i] = color;
+      material.color.setHex(color ?? DARK);
+      changed = true;
+    });
+    return changed;
+  }
+
   const distance = threat.level >= 5 ? 10 : 9.2;
   camera.position.set(0, distance * 0.34, distance);
   camera.lookAt(0, threat.level >= 5 ? 1.2 : 0.75, 0);
@@ -1292,6 +1327,7 @@ export function mountThreatDiorama(
   const popMs = (Math.max(...parts.map((part) => part.delay)) + POP_SECONDS) * 1000;
 
   function draw(now: number, settled: boolean) {
+    lightBeacons();
     const elapsed = (now - start) / 1000;
     for (const { group, delay } of parts) {
       const x = settled ? 1 : Math.min(1, Math.max(0, (elapsed - delay) / POP_SECONDS));
@@ -1345,9 +1381,12 @@ export function mountThreatDiorama(
   const still = reduced ? new ResizeObserver(() => draw(start, true)) : null;
   if (still) still.observe(canvas);
   else frame = requestAnimationFrame(loop);
+  // A still scene still shows a front being taken.
+  const relight = still && threat.beacons ? setInterval(() => lightBeacons() && draw(start, true), 1000) : undefined;
 
   return () => {
     cancelAnimationFrame(frame);
+    clearInterval(relight);
     observer.disconnect();
     still?.disconnect();
     canvas.removeEventListener("pointerdown", onDown);

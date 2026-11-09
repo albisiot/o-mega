@@ -770,6 +770,10 @@ function TurnReveal({
 function BossTable({ view }: { view: BossView }) {
   return (
     <div className="flex flex-col gap-2">
+      <p className="text-sm font-bold">
+        <span className="font-display text-lg uppercase text-comic-yellow">{view.boss.name}.</span>{" "}
+        <span className="italic">{view.boss.flavor}</span>
+      </p>
       <p className="text-sm font-medium text-muted">
         Ogni turno tutti i fronti salgono di {balance.boss.growth}, e {balance.boss.extraFronts} a caso di{" "}
         {balance.boss.growth + balance.boss.extraGrowth}. Da solo su un fronte lo presidi se arrivi alla soglia; sullo stesso
