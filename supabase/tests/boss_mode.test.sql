@@ -44,8 +44,8 @@ begin
   assert not exists (
     select 1 from public.boss_fronts f join public.threat_definitions t on t.id = f.threat_id where t.region <> 'megara'
   ), 'a front beyond Nuova Megara';
-  assert (select count(*) from public.game_config where key like 'boss.%') = 14, 'boss configuration';
-  assert public.config_int('boss.targets.level6') = 16, 'presidio target of level 6';
+  assert (select count(*) from public.game_config where key like 'boss.%') = 8, 'boss configuration';
+  assert not exists (select 1 from public.game_config where key like 'boss.targets.%'), 'no presidio target';
 end $$;
 
 -- The points table: the same rules as the engine.
@@ -79,6 +79,7 @@ declare
   v_bot_wins integer := (select bot_wins from public.profiles where id = v_a);
   play_a jsonb;
   play_b jsonb;
+  v_holders jsonb;
 begin
   select array_agg(i.definition_id order by u.ord) into v_defs
   from unnest(v_team) with ordinality as u(id, ord) join public.card_instances i on i.id = u.id;
@@ -117,7 +118,7 @@ begin
   assert jsonb_array_length(v_state -> 'fronts') = 5, 'five fronts';
   assert (v_state -> 'fronts' -> 0 ->> 'front')::integer = 0 and v_state -> 'fronts' -> 0 ->> 'name' = 'Rissa al porto', 'first front';
   assert v_state -> 'values' = v_values, 'points table';
-  assert v_state -> 'presidio_targets' = '{"1": 4, "2": 7, "3": 9, "4": 12, "5": 14, "6": 16}'::jsonb, 'presidio targets';
+  assert v_state -> 'presidio_targets' is null, 'no presidio targets';
   assert (v_state ->> 'turns')::integer = 5, 'turns';
   assert jsonb_array_length(v_state -> 'my_team') = 5, 'own team';
   assert v_state -> 'rounds' -> 0 ->> 'opponent_play' is null, 'opponent play before resolving';
@@ -126,91 +127,100 @@ begin
   v_context := public.match_round_context(v_a, v_match);
   assert v_context -> 'match' ->> 'format' = 'boss' and v_context -> 'match' -> 'boss_values' = v_values, 'context';
 
-  -- Turn 1, same front (slot 1, worth 2): a wins it.
+  -- Turn 1, both on front 1 (worth 2): a's 8 beats b's 5.
   play_a := jsonb_build_object('card_instance_id', v_team[1], 'definition_id', v_defs[1], 'front_slot', 1,
-    'base', 8, 'bonus', 0, 'score', 8, 'highest', 8, 'auto_played', false, 'points', 2, 'required', null);
+    'base', 8, 'bonus', 0, 'score', 8, 'highest', 8, 'auto_played', false, 'points', 2);
   play_b := jsonb_build_object('card_instance_id', null, 'definition_id', v_bot[1], 'front_slot', 1,
-    'base', 5, 'bonus', 0, 'score', 5, 'highest', 5, 'auto_played', false, 'points', 0, 'required', null);
+    'base', 5, 'bonus', 0, 'score', 5, 'highest', 5, 'auto_played', false, 'points', 0);
 
   v_failed := false;
-  begin perform public.match_record_boss_turn_state(v_match, 1, play_a, play_b || '{"points": 2}', null, 'a');
+  begin perform public.match_record_boss_turn_state(v_match, 1, play_a || '{"points": 0}', play_b || '{"points": 2}', '["b", null, null, null, null]', null, 'a');
   exception when others then v_failed := sqlerrm = 'invalid_points'; end;
-  assert v_failed, 'both sides took the same front';
+  assert v_failed, 'the lower score held the front';
   v_failed := false;
-  begin perform public.match_record_boss_turn_state(v_match, 1, play_a || '{"points": 0}', play_b || '{"points": 2}', null, 'a');
-  exception when others then v_failed := sqlerrm = 'invalid_points'; end;
-  assert v_failed, 'the lower score took the front';
-  v_failed := false;
-  begin perform public.match_record_boss_turn_state(v_match, 1, play_a || '{"points": 3}', play_b, null, 'a');
+  begin perform public.match_record_boss_turn_state(v_match, 1, play_a || '{"points": 3}', play_b, '["a", null, null, null, null]', null, 'a');
   exception when others then v_failed := sqlerrm = 'invalid_points'; end;
   assert v_failed, 'points that are not in the table';
   v_failed := false;
-  begin perform public.match_record_boss_turn_state(v_match, 1, play_a || '{"front_slot": 6}', play_b, null, 'a');
+  begin perform public.match_record_boss_turn_state(v_match, 1, play_a, play_b, '["a", "a", null, null, null]', null, 'a');
+  exception when others then v_failed := sqlerrm = 'invalid_points'; end;
+  assert v_failed, 'a front held with nobody on it';
+  v_failed := false;
+  begin perform public.match_record_boss_turn_state(v_match, 1, play_a, play_b, '["a", null, null, null]', null, 'a');
+  exception when others then v_failed := sqlerrm = 'invalid_points'; end;
+  assert v_failed, 'holders for four fronts';
+  v_failed := false;
+  begin perform public.match_record_boss_turn_state(v_match, 1, play_a || '{"front_slot": 6}', play_b, '["a", null, null, null, null]', null, 'a');
   exception when others then v_failed := sqlerrm = 'invalid_front'; end;
   assert v_failed, 'a front that does not exist';
-  v_failed := false;
-  begin perform public.match_record_boss_turn_state(v_match, 1, play_a || '{"required": 4}', play_b, null, 'a');
-  exception when others then v_failed := sqlerrm = 'invalid_points'; end;
-  assert v_failed, 'a presidio target on a contested front';
   v_failed := false;
   begin perform public.match_record_round_state(v_match, 1, play_a, play_b, 'a', null, 'a');
   exception when others then v_failed := sqlerrm = 'invalid_front'; end;
   assert v_failed, 'a turn stored as a classic round';
 
-  v_state := public.match_record_boss_turn_state(v_match, 1, play_a, play_b, null, 'a');
+  v_state := public.match_record_boss_turn_state(v_match, 1, play_a, play_b, '["a", null, null, null, null]', null, 'a');
   assert (v_state ->> 'current_round')::integer = 2, 'turn 2';
   assert v_state -> 'points' = '{"me": 2, "opponent": 0}'::jsonb, format('points %s', v_state -> 'points');
   assert v_state -> 'fronts_taken' = '{"me": 1, "opponent": 0}'::jsonb, 'fronts taken';
+  assert v_state -> 'rounds' -> 0 -> 'holders' = '["me", null, null, null, null]'::jsonb, 'holders as the player sees them';
+  assert public.match_state_payload(v_match, 'b') -> 'rounds' -> 0 -> 'holders' = '["opponent", null, null, null, null]'::jsonb,
+    'holders as the bot side sees them';
   assert (v_state -> 'rounds' -> 0 -> 'opponent_play' ->> 'front')::integer = 0, 'opponent front after resolving';
-  assert (v_state -> 'rounds' -> 0 -> 'my_play' ->> 'points')::integer = 2, 'own points of the turn';
   assert (select winner_side from public.match_rounds where match_id = v_match and round = 1) = 'a', 'turn winner';
 
-  -- Turn 2, different fronts: a holds slot 2 (worth 4), b fails slot 5.
+  -- Turn 2: a on front 2 (7), b alone on front 5 (13). Front 1 stays a's and pays again.
   play_a := jsonb_build_object('card_instance_id', v_team[2], 'definition_id', v_defs[2], 'front_slot', 2,
-    'base', 7, 'bonus', 0, 'score', 7, 'highest', 4, 'auto_played', false, 'points', 4, 'required', 7);
+    'base', 7, 'bonus', 0, 'score', 7, 'highest', 4, 'auto_played', false, 'points', 7);
   play_b := jsonb_build_object('card_instance_id', null, 'definition_id', v_bot[2], 'front_slot', 5,
-    'base', 13, 'bonus', 0, 'score', 13, 'highest', 4, 'auto_played', false, 'points', 0, 'required', 14);
+    'base', 13, 'bonus', 0, 'score', 13, 'highest', 4, 'auto_played', false, 'points', 2);
   v_failed := false;
-  begin perform public.match_record_boss_turn_state(v_match, 2, play_a || '{"score": 6}', play_b, null, 'a');
-  exception when others then v_failed := sqlerrm = 'invalid_points'; end;
-  assert v_failed, 'a front held below the presidio target';
-  v_failed := false;
-  begin perform public.match_record_boss_turn_state(v_match, 2, play_a || '{"points": 0}', play_b, null, 'a');
-  exception when others then v_failed := sqlerrm = 'invalid_points'; end;
-  assert v_failed, 'a front not held at the presidio target';
+  begin perform public.match_record_boss_turn_state(v_match, 2, play_a || '{"front_slot": 1}', play_b, '["a", null, null, null, "b"]', null, 'a');
+  exception when others then v_failed := sqlerrm = 'invalid_front'; end;
+  assert v_failed, 'a second character on the same front of a side';
   v_failed := false;
   begin perform public.match_record_boss_turn_state(v_match, 2,
-    play_a || jsonb_build_object('card_instance_id', v_team[1], 'definition_id', v_defs[1]), play_b, null, 'a');
+    play_a || jsonb_build_object('card_instance_id', v_team[1], 'definition_id', v_defs[1]), play_b, '["a", "a", null, null, "b"]', null, 'a');
   exception when others then v_failed := sqlerrm = 'character_already_played'; end;
   assert v_failed, 'a character played twice';
-  perform public.match_record_boss_turn_state(v_match, 2, play_a, play_b, null, 'a');
+  v_failed := false;
+  begin perform public.match_record_boss_turn_state(v_match, 2, play_a || '{"points": 4}', play_b, '["a", "a", null, null, "b"]', null, 'a');
+  exception when others then v_failed := sqlerrm = 'invalid_points'; end;
+  assert v_failed, 'a front held earlier that did not pay again';
+  perform public.match_record_boss_turn_state(v_match, 2, play_a, play_b, '["a", "a", null, null, "b"]', null, 'a');
 
-  -- Turns 3-5: nobody takes anything; then the result must match the points.
+  -- Turns 3-5: a places 10s on fronts 3, 4, 5; b places 0s on fronts 2, 3, 4.
   for t in 3 .. 5 loop
-    play_a := jsonb_build_object('card_instance_id', v_team[t], 'definition_id', v_defs[t], 'front_slot', 4,
-      'base', 1, 'bonus', 0, 'score', 1, 'highest', 1, 'auto_played', false, 'points', 0, 'required', 12);
-    play_b := jsonb_build_object('card_instance_id', null, 'definition_id', v_bot[t], 'front_slot', 3,
-      'base', 1, 'bonus', 0, 'score', 1, 'highest', 1, 'auto_played', true, 'points', 0, 'required', 9);
+    play_a := jsonb_build_object('card_instance_id', v_team[t], 'definition_id', v_defs[t], 'front_slot', t,
+      'base', 10, 'bonus', 0, 'score', 10, 'highest', 5, 'auto_played', false,
+      'points', case t when 3 then 14 when 4 then 23 else 29 end);
+    play_b := jsonb_build_object('card_instance_id', null, 'definition_id', v_bot[t], 'front_slot', t - 1,
+      'base', 0, 'bonus', 0, 'score', 0, 'highest', 0, 'auto_played', true,
+      'points', case t when 3 then 3 when 4 then 5 else 6 end);
+    v_holders := case t
+      when 3 then '["a", "a", "a", null, "b"]'
+      when 4 then '["a", "a", "a", "a", "b"]'
+      else '["a", "a", "a", "a", "b"]' end;
     if t = 5 then
       v_failed := false;
-      begin perform public.match_record_boss_turn_state(v_match, t, play_a, play_b, 'b', 'a');
+      begin perform public.match_record_boss_turn_state(v_match, t, play_a, play_b, v_holders, 'b', 'a');
       exception when others then v_failed := sqlerrm = 'result_mismatch'; end;
       assert v_failed, 'a result that does not follow the points';
-      v_state := public.match_record_boss_turn_state(v_match, t, play_a, play_b, 'a', 'a');
+      v_state := public.match_record_boss_turn_state(v_match, t, play_a, play_b, v_holders, 'a', 'a');
     else
-      v_state := public.match_record_boss_turn_state(v_match, t, play_a, play_b, null, 'a');
+      v_state := public.match_record_boss_turn_state(v_match, t, play_a, play_b, v_holders, null, 'a');
     end if;
   end loop;
 
   assert v_state ->> 'status' = 'finished' and v_state ->> 'result' = 'win', format('end %s', v_state ->> 'result');
-  assert v_state -> 'points' = '{"me": 6, "opponent": 0}'::jsonb, 'final points';
+  assert v_state -> 'points' = '{"me": 75, "opponent": 16}'::jsonb, format('final points %s', v_state -> 'points');
+  assert v_state -> 'fronts_taken' = '{"me": 14, "opponent": 4}'::jsonb, format('fronts held %s', v_state -> 'fronts_taken');
   assert (select bot_wins from public.profiles where id = v_a) = v_bot_wins + 1, 'bot statistics';
   assert (select count(*) from public.match_rounds where match_id = v_match) = 5, 'five turns';
 
   set local role authenticated;
   perform set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000e1", "role": "authenticated"}', true);
   assert (public.get_match_history() -> 0 ->> 'format') = 'boss', 'history format';
-  assert (public.get_match_history() -> 0 ->> 'points_me')::integer = 6, 'history points';
+  assert (public.get_match_history() -> 0 ->> 'points_me')::integer = 75, 'history points';
   assert (public.get_match_history() -> 0 ->> 'boss_name') = 'Il Colosso del porto', 'history boss';
   assert (public.get_match_state(v_match) ->> 'format') = 'boss', 'the player reads the boss payload';
   reset role;
@@ -236,7 +246,7 @@ begin
   assert jsonb_array_length(public.match_state_payload(v_match, 'a') -> 'rounds') = 1, 'classic rounds';
   v_failed := false;
   begin
-    perform public.match_record_boss_turn(v_match, 1, '{"front_slot": 1}', '{"front_slot": 1}', null);
+    perform public.match_record_boss_turn(v_match, 1, '{"front_slot": 1}', '{"front_slot": 1}', '[]', null);
   exception when others then v_failed := sqlerrm = 'invalid_format'; end;
   assert v_failed, 'a classic round stored as a turn';
   perform public.finish_match(v_match, 'b', 'forfeit');
@@ -300,29 +310,30 @@ begin
 
   play_a := jsonb_build_object('card_instance_id', v_team_a[1],
     'definition_id', (select definition_id from public.card_instances where id = v_team_a[1]), 'front_slot', 3,
-    'base', 9, 'bonus', 0, 'score', 9, 'highest', 5, 'auto_played', false, 'points', 1, 'required', 9);
+    'base', 9, 'bonus', 0, 'score', 9, 'highest', 5, 'auto_played', false, 'points', 1);
   play_b := jsonb_build_object('card_instance_id', v_team_b[1],
     'definition_id', (select definition_id from public.card_instances where id = v_team_b[1]), 'front_slot', 4,
-    'base', 3, 'bonus', 0, 'score', 3, 'highest', 2, 'auto_played', false, 'points', 0, 'required', 12);
+    'base', 3, 'bonus', 0, 'score', 3, 'highest', 2, 'auto_played', false, 'points', 2);
   v_failed := false;
-  begin perform public.match_record_boss_turn(v_match, 1, play_a, play_b, null);
+  begin perform public.match_record_boss_turn(v_match, 1, play_a, play_b, '[null, null, "a", "b", null]', null);
   exception when others then v_failed := sqlerrm = 'choice_not_submitted'; end;
   assert v_failed, 'a front other than the one chosen';
-  perform public.match_record_boss_turn(v_match, 1, play_a || '{"front_slot": 2, "points": 2, "required": 7}', play_b, null);
+  perform public.match_record_boss_turn(v_match, 1, play_a || '{"front_slot": 2, "points": 2}', play_b, '[null, "a", null, "b", null]', null);
   assert (select points_a from public.matches where id = v_match) = 2, 'points of the player';
 
-  -- An Annullatore stops a power only on the same front.
+  -- An Annullatore stops a power on its own front only, and only of a newcomer.
   insert into public.card_instances (owner_id, definition_id, acquired_via) values (v_b, v_nullifier, 'pack') returning id into v_inst;
   update public.match_teams set card_instance_ids[2] = v_inst, definition_ids[2] = v_nullifier
   where match_id = v_match and side = 'b';
   play_a := jsonb_build_object('card_instance_id', v_team_a[2],
     'definition_id', (select definition_id from public.card_instances where id = v_team_a[2]), 'front_slot', 1,
-    'base', 1, 'bonus', 0, 'score', 1, 'highest', 1, 'auto_played', true, 'points', 0, 'required', 4);
+    'base', 1, 'bonus', 0, 'score', 1, 'highest', 1, 'auto_played', true, 'points', 6);
   play_b := jsonb_build_object('card_instance_id', v_inst, 'definition_id', v_nullifier, 'front_slot', 2,
-    'base', 1, 'bonus', 0, 'score', 1, 'highest', 1, 'auto_played', true, 'points', 0, 'required', 7);
+    'base', 1, 'bonus', 0, 'score', 1, 'highest', 1, 'auto_played', true, 'points', 3);
   update public.match_rounds set deadline_at = now() - interval '1 hour' where match_id = v_match and round = 2;
-  perform public.match_record_boss_turn(v_match, 2, play_a, play_b, null);
+  perform public.match_record_boss_turn(v_match, 2, play_a, play_b, '["a", "a", null, "b", null]', null);
   assert not public.nullified_in_round(v_match, 2, 'a'), 'an Annullatore on another front';
+  assert not public.nullified_in_round(v_match, 1, 'a'), 'an Annullatore arriving after the character';
   perform public.finish_match(v_match, 'draw', 'forfeit');
 end $$;
 

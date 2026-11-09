@@ -226,7 +226,6 @@ async function load(): Promise<Loaded> {
       growth: value("boss.growth"),
       extraFronts: value("boss.extra_fronts"),
       extraGrowth: value("boss.extra_growth"),
-      targets: Object.fromEntries([1, 2, 3, 4, 5, 6].map((level) => [level, value(`boss.targets.level${level}`)])),
     },
     graceSeconds: value("match.timeout_grace_seconds"),
     catalog: {
@@ -267,10 +266,9 @@ type PlayRow = {
   score: number;
   highest_value: number;
   auto_played: boolean;
-  /** Grande Minaccia only: 1-based front, points taken, score needed alone on the front. */
+  /** Grande Minaccia only: 1-based front where the character stays, points the side took that turn. */
   front_slot: number | null;
   points: number | null;
-  required: number | null;
 };
 
 type MatchContext = {
@@ -285,7 +283,14 @@ type MatchContext = {
     boss_values: number[][] | null;
   };
   teams: { side: Side; card_instance_ids: string[] | null; definition_ids: string[] }[];
-  rounds: { round: number; deadline_at: string; winner_side: string | null; resolved_at: string | null }[];
+  rounds: {
+    round: number;
+    deadline_at: string;
+    winner_side: string | null;
+    resolved_at: string | null;
+    /** Grande Minaccia: who held each front in that turn. */
+    holders?: (Side | null)[] | null;
+  }[];
   plays: PlayRow[];
   /** Choices already submitted for the current round (matches between players). */
   pending: { side: Side; card_instance_id: string; front_slot: number | null }[];
@@ -358,7 +363,8 @@ async function loadMatch(userId: string, matchId: string) {
 
 /**
  * The engine state of a Grande Minaccia: the fronts are the match's threats, plain
- * (no modifier), and each resolved turn says where each side played and what it took.
+ * (no modifier), and each resolved turn says where each side placed its character,
+ * what it took and who held each front.
  */
 function bossState(
   loaded: Loaded,
@@ -375,11 +381,11 @@ function bossState(
         a: playRows.find((row) => row.round === r.round && row.side === "a")!,
         b: playRows.find((row) => row.round === r.round && row.side === "b")!,
       };
-      const contested = rows.a.front_slot === rows.b.front_slot;
+      const holders = r.holders ?? match.threat_ids.map(() => null);
       const playOf = (playSide: Side) => {
         const p = rows[playSide];
-        const other = rows[playSide === "a" ? "b" : "a"];
-        const points = p.points ?? 0;
+        const front = (p.front_slot ?? 1) - 1;
+        const holder = holders[front] ?? null;
         return {
           characterId: p.card_instance_id ?? p.definition_id,
           base: p.base_score,
@@ -387,14 +393,12 @@ function bossState(
           total: p.score,
           highest: p.highest_value,
           autoPlayed: p.auto_played,
-          front: (p.front_slot ?? 1) - 1,
-          required: p.required,
-          points,
-          // Nobody took a contested front: void for both.
-          outcome: points > 0 ? ("won" as const) : contested && (other.points ?? 0) === 0 ? ("void" as const) : ("lost" as const),
+          front,
+          points: p.points ?? 0,
+          outcome: holder === null ? ("void" as const) : holder === playSide ? ("won" as const) : ("lost" as const),
         };
       };
-      return { turn: r.round, plays: { a: playOf("a"), b: playOf("b") } };
+      return { turn: r.round, plays: { a: playOf("a"), b: playOf("b") }, holders };
     });
   return {
     rules: loaded.boss,
@@ -429,7 +433,6 @@ function recordBossTurn(
       highest: play.highest,
       auto_played: play.autoPlayed,
       points: play.points,
-      required: play.required,
     };
   };
   return admin.rpc("match_record_boss_turn_state", {
@@ -437,6 +440,7 @@ function recordBossTurn(
     p_turn: played.turn.turn,
     p_play_a: playPayload("a"),
     p_play_b: playPayload("b"),
+    p_holders: played.turn.holders,
     p_result: played.finished ? played.result : null,
     p_side: side,
   });
