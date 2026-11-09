@@ -81,7 +81,8 @@ function BossSteps({ initial }: { initial: BossView }) {
   const [offset, setOffset] = useState(() => Date.parse(initial.server_now) - Date.now());
   const [revealing, setRevealing] = useState<number | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [front, setFront] = useState<number>(() => hottestFront(initial));
+  // The front the player tapped this turn; until then, the one already submitted or the hottest.
+  const [front, setFront] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [abilities, setAbilities] = useState<AbilityInfo[]>([]);
@@ -115,7 +116,7 @@ function BossSteps({ initial }: { initial: BossView }) {
       revealedUpTo.current = newest;
       setRevealing(newest);
       setSelected(null);
-      setFront(hottestFront(next));
+      setFront(null);
     }
   }, []);
   const fetchBoss = useCallback(async (id: string) => (await fetchMatchState(id)) as unknown as BossView, []);
@@ -258,16 +259,16 @@ function BossSteps({ initial }: { initial: BossView }) {
   return (
     <div className="game-shell">
       <header className="relative flex items-center gap-1.5 px-3 py-1">
-        <div className="min-w-0 shrink-0 leading-none">
+        <div className="min-w-0 max-w-[7.5rem] shrink-0 leading-none">
           <p className="truncate text-[10px] font-bold text-muted">
-            Grande Minaccia · {view.mode === "bot" ? rival : `Amichevole · ${rival}`}
+            {view.mode === "bot" ? `Grande Minaccia · ${rival}` : `Amichevole · ${rival}`}
           </p>
           <p className="mt-0.5 flex items-baseline gap-1 text-[11px] font-extrabold uppercase">
             Tu
             <span className="shrink-0 font-display text-2xl leading-6 text-comic-yellow">
               {view.points.me}–{view.points.opponent}
             </span>
-            <span className="max-w-[5.5rem] truncate">{isBot ? "Bot" : rival}</span>
+            <span className="truncate">{isBot ? "Bot" : rival}</span>
           </p>
         </div>
         <TurnTrack view={view} />
@@ -367,7 +368,7 @@ function BossSteps({ initial }: { initial: BossView }) {
           deadline={deadline!}
           offset={offset}
           selected={selected ?? current.my_pending?.instance_id ?? null}
-          front={front}
+          front={front ?? current.my_pending?.front ?? hottestFront(view)}
           onSelect={setSelected}
           onFront={setFront}
           busy={busy}
