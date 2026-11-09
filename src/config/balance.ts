@@ -73,8 +73,8 @@ export const balance = {
 
   /**
    * Grande Minaccia (SPEC §5.12): a boss with five fronts and a points table visible
-   * from the start. Tuned by simulation on the real catalog. The turn timer is the
-   * match's round timer.
+   * from the start; a character placed on a front stays there and scores every turn.
+   * Simulated on the real catalog. The turn timer is the match's round timer.
    */
   boss: {
     turns: 5,
@@ -87,15 +87,6 @@ export const balance = {
     growth: 1,
     extraFronts: 2,
     extraGrowth: 1,
-    /** Score that holds a front alone (presidio): half the Emergenza target, rounded up. */
-    targets: {
-      level1: 4,
-      level2: 7,
-      level3: 9,
-      level4: 12,
-      level5: 14,
-      level6: 16,
-    },
   },
 
   /** Twists on the threats of a match; Emergenza has none. Tuned by simulation (SPEC §5.4). */

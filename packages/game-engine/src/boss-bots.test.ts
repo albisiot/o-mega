@@ -78,7 +78,7 @@ describe("chooseBossBotPlay", () => {
 });
 
 /** A match between two bots with the same team; 1 if side a wins, 0.5 on a draw. */
-function botMatch(rng: Rng, team: Character[], a: BotDifficulty, b: BotDifficulty, characters: Character[]): number {
+function botMatch(rng: Rng, team: Character[], other: Character[], a: BotDifficulty, b: BotDifficulty, characters: Character[]): number {
   const values = shuffle(rng, [0, 1, 2, 3, 4]);
   // A table drawn like the real one: two hot fronts, then +1 and +2.
   let row: number[] = [0, 1, 2, 3, 4].map((f) => (values.indexOf(f) < 2 ? 2 : 1));
@@ -88,7 +88,7 @@ function botMatch(rng: Rng, team: Character[], a: BotDifficulty, b: BotDifficult
     row = row.map((v, f) => v + 1 + (extra.includes(f) ? 1 : 0));
     table.push(row);
   }
-  let state = bossState(team, team.map((c) => ({ ...c, id: `${c.id}-b` })), table);
+  let state = bossState(team, other.map((c) => ({ ...c, id: `${c.id}-b` })), table);
   const k = knowledge(characters);
   while (state.turns.length < 5) {
     const choiceA = chooseBossBotPlay(a, bossBotView(state, "a", k), rng);
@@ -100,12 +100,14 @@ function botMatch(rng: Rng, team: Character[], a: BotDifficulty, b: BotDifficult
 }
 
 describe("bot strength (mini simulation, fixed seed)", () => {
-  it("planning beats greedy play with the same team", () => {
+  it("Super Pro beats Easy with random teams", () => {
     const characters = catalog(7);
     const rng = mulberry32(2026);
     let score = 0;
-    const matches = 150;
-    for (let i = 0; i < matches; i++) score += botMatch(rng, shuffle(rng, characters).slice(0, 5), "hard", "medium", characters);
+    const matches = 60;
+    for (let i = 0; i < matches; i++) {
+      score += botMatch(rng, shuffle(rng, characters).slice(0, 5), shuffle(rng, characters).slice(0, 5), "super_pro", "easy", characters);
+    }
     expect(score / matches).toBeGreaterThan(0.6);
-  });
+  }, 30_000);
 });

@@ -1,21 +1,21 @@
 // Grande Minaccia (SPEC §5.12): a boss with five fronts, all visible from the
 // start, and a table of the points each front is worth in each turn. Every turn
-// both sides secretly choose a character and a front. On the same front the two
-// characters compare as in a round; on different fronts each side holds its own
-// front by reaching the presidio target (half the Emergenza one). After the last
-// turn the side with more points wins. Pure: the Edge Function loads and stores.
+// both sides secretly place a character on one of their own free fronts, where
+// it stays for the rest of the match with the score it made when it arrived.
+// Then every occupied front pays its value of that turn: to the only character
+// on it, or to the higher of the two. After the last turn the side with more
+// points wins. Pure: the Edge Function loads and stores.
 
-import { otherSide, outcomeFor, SIDES } from "./match.ts";
+import { otherSide, SIDES } from "./match.ts";
 import { pickOne, shuffle, type Rng } from "./rng.ts";
 import { abilityMalusOn, asPlayedAgainst, carriedBonusAfter, compareScores, scorePlay, type PlayOutcome, type ScoreContext } from "./scoring.ts";
-import { requiredScore } from "./emergency.ts";
 import type { AbilityFamilies, Character, MatchResult, PlayScore, Side, Threat } from "./types.ts";
 
 /** The numbers of the mode (balance.ts `boss`, game_config `boss.*`). */
 export type BossRules = {
-  /** Turns of a match; each side plays one character per turn, each character once. */
+  /** Turns of a match; each side places one character per turn, each character once. */
   turns: number;
-  /** Fronts of a boss. */
+  /** Fronts of a boss: one place per side on each. */
   fronts: number;
   /** Fronts worth `hotValue` in the first turn; the others are worth `baseValue`. */
   hotFronts: number;
@@ -26,22 +26,18 @@ export type BossRules = {
   /** ...and `extraFronts` random fronts `extraGrowth` more on top of that. */
   extraFronts: number;
   extraGrowth: number;
-  /** Threat level → score that holds a front alone (presidio). */
-  targets: Record<number, number>;
 };
 
-/** A choice for one turn: who plays, and on which front (0-based). */
+/** A choice for one turn: who arrives, and on which of the side's free fronts (0-based). */
 export type BossChoice = { characterId: string; front: number; autoPlayed: boolean };
 
 export type BossPlay = PlayScore & {
   autoPlayed: boolean;
-  /** 0-based front the character played on. */
+  /** 0-based front the character was placed on; it stays there. */
   front: number;
-  /** Score that would have held the front alone; null when both sides chose it. */
-  required: number | null;
-  /** Points the side took this turn: the front's value, or 0. */
+  /** Points the side took this turn, from every front it held. */
   points: number;
-  /** Won: the front was taken. Void: same front, nobody took it. */
+  /** How its own front ended this turn (Riscossa, Slancio, Vendetta): held, lost or nobody's. */
   outcome: PlayOutcome;
 };
 
@@ -49,6 +45,8 @@ export type BossTurnRecord = {
   /** 1-based. */
   turn: number;
   plays: Record<Side, BossPlay>;
+  /** Who held each front this turn, in front order; null: nobody there, or a tie. */
+  holders: (Side | null)[];
 };
 
 /** Everything the server knows about a Grande Minaccia match. Never send it to a client as is. */
@@ -61,6 +59,9 @@ export type BossState = {
   teams: Record<Side, Character[]>;
   turns: BossTurnRecord[];
 };
+
+/** A character standing on a front: its score is the one it made when it arrived. */
+export type BossOccupant = { characterId: string; score: PlayScore; turn: number };
 
 // ---------------------------------------------------------------------------
 // Points table
@@ -113,19 +114,36 @@ export function bossTurnNumber(state: BossState): number {
   return state.turns.length + 1;
 }
 
-/** Turns of the match: one per character, at most `rules.turns`. */
+/** Turns of the match: one per character and per front, at most `rules.turns`. */
 export function bossTurnCount(state: BossState): number {
-  return Math.min(state.rules.turns, state.teams.a.length, state.teams.b.length, state.values.length);
+  return Math.min(state.rules.turns, state.fronts.length, state.teams.a.length, state.teams.b.length, state.values.length);
 }
 
 export function isBossFinished(state: BossState): boolean {
   return state.turns.length >= bossTurnCount(state);
 }
 
-/** Characters of a side not yet used: each one plays once per match. */
+/** Characters of a side not placed yet: each one arrives once and stays. */
 export function availableBossCharacters(state: BossState, side: Side): Character[] {
   const used = new Set(state.turns.map((turn) => turn.plays[side].characterId));
   return state.teams[side].filter((character) => !used.has(character.id));
+}
+
+/** The side's character on each front, null where it has none yet. */
+export function bossBoard(state: BossState, side: Side): (BossOccupant | null)[] {
+  const board: (BossOccupant | null)[] = state.fronts.map(() => null);
+  for (const turn of state.turns) {
+    const { characterId, front, ...score } = turn.plays[side];
+    board[front] = { characterId, score: { ...score, characterId }, turn: turn.turn };
+  }
+  return board;
+}
+
+/** The fronts where the side can still place a character. */
+export function freeBossFronts(state: BossState, side: Side): number[] {
+  return bossBoard(state, side)
+    .map((occupant, front) => (occupant ? -1 : front))
+    .filter((front) => front >= 0);
 }
 
 /** Points so far. */
@@ -135,20 +153,21 @@ export function bossPoints(state: BossState): Record<Side, number> {
   return points;
 }
 
-/** Fronts taken so far (a front taken in two turns counts twice): the "rounds won" of the powers. */
+/** Fronts held so far, one per front per turn: the "rounds won" of the powers and the first tie-break. */
 export function frontsTaken(state: BossState): Record<Side, number> {
   const taken = { a: 0, b: 0 };
-  for (const turn of state.turns) for (const side of SIDES) if (turn.plays[side].outcome === "won") taken[side] += 1;
+  for (const turn of state.turns) for (const holder of turn.holders) if (holder) taken[holder] += 1;
   return taken;
 }
 
+/** Sum of the scores of the characters placed. */
 export function bossTotalScores(state: BossState): Record<Side, number> {
   const totals = { a: 0, b: 0 };
   for (const turn of state.turns) for (const side of SIDES) totals[side] += turn.plays[side].total;
   return totals;
 }
 
-/** More points; then more fronts taken; then the higher sum of scores; otherwise a draw. null while playing. */
+/** More points; then more fronts held; then the higher sum of scores; otherwise a draw. null while playing. */
 export function bossResult(state: BossState): MatchResult | null {
   if (!isBossFinished(state)) return null;
   for (const tally of [bossPoints(state), frontsTaken(state), bossTotalScores(state)]) {
@@ -162,23 +181,33 @@ function characterOf(state: BossState, side: Side, id: string): Character | unde
 }
 
 /**
- * The character a side played in a resolved turn, as it played: without its power
- * when an opposing Annullatore was on the same front. Alone on a front no opposing
- * power reaches it.
+ * The opposing character a newcomer meets on its front: the one already there, or
+ * the one arriving in the same turn. Its powers that act on an opponent act on it.
+ */
+function opponentOnFront(state: BossState, side: Side, front: number, arriving?: Character): Character | undefined {
+  if (arriving) return arriving;
+  const occupant = bossBoard(state, otherSide(side))[front];
+  return occupant ? characterOf(state, otherSide(side), occupant.characterId) : undefined;
+}
+
+/**
+ * The character a side placed in a resolved turn, as it played: without its power
+ * when the opposing character it met on its front was an Annullatore.
  */
 export function bossPlayedIn(state: BossState, turn: BossTurnRecord, side: Side): Character | undefined {
   const own = characterOf(state, side, turn.plays[side].characterId);
   if (!own) return undefined;
-  const front = state.fronts[turn.plays[side].front];
-  const contested = turn.plays.a.front === turn.plays.b.front;
-  const opponent = contested ? characterOf(state, otherSide(side), turn.plays[otherSide(side)].characterId) : undefined;
-  return asPlayedAgainst(own, opponent, front);
+  const before: BossState = { ...state, turns: state.turns.filter((t) => t.turn < turn.turn) };
+  const front = turn.plays[side].front;
+  const sameFront = turn.plays[otherSide(side)].front === front;
+  const arriving = sameFront ? characterOf(state, otherSide(side), turn.plays[otherSide(side)].characterId) : undefined;
+  return asPlayedAgainst(own, opponentOnFront(before, side, front, arriving), state.fronts[front]);
 }
 
 /**
  * What the powers of `side` know before the current turn (SPEC §5.12): the turn is
- * the round, fronts taken are rounds won, Riscossa, Slancio and Vendetta read the
- * side's own previous turn, Crescendo the level of the front it played then.
+ * the round, fronts held are rounds won, Riscossa, Slancio and Vendetta read how the
+ * side's last character did on its front, Crescendo the level of that front.
  */
 export function bossContext(state: BossState, side: Side, families: AbilityFamilies): ScoreContext {
   const taken = frontsTaken(state);
@@ -198,15 +227,29 @@ export function bossContext(state: BossState, side: Side, families: AbilityFamil
   };
 }
 
-/** Score that holds `front` alone: Sabotatore lowers it, Implacabile is satisfied one point short. */
-export function presidioTarget(character: Character, front: Threat, rules: Pick<BossRules, "targets">): number {
-  return requiredScore(character, front, rules);
+/** The score a character makes arriving on a front this turn, against `opponent` if one is there. */
+function arrivalScore(
+  state: BossState,
+  side: Side,
+  character: Character,
+  front: number,
+  opponent: Character | undefined,
+  families: AbilityFamilies,
+): PlayScore {
+  const threat = state.fronts[front];
+  const acting = asPlayedAgainst(character, opponent, threat);
+  const opposing = opponent && asPlayedAgainst(opponent, character, threat);
+  return scorePlay(acting, threat, {
+    ...bossContext(state, side, families),
+    abilityMalus: abilityMalusOn(acting, opposing),
+    opponent: opposing,
+  });
 }
 
 /**
- * How a character would do alone on a front this turn: the score and the presidio
- * target. Only a preview (the opponent may choose the same front): the screen
- * shows it, the server never uses it to decide.
+ * How a character would score arriving on a front this turn, against the opposing
+ * character already there (the opponent may also arrive in the same turn: only a
+ * preview). The screen shows it; the server never uses it to decide.
  */
 export function previewBossPlay(
   state: BossState,
@@ -214,30 +257,32 @@ export function previewBossPlay(
   character: Character,
   front: number,
   families: AbilityFamilies,
-): { score: PlayScore; required: number } {
-  const threat = state.fronts[front];
-  if (!threat) throw new Error(`No front ${front}`);
-  const acting = asPlayedAgainst(character, null, threat);
-  return {
-    score: scorePlay(acting, threat, bossContext(state, side, families)),
-    required: presidioTarget(acting, threat, state.rules),
-  };
+): { score: PlayScore; against: PlayScore | null } {
+  if (!state.fronts[front]) throw new Error(`No front ${front}`);
+  const score = arrivalScore(state, side, character, front, opponentOnFront(state, side, front), families);
+  return { score, against: bossBoard(state, otherSide(side))[front]?.score ?? null };
 }
 
-/** Timer expired: a random available character on a front worth the most this turn. */
+/** Who holds a front: the only character on it, or the higher of the two (ties as in a round). */
+export function frontHolder(a: PlayScore | null | undefined, b: PlayScore | null | undefined): Side | null {
+  if (a && b) return compareScores(a, b);
+  return a ? "a" : b ? "b" : null;
+}
+
+/** Timer expired: a random available character on a free front worth the most this turn. */
 export function autoBossChoice(state: BossState, side: Side, rng: Rng): BossChoice {
   const row = state.values[state.turns.length];
   if (!row) throw new Error("The match is already over");
-  const best = Math.max(...row);
-  const fronts = row.map((value, f) => (value === best ? f : -1)).filter((f) => f >= 0);
+  const free = freeBossFronts(state, side);
+  const best = Math.max(...free.map((f) => row[f]));
   return {
     characterId: pickOne(rng, availableBossCharacters(state, side)).id,
-    front: pickOne(rng, fronts),
+    front: pickOne(rng, free.filter((f) => row[f] === best)),
     autoPlayed: true,
   };
 }
 
-/** Scores both choices and appends the turn. Pure. */
+/** Places both choices, then every occupied front pays this turn's value to its holder. Pure. */
 export function resolveBossTurn(
   state: BossState,
   choices: Record<Side, BossChoice>,
@@ -250,58 +295,44 @@ export function resolveBossTurn(
   const chosen = {} as Record<Side, Character>;
   for (const side of SIDES) {
     const { characterId, front } = choices[side];
-    if (!Number.isInteger(front) || front < 0 || front >= state.fronts.length) throw new Error("invalid_front");
+    if (!Number.isInteger(front) || !freeBossFronts(state, side).includes(front)) throw new Error("invalid_front");
     const character = availableBossCharacters(state, side).find((c) => c.id === characterId);
     if (!character) throw new Error(`Character ${characterId} is not available for side ${side}`);
     chosen[side] = character;
   }
 
-  const contested = choices.a.front === choices.b.front;
-  const plays = {} as Record<Side, BossPlay>;
-
-  if (contested) {
-    const front = state.fronts[choices.a.front];
-    const acting = { a: asPlayedAgainst(chosen.a, chosen.b, front), b: asPlayedAgainst(chosen.b, chosen.a, front) };
-    const scores = {} as Record<Side, PlayScore>;
-    for (const side of SIDES) {
-      const opponent = acting[otherSide(side)];
-      scores[side] = scorePlay(acting[side], front, {
-        ...bossContext(state, side, families),
-        abilityMalus: abilityMalusOn(acting[side], opponent),
-        opponent,
-      });
-    }
-    const winner = compareScores(scores.a, scores.b);
-    for (const side of SIDES) {
-      plays[side] = {
-        ...scores[side],
-        autoPlayed: choices[side].autoPlayed,
-        front: choices[side].front,
-        required: null,
-        points: winner === side ? row[choices[side].front] : 0,
-        outcome: outcomeFor(winner, side),
-      };
-    }
-  } else {
-    // Alone on a front: no opposing character, so the powers act as in Emergenza.
-    for (const side of SIDES) {
-      const front = state.fronts[choices[side].front];
-      const acting = asPlayedAgainst(chosen[side], null, front);
-      const score = scorePlay(acting, front, bossContext(state, side, families));
-      const required = presidioTarget(acting, front, state.rules);
-      const held = score.total >= required;
-      plays[side] = {
-        ...score,
-        autoPlayed: choices[side].autoPlayed,
-        front: choices[side].front,
-        required,
-        points: held ? row[choices[side].front] : 0,
-        outcome: held ? "won" : "lost",
-      };
-    }
+  const sameFront = choices.a.front === choices.b.front;
+  const scores = {} as Record<Side, PlayScore>;
+  for (const side of SIDES) {
+    const arriving = sameFront ? chosen[otherSide(side)] : undefined;
+    const opponent = opponentOnFront(state, side, choices[side].front, arriving);
+    scores[side] = arrivalScore(state, side, chosen[side], choices[side].front, opponent, families);
   }
 
-  const turn: BossTurnRecord = { turn: turnIndex + 1, plays };
+  // The board after the arrivals: every character keeps the score it arrived with.
+  const boards = { a: bossBoard(state, "a"), b: bossBoard(state, "b") };
+  for (const side of SIDES) {
+    boards[side][choices[side].front] = { characterId: chosen[side].id, score: scores[side], turn: turnIndex + 1 };
+  }
+  const holders = state.fronts.map((_, f) => frontHolder(boards.a[f]?.score, boards.b[f]?.score));
+  const points = { a: 0, b: 0 };
+  holders.forEach((holder, f) => {
+    if (holder) points[holder] += row[f];
+  });
+
+  const plays = {} as Record<Side, BossPlay>;
+  for (const side of SIDES) {
+    const holder = holders[choices[side].front];
+    plays[side] = {
+      ...scores[side],
+      autoPlayed: choices[side].autoPlayed,
+      front: choices[side].front,
+      points: points[side],
+      outcome: holder === null ? "void" : holder === side ? "won" : "lost",
+    };
+  }
+
+  const turn: BossTurnRecord = { turn: turnIndex + 1, plays, holders };
   return { state: { ...state, turns: [...state.turns, turn] }, turn };
 }
 
@@ -320,7 +351,7 @@ export function playBossPvpTurn(params: {
     const choice = choices[side];
     if (choice === null) return autoBossChoice(state, side, rng);
     if (!availableBossCharacters(state, side).some((c) => c.id === choice.characterId)) throw new Error("character_not_available");
-    if (!Number.isInteger(choice.front) || choice.front < 0 || choice.front >= state.fronts.length) throw new Error("invalid_front");
+    if (!Number.isInteger(choice.front) || !freeBossFronts(state, side).includes(choice.front)) throw new Error("invalid_front");
     return { ...choice, autoPlayed: false };
   };
   const resolved = resolveBossTurn(state, { a: pick("a"), b: pick("b") }, families);

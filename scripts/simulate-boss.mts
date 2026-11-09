@@ -8,7 +8,6 @@ import { readFileSync } from "node:fs";
 import {
   bossResult,
   bossBotView,
-  buildBotTeam,
   chooseBossBotPlay,
   computeAbilityMeans,
   drawBossValues,
@@ -62,7 +61,6 @@ const rules: BossRules = {
   growth: b.growth,
   extraFronts: b.extraFronts,
   extraGrowth: b.extraGrowth,
-  targets: Object.fromEntries([1, 2, 3, 4, 5, 6].map((l) => [l, b.targets[`level${l}` as keyof typeof b.targets]])),
 };
 const matchRules = { threatsPerMatch: b.fronts, threatLevels: balance.match.threatLevels } as MatchRules;
 
@@ -102,12 +100,12 @@ const same = (rng: Rng): [Character[], Character[]] => {
 const byRank = (ranks: number[]) => characters.filter((c) => ranks.includes(c.rarityRank));
 
 console.log(`${characters.length} characters, ${megara.length} threats of Nuova Megara, ${N} matches per line`);
-run("Difficile vs Medio (stessa squadra)", N, same, "hard", "medium");
-run("Medio vs Facile (stessa squadra)", N, same, "medium", "easy");
-run("Super Pro vs Difficile (stessa squadra)", Math.ceil(N / 4), same, "super_pro", "hard");
-run("Alfa+Omega vs Delta (Difficile)", N, (rng) => [pick(rng, byRank([4, 5])), pick(rng, byRank([1]))], "hard", "hard");
-run("Squadre dei bot: Super Pro vs Facile", Math.ceil(N / 4), (rng) => [
-  buildBotTeam("super_pro", characters, 5, rng),
-  buildBotTeam("easy", characters, 5, rng),
-], "medium", "medium");
+const random = (rng: Rng): [Character[], Character[]] => [pick(rng, characters), pick(rng, characters)];
+run("Medio vs Facile (squadre casuali)", N, random, "medium", "easy");
+run("Difficile vs Medio (squadre casuali)", Math.ceil(N / 2), random, "hard", "medium");
+run("Super Pro vs Medio (squadre casuali)", Math.ceil(N / 4), random, "super_pro", "medium");
+run("Super Pro vs Difficile (squadre casuali)", Math.ceil(N / 4), random, "super_pro", "hard");
+run("Difficile vs Medio (stessa squadra)", Math.ceil(N / 2), same, "hard", "medium");
+run("Alfa+Omega vs Delta (Medio)", N, (rng) => [pick(rng, byRank([4, 5])), pick(rng, byRank([1]))], "medium", "medium");
+run("Gamma vs Delta (Medio)", N, (rng) => [pick(rng, byRank([2])), pick(rng, byRank([1]))], "medium", "medium");
 console.log(`slowest turn of both bots: ${slowest.toFixed(0)} ms`);

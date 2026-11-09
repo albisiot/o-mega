@@ -62,7 +62,6 @@ export const BOSS_RULES: BossRules = {
   growth: 1,
   extraFronts: 2,
   extraGrowth: 1,
-  targets: { 1: 4, 2: 7, 3: 9, 4: 12, 5: 14, 6: 16 },
 };
 
 /** Levels 1, 2, 3, 4, 6: valid as a match (one low, one high, sum 16). */

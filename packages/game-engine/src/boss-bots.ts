@@ -1,46 +1,40 @@
 // Bots of the Grande Minaccia (SPEC §5.12). Like the bots of a match they know only
-// what a player knows: the boss, the whole points table, their own characters and
-// the opponent's characters already played. Never the opponent's choice for this
-// turn nor the rest of their team.
+// what a player knows: the boss, the whole points table, the board (every character
+// already placed, with its score), their own hand. Never the opponent's choice for
+// this turn nor the rest of their hand.
 //
 // They decide on a fast model of the mode: each character's score on each front in
-// each turn, counted alone, and a fixed chance that the opponent comes to the same
-// front. On the real catalog, with the same team: Hard beats Medium about 77% of
-// the time (85% if it never varied its moves), Super Pro beats Hard about 74%
-// (scripts/simulate-boss.mts).
+// each turn, and a chance that the front stays theirs once the opponent arrives.
+// Strength on the real catalog: scripts/simulate-boss.mts.
 
 import {
   availableBossCharacters,
+  bossBoard,
   bossContext,
-  bossPlayedIn,
   bossPoints,
   bossTotalScores,
   bossTurnCount,
   frontsTaken,
   playBossPvpTurn,
-  presidioTarget,
+  previewBossPlay,
   type BossChoice,
-  type BossRules,
   type BossState,
 } from "./boss.ts";
 import { type BotDifficulty, type BotKnowledge } from "./bots.ts";
 import { otherSide } from "./match.ts";
 import { mulberry32, pickWeighted, randomInt, shuffle, type Rng } from "./rng.ts";
-import { asPlayedAgainst, baseScore, highestRequired, scorePlay, type ScoreContext } from "./scoring.ts";
+import { baseScore, highestRequired, scorePlay, type ScoreContext } from "./scoring.ts";
 import type { AbilityCode, AbilityFamilies, Character, Side, Threat } from "./types.ts";
 
-/** Playouts Super Pro runs before each move, for all its options together. */
-export const BOSS_SUPER_PRO_SIMULATIONS = 600;
-
-/** Chance the bots assume that the opponent chooses the same front. */
-const CONTEST_CHANCE = 0.35;
-
 /**
- * Hard picks at random among moves this close to its best plan (points), so it is not
- * predictable: two identical planners end up on the same front most of the time.
+ * Monte Carlo of Hard and Super Pro: the moves the model rates best, and the playouts
+ * run for all of them together. Fewer candidates keep each one's estimate steady.
  */
-const HARD_TOLERANCE_POINTS = 0.1;
-const HARD_TOLERANCE_SHARE = 0.02;
+export const BOSS_HARD_SEARCH = { candidates: 4, simulations: 160 };
+export const BOSS_SUPER_PRO_SEARCH = { candidates: 8, simulations: 800 };
+
+/** A character on a front, as the model compares them. */
+type Slot = { score: number; highest: number } | null;
 
 export type BossBotView = {
   available: Character[];
@@ -51,16 +45,19 @@ export type BossBotView = {
   turnCount: number;
   /** What the bot's powers know this turn (bossContext). */
   context: ScoreContext;
+  /** Exact scores of each available character arriving on each front this turn. */
+  now: Map<string, number[]>;
+  board: Slot[];
+  opponentBoard: Slot[];
   points: number;
   opponentPoints: number;
   taken: number;
   opponentTaken: number;
   /** Sum of scores so far, own minus opponent's (last tie-break). */
   scoreLead: number;
-  /** Catalog characters the opponent may still field: a team never repeats a character. */
+  /** Catalog characters the opponent may still place: a team never repeats a character. */
   opponentPool: Character[];
   opponentHandSize: number;
-  rules: BossRules;
   families: AbilityFamilies;
   abilityMeans: Record<AbilityCode, number>;
 };
@@ -68,21 +65,26 @@ export type BossBotView = {
 export function bossBotView(state: BossState, side: Side, knowledge: BotKnowledge): BossBotView {
   const opponent = otherSide(side);
   const seen = new Set(
-    state.turns
-      .map((turn) => bossPlayedIn(state, turn, opponent))
-      .filter((c): c is Character => c !== undefined)
-      .map((c) => c.definitionId),
+    state.turns.map((turn) => state.teams[opponent].find((c) => c.id === turn.plays[opponent].characterId)?.definitionId),
   );
   const points = bossPoints(state);
   const taken = frontsTaken(state);
   const totals = bossTotalScores(state);
+  const slots = (s: Side): Slot[] =>
+    bossBoard(state, s).map((o) => (o ? { score: o.score.total, highest: o.score.highest } : null));
+  const available = availableBossCharacters(state, side);
   return {
-    available: availableBossCharacters(state, side),
+    available,
     fronts: state.fronts,
     values: state.values,
     turnIndex: state.turns.length,
     turnCount: bossTurnCount(state),
     context: bossContext(state, side, knowledge.families),
+    now: new Map(
+      available.map((c) => [c.id, state.fronts.map((_, f) => previewBossPlay(state, side, c, f, knowledge.families).score.total)]),
+    ),
+    board: slots(side),
+    opponentBoard: slots(opponent),
     points: points[side],
     opponentPoints: points[opponent],
     taken: taken[side],
@@ -90,7 +92,6 @@ export function bossBotView(state: BossState, side: Side, knowledge: BotKnowledg
     scoreLead: totals[side] - totals[opponent],
     opponentPool: knowledge.characters.filter((c) => !seen.has(c.definitionId)),
     opponentHandSize: availableBossCharacters(state, opponent).length,
-    rules: state.rules,
     families: knowledge.families,
     abilityMeans: knowledge.abilityMeans,
   };
@@ -100,17 +101,12 @@ export function bossBotView(state: BossState, side: Side, knowledge: BotKnowledg
 // Fast model
 // ---------------------------------------------------------------------------
 
-/** A character on every front: score per turn (alone), highest required value, presidio target. */
-type Table = { character: Character; total: number[][]; highest: number[]; required: number[] };
+/** A character's score on every front in every turn, and its highest required value. */
+type Table = { character: Character; total: number[][]; highest: number[] };
+type Fast = { hand: Table[]; board: Slot[]; points: number; taken: number; total: number };
 type Move = { hand: number; front: number };
-type Fast = { hand: Table[]; points: number; taken: number; total: number };
 
-type Model = {
-  view: BossBotView;
-  /** Score a typical character makes on each front, and how widely scores spread there. */
-  expected: number[];
-  scale: number[];
-};
+type Model = { view: BossBotView; expected: number[]; scale: number[]; tables: Map<Character, Table> };
 
 function model(view: BossBotView): Model {
   const typical: Character = { id: "typical", definitionId: "typical", faction: "", rarityRank: 0, stats: view.abilityMeans, power: null };
@@ -118,146 +114,104 @@ function model(view: BossBotView): Model {
     view,
     expected: view.fronts.map((front) => baseScore(typical, front)),
     scale: view.fronts.map((front) => 2.5 * Math.sqrt(front.level)),
+    tables: new Map(),
   };
 }
 
 /**
- * Scores of a character on every front from the current turn on. `exact` is the
- * context of the current turn (the bot's own characters); later turns, and the
- * opponent's characters, are counted without what earlier turns would change.
+ * Scores of a character arriving on every front in every turn from now on: exact for
+ * the bot's own characters this turn, alone and without the effects of earlier turns
+ * otherwise.
  */
-function table(view: BossBotView, character: Character, team: readonly Character[], exact?: ScoreContext): Table {
+function table(m: Model, character: Character, team: readonly Character[]): Table {
+  const cached = m.tables.get(character);
+  if (cached) return cached;
+  const { view } = m;
   const levels = view.fronts.map((front) => front.level);
-  return {
+  const exact = view.now.get(character.id);
+  const result: Table = {
     character,
-    total: view.fronts.map((front) => {
-      const acting = asPlayedAgainst(character, null, front);
-      return Array.from({ length: view.turnCount }, (_, t) => {
+    total: view.fronts.map((front, f) =>
+      Array.from({ length: view.turnCount }, (_, t) => {
         if (t < view.turnIndex) return 0;
-        const context: ScoreContext =
-          exact && t === view.turnIndex
-            ? exact
-            : {
-                families: view.families,
-                roundsWon: exact?.roundsWon ?? 0,
-                opponentRoundsWon: exact?.opponentRoundsWon ?? 0,
-                carriedBonus: 0,
-                round: t + 1,
-                team,
-                threatLevels: levels,
-                played: exact?.played ?? [],
-              };
-        return scorePlay(acting, front, context).total;
-      });
-    }),
+        if (exact && t === view.turnIndex) return exact[f];
+        return scorePlay(character, front, {
+          families: view.families,
+          roundsWon: 0,
+          opponentRoundsWon: 0,
+          carriedBonus: 0,
+          round: t + 1,
+          team,
+          threatLevels: levels,
+          played: [],
+        }).total;
+      }),
+    ),
     highest: view.fronts.map((front) => highestRequired(character, front)),
-    required: view.fronts.map((front) => presidioTarget(asPlayedAgainst(character, null, front), front, view.rules)),
   };
+  m.tables.set(character, result);
+  return result;
 }
 
-/** Chance that a score beats a typical opponent's on a front. */
-function contestChance(m: Model, front: number, total: number): number {
-  return 1 / (1 + Math.exp(-(total - m.expected[front]) / m.scale[front]));
+const beats = (a: Slot, b: Slot) => !!a && (!b || a.score > b.score || (a.score === b.score && a.highest > b.highest));
+
+/** Chance that a score stays above whatever the opponent will bring to the front. */
+function holdChance(m: Model, front: number, score: number): number {
+  return 1 / (1 + Math.exp(-(score - m.expected[front]) / m.scale[front]));
 }
 
-/** Expected points of a character on a front in a turn. */
-function expectedPoints(m: Model, tab: Table, front: number, t: number): number {
-  const total = tab.total[front][t];
-  const alone = total >= tab.required[front] ? 1 : 0;
-  return m.view.values[t][front] * ((1 - CONTEST_CHANCE) * alone + CONTEST_CHANCE * contestChance(m, front, total));
-}
-
-function bestFront(m: Model, tab: Table, t: number): { value: number; front: number } {
-  let value = -Infinity;
-  let front = 0;
-  for (let f = 0; f < m.view.fronts.length; f++) {
-    const x = expectedPoints(m, tab, f, t);
-    if (x > value) [value, front] = [x, f];
+/** Expected points of placing a character on a free front now, from now to the end. */
+function placementValue(m: Model, opp: Fast, tab: Table, front: number, t: number): number {
+  const score = tab.total[front][t];
+  const mine: Slot = { score, highest: tab.highest[front] };
+  const theirs = opp.board[front];
+  const hold = holdChance(m, front, score);
+  let value = 0;
+  for (let u = t; u < m.view.turnCount; u++) {
+    const worth = m.view.values[u][front];
+    if (theirs) value += beats(mine, theirs) ? worth : 0;
+    // Not there yet: likely ours this turn, then it depends on who they bring.
+    else value += worth * (u === t ? 0.85 + 0.15 * hold : 0.45 + 0.55 * hold);
   }
-  return { value, front };
+  return value;
 }
 
-/** Best sum of expected points assigning `hand` to the turns from `t` on, each to its best front. */
-function bestAssignment(m: Model, hand: readonly Table[], t: number): number {
-  const turns = Math.min(hand.length, m.view.turnCount - t);
-  if (turns <= 0) return 0;
-  const w = hand.map((tab) => Array.from({ length: turns }, (_, k) => bestFront(m, tab, t + k).value));
+function options(me: Fast): Move[] {
+  const free = me.board.map((slot, f) => (slot ? -1 : f)).filter((f) => f >= 0);
+  return me.hand.flatMap((_, h) => free.map((front) => ({ hand: h, front })));
+}
+
+/** The move worth the most now, ties broken at random. */
+function greedyMove(m: Model, me: Fast, opp: Fast, t: number, rng: Rng): Move {
   let best = -Infinity;
-  const used = new Array<boolean>(hand.length).fill(false);
-  const assign = (k: number, sum: number) => {
-    if (k === turns) {
-      best = Math.max(best, sum);
-      return;
-    }
-    for (let i = 0; i < hand.length; i++) {
-      if (used[i]) continue;
-      used[i] = true;
-      assign(k + 1, sum + w[i][k]);
-      used[i] = false;
-    }
-  };
-  assign(0, 0);
-  return best;
+  let picks: Move[] = [];
+  for (const move of options(me)) {
+    const value = placementValue(m, opp, me.hand[move.hand], move.front, t);
+    if (value > best + 1e-9) [best, picks] = [value, [move]];
+    else if (Math.abs(value - best) <= 1e-9) picks.push(move);
+  }
+  return picks[randomInt(rng, picks.length)];
 }
 
-/** Plan value of every move: its expected points now plus the best plan for the rest of the hand. */
-function planValues(m: Model, hand: readonly Table[], t: number): { move: Move; value: number }[] {
-  const options: { move: Move; value: number }[] = [];
-  hand.forEach((tab, p) => {
-    const rest = bestAssignment(m, hand.filter((_, i) => i !== p), t + 1);
-    for (let f = 0; f < m.view.fronts.length; f++) {
-      options.push({ move: { hand: p, front: f }, value: expectedPoints(m, tab, f, t) + rest });
+function place(side: Fast, move: Move, t: number) {
+  const tab = side.hand[move.hand];
+  const score = tab.total[move.front][t];
+  side.board = [...side.board];
+  side.board[move.front] = { score, highest: tab.highest[move.front] };
+  side.total += score;
+  side.hand = side.hand.filter((_, i) => i !== move.hand);
+}
+
+function payTurn(m: Model, a: Fast, b: Fast, t: number) {
+  a.board.forEach((_, f) => {
+    if (beats(a.board[f], b.board[f])) {
+      a.points += m.view.values[t][f];
+      a.taken += 1;
+    } else if (beats(b.board[f], a.board[f])) {
+      b.points += m.view.values[t][f];
+      b.taken += 1;
     }
   });
-  return options;
-}
-
-/** The planner: the move of the best plan, ties broken at random. Plays both sides of Super Pro's playouts. */
-function plannerMove(m: Model, hand: readonly Table[], t: number, rng: Rng): Move {
-  const order = shuffle(rng, hand.map((_, p) => p));
-  const turns = Math.min(hand.length, m.view.turnCount - t);
-  const w = order.map((p) => Array.from({ length: turns }, (_, k) => bestFront(m, hand[p], t + k)));
-  let best = -Infinity;
-  let first = 0;
-  const used = new Array<boolean>(hand.length).fill(false);
-  const assign = (k: number, sum: number, f: number) => {
-    if (k === turns) {
-      if (sum > best) [best, first] = [sum, f];
-      return;
-    }
-    for (let i = 0; i < order.length; i++) {
-      if (used[i]) continue;
-      used[i] = true;
-      assign(k + 1, sum + w[i][k].value, k === 0 ? i : f);
-      used[i] = false;
-    }
-  };
-  assign(0, 0, 0);
-  return { hand: order[first], front: w[first][0].front };
-}
-
-function resolveFast(m: Model, a: Fast, b: Fast, moveA: Move, moveB: Move, t: number) {
-  const ta = a.hand[moveA.hand];
-  const tb = b.hand[moveB.hand];
-  const sa = ta.total[moveA.front][t];
-  const sb = tb.total[moveB.front][t];
-  a.total += sa;
-  b.total += sb;
-  const take = (side: Fast, front: number) => {
-    side.points += m.view.values[t][front];
-    side.taken += 1;
-  };
-  if (moveA.front === moveB.front) {
-    const f = moveA.front;
-    const winner = sa !== sb ? (sa > sb ? "a" : "b") : ta.highest[f] !== tb.highest[f] ? (ta.highest[f] > tb.highest[f] ? "a" : "b") : null;
-    if (winner === "a") take(a, f);
-    if (winner === "b") take(b, f);
-  } else {
-    if (sa >= ta.required[moveA.front]) take(a, moveA.front);
-    if (sb >= tb.required[moveB.front]) take(b, moveB.front);
-  }
-  a.hand = a.hand.filter((_, i) => i !== moveA.hand);
-  b.hand = b.hand.filter((_, i) => i !== moveB.hand);
 }
 
 /** 1 = win, 0.5 = draw, 0 = loss, with the tie-breaks of the mode. */
@@ -266,47 +220,6 @@ function outcome(a: Fast, b: Fast): number {
     if (x !== y) return x > y ? 1 : 0;
   }
   return 0.5;
-}
-
-// ---------------------------------------------------------------------------
-// Moves
-// ---------------------------------------------------------------------------
-
-function toChoice(hand: readonly Table[], move: Move): BossChoice {
-  return { characterId: hand[move.hand].character.id, front: move.front, autoPlayed: false };
-}
-
-/** Chooses the bot's character and front for the current turn. */
-export function chooseBossBotPlay(difficulty: BotDifficulty, view: BossBotView, rng: Rng): BossChoice {
-  if (view.available.length === 0) throw new Error("The bot has no character left");
-  const m = model(view);
-  const t = view.turnIndex;
-  const hand = view.available.map((character) => table(view, character, view.context.team, view.context));
-  const moves = hand.flatMap((tab, p) =>
-    view.fronts.map((_, f) => ({ move: { hand: p, front: f }, value: expectedPoints(m, tab, f, t) })),
-  );
-
-  switch (difficulty) {
-    case "easy":
-      // Random, preferring moves worth something.
-      return toChoice(hand, pickWeighted(rng, moves, (o) => (o.value + 0.5) ** 2).move);
-    case "medium": {
-      // Greedy: the most points this turn, no planning.
-      const best = Math.max(...moves.map((o) => o.value));
-      const top = moves.filter((o) => o.value >= best - 1e-9);
-      return toChoice(hand, top[randomInt(rng, top.length)].move);
-    }
-    case "hard": {
-      // The planner, varying among near-equal moves: an opponent cannot read it.
-      const options = planValues(m, hand, t);
-      const best = Math.max(...options.map((o) => o.value));
-      const tolerance = Math.max(HARD_TOLERANCE_POINTS, HARD_TOLERANCE_SHARE * best);
-      const near = options.filter((o) => o.value >= best - tolerance);
-      return toChoice(hand, near[randomInt(rng, near.length)].move);
-    }
-    case "super_pro":
-      return toChoice(hand, simulateBossMove(m, hand, rng));
-  }
 }
 
 /** A random subset of `items`. */
@@ -323,38 +236,68 @@ function sample<T>(rng: Rng, items: readonly T[], count: number): T[] {
 }
 
 /**
- * Super Pro: Monte Carlo. Each simulation draws an opponent hand that fits what is
- * known and lets the planner choose the opponent's move, then tries every option
- * against that same draw, both sides played by the planner after it. So it reads
- * where the opponent is likely to go, not only the points table.
+ * Monte Carlo: each simulation draws an opponent hand that fits what is known, then
+ * tries every candidate against that same draw, both sides playing greedily afterwards.
  */
-function simulateBossMove(m: Model, hand: Table[], rng: Rng): Move {
+function simulateMove(m: Model, me: Fast, opp: Fast, search: { candidates: number; simulations: number }, rng: Rng): Move {
   const view = m.view;
   const t = view.turnIndex;
-  const options: Move[] = shuffle(
-    rng,
-    hand.flatMap((_, p) => view.fronts.map((__, f) => ({ hand: p, front: f }))),
-  );
-  if (view.opponentHandSize === 0 || view.opponentPool.length === 0) return plannerMove(m, hand, t, rng);
-  const pool = view.opponentPool.map((character) => table(view, character, [character]));
-  const wins = new Array<number>(options.length).fill(0);
-  const simulations = Math.max(1, Math.ceil(BOSS_SUPER_PRO_SIMULATIONS / options.length));
-  for (let k = 0; k < simulations; k++) {
-    const theirs = sample(rng, pool, view.opponentHandSize);
+  const { simulations } = search;
+  const moves = shuffle(rng, options(me))
+    .map((move) => ({ move, value: placementValue(m, opp, me.hand[move.hand], move.front, t) }))
+    .sort((x, y) => y.value - x.value)
+    .slice(0, search.candidates)
+    .map(({ move }) => move);
+  if (moves.length === 1 || view.opponentHandSize === 0 || view.opponentPool.length === 0) return greedyMove(m, me, opp, t, rng);
+  const wins = new Array<number>(moves.length).fill(0);
+  const rounds = Math.max(1, Math.ceil(simulations / moves.length));
+  for (let k = 0; k < rounds; k++) {
+    const theirs = sample(rng, view.opponentPool, view.opponentHandSize).map((c) => table(m, c, [c]));
     const seed = randomInt(rng, 2 ** 31);
-    const theirFirst = plannerMove(m, theirs, t, mulberry32(seed ^ 0x5bd1));
-    options.forEach((option, o) => {
+    moves.forEach((move, i) => {
       const r = mulberry32(seed);
-      const a: Fast = { hand: [...hand], points: view.points, taken: view.taken, total: view.scoreLead };
-      const b: Fast = { hand: [...theirs], points: view.opponentPoints, taken: view.opponentTaken, total: 0 };
-      resolveFast(m, a, b, option, theirFirst, t);
-      for (let u = t + 1; u < view.turnCount && a.hand.length > 0 && b.hand.length > 0; u++) {
-        resolveFast(m, a, b, plannerMove(m, a.hand, u, r), plannerMove(m, b.hand, u, r), u);
+      const a: Fast = { ...me, hand: [...me.hand] };
+      const b: Fast = { ...opp, hand: theirs };
+      for (let u = t; u < view.turnCount && a.hand.length > 0 && b.hand.length > 0; u++) {
+        const moveA = u === t ? move : greedyMove(m, a, b, u, r);
+        const moveB = greedyMove(m, b, a, u, r);
+        place(a, moveA, u);
+        place(b, moveB, u);
+        payTurn(m, a, b, u);
       }
-      wins[o] += outcome(a, b);
+      wins[i] += outcome(a, b);
     });
   }
-  return options[wins.indexOf(Math.max(...wins))];
+  return moves[wins.indexOf(Math.max(...wins))];
+}
+
+/** Chooses the bot's character and front for the current turn. */
+export function chooseBossBotPlay(difficulty: BotDifficulty, view: BossBotView, rng: Rng): BossChoice {
+  if (view.available.length === 0) throw new Error("The bot has no character left");
+  const m = model(view);
+  const t = view.turnIndex;
+  const me: Fast = {
+    hand: view.available.map((c) => table(m, c, view.context.team)),
+    board: view.board,
+    points: view.points,
+    taken: view.taken,
+    total: view.scoreLead,
+  };
+  const opp: Fast = { hand: [], board: view.opponentBoard, points: view.opponentPoints, taken: view.opponentTaken, total: 0 };
+  const choose = (move: Move): BossChoice => ({ characterId: me.hand[move.hand].character.id, front: move.front, autoPlayed: false });
+
+  switch (difficulty) {
+    case "easy":
+      // Random, preferring moves worth something.
+      return choose(pickWeighted(rng, options(me), (move) => (placementValue(m, opp, me.hand[move.hand], move.front, t) + 1) ** 2));
+    case "medium":
+      // Greedy: the most points from now on for this placement, no look at the opponent's hand.
+      return choose(greedyMove(m, me, opp, t, rng));
+    case "hard":
+      return choose(simulateMove(m, me, opp, BOSS_HARD_SEARCH, rng));
+    case "super_pro":
+      return choose(simulateMove(m, me, opp, BOSS_SUPER_PRO_SEARCH, rng));
+  }
 }
 
 /**
