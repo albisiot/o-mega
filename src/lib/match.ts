@@ -64,6 +64,8 @@ export type MatchRound = {
 export type MatchView = {
   id: string;
   mode: "bot" | "friendly" | "conquest";
+  /** "boss": a Grande Minaccia, whose state is a BossView (src/lib/boss.ts). Missing before it existed. */
+  format?: "classic" | "boss";
   bot_difficulty: BotDifficulty | null;
   status: "active" | "finished";
   my_side: "a" | "b";
@@ -109,8 +111,9 @@ export function cachedMatchView(id: string): MatchView | null {
   return views.get(id) ?? null;
 }
 
-function remember(view: MatchView): MatchView {
-  views.set(view.id, view);
+/** Keeps a match state, of either format, for the match page to open without a request. */
+export function remember<T extends { id: string }>(view: T): T {
+  views.set(view.id, view as unknown as MatchView);
   return view;
 }
 
@@ -149,7 +152,14 @@ export async function fetchMatchState(matchId: string): Promise<MatchView> {
   return data as unknown as MatchView;
 }
 
-export type ActiveMatch = { id: string; mode: string; bot_difficulty: BotDifficulty | null; current_round: number };
+export type ActiveMatch = {
+  id: string;
+  mode: string;
+  /** Missing before the Grande Minaccia existed. */
+  format?: MatchFormat;
+  bot_difficulty: BotDifficulty | null;
+  current_round: number;
+};
 
 export async function fetchActiveMatch(): Promise<ActiveMatch | null> {
   const { data, error } = await getSupabase().rpc("get_active_match");
@@ -176,11 +186,15 @@ export function joinQueue(
   cardInstanceIds: string[],
   mode: QueueMode,
   timeoutMs?: number,
+  format: MatchFormat = "classic",
 ): Promise<{ matched: boolean; match_id: string | null }> {
-  return invokeFunction({ action: "queue", mode, card_instance_ids: cardInstanceIds }, timeoutMs);
+  return invokeFunction({ action: "queue", mode, format, card_instance_ids: cardInstanceIds }, timeoutMs);
 }
 
 export type QueueMode = "friendly" | "conquest";
+
+/** A classic match, or a Grande Minaccia (friendly only). */
+export type MatchFormat = "classic" | "boss";
 
 export type ConquestStatus = {
   unlocked: boolean;
@@ -228,18 +242,18 @@ export function resolvePvpRound(matchId: string): Promise<MatchView> {
   return invokeMatch({ action: "resolve", match_id: matchId });
 }
 
-export type Lobby = { code: string; expires_at: string };
+export type Lobby = { code: string; expires_at: string; format?: MatchFormat };
 
-export async function createLobby(cardInstanceIds: string[]): Promise<Lobby> {
-  const { data, error } = await getSupabase().rpc("create_lobby", { p_card_instance_ids: cardInstanceIds });
+export async function createLobby(cardInstanceIds: string[], format: MatchFormat = "classic"): Promise<Lobby> {
+  const { data, error } = await getSupabase().rpc("create_lobby", { p_card_instance_ids: cardInstanceIds, p_format: format });
   if (error) throw error;
   return data as unknown as Lobby;
 }
 
 export async function fetchMyLobby(): Promise<Lobby | null> {
-  const { data, error } = await getSupabase().from("match_lobbies").select("code, expires_at").maybeSingle();
+  const { data, error } = await getSupabase().from("match_lobbies").select("code, expires_at, format").maybeSingle();
   if (error) throw error;
-  return data;
+  return data ? { ...data, format: data.format === "boss" ? "boss" : "classic" } : null;
 }
 
 export async function cancelLobby(): Promise<void> {
@@ -316,6 +330,11 @@ export type MatchHistoryEntry = {
   result: "win" | "loss" | "draw";
   rounds_me: number;
   rounds_opponent: number;
+  /** Grande Minaccia: points and the boss (missing on older entries). */
+  format?: MatchFormat;
+  points_me?: number;
+  points_opponent?: number;
+  boss_name?: string | null;
   coins: number;
   opponent: string | null;
   conquest: {

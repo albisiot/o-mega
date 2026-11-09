@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
+import { BossMatchScreen } from "@/components/boss-match-screen";
 import { LoadingScreen } from "@/components/loading-screen";
 import { MatchScreen } from "@/components/match-screen";
+import { isBossView } from "@/lib/boss";
 import { describeServerError } from "@/lib/errors";
 import { cachedMatchView, fetchMatchState, type MatchView } from "@/lib/match";
 
@@ -52,5 +54,7 @@ function MatchPageContent() {
     );
   }
   if (!view) return <LoadingScreen label="Caricamento della partita…" />;
+  // A Grande Minaccia has a screen of its own.
+  if (isBossView(view)) return <BossMatchScreen key={view.id} initial={view} />;
   return <MatchScreen key={view.id} initial={view} story={story} />;
 }

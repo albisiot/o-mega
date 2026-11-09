@@ -113,6 +113,11 @@ export const TUTORIAL_MODES = [
     text: `Contro il primo giocatore libero, o contro un amico con un codice di 6 caratteri. Nessuna carta in gioco e nessuna moneta. Dà più esperienza: ${progression.pvpWinXp} XP se vinci, ${progression.pvpParticipationXp} se perdi.`,
   },
   {
+    name: "Grande Minaccia",
+    color: "bg-comic-orange",
+    text: `Un Boss con cinque fronti, tutti visibili, e una tabella di quanti punti vale ognuno in ogni turno. Scegli chi mandare e dove: sullo stesso fronte vince chi fa più punti, da solo lo prendi se arrivi alla soglia. Contro un bot o un giocatore, senza carte in gioco.`,
+  },
+  {
     name: "Conquista",
     color: "bg-comic-magenta",
     text: `Come l'online, ma con le carte in palio: chi vince ne prende una all'avversario. Si sblocca dopo ${conquest.unlockAfterMatches} partite completate, anche contro i bot, o al livello ${conquest.unlockAtLevel}.`,

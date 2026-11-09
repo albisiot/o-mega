@@ -105,6 +105,11 @@ begin
   exception when others then v_failed := sqlerrm = 'match_already_active'; end;
   assert v_failed, 'two matches at once';
 
+  set local role authenticated;
+  perform set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000e1", "role": "authenticated"}', true);
+  assert public.get_active_match() ->> 'format' = 'boss', 'the match in progress says its format';
+  reset role;
+
   -- What the player sees: the boss, every front and the whole table from the start.
   v_state := public.match_state_payload(v_match, 'a');
   assert v_state ->> 'format' = 'boss', 'format in the payload';

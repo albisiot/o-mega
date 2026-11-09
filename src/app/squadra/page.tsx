@@ -9,6 +9,7 @@ import { CardDetailProvider } from "@/components/card-detail";
 import { LoadingScreen } from "@/components/loading-screen";
 import { TeamPicker } from "@/components/team-picker";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
+import { startBossBotMatch } from "@/lib/boss";
 import { describeServerError } from "@/lib/errors";
 import { startStoryMission, storyMatchHref } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -23,6 +24,7 @@ import {
   startBotMatch,
   storePendingTeam,
   type Formation,
+  type MatchFormat,
   type VariantCopy,
 } from "@/lib/match";
 
@@ -34,6 +36,7 @@ const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
 // /squadra/?mode=lobby                          (create a friend code)
 // /squadra/?mode=join&code=ABC234               (join a friend)
 // /squadra/?story=C1M1                          (a story mission)
+// &format=boss with difficulty, queue or lobby  (a Grande Minaccia)
 export default function TeamPage() {
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -73,6 +76,14 @@ function readMode(params: URLSearchParams): Mode {
   return { kind: "bot", difficulty: difficulty && DIFFICULTIES.includes(difficulty) ? difficulty : "easy" };
 }
 
+/** A Grande Minaccia: against a bot, or friendly between players (never Conquest or Story). */
+function readFormat(params: URLSearchParams, mode: Mode): MatchFormat {
+  return params.get("format") === "boss" && ["bot", "queue", "lobby"].includes(mode.kind) ? "boss" : "classic";
+}
+
+const BOSS_INTRO =
+  "Scegli 5 personaggi diversi: il Boss lo scopri dopo. Ogni personaggio gioca un turno su un fronte a tua scelta: servono specialisti per i fronti piccoli e generalisti per quelli grandi. Con una pressione lunga su una carta la vedi intera.";
+
 const COPY: Record<Mode["kind"], { subtitle: (mode: Mode) => string; start: (mode: Mode) => string }> = {
   bot: {
     subtitle: (mode) => `Contro il bot ${DIFFICULTY_LABELS[(mode as { difficulty: BotDifficulty }).difficulty]}`,
@@ -89,6 +100,7 @@ function TeamPageContent() {
   const router = useRouter();
   const params = useSearchParams();
   const mode = readMode(params);
+  const format = readFormat(params, mode);
   const isConquest = mode.kind === "conquest";
   const { session } = useRequireSignedIn();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -121,7 +133,8 @@ function TeamPageContent() {
     try {
       switch (mode.kind) {
         case "bot": {
-          const view = await startBotMatch(mode.difficulty, cardInstanceIds);
+          const view =
+            format === "boss" ? await startBossBotMatch(mode.difficulty, cardInstanceIds) : await startBotMatch(mode.difficulty, cardInstanceIds);
           router.push(`/partita/?id=${view.id}`);
           break;
         }
@@ -136,12 +149,12 @@ function TeamPageContent() {
           break;
         }
         case "lobby":
-          await createLobby(cardInstanceIds);
+          await createLobby(cardInstanceIds, format);
           router.push("/attesa/?mode=lobby");
           break;
         case "queue":
           storePendingTeam(cardInstanceIds);
-          router.push("/attesa/?mode=queue");
+          router.push(format === "boss" ? "/attesa/?mode=queue&format=boss" : "/attesa/?mode=queue");
           break;
         case "conquest":
           storePendingTeam(cardInstanceIds);
@@ -168,7 +181,9 @@ function TeamPageContent() {
         </Link>
         <div className="min-w-0">
           <h1 className="font-display text-[22px] uppercase leading-6 text-comic-yellow">La tua squadra</h1>
-          <p className="truncate text-[11px] font-bold text-muted">{COPY[mode.kind].subtitle(mode)}</p>
+          <p className="truncate text-[11px] font-bold text-muted">
+            {format === "boss" ? `Grande Minaccia · ${COPY[mode.kind].subtitle(mode)}` : COPY[mode.kind].subtitle(mode)}
+          </p>
         </div>
       </header>
 
@@ -198,7 +213,11 @@ function TeamPageContent() {
               startLabel={COPY[mode.kind].start(mode)}
               starting={starting}
               onStart={start}
-              intro="Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello basso e i generalisti per quelle alte. Con una pressione lunga su una carta la vedi intera."
+              intro={
+                format === "boss"
+                  ? BOSS_INTRO
+                  : "Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello basso e i generalisti per quelle alte. Con una pressione lunga su una carta la vedi intera."
+              }
             />
           </CardDetailProvider>
         ) : (

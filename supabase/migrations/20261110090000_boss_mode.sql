@@ -1351,3 +1351,30 @@ as $$
     limit greatest(1, least(coalesce(p_limit, 30), 100))
   ) s
 $$;
+
+-- The match in progress, with its format: Gioca names a Grande Minaccia as such.
+create or replace function public.get_active_match()
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_result jsonb;
+begin
+  if v_uid is null then
+    return null;
+  end if;
+  perform public.close_abandoned_matches(v_uid);
+  select jsonb_build_object(
+    'id', m.id, 'mode', m.mode, 'format', m.format, 'bot_difficulty', m.bot_difficulty, 'current_round', m.current_round
+  )
+  into v_result
+  from public.matches m
+  where m.status = 'active' and (m.player_a = v_uid or m.player_b = v_uid)
+  limit 1;
+  return v_result;
+end;
+$$;

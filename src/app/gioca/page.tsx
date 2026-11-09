@@ -31,6 +31,7 @@ const MODES = [
   { key: "story", label: "Storia", detail: "Missioni a Nuova Megara, con carte in premio", color: "rays-gold" },
   { key: "bot", label: "Contro bot", detail: "Allenati senza rischiare nulla", color: "bg-comic-cyan" },
   { key: "friendly", label: "Amichevole online", detail: "Sfida un giocatore o un amico", color: "bg-comic-yellow" },
+  { key: "boss", label: "Grande Minaccia", detail: "Un Boss, cinque fronti: contro un bot o un giocatore", color: "bg-comic-orange" },
   { key: "conquest", label: "Conquista", detail: "Chi vince prende una carta", color: "bg-comic-magenta" },
   { key: "emergency", label: "Emergenza", detail: "La sfida del giorno, da solo", color: "bg-foreground" },
 ] as const;
@@ -145,6 +146,40 @@ function BotSection({ disabled }: { disabled: boolean }) {
     </div>
   );
 }
+
+/** Grande Minaccia (SPEC §5.12): against a bot, or friendly between players. */
+function BossSection({ disabled }: { disabled: boolean }) {
+  return (
+    <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
+      <p className="text-sm font-medium text-muted">
+        Il Boss ha cinque fronti, tutti visibili, e ogni turno valgono di più. Scegli chi mandare e dove: sullo stesso
+        fronte dell&apos;avversario vince chi fa più punti, da solo lo prendi se arrivi alla soglia. Nessuna carta in gioco
+        e nessuna moneta.
+      </p>
+      {BOTS.map((bot) => (
+        <OptionRow
+          key={bot.difficulty}
+          href={`/squadra/?format=boss&difficulty=${bot.difficulty}`}
+          title={`Bot ${DIFFICULTY_LABELS[bot.difficulty]}`}
+          detail={BOSS_BOTS[bot.difficulty]}
+        />
+      ))}
+      <OptionRow href="/squadra/?mode=queue&format=boss" title="Cerca un avversario" detail="Sfida il primo giocatore disponibile." />
+      <OptionRow
+        href="/squadra/?mode=lobby&format=boss"
+        title="Crea un codice"
+        detail="Mandalo a un amico: lo usa in Amichevole online, con Entra."
+      />
+    </div>
+  );
+}
+
+const BOSS_BOTS: Record<(typeof BOTS)[number]["difficulty"], string> = {
+  easy: "Sceglie quasi a caso. Ideale per imparare.",
+  medium: "Prende ogni turno il fronte che rende di più.",
+  hard: "Pianifica tutti e cinque i turni con la tabella dei punti.",
+  super_pro: "Simula centinaia di partite e prova a indovinare dove andrai.",
+};
 
 function ConquestSection({ status, disabled }: { status: ConquestStatus | null; disabled: boolean }) {
   const { maxCardsLostPerDay, unlockAfterMatches, unlockAtLevel, loserCoins, minConquerableCards } = balance.conquest;
@@ -286,6 +321,7 @@ function ActiveMatchBanner({ match, onForfeit }: { match: ActiveMatch; onForfeit
         <span className="min-w-0">
           <span className="block font-display text-[17px] uppercase leading-5">Hai una partita in corso</span>
           <span className="block text-xs font-bold leading-4">
+            {match.format === "boss" ? "Grande Minaccia · " : ""}
             {match.mode === "bot"
               ? `Contro il bot ${DIFFICULTY_LABELS[match.bot_difficulty ?? "easy"]}`
               : match.mode === "conquest"
@@ -293,7 +329,7 @@ function ActiveMatchBanner({ match, onForfeit }: { match: ActiveMatch; onForfeit
                   ? `Conquista contro il bot ${DIFFICULTY_LABELS[match.bot_difficulty]}`
                   : "Conquista contro un giocatore"
                 : "Amichevole contro un giocatore"}{" "}
-            · round {match.current_round}
+            · {match.format === "boss" ? "turno" : "round"} {match.current_round}
           </span>
         </span>
         <span className="shrink-0 -skew-x-8 bg-black px-2.5 py-1 font-display text-base uppercase text-comic-yellow">
@@ -374,6 +410,7 @@ export default function PlayPage() {
             {opened.key === "story" && <StorySection disabled={blocked} />}
             {opened.key === "bot" && <BotSection disabled={blocked} />}
             {opened.key === "friendly" && <FriendlySection disabled={blocked} />}
+            {opened.key === "boss" && <BossSection disabled={blocked} />}
             {opened.key === "conquest" && <ConquestSection status={conquest} disabled={blocked} />}
             {opened.key === "emergency" && <EmergencySection />}
           </section>

@@ -19,6 +19,7 @@ import {
   readPendingTeam,
   subscribeToUpdates,
   type Lobby,
+  type MatchFormat,
   type QueueMode,
 } from "@/lib/match";
 import { formatCountdown, useNow } from "@/lib/use-now";
@@ -43,6 +44,8 @@ function WaitingContent() {
   const params = useSearchParams();
   const mode = params.get("mode") === "lobby" ? "lobby" : "queue";
   const queueMode: QueueMode = params.get("type") === "conquest" ? "conquest" : "friendly";
+  // A Grande Minaccia is friendly only.
+  const format: MatchFormat = params.get("format") === "boss" && queueMode === "friendly" ? "boss" : "classic";
   const { session } = useRequireSignedIn();
   if (!session) return <LoadingScreen />;
   return (
@@ -51,7 +54,7 @@ function WaitingContent() {
       {mode === "lobby" ? (
         <LobbyWait userId={session.user.id} />
       ) : (
-        <QueueWait userId={session.user.id} queueMode={queueMode} />
+        <QueueWait userId={session.user.id} queueMode={queueMode} format={format} />
       )}
     </div>
   );
@@ -87,7 +90,7 @@ function useMatchStart(userId: string, onStart: (matchId: string) => void, check
   }, [userId, checkEveryMs]);
 }
 
-function QueueWait({ userId, queueMode }: { userId: string; queueMode: QueueMode }) {
+function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: QueueMode; format: MatchFormat }) {
   const router = useRouter();
   const [team] = useState(readPendingTeam);
   const [startedAt] = useState(() => Date.now());
@@ -121,7 +124,7 @@ function QueueWait({ userId, queueMode }: { userId: string; queueMode: QueueMode
     };
     const attempt = () => {
       const attemptedAt = Date.now();
-      joinQueue(team, queueMode, QUEUE_REFRESH_MS)
+      joinQueue(team, queueMode, QUEUE_REFRESH_MS, format)
         .then((result) => {
           setError(null);
           if (result.matched && result.match_id) goToMatch(result.match_id);
@@ -144,14 +147,16 @@ function QueueWait({ userId, queueMode }: { userId: string; queueMode: QueueMode
     };
     // goToMatch only reads refs and the router.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [team, queueMode]);
+  }, [team, queueMode, format]);
 
   if (!team) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm font-semibold">Scegli prima la tua squadra.</p>
         <Link
-          href={queueMode === "conquest" ? "/squadra/?mode=conquest" : "/squadra/?mode=queue"}
+          href={
+            queueMode === "conquest" ? "/squadra/?mode=conquest" : format === "boss" ? "/squadra/?mode=queue&format=boss" : "/squadra/?mode=queue"
+          }
           className="btn btn-outline"
         >
           Scegli la squadra
@@ -176,7 +181,11 @@ function QueueWait({ userId, queueMode }: { userId: string; queueMode: QueueMode
       </ComicBurst>
       <div>
         <p className="font-display text-3xl uppercase">
-          {queueMode === "conquest" ? "Ricerca di un avversario per la Conquista…" : "Ricerca di un avversario…"}
+          {queueMode === "conquest"
+            ? "Ricerca di un avversario per la Conquista…"
+            : format === "boss"
+              ? "Ricerca di un avversario per la Grande Minaccia…"
+              : "Ricerca di un avversario…"}
         </p>
         <p className="mt-1 font-display text-2xl text-comic-yellow">{waited} s</p>
         <p key={line} className="animate-panel-fade mt-1 text-sm font-semibold text-comic-cyan">
@@ -271,7 +280,9 @@ function LobbyWait({ userId }: { userId: string }) {
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
-      <p className="text-base font-semibold">Dai questo codice al tuo amico:</p>
+      <p className="text-base font-semibold">
+        {lobby.format === "boss" ? "Grande Minaccia: dai questo codice al tuo amico:" : "Dai questo codice al tuo amico:"}
+      </p>
       <p className="-skew-x-8 select-all bg-comic-yellow px-5 py-2 font-display text-5xl tracking-[0.15em] text-black shadow-[5px_5px_0_var(--comic-magenta)]">
         {lobby.code}
       </p>

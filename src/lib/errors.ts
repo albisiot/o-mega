@@ -21,6 +21,8 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   duplicate_character: "Non puoi schierare due copie dello stesso personaggio.",
   card_not_owned: "Una delle carte scelte non è più tua.",
   invalid_difficulty: "Difficoltà non valida.",
+  invalid_front: "Scegli uno dei cinque fronti.",
+  boss_not_found: "Nessuna Grande Minaccia disponibile in questo momento.",
   too_many_formations: "Hai raggiunto il numero massimo di formazioni.",
   invalid_formation_name: "Il nome della formazione deve avere da 1 a 30 caratteri.",
   formation_not_found: "Formazione non trovata.",

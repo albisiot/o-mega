@@ -313,6 +313,12 @@ Il sismografo comincia a registrare scosse lontane: altre pietre dell'Alfabeto a
 
 Le regole e le Minacce sono in `docs/SPEC.md` §5.4.
 
+### La Grande Minaccia
+
+A volte il sismografo non segna una scossa, ma cinque nello stesso punto: qualcosa di grande sta premendo su Nuova Megara da più lati. Il Comune la chiama **Grande Minaccia** e la pubblica intera, perché non c'è tempo per i segreti: i cinque fronti e quanto paga ognuno, ora per ora, perché più si aspetta più il danno cresce. Due Reggenti ricevono l'incarico insieme e ognuno sceglie dove mandare i suoi Echi. Se finiscono sullo stesso fronte, il Comune paga solo chi lo risolve meglio; da soli, basta tenerlo (la soglia di presidio). Regole in `docs/SPEC.md` §5.12.
+
+I sei Boss iniziali sono segnaposto, come tutti i testi: il Colosso del porto, la Signora dell'Eclissi, la Mente Madre, la Fortezza nel cielo, il Gigante sotto Megara e l'Ombra nella rete. Ognuno ha cinque fronti tra le Minacce di Nuova Megara che ne raccontano i lati (il Colosso: rissa al porto, robot impazzito, contrabbando, androidi, titano di metallo).
+
 ## 7. Sceneggiature
 
 ### Stagione 1: *Il Rintocco*

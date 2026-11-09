@@ -338,6 +338,52 @@ Stesso metodo del Capitolo 1, sul catalogo a 122 personaggi (10.000 partite per 
 
 Stesso metodo, con il catalogo delle Minacce che il server dà ai bot dopo le Minacce dei luoghi (§5.4): 75 Minacce, con le loro regole. Il giocatore con la squadra casuale vince circa il 77%, 66%, 56%, 44% e 20% delle volte (10.000 partite con il bot Medio, 6.000 con Difficile, 4.000 con Super Pro). Nelle stesse condizioni il Capitolo 2 dà 81%, 70%, 60%, 73% e 24%: la missione 4 del Capitolo 2 era al 46% con le sole 60 Minacce di Nuova Megara, e il bot Difficile, che stima i round futuri sul catalogo, ora la gioca molto peggio. Il Capitolo 3 è tarato sul 45% previsto, quindi ogni missione resta un po' più dura della corrispondente e la prima è la più facile del capitolo. Solo Minacce di Nuova Megara, perché il capitolo non esce dalla torre; la prima di ogni missione è a tema (Terminale bloccato, Labirinto di specchi, Caccia nel buio, Colpo al caveau, Reattore in fusione).
 
+### 5.12 Grande Minaccia (Boss)
+
+Modalità alternativa alla partita classica: due giocatori, o un giocatore e un bot, affrontano la stessa **Grande Minaccia**, un Boss con **5 fronti** visibili dall'inizio. Nome provvisorio. Si gioca contro i bot (4 difficoltà) o in amichevole tra giocatori (avversario casuale o codice amico); niente Conquista per ora.
+
+1. **Squadra:** 5 personaggi diversi, segreta come sempre, scelta **prima** di vedere il Boss (altrimenti vincerebbe chi ha la collezione più grande, con lo specialista giusto per ogni fronte).
+2. **Il Boss:** il server lo estrae tra quelli attivi. Ogni Boss ha 5 fronti, Minacce di Nuova Megara scelte a mano, con livelli composti come in §5.4 (almeno uno di livello 1-2, almeno uno di 5-6, somma 14-20). Nome, livello e abilità di ogni fronte sono visibili dall'inizio; niente modificatori sorteggiati né Minacce dei luoghi.
+3. **Tabella dei punti, tutta visibile dall'inizio (5 turni × 5 fronti):** al turno 1 due fronti a caso valgono 2, gli altri 1; a ogni turno dopo **tutti +1, e 2 fronti a caso +1 in più** (cumulativo). Esempio: 2·2·1·1·1 → 3·4·2·3·2 → 5·5·4·4·3 → …
+4. **Turno (5, una carta per turno, ogni carta gioca una volta):** in segreto e in contemporanea ognuno sceglie **una carta e un fronte**. Timer di 30 secondi; allo scadere il server gioca una carta a caso sul fronte che in quel turno vale di più.
+5. **Chi prende i punti del fronte in quel turno:**
+   - **stesso fronte:** confronto come un round (§5.6: punteggio, Implacabile, valore singolo più alto, altrimenti nullo). Chi vince prende il valore del fronte; con il nullo nessuno.
+   - **fronti diversi:** ognuno **presidia** il suo se arriva alla **soglia di presidio**, metà di quella dell'Emergenza arrotondata per eccesso: **4, 7, 9, 12, 14, 16** (livello 1-6). Così una carta con valori nulli non "risolve" un fronte da sola.
+   - I fronti non si consumano: si possono rigiocare nei turni dopo, con il valore di quel turno.
+6. **Fine:** dopo 5 turni vince chi ha più punti; a parità chi ha preso più fronti; poi la somma dei punteggi; poi pareggio.
+7. **Poteri** (turno = round, "round vinti" = fronti presi finora):
+   - contro un avversario sullo stesso fronte valgono come in partita;
+   - da solo su un fronte valgono come in Emergenza (§5.10): Sabotatore abbassa la soglia di 1 per abilità richiesta, Implacabile si accontenta di un punto in meno; Annullatore, Davide, Nemesi, Schermato, Contrattacco, Opportunista e Riflesso non fanno nulla;
+   - Riscossa, Slancio e Vendetta guardano l'esito della propria carta nel turno prima; Crescendo il livello del fronte giocato dalla propria carta nel turno prima; Grande prova i livelli dei 5 fronti;
+   - **Veggente qui non serve**, perché è già tutto visibile. Segnalato, nessuna modifica (le regole di §5-§6 cambiano solo con l'approvazione dell'utente).
+8. **Premi:** come bot e amichevoli (§13.1): nessuna moneta, esperienza normale, punti evento del tipo di partita (bot o amichevole), statistiche normali.
+
+**Bot:** vedono solo ciò che vede un giocatore (Boss, tabella, i propri personaggi, quelli avversari già giocati).
+
+| Difficoltà | Comportamento |
+|---|---|
+| **Facile** | Carta e fronte a caso, preferendo le mosse che rendono qualcosa. |
+| **Medio** | Avido: la carta e il fronte con più punti attesi in questo turno. |
+| **Difficile** | Pianifica tutti i turni con la tabella (abbina carte, fronti e turni), e varia a caso tra mosse quasi equivalenti per non essere prevedibile. |
+| **Super Pro** | Monte Carlo (600 simulazioni a mossa): per ogni carta e fronte gioca il resto della partita contro mani avversarie plausibili, lasciando al pianificatore la mossa dell'avversario. Legge dove andrà l'altro. |
+
+Le squadre dei bot si costruiscono come in §5.9.
+
+**Simulazioni** (catalogo reale a 122 personaggi, 60 Minacce di Nuova Megara, 2.000 partite per riga; riferimento: nella partita classica Difficile contro Medio con la stessa squadra vince il 50%, Alfa+Omega contro Delta l'87,6%):
+
+| Prova | Risultato |
+|---|---|
+| Pianificatore contro avido, stessa squadra | 84% |
+| Pianificatore contro la regola "la carta più debole prima, sul fronte che conviene" | 78% |
+| Monte Carlo contro pianificatore | 67% |
+| Delta col pianificatore contro Alfa+Omega con la regola semplice | 34% |
+| Alfa+Omega contro Delta, Gamma contro Delta | 86%, 65% |
+| Pareggi, rimonte (vince chi era indietro dopo il turno 3) | 1,6%, 27% |
+
+Giocare bene conta molto più che nella classica, e la squadra forte non vince più che nella classica. Con i bot del motore (`scripts/simulate-boss.mts`, 400 partite): Difficile batte Medio il 77% con la stessa squadra (85% se non variasse le mosse), Super Pro batte Difficile il 74%. Scartate in simulazione: la soglia piena (le squadre rare vincevano il 90-92%), le "corsie" in cui le carte restano sul fronte (rimonte 8-11%) e i punti fissi (26% di pareggi).
+
+**Tecnica:** motore in `packages/game-engine/src/boss.ts` e `boss-bots.ts`; numeri in `balance.ts` (`boss`) e `game_config` (`boss.*`); Boss in `boss_definitions` e `boss_fronts` (6 Boss segnaposto); una partita è una riga di `matches` con `format = 'boss'`, `boss_id`, `boss_values` (la tabella) e `points_a`/`points_b`; `mode` resta `bot` o `friendly`. Ogni turno è una riga di `match_rounds` senza Minaccia; ogni giocata in `round_plays` ha `front_slot`, `points` e, da sola sul fronte, `required`. La funzione `match_record_boss_turn` controlla turno, carte, fronti, punti rispetto alla tabella e ai punteggi, e il risultato finale. Edge Function `match`: azioni `boss_start` e `boss_play`; tra giocatori `submit` riceve anche il fronte, `queue` il formato, e il codice amico porta il formato con sé.
+
 ## 6. Conquista delle carte
 
 ### 6.1 Regola base
@@ -572,6 +618,7 @@ Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy
 | Sblocco Conquista | 5 partite completate o livello 3; le partite abbandonate non contano. |
 | Personaggi sbloccabili | Alcune carte hanno un livello di sblocco: non escono da pacchetti e starter set, ogni giocatore ne riceve una copia a quel livello, legata all'account (mai conquistabile né convertibile). Elenco in `docs/WORLD.md`. |
 | Minacce oltre Nuova Megara | Regola fissa per luogo, non nuovi modificatori sorteggiati; i modificatori sorteggiati restano alle Minacce di Nuova Megara; l'Emergenza non estrae le Minacce dei luoghi (§5.4, §5.10). |
+| Grande Minaccia | Modalità con un Boss a 5 fronti e la tabella dei punti visibile (§5.12): prima contro i bot, poi amichevole tra giocatori; niente monete, niente Conquista finché non ci sono dati reali. Approvata il 9 novembre 2026 con tutti i valori di default. |
 
 ### 13.2 Aperte (usare il default)
 
