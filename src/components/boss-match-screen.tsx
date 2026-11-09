@@ -540,13 +540,17 @@ function ChooseTurn({
               <span className="line-clamp-3 min-h-[33px] break-words text-[9.5px] font-extrabold leading-[11px] [hyphens:auto]" lang="it">
                 {f.name}
               </span>
-              {/* Who stands there: you above, the opponent below. */}
-              <span className={`mt-0.5 truncate text-[9.5px] font-extrabold ${own ? "text-comic-cyan" : on ? "text-black/60" : "text-faint"}`}>
-                {own ? `${own.card.name} ${own.score}` : "libero"}
-              </span>
-              <span className={`truncate text-[9.5px] font-extrabold ${their ? (on ? "text-black" : "text-comic-orange") : on ? "text-black/50" : "text-faint"}`}>
-                {their ? `${their.card.name} ${their.score}` : "—"}
-              </span>
+              {/* Who stands there: you above, the opponent below. The score never gets cut off by a long name. */}
+              {own ? (
+                <FrontOccupant name={own.card.name} score={own.score} tone="mine" />
+              ) : (
+                <span className={`mt-0.5 truncate text-[9.5px] font-extrabold leading-4 ${on ? "text-black/60" : "text-faint"}`}>libero</span>
+              )}
+              {their ? (
+                <FrontOccupant name={their.card.name} score={their.score} tone="theirs" onYellow={on} />
+              ) : (
+                <span className={`mt-0.5 truncate text-[9.5px] font-extrabold leading-4 ${on ? "text-black/50" : "text-faint"}`}>—</span>
+              )}
               {preview && (
                 <span
                   className={`mt-0.5 -skew-x-8 px-1 text-center font-display text-[15px] leading-5 ${
@@ -640,6 +644,22 @@ function ChooseTurn({
         </button>
       </div>
     </main>
+  );
+}
+
+/** A character standing on a front: its score in a coloured badge, then the name in what room is left. */
+function FrontOccupant({ name, score, tone, onYellow = false }: { name: string; score: number; tone: "mine" | "theirs"; onYellow?: boolean }) {
+  return (
+    <span className="mt-0.5 flex min-w-0 items-center gap-0.5">
+      <span
+        className={`shrink-0 px-0.5 font-display text-[13px] leading-4 ${onYellow ? "bg-black text-comic-orange" : tone === "mine" ? "bg-comic-cyan text-black" : "bg-comic-orange text-black"}`}
+      >
+        {score}
+      </span>
+      <span className={`min-w-0 truncate text-[9px] font-extrabold ${onYellow ? "text-black" : tone === "mine" ? "text-comic-cyan" : "text-comic-orange"}`}>
+        {name}
+      </span>
+    </span>
   );
 }
 
