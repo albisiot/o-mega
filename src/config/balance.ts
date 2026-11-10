@@ -23,7 +23,7 @@ export const balance = {
     roundsToWin: 3,
     roundTimerSeconds: 30,
     /** Time to show a round result before the next timer starts. */
-    revealPauseSeconds: 5,
+    revealPauseSeconds: 6,
     /** Network tolerance after a deadline before the server auto-plays. */
     timeoutGraceSeconds: 3,
     reconnectGraceSeconds: 30,
