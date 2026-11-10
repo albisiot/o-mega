@@ -21,6 +21,7 @@ import { ThreatDiorama } from "@/components/threat-diorama";
 import { RoundComic } from "@/components/round-comic";
 import { prefetchWinnerNames } from "@/components/winner-name";
 import { balance } from "@/config/balance";
+import { describeEventPoints } from "@/lib/events";
 import { artSrcSet, thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
@@ -1094,7 +1095,7 @@ function MatchResult({
       {coins > 0 && <p className={`${chip} bg-black text-comic-yellow`}>+{coins} monete</p>}
       {eventPoints && (
         <p className={`${chip} bg-comic-yellow text-black`}>
-          +{eventPoints.points} punti evento{eventPoints.new_rewards > 0 && " · premio ottenuto!"}
+          {describeEventPoints(eventPoints)}
         </p>
       )}
     </>

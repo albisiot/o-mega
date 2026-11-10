@@ -160,6 +160,8 @@ export const balance = {
     sameOpponentWindowHours: 24,
     /** Targets an event can have. */
     maxTiers: 5,
+    /** An event that admits only some traits must allow at least this many characters (an Emergenza squad). */
+    minAdmittedCharacters: 8,
   },
 
   matchmaking: {

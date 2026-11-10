@@ -1008,6 +1008,7 @@ export type Database = {
           points: Json
           starts_at: string
           title: string
+          traits: string[]
         }
         Insert: {
           created_at?: string
@@ -1020,6 +1021,7 @@ export type Database = {
           points: Json
           starts_at: string
           title: string
+          traits?: string[]
         }
         Update: {
           created_at?: string
@@ -1032,6 +1034,7 @@ export type Database = {
           points?: Json
           starts_at?: string
           title?: string
+          traits?: string[]
         }
         Relationships: [
           {
@@ -2270,6 +2273,7 @@ export type Database = {
           p_starts_at: string
           p_tiers: Json
           p_title: string
+          p_traits?: string[]
         }
         Returns: Json
       }
@@ -2378,6 +2382,7 @@ export type Database = {
             Args: { p_definition_id: string; p_instance_id: string }
             Returns: Json
           }
+      card_trait_codes: { Args: { p_definition_id: string }; Returns: Json }
       cards_lost_today: { Args: { p_user: string }; Returns: number }
       check_conquest_team: {
         Args: { p_instance_ids: string[]; p_user: string }
@@ -2522,9 +2527,17 @@ export type Database = {
         Returns: Json
       }
       event_points_rules: { Args: { p_points: Json }; Returns: Json }
+      event_ref_team: {
+        Args: { p_ref_id: string; p_user: string }
+        Returns: string[]
+      }
       event_reward_cards: {
         Args: { p_card_codes: string[] }
         Returns: Record<string, unknown>
+      }
+      event_team_admitted: {
+        Args: { p_definition_ids: string[]; p_traits: string[] }
+        Returns: boolean
       }
       finish_match: {
         Args: { p_match_id: string; p_reason: string; p_result: string }
@@ -2901,6 +2914,9 @@ export type Database = {
         Returns: boolean
       }
       team_value: { Args: { p_definition_ids: string[] }; Returns: number }
+      trait_admitted_count: { Args: { p_traits: string[] }; Returns: number }
+      trait_catalog_payload: { Args: never; Returns: Json }
+      traits_description: { Args: { p_traits: string[] }; Returns: Json }
       username_base: { Args: { p_source: string }; Returns: string }
       valid_boss_values: { Args: { p_values: Json }; Returns: boolean }
       validate_conquest_team: {

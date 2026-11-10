@@ -22,6 +22,7 @@ import {
   type BossRound,
   type BossView,
 } from "@/lib/boss";
+import { describeEventPoints } from "@/lib/events";
 import { bossTurnEntries, holdersBefore, type BossEntry } from "@/lib/boss-powers";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
@@ -887,7 +888,7 @@ function BossResult({ view, rival }: { view: BossView; rival: string }) {
           {xp > 0 && <p className={`${chip} bg-black text-foreground`}>+{xp} XP</p>}
           {eventPoints && (
             <p className={`${chip} bg-comic-yellow text-black`}>
-              +{eventPoints.points} punti evento{eventPoints.new_rewards > 0 && " · premio ottenuto!"}
+              {describeEventPoints(eventPoints)}
             </p>
           )}
           {view.level_rewards.map((reward) => (

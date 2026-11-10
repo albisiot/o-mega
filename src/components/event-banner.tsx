@@ -17,6 +17,7 @@ import {
   type MatchEventPoints,
 } from "@/lib/events";
 import { packRevealHref } from "@/lib/packs";
+import { describeAdmitted } from "@/lib/traits";
 import { useNow } from "@/lib/use-now";
 
 /** The event status, shown at once from the last answer and refreshed on mount. */
@@ -160,6 +161,9 @@ export function EventBanner() {
           {progress.next ? `${event.my_points}/${progress.next.points} punti` : "Traguardi completati"}
         </span>
       </span>
+      {(event.admitted ?? []).length > 0 && (
+        <span className="truncate text-[12px] font-bold leading-4">Solo {describeAdmitted(event.admitted ?? [])}</span>
+      )}
     </Link>
   );
 }

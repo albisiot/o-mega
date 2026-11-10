@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { CardSortToggle } from "@/components/card-sort-toggle";
 import { BackLink } from "@/components/comic-parts";
+import { TraitFilter } from "@/components/trait-filter";
 import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { searchCards, sortCards, type CardOrder } from "@/lib/card-sort";
@@ -15,6 +16,7 @@ import {
   type PackPoolCard,
   type PackPoolRarity,
 } from "@/lib/pack-pool-admin";
+import { matchesTraits } from "@/lib/traits";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const CHIP = "flex min-h-11 shrink-0 items-center gap-1.5 border-2 px-3 text-sm font-bold";
@@ -30,6 +32,7 @@ export function PackPoolAdmin({ initial }: { initial: PackPool }) {
   const [query, setQuery] = useState("");
   const [order, setOrder] = useState<CardOrder>("name");
   const [rarityFilter, setRarityFilter] = useState<string | null>(null);
+  const [traits, setTraits] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   // Only the answer to the latest change is shown: an older one would undo newer ticks.
   const latest = useRef(0);
@@ -57,7 +60,9 @@ export function PackPoolAdmin({ initial }: { initial: PackPool }) {
     }
   }
 
-  const found = sortCards(searchCards(pool.cards, query), order);
+  const found = sortCards(searchCards(pool.cards, query), order).filter((card) =>
+    matchesTraits(card.traits ?? [], traits, pool.trait_catalog ?? []),
+  );
   const shownRarities = pool.rarities.filter((rarity) => rarityFilter === null || rarity.code === rarityFilter);
   const inPacks = pool.cards.filter((card) => card.in_packs).length;
 
@@ -116,6 +121,16 @@ export function PackPoolAdmin({ initial }: { initial: PackPool }) {
             );
           })}
         </div>
+        {/* Older servers send no catalog: the filter simply does not show. */}
+        {(pool.trait_catalog ?? []).length > 0 && (
+          <TraitFilter
+            catalog={pool.trait_catalog ?? []}
+            chosen={traits}
+            onChange={setTraits}
+            layout="row"
+            label="Filtra per tratto"
+          />
+        )}
         <div aria-live="polite" className="shrink-0 empty:hidden">
           {error && <p className="text-sm font-bold text-comic-magenta">{error}</p>}
         </div>
@@ -123,7 +138,9 @@ export function PackPoolAdmin({ initial }: { initial: PackPool }) {
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain">
           <p className="text-xs font-medium leading-4 text-muted">
             Togli la spunta per tenere una carta fuori dai pacchetti; puoi sempre darla con un codice bonus. Le carte
-            dei livelli non escono mai e non sono in elenco. Le varianti seguono la loro carta.
+            dei livelli non escono mai e non sono in elenco. Le varianti seguono la loro carta. Con la ricerca o i
+            tratti, Seleziona e Deseleziona valgono solo per le carte trovate: in un tratto basta uno di quelli scelti,
+            tra tratti di tipo diverso servono tutti.
           </p>
           {shownRarities.map((rarity) => (
             <RaritySection
@@ -131,7 +148,7 @@ export function PackPoolAdmin({ initial }: { initial: PackPool }) {
               rarity={rarity}
               allCards={pool.cards}
               shown={found.filter((card) => card.rarity_code === rarity.code)}
-              searching={query.trim() !== ""}
+              searching={query.trim() !== "" || traits.length > 0}
               guaranteed={rarity.rank >= pool.guaranteed_min_rarity_rank}
               onApply={apply}
             />

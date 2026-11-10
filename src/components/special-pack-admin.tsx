@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { CardSortToggle } from "@/components/card-sort-toggle";
 import { BackLink, PackArt, TabBar } from "@/components/comic-parts";
+import { TraitFilter } from "@/components/trait-filter";
 import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { searchCards, sortCards, type CardOrder } from "@/lib/card-sort";
@@ -29,6 +30,7 @@ import {
   type AdminSpecialPacks,
   type SpecialPackDraft,
 } from "@/lib/special-pack-admin";
+import { matchesTraits } from "@/lib/traits";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow } from "@/lib/use-now";
 
@@ -469,9 +471,12 @@ function CardsStep({ data, draft, update }: StepProps) {
   const [query, setQuery] = useState("");
   const [order, setOrder] = useState<CardOrder>("name");
   const [rarityFilter, setRarityFilter] = useState<string | null>(null);
+  const [traits, setTraits] = useState<string[]>([]);
+  const catalog = data.trait_catalog ?? [];
   const chosen = new Set(draft.cardCodes);
   const found = sortCards(searchCards(data.cards, query), order).filter(
-    (card) => rarityFilter === null || card.rarity_code === rarityFilter,
+    (card) =>
+      (rarityFilter === null || card.rarity_code === rarityFilter) && matchesTraits(card.traits ?? [], traits, catalog),
   );
   const rarityColor = new Map(data.rarities.map((rarity) => [rarity.code, rarity.color]));
   const rarityName = new Map(data.rarities.map((rarity) => [rarity.code, rarity.name]));
@@ -533,6 +538,9 @@ function CardsStep({ data, draft, update }: StepProps) {
           );
         })}
       </div>
+      {catalog.length > 0 && (
+        <TraitFilter catalog={catalog} chosen={traits} onChange={setTraits} layout="row" label="Filtra per tratto" />
+      )}
       <div className="grid shrink-0 grid-cols-2 gap-2">
         <button
           type="button"

@@ -1,4 +1,5 @@
 import { getSupabase } from "@/lib/supabase/client";
+import type { TraitCategory } from "@/lib/traits";
 
 export type PackPoolRarity = { code: string; name: string; rank: number; color: string };
 
@@ -8,6 +9,8 @@ export type PackPoolCard = {
   rarity_code: string;
   art_url: string | null;
   in_packs: boolean;
+  /** Trait codes, to filter the list. */
+  traits?: string[];
 };
 
 /** Every card packs could give (level cards never can), rarest last. */
@@ -15,6 +18,7 @@ export type PackPool = {
   rarities: PackPoolRarity[];
   cards: PackPoolCard[];
   guaranteed_min_rarity_rank: number;
+  trait_catalog?: TraitCategory[];
 };
 
 export async function fetchPackPool(): Promise<PackPool> {

@@ -2,6 +2,7 @@ import { balance } from "@/config/balance";
 import { toRomeInput } from "@/lib/events";
 import type { PackColor } from "@/lib/pack-colors";
 import { getSupabase } from "@/lib/supabase/client";
+import type { TraitCategory } from "@/lib/traits";
 
 export type OddsMode = "rarity" | "card";
 
@@ -13,6 +14,8 @@ export type AdminPackCard = {
   rarity_code: string;
   art_url: string | null;
   has_variants: boolean;
+  /** Trait codes, to filter the list. */
+  traits?: string[];
 };
 
 export type AdminSpecialPack = {
@@ -40,6 +43,7 @@ export type AdminSpecialPack = {
 export type AdminSpecialPacks = {
   now: string;
   max_cards_per_pack: number;
+  trait_catalog?: TraitCategory[];
   rarities: AdminRarity[];
   /** Every card a special pack can hold (never level cards), least rare first. */
   cards: AdminPackCard[];

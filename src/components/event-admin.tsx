@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 import { BackLink, TabBar } from "@/components/comic-parts";
+import { TraitFilter } from "@/components/trait-filter";
 import { balance } from "@/config/balance";
 import {
   DEFAULT_EVENT_POINTS,
@@ -14,6 +15,7 @@ import {
 } from "@/lib/event-admin";
 import { describeServerError } from "@/lib/errors";
 import { EVENT_KINDS, addHoursToInput, describeTierReward, formatRomeDateTime, toRomeInput, type EventPoints } from "@/lib/events";
+import { describeTraits, matchesTraits, type TraitCategory } from "@/lib/traits";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const INPUT = "min-h-12 w-full min-w-0 max-w-full border-2 border-comic-yellow bg-black px-3 text-base font-semibold";
@@ -43,6 +45,8 @@ type FormState = {
   endsAt: string;
   points: PointsForm;
   dailyCap: string;
+  /** Admitted traits; empty: every character. */
+  traits: string[];
   tiers: TierForm[];
 };
 
@@ -73,6 +77,7 @@ function emptyForm(now: number): FormState {
     endsAt: addHoursToInput(startsAt, 48),
     points: pointsForm(DEFAULT_EVENT_POINTS),
     dailyCap: "",
+    traits: [],
     tiers: [{ points: "300", coins: "100", packs: "1", cards: [] }],
   };
 }
@@ -90,6 +95,7 @@ function formFrom(event: AdminEvent, now: number, copy: boolean): FormState {
     endsAt: copy ? addHoursToInput(startsAt, hours) : toRomeInput(event.ends_at),
     points: pointsForm(event.points),
     dailyCap: event.daily_cap === null ? "" : String(event.daily_cap),
+    traits: event.traits ?? [],
     tiers: event.tiers.map((tier) => ({
       points: String(tier.points),
       coins: tier.coins > 0 ? String(tier.coins) : "",
@@ -162,6 +168,8 @@ export function EventAdmin({ data, onChange }: EventAdminProps) {
             key={formKey}
             initial={form}
             cards={data.cards}
+            catalog={data.trait_catalog ?? []}
+            minAdmitted={data.min_admitted_characters ?? balance.events.minAdmittedCharacters}
             onSaved={(next, title) => {
               onChange(next);
               load(emptyForm(now));
@@ -226,11 +234,15 @@ const DURATIONS = [
 function EventForm({
   initial,
   cards,
+  catalog,
+  minAdmitted,
   onSaved,
   onCancel,
 }: {
   initial: FormState;
   cards: AdminEvents["cards"];
+  catalog: TraitCategory[];
+  minAdmitted: number;
   onSaved: (next: AdminEvents, title: string) => void;
   onCancel: () => void;
 }) {
@@ -252,6 +264,8 @@ function EventForm({
       points: { ...current.points, [kind]: { ...current.points[kind], [outcome]: value } },
     }));
   const shownTier = Math.min(tierIndex, form.tiers.length - 1);
+  // Same set as the server's count: active cards that are not level cards.
+  const admitted = cards.filter((card) => matchesTraits(card.traits ?? [], form.traits, catalog)).length;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -272,6 +286,7 @@ function EventForm({
         endsAt: form.endsAt,
         points,
         dailyCap: form.dailyCap.trim() === "" ? null : Number(form.dailyCap),
+        traits: form.traits,
         tiers: form.tiers.map((tier) => ({
           points: number(tier.points),
           coins: number(tier.coins),
@@ -368,11 +383,43 @@ function EventForm({
                 </button>
               ))}
             </div>
+            {catalog.length > 0 && (
+              <div className={LABEL}>
+                <span>Personaggi ammessi</span>
+                <TraitFilter
+                  catalog={catalog}
+                  chosen={form.traits}
+                  onChange={(traits) => update({ traits })}
+                  layout="wrap"
+                  label="Personaggi ammessi"
+                  disabled={locked}
+                />
+                <span
+                  className={`text-xs font-semibold leading-4 ${
+                    form.traits.length > 0 && admitted < minAdmitted
+                      ? "text-comic-magenta"
+                      : form.traits.length > 0 && admitted < 15
+                        ? "text-comic-yellow"
+                        : "text-muted"
+                  }`}
+                >
+                  {form.traits.length === 0
+                    ? "Nessun tratto scelto: tutti i personaggi danno punti."
+                    : `Solo ${describeTraits(form.traits, catalog)}: ${admitted} personaggi. Una partita dà punti solo se tutta la squadra è di questi personaggi (in Emergenza tutti e 8).${
+                        admitted < minAdmitted
+                          ? ` Ne servono almeno ${minAdmitted}.`
+                          : admitted < 15
+                            ? " Con meno di 15 pochi giocatori riescono a formare la squadra."
+                            : ""
+                      }`}
+                </span>
+              </div>
+            )}
           </>
         )}
 
         {step === "points" && (
-          <fieldset disabled={locked} className="flex flex-col gap-2 disabled:opacity-50">
+          <fieldset disabled={locked} className="flex min-w-0 flex-col gap-2 disabled:opacity-50">
             <legend className="sr-only">Punti per partita</legend>
             <div className="grid grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))] items-center gap-1.5 text-xs font-bold">
               <span />
@@ -434,7 +481,7 @@ function EventForm({
         )}
 
         {step === "rewards" && (
-          <fieldset disabled={locked} className="flex flex-col gap-2 disabled:opacity-50">
+          <fieldset disabled={locked} className="flex min-w-0 flex-col gap-2 disabled:opacity-50">
             <legend className="sr-only">Traguardi e premi</legend>
             <div className="flex gap-1.5">
               {form.tiers.map((tier, index) => (
@@ -473,6 +520,7 @@ function EventForm({
               index={shownTier}
               tier={form.tiers[shownTier]}
               cards={cards}
+              catalog={catalog}
               onChange={(patch) => updateTier(shownTier, patch)}
               onRemove={
                 form.tiers.length > 1
@@ -520,18 +568,22 @@ function TierEditor({
   index,
   tier,
   cards,
+  catalog,
   onChange,
   onRemove,
 }: {
   index: number;
   tier: TierForm;
   cards: AdminEvents["cards"];
+  catalog: TraitCategory[];
   onChange: (patch: Partial<TierForm>) => void;
   onRemove?: () => void;
 }) {
   const [pendingCard, setPendingCard] = useState<string | null>(null);
   const [pendingStyle, setPendingStyle] = useState("");
   const pending = cards.find((card) => card.code === pendingCard) ?? null;
+  const [traits, setTraits] = useState<string[]>([]);
+  const shownCards = cards.filter((card) => matchesTraits(card.traits ?? [], traits, catalog));
 
   return (
     <div className="flex flex-col gap-2 bg-panel p-3">
@@ -581,6 +633,9 @@ function TierEditor({
           />
         </label>
       </div>
+      {catalog.length > 0 && (
+        <TraitFilter catalog={catalog} chosen={traits} onChange={setTraits} layout="row" label="Carte per tratto" />
+      )}
       <label className={LABEL}>
         Carte
         <select
@@ -594,8 +649,10 @@ function TierEditor({
           }}
           className={INPUT}
         >
-          <option value="">Aggiungi una carta…</option>
-          {cards.map((card) => (
+          <option value="">
+            {shownCards.length === cards.length ? "Aggiungi una carta…" : `Aggiungi una carta… (${shownCards.length})`}
+          </option>
+          {shownCards.map((card) => (
             <option key={card.code} value={card.code}>
               {card.name} ({card.rarity})
             </option>

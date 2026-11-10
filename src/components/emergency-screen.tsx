@@ -15,6 +15,7 @@ import { PlayerAvatar } from "@/components/player-avatar";
 import { TeamPicker } from "@/components/team-picker";
 import { ThreatDiorama } from "@/components/threat-diorama";
 import { balance } from "@/config/balance";
+import { describeEventPoints } from "@/lib/events";
 import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
@@ -604,7 +605,7 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
             )}
             {eventPoints && (
               <p className="-skew-x-8 bg-comic-yellow px-2.5 py-0.5 text-[13px] font-extrabold text-black">
-                +{eventPoints.points} punti evento{eventPoints.new_rewards > 0 && " · premio ottenuto!"}
+                {describeEventPoints(eventPoints)}
               </p>
             )}
           </div>

@@ -1,5 +1,6 @@
 import type { EventPoints } from "@/lib/events";
 import { getSupabase } from "@/lib/supabase/client";
+import type { TraitCategory } from "@/lib/traits";
 
 export type AdminEventTier = {
   tier: number;
@@ -21,6 +22,8 @@ export type AdminEvent = {
   ends_at: string;
   points: EventPoints;
   daily_cap: number | null;
+  /** Admitted traits; empty: every character. */
+  traits?: string[];
   is_active: boolean;
   /** Players with at least one point. */
   players: number;
@@ -29,9 +32,12 @@ export type AdminEvent = {
 
 export type AdminEvents = {
   now: string;
+  trait_catalog?: TraitCategory[];
+  /** Fewest characters a rule may admit (an Emergenza squad). */
+  min_admitted_characters?: number;
   events: AdminEvent[];
-  /** The cards a target can give, each with the artwork variants it can come with. */
-  cards: { code: string; name: string; rarity: string; variants: { style: string; name: string }[] }[];
+  /** The cards a target can give, each with the artwork variants it can come with, and its traits. */
+  cards: { code: string; name: string; rarity: string; traits?: string[]; variants: { style: string; name: string }[] }[];
 };
 
 export type EventDraft = {
@@ -45,6 +51,8 @@ export type EventDraft = {
   points: EventPoints;
   /** Null: no daily limit. */
   dailyCap: number | null;
+  /** Admitted traits; empty: every character. */
+  traits: string[];
   tiers: { points: number; coins: number; packs: number; cards: string[] }[];
 };
 
@@ -64,6 +72,7 @@ export async function saveEvent(draft: EventDraft): Promise<AdminEvents> {
     p_points: draft.points,
     p_daily_cap: draft.dailyCap ?? undefined,
     p_tiers: draft.tiers,
+    p_traits: draft.traits,
   });
   if (error) throw error;
   return data as unknown as AdminEvents;

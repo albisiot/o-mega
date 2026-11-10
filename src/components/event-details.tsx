@@ -21,6 +21,7 @@ import {
   type GameEvent,
 } from "@/lib/events";
 import { rarityFrame } from "@/lib/rarity-theme";
+import { describeAdmitted } from "@/lib/traits";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const TABS = [
@@ -72,6 +73,11 @@ export function EventDetails({ event, now, abilities }: { event: GameEvent; now:
         <p className="text-xs font-medium leading-4 text-muted">
           Dal {formatRomeDateTime(event.starts_at)} al {formatRomeDateTime(event.ends_at)}, ora italiana
         </p>
+        {(event.admitted ?? []).length > 0 && (
+          <p className="mt-1 border-l-4 border-comic-cyan bg-panel px-2.5 py-1 text-[13px] font-bold leading-4">
+            Solo personaggi {describeAdmitted(event.admitted ?? [])}: fai punti solo se tutta la squadra lo è.
+          </p>
+        )}
       </section>
 
       {toOpen && (
@@ -170,7 +176,11 @@ export function EventDetails({ event, now, abilities }: { event: GameEvent; now:
             </table>
             <p className="shrink-0 text-xs font-medium leading-4 text-muted">
               Contano le partite iniziate e finite durante l&apos;evento. Le partite abbandonate non danno punti a nessuno
-              dei due. Contro lo stesso giocatore danno punti al massimo {balance.events.sameOpponentMatches} partite ogni{" "}
+              dei due.
+              {(event.admitted ?? []).length > 0 &&
+                ` Danno punti solo le squadre di personaggi ${describeAdmitted(event.admitted ?? [])}${
+                  event.admitted_characters ? ` (${event.admitted_characters} in tutto)` : ""
+                }: in Emergenza tutti e 8.`} Contro lo stesso giocatore danno punti al massimo {balance.events.sameOpponentMatches} partite ogni{" "}
               {balance.events.sameOpponentWindowHours} ore.
             </p>
           </>

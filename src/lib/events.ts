@@ -50,6 +50,10 @@ export type GameEvent = {
   ends_at: string;
   points: EventPoints;
   daily_cap: number | null;
+  /** Only teams of these characters earn points, one part per category; empty (or missing): everyone. */
+  admitted?: { category: string; traits: string[] }[];
+  /** How many characters the rule admits; null without a rule. */
+  admitted_characters?: number | null;
   tiers: EventTier[];
   my_points: number;
   my_points_today: number;
@@ -84,7 +88,15 @@ export type MatchEventPoints = {
   total: number;
   /** Targets reached and not opened yet. */
   new_rewards: number;
+  /** The event admits only some characters and this team had others: no points. */
+  not_admitted?: boolean;
 };
+
+/** "+30 punti evento · premio ottenuto!", or why the team earned none. */
+export function describeEventPoints(points: MatchEventPoints): string {
+  if (points.not_admitted) return "Squadra non ammessa all'evento: 0 punti";
+  return `+${points.points} punti evento${points.new_rewards > 0 ? " · premio ottenuto!" : ""}`;
+}
 
 /** What a match (null: today's Emergenza run) earned the player in the running event, or null. */
 export async function fetchEventPointsFor(refId: string | null): Promise<MatchEventPoints | null> {
