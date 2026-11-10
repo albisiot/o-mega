@@ -2407,11 +2407,14 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_daily_objectives_payload: { Args: never; Returns: Json }
+      admin_delete_daily_objective: { Args: { p_code: string }; Returns: Json }
       admin_delete_event: { Args: { p_id: string }; Returns: Json }
       admin_delete_special_pack: { Args: { p_id: string }; Returns: Json }
       admin_events_payload: { Args: never; Returns: Json }
       admin_get_boss_table: { Args: never; Returns: Json }
       admin_list_bonus_codes: { Args: never; Returns: Json }
+      admin_list_daily_objectives: { Args: never; Returns: Json }
       admin_list_events: { Args: never; Returns: Json }
       admin_list_pack_cards: { Args: never; Returns: Json }
       admin_list_special_packs: { Args: never; Returns: Json }
@@ -2422,6 +2425,19 @@ export type Database = {
           p_hot_fronts: number
           p_hot_growth: number
           p_hot_value: number
+        }
+        Returns: Json
+      }
+      admin_save_daily_objective: {
+        Args: {
+          p_code: string
+          p_coins: number
+          p_difficulty: string
+          p_metric: string
+          p_packs: number
+          p_params: Json
+          p_target: number
+          p_title: string
         }
         Returns: Json
       }
@@ -2463,6 +2479,10 @@ export type Database = {
       }
       admin_set_cards_in_packs: {
         Args: { p_card_codes: string[]; p_in_packs: boolean }
+        Returns: Json
+      }
+      admin_set_daily_objective_active: {
+        Args: { p_code: string; p_is_active: boolean }
         Returns: Json
       }
       admin_set_event_active: {
@@ -2554,6 +2574,7 @@ export type Database = {
         Args: { p_instance_ids: string[]; p_user: string }
         Returns: string[]
       }
+      check_daily_objectives_enough: { Args: never; Returns: undefined }
       check_team: {
         Args: { p_instance_ids: string[]; p_user: string }
         Returns: string[]

@@ -86,6 +86,9 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   objective_already_completed: "Un obiettivo completato non si può cambiare.",
   no_refreshes_left: "Hai finito i cambi di oggi: tornano dopo la mezzanotte.",
   no_objective_available: "Non ci sono altri obiettivi di questa difficoltà per oggi.",
+  invalid_objective: "Controlla l'obiettivo: titolo da 3 a 80 caratteri, soglia da 1 a 100, pacchetti da 0 a 5 e almeno un premio.",
+  objective_in_use: "Questo obiettivo è già stato assegnato: disattivalo invece di eliminarlo.",
+  objectives_too_few: "Ogni difficoltà deve avere almeno tanti obiettivi attivi quanti se ne danno al giorno.",
 };
 
 export function describeServerError(error: unknown): string {
