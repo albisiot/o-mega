@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AbilityFamilies } from "@o-mega/game-engine";
+import { BossComic } from "@/components/boss-comic";
 import { BossDiorama } from "@/components/boss-diorama";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { useEventPointsFor } from "@/components/event-banner";
@@ -18,11 +19,10 @@ import {
   playBossTurn,
   resolveBossTurn,
   submitBossChoice,
-  turnOutcome,
-  type BossFront,
   type BossRound,
   type BossView,
 } from "@/lib/boss";
+import { bossTurnEntries, holdersBefore, type BossEntry } from "@/lib/boss-powers";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
 import {
@@ -33,8 +33,6 @@ import {
   pingMatch,
   subscribeToUpdates,
 } from "@/lib/match";
-import { artSrcSet } from "@/lib/art";
-import { withBasePath } from "@/lib/base-path";
 import { matchXp } from "@/lib/progression";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -708,53 +706,6 @@ function OpponentAbsent({
   );
 }
 
-/** What one side placed in a turn: who, where, with what score, and what the side took in all. */
-function TurnSide({
-  label,
-  name,
-  art,
-  front,
-  play,
-  outcome,
-  tone,
-}: {
-  label: string;
-  name: string;
-  art: string | null;
-  front: BossFront;
-  play: { score: number; points: number; auto_played: boolean };
-  outcome: "won" | "lost" | "void";
-  tone: string;
-}) {
-  return (
-    <div className={`relative flex min-h-[130px] flex-1 flex-col justify-end gap-0.5 overflow-hidden px-4 py-3 ${tone}`}>
-      {art && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={withBasePath(art)}
-          srcSet={artSrcSet(art)}
-          sizes="45vw"
-          alt=""
-          decoding="async"
-          className="absolute inset-y-0 right-0 h-full w-[45%] object-cover object-top [mask-image:linear-gradient(to_right,transparent,#000_35%)]"
-        />
-      )}
-      <p className="relative max-w-[62%] text-[13px] font-extrabold leading-4">
-        {label} · entra su {front.name}
-        {play.auto_played && " · tempo scaduto"}
-      </p>
-      <p className="relative max-w-[60%] font-display text-[30px] uppercase leading-8">{name}</p>
-      <p className="relative flex items-baseline gap-2 text-sm font-bold">
-        <span className="font-display text-5xl leading-[48px]">{play.score}</span>
-        <span className="max-w-[45%] leading-4">
-          {outcome === "won" ? "e tiene il fronte" : outcome === "lost" ? "ma il fronte è dell'altro" : "pari: il fronte non paga"}
-        </span>
-        <span className="ml-auto -skew-x-8 bg-black px-2 font-display text-3xl text-comic-yellow">+{play.points}</span>
-      </p>
-    </div>
-  );
-}
-
 function TurnReveal({
   view,
   round,
@@ -768,61 +719,51 @@ function TurnReveal({
   onContinue: () => void;
   finished: boolean;
 }) {
-  const mine = view.my_team.find((card) => card.instance_id === round.my_play?.instance_id);
-  const theirs = round.opponent_play;
-  if (!round.my_play || !theirs) return null;
-  const row = view.values[round.round - 1];
-  const holders = round.holders ?? view.fronts.map(() => null);
+  const detail = useCardDetail();
+  const entries = useMemo(() => bossTurnEntries(view, round), [view, round]);
+  if (!entries || !round.my_play || !round.opponent_play) return null;
+  const statsOf = (entry: BossEntry) => {
+    const abilities = view.fronts[entry.front]?.abilities ?? [];
+    return entry.card ? abilities.map((code) => `${code} ${entry.card!.stats[code] ?? 0}`).join(" · ") : "";
+  };
+  // The totals as they stood after this turn.
+  const upTo = view.rounds.filter((r) => r.resolved && r.round <= round.round);
+  const totals = {
+    me: upTo.reduce((sum, r) => sum + (r.my_play?.points ?? 0), 0),
+    opponent: upTo.reduce((sum, r) => sum + (r.opponent_play?.points ?? 0), 0),
+  };
+  const notices = [
+    ...(round.my_play.auto_played ? ["Tempo scaduto: il server ha scelto per te."] : []),
+    ...(round.opponent_play.auto_played ? [`${rival} non ha scelto in tempo.`] : []),
+  ];
 
   return (
-    <main className="relative mt-1 flex min-h-0 flex-1 cursor-pointer flex-col gap-1 overflow-y-auto px-3 pb-3" onClick={onContinue}>
-      <p className="-skew-x-8 bg-comic-yellow px-3 py-1.5 text-center font-display text-xl uppercase text-black">
-        Turno {round.round} · ogni fronte occupato paga
-      </p>
-      <section aria-label="La tua giocata" className="animate-play-in-top flex flex-1 flex-col">
-        <TurnSide
-          label="Tu"
-          name={mine?.name ?? "—"}
-          art={mine?.art_url ?? null}
-          front={view.fronts[round.my_play.front]}
-          play={round.my_play}
-          outcome={turnOutcome(round, "me")}
-          tone="bg-comic-cyan text-black"
-        />
-      </section>
-      <section aria-label={`La giocata di ${rival}`} className="flex flex-1 flex-col">
-        <TurnSide
-          label={rival}
-          name={theirs.name}
-          art={theirs.art_url}
-          front={view.fronts[theirs.front]}
-          play={theirs}
-          outcome={turnOutcome(round, "opponent")}
-          tone="bg-comic-orange text-black"
-        />
-      </section>
-      {/* Every front this turn: its value and who took it. */}
-      <ol className="flex gap-1" aria-label="Chi tiene ogni fronte">
-        {view.fronts.map((f) => {
-          const holder = holders[f.front];
-          return (
-            <li
-              key={f.front}
-              aria-label={`${f.name}: ${row[f.front]} punti a ${holder === "me" ? "te" : holder === "opponent" ? rival : "nessuno"}`}
-              className={`flex min-w-0 flex-1 flex-col items-center -skew-x-8 py-1 ${
-                holder === "me" ? "bg-comic-cyan text-black" : holder === "opponent" ? "bg-comic-orange text-black" : "bg-panel-raised text-faint"
-              }`}
-            >
-              <span className="font-display text-lg leading-5">+{row[f.front]}</span>
-              <span className="text-[9px] font-extrabold uppercase">{holder === "me" ? "tuo" : holder === "opponent" ? "suo" : "—"}</span>
-            </li>
-          );
-        })}
-      </ol>
-      <p className="text-center text-sm font-bold text-muted">
-        Tu {view.points.me} – {view.points.opponent} {rival} · {finished ? "tocca per il risultato" : "tocca per continuare"}
-      </p>
-    </main>
+    <BossComic
+      key={round.round}
+      turn={round.round}
+      turns={view.turns}
+      bossName={view.boss.name}
+      fronts={view.fronts.map((front) => ({ name: front.name, level: front.level }))}
+      values={view.values[round.round - 1] ?? view.fronts.map(() => 0)}
+      holdersBefore={holdersBefore(view, round)}
+      holdersAfter={round.holders ?? view.fronts.map(() => null)}
+      rivalName={rival}
+      entries={entries}
+      stats={{ me: statsOf(entries.me), opponent: statsOf(entries.opponent) }}
+      press={{
+        me: entries.me.card ? detail.press(entries.me.card) : undefined,
+        opponent: entries.opponent.card ? detail.press(entries.opponent.card) : undefined,
+      }}
+      points={{ me: round.my_play.points, opponent: round.opponent_play.points }}
+      totals={totals}
+      notices={notices}
+      onContinue={onContinue}
+      hint={(complete) => (
+        <p className="py-1 text-center text-xs font-extrabold uppercase tracking-wide text-black">
+          {!complete ? "Tocca per saltare" : finished ? "Tocca per il risultato" : "Tocca per continuare"}
+        </p>
+      )}
+    />
   );
 }
 
