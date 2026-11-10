@@ -1,10 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Silhouette } from "@/components/card-view";
-import { WinnerName } from "@/components/winner-name";
-import { artSrcSet } from "@/lib/art";
-import { withBasePath } from "@/lib/base-path";
+import { useMemo, type ReactNode } from "react";
+import {
+  BEAT_MS,
+  ComicArt,
+  Crack,
+  paced,
+  pageStyle,
+  Rolling,
+  ShoutBalloon,
+  ThinkBalloon,
+  useBeats,
+  useVerdictBuzz,
+  VerdictPanel,
+} from "@/components/comic-page";
 import type { MatchCard } from "@/lib/match";
 import type { PowerNote } from "@/lib/round-powers";
 import { LONG_PRESS_CLASS, type LongPressHandlers } from "@/lib/use-long-press";
@@ -12,26 +21,7 @@ import { LONG_PRESS_CLASS, type LongPressHandlers } from "@/lib/use-long-press";
 // A round result told as a comic page, read in order (direction D of the clash drafts):
 // the threat with its twist, the two cards with their powers speaking one at a time in
 // balloons, then the last panel with the winner breaking out of its frame. The loser greys
-// out and its panel cracks. A tap jumps to the end; reduced motion shows the end at once.
-// The whole page plays at this pace: 0.75 is a little slower than the drafts. The CSS
-// animations read it too, through --comic-pace on the page.
-const SPEED = 0.75;
-const PACE = 1 / SPEED;
-const paced = (ms: number) => Math.round(ms * PACE);
-const BEAT_MS = {
-  /** The twist caption stamps on the threat panel. */
-  twist: paced(350),
-  /** The scores start counting up, without the powers' points. */
-  base: paced(450),
-  /** How long the base count takes. */
-  baseCount: paced(450),
-  /** Between one power and the next. */
-  power: paced(400),
-  /** A pause before the verdict. */
-  verdict: paced(350),
-  /** After the verdict, the powers that act on the next card. */
-  after: paced(450),
-} as const;
+// out and its panel cracks. The shared pieces are in comic-page.tsx.
 
 export type ComicKey = "me" | "opponent";
 
@@ -114,90 +104,6 @@ function planBeats(props: Pick<RoundComicProps, "twist" | "me" | "opponent">): B
   return beats;
 }
 
-function prefersReducedMotion(): boolean {
-  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-/** Plays the beats one after the other; `complete` jumps to the end. */
-function useBeats(beats: Beat[]) {
-  const [fired, setFired] = useState(() => (prefersReducedMotion() ? beats.length : 0));
-  useEffect(() => {
-    if (fired >= beats.length) return;
-    const start = performance.now();
-    const timers = beats.map((beat, index) =>
-      index < fired ? 0 : window.setTimeout(() => setFired((n) => Math.max(n, index + 1)), Math.max(0, beat.at - (performance.now() - start))),
-    );
-    return () => timers.forEach((timer) => window.clearTimeout(timer));
-    // Scheduled once per page: later beats are already counted in.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [beats]);
-  const [skipped, setSkipped] = useState(false);
-  const complete = useCallback(() => {
-    setSkipped(true);
-    setFired(beats.length);
-  }, [beats.length]);
-  return { fired: beats.slice(0, fired), done: fired >= beats.length, skipped, complete };
-}
-
-/** A number that climbs to its value; at once when skipped. */
-function Rolling({ value, instant }: { value: number; instant: boolean }) {
-  const [shown, setShown] = useState(0);
-  const from = useRef(0);
-  useEffect(() => {
-    if (instant || prefersReducedMotion()) {
-      from.current = value;
-      return;
-    }
-    const start = performance.now();
-    const origin = from.current;
-    let frame = 0;
-    const step = (time: number) => {
-      const progress = Math.min(1, (time - start) / BEAT_MS.baseCount);
-      const next = Math.round(origin + (value - origin) * progress);
-      from.current = next;
-      setShown(next);
-      if (progress < 1) frame = requestAnimationFrame(step);
-    };
-    frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
-  }, [value, instant]);
-  return <>{instant || prefersReducedMotion() ? value : shown}</>;
-}
-
-/** The crack across the loser's panel, drawn when the page gives the verdict. */
-function Crack() {
-  return (
-    <svg className="comic-crack" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden>
-      <path className="comic-crack-ink" vectorEffect="non-scaling-stroke" d="M60 0 L47 24 L63 44 L43 66 L61 88 L45 112 L56 140" />
-      <path className="comic-crack-light" vectorEffect="non-scaling-stroke" d="M60 0 L47 24 L63 44 L43 66 L61 88 L45 112 L56 140" />
-    </svg>
-  );
-}
-
-const SHOUT_PATH =
-  "M80 4 92 16 108 6 114 22 134 16 132 34 154 36 142 52 156 66 136 70 140 88 118 82 108 98 94 86 80 100 70 86 50 98 46 80 22 88 28 70 4 64 20 52 6 38 28 34 26 16 48 22 54 6 68 16Z";
-
-function Art({ card, className }: { card: MatchCard; className: string }) {
-  if (!card.art_url) {
-    return (
-      <div className={`${className} bg-black`}>
-        <Silhouette faction={card.faction} accent={card.rarity.color} className="absolute bottom-0 left-1/2 h-full -translate-x-1/2" />
-      </div>
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={withBasePath(card.art_url)}
-      srcSet={artSrcSet(card.art_url)}
-      sizes="50vw"
-      alt=""
-      decoding="async"
-      className={`${className} object-cover object-top`}
-    />
-  );
-}
-
 function CardPanel({
   side,
   data,
@@ -235,7 +141,7 @@ function CardPanel({
       } ${LONG_PRESS_CLASS} relative min-h-0 overflow-hidden text-black`}
       style={{ animationDelay: `${paced(isMe ? 80 : 160)}ms` }}
     >
-      {data.card && <Art card={data.card} className="comic-dim absolute inset-0 h-full w-full" />}
+      {data.card && <ComicArt card={data.card} className="comic-dim absolute inset-0 h-full w-full" />}
       <div
         className={`comic-dim absolute top-1.5 z-[4] grid h-14 w-14 place-items-center rounded-full border-[3px] border-foreground bg-black font-display text-[28px] tabular-nums text-comic-yellow ${
           isMe ? "left-1.5" : "right-1.5"
@@ -245,33 +151,8 @@ function CardPanel({
       </div>
 
       <div className={`absolute inset-x-1 top-[66px] z-[5] flex flex-col gap-1.5 ${isMe ? "items-start" : "items-end"}`}>
-        {shouts.length > 0 && (
-          <div className="comic-shout relative min-w-[132px] max-w-full px-7 py-5 text-center">
-            <svg viewBox="0 0 160 104" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden>
-              <path d={SHOUT_PATH} fill="#fff" stroke="#000" strokeWidth={3} strokeLinejoin="round" />
-            </svg>
-            {shouts.map(({ note, index }) => (
-              <p key={index} className="comic-pop relative leading-none">
-                <span className="block font-sfx text-[19px] tracking-wide">{note.name}!</span>
-                {note.effect && <span className="block text-[11px] font-extrabold leading-3">{note.effect}</span>}
-                {decisiveIndex === index && verdict && (
-                  <span className="comic-pop mt-0.5 inline-block -rotate-3 border-2 border-black bg-comic-yellow px-1 font-sfx text-[13px] tracking-wide">
-                    Decisivo!
-                  </span>
-                )}
-              </p>
-            ))}
-          </div>
-        )}
-        {showIdle && idle.length > 0 && (
-          <div className="comic-pop max-w-[150px] rounded-[50%] border-[3px] border-black bg-white px-3 py-2 text-center text-[11px] font-bold italic leading-[13px] text-[#444]">
-            {idle.map((note, index) => (
-              <span key={index} className="block">
-                {note.name}… {note.effect ?? "non stavolta"}
-              </span>
-            ))}
-          </div>
-        )}
+        <ShoutBalloon notes={shouts} decisiveIndex={decisiveIndex} verdict={verdict} />
+        {showIdle && <ThinkBalloon notes={idle} />}
       </div>
 
       {showAfter && after.length > 0 && (
@@ -317,19 +198,7 @@ export function RoundComic(props: RoundComicProps) {
   const outcomeOf = (side: ComicKey) =>
     !verdict ? null : winner === "none" ? ("void" as const) : winner === side ? ("won" as const) : ("lost" as const);
 
-  // The phone buzzes with the verdict where it can (not Safari on iPhone).
-  const buzzed = useRef(false);
-  useEffect(() => {
-    if (!verdict || buzzed.current) return;
-    buzzed.current = true;
-    // Browsers allow it only after a tap, which a match always had.
-    if (!navigator.userActivation?.hasBeenActive) return;
-    try {
-      navigator.vibrate?.(winner === "me" ? [30, 40, 70] : winner === "opponent" ? [140] : [25]);
-    } catch {
-      // Not supported: the page shakes anyway.
-    }
-  }, [verdict, winner]);
+  useVerdictBuzz(verdict, winner === "me" ? "win" : winner === "opponent" ? "lose" : "void");
 
   const winnerSide = winner === "none" ? null : props[winner];
   const title = winner === "me" ? "Round vinto!" : winner === "opponent" ? "Round perso" : "Round nullo";
@@ -338,7 +207,7 @@ export function RoundComic(props: RoundComicProps) {
   return (
     <main
       className="comic-page relative mt-1 flex min-h-0 flex-1 cursor-pointer flex-col gap-1.5 overflow-hidden px-1.5 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1.5"
-      style={{ "--comic-pace": PACE } as CSSProperties}
+      style={pageStyle}
       onClick={() => (done ? props.onContinue() : complete())}
     >
       <section aria-label={`Round ${props.round}: ${props.threatName}`} className="comic-panel halftone relative shrink-0 bg-comic-orange px-3 pb-2.5 pt-2 text-black">
@@ -382,47 +251,24 @@ export function RoundComic(props: RoundComicProps) {
         })}
       </div>
 
-      <section
-        aria-live="polite"
-        aria-label={title}
-        className={`comic-panel comic-verdict relative h-[156px] shrink-0 overflow-visible ${
-          !verdict ? "bg-panel-raised" : winner === "me" ? "rays-gold" : winner === "opponent" ? "halftone bg-comic-magenta" : "bg-[#cfc6ad]"
-        }`}
+      <VerdictPanel
+        verdict={verdict}
+        tone={winner === "me" ? "win" : winner === "opponent" ? "lose" : "void"}
+        hero={winnerSide?.card ?? null}
+        heroKey={`${props.round}-${winnerSide?.card?.code ?? "none"}`}
+        sfx={sfx}
+        title={title}
       >
-        {verdict && (
-          <>
-            {winnerSide?.card && (
-              <div className="comic-hero absolute -top-3 left-2.5 z-10 h-[150px] w-[104px] -rotate-[5deg] border-4 border-black bg-black shadow-[6px_6px_0_#000]">
-                <Art card={winnerSide.card} className="relative h-full w-full" />
-              </div>
-            )}
-            <span
-              className={`comic-stamp text-sfx absolute z-[11] -rotate-[8deg] leading-none ${
-                winnerSide?.card ? "left-[24px] top-[64px] text-[34px]" : "left-3 top-2 text-[40px]"
-              } ${winner === "me" ? "text-comic-magenta" : "text-foreground"}`}
-            >
-              {sfx}
-            </span>
-            <div className={`absolute bottom-2 right-2 top-1.5 z-[4] flex flex-col justify-end gap-1 ${winnerSide?.card ? "left-[124px]" : "left-2"}`}>
-              {winnerSide?.card && (
-                <WinnerName key={`${props.round}-${winnerSide.card.code}`} card={winnerSide.card} delay={0.15} className="h-[52px] min-h-0 shrink" />
-              )}
-              <div className="comic-fade border-[3px] border-black bg-white px-2.5 py-1 text-black">
-                <p className="font-display text-[20px] uppercase leading-[22px]">{title}</p>
-                <p className="text-[12px] font-bold leading-[15px]">
-                  {props.resultLine}
-                  {props.decisive && ` ${props.decisive.text}`}
-                </p>
-                {props.notices.map((notice) => (
-                  <p key={notice} className="text-[11px] font-semibold leading-[14px] text-[#444]">
-                    {notice}
-                  </p>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-      </section>
+        <p className="text-[12px] font-bold leading-[15px]">
+          {props.resultLine}
+          {props.decisive && ` ${props.decisive.text}`}
+        </p>
+        {props.notices.map((notice) => (
+          <p key={notice} className="text-[11px] font-semibold leading-[14px] text-[#444]">
+            {notice}
+          </p>
+        ))}
+      </VerdictPanel>
 
       <div className="flex shrink-0 justify-center">{props.hint(done)}</div>
     </main>

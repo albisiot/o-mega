@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { resolveEmergencyPlay, type AbilityFamilies, type EmergencyRules } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
+import { EmergencyComic } from "@/components/emergency-comic";
 import { Silhouette } from "@/components/card-view";
-import { BackLink, ComicBurst } from "@/components/comic-parts";
+import { BackLink } from "@/components/comic-parts";
 import { useEventPointsFor } from "@/components/event-banner";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
@@ -29,6 +30,7 @@ import {
   type EmergencyRun,
   type EmergencyView,
 } from "@/lib/emergency";
+import { emergencyPowerNotes, type EmergencyNote } from "@/lib/emergency-powers";
 import { describeServerError } from "@/lib/errors";
 import { fetchInstanceDefinitions, fetchOwnedInstances, toCharacter, type VariantCopy } from "@/lib/match";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
@@ -90,12 +92,7 @@ function EmergencySteps({ initial }: { initial: EmergencyView }) {
       {!run ? (
         <Briefing view={view} picking={picking} onPick={() => setPicking(true)} onStarted={setView} />
       ) : revealing ? (
-        <PlayReveal
-          play={revealing}
-          run={run}
-          maxFailures={view.rules.max_failures}
-          onContinue={() => setRevealing(null)}
-        />
+        <PlayReveal play={revealing} run={run} rules={view.rules} onContinue={() => setRevealing(null)} />
       ) : run.status === "finished" ? (
         <RunResult run={run} rules={view.rules} />
       ) : (
@@ -513,54 +510,68 @@ function ChoosePhase({
 function PlayReveal({
   play,
   run,
-  maxFailures,
+  rules,
   onContinue,
 }: {
   play: EmergencyPlay;
   run: EmergencyRun;
-  maxFailures: number;
+  rules: EmergencyView["rules"];
   onContinue: () => void;
 }) {
   const card = run.squad.find((c) => c.instance_id === play.instance_id);
   const detail = useCardDetail();
-  // The outcome takes the room above the button, like the threat while choosing.
+  const earlier = run.plays.filter((p) => p.round < play.round).sort((a, b) => a.round - b.round);
+  const before = earlier.flatMap((p) => {
+    const played = run.squad.find((c) => c.instance_id === p.instance_id);
+    return played ? [{ card: played, passed: p.passed }] : [];
+  });
+  const notes = card ? emergencyPowerNotes(card, play, before) : [];
+  const failedBefore = earlier.filter((p) => !p.passed).length;
+  const isLast = run.plays.every((p) => p.round <= play.round);
   return (
-    <>
-      <main className="flex min-h-0 flex-1 flex-col gap-3 px-3 pt-1">
-        <section
-          {...(card ? detail.press(card) : {})}
-          className={`cut-bottom relative flex min-h-0 flex-1 flex-col items-center justify-center gap-2 overflow-hidden px-4 pb-8 pt-5 text-center text-black ${LONG_PRESS_CLASS} ${
-            play.passed ? "bg-comic-cyan" : "halftone bg-comic-magenta"
-          }`}
-        >
-          <p className="relative text-sm font-extrabold">{play.threat.name}</p>
-          <p className="animate-rare-title text-sfx relative text-5xl uppercase text-foreground">
-            {play.passed ? "Superata!" : "Fallita"}
-          </p>
-          <ComicBurst fill="#ffd60a" className="relative mt-1 h-28 w-28 -rotate-[8deg]" textClassName="text-[34px] tracking-wide">
-            {play.score}
-          </ComicBurst>
-          <p className="relative font-bold">
-            {card?.name ?? "?"}: servivano {play.required} punti
-          </p>
-          {play.bonus > 0 && (
-            <p className="relative text-sm font-bold">
-              {play.base} dalle abilità, +{play.bonus} dal bonus
-            </p>
-          )}
-        </section>
-        <p className="text-center text-sm font-semibold text-muted">
-          Superate {run.passed} · Fallite {run.failed} su {maxFailures}
-        </p>
-      </main>
-
-      <div className="px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
-        <button type="button" onClick={onContinue} className="btn btn-primary w-full">
-          {run.status === "finished" ? "Vedi il risultato" : "Prossima Minaccia"}
+    <EmergencyComic
+      key={play.round}
+      number={play.round}
+      of={rules.threats_per_run}
+      passedBefore={earlier.length - failedBefore}
+      failedBefore={failedBefore}
+      lastChance={failedBefore === rules.max_failures - 1}
+      threatName={play.threat.name}
+      level={play.level}
+      abilities={play.threat.abilities}
+      card={card ?? null}
+      stats={card ? play.threat.abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ") : ""}
+      score={play.score}
+      target={rules.targets[String(play.level)] ?? play.required}
+      required={play.required}
+      passed={play.passed}
+      notes={notes}
+      decisive={play.passed ? decisiveNote(notes, play.score, play.required) : null}
+      ended={isLast && run.status === "finished"}
+      press={card ? detail.press(card) : undefined}
+      onContinue={onContinue}
+      action={(complete, skip) => (
+        <button type="button" onClick={complete ? onContinue : skip} className="btn btn-primary w-full">
+          {!complete ? "Salta" : run.status === "finished" && isLast ? "Vedi il risultato" : "Prossima Minaccia"}
         </button>
-      </div>
-    </>
+      )}
+    />
   );
+}
+
+/** The power without which a passed threat would have failed. */
+function decisiveNote(notes: EmergencyNote[], score: number, required: number): { index: number; text: string } | null {
+  for (const [index, note] of notes.entries()) {
+    if (!note.active || note.timing) continue;
+    if (note.points && note.points > 0 && score - note.points < required) {
+      const short = required - (score - note.points);
+      return { index, text: `Senza ${note.name} si fermava a ${score - note.points}: ${short === 1 ? "mancava 1 punto" : `mancavano ${short} punti`}.` };
+    }
+    if (note.threshold && score < required + note.threshold) {
+      return { index, text: `Senza ${note.name} ne servivano ${required + note.threshold}.` };
+    }
+  }
+  return null;
 }
 
 function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["rules"] }) {
