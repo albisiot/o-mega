@@ -90,6 +90,18 @@ export const balance = {
     baseValue: 1,
   },
 
+  /**
+   * Allarme Triplo (SPEC §5.13): three threats drawn at random, the same for the whole
+   * match; a deck of rounds × threats characters, three drawn at random each round and
+   * placed one per threat. Each threat won is a point.
+   */
+  triple: {
+    rounds: 3,
+    threats: 3,
+    /** Time to place the three cards of a round. */
+    roundTimerSeconds: 45,
+  },
+
   /** Twists on the threats of a match; Emergenza has none. Tuned by simulation (SPEC §5.4). */
   threatModifiers: {
     minPerMatch: 1,

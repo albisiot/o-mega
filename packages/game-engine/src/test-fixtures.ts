@@ -1,6 +1,7 @@
 // Shared test data for the engine tests (not part of the public API).
 
 import type { BossRules, BossState } from "./boss.ts";
+import type { TripleRules, TripleState } from "./triple.ts";
 import type { AbilityFamilies, Character, MatchRules, MatchState, Power, Threat } from "./types.ts";
 
 export const ABILITIES = ["FOR", "VEL", "RES", "INT", "VOL", "PER", "ENE", "MAG", "PSI", "COM", "TEC", "FUR"];
@@ -82,4 +83,15 @@ export const VALUES = [
 
 export function bossState(teamA: Character[], teamB: Character[], values = VALUES): BossState {
   return { rules: BOSS_RULES, fronts: FRONTS, values, teams: { a: teamA, b: teamB }, turns: [] };
+}
+
+// Allarme Triplo
+
+export const TRIPLE_RULES: TripleRules = { rounds: 3, threats: 3, classicRounds: 5 };
+
+/** Levels 1, 2, 3. */
+export const TRIPLE_THREATS: Threat[] = [threat("t1", ["FOR"]), threat("t2", ["VEL", "RES"]), threat("t3", ["INT", "VOL", "PER"])];
+
+export function tripleState(deckA: Character[], deckB: Character[], threats = TRIPLE_THREATS): TripleState {
+  return { rules: TRIPLE_RULES, threats, decks: { a: deckA, b: deckB }, rounds: [] };
 }

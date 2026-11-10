@@ -41,7 +41,7 @@ type TeamPickerProps = {
   startLabel: string;
   starting: boolean;
   onStart: (cardInstanceIds: string[]) => void;
-  /** Emergenza: a larger squad, which formations (always a match team) cannot hold. */
+  /** Emergenza, Allarme Triplo: a larger squad, which formations (always a match team) cannot hold. */
   squadSize?: number;
   /** The advice on how to choose, behind an "i". */
   intro?: string;
@@ -206,7 +206,7 @@ export function TeamPicker(props: TeamPickerProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* The squad. A slot with choices (Conquest stake, artwork variant) opens them; otherwise a tap removes the card. */}
-      <section className={`grid gap-1.5 ${squadSize ? "grid-cols-4" : "grid-cols-5"}`}>
+      <section className={`grid gap-1.5 ${squadSize && squadSize % 4 === 0 ? "grid-cols-4" : "grid-cols-5"}`}>
         {Array.from({ length: size }, (_, i) => {
           const card = selected[i] ? byId.get(selected[i]) : null;
           const height = squadSize ? "h-14" : "h-[72px]";
@@ -238,7 +238,7 @@ export function TeamPicker(props: TeamPickerProps) {
                 <img
                   src={withBasePath(card.art_url)}
                   srcSet={artSrcSet(card.art_url)}
-                  sizes={squadSize ? "calc((100vw - 58px) / 4)" : "calc((100vw - 68px) / 5)"}
+                  sizes={squadSize && squadSize % 4 === 0 ? "calc((100vw - 58px) / 4)" : "calc((100vw - 68px) / 5)"}
                   alt=""
                   decoding="async"
                   className="absolute inset-0 h-full w-full object-cover object-top"

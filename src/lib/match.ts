@@ -64,8 +64,11 @@ export type MatchRound = {
 export type MatchView = {
   id: string;
   mode: "bot" | "friendly" | "conquest";
-  /** "boss": a Grande Minaccia, whose state is a BossView (src/lib/boss.ts). Missing before it existed. */
-  format?: "classic" | "boss";
+  /**
+   * "boss": a Grande Minaccia, whose state is a BossView (src/lib/boss.ts); "triple": an
+   * Allarme Triplo, a TripleView (src/lib/triple.ts). Missing before they existed.
+   */
+  format?: "classic" | "boss" | "triple";
   bot_difficulty: BotDifficulty | null;
   status: "active" | "finished";
   my_side: "a" | "b";
@@ -193,8 +196,8 @@ export function joinQueue(
 
 export type QueueMode = "friendly" | "conquest";
 
-/** A classic match, or a Grande Minaccia (friendly only). */
-export type MatchFormat = "classic" | "boss";
+/** A classic match, a Grande Minaccia or an Allarme Triplo (both friendly only). */
+export type MatchFormat = "classic" | "boss" | "triple";
 
 export type ConquestStatus = {
   unlocked: boolean;
@@ -253,7 +256,7 @@ export async function createLobby(cardInstanceIds: string[], format: MatchFormat
 export async function fetchMyLobby(): Promise<Lobby | null> {
   const { data, error } = await getSupabase().from("match_lobbies").select("code, expires_at, format").maybeSingle();
   if (error) throw error;
-  return data ? { ...data, format: data.format === "boss" ? "boss" : "classic" } : null;
+  return data ? { ...data, format: data.format === "boss" || data.format === "triple" ? data.format : "classic" } : null;
 }
 
 export async function cancelLobby(): Promise<void> {

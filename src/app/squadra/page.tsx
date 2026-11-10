@@ -11,6 +11,8 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { TeamPicker } from "@/components/team-picker";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
 import { startBossBotMatch } from "@/lib/boss";
+import { balance } from "@/config/balance";
+import { startTripleBotMatch } from "@/lib/triple";
 import { describeServerError } from "@/lib/errors";
 import { startStoryMission, storyMatchHref } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -38,6 +40,7 @@ const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
 // /squadra/?mode=join&code=ABC234               (join a friend)
 // /squadra/?story=C1M1                          (a story mission)
 // &format=boss with difficulty, queue or lobby  (a Grande Minaccia)
+// &format=triple with difficulty, queue or lobby (an Allarme Triplo)
 export default function TeamPage() {
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -77,10 +80,17 @@ function readMode(params: URLSearchParams): Mode {
   return { kind: "bot", difficulty: difficulty && DIFFICULTIES.includes(difficulty) ? difficulty : "easy" };
 }
 
-/** A Grande Minaccia: against a bot, or friendly between players (never Conquest or Story). */
+/** A Grande Minaccia or an Allarme Triplo: against a bot, or friendly between players (never Conquest or Story). */
 function readFormat(params: URLSearchParams, mode: Mode): MatchFormat {
-  return params.get("format") === "boss" && ["bot", "queue", "lobby"].includes(mode.kind) ? "boss" : "classic";
+  const format = params.get("format");
+  return (format === "boss" || format === "triple") && ["bot", "queue", "lobby"].includes(mode.kind) ? format : "classic";
 }
+
+const TRIPLE_DECK = balance.triple.rounds * balance.triple.threats;
+
+const TRIPLE_INTRO = `Scegli ${TRIPLE_DECK} personaggi diversi: le Minacce le scopri dopo. Ogni round ne peschi ${balance.triple.threats} a caso e li metti uno per Minaccia, quindi conviene un mazzo vario, con specialisti di più abilità. Con una pressione lunga su una carta la vedi intera.`;
+
+const FORMAT_LABELS: Record<MatchFormat, string> = { classic: "", boss: "Grande Minaccia · ", triple: "Allarme Triplo · " };
 
 const BOSS_INTRO =
   "Scegli 5 personaggi diversi: il Boss lo scopri dopo. Ogni turno uno di loro entra su un fronte e ci resta fino alla fine, uno per fronte: servono specialisti per i fronti piccoli e generalisti per quelli grandi. Con una pressione lunga su una carta la vedi intera.";
@@ -135,7 +145,11 @@ function TeamPageContent() {
       switch (mode.kind) {
         case "bot": {
           const view =
-            format === "boss" ? await startBossBotMatch(mode.difficulty, cardInstanceIds) : await startBotMatch(mode.difficulty, cardInstanceIds);
+            format === "boss"
+              ? await startBossBotMatch(mode.difficulty, cardInstanceIds)
+              : format === "triple"
+                ? await startTripleBotMatch(mode.difficulty, cardInstanceIds)
+                : await startBotMatch(mode.difficulty, cardInstanceIds);
           router.push(`/partita/?id=${view.id}`);
           break;
         }
@@ -155,7 +169,7 @@ function TeamPageContent() {
           break;
         case "queue":
           storePendingTeam(cardInstanceIds);
-          router.push(format === "boss" ? "/attesa/?mode=queue&format=boss" : "/attesa/?mode=queue");
+          router.push(format === "classic" ? "/attesa/?mode=queue" : `/attesa/?mode=queue&format=${format}`);
           break;
         case "conquest":
           storePendingTeam(cardInstanceIds);
@@ -173,9 +187,12 @@ function TeamPageContent() {
       <header className="flex items-center gap-2.5 px-3 py-1">
         <BackLink href={mode.kind === "story" ? "/storia" : "/gioca"} label={`Torna a ${mode.kind === "story" ? "Storia" : "Gioca"}`} />
         <div className="min-w-0">
-          <h1 className="font-display text-[22px] uppercase leading-6 text-comic-yellow">La tua squadra</h1>
+          <h1 className="font-display text-[22px] uppercase leading-6 text-comic-yellow">
+            {format === "triple" ? "Il tuo mazzo" : "La tua squadra"}
+          </h1>
           <p className="truncate text-[11px] font-bold text-muted">
-            {format === "boss" ? `Grande Minaccia · ${COPY[mode.kind].subtitle(mode)}` : COPY[mode.kind].subtitle(mode)}
+            {FORMAT_LABELS[format]}
+            {COPY[mode.kind].subtitle(mode)}
           </p>
         </div>
       </header>
@@ -206,10 +223,13 @@ function TeamPageContent() {
               startLabel={COPY[mode.kind].start(mode)}
               starting={starting}
               onStart={start}
+              squadSize={format === "triple" ? TRIPLE_DECK : undefined}
               intro={
                 format === "boss"
                   ? BOSS_INTRO
-                  : "Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello basso e i generalisti per quelle alte. Con una pressione lunga su una carta la vedi intera."
+                  : format === "triple"
+                    ? TRIPLE_INTRO
+                    : "Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello basso e i generalisti per quelle alte. Con una pressione lunga su una carta la vedi intera."
               }
             />
           </CardDetailProvider>

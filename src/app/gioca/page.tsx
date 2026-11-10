@@ -32,6 +32,7 @@ const MODES = [
   { key: "story", label: "Storia", detail: "Missioni a Nuova Megara, con carte in premio", color: "rays-gold" },
   { key: "friendly", label: "Amichevole", detail: "Contro un bot, un giocatore o un amico", color: "bg-comic-cyan" },
   { key: "boss", label: "Grande Minaccia", detail: "Un Boss, cinque fronti: contro un bot o un giocatore", color: "bg-comic-orange" },
+  { key: "triple", label: "Allarme Triplo", detail: "Tre Minacce, nove carte, tre round", color: "bg-comic-yellow" },
   { key: "conquest", label: "Conquista", detail: "Chi vince prende una carta", color: "bg-comic-magenta" },
   { key: "emergency", label: "Emergenza", detail: "La sfida del giorno, da solo", color: "bg-foreground" },
 ] as const;
@@ -162,6 +163,41 @@ const BOSS_BOTS: Record<(typeof BOTS)[number]["difficulty"], string> = {
   medium: "Mette ogni turno la carta dove rende di più fino alla fine.",
   hard: "Simula le partite possibili prima di ogni mossa.",
   super_pro: "Simula molte più partite, con mani avversarie plausibili.",
+};
+
+/** Allarme Triplo (SPEC §5.13): against a bot, or friendly between players. */
+function TripleSection({ disabled }: { disabled: boolean }) {
+  const { rounds, threats } = balance.triple;
+  return (
+    <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
+      <p className="text-sm font-medium text-muted">
+        Porti un mazzo di {rounds * threats} personaggi. Escono {threats} Minacce a caso, sempre le stesse per tutta la
+        partita. Ogni round peschi {threats} carte e ne metti una per Minaccia: ogni Minaccia vinta vale un punto. Dopo{" "}
+        {rounds} round vince chi ha più punti. Nessuna carta in gioco e nessuna moneta.
+      </p>
+      {BOTS.map((bot) => (
+        <OptionRow
+          key={bot.difficulty}
+          href={`/squadra/?format=triple&difficulty=${bot.difficulty}`}
+          title={`Bot ${DIFFICULTY_LABELS[bot.difficulty]}`}
+          detail={TRIPLE_BOTS[bot.difficulty]}
+        />
+      ))}
+      <OptionRow href="/squadra/?mode=queue&format=triple" title="Cerca un avversario" detail="Sfida il primo giocatore disponibile." />
+      <OptionRow
+        href="/squadra/?mode=lobby&format=triple"
+        title="Crea un codice"
+        detail="Mandalo a un amico: lo usa in Amichevole, con Entra."
+      />
+    </div>
+  );
+}
+
+const TRIPLE_BOTS: Record<(typeof BOTS)[number]["difficulty"], string> = {
+  easy: "Piazza quasi a caso. Ideale per imparare.",
+  medium: "Mette ogni carta sulla Minaccia dove rende di più.",
+  hard: "Prova le mani avversarie possibili prima di piazzare. Mazzo forte.",
+  super_pro: "Ne prova molte di più. Mazzo fortissimo.",
 };
 
 function ConquestSection({ status, disabled }: { status: ConquestStatus | null; disabled: boolean }) {
@@ -325,7 +361,7 @@ function ActiveMatchBanner({ match, onForfeit }: { match: ActiveMatch; onForfeit
         <span className="min-w-0">
           <span className="block font-display text-[17px] uppercase leading-5">Hai una partita in corso</span>
           <span className="block text-xs font-bold leading-4">
-            {match.format === "boss" ? "Grande Minaccia · " : ""}
+            {match.format === "boss" ? "Grande Minaccia · " : match.format === "triple" ? "Allarme Triplo · " : ""}
             {match.mode === "bot"
               ? `Contro il bot ${DIFFICULTY_LABELS[match.bot_difficulty ?? "easy"]}`
               : match.mode === "conquest"
@@ -333,7 +369,8 @@ function ActiveMatchBanner({ match, onForfeit }: { match: ActiveMatch; onForfeit
                   ? `Conquista contro il bot ${DIFFICULTY_LABELS[match.bot_difficulty]}`
                   : "Conquista contro un giocatore"
                 : "Amichevole contro un giocatore"}{" "}
-            · {match.format === "boss" ? "turno" : "round"} {match.current_round}
+            · {match.format === "boss" ? "turno" : "round"}{" "}
+            {match.format === "triple" ? Math.floor((match.current_round - 1) / balance.triple.threats) + 1 : match.current_round}
           </span>
         </span>
         <span className="shrink-0 -skew-x-8 bg-black px-2.5 py-1 font-display text-base uppercase text-comic-yellow">
@@ -415,6 +452,7 @@ export default function PlayPage() {
             {opened.key === "story" && <StorySection disabled={blocked} />}
             {opened.key === "friendly" && <FriendlySection disabled={blocked} />}
             {opened.key === "boss" && <BossSection disabled={blocked} />}
+            {opened.key === "triple" && <TripleSection disabled={blocked} />}
             {opened.key === "conquest" && <ConquestSection status={conquest} disabled={blocked} />}
             {opened.key === "emergency" && <EmergencySection />}
           </section>

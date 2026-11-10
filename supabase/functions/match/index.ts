@@ -19,6 +19,8 @@ import {
   playBossPvpTurn,
   playBotRound,
   playPvpRound,
+  playTripleBotRound,
+  playTriplePvpRound,
   resolveEmergencyPlay,
   type BossRules,
   type BossState,
@@ -36,6 +38,9 @@ import {
   type Side,
   type Threat,
   type ThreatModifier,
+  type TripleRoundRecord,
+  type TripleRules,
+  type TripleState,
 } from "../_shared/game-engine/index.ts";
 
 const corsHeaders = {
@@ -77,6 +82,7 @@ const CLIENT_ERRORS = new Set([
   "story_mission_locked",
   "invalid_front",
   "boss_not_found",
+  "invalid_placement",
 ]);
 
 class GameError extends Error {}
@@ -121,6 +127,7 @@ type Loaded = {
   rules: MatchRules;
   emergency: EmergencyRules;
   boss: BossRules;
+  triple: TripleRules;
   graceSeconds: number;
   catalog: BotMatchCatalog;
   /** Threats of Nuova Megara only: Emergenza never draws the places beyond it. */
@@ -225,6 +232,11 @@ async function load(): Promise<Loaded> {
       hotGrowth: value("boss.hot_growth"),
       baseValue: value("boss.base_value"),
     },
+    triple: {
+      rounds: value("triple.rounds"),
+      threats: value("triple.threats"),
+      classicRounds: value("match.threats_per_match"),
+    },
     graceSeconds: value("match.timeout_grace_seconds"),
     catalog: {
       characters: activeCharacters,
@@ -273,7 +285,7 @@ type MatchContext = {
   side: Side;
   match: {
     status: string;
-    format: "classic" | "boss";
+    format: "classic" | "boss" | "triple";
     bot_difficulty: BotDifficulty | null;
     current_round: number;
     threat_ids: string[];
@@ -291,7 +303,7 @@ type MatchContext = {
   }[];
   plays: PlayRow[];
   /** Choices already submitted for the current round (matches between players). */
-  pending: { side: Side; card_instance_id: string; front_slot: number | null }[];
+  pending: { side: Side; card_instance_id: string; front_slot: number | null; round?: number }[];
 };
 
 /** Rebuilds the full engine state of a match from the database, in one request. */
@@ -321,7 +333,11 @@ async function loadMatch(userId: string, matchId: string) {
 
   if (match.format === "boss") {
     const boss = bossState(loaded, match, teams, roundRows, playRows);
-    return { loaded, match, side, state: null, boss, pending, deadline };
+    return { loaded, match, side, state: null, boss, triple: null, pending, deadline };
+  }
+  if (match.format === "triple") {
+    const triple = tripleState(loaded, match, teams, roundRows, playRows);
+    return { loaded, match, side, state: null, boss: null, triple, pending, deadline };
   }
 
   const resolved: RoundRecord[] = roundRows
@@ -356,7 +372,90 @@ async function loadMatch(userId: string, matchId: string) {
     teams,
     rounds: resolved,
   };
-  return { loaded, match, side, state, boss: null, pending, deadline };
+  return { loaded, match, side, state, boss: null, triple: null, pending, deadline };
+}
+
+/**
+ * The engine state of an Allarme Triplo: the three threats are the first of the
+ * match's (each round repeats them), the decks are the teams in draw order, and
+ * contest c of the database is threat (c - 1) % threats of round (c - 1) / threats + 1.
+ */
+function tripleState(
+  loaded: Loaded,
+  match: MatchContext["match"],
+  decks: TripleState["decks"],
+  roundRows: MatchContext["rounds"],
+  playRows: PlayRow[],
+): TripleState {
+  const perRound = loaded.triple.threats;
+  const threats = match.threat_ids.slice(0, perRound).map((id, i) => {
+    const threat = loaded.threats.get(id);
+    if (!threat) throw new Error(`Unknown threat ${id}`);
+    return { ...threat, modifier: match.threat_modifiers[i] ?? null };
+  });
+  const resolvedRounds = Math.floor(roundRows.filter((r) => r.resolved_at).length / perRound);
+  const rounds: TripleRoundRecord[] = Array.from({ length: resolvedRounds }, (_, r) => {
+    const contests = threats.map((_, slot) => r * perRound + slot + 1);
+    const winners = contests.map((c) => {
+      const w = roundRows.find((row) => row.round === c)?.winner_side;
+      return w === "a" || w === "b" ? w : null;
+    });
+    const playsOf = (playSide: Side) =>
+      contests.map((c, slot) => {
+        const p = playRows.find((row) => row.round === c && row.side === playSide)!;
+        const winner = winners[slot];
+        return {
+          characterId: p.card_instance_id ?? p.definition_id,
+          base: p.base_score,
+          bonus: p.bonus,
+          total: p.score,
+          highest: p.highest_value,
+          autoPlayed: p.auto_played,
+          outcome: winner === null ? ("void" as const) : winner === playSide ? ("won" as const) : ("lost" as const),
+        };
+      });
+    return { round: r + 1, plays: { a: playsOf("a"), b: playsOf("b") }, winners };
+  });
+  return { rules: loaded.triple, threats, decks, rounds };
+}
+
+/** Stores a round computed by the engine; answers with the match as `side` sees it. */
+function recordTripleRound(
+  matchId: string,
+  state: TripleState,
+  played: { round: TripleRoundRecord; finished: boolean; result: MatchResult | null },
+  side: Side,
+) {
+  const playsPayload = (playSide: Side) =>
+    played.round.plays[playSide].map((play) => {
+      const character = state.decks[playSide].find((c) => c.id === play.characterId)!;
+      return {
+        // Bots own no cards: their character id is the definition id.
+        card_instance_id: character.id === character.definitionId ? null : character.id,
+        definition_id: character.definitionId,
+        base: play.base,
+        bonus: play.bonus,
+        score: play.total,
+        highest: play.highest,
+        auto_played: play.autoPlayed,
+      };
+    });
+  return admin.rpc("match_record_triple_round_state", {
+    p_match_id: matchId,
+    p_round: played.round.round,
+    p_plays_a: playsPayload("a"),
+    p_plays_b: playsPayload("b"),
+    p_winners: played.round.winners,
+    p_result: played.finished ? played.result : null,
+    p_side: side,
+  });
+}
+
+/** The cards sent by the client, one per threat in threat order, or null when the timer expired. */
+function placementOf(value: unknown): string[] | null {
+  if (value === null || value === undefined) return null;
+  if (!Array.isArray(value) || !value.every((id) => typeof id === "string")) throw new GameError("invalid_placement");
+  return value;
 }
 
 /**
@@ -608,6 +707,60 @@ async function playBossBotTurnFor(userId: string, body: Record<string, unknown>)
   return check(saved);
 }
 
+// ---------------------------------------------------------------------------
+// Allarme Triplo against a bot (SPEC §5.13)
+// ---------------------------------------------------------------------------
+
+/** The database draws the threats and shuffles the decks; the engine builds the bot's deck. */
+async function startTripleBotMatch(userId: string, body: Record<string, unknown>) {
+  const difficulty = body.difficulty as BotDifficulty;
+  if (!DIFFICULTIES.includes(difficulty)) throw new GameError("invalid_difficulty");
+  const cards = cardIds(body.card_instance_ids);
+  const { triple, catalog } = await load();
+  const deckSize = triple.rounds * triple.threats;
+  const matchId = check(
+    await admin.rpc("match_create_triple_bot", {
+      p_user: userId,
+      p_difficulty: difficulty,
+      p_card_instance_ids: cards,
+      p_bot_definition_ids: buildBotTeam(difficulty, catalog.characters, deckSize, rng).map((c) => c.definitionId),
+    }),
+  ) as string;
+  return stateFor(matchId, "a");
+}
+
+async function playTripleBotRoundFor(userId: string, body: Record<string, unknown>) {
+  const matchId = body.match_id;
+  const placement = placementOf(body.card_instance_ids);
+  if (typeof matchId !== "string") throw new GameError("invalid_request");
+
+  const { loaded, match, triple, deadline } = await loadMatch(userId, matchId);
+  const difficulty = match.bot_difficulty;
+  if (!difficulty || !triple) throw new GameError("match_not_found");
+  if (body.round !== triple.rounds.length + 1) throw new GameError("round_already_resolved");
+
+  const expired = Date.now() > deadline + loaded.graceSeconds * 1000;
+  if (placement === null && !expired) throw new GameError("round_not_expired");
+
+  const record = (playerChoice: string[] | null) => {
+    let played;
+    try {
+      played = playTripleBotRound({ state: triple, catalog: loaded.catalog, difficulty, playerSide: "a", playerChoice, rng });
+    } catch (cause) {
+      // Cards that are not the player's hand of this round.
+      if (cause instanceof Error && cause.message === "invalid_placement") throw new GameError("invalid_placement");
+      throw cause;
+    }
+    return recordTripleRound(matchId, triple, played, "a");
+  };
+
+  let saved = await record(expired ? null : placement);
+  // Clocks can disagree by a moment: if the database says the time is up, the
+  // cards are placed at random for the player, as the rules require.
+  if (saved.error?.message === "round_expired") saved = await record(null);
+  return check(saved);
+}
+
 /** A story mission: the database builds the match from the mission, then it plays as any bot match. */
 async function startStoryMission(userId: string, body: Record<string, unknown>) {
   if (typeof body.mission !== "string") throw new GameError("invalid_request");
@@ -659,6 +812,10 @@ async function joinQueue(userId: string, body: Record<string, unknown>) {
     if (body.format === "boss") {
       return { p_threat_ids: planThreats(loaded), p_format: "boss", p_boss_values: drawBossValues(rng, loaded.boss) };
     }
+    // An Allarme Triplo between players: the database draws the threats and shuffles the decks.
+    if (body.format === "triple") {
+      return { p_threat_ids: planThreats(loaded), p_format: "triple" };
+    }
     return { p_threat_ids: planThreats(loaded) };
   };
   const { data, error } = await withBossTable((loaded) =>
@@ -673,15 +830,29 @@ async function joinQueue(userId: string, body: Record<string, unknown>) {
  * up. Safe to call from both clients at once: the database accepts one result.
  */
 async function resolvePvpRound(userId: string, matchId: string) {
-  const { loaded, match, side, state, boss, pending, deadline } = await loadMatch(userId, matchId);
+  const { loaded, match, side, state, boss, triple, pending, deadline } = await loadMatch(userId, matchId);
   if (match.bot_difficulty) throw new GameError("match_not_found");
 
   const pendingOf = (pendingSide: Side) => pending.find((p) => p.side === pendingSide) ?? null;
   const expired = Date.now() > deadline + loaded.graceSeconds * 1000;
-  if ((pendingOf("a") === null || pendingOf("b") === null) && !expired) return stateFor(matchId, side);
 
   let saved;
-  if (boss) {
+  if (triple) {
+    // A side has placed when its choice is there for every contest of the round.
+    const first = triple.rounds.length * triple.threats.length + 1;
+    const placementOfSide = (placeSide: Side) => {
+      const ids = triple.threats.map(
+        (_, slot) => pending.find((p) => p.side === placeSide && p.round === first + slot)?.card_instance_id,
+      );
+      return ids.every((id): id is string => typeof id === "string") ? ids : null;
+    };
+    const choices = { a: placementOfSide("a"), b: placementOfSide("b") };
+    if ((choices.a === null || choices.b === null) && !expired) return stateFor(matchId, side);
+    const played = playTriplePvpRound({ state: triple, choices, families: loaded.catalog.families, rng });
+    saved = await recordTripleRound(matchId, triple, played, side);
+  } else if ((pendingOf("a") === null || pendingOf("b") === null) && !expired) {
+    return stateFor(matchId, side);
+  } else if (boss) {
     const choiceOf = (choiceSide: Side) => {
       const p = pendingOf(choiceSide);
       return p && p.front_slot !== null ? { characterId: p.card_instance_id, front: p.front_slot - 1 } : null;
@@ -699,6 +870,24 @@ async function resolvePvpRound(userId: string, matchId: string) {
     throw new Error(saved.error.message);
   }
   return stateFor(matchId, side);
+}
+
+/** Allarme Triplo between players: the cards of the round, one per threat, in one choice. */
+async function submitTriple(userId: string, body: Record<string, unknown>) {
+  const placement = placementOf(body.card_instance_ids);
+  if (typeof body.match_id !== "string" || placement === null || typeof body.round !== "number") {
+    throw new GameError("invalid_request");
+  }
+  const status = check(
+    await admin.rpc("match_submit_triple", {
+      p_user: userId,
+      p_match_id: body.match_id,
+      p_round: body.round,
+      p_card_instance_ids: placement,
+    }),
+  );
+  if (status === "ready") return resolvePvpRound(userId, body.match_id);
+  return check(await admin.rpc("match_state_for_user", { p_match_id: body.match_id, p_user: userId }));
 }
 
 async function submitChoice(userId: string, body: Record<string, unknown>) {
@@ -826,6 +1015,12 @@ Deno.serve(async (req) => {
         return json(await startBossBotMatch(userId, body));
       case "boss_play":
         return json(await playBossBotTurnFor(userId, body));
+      case "triple_start":
+        return json(await startTripleBotMatch(userId, body));
+      case "triple_play":
+        return json(await playTripleBotRoundFor(userId, body));
+      case "triple_submit":
+        return json(await submitTriple(userId, body));
       case "story_start":
         return json(await startStoryMission(userId, body));
       case "join_lobby":

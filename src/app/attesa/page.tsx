@@ -44,8 +44,9 @@ function WaitingContent() {
   const params = useSearchParams();
   const mode = params.get("mode") === "lobby" ? "lobby" : "queue";
   const queueMode: QueueMode = params.get("type") === "conquest" ? "conquest" : "friendly";
-  // A Grande Minaccia is friendly only.
-  const format: MatchFormat = params.get("format") === "boss" && queueMode === "friendly" ? "boss" : "classic";
+  // A Grande Minaccia and an Allarme Triplo are friendly only.
+  const asked = params.get("format");
+  const format: MatchFormat = (asked === "boss" || asked === "triple") && queueMode === "friendly" ? asked : "classic";
   const { session } = useRequireSignedIn();
   if (!session) return <LoadingScreen />;
   return (
@@ -155,7 +156,7 @@ function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: Q
         <p className="text-sm font-semibold">Scegli prima la tua squadra.</p>
         <Link
           href={
-            queueMode === "conquest" ? "/squadra/?mode=conquest" : format === "boss" ? "/squadra/?mode=queue&format=boss" : "/squadra/?mode=queue"
+            queueMode === "conquest" ? "/squadra/?mode=conquest" : format === "classic" ? "/squadra/?mode=queue" : `/squadra/?mode=queue&format=${format}`
           }
           className="btn btn-outline"
         >
@@ -185,7 +186,9 @@ function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: Q
             ? "Ricerca di un avversario per la Conquista…"
             : format === "boss"
               ? "Ricerca di un avversario per la Grande Minaccia…"
-              : "Ricerca di un avversario…"}
+              : format === "triple"
+                ? "Ricerca di un avversario per Allarme Triplo…"
+                : "Ricerca di un avversario…"}
         </p>
         <p className="mt-1 font-display text-2xl text-comic-yellow">{waited} s</p>
         <p key={line} className="animate-panel-fade mt-1 text-sm font-semibold text-comic-cyan">
@@ -281,7 +284,11 @@ function LobbyWait({ userId }: { userId: string }) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
       <p className="text-base font-semibold">
-        {lobby.format === "boss" ? "Grande Minaccia: dai questo codice al tuo amico:" : "Dai questo codice al tuo amico:"}
+        {lobby.format === "boss"
+          ? "Grande Minaccia: dai questo codice al tuo amico:"
+          : lobby.format === "triple"
+            ? "Allarme Triplo: dai questo codice al tuo amico (gli servono 9 carte):"
+            : "Dai questo codice al tuo amico:"}
       </p>
       <p className="-skew-x-8 select-all bg-comic-yellow px-5 py-2 font-display text-5xl tracking-[0.15em] text-black shadow-[5px_5px_0_var(--comic-magenta)]">
         {lobby.code}

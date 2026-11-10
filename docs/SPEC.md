@@ -395,6 +395,45 @@ Con i fronti caldi a rotazione (2.000 partite per riga, 300 col Monte Carlo): Al
 
 **Tecnica:** motore in `packages/game-engine/src/boss.ts` e `boss-bots.ts`; numeri in `balance.ts` (`boss`) e `game_config` (`boss.*`); Boss in `boss_definitions` e `boss_fronts` (6 Boss segnaposto); una partita è una riga di `matches` con `format = 'boss'`, `boss_id`, `boss_values` (la tabella) e `points_a`/`points_b`; `mode` resta `bot` o `friendly`. Ogni turno è una riga di `match_rounds` senza Minaccia, con `holders` (chi ha tenuto ogni fronte in quel turno); ogni giocata in `round_plays` ha `front_slot` (dove resta) e `points` (quanto ha preso il giocatore in quel turno da tutti i fronti). La funzione `match_record_boss_turn` controlla turno, carte, che ognuno entri su un suo fronte libero, chi tiene ogni fronte rispetto ai punteggi sul tabellone, i punti rispetto alla tabella e il risultato finale. Edge Function `match`: azioni `boss_start` e `boss_play`; tra giocatori `submit` riceve anche il fronte, `queue` il formato, e il codice amico porta il formato con sé.
 
+### 5.13 Allarme Triplo
+
+Modalità alternativa alla partita classica, chiesta dall'utente il 10 novembre 2026: tre Minacce fisse e un mazzo di nove carte. Si gioca contro i bot (4 difficoltà) o in amichevole tra giocatori (avversario casuale o codice amico); niente Conquista per ora.
+
+1. **Mazzo:** 9 personaggi diversi (`definition_id` tutti diversi, come in §5.2), scelto **prima** di vedere le Minacce. Le 10 carte iniziali bastano.
+2. **Minacce:** il server estrae **3 Minacce di Nuova Megara completamente a caso**, di qualsiasi livello (nessuna regola di composizione: possono uscire tre Minacce di livello 1 o tre di livello 6). Sono visibili dall'inizio e restano le stesse per tutta la partita. Modificatori come in §5.4 (1 o 2 sulle tre, sorteggiati una volta e validi in tutti i round); niente Minacce dei luoghi.
+3. **Pesca:** all'inizio il server mescola i due mazzi. Ogni round ogni giocatore pesca le 3 carte successive del proprio mazzo: dopo 3 round tutte e 9 sono state giocate.
+4. **Round (3):** in segreto e in contemporanea ognuno mette **una carta su ogni Minaccia**. Timer di 45 secondi per piazzarle tutte; allo scadere il server le piazza a caso. Tra giocatori la scelta si può cambiare fino alla risoluzione.
+5. **Su ogni Minaccia** le due carte si confrontano come in un round (§5.5-§5.6): punteggio, poi Implacabile, poi valore singolo più alto, altrimenti nullo. Chi vince prende **1 punto**; un confronto nullo non dà punti.
+6. **Fine:** dopo 3 round vince chi ha più punti (massimo 9); a parità la somma dei punteggi di tutte le carte; poi pareggio.
+7. **Poteri** (il round è il round della partita, le Minacce vinte sono i round vinti, la squadra è il mazzo di 9):
+   - ogni Minaccia è una corsia: Riscossa, Slancio, Sacrificio, Catalizzatore, Riverbero e Vendetta guardano la propria carta **sulla stessa Minaccia nel round prima** e passano il bonus alla carta che ci andrà nel round dopo;
+   - Apripista e Ultimo baluardo leggono il round come il suo posto in una partita classica (1 → 1, 2 → 3, 3 → 5): Apripista vale solo nel round 1, Ultimo baluardo solo nel round 3;
+   - Crescendo non scatta mai (la Minaccia di una corsia ha sempre lo stesso livello); Veggente non serve (tutto è visibile): segnalati, nessuna modifica;
+   - Sabotatore, Annullatore, Nemesi, Davide, Contrattacco, Schermato, Opportunista e Riflesso agiscono sulla carta avversaria della stessa Minaccia; Spia svela una carta del mazzo avversario non ancora giocata; Capobranco conta le carte dei round precedenti; Legame conta tutto il mazzo di 9.
+8. **Premi:** come bot e amichevoli (§13.1): nessuna moneta, esperienza normale, punti evento del tipo di partita, statistiche normali.
+
+**Bot:** vedono solo ciò che vede un giocatore (le tre Minacce, la propria mano, i risultati e le carte avversarie già giocate). Facile: piazzamento quasi a caso, preferendo quelli buoni. Medio: il piazzamento che vince più Minacce contro un personaggio tipico. Difficile e Super Pro: Monte Carlo su 150 e 600 mani avversarie plausibili, piazzate come le piazzerebbe Medio; nell'ultimo round cercano la vittoria della partita, prima le Minacce vinte. I mazzi dei bot si costruiscono come in §5.9 (9 carte).
+
+**Simulazioni** (`scripts/simulate-triple.mts`, catalogo reale a 122 personaggi e 60 Minacce di Nuova Megara, senza modificatori, 600 partite per riga):
+
+| Prova | Risultato | Partita classica |
+|---|---|---|
+| Alfa+Omega contro Delta (Medio contro Medio) | 94,5% | 87% |
+| Gamma contro Delta | 71% | 63-65% |
+| Beta contro Gamma | 69% | 65% |
+| 2 Alfa/Omega + 7 Delta contro 9 Delta | 65% | – |
+| Delta giocato bene (Difficile) contro Alfa+Omega (Medio) | 6,5% | – |
+| Stesso mazzo: Medio contro piazzamento a caso | 95,5% | – |
+| Stesso mazzo: Difficile contro Medio | 52% (pari) | circa 50% |
+| Stesso mazzo: chi vede le carte avversarie contro Medio | 67% | 75% |
+| Medio contro Facile, Super Pro contro Medio (mazzi casuali) | 80%, 48% | – |
+| Stessi mazzi e stesse Minacce, cambia solo la pesca | il mazzo più debole vince in media il 22% grazie alla pesca; nel 32% delle coppie il mazzo decide sempre (≥ 90%) | – |
+| Pareggi, parità di punti decisa dai punteggi, confronti nulli | 0,2%, 7,5%, 0,3 per partita; scarto medio 2 punti | – |
+
+Conclusioni: mettere ogni carta sulla Minaccia giusta conta molto (contro chi piazza a caso si vince il 95%), ma oltre il piazzamento "avido" leggere l'avversario non aiuta: il Monte Carlo non batte Medio, e anche chi vedesse le carte avversarie vincerebbe solo il 67%. La pesca pesa davvero, circa una partita su cinque per il mazzo più debole, ma meno del mazzo: con nove confronti invece di "chi arriva a 3" la squadra conta **più** che nella partita classica (Alfa+Omega contro Delta 94,5% contro 87%). Come chiesto dall'utente (soluzione C), nessuna correzione alle regole finché non ci sono dati reali; le leve possibili sono "pescane 4, giocane 3" o un cambio di carta per partita.
+
+**Tecnica:** motore in `packages/game-engine/src/triple.ts` e `triple-bots.ts`; numeri in `balance.ts` (`triple`) e `game_config` (`triple.*`). Una partita è una riga di `matches` con `format = 'triple'`; ogni confronto (una Minaccia in un round) è una riga di `match_rounds`, come un round classico: confronto c = (round − 1) × 3 + Minaccia, quindi `threat_ids` e `threat_levels` contengono le tre Minacce tre volte, i modificatori si sorteggiano sulle tre e si ripetono, `current_round` è il primo confronto del round in corso e `rounds_won_*` sono i punti. L'ordine di pesca è l'ordine di `match_teams.card_instance_ids`, mescolato dal database alla creazione e mai letto dai client: il payload (`triple_state_payload`) mostra il mazzo in un ordine neutro e solo le mani dei round già aperti. `match_record_triple_round` controlla che ognuno giochi esattamente le carte pescate, una per Minaccia, le scelte inviate o la scadenza, chi vince ogni Minaccia rispetto ai punteggi e il risultato; `match_submit_triple` riceve le tre carte in una volta (le scelte di una carta sola sono rifiutate). Edge Function `match`: azioni `triple_start`, `triple_play`, `triple_submit`; `queue` e il codice amico portano il formato.
+
 ## 6. Conquista delle carte
 
 ### 6.1 Regola base
@@ -651,6 +690,7 @@ Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy
 | Personaggi sbloccabili | Alcune carte hanno un livello di sblocco: non escono da pacchetti e starter set, ogni giocatore ne riceve una copia a quel livello, legata all'account (mai conquistabile né convertibile). Elenco in `docs/WORLD.md`. |
 | Minacce oltre Nuova Megara | Regola fissa per luogo, non nuovi modificatori sorteggiati; i modificatori sorteggiati restano alle Minacce di Nuova Megara; l'Emergenza non estrae le Minacce dei luoghi (§5.4, §5.10). |
 | Grande Minaccia | Modalità con un Boss a 5 fronti e la tabella dei punti visibile (§5.12): prima contro i bot, poi amichevole tra giocatori; niente monete, niente Conquista finché non ci sono dati reali. Approvata il 9 novembre 2026 con tutti i valori di default; lo stesso giorno l'utente ha chiesto le carte fisse sui fronti, che pagano sempre a chi è da solo. |
+| Allarme Triplo | Modalità con 3 Minacce fisse estratte a caso (di qualsiasi livello) e un mazzo di 9 carte, 3 pescate a caso per round (§5.13): bot e amichevole tra giocatori, niente monete né Conquista. Approvata il 10 novembre 2026 con i valori di default, tranne le Minacce completamente a caso; nessuna correzione contro il caso della pesca finché non ci sono dati reali. |
 
 ### 13.2 Aperte (usare il default)
 

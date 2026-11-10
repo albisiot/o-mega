@@ -7,9 +7,11 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { BossMatchScreen } from "@/components/boss-match-screen";
 import { LoadingScreen } from "@/components/loading-screen";
 import { MatchScreen } from "@/components/match-screen";
+import { TripleMatchScreen } from "@/components/triple-match-screen";
 import { isBossView } from "@/lib/boss";
 import { describeServerError } from "@/lib/errors";
 import { cachedMatchView, fetchMatchState, type MatchView } from "@/lib/match";
+import { isTripleView } from "@/lib/triple";
 
 // /partita/?id=<match id>: query string, see CLAUDE.md (static export).
 export default function MatchPage() {
@@ -56,5 +58,7 @@ function MatchPageContent() {
   if (!view) return <LoadingScreen label="Caricamento della partita…" />;
   // A Grande Minaccia has a screen of its own.
   if (isBossView(view)) return <BossMatchScreen key={view.id} initial={view} />;
+  // So does an Allarme Triplo.
+  if (isTripleView(view)) return <TripleMatchScreen key={view.id} initial={view} />;
   return <MatchScreen key={view.id} initial={view} story={story} />;
 }

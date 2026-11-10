@@ -11,3 +11,5 @@ export * from "./flow.ts";
 export * from "./emergency.ts";
 export * from "./boss.ts";
 export * from "./boss-bots.ts";
+export * from "./triple.ts";
+export * from "./triple-bots.ts";

@@ -67,7 +67,8 @@ export default function HistoryPage() {
 function HistoryRow({ entry }: { entry: MatchHistoryEntry }) {
   const result = RESULT_STYLES[entry.result];
   const boss = entry.format === "boss";
-  const mode = `${boss ? `${entry.boss_name ?? "Grande Minaccia"} · ` : ""}${
+  const triple = entry.format === "triple";
+  const mode = `${boss ? `${entry.boss_name ?? "Grande Minaccia"} · ` : triple ? "Allarme Triplo · " : ""}${
     entry.mode === "bot"
       ? `Bot ${DIFFICULTY_LABELS[entry.bot_difficulty ?? "easy"]}`
       : `${entry.mode === "conquest" ? "Conquista" : "Amichevole"} · ${
@@ -88,7 +89,11 @@ function HistoryRow({ entry }: { entry: MatchHistoryEntry }) {
       <div className="shrink-0 text-right">
         <p className={`font-display text-lg uppercase ${result.className}`}>{result.label}</p>
         <p className="font-display text-base">
-          {boss ? `${entry.points_me ?? 0} – ${entry.points_opponent ?? 0} punti` : `${entry.rounds_me} – ${entry.rounds_opponent}`}
+          {boss
+            ? `${entry.points_me ?? 0} – ${entry.points_opponent ?? 0} punti`
+            : triple
+              ? `${entry.rounds_me} – ${entry.rounds_opponent} punti`
+              : `${entry.rounds_me} – ${entry.rounds_opponent}`}
         </p>
         {entry.coins > 0 && <p className="text-xs font-bold text-comic-yellow">+{entry.coins} monete</p>}
       </div>

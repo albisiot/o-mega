@@ -2392,6 +2392,10 @@ export type Database = {
         Args: { p_instance_ids: string[]; p_user: string }
         Returns: string[]
       }
+      check_team_of: {
+        Args: { p_instance_ids: string[]; p_size: number; p_user: string }
+        Returns: string[]
+      }
       claim_conquest_card: {
         Args: { p_card_instance_id: string; p_match_id: string }
         Returns: Json
@@ -2625,6 +2629,20 @@ export type Database = {
         }
         Returns: string
       }
+      insert_triple_match: {
+        Args: {
+          p_bot_difficulty: string
+          p_definitions_a: string[]
+          p_definitions_b: string[]
+          p_mode: string
+          p_player_a: string
+          p_player_b: string
+          p_team_a: string[]
+          p_team_b: string[]
+          p_threat_ids?: string[]
+        }
+        Returns: string
+      }
       instance_in_active_match: {
         Args: { p_instance_id: string }
         Returns: boolean
@@ -2668,6 +2686,16 @@ export type Database = {
           p_bot_definition_ids: string[]
           p_difficulty: string
           p_threat_ids: string[]
+          p_user: string
+        }
+        Returns: string
+      }
+      match_create_triple_bot: {
+        Args: {
+          p_bot_definition_ids: string[]
+          p_card_instance_ids: string[]
+          p_difficulty: string
+          p_threat_ids?: string[]
           p_user: string
         }
         Returns: string
@@ -2743,6 +2771,29 @@ export type Database = {
         }
         Returns: Json
       }
+      match_record_triple_round: {
+        Args: {
+          p_match_id: string
+          p_plays_a: Json
+          p_plays_b: Json
+          p_result: string
+          p_round: number
+          p_winners: Json
+        }
+        Returns: undefined
+      }
+      match_record_triple_round_state: {
+        Args: {
+          p_match_id: string
+          p_plays_a: Json
+          p_plays_b: Json
+          p_result: string
+          p_round: number
+          p_side: string
+          p_winners: Json
+        }
+        Returns: Json
+      }
       match_round_context: {
         Args: { p_match_id: string; p_user: string }
         Returns: Json
@@ -2759,6 +2810,15 @@ export type Database = {
         Args: {
           p_card_instance_id: string
           p_front_slot?: number
+          p_match_id: string
+          p_round: number
+          p_user: string
+        }
+        Returns: string
+      }
+      match_submit_triple: {
+        Args: {
+          p_card_instance_ids: string[]
           p_match_id: string
           p_round: number
           p_user: string
@@ -2789,6 +2849,10 @@ export type Database = {
       open_special_pack: {
         Args: { p_pack_id: string; p_user: string }
         Returns: string
+      }
+      open_triple_round: {
+        Args: { p_match_id: string; p_round: number }
+        Returns: undefined
       }
       pack_opening_payload: { Args: { p_opening_id: string }; Returns: Json }
       place_modifier: {
@@ -2913,10 +2977,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      team_size_for: { Args: { p_format: string }; Returns: number }
       team_value: { Args: { p_definition_ids: string[] }; Returns: number }
       trait_admitted_count: { Args: { p_traits: string[] }; Returns: number }
       trait_catalog_payload: { Args: never; Returns: Json }
       traits_description: { Args: { p_traits: string[] }; Returns: Json }
+      triple_deck_size: { Args: never; Returns: number }
+      triple_state_payload: {
+        Args: { p_match_id: string; p_side: string }
+        Returns: Json
+      }
       username_base: { Args: { p_source: string }; Returns: string }
       valid_boss_values: { Args: { p_values: Json }; Returns: boolean }
       validate_conquest_team: {
@@ -2925,6 +2995,10 @@ export type Database = {
       }
       validate_team: {
         Args: { p_instance_ids: string[]; p_user: string }
+        Returns: string[]
+      }
+      validate_team_for: {
+        Args: { p_format: string; p_instance_ids: string[]; p_user: string }
         Returns: string[]
       }
       with_place_modifiers: {
