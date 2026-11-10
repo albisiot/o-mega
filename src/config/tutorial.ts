@@ -92,6 +92,18 @@ export const PRACTICE = {
   ],
 };
 
+/**
+ * How a power shows in a round result: Bulwark's Ultimo baluardo in round 4 turns a
+ * lost round into a won one (8 + 3 = 11 against Dogwatch's 10).
+ */
+export const POWER_EXAMPLE = {
+  round: 4,
+  threat: PRACTICE.threat,
+  me: { ...SAMPLE_CARD, bonus: 3 },
+  opponent: DOGWATCH,
+  decisive: "Senza Ultimo baluardo finiva 8 a 10.",
+};
+
 export const TUTORIAL_POWERS = [
   { name: "Specialità", text: "+2 contro le Minacce che richiedono una certa abilità." },
   { name: "Ultimo baluardo", text: "+3 se giocato nel round 4 o 5." },
@@ -207,7 +219,10 @@ export const TUTORIAL_STEPS = [
   {
     key: "powers",
     title: "I Poteri",
-    points: ["Sono effetti che scattano solo in certe situazioni: il testo è sulla carta. Eccone alcuni."],
+    points: [
+      "Sono effetti che scattano solo in certe situazioni: il testo è sulla carta.",
+      "Nel risultato del round ogni potere che scatta parla in una nuvoletta e aggiunge i suoi punti; quelli che non scattano restano un pensiero. «Decisivo!» segna il potere che ha cambiato l'esito.",
+    ],
   },
   {
     key: "modes",

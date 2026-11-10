@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { CardView } from "@/components/card-view";
+import { CardView, type CardData } from "@/components/card-view";
 import { PackArt } from "@/components/comic-parts";
+import { RoundComic } from "@/components/round-comic";
 import {
   DOGWATCH,
   GANTRY,
+  POWER_EXAMPLE,
   PRACTICE,
   SAMPLE_CARD,
   SAMPLE_LEVELS,
@@ -21,6 +23,7 @@ import {
   type TutorialStepKey,
 } from "@/config/tutorial";
 import { withBasePath } from "@/lib/base-path";
+import type { MatchCard } from "@/lib/match";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { hasSeenTutorial, markTutorialSeen } from "@/lib/tutorial-seen";
 
@@ -303,6 +306,7 @@ function RoundDemo() {
 function PracticeDemo() {
   const { threat, opponent, team } = PRACTICE;
   const [choice, setChoice] = useState<(typeof team)[number] | null>(null);
+  const [replay, setReplay] = useState(0);
   const opponentScore = scoreOn(opponent, threat);
   const myScore = choice ? scoreOn(choice.card, threat) : 0;
   const won = myScore > opponentScore;
@@ -349,12 +353,19 @@ function PracticeDemo() {
       </ul>
 
       {choice && (
-        <section ref={result} className={`flex flex-col gap-1 p-3 text-black ${won ? "bg-comic-cyan" : "bg-comic-magenta"}`} aria-live="polite">
-          <p className="font-display text-2xl uppercase">{won ? "Round vinto!" : "Round perso"}</p>
-          <p className="text-sm font-bold">
-            {choice.card.name} {myScore} – {opponentScore} {opponent.name}
-          </p>
-          <p className="text-sm font-semibold">{choice.feedback}</p>
+        <section ref={result} className="flex flex-col gap-2" aria-live="polite">
+          {/* The result as a real match shows it; a tap at the end plays it again. */}
+          <DemoComic
+            key={`${choice.card.name}-${replay}`}
+            round={1}
+            threat={threat}
+            me={{ card: choice.card, score: myScore }}
+            opponent={{ card: opponent, score: opponentScore, label: "Avversario" }}
+            winner={won ? "me" : "opponent"}
+            resultLine={`${won ? choice.card.name : opponent.name} batte ${won ? opponent.name : choice.card.name} · ${Math.max(myScore, opponentScore)} a ${Math.min(myScore, opponentScore)}.`}
+            onReplay={() => setReplay((n) => n + 1)}
+          />
+          <p className={`p-3 text-sm font-semibold text-black ${won ? "bg-comic-cyan" : "bg-comic-magenta"}`}>{choice.feedback}</p>
         </section>
       )}
     </div>
@@ -368,6 +379,88 @@ function CardThumb({ src }: { src?: string | null }): ReactNode {
 }
 
 function PowersDemo() {
+  const [replay, setReplay] = useState(0);
+  const { threat, round, me, opponent, decisive } = POWER_EXAMPLE;
+  const myScore = scoreOn(me, threat) + me.bonus;
+  const theirScore = scoreOn(opponent, threat);
+  return (
+    <>
+      <DemoComic
+        key={replay}
+        round={round}
+        threat={threat}
+        me={{ card: me, score: myScore, notes: [{ name: me.power?.name ?? "", effect: `+${me.bonus}`, active: true, points: me.bonus }] }}
+        opponent={{ card: opponent, score: theirScore, label: "Avversario" }}
+        winner="me"
+        resultLine={`${me.name} batte ${opponent.name} · ${myScore} a ${theirScore}.`}
+        decisive={{ side: "me", index: 0, text: decisive }}
+        onReplay={() => setReplay((n) => n + 1)}
+      />
+      <PowersList />
+    </>
+  );
+}
+
+/** A card of the tutorial as the round result reads it. */
+function demoCard(card: CardData, power: MatchCard["power"] = null): MatchCard {
+  return {
+    definition_id: card.name,
+    code: card.code ?? card.name,
+    name: card.name,
+    faction: card.faction,
+    flavor: card.flavor,
+    art_url: card.art_url ?? null,
+    stats: card.stats,
+    rarity: { code: card.rarity.name.toLowerCase(), ...card.rarity },
+    power,
+  };
+}
+
+/** The round result of a real match, with made-up plays: it teaches how to read it. */
+function DemoComic({
+  round,
+  threat,
+  me,
+  opponent,
+  winner,
+  resultLine,
+  decisive = null,
+  onReplay,
+}: {
+  round: number;
+  threat: { name: string; level: number; abilities: string[] };
+  me: { card: CardData; score: number; notes?: { name: string; effect: string; active: boolean; points?: number }[] };
+  opponent: { card: CardData; score: number; label: string };
+  winner: "me" | "opponent";
+  resultLine: string;
+  decisive?: { side: "me" | "opponent"; index: number; text: string } | null;
+  onReplay: () => void;
+}) {
+  const stats = (card: CardData) => threat.abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ");
+  return (
+    <div className="flex h-[min(600px,82dvh)] shrink-0 flex-col">
+      <RoundComic
+        round={round}
+        level={threat.level}
+        threatName={threat.name}
+        abilities={threat.abilities}
+        twist={null}
+        me={{ label: "Tu", card: demoCard(me.card), stats: stats(me.card), score: me.score, notes: me.notes ?? [] }}
+        opponent={{ label: opponent.label, card: demoCard(opponent.card), stats: stats(opponent.card), score: opponent.score, notes: [] }}
+        winner={winner}
+        decisive={decisive}
+        resultLine={resultLine}
+        notices={[]}
+        onContinue={onReplay}
+        hint={(complete) => (
+          <p className="py-1 text-xs font-extrabold uppercase tracking-wide text-black">{complete ? "Tocca per rivederlo" : "Tocca per saltare"}</p>
+        )}
+      />
+    </div>
+  );
+}
+
+function PowersList() {
   return (
     <ul className="flex flex-col gap-0.5">
       {TUTORIAL_POWERS.map((power) => (

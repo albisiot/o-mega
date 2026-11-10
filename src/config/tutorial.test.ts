@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DOGWATCH, GANTRY, PRACTICE, scoreOn, THREAT_EXAMPLES } from "./tutorial";
+import { DOGWATCH, GANTRY, POWER_EXAMPLE, PRACTICE, scoreOn, THREAT_EXAMPLES } from "./tutorial";
 
 describe("tutorial examples", () => {
   it("practice round: the feedback matches the scores", () => {
@@ -8,6 +8,16 @@ describe("tutorial examples", () => {
     expect(max).toBeGreaterThan(tony);
     expect(tony).toBeGreaterThan(opponent);
     expect(nonna).toBeLessThan(opponent);
+  });
+
+  it("power example: Ultimo baluardo is decisive, as its text says", () => {
+    const { me, opponent, threat, round, decisive } = POWER_EXAMPLE;
+    const without = scoreOn(me, threat);
+    const theirs = scoreOn(opponent, threat);
+    expect(round).toBeGreaterThanOrEqual(4);
+    expect(without + me.bonus).toBeGreaterThan(theirs);
+    expect(without).toBeLessThan(theirs);
+    expect(decisive).toBe(`Senza Ultimo baluardo finiva ${without} a ${theirs}.`);
   });
 
   it("the specialist wins the low threat, the generalist the high one", () => {
