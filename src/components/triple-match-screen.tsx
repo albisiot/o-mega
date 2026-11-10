@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import type { AbilityFamilies } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { useEventPointsFor } from "@/components/event-banner";
+import { Silhouette } from "@/components/card-view";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
 import { Sheet } from "@/components/sheet";
@@ -34,6 +35,9 @@ import {
   type TripleThreat,
   type TripleView,
 } from "@/lib/triple";
+import { artSrcSet } from "@/lib/art";
+import { withBasePath } from "@/lib/base-path";
+import { useCardDrag } from "@/lib/use-card-drag";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow, useSecondsLeft } from "@/lib/use-now";
 
@@ -479,30 +483,48 @@ function ChooseRound({
   const detail = useCardDetail();
   const cardOf = (id: string | null) => hand.find((card) => card.instance_id === id) ?? null;
   const slotOf = (id: string) => placement.indexOf(id);
-  // The card being placed: the one tapped, or the first still in the hand.
-  const active = selected ?? hand.find((card) => slotOf(card.instance_id) < 0)?.instance_id ?? null;
+  // A card dragged onto a threat goes there (swapping with the one there, which goes back
+  // to the hand or to the dragged card's old threat); dropped on the hand it leaves its threat.
+  const { drag, start, ghostRef } = useCardDrag((id, zone) => {
+    if (zone === "hand") {
+      onPlace(placement.map((placed) => (placed === id ? null : placed)));
+      onSelect(null);
+    } else if (zone !== null) {
+      put(id, Number(zone));
+    }
+  }, busy);
+  // The card being placed: the one dragged, the one tapped, or the first still in the hand.
+  const active = drag?.id ?? selected ?? hand.find((card) => slotOf(card.instance_id) < 0)?.instance_id ?? null;
   const complete = placement.every((id) => id !== null);
   const isPending =
     complete && round.my_pending !== null && round.my_pending.every((id, slot) => id === placement[slot]);
   const previewNote =
     "Il punteggio di ogni carta su ogni Minaccia, prima di sapere chi metterà l'avversario: Sabotatore, Nemesi e gli altri poteri che guardano la carta avversaria si vedono solo dopo. Il server calcola tutto quando piazzi.";
 
-  function place(slot: number) {
-    if (busy) return;
+  /** Puts a card on a threat; the card there goes where the moved one was (the hand, or its threat). */
+  function put(id: string, slot: number) {
     const next = [...placement];
     const here = next[slot];
+    const from = next.indexOf(id);
+    if (from === slot) return;
+    if (from >= 0) next[from] = here; // swap
+    next[slot] = id;
+    onPlace(next);
+    onSelect(null);
+  }
+
+  function place(slot: number) {
+    if (busy) return;
+    const here = placement[slot];
     if (active === null || active === here) {
       // A tap on a placed card without a new one to put there takes it back to the hand.
+      const next = [...placement];
       next[slot] = null;
       onPlace(next);
       onSelect(here);
       return;
     }
-    const from = next.indexOf(active);
-    if (from >= 0) next[from] = here; // swap
-    next[slot] = active;
-    onPlace(next);
-    onSelect(null);
+    put(active, slot);
   }
 
   return (
@@ -532,18 +554,26 @@ function ChooseRound({
           const score = placed ? previews.get(placed.instance_id)?.[threat.slot] : undefined;
           const incoming = active && placement[threat.slot] !== active ? previews.get(active)?.[threat.slot] : undefined;
           const twist = modifierText(threat, abilities);
+          const hovered = drag?.over === String(threat.slot);
           return (
             <button
               key={threat.slot}
               type="button"
+              data-drop={threat.slot}
               onClick={() => place(threat.slot)}
+              onPointerDown={placed ? start(placed.instance_id) : undefined}
+              onDragStart={(event) => event.preventDefault()}
               disabled={busy}
               aria-label={`${threat.name}, livello ${threat.level}${placed ? `: ${placed.name}, ${score?.total ?? 0} punti` : ": libera"}${
                 incoming && active ? `. ${cardOf(active)?.name} farebbe ${incoming.total}` : ""
               }`}
-              className={`flex min-h-0 min-w-0 flex-col border-[3px] px-1.5 pb-1.5 pt-1 text-left ${
-                placed ? "border-comic-yellow bg-panel" : "border-dashed border-line bg-panel"
-              }`}
+              className={`flex min-h-0 min-w-0 touch-none select-none flex-col border-[3px] px-1.5 pb-1.5 pt-1 text-left ${
+                hovered
+                  ? "border-comic-cyan bg-panel-raised shadow-[3px_3px_0_var(--comic-cyan)]"
+                  : placed
+                    ? "border-comic-yellow bg-panel"
+                    : "border-dashed border-line bg-panel"
+              } ${placed && drag?.id === placed.instance_id ? "opacity-50" : ""}`}
             >
               <span className="flex items-center justify-between gap-1">
                 <span className="text-[10px] font-extrabold text-muted">Lv {threat.level}</span>
@@ -580,15 +610,20 @@ function ChooseRound({
         })}
       </div>
 
-      {/* The hand: the cards drawn this round. Tap one, then the threat. */}
-      <div role="group" aria-label="Le carte pescate" className="flex justify-center gap-2 px-3 pb-1.5 pt-2.5">
+      {/* The hand: the cards drawn this round. Drag one onto a threat, or tap it, then the threat. */}
+      <div role="group" aria-label="Le carte pescate" data-drop="hand" className="flex justify-center gap-2 px-3 pb-1.5 pt-2.5">
         {hand.map((card) => {
           const slot = slotOf(card.instance_id);
           const scores = previews.get(card.instance_id) ?? [];
           const best = scores.length ? Math.max(...scores.map((s) => s.total)) : 0;
           const shown = slot >= 0 ? scores[slot] : undefined;
           return (
-            <div key={card.instance_id} className="w-[calc((100%-1rem)/3)] max-w-32">
+            <div
+              key={card.instance_id}
+              onPointerDown={start(card.instance_id)}
+              onDragStart={(event) => event.preventDefault()}
+              className={`w-[calc((100%-1rem)/3)] max-w-32 touch-none ${drag?.id === card.instance_id ? "opacity-50" : ""}`}
+            >
               <HandCard
                 card={card}
                 score={shown?.total ?? best}
@@ -610,8 +645,8 @@ function ChooseRound({
         <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
           <span className="min-w-0 flex-1">
             {complete
-              ? "Tutte le Minacce coperte. Puoi ancora scambiare le carte toccando le Minacce."
-              : "Tocca una carta, poi la Minaccia dove mandarla. Ogni Minaccia vinta vale un punto."}
+              ? "Tutte le Minacce coperte. Puoi ancora spostare o scambiare le carte trascinandole."
+              : "Trascina una carta sulla Minaccia, o toccala e poi tocca la Minaccia. Ogni Minaccia vinta vale un punto."}
           </span>
           <InfoTip text={previewNote} />
         </p>
@@ -634,7 +669,36 @@ function ChooseRound({
                 : `Piazza ancora ${placement.filter((id) => id === null).length}`}
         </button>
       </div>
+      {drag && <DragGhost ref={ghostRef} card={cardOf(drag.id)} />}
     </main>
+  );
+}
+
+/** The card under the finger while it is dragged. */
+function DragGhost({ ref, card }: { ref: (element: HTMLDivElement | null) => void; card: MatchCard | null }) {
+  if (!card) return null;
+  return (
+    <div
+      ref={ref}
+      aria-hidden
+      className="pointer-events-none fixed left-0 top-0 z-50 w-24 border-[3px] border-comic-yellow bg-panel shadow-[5px_5px_0_var(--comic-magenta)]"
+    >
+      <span className="relative block aspect-[3/4] bg-panel-raised">
+        {card.art_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={withBasePath(card.art_url)}
+            srcSet={artSrcSet(card.art_url)}
+            sizes="96px"
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover object-top"
+          />
+        ) : (
+          <Silhouette faction={card.faction} accent={card.rarity.color} className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2" />
+        )}
+      </span>
+      <span className="block truncate px-0.5 py-0.5 text-center font-display text-xs uppercase leading-[15px]">{card.name}</span>
+    </div>
   );
 }
 

@@ -23,11 +23,11 @@ export type LongPressHandlers = {
 };
 
 /**
- * Swallows the click that ends a long press, wherever it lands: on the pressed element it
+ * Swallows the click that ends a long press (or a drag), wherever it lands: on the pressed element it
  * must not select or play it, on an overlay just opened it must not close it. The next
  * press (or key) starts afresh, so a release that makes no click leaves nothing behind.
  */
-function swallowReleaseClick() {
+export function swallowReleaseClick() {
   const done = () => {
     window.removeEventListener("click", swallow, true);
     window.removeEventListener("pointerdown", done, true);
@@ -49,12 +49,25 @@ function swallowReleaseClick() {
  * keeps doing what the element's own onClick does; moving the pointer cancels the press.
  */
 export function useLongPress(): (onLongPress: () => void) => LongPressHandlers {
-  const press = useRef<{ pointerId: number; x: number; y: number; timer: number } | null>(null);
+  const press = useRef<{ pointerId: number; x: number; y: number; timer: number; stop: () => void } | null>(null);
 
   const cancel = useCallback(() => {
-    if (press.current) window.clearTimeout(press.current.timer);
+    if (press.current) {
+      window.clearTimeout(press.current.timer);
+      press.current.stop();
+    }
     press.current = null;
   }, []);
+
+  // The pointer drifting anywhere, even off the element (a card being dragged), is not a press.
+  const drifted = useCallback(
+    (event: { pointerId: number; clientX: number; clientY: number }) => {
+      const current = press.current;
+      if (!current || current.pointerId !== event.pointerId) return;
+      if (Math.hypot(event.clientX - current.x, event.clientY - current.y) > MOVE_TOLERANCE_PX) cancel();
+    },
+    [cancel],
+  );
 
   useEffect(() => cancel, [cancel]);
 
@@ -65,17 +78,15 @@ export function useLongPress(): (onLongPress: () => void) => LongPressHandlers {
         if (event.button !== 0) return;
         cancel();
         const timer = window.setTimeout(() => {
-          press.current = null;
+          cancel();
           swallowReleaseClick();
           onLongPress();
         }, LONG_PRESS_MS);
-        press.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, timer };
+        window.addEventListener("pointermove", drifted);
+        const stop = () => window.removeEventListener("pointermove", drifted);
+        press.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, timer, stop };
       },
-      onPointerMove(event) {
-        const current = press.current;
-        if (!current || current.pointerId !== event.pointerId) return;
-        if (Math.hypot(event.clientX - current.x, event.clientY - current.y) > MOVE_TOLERANCE_PX) cancel();
-      },
+      onPointerMove: drifted,
       onPointerUp: cancel,
       onPointerCancel: cancel,
       onPointerLeave: cancel,
@@ -84,6 +95,6 @@ export function useLongPress(): (onLongPress: () => void) => LongPressHandlers {
         event.preventDefault();
       },
     }),
-    [cancel],
+    [cancel, drifted],
   );
 }

@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "10 novembre 2026",
     changes: [
+      "In Allarme Triplo ora puoi trascinare le carte: dalla mano a una Minaccia, da una Minaccia all'altra (le due carte si scambiano) o di nuovo nella mano. Il tocco funziona come prima: tocca una carta, poi la Minaccia.",
       "Nuova modalità in Gioca: Allarme Triplo. Porti un mazzo di 9 personaggi diversi ed escono 3 Minacce a caso, di qualsiasi livello, che restano le stesse per tutta la partita. Ogni round peschi 3 carte a caso dal tuo mazzo e ne metti una su ogni Minaccia, in segreto: su ogni Minaccia vince chi fa più punti, e ogni Minaccia vinta vale un punto. Dopo 3 round hai giocato tutte e 9 le carte e vince chi ha più punti (a parità, la somma dei punteggi). I poteri che passano un bonus alla carta dopo lo passano alla carta che metti sulla stessa Minaccia nel round successivo. Si gioca contro i bot, dal Facile al Super Pro, o in amichevole contro un giocatore o un amico con un codice. Nessuna carta in gioco.",
       "Niente più zoom per sbaglio: in tutte le pagine dell'app il pizzico e il doppio tocco non ingrandiscono più lo schermo, che resta sempre a misura di telefono. Lo scorrimento funziona come prima.",
       "Alcuni eventi ora ammettono solo i personaggi con certi tratti, per esempio solo Mito o Strappo, o solo i Figli dell'Ultima: lo trovi scritto nel banner e nella pagina dell'evento. In quegli eventi una partita dà punti solo se tutta la squadra ha quei tratti (in Emergenza tutti e 8), e a fine partita ti diciamo se la squadra non era ammessa.",
