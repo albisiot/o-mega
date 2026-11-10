@@ -684,6 +684,164 @@ export type Database = {
           },
         ]
       }
+      daily_objective_days: {
+        Row: {
+          created_at: string
+          day: string
+          refreshes: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          refreshes?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          refreshes?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_objective_days_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_objective_definitions: {
+        Row: {
+          card_definition_ids: string[]
+          card_variant_ids: string[]
+          code: string
+          coins: number | null
+          created_at: string
+          difficulty: string
+          is_active: boolean
+          metric: string
+          packs: number
+          params: Json
+          target: number
+          title: string
+        }
+        Insert: {
+          card_definition_ids?: string[]
+          card_variant_ids?: string[]
+          code: string
+          coins?: number | null
+          created_at?: string
+          difficulty: string
+          is_active?: boolean
+          metric: string
+          packs?: number
+          params?: Json
+          target: number
+          title: string
+        }
+        Update: {
+          card_definition_ids?: string[]
+          card_variant_ids?: string[]
+          code?: string
+          coins?: number | null
+          created_at?: string
+          difficulty?: string
+          is_active?: boolean
+          metric?: string
+          packs?: number
+          params?: Json
+          target?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      daily_objectives: {
+        Row: {
+          assigned_at: string
+          card_definition_ids: string[]
+          card_variant_ids: string[]
+          claimed_at: string | null
+          coins: number
+          completed_at: string | null
+          day: string
+          definition_code: string
+          difficulty: string
+          id: string
+          metric: string
+          opening_ids: string[]
+          packs: number
+          params: Json
+          progress: number
+          replaced_at: string | null
+          slot: number
+          target: number
+          title: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          card_definition_ids?: string[]
+          card_variant_ids?: string[]
+          claimed_at?: string | null
+          coins: number
+          completed_at?: string | null
+          day: string
+          definition_code: string
+          difficulty: string
+          id?: string
+          metric: string
+          opening_ids?: string[]
+          packs: number
+          params: Json
+          progress?: number
+          replaced_at?: string | null
+          slot: number
+          target: number
+          title: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          card_definition_ids?: string[]
+          card_variant_ids?: string[]
+          claimed_at?: string | null
+          coins?: number
+          completed_at?: string | null
+          day?: string
+          definition_code?: string
+          difficulty?: string
+          id?: string
+          metric?: string
+          opening_ids?: string[]
+          packs?: number
+          params?: Json
+          progress?: number
+          replaced_at?: string | null
+          slot?: number
+          target?: number
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_objectives_definition_code_fkey"
+            columns: ["definition_code"]
+            isOneToOne: false
+            referencedRelation: "daily_objective_definitions"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "daily_objectives_user_id_day_fkey"
+            columns: ["user_id", "day"]
+            isOneToOne: false
+            referencedRelation: "daily_objective_days"
+            referencedColumns: ["user_id", "day"]
+          },
+        ]
+      }
       emergency_days: {
         Row: {
           created_at: string
@@ -2231,6 +2389,10 @@ export type Database = {
       }
     }
     Functions: {
+      add_daily_objective_progress: {
+        Args: { p_amount: number; p_objective_id: string }
+        Returns: undefined
+      }
       admin_bonus_codes_payload: { Args: never; Returns: Json }
       admin_boss_table_payload: { Args: never; Returns: Json }
       admin_create_bonus_code: {
@@ -2312,6 +2474,10 @@ export type Database = {
         Returns: Json
       }
       admin_special_packs_payload: { Args: never; Returns: Json }
+      advance_daily_objectives: {
+        Args: { p_amount?: number; p_metric: string; p_user: string }
+        Returns: undefined
+      }
       award_event_points: {
         Args: {
           p_kind: string
@@ -2400,6 +2566,7 @@ export type Database = {
         Args: { p_card_instance_id: string; p_match_id: string }
         Returns: Json
       }
+      claim_daily_objective: { Args: { p_objective_id: string }; Returns: Json }
       claim_daily_pack: { Args: never; Returns: Json }
       claim_victory: { Args: { p_match_id: string }; Returns: Json }
       classic_match_state_payload: {
@@ -2465,7 +2632,37 @@ export type Database = {
         Returns: string
       }
       current_event_id: { Args: { p_at?: string }; Returns: string }
+      daily_objective_card_fits: {
+        Args: { p_faction: string; p_params: Json; p_rank: number }
+        Returns: boolean
+      }
+      daily_objective_match_amount: {
+        Args: {
+          p_match: Database["public"]["Tables"]["matches"]["Row"]
+          p_metric: string
+          p_params: Json
+          p_side: string
+        }
+        Returns: number
+      }
+      daily_objective_params_valid: {
+        Args: { p_metric: string; p_params: Json }
+        Returns: boolean
+      }
+      daily_objectives_payload: {
+        Args: { p_day: string; p_user: string }
+        Returns: Json
+      }
       delete_formation: { Args: { p_formation_id: string }; Returns: undefined }
+      draw_daily_objective: {
+        Args: {
+          p_day: string
+          p_difficulty: string
+          p_slot: number
+          p_user: string
+        }
+        Returns: string
+      }
       draw_match_modifiers: { Args: { p_threat_ids: string[] }; Returns: Json }
       draw_pack_definitions: {
         Args: { p_count: number; p_guaranteed_min_rank: number }
@@ -2526,6 +2723,7 @@ export type Database = {
         Returns: string
       }
       emergency_state_payload: { Args: { p_user: string }; Returns: Json }
+      ensure_daily_objectives: { Args: { p_user: string }; Returns: string }
       event_payload: {
         Args: { p_event_id: string; p_user: string }
         Returns: Json
@@ -2562,6 +2760,7 @@ export type Database = {
       }
       get_conquest_history: { Args: never; Returns: Json }
       get_conquest_status: { Args: never; Returns: Json }
+      get_daily_objectives: { Args: never; Returns: Json }
       get_emergency_leaderboard: { Args: { p_limit?: number }; Returns: Json }
       get_event: { Args: never; Returns: Json }
       get_event_points_for: { Args: { p_ref_id: string }; Returns: Json }
@@ -2889,6 +3088,10 @@ export type Database = {
         }
       }
       redeem_bonus_code: { Args: { p_code: string }; Returns: Json }
+      refresh_daily_objective: {
+        Args: { p_objective_id: string }
+        Returns: Json
+      }
       resolve_conquest_claim: {
         Args: { p_auto: boolean; p_instance_id: string; p_match_id: string }
         Returns: undefined

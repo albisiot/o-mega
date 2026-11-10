@@ -176,6 +176,27 @@ export const balance = {
     minAdmittedCharacters: 8,
   },
 
+  /**
+   * Daily objectives (SPEC §8.3): drawn by the server at the first use of the game day.
+   * The catalog (titles, targets, rewards of each objective) is the table
+   * daily_objective_definitions; an objective without its own coins pays rewardCoins.
+   */
+  dailyObjectives: {
+    /** Objectives each player gets per game day, by difficulty. */
+    perDay: {
+      easy: 1,
+      medium: 1,
+      hard: 1,
+    },
+    /** Objectives not yet completed a player can swap per game day, in total. */
+    refreshesPerDay: 3,
+    rewardCoins: {
+      easy: 20,
+      medium: 40,
+      hard: 60,
+    },
+  },
+
   matchmaking: {
     friendCodeMinutes: 10,
     /** Queue entries not refreshed by the waiting client for this long are ignored. */

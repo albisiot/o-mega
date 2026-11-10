@@ -79,6 +79,13 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   event_tier_no_reward: "Ogni traguardo deve dare almeno un premio: monete, pacchetti o carte.",
   event_invalid_card: "Una delle carte scelte non si può dare come premio.",
   event_has_points: "Qualcuno ha già punti in questo evento: disattivalo invece di eliminarlo.",
+  objective_not_found: "Obiettivo non trovato: ricarica la pagina.",
+  objective_expired: "Questo obiettivo è scaduto a mezzanotte.",
+  objective_not_completed: "Completa l'obiettivo per riscattare il premio.",
+  objective_already_claimed: "Hai già riscattato questo premio.",
+  objective_already_completed: "Un obiettivo completato non si può cambiare.",
+  no_refreshes_left: "Hai finito i cambi di oggi: tornano dopo la mezzanotte.",
+  no_objective_available: "Non ci sono altri obiettivi di questa difficoltà per oggi.",
 };
 
 export function describeServerError(error: unknown): string {

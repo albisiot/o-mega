@@ -578,6 +578,32 @@ Tra un inizio e una fine decisi da un amministratore, le partite danno **punti e
 - **Il giocatore vede:** in Home e in Gioca un banner con titolo, conto alla rovescia e barra verso il prossimo traguardo (o "Evento in arrivo" con il tempo all'inizio); a premio ottenuto il banner diventa "Premio evento ottenuto! Aprilo". La pagina `/evento` mostra descrizione, date, punti totali e di oggi, i traguardi con le carte premio e la tabella dei punti. Il risultato di una partita e il riepilogo dell'Emergenza mostrano "+N punti evento".
 - **Gestione dall'app:** in fondo all'informativa sulla privacy, accanto a *Gestione codici* e *Carte nei pacchetti*, gli amministratori trovano *Gestione eventi* (`/gestione-eventi`): crea un evento, elenca quelli in corso, programmati e conclusi con i giocatori e quanti hanno raggiunto ogni traguardo, e permette di modificarli, disattivarli, eliminarli (solo se nessuno ha punti) e **duplicarli** per ripeterli con nuove date (il progresso riparte da zero). Un evento iniziato cambia solo titolo, descrizione e fine, così le regole non cambiano a chi sta giocando; uno concluso non cambia più. Ogni funzione verifica l'amministratore sul server. Nel passo *Dati* si scelgono i personaggi ammessi per tratto, con il numero di personaggi che la regola ammette; nel passo *Premi* l'elenco delle carte premio si filtra per tratto.
 
+### 8.3 Obiettivi giornalieri
+
+Ogni giorno di gioco (da mezzanotte a mezzanotte `Europe/Rome`) ogni giocatore riceve alcuni obiettivi; completarne uno dà un premio da riscattare.
+
+- **Quanti:** uno Facile, uno Medio e uno Difficile (`balance.ts` `dailyObjectives.perDay`, `game_config` `daily_objectives.per_day.*`). Il server li estrae a caso al primo uso del giorno: quando il giocatore apre gli obiettivi o la home, o quando fa qualcosa che conta, quindi conta anche la prima partita del giorno. Mai due obiettivi uguali né due che contano la stessa cosa nello stesso giorno.
+- **Progresso:** lo calcola solo il database, nella stessa transazione che registra l'azione; il client non lo invia mai. Contano:
+  - le partite **chiuse normalmente** in qualsiasi modalità: le partite abbandonate (`end_reason = 'forfeit'`) non contano per nessuno dei due, come negli eventi (trigger su `matches`);
+  - le Minacce superate in Emergenza (`emergency_plays`);
+  - i pacchetti aperti: del giorno, comprati, speciali, e quelli di codici bonus ed eventi, ma non quelli che paga un obiettivo (`pack_openings`);
+  - i doppioni convertiti e le carte conquistate (`card_transfers`).
+  Le "Minacce vinte" sono quelle della partita classica e i confronti di Allarme Triplo: un turno della Grande Minaccia non lo vince una sola carta. La partita che finisce dopo mezzanotte conta per il giorno nuovo.
+- **Premio:** monete, pacchetti standard e carte scelte, come nei codici bonus (§8.1); un obiettivo senza monete proprie paga quelle della sua difficoltà: 20, 40, 60 (`dailyObjectives.rewardCoins`). Si riscatta una sola volta (`claim_daily_objective`), nella stessa transazione: monete in `coin_ledger` (`objective_reward`), carte in `card_transfers` (`objective`); le carte e i pacchetti si mostrano con l'apertura dei pacchetti. **Un premio non riscattato scade a mezzanotte**, come il pacchetto del giorno.
+- **Cambi:** un obiettivo non ancora completato si può cambiare con un altro della stessa difficoltà, **3 volte al giorno in tutto** (`dailyObjectives.refreshesPerDay`). Il nuovo parte da zero e non è mai uno già proposto quel giorno; se non ne resta nessuno il cambio non avviene e non si consuma.
+- **Catalogo di partenza** (testi segnaposto, tabella `daily_objective_definitions`, si cambia con SQL senza toccare il codice):
+
+| Difficoltà | Obiettivo | Premio |
+|---|---|---|
+| Facile | Gioca 2 partite · Apri un pacchetto · Supera 3 Minacce in Emergenza · Gioca 3 carte Beta o più rare · Gioca una missione della Storia · Converti 2 doppioni | 20 monete |
+| Media | Vinci 3 partite · Vinci 3 Minacce con un Supercattivo · Vinci 3 Minacce con un Supereroe · Vinci 2 Minacce con una carta Delta · Supera 5 Minacce in Emergenza · Vinci una partita ad Allarme Triplo · Vinci una partita a Grande Minaccia | 40 monete |
+| Difficile | Vinci 2 partite contro un bot Difficile o Super Pro · Vinci una partita online contro un giocatore · Vinci una partita classica 3-0 · Vinci 6 Minacce in partita | 60 monete |
+| Difficile | Conquista una carta · Supera tutte le 8 Minacce dell'Emergenza | 1 pacchetto standard |
+
+  Ogni obiettivo ha una metrica (`matches_played`, `matches_won`, `threats_won`, `cards_played`, `emergency_passed`, `packs_opened`, `duplicates_converted`, `cards_conquered`) con filtri facoltativi in `params` (`format`, `story`, `opponent`, `bot_difficulties`, `flawless`, `faction`, `min_rarity_rank`, `max_rarity_rank`), controllati dal database. Un giocatore riceve una copia della riga, quindi una modifica al catalogo vale dal giorno dopo.
+- **Dati:** `daily_objective_definitions` (catalogo), `daily_objective_days` (giorno estratto e cambi usati), `daily_objectives` (obiettivi del giocatore con progresso, completamento, riscatto e cambio). Nessun client legge le tabelle: tutto passa da `get_daily_objectives`, `claim_daily_objective` e `refresh_daily_objective`.
+- **Il giocatore vede:** nella home, sotto il pacchetto del giorno, la barra *Obiettivi del giorno* con "1 su 3 completati"; quando c'è un premio diventa gialla con "Riscatta". La pagina `/obiettivi` mostra per ogni obiettivo difficoltà, premio, barra di progresso e il tasto Riscatta o Cambia, il tempo ai nuovi obiettivi e i cambi rimasti.
+
 ## 9. Collezione e album
 
 - Album con tutte le carte del catalogo: possedute e mancanti (sagoma).
@@ -636,7 +662,7 @@ Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy
 ## 11. Schermate principali
 
 1. **Login** (Google).
-2. **Home:** pacchetto del giorno, saldo monete, pulsante Gioca, missioni (in futuro).
+2. **Home:** pacchetto del giorno, saldo monete, pulsante Gioca, obiettivi del giorno (§8.3).
 3. **Apertura pacchetto** (animazione).
 4. **Collezione / Album.**
 5. **Formazioni:** scelta e salvataggio della squadra.
