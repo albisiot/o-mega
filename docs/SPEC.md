@@ -351,6 +351,18 @@ Stesso metodo del Capitolo 1, sul catalogo a 122 personaggi (10.000 partite per 
 
 Stesso metodo, con il catalogo delle Minacce che il server dà ai bot dopo le Minacce dei luoghi (§5.4): 75 Minacce, con le loro regole. Il giocatore con la squadra casuale vince circa il 77%, 66%, 56%, 44% e 20% delle volte (10.000 partite con il bot Medio, 6.000 con Difficile, 4.000 con Super Pro). Nelle stesse condizioni il Capitolo 2 dà 81%, 70%, 60%, 73% e 24%: la missione 4 del Capitolo 2 era al 46% con le sole 60 Minacce di Nuova Megara, e il bot Difficile, che stima i round futuri sul catalogo, ora la gioca molto peggio. Il Capitolo 3 è tarato sul 45% previsto, quindi ogni missione resta un po' più dura della corrispondente e la prima è la più facile del capitolo. Solo Minacce di Nuova Megara, perché il capitolo non esce dalla torre; la prima di ogni missione è a tema (Terminale bloccato, Labirinto di specchi, Caccia nel buio, Colpo al caveau, Reattore in fusione).
 
+**Capitolo 4, Multitude:**
+
+| Missione | Avversario | Bot | Livelli | Premio |
+|---|---|---|---|---|
+| 1. Pensieri di nessuno | Lullaby e il coro | Medio | 1·3·5·2·4 | 60 monete |
+| 2. La negoziatrice | Gli Echi dei Custodi | Medio | 2·4·1·5·3 | 70 monete |
+| 3. Sentire troppo | Gli Echi delle Lanterne | Difficile | 5·3·1·4·2 | 80 monete |
+| 4. Facce note | Ottavia e le spie | Difficile | 2·6·1·4·3 | 90 monete |
+| 5. Ultima voce | Antiphon e Multitude (1 Omega, Multitude, che non è il premio) | Super Pro | 3·6·1·5·2 | 110 monete e la carta Antiphon (Beta) |
+
+Stesso metodo del Capitolo 3; motore delle partite e catalogo (122 personaggi, 75 Minacce con le loro regole) non sono cambiati. Il giocatore con la squadra casuale vince circa il 73%, 62%, 50%, 41% e 16% delle volte (10.000 partite con il bot Medio, 6.000 con Difficile, 4.000 con Super Pro). Il Capitolo 3, rimisurato nelle stesse condizioni, dà 77%, 67%, 56%, 45% e 21%: ogni missione è un po' più dura della corrispondente e la prima resta la più facile del capitolo. Solo Minacce di Nuova Megara, perché il capitolo resta nei quartieri alti; la prima di ogni missione è a tema (Incubo ricorrente, Ostaggio in banca, Epidemia di follia, Spia infiltrata, Mente alveare). Il boss schiera solo le voci dei Figli, forti in mente e magia, e la sua percentuale dipende moltissimo dalle Minacce (dal 3% al 95% tra le combinazioni provate): con quelle scelte il giocatore vince quasi sempre Collasso della città (98%), un round su tre la Minaccia d'apertura, e di rado gli altri tre (4-14%).
+
 ### 5.12 Grande Minaccia (Boss)
 
 Modalità alternativa alla partita classica: due giocatori, o un giocatore e un bot, affrontano la stessa **Grande Minaccia**, un Boss con **5 fronti** visibili dall'inizio. Nome provvisorio. Si gioca contro i bot (4 difficoltà) o in amichevole tra giocatori (avversario casuale o codice amico); niente Conquista per ora.

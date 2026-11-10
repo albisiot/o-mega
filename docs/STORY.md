@@ -187,24 +187,26 @@ Squadre avversarie, Minacce e difficoltà si tarano con la simulazione, come nel
 
 ### Capitolo 4 — Multitude
 
-*Atto II, metà stagione. Albo* Multitude.
+*Atto II, metà stagione. Albo* Multitude. *Testi nel database (migrazione `20261111150000_chapter_four_story.sql`); squadre e Minacce tarate con la simulazione (SPEC §5.11).*
 
 - **In una riga:** qualcuno parla a Multitude, e Multitude ripete le sue parole nella testa di chi ti sta vicino.
 - **Luogo:** i quartieri alti con vista sul vulcano e la scuola di Hornbook.
-- **Avversari:** i Figli dell'Ultima, che usano Multitude, e i tuoi alleati quando non sono più loro: in alcune missioni ti trovi contro gli Echi di Custodi e Lanterne.
+- **Avversari:** i Figli dell'Ultima, che usano Multitude, e i tuoi alleati quando non sono più loro: nella seconda e nella terza missione ti trovi contro gli Echi di Custodi e Lanterne. Nella quarta Ottavia gioca per i Figli e conosce già le tue lastre; perché sia passata con loro si scopre nel Capitolo 5. Renata ti manda nei quartieri alti liquidando i pensieri altrui come «stress da altitudine».
 - **Conflitto interno:** le Lanterne accusano i Custodi di nascondere qualcosa sul tempio; i Custodi accusano le Lanterne di nascondere Segnati non registrati. Hanno ragione tutti e due.
 - **Carte presentate:** Multitude, Antiphon, Parley.
 - **Boss:** Antiphon. Ripete al contrario le parole degli altri e le ritorce contro chi le ha dette: è lui la voce che Multitude ascolta. La sua squadra comprende Multitude, che non è il premio.
 - **Rivelazione:** sconfitto Antiphon, Multitude ripete la mente che aveva ascoltato prima di lui: quella di Renata. Nel suo ricordo c'è la notte dell'Ora Zero vista da dentro: Renata apre la camera, la pietra scrive da sola, si spacca. E nella camera l'Ora Zero sta ancora succedendo. Nello stesso momento Multitude fa sentire a tutti il pensiero di Ottavia: suo fratello, sparito quella notte.
 - **Gancio:** Renata sparisce, Ottavia anche. Al bar di Publican ti aspetta Retrograde: *"Sono già stato qui. La porta, la prossima volta, la apri tu."*
 
-| # | Missione | Situazione | Carte principali |
+| # | Missione | Situazione | Squadra avversaria (definitiva) |
 |---|---|---|---|
-| 1 | Pensieri di nessuno | Hornbook sente in classe pensieri che nessuno sta pensando | Lullaby, Tacet, Gazetteer |
-| 2 | La negoziatrice | Parley cambia parte a metà di una trattativa | Parley, Bulwark, Precinct |
-| 3 | Sentire troppo | Le Lanterne telepati non distinguono più i pensieri propri | Fathom, Hapax, Vigil |
-| 4 | Facce note | Ottavia gioca come se conoscesse le tue lastre, e le conosce | Semaphore, Understudy, Procura |
-| 5 | Ultima voce | Antiphon parla, Multitude ripete | Antiphon, Multitude, Belladonna |
+| 1 | Pensieri di nessuno | Hornbook sente in classe pensieri che nessuno sta pensando | Lullaby, Tacet, Gazetteer, Epigone, Patina |
+| 2 | La negoziatrice | Parley cambia parte a metà di una trattativa | Parley, Bulwark, Precinct, Dogwatch, Censor |
+| 3 | Sentire troppo | Le Lanterne telepati non distinguono più i pensieri propri | Fathom, Hapax, Vigil, Subsong, Hornbook |
+| 4 | Facce note | Ottavia gioca come se conoscesse le tue lastre, e le conosce | Semaphore, Understudy, Procura, Sordina, Kiln |
+| 5 | Ultima voce | Antiphon parla, Multitude ripete | Antiphon, Multitude, Belladonna, Lullaby, Tacet |
+
+**Testo finale:** sconfitto Antiphon, Multitude ripete la mente che ascoltava prima di lui, e tutto il quartiere sente il ricordo di Renata: la notte dell'Ora Zero apre la camera del tempio e vede una pietra incidersi da sola e spaccarsi. Nel ricordo quella luce non si spegne mai, perché l'Ora Zero non è finita: laggiù sta ancora succedendo, solo molto piano. Poi Multitude fa sentire a tutti il pensiero di Ottavia, il fratello sparito quella notte; il giorno dopo Renata e Ottavia non si trovano più e all'Ufficio Licenze c'è un cartello «Torno subito». Al bar di Publican Retrograde ha già ordinato per due e lascia pagare te: *"Sono già stato qui. La porta, la prossima volta, la apri tu."* Il registro delle lettere (§2) non cambia; Holdout e la frase restano nascosti (§7).
 
 ### Capitolo 5 — La porta
 
