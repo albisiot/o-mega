@@ -356,23 +356,23 @@ html.screen-locked body {
 /* The round result as a comic page (round-comic.tsx): panels come in, balloons pop,
    the loser greys out and cracks, the winner breaks out of the last panel. */
 .comic-page { background: #efe4c8; }
-.comic-panel { border: 3px solid #000; animation: comic-in 0.35s ease-out both; }
+.comic-panel { border: 3px solid #000; animation: comic-in calc(0.35s * var(--comic-pace, 1)) ease-out both; }
 .comic-twist { opacity: 0; }
-.comic-twist.comic-on { animation: comic-stamp 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
-.comic-pop { animation: comic-pop 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.comic-twist.comic-on { animation: comic-stamp calc(0.45s * var(--comic-pace, 1)) cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+.comic-pop { animation: comic-pop calc(0.4s * var(--comic-pace, 1)) cubic-bezier(0.2, 1.6, 0.4, 1) both; }
 .comic-shout > p + p { margin-top: 6px; }
-.comic-stamp { animation: comic-stamp 0.5s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
-.comic-fade { animation: panel-fade 0.3s 0.15s ease-out both; }
-.comic-hero { animation: comic-hero 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
-.comic-dim { transition: filter 0.35s; }
-.comic-lost { background-color: #6c6c74; translate: 0 6px; rotate: -1deg; transition: translate 0.35s, rotate 0.35s, background-color 0.35s; }
+.comic-stamp { animation: comic-stamp calc(0.5s * var(--comic-pace, 1)) cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+.comic-fade { animation: panel-fade calc(0.3s * var(--comic-pace, 1)) calc(0.15s * var(--comic-pace, 1)) ease-out both; }
+.comic-hero { animation: comic-hero calc(0.5s * var(--comic-pace, 1)) cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+.comic-dim { transition: filter calc(0.35s * var(--comic-pace, 1)); }
+.comic-lost { background-color: #6c6c74; translate: 0 6px; rotate: -1deg; transition: translate calc(0.35s * var(--comic-pace, 1)), rotate calc(0.35s * var(--comic-pace, 1)), background-color calc(0.35s * var(--comic-pace, 1)); }
 .comic-lost:nth-child(2) { rotate: 1deg; }
 .comic-lost .comic-dim { filter: grayscale(1) brightness(0.7); }
 .comic-void .comic-dim { filter: grayscale(0.6); }
 .comic-won { box-shadow: 0 0 0 3px var(--comic-yellow); }
-.comic-verdict:has(.comic-stamp) { animation: comic-shake 0.4s ease-out both; }
+.comic-verdict:has(.comic-stamp) { animation: comic-shake calc(0.4s * var(--comic-pace, 1)) ease-out both; }
 .comic-crack { position: absolute; inset: 0; z-index: 6; width: 100%; height: 100%; pointer-events: none; }
-.comic-crack path { fill: none; stroke-linejoin: round; stroke-dasharray: 2000; stroke-dashoffset: 2000; transition: stroke-dashoffset 0.45s ease-out 0.12s; }
+.comic-crack path { fill: none; stroke-linejoin: round; stroke-dasharray: 2000; stroke-dashoffset: 2000; transition: stroke-dashoffset calc(0.45s * var(--comic-pace, 1)) ease-out calc(0.12s * var(--comic-pace, 1)); }
 .comic-crack-ink { stroke: #000; stroke-width: 7; }
 .comic-crack-light { stroke: #fff; stroke-width: 3; }
 .comic-lost .comic-crack path { stroke-dashoffset: 0; }

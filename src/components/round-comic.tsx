@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Silhouette } from "@/components/card-view";
 import { WinnerName } from "@/components/winner-name";
 import { artSrcSet } from "@/lib/art";
@@ -13,19 +13,24 @@ import { LONG_PRESS_CLASS, type LongPressHandlers } from "@/lib/use-long-press";
 // the threat with its twist, the two cards with their powers speaking one at a time in
 // balloons, then the last panel with the winner breaking out of its frame. The loser greys
 // out and its panel cracks. A tap jumps to the end; reduced motion shows the end at once.
+// The whole page plays at this pace: 0.75 is a little slower than the drafts. The CSS
+// animations read it too, through --comic-pace on the page.
+const SPEED = 0.75;
+const PACE = 1 / SPEED;
+const paced = (ms: number) => Math.round(ms * PACE);
 const BEAT_MS = {
   /** The twist caption stamps on the threat panel. */
-  twist: 350,
+  twist: paced(350),
   /** The scores start counting up, without the powers' points. */
-  base: 450,
+  base: paced(450),
   /** How long the base count takes. */
-  baseCount: 450,
+  baseCount: paced(450),
   /** Between one power and the next. */
-  power: 400,
+  power: paced(400),
   /** A pause before the verdict. */
-  verdict: 350,
+  verdict: paced(350),
   /** After the verdict, the powers that act on the next card. */
-  after: 450,
+  after: paced(450),
 } as const;
 
 export type ComicKey = "me" | "opponent";
@@ -228,7 +233,7 @@ function CardPanel({
       className={`comic-panel ${isMe ? "bg-comic-cyan" : "halftone bg-comic-magenta"} ${
         outcome === "lost" ? "comic-lost" : outcome === "void" ? "comic-void" : outcome === "won" ? "comic-won" : ""
       } ${LONG_PRESS_CLASS} relative min-h-0 overflow-hidden text-black`}
-      style={{ animationDelay: isMe ? "80ms" : "160ms" }}
+      style={{ animationDelay: `${paced(isMe ? 80 : 160)}ms` }}
     >
       {data.card && <Art card={data.card} className="comic-dim absolute inset-0 h-full w-full" />}
       <div
@@ -333,6 +338,7 @@ export function RoundComic(props: RoundComicProps) {
   return (
     <main
       className="comic-page relative mt-1 flex min-h-0 flex-1 cursor-pointer flex-col gap-1.5 overflow-hidden px-1.5 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1.5"
+      style={{ "--comic-pace": PACE } as CSSProperties}
       onClick={() => (done ? props.onContinue() : complete())}
     >
       <section aria-label={`Round ${props.round}: ${props.threatName}`} className="comic-panel halftone relative shrink-0 bg-comic-orange px-3 pb-2.5 pt-2 text-black">
