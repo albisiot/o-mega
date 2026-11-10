@@ -10,8 +10,12 @@ import {
 } from "@o-mega/game-engine";
 import { toCharacter, type MatchCard, type MatchRound } from "@/lib/match";
 
-/** One line about a power on the round result, shown next to the card it belongs to. */
-export type PowerNote = { name: string; effect: string | null; active: boolean };
+/**
+ * One line about a power on the round result, shown next to the card it belongs to. `points`
+ * is what it added to this card's score in this round; `timing` says when it shows: on a tie it
+ * settled (Implacabile) or after the result, for the next card (Riscossa, Slancio and the like).
+ */
+export type PowerNote = { name: string; effect: string | null; active: boolean; points?: number; timing?: "tie" | "after" };
 
 export type RoundOutcome = {
   /** Bonus this card received from the previous card of its side (Riscossa or Slancio). */
@@ -69,13 +73,13 @@ export function roundPowerNotes(
         notes.push({ name: power.name, effect: "svela un personaggio rivale", active: true });
         break;
       case "relentless":
-        notes.push({ name: power.name, effect: outcome.wonTie ? "vince la parità" : null, active: outcome.wonTie });
+        notes.push({ name: power.name, effect: outcome.wonTie ? "vince la parità" : null, active: outcome.wonTie, timing: "tie" });
         break;
       case "comeback":
       case "momentum": {
         const result: PlayOutcome = outcome.lost ? "lost" : outcome.won ? "won" : "void";
         const passed = carriedBonusAfter(character, result);
-        notes.push({ name: power.name, effect: passed ? `+${passed} al prossimo` : null, active: passed > 0 });
+        notes.push({ name: power.name, effect: passed ? `+${passed} al prossimo` : null, active: passed > 0, timing: "after" });
         break;
       }
       case "nullifier":
@@ -96,13 +100,13 @@ export function roundPowerNotes(
         );
         break;
       case "sacrifice":
-        notes.push({ name: power.name, effect: `+${power.params.bonus} al prossimo`, active: true });
+        notes.push({ name: power.name, effect: `+${power.params.bonus} al prossimo`, active: true, timing: "after" });
         break;
       case "catalyst":
-        notes.push({ name: power.name, effect: `×${power.params.multiplier} al potere del prossimo`, active: true });
+        notes.push({ name: power.name, effect: `×${power.params.multiplier} al potere del prossimo`, active: true, timing: "after" });
         break;
       case "pack_leader":
-        notes.push({ name: power.name, effect: `+${power.params.bonus} ai prossimi della fazione`, active: true });
+        notes.push({ name: power.name, effect: `+${power.params.bonus} ai prossimi della fazione`, active: true, timing: "after" });
         break;
       case "fog":
         notes.push({ name: power.name, effect: "nasconde chi l'ha giocato", active: true });
@@ -113,18 +117,18 @@ export function roundPowerNotes(
           outcome.carried -
           (outcome.pack ?? 0) -
           modifierPoints(character, { id: "round", ...threat }, outcome.standing);
-        notes.push({
-          name: power.name,
-          effect: points ? `${points > 0 ? "+" : "−"}${Math.abs(points)}` : null,
-          active: points !== 0,
-        });
+        notes.push(
+          points
+            ? { name: power.name, effect: `${points > 0 ? "+" : "−"}${Math.abs(points)}`, active: true, points }
+            : { name: power.name, effect: null, active: false },
+        );
       }
     }
   }
   if (outcome.carried > 0) {
-    notes.push({ name: outcome.carriedFrom ?? "Riscossa", effect: `+${outcome.carried}`, active: true });
+    notes.push({ name: outcome.carriedFrom ?? "Riscossa", effect: `+${outcome.carried}`, active: true, points: outcome.carried });
   }
-  if (outcome.pack) notes.push({ name: "Capobranco", effect: `+${outcome.pack}`, active: true });
+  if (outcome.pack) notes.push({ name: "Capobranco", effect: `+${outcome.pack}`, active: true, points: outcome.pack });
   return notes;
 }
 

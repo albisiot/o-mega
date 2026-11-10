@@ -23,7 +23,7 @@ describe("roundPowerNotes", () => {
 
   it("shows the points a power added, or dims it when it did nothing", () => {
     const underdog = card({ code: "underdog", params: { bonus: 3 }, name: "Sfavorito", text: "" });
-    expect(roundPowerNotes(underdog, { bonus: 3 }, threat, calm)).toEqual([{ name: "Sfavorito", effect: "+3", active: true }]);
+    expect(roundPowerNotes(underdog, { bonus: 3 }, threat, calm)).toEqual([{ name: "Sfavorito", effect: "+3", active: true, points: 3 }]);
     expect(roundPowerNotes(underdog, { bonus: 0 }, threat, calm)).toEqual([{ name: "Sfavorito", effect: null, active: false }]);
   });
 
@@ -35,8 +35,8 @@ describe("roundPowerNotes", () => {
     };
     const notes = roundPowerNotes(opener, { bonus: 2 + 3 + 2 }, hostile, { ...calm, carried: 3 });
     expect(notes).toEqual([
-      { name: "Apripista", effect: "+2", active: true },
-      { name: "Riscossa", effect: "+3", active: true },
+      { name: "Apripista", effect: "+2", active: true, points: 2 },
+      { name: "Riscossa", effect: "+3", active: true, points: 3 },
     ]);
   });
 
@@ -46,9 +46,11 @@ describe("roundPowerNotes", () => {
     const relentless = card({ code: "relentless", params: {}, name: "Implacabile", text: "" });
     expect(roundPowerNotes(relentless, { bonus: 0 }, threat, { ...calm, wonTie: true })[0].effect).toBe("vince la parità");
     expect(roundPowerNotes(relentless, { bonus: 0 }, threat, calm)[0].active).toBe(false);
+    expect(roundPowerNotes(relentless, { bonus: 0 }, threat, calm)[0].timing).toBe("tie");
     const comeback = card({ code: "comeback", params: { bonus: 2 }, name: "Riscossa", text: "" });
     expect(roundPowerNotes(comeback, { bonus: 0 }, threat, { ...calm, lost: true })[0].effect).toBe("+2 al prossimo");
     expect(roundPowerNotes(comeback, { bonus: 0 }, threat, calm)[0].active).toBe(false);
+    expect(roundPowerNotes(comeback, { bonus: 0 }, threat, calm)[0].timing).toBe("after");
   });
 });
 
@@ -88,7 +90,7 @@ describe("roundPowerNotes for Annullatore and Slancio", () => {
     expect(roundPowerNotes(momentum, { bonus: 0 }, threat, { ...calm, won: true })[0].effect).toBe("+2 al prossimo");
     const plain = card(null);
     expect(roundPowerNotes(plain, { bonus: 2 }, threat, { ...calm, carried: 2, carriedFrom: "Slancio" })).toEqual([
-      { name: "Slancio", effect: "+2", active: true },
+      { name: "Slancio", effect: "+2", active: true, points: 2 },
     ]);
   });
 });
@@ -131,11 +133,11 @@ describe("roundPowerNotes for the backlog powers", () => {
   it("shows the Capobranco bonus apart from the card's own power", () => {
     const opener = power("opener", "Apripista", { bonus: 3, max_round: 2 });
     expect(roundPowerNotes(opener, { bonus: 4 }, threat, { ...calm, pack: 1 })).toEqual([
-      { name: "Apripista", effect: "+3", active: true },
-      { name: "Capobranco", effect: "+1", active: true },
+      { name: "Apripista", effect: "+3", active: true, points: 3 },
+      { name: "Capobranco", effect: "+1", active: true, points: 1 },
     ]);
     expect(roundPowerNotes(card(null), { bonus: 1 }, threat, { ...calm, pack: 1 })).toEqual([
-      { name: "Capobranco", effect: "+1", active: true },
+      { name: "Capobranco", effect: "+1", active: true, points: 1 },
     ]);
   });
 

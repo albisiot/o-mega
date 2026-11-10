@@ -12,14 +12,14 @@ import {
 } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { Silhouette } from "@/components/card-view";
-import { ComicBurst } from "@/components/comic-parts";
 import { ConquestPanel, ConquestPick, SecondsLeft } from "@/components/conquest-panel";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
 import { useEventPointsFor } from "@/components/event-banner";
 import { StoryRewardPanel, useStoryReward } from "@/components/story-reward";
 import { ThreatDiorama } from "@/components/threat-diorama";
-import { prefetchWinnerNames, WinnerName } from "@/components/winner-name";
+import { RoundComic } from "@/components/round-comic";
+import { prefetchWinnerNames } from "@/components/winner-name";
 import { balance } from "@/config/balance";
 import { artSrcSet, thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
@@ -55,7 +55,7 @@ import {
 } from "@/lib/round-powers";
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { useLockedScreen } from "@/lib/use-locked-screen";
-import { LONG_PRESS_CLASS, type LongPressHandlers } from "@/lib/use-long-press";
+import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
 import { useNow, useSecondsLeft } from "@/lib/use-now";
 
 type TeamCard = MatchView["my_team"][number];
@@ -66,11 +66,6 @@ const WINNER_STYLES = {
   none: "bg-panel-raised text-faint",
 } as const;
 
-// The round result builds up: the two plays slide in, their scores climb from SCORES_SECONDS,
-// SBAM! bursts next to the winning score once they stop (see .animate-burst-pop), then the
-// winner's 3D name flies in at NAME_SECONDS. SBAM! tells who won: no verdict banner.
-const SCORES_SECONDS = 0.4;
-const NAME_SECONDS = 1.5;
 // When the 3D names start downloading after the match opens (see prefetchWinnerNames).
 const NAMES_PREFETCH_SECONDS = 2;
 // Against a player, a ping marks us present at this pace and brings the opponent's last sign
@@ -873,8 +868,6 @@ function RoundReveal({
   const mine = team.find((card) => card.instance_id === round.my_play?.instance_id);
   const theirs = round.opponent_play;
   const detail = useCardDetail();
-  // Read out to screen readers: on screen, SBAM! next to a score says who won.
-  const banner = { me: "Round vinto!", opponent: "Round perso", none: "Round nullo" }[round.winner ?? "none"];
   const winnerCard = round.winner === "me" ? mine : round.winner === "opponent" ? theirs : null;
   const isTie = round.my_play && theirs && round.my_play.score === theirs.score;
   // With Implacabile on both sides, or against an Annullatore, the tie is settled as usual, by the highest value.
@@ -936,230 +929,123 @@ function RoundReveal({
       })
     : [];
 
-  // The halves never shrink below their content: on a screen too short for an unusual
-  // round (several notes at once), the result scrolls inside instead of being cut.
+  const nameOf = (code: string) => abilities.find((a) => a.code === code)?.name ?? code;
+  const twist = round.modifier ? describeThreatModifier(round.modifier, nameOf(round.threat.abilities[0]), nameOf) : null;
+  const statsOf = (card: MatchCard | null | undefined) =>
+    card ? round.threat.abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ") : "";
+  const winner = round.winner ?? "none";
+  const myScore = round.my_play?.score ?? 0;
+  const theirScore = theirs?.score ?? 0;
+  const winnerPlay = winner === "me" ? round.my_play : winner === "opponent" ? theirs : null;
+  const loserPlay = winner === "me" ? theirs : winner === "opponent" ? round.my_play : null;
+  const decisive =
+    winner === "none" || !winnerPlay || !loserPlay || !winnerCard || !loserCard
+      ? null
+      : decisiveNote(winner, winner === "me" ? myNotes : theirNotes, winnerPlay, loserPlay, loserCard.name);
+  const resultLine =
+    winner === "none"
+      ? `Pari ${myScore} a ${theirScore}, e stesso valore più alto.`
+      : !winnerCard || !loserCard || !winnerPlay || !loserPlay
+        ? ""
+        : tieWonBy
+          ? `${winnerCard.name} vince la parità con Implacabile · ${winnerPlay.score} a ${loserPlay.score}.`
+          : isTie
+            ? `Pari ${winnerPlay.score} a ${loserPlay.score}: vince il valore più alto, ${winnerPlay.highest} contro ${loserPlay.highest}.`
+            : `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}.`;
+  const notices = [
+    ...(round.my_play?.auto_played ? ["Tempo scaduto: il server ha scelto per te."] : []),
+    ...(theirs?.auto_played ? [`${opponentName} non ha scelto in tempo.`] : []),
+  ];
+
   return (
-    <main className="relative mt-1 flex min-h-0 flex-1 cursor-pointer flex-col overflow-y-auto" onClick={onContinue}>
-      <section
-        aria-label="La tua giocata"
-        className="animate-play-in-top relative flex flex-[1_0_auto] flex-col overflow-hidden bg-comic-cyan px-4 pb-2 pt-2.5 text-black [clip-path:polygon(0_0,100%_0,100%_calc(100%-52px),0_100%)]"
-      >
-        <p className="text-[13px] font-extrabold leading-4">
-          Round {round.round} · {round.threat.name}
-        </p>
-        <PlaySide
-          label="Tu"
-          card={mine ?? null}
-          play={round.my_play}
-          abilities={round.threat.abilities}
-          side="left"
-          won={round.winner === "me"}
-          notes={myNotes}
-          press={mine ? detail.press(mine) : undefined}
-        />
-      </section>
-
-      {/* The winner's name sits on the seam between the two plays, tilted with it. It arrives
-          last: first the plays, then their scores, then SBAM! on the winning one. */}
-      <section
-        aria-label={winnerCard ? `${banner} ${winnerCard.name}` : banner}
-        className="relative z-10 -my-[52px] overflow-hidden py-[26px] [clip-path:polygon(0_52px,100%_0,100%_calc(100%-52px),0_100%)]"
-      >
-        <div
-          aria-hidden
-          className="rays-dark animate-rays-spin absolute left-1/2 top-1/2 h-[200vmax] w-[200vmax] -translate-x-1/2 -translate-y-1/2"
-        />
-        <div className="relative -rotate-[7.5deg]">
-          {winnerCard ? (
-            <WinnerName key={`${round.round}-${winnerCard.code}`} card={winnerCard} delay={NAME_SECONDS} />
-          ) : (
-            <div className="animate-burst-pop relative h-[120px]">
-              <ComicBurst
-                fill="#ffd60a"
-                className="absolute left-1/2 top-2 h-[104px] w-[104px] -translate-x-1/2 rotate-[8deg]"
-                textClassName="text-[30px] tracking-wide"
-              >
-                PARI!
-              </ComicBurst>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section
-        aria-label={`La giocata di ${opponentName}`}
-        className="animate-play-in-bottom halftone relative flex flex-[1_0_auto] flex-col justify-end overflow-hidden bg-comic-magenta px-4 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-9 text-black [clip-path:polygon(0_52px,100%_0,100%_100%,0_100%)]"
-      >
-        <PlaySide
-          label={opponentName}
-          card={theirs}
-          play={theirs}
-          abilities={round.threat.abilities}
-          side="right"
-          won={round.winner === "opponent"}
-          notes={theirNotes}
-          press={theirs ? detail.press(theirs) : undefined}
-        />
-        <div className="relative mt-2 flex flex-col gap-1.5">
-          {round.modifier && (
-            <p className="bg-black px-3 py-1 text-center text-xs font-semibold leading-4 text-foreground">
-              {modifierLine(
-                round.modifier,
-                abilities.find((a) => a.code === round.threat.abilities[0])?.name ?? round.threat.abilities[0],
-                (code) => abilities.find((a) => a.code === code)?.name ?? code,
-              )}
-            </p>
-          )}
-          {round.my_play?.auto_played && (
-            <p className="bg-black px-3 py-1 text-center text-xs font-semibold leading-4 text-foreground">
-              Tempo scaduto: il server ha scelto per te.
-            </p>
-          )}
-          {theirs?.auto_played && (
-            <p className="bg-black px-3 py-1 text-center text-xs font-semibold leading-4 text-foreground">
-              {opponentName} non ha scelto in tempo.
-            </p>
-          )}
-          {round.winner === "none" && (
-            <p className="bg-black px-3 py-1 text-center text-xs font-semibold leading-4 text-foreground">
-              Stesso punteggio e stesso valore più alto.
-            </p>
-          )}
-          {/* The whole screen continues; this stays as the hint and the keyboard's way on. */}
-          <button
-            type="button"
-            className={`mx-auto flex h-8 items-center gap-1.5 px-3 text-xs font-extrabold uppercase ${
-              pickDeadline === null ? "tracking-wide" : "-skew-x-8 bg-black text-comic-yellow"
-            }`}
-          >
-            <svg viewBox="0 0 14 16" className="h-4 w-3.5" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden>
-              <path
-                d="M5 9V2.5c0-.8 1.8-.8 1.8 0V9m0-1.5c0-.8 1.8-.8 1.8 0V9m0-1c0-.8 1.8-.8 1.8 0v3.5c0 2.5-1.6 3.8-3.8 3.8S3.2 14 2.2 12L1 9.6c-.4-.8.6-1.4 1.2-.8L5 11"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            {pickDeadline !== null ? (
-              <>
-                Tocca per scegliere la conquista
-                <span className="normal-case">
-                  · <SecondsLeft key={pickDeadline} deadline={pickDeadline} offset={offset} /> s
-                </span>
-              </>
-            ) : finished ? (
-              "Tocca per vedere il risultato"
-            ) : (
-              "Tocca per continuare"
-            )}
-          </button>
-        </div>
-      </section>
-    </main>
-  );
-}
-
-/** The score climbs to its value when a round is revealed, once the cards are in. */
-function CountUp({ value }: { value: number }) {
-  const [shown, setShown] = useState(0);
-  useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const start = performance.now() + (reduced ? 0 : SCORES_SECONDS * 1000);
-    let frame = 0;
-    const step = (time: number) => {
-      const progress = reduced ? 1 : Math.min(1, Math.max(0, (time - start) / 600));
-      setShown(Math.round(value * progress));
-      if (progress < 1) frame = requestAnimationFrame(step);
-    };
-    frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
-  }, [value]);
-  return <span className="font-display text-[58px] leading-[60px]">{shown}</span>;
-}
-
-function PlaySide({
-  label,
-  card,
-  play,
-  abilities,
-  side,
-  won,
-  notes,
-  press,
-}: {
-  label: string;
-  card: MatchCard | null;
-  play: { score: number } | null;
-  abilities: string[];
-  side: "left" | "right";
-  /** SBAM! bursts next to the winning score. */
-  won: boolean;
-  /** What the card's power did this round (dimmed when it did nothing). */
-  notes: PowerNote[];
-  /** A long press on this side shows the card whole; a tap still goes on. */
-  press?: LongPressHandlers;
-}) {
-  const isLeft = side === "left";
-  return (
-    <div {...press} className={`relative flex ${isLeft ? "justify-start" : "justify-end text-right"} ${LONG_PRESS_CLASS}`}>
-      {/* The art grows with the screen: 23% of its height, at most the old 176 px. Even then the
-          drawing is at most 128 px wide, so the thumbnail the hand already loaded does. */}
-      {card && (
-        <div className={`absolute bottom-0 aspect-[32/44] h-[clamp(108px,23dvh,176px)] ${isLeft ? "right-0" : "left-0"}`}>
-          {card.art_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={withBasePath(thumbArtUrl(card.art_url))}
-              alt=""
-              decoding="async"
-              className="h-full w-full border-[3px] border-black object-cover object-top"
+    <RoundComic
+      key={round.round}
+      round={round.round}
+      level={round.level}
+      threatName={round.threat.name}
+      abilities={round.threat.abilities}
+      twist={twist}
+      me={{ label: "Tu", card: mine ?? null, stats: statsOf(mine), score: myScore, notes: myNotes, press: mine ? detail.press(mine) : undefined }}
+      opponent={{
+        label: opponentName,
+        card: theirs,
+        stats: statsOf(theirs),
+        score: theirScore,
+        notes: theirNotes,
+        press: theirs ? detail.press(theirs) : undefined,
+      }}
+      winner={winner}
+      decisive={decisive}
+      resultLine={resultLine}
+      notices={notices}
+      onContinue={onContinue}
+      hint={(complete) => (
+        // The whole screen continues; this stays as the hint and the keyboard's way on.
+        <button
+          type="button"
+          className={`flex h-8 items-center gap-1.5 px-3 text-xs font-extrabold uppercase text-black ${
+            pickDeadline === null ? "tracking-wide" : "-skew-x-8 bg-black text-comic-yellow"
+          }`}
+        >
+          <svg viewBox="0 0 14 16" className="h-4 w-3.5" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden>
+            <path
+              d="M5 9V2.5c0-.8 1.8-.8 1.8 0V9m0-1.5c0-.8 1.8-.8 1.8 0V9m0-1c0-.8 1.8-.8 1.8 0v3.5c0 2.5-1.6 3.8-3.8 3.8S3.2 14 2.2 12L1 9.6c-.4-.8.6-1.4 1.2-.8L5 11"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-          ) : (
-            <Silhouette
-              faction={card.faction}
-              accent={card.rarity.color}
-              className="absolute bottom-0 left-1/2 h-full -translate-x-1/2"
-            />
-          )}
-        </div>
-      )}
-      <div className="relative max-w-[64%]">
-        <p className="truncate text-xs font-extrabold leading-4">{label}</p>
-        <p className="truncate font-display text-[28px] uppercase leading-8">{card?.name ?? "?"}</p>
-        {card && (
-          <p className="text-xs font-bold leading-4">{abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ")}</p>
-        )}
-        {notes.length > 0 && (
-          <div className={`mt-1 flex flex-wrap gap-1 ${isLeft ? "" : "justify-end"}`}>
-            {notes.map((note, index) => (
-              <span
-                key={index}
-                className={`-skew-x-8 bg-black px-1.5 py-px text-[11px] font-bold leading-4 ${
-                  note.active ? "text-comic-yellow" : "text-faint"
-                }`}
-              >
-                <span className="font-extrabold uppercase">{note.name}</span>
-                {note.effect && ` ${note.effect}`}
+          </svg>
+          {!complete ? (
+            "Tocca per saltare"
+          ) : pickDeadline !== null ? (
+            <>
+              Tocca per scegliere la conquista
+              <span className="normal-case">
+                · <SecondsLeft key={pickDeadline} deadline={pickDeadline} offset={offset} /> s
               </span>
-            ))}
-          </div>
-        )}
-        {play && (
-          <div className={`flex items-center gap-1 ${isLeft ? "" : "flex-row-reverse"}`}>
-            <CountUp value={play.score} />
-            {won && (
-              <ComicBurst
-                fill="#ffd60a"
-                className={`animate-burst-pop relative h-[60px] w-[60px] shrink-0 ${isLeft ? "rotate-[10deg]" : "-rotate-[10deg]"}`}
-                textClassName="text-[17px] tracking-wide"
-              >
-                SBAM!
-              </ComicBurst>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+            </>
+          ) : finished ? (
+            "Tocca per vedere il risultato"
+          ) : (
+            "Tocca per continuare"
+          )}
+        </button>
+      )}
+    />
   );
+}
+
+/**
+ * The power that changed the result: without its points the winner would not have won
+ * (Implacabile: without it the tie went to the highest value, or to nobody).
+ */
+function decisiveNote(
+  side: "me" | "opponent",
+  notes: PowerNote[],
+  winner: { score: number; highest: number },
+  loser: { score: number; highest: number },
+  loserName: string,
+): { side: "me" | "opponent"; index: number; text: string } | null {
+  const tie = notes.findIndex((note) => note.active && note.timing === "tie");
+  if (tie >= 0 && winner.score === loser.score) {
+    if (winner.highest > loser.highest) return null;
+    return {
+      side,
+      index: tie,
+      text:
+        winner.highest === loser.highest
+          ? `Senza ${notes[tie].name} il round era nullo.`
+          : `Senza ${notes[tie].name} vinceva ${loserName}, col valore più alto.`,
+    };
+  }
+  for (const [index, note] of notes.entries()) {
+    if (!note.active || note.timing || !note.points || note.points <= 0) continue;
+    const without = winner.score - note.points;
+    if (without < loser.score) return { side, index, text: `Senza ${note.name} finiva ${without} a ${loser.score}.` };
+    if (without === loser.score && winner.highest <= loser.highest) {
+      return { side, index, text: `Senza ${note.name} finiva pari, ${without} a ${loser.score}.` };
+    }
+  }
+  return null;
 }
 
 function MatchResult({

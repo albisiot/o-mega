@@ -12,6 +12,8 @@ type WinnerNameProps = {
   card: NameCard;
   /** Seconds to wait, from when the screen appears, before the letters fly in. */
   delay?: number;
+  /** The height of the name, 120 px unless given. */
+  className?: string;
 };
 
 // Letter outlines by font, downloaded once per session.
@@ -41,7 +43,7 @@ export function prefetchWinnerNames(cards: NameCard[]) {
  * The name of the card that won the round, as 3D letters in its own style (winner-name-3d.ts).
  * Without WebGL it falls back to the flat card name.
  */
-export const WinnerName = memo(function WinnerName({ card, delay = 0 }: WinnerNameProps) {
+export const WinnerName = memo(function WinnerName({ card, delay = 0, className = "h-[120px]" }: WinnerNameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [failed, setFailed] = useState(false);
   const dragStart = useRef(0);
@@ -72,7 +74,7 @@ export const WinnerName = memo(function WinnerName({ card, delay = 0 }: WinnerNa
 
   if (failed) {
     return (
-      <div className="flex h-[120px] items-center px-6">
+      <div className={`flex items-center px-6 ${className}`}>
         <CardName card={card} size="lg" as="p" className="h-14" />
       </div>
     );
@@ -89,7 +91,7 @@ export const WinnerName = memo(function WinnerName({ card, delay = 0 }: WinnerNa
       onClick={(event) => {
         if (Math.abs(event.clientX - dragStart.current) > 6) event.stopPropagation();
       }}
-      className="relative block h-[120px] w-full cursor-grab touch-pan-y"
+      className={`relative block w-full cursor-grab touch-pan-y ${className}`}
     />
   );
 });
