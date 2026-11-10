@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "10 novembre 2026",
     changes: [
+      "Niente più zoom per sbaglio: in tutte le pagine dell'app il pizzico e il doppio tocco non ingrandiscono più lo schermo, che resta sempre a misura di telefono. Lo scorrimento funziona come prima.",
       "Alcuni eventi ora ammettono solo i personaggi con certi tratti, per esempio solo Mito o Strappo, o solo i Figli dell'Ultima: lo trovi scritto nel banner e nella pagina dell'evento. In quegli eventi una partita dà punti solo se tutta la squadra ha quei tratti (in Emergenza tutti e 8), e a fine partita ti diciamo se la squadra non era ammessa.",
       "Ogni personaggio ha la sua scheda: aprendo una carta dalla collezione trovi il vero nome, sotto il disegno, e toccandolo leggi i suoi poteri e i suoi tratti. I tratti sono tre: l'Origine (Segno, Mestiere, Tecnologia, Magia, Mito o Strappo), la Natura (Umano, Macchina, Alieno, Creatura o Entità) e il Gruppo (Custodi, Lanterne, Compagnia Lete, Figli dell'Ultima, Banco o Sciolti). In futuro alcuni eventi speciali ammetteranno solo i personaggi con certi tratti. Il potere delle carte in partita non cambia.",
     ],

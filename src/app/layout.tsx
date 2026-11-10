@@ -18,6 +18,7 @@ import {
 import { AppSplash } from "@/components/app-splash";
 import { AuthProvider } from "@/components/auth-provider";
 import { BottomNav } from "@/components/bottom-nav";
+import { NoZoom } from "@/components/no-zoom";
 import { PlaceMemory } from "@/components/place-memory";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { Suspense } from "react";
@@ -73,6 +74,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // No zoom: the app is laid out for the phone screen (see NoZoom for iPhone Safari).
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
   themeColor: "#0b0b0f",
 };
@@ -90,6 +94,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <AppSplash />
         </AuthProvider>
         <ServiceWorkerRegistration />
+        <NoZoom />
         <Suspense fallback={null}>
           <PlaceMemory />
         </Suspense>

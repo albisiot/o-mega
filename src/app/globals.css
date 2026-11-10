@@ -44,6 +44,9 @@
 html {
   color-scheme: dark;
   -webkit-text-size-adjust: 100%;
+  /* No zoom anywhere (pinch or double tap): scrolling only. Every element inherits the limit,
+     elements with touch-action: none (3D drags) keep handling their own gestures. See NoZoom. */
+  touch-action: pan-x pan-y;
 }
 
 body {
