@@ -6,6 +6,7 @@ import { Suspense, useCallback, useEffect, useState, type MouseEvent } from "rea
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { ArtViewerButton } from "@/components/art-viewer";
 import { CopiesSheet, MissingCard } from "@/components/card-details";
+import { CharacterProfileSheet } from "@/components/character-profile";
 import { CardModelButton } from "@/components/card-model";
 import { CardView } from "@/components/card-view";
 import { LoadingScreen } from "@/components/loading-screen";
@@ -152,6 +153,7 @@ function CardPageContent() {
               )}
               <CardModelButton code={card.code} name={card.name} className="min-h-12 flex-1" />
             </div>
+            <CharacterProfileSheet key={card.id} definitionId={card.id} name={card.name} />
             <CopiesSheet card={card} owned={owned} onConverted={() => setReloadKey((k) => k + 1)} />
           </>
         ) : (

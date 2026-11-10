@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "10 novembre 2026",
+    changes: [
+      "Ogni personaggio ha la sua scheda: aprendo una carta dalla collezione trovi il vero nome, sotto il disegno, e toccandolo leggi i suoi poteri e i suoi tratti. I tratti sono tre: l'Origine (Segno, Mestiere, Tecnologia, Magia, Mito o Strappo), la Natura (Umano, Macchina, Alieno, Creatura o Entità) e il Gruppo (Custodi, Lanterne, Compagnia Lete, Figli dell'Ultima, Banco o Sciolti). In futuro alcuni eventi speciali ammetteranno solo i personaggi con certi tratti. Il potere delle carte in partita non cambia.",
+    ],
+  },
+  {
     date: "9 novembre 2026",
     changes: [
       "Nel Negozio arrivano i pacchetti speciali: accanto al pacchetto standard ne trovi altri, ognuno con il suo nome, colore, prezzo e carte, a volte solo per pochi giorni. Scorri in alto per vederli tutti. Nella scheda Probabilità trovi sempre quelle del pacchetto che stai guardando: per rarità e per ogni personaggio che può uscire, con la carta garantita e le varianti. Come sempre le estrazioni avvengono sul server, e se un pacchetto cambia mentre lo guardi l'acquisto si ferma senza toglierti monete.",

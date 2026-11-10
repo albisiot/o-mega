@@ -1,0 +1,491 @@
+-- Character profiles: every character gets a real name, a description of its
+-- powers and three traits (origin, nature, group). They are shown only on the
+-- card detail page (/carta). The powers text is lore: the game power of the card
+-- (power_code) does not change. Traits are a catalog the server can filter on,
+-- so future special events can admit only characters with certain traits
+-- (public.card_matches_traits). Texts are placeholders, like the rest of the
+-- catalog content (docs/WORLD.md).
+
+alter table public.card_definitions
+  add column real_name text,
+  add column powers_text text;
+
+create table public.trait_categories (
+  code text primary key,
+  name text not null,
+  sort_order integer not null
+);
+
+create table public.traits (
+  code text primary key,
+  category_code text not null references public.trait_categories (code),
+  name text not null,
+  description text not null,
+  sort_order integer not null,
+  unique (code, category_code)
+);
+
+create index traits_category_code_idx on public.traits (category_code);
+
+-- A card can hold several traits; today each card has exactly one per category
+-- (checked by supabase/tests/character_profiles.test.sql).
+create table public.card_definition_traits (
+  definition_id uuid not null references public.card_definitions (id) on delete cascade,
+  trait_code text not null references public.traits (code),
+  primary key (definition_id, trait_code)
+);
+
+create index card_definition_traits_trait_code_idx on public.card_definition_traits (trait_code);
+
+-- Catalog data: everyone reads it, nobody writes it from the client.
+alter table public.trait_categories enable row level security;
+alter table public.traits enable row level security;
+alter table public.card_definition_traits enable row level security;
+revoke all on table public.trait_categories, public.traits, public.card_definition_traits from anon, authenticated;
+grant select on table public.trait_categories, public.traits, public.card_definition_traits to anon, authenticated;
+create policy trait_categories_select on public.trait_categories for select to anon, authenticated using (true);
+create policy traits_select on public.traits for select to anon, authenticated using (true);
+create policy card_definition_traits_select on public.card_definition_traits for select to anon, authenticated using (true);
+
+insert into public.trait_categories (code, name, sort_order) values
+  ('origin', 'Origine', 1),
+  ('nature', 'Natura', 2),
+  ('group', 'Gruppo', 3);
+
+insert into public.traits (code, category_code, name, description, sort_order) values
+  ('origin.segno', 'origin', 'Segno', 'Il potere viene dall''Ora Zero.', 1),
+  ('origin.mestiere', 'origin', 'Mestiere', 'Nessun potere: addestramento, astuzia, bravura.', 2),
+  ('origin.tecnologia', 'origin', 'Tecnologia', 'Armature, gadget, robot e macchine.', 3),
+  ('origin.magia', 'origin', 'Magia', 'Incantesimi, formule e tatuaggi magici.', 4),
+  ('origin.mito', 'origin', 'Mito', 'Creature, giganti e forze antiche svegliate negli scavi.', 5),
+  ('origin.strappo', 'origin', 'Strappo', 'Arrivati dallo strappo: alieni e gente di altri tempi.', 6),
+  ('nature.umano', 'nature', 'Umano', 'Una persona, con o senza poteri.', 1),
+  ('nature.macchina', 'nature', 'Macchina', 'Robot, androidi, armature e intelligenze artificiali.', 2),
+  ('nature.alieno', 'nature', 'Alieno', 'Viene da un altro pianeta.', 3),
+  ('nature.creatura', 'nature', 'Creatura', 'Mostri, giganti e animali del mito.', 4),
+  ('nature.entita', 'nature', 'Entità', 'Forze, luoghi e fenomeni con una volontà.', 5),
+  ('group.custodi', 'group', 'Custodi', 'Guardia civica, onesta e senza fondi.', 1),
+  ('group.lanterne', 'group', 'Lanterne', 'Volontari dei quartieri poveri, senza divisa né permessi.', 2),
+  ('group.lete', 'group', 'Compagnia Lete', 'Ha privatizzato l''energia dell''Ora Zero.', 3),
+  ('group.figli', 'group', 'Figli dell''Ultima', 'Vogliono completare l''alfabeto, cioè arrivare alla fine.', 4),
+  ('group.banco', 'group', 'Banco', 'Gestisce licenze, sfide e Diritto di Presa. Vince sempre.', 5),
+  ('group.sciolti', 'group', 'Sciolti', 'Contrabbandieri, mercenari e chiunque abbia smesso di scegliere.', 6);
+
+-- True when the card has, for every category named in p_traits, at least one of
+-- the listed traits of that category: ['origin.mito', 'origin.strappo',
+-- 'group.figli'] means (Mito or Strappo) and Figli dell'Ultima. An empty list
+-- admits every card; an unknown trait code is an error, so a typo in an event
+-- never silently admits nobody.
+create function public.card_matches_traits(p_definition_id uuid, p_traits text[])
+returns boolean
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_unknown text;
+begin
+  select t into v_unknown
+  from unnest(coalesce(p_traits, '{}')) as t
+  where not exists (select 1 from public.traits where code = t)
+  limit 1;
+  if v_unknown is not null then
+    raise exception 'unknown trait %', v_unknown using errcode = '22023';
+  end if;
+
+  return not exists (
+    select 1
+    from public.traits wanted
+    where wanted.code = any (coalesce(p_traits, '{}'))
+      and not exists (
+        select 1
+        from public.card_definition_traits held
+        join public.traits t on t.code = held.trait_code
+        where held.definition_id = p_definition_id
+          and t.category_code = wanted.category_code
+          and held.trait_code = any (p_traits)
+      )
+  );
+end;
+$$;
+
+revoke execute on function public.card_matches_traits(uuid, text[]) from public;
+grant execute on function public.card_matches_traits(uuid, text[]) to anon, authenticated;
+
+update public.card_definitions as d
+set real_name = v.real_name, powers_text = v.powers_text
+from (values
+  ('P001', 'Rocco Scarano',
+   'Solleva un container a spalla e lo posa dove serve, senza perdere il sorriso. Tutta la sua forza è nel corpo: la magia non la sente e i pensieri degli altri gli scivolano addosso.'),
+  ('P002', 'Nicola «Nicolino» Esposito',
+   'Nessun Segno: a trent''anni ha ancora la faccia di un ragazzino e la usa per sparire tra la folla con il tuo portafoglio. Mani velocissime, gambe ancora di più; con la magia non ha mai avuto niente a che fare.'),
+  ('P003', 'Ettore Calò',
+   'Nessun Segno: risolve le equazioni al primo sguardo e costruisce strumenti per le Lanterne con quello che trova nei cassonetti. Di forza non ne ha: un barattolo chiuso lo batte sempre.'),
+  ('P004', 'Beatrix Nwosu',
+   'Legge il futuro al mercato e traccia col gesso soglie che chi ha cattive intenzioni non riesce a varcare. Le braccia non la reggono: la borsa della spesa gliela porta il quartiere.'),
+  ('P005', 'Bruno Cafiero',
+   'Accumula energia nel corpo finché non scoppia, e la Compagnia Lete lo manda dove serve un botto. Non sa avvicinarsi in silenzio: lo annuncia il calore che gli esce dalla pelle.'),
+  ('P006', 'Cassia Lunardi',
+   'Vede come andrà a finire, sempre e nei dettagli. Nessuno le crede mai, e il suo corpo fragile non regge nemmeno la fatica di insistere.'),
+  ('P007', 'Samuele Dieli',
+   'Nessun Segno: guida il blindato dei Custodi e lo tiene in piedi con chiave inglese, nastro adesivo e calci ben assestati. Sulla mente degli altri non ha alcuna presa.'),
+  ('P008', 'Greta Talamo',
+   'Nessun Segno: impara voci, abitudini e firme finché nessuno ricorda l''ufficio senza di lei. Lavora dall''interno per la Compagnia Lete; se deve fare a botte, ha già perso.'),
+  ('P009', 'Jang Hyun-woo',
+   'Nessun Segno. Da sei anni copre da solo il turno di notte dei Custodi e, leggendo la condensa sui vetri, capisce con sei minuti d''anticipo quale emergenza sta arrivando.'),
+  ('P010', 'Marek Doubrava',
+   'Il suo orecchio interno non segue la gravità ma la strada fatta: anche nelle correnti impazzite dello stretto sa sempre dov''è l''uscita. Porta oltre il porto chiunque paghi; il ritorno non è compreso.'),
+  ('P011', 'Cosimo Nerini',
+   'Novizio dei Figli dell''Ultima: conosce tre formule e mezza e le fa funzionare a forza di entusiasmo. Un po'' bravo in tutto, davvero bravo in niente.'),
+  ('P012', 'Vlasta Řehořová',
+   'Quando nel quartiere va via la luce arriva lei con la lanterna. Se appoggia le mani su una macchina che si sta spegnendo, la tiene sveglia ancora qualche ora: non la ripara, ma si fa dire tutto.'),
+  ('P013', 'Tano Mangiapane',
+   'I tatuaggi della gente di porto gli corrono sulle braccia: i nodi che stringe non cedono mai e il carico passa intero alla bitta che lo trattiene. Non corre: aspetta che arrivi tu.'),
+  ('P014', 'Ugo Grigoletti',
+   'Un minuto dopo averlo visto nessuno ricorda la sua faccia, la sua voce o il suo nome. La Compagnia Lete lo paga in contanti, perché in busta paga sparirebbe.'),
+  ('P015', 'Georgeta Zamfirescu',
+   'Con le mani sul paziente costringe un organo a lavorare oltre il limite per quaranta minuti, il tempo di salvarlo. Cura gratis il quartiere nella clinica delle Lanterne; la salute che regala, a lei manca.'),
+  ('P016', 'Addolorata Ferri',
+   'Strega dei Figli dell''Ultima: le campane della città suonano da sole quando si avvicina e i suoi sortilegi seguono quel rintocco. Nascondersi le è impossibile: la si sente da tre quartieri.'),
+  ('P017', 'Nino Barresi',
+   'Sotto il tetto del suo bar nessuno riesce a fare del male a un altro cliente, né a mentire su quanto deve. È l''unico terreno neutrale di Nuova Megara, e lui lo difende con lo strofinaccio in mano.'),
+  ('P018', 'Elia Mancuso',
+   'Maestro elementare con il Segno della telepatia: sente i pensieri di tutta la classe, per questo nessuno copia. Non ha mai tirato un pugno in vita sua.'),
+  ('P019', 'Mirko Cottone',
+   'Nessun Segno: pugile della Compagnia Lete che manda al tappeto chiunque. Ha la mascella di vetro: il primo colpo che incassa è anche l''ultimo.'),
+  ('P020', 'Beatrice «Bea» Radice',
+   'Radioamatrice delle Lanterne: con le antenne montate sul tetto tiene in contatto il quartiere quando salta la rete, e ascolta anche quello che non dovrebbe.'),
+  ('P021', 'Danilo Rueda',
+   'Convince una serratura a tornare com''era prima di essere chiusa: per qualche secondo la porta non è mai stata chiusa. Funziona su chiavistelli e casseforti; con l''elettronica, niente da fare.'),
+  ('P022', 'Antonio «Totò» Mastino',
+   'Nessun Segno: cacciatore di taglie che non molla mai una pista e trova chiunque. Capire perché lo stia cercando è un altro discorso, e farlo di nascosto non gli riesce.'),
+  ('P023', 'Idris Konaté',
+   'Pompiere dei Custodi: non spegne il fuoco, lo riporta a com''era prima. Con undici gesti un incendio nato da un incantesimo torna a essere un forno, una lampada, una stufa.'),
+  ('P024', 'Dino Fusaro',
+   'Apprendista mago della Compagnia Lete: i suoi incantesimi funzionano benissimo, solo che non fanno mai quello che voleva. Preme tutti i bottoni e non legge le istruzioni.'),
+  ('P025', 'Marta Scudieri',
+   'Nessun Segno: agente dei Custodi con lo scudo antisommossa, sempre in prima fila. Non sa nascondersi e non ci prova nemmeno.'),
+  ('P026', 'Ivano Vegliante',
+   'Nessun Segno: capo di una banda di motociclisti, ha truccato la moto finché ha smesso di frenare. Arriva sempre per primo; incassare i colpi gli riesce meno bene.'),
+  ('P027', 'Bianca Trentin',
+   'Medium del mercato nero: sente i segreti di chi le passa accanto e li rivende al primo che paga. Cosa vogliano dire, non lo capisce nemmeno lei.'),
+  ('P028', 'Gaetano Vattiato',
+   'Elettricista delle Lanterne: afferra i cavi tranciati a mani nude e fa passare la corrente nel proprio corpo finché il quartiere non torna acceso. Correre, invece, non è il suo forte.'),
+  ('P029', 'Goran Orsić',
+   'Nessun Segno: picchiatore della Compagnia Lete, forte come un toro e altrettanto riflessivo. Fa quello che gli dicono, anche troppo.'),
+  ('P030', 'Jacopo «Jay» Rondinelli',
+   'Nessun Segno: staffetta delle Lanterne, conosce ogni tetto della città e corre da un capo all''altro senza mai toccare la strada. Di magia non sa niente.'),
+  ('P031', 'Nadia Bitetti',
+   'Nessun Segno: hacker della Compagnia Lete, ti svuota il conto in un secondo. È così vanitosa che lascia sempre la firma.'),
+  ('P032', 'Lira Scognamiglio',
+   'Rigattiera di maledizioni: le compra usate, le rimette a nuovo e scrive patti che si fanno rispettare da soli. Chi non paga la penale la paga lo stesso, senza vedere chi la riscuote.'),
+  ('P033', 'Gustav Halloran',
+   'Ex operaio della centrale, rimesso in piedi dopo l''incidente con pistoni idraulici e valvole al posto dei muscoli. Ha più energia di una cabina elettrica; un pugno, però, non l''ha mai tirato.'),
+  ('P034', 'Leandro Sonnino',
+   'Reclutatore dei Figli dell''Ultima: con una frase ti convince, con la seconda ti fa dimenticare la prima. Davanti a chi non lo ascolta, non sa difendersi.'),
+  ('P035', 'Idrissa Camara',
+   'Dentro il suo rione sa dove si trova ogni estraneo e da quanto tempo, e guarisce dalle ferite in poche ore. Un passo oltre il confine è un lottatore di strada qualunque, con la testa calda.'),
+  ('P036', 'Fritz Rotondi',
+   'Costruttore di robot della Compagnia Lete: le sue macchine sembrano impazzire, ma lo fanno solo quando lo decide lui. Di nascosto non sa fare niente: lo tradisce il rumore.'),
+  ('P037', 'Alessandra «Sasha» Neri',
+   'Nessun Segno: spia su commissione, passa inosservata ovunque e ricorda tutto quello che vede. Lavora per chi paga di più; la lealtà la vende a parte.'),
+  ('P038', 'Nora Fiorentino',
+   'Nessun Segno: investigatrice dei Custodi, legge le persone dal modo in cui stanno ferme e ha informatori in ogni quartiere. Trova il colpevole prima del caffè; in un corpo a corpo, meglio non contarci.'),
+  ('P039', 'Anselmo Quaresma',
+   'Nessun Segno: fanatico dei Figli dell''Ultima, ha una fede che nessuna minaccia scalfisce e un corpo che regge qualunque cosa. Nella mente degli altri non sa leggere niente.'),
+  ('P040', 'Suvi Halonen',
+   'Strega di città: usa cavi elettrici, numeri civici e nomi come ingredienti dei suoi incantesimi. Può spegnere un isolato o far arrivare qualcuno sempre tre minuti in ritardo; se l''incantesimo si inceppa, lo aggiusta col saldatore.'),
+  ('P041', 'Ottavio Carusi',
+   'Esattore della Compagnia Lete: incassa ogni colpo senza battere ciglio e poi presenta il conto. Ci vede pochissimo, ma un debitore lo trova lo stesso.'),
+  ('P042', 'Rico Turrisi',
+   'Nessun Segno: corriere su una moto elettrica truccata, consegna qualunque cosa in dieci minuti in ogni angolo della città. Non fa domande e non ha mai aperto un libro.'),
+  ('P043', 'Zoe Saronni',
+   'Sente i pensieri di chi le sta intorno come un rumore di fondo che non si spegne mai. Li sente tutti; capirli è un''altra storia.'),
+  ('P044', 'Tomás Okonkwo',
+   'Assorbe il calore dell''aria intorno e lo scarica dalle mani: fonde una serratura, fa gelare una stanza. Il primo incendio l''ha acceso per sbaglio; per gli altri lavora con i Figli dell''Ultima.'),
+  ('P045', 'Rafael Okoye',
+   'Ex campione di lotta, ha muscoli che bruciano più in fretta di quelli umani. Può prestare il suo Segno a un altro per undici minuti, e intanto resta un uomo qualunque. Ragionare non è mai stato il suo forte.'),
+  ('P046', 'Lola Gettini',
+   'La ladra più veloce di Nuova Megara: ti sfila l''orologio e ti dice che ora è prima che tu te ne accorga. Corre più di chiunque, ma un colpo vero la mette a terra.'),
+  ('P047', 'Wafa Trabelsi',
+   'Analista del Banco: ogni sera trova sul quaderno, scritte con la sua calligrafia, righe che non ricorda di aver scritto. Sono i conti che nessuno ha ancora fatto, e sono sempre esatti.'),
+  ('P048', 'Dante Nocera',
+   'Mago di strada quasi cieco: legge le pietre incise degli scavi senza vederle, e gli incantesimi vedono per lui. Il mondo davanti al naso, invece, gli sfugge.'),
+  ('P049', 'Casimiro Duarte',
+   'Dirigente della Compagnia Lete e reattore che cammina: assorbe ogni luce e ogni radiazione senza restituirne. L''energia può scaricarla solo toccando, e ogni sua stretta di mano scotta.'),
+  ('P050', 'Dalia Sfeir',
+   'Negoziatrice dei Custodi: ogni sua frase ti arriva con la voce di cui ti fidi di più. Ha fermato tre stragi parlando; con le mani non saprebbe fermare nessuno.'),
+  ('P051', 'Vittorio Vetrano',
+   'Il combattente più veloce della città, con ossa di vetro che si rompono al primo colpo serio. Quando va in pezzi, le schegge continuano a colpire.'),
+  ('P052', 'Augusto Valtorta',
+   'Nessun Segno: l''ingegnere che ha progettato la centrale dell''Ora Zero, il cervello più brillante di Nuova Megara. Ora vende il suo genio a chiunque paghi, e la sua parola a chi paga di più.'),
+  ('P053', 'Ji-woo Park',
+   'Al buio vede la luce che le cose emettono invece di quella che riflettono: tracce recenti, forme nascoste, il punto in cui qualcuno ha mentito. Nessuno riesce a vederla; scappa sempre, poi torna sempre.'),
+  ('P054', 'Veronica Crosetti',
+   'Trova chiunque, ovunque si nasconda, e non smette mai di cercarlo. Più la si ferma, più torna forte: per i Figli dell''Ultima è la cacciatrice perfetta.'),
+  ('P055', 'Nessuno: negli archivi del Comune è «Fondazione Uno»',
+   'È la roccia su cui poggia il tempio oracolare; da quando si è svegliato ha l''aspetto di un vecchio fermo davanti alla porta. Regge i carichi, chiude le crepe, sposta massi enormi, e da lì non si muove mai.'),
+  ('P056', 'Domenica «Mimì» Canale',
+   'Costruisce macchine che funzionano a incantesimi e ha sostituito con i suoi pezzi metà del proprio corpo. Ormai è più macchina che persona, e il conto dei suoi lavori resta intero.'),
+  ('P057', 'Bonaria Puddu',
+   'Era al centro dell''Ora Zero e da allora non riesce a morire. Nessuna macchina la registra: per telecamere e computer è solo rumore di fondo. Si muove a fatica, ma non cede mai.'),
+  ('P058', 'Nessuno: l''armatura non ha un proprietario registrato',
+   'Un''armatura perfetta che ogni notte pattuglia la città, veloce e precisa come nessun soldato. Dentro non c''è nessuno, e nessuno sa chi l''abbia costruita.'),
+  ('P059', 'Non ricorda più come si chiamava',
+   'Sente i pensieri di tutti quelli che ha intorno e ha smesso di averne di propri. Obbedisce all''ultima voce che ha ascoltato: i Figli dell''Ultima si assicurano che sia la loro.'),
+  ('P060', 'Salvatore «Turi» Lo Monaco',
+   'Dall''Ora Zero porta dentro di sé un vulcano: forza, fuoco e magia da far tremare la città. Non ha mai imparato a combattere, e il telefono non gli ha mai funzionato.'),
+  ('P061', 'Nico Icardi',
+   'Esordiente in costume: vola con ali di lamiera saldate in garage. Il volo gli riesce benissimo; l''atterraggio deve ancora impararlo.'),
+  ('P062', 'Giada Fiorillo',
+   'Esordiente dei Custodi con uno zaino di estintori che la spara in aria in un secondo. Per fermarsi chiede aiuto a un muro.'),
+  ('P063', 'Marco Calamita',
+   'Il suo Segno attira il metallo: chiavi, posate, tombini. Non sa ancora spegnerlo, e ogni sera restituisce mazzi di chiavi a mezzo quartiere.'),
+  ('P064', 'Teresa Allegra',
+   'Si allunga per decine di metri e afferra qualunque cosa. Il braccio arriva subito; il resto del corpo la raggiunge con calma.'),
+  ('P065', 'Cesare Calcaterra',
+   'Le sue mani sciolgono qualunque cosa: serrature, sbarre, porte blindate. Anche i guanti, purtroppo: ne compra un paio al giorno.'),
+  ('P066', 'Franca Falcone',
+   'Nessun Segno: combatte con lame fatte in casa e affilate da sola, come si vede dai cerotti.'),
+  ('P067', 'Oreste Calabrò',
+   'Ha costruito uno sciame di vespe meccaniche che obbedisce a ogni suo comando, e lo noleggia alla Compagnia Lete. Ne ha una paura tremenda: dorme con la luce accesa.'),
+  ('P068', 'Nives Caligiuri',
+   'Si trasforma in nebbia e passa sotto qualunque porta. Dove si ricompone, lo scopre all''ultimo anche lei.'),
+  ('P069', 'Lucia Marino',
+   'Di notte emette una luce che acceca e illumina mezzo porto. A mezzogiorno è poco più di una lampadina.'),
+  ('P070', 'Pietro Altamura',
+   'Ali retrattili e una vista che legge una targa a un chilometro. Da vicino non distingue il menù dal conto.'),
+  ('P071', 'Ciro Fornaro',
+   'Brucia tutto ciò che tocca, comprese le sue mani, coperte di cicatrici. Per questo non stringe mai la mano a nessuno.'),
+  ('P072', 'Taziana Silvestri',
+   'La sua voce ipnotizza: basta una parola e fai quello che vuole. Ogni parola però le costa, e dopo la seconda resta senza voce per giorni.'),
+  ('P073', 'Corrado Lamonica',
+   'Cacciatore di taglie con un braccio cromato che stringe come una morsa. Lavora per il Banco finché non avrà pagato le rate del braccio, cioè per sempre.'),
+  ('P074', 'Tommaso Ventura',
+   'Comanda il vento e arriva dove serve prima di chiunque altro. Non riesce a stare fermo: riparte prima che tu faccia in tempo a ringraziarlo.'),
+  ('P075', 'Bruno Ferraiolo',
+   'Il suo esoscheletro solleva un autobus e regge un crollo. Quando la batteria si scarica non alza nemmeno la tazzina del caffè.'),
+  ('P076', 'Erminia Casati',
+   'Ha costruito una macchina che piega il caso: dadi, coincidenze, incidenti. Prevede ogni imprevisto tranne quello che, ogni volta, le manda a monte il piano.'),
+  ('P077', 'Gennaro Fondali',
+   'Palombaro con tentacoli d''acciaio che lo rendono il terrore del porto. Fuori dall''acqua è lentissimo, e per le scale chiede aiuto.'),
+  ('P078', 'Selene Astori',
+   'Dentro di lei brucia la forza di una stella, abbastanza per fermare qualsiasi minaccia. Ogni volta che la usa si consuma un po'', e lo sa.'),
+  ('P079', 'Agata Petrosino',
+   'Pietrifica con lo sguardo chiunque la guardi negli occhi. La pietra le sta salendo sulla pelle, un po'' alla volta: da anni evita gli specchi.'),
+  ('P080', 'Tifeo, il gigante del mito',
+   'Il gigante del mito sepolto da tremila anni sotto il vulcano: quando si gira nel sonno, la città trema. Non può lasciare la sua prigione, e i Figli dell''Ultima lavorano per liberarlo.'),
+  ('P081', 'Nessuno: sulla piastra c''è scritto solo «Lotto 7»',
+   'Robot assemblato con gli scarti del porto, cerca lavoro in tutti gli uffici della città. Ai colloqui perde sempre qualche pezzo; per ora il Banco lo paga a giornata.'),
+  ('P082', 'Matricola CB-0, Contabilità del Banco',
+   'Robot contabile del Banco: controlla tre volte ogni pagamento e non lo trova mai. Fuori dai suoi registri non vede niente.'),
+  ('P083', 'Saverio Cirillo',
+   'Dall''Ora Zero è mezzo geco: si arrampica sui muri e la coda gli ricresce ogni volta. Con le macchine è negato.'),
+  ('P084', 'Nessuno: i tecnici della metro la chiamano «la Muffa»',
+   'Creatura di muffa viva cresciuta nei tunnel della metro: si allarga sui muri e corrode tutto ciò che copre. È lentissima e non ha forza, ma non se ne va mai.'),
+  ('P085', 'Modello Domus 3, per il quartiere «Nonno»',
+   'Vecchio robot domestico che ha cresciuto mezzo quartiere insieme alle Lanterne. Sa fare un po'' di tutto, cucina ancora col manuale e non ha mai imparato a fare a botte.'),
+  ('P086', 'Hector Salazar-Lim',
+   'Vigile dei Custodi: nel suo quartiere chi ha commesso un reato non riesce a mentirgli. Con la luna piena diventa un lupo e sbrana i ladri; di giorno paga i danni.'),
+  ('P087', 'Cerbero, il cane delle necropoli',
+   'Cane a tre teste delle necropoli sotto la metro, oggi fa la guardia ai sotterranei del Banco. Le tre teste litigano per la ciotola e nessuna ha mai letto un libro.'),
+  ('P088', 'Ondina Falqui',
+   'Arpia di quartiere con ali e artigli, firma una rubrica di pettegolezzi letta da tutta la città. Quello che scrive diventa ciò che i testimoni ricordano di aver visto.'),
+  ('P089', 'Polifemo, il ciclope del mito',
+   'Gigante del mito con un occhio solo, oggi scarica le navi per la Compagnia Lete. È forte come una gru, ma ti vede solo se gli stai davanti.'),
+  ('P090', 'Lamberto Sorrentino',
+   'Vampiro e dirigente della Compagnia Lete: succhia sangue e soldi a rate, interessi a parte. Non regge i colpi: un paletto e la riunione finisce lì.'),
+  ('P091', 'Talos, l''automa di bronzo',
+   'Automa di bronzo del mito trovato negli scavi, oggi protegge la città con i Custodi. È bronzo da capo a piedi, tranne il tallone: meglio non toccarlo.'),
+  ('P092', 'Cariddi, il vortice dello stretto',
+   'Il vortice con i denti che l''Ora Zero ha fatto nascere nel porto: ingoia navi, container e denunce. Il Banco vende i permessi per passarle accanto.'),
+  ('P093', 'Glip (il resto del nome è un suono che gli umani non sanno fare)',
+   'Piccolo alieno turista arrivato dallo strappo: ha sbagliato pianeta e il Banco gli ha venduto un permesso di soggiorno. Ora fa la fila alle Poste; non ha né forza né resistenza.'),
+  ('P094', 'Unità di vigilanza CV-12 dei Custodi',
+   'Robot vigile dei Custodi: riconosce ogni infrazione e multa chiunque, supereroi compresi. Magia e pensieri, per lui, non esistono.'),
+  ('P095', 'Rachele Lasorsa',
+   'Esordiente in costume: spara laser dagli occhi. Ogni raggio le brucia un po'' la vista, e ha già bruciato tre paia di occhiali.'),
+  ('P096', 'Hu''Kss (pronuncia approssimativa)',
+   'Alieno gelatinoso arrivato dallo strappo: entra da sotto la porta e ti vende un''assicurazione della Compagnia Lete. Non ha muscoli e non sa fare a botte.'),
+  ('P097', 'Sofia Sestini',
+   'Astronauta partita prima dell''Ora Zero e tornata dallo spazio chiusa in un''armatura. Si orienta con le stelle anche sotto terra; muoversi di nascosto non le riesce, e cerca ancora parcheggio.'),
+  ('P098', 'Si fa chiamare Fabio Ferrandi, come l''ingegnere che ha sostituito',
+   'Androide della Compagnia Lete che ha preso il posto di un ingegnere: ne copia la faccia, la voce e le abitudini. In ufficio nessuno se n''è accorto; nella sua mente non c''è niente da leggere.'),
+  ('P099', 'Zeta Rax (il vero nome lo tiene per sé)',
+   'Cacciatrice di taglie aliena che ha attraversato tre galassie per trovarti. Riscuote per il Banco, accetta solo contanti e non si ferma mai.'),
+  ('P100', 'Emre Yalçın',
+   'Anziano eroe arrivato dal futuro con il jetpack: ringiovanisce un po'' ogni anno e sente il dolore delle ferite prima di riceverle. Dice che prima si stava meglio.'),
+  ('P101', 'Suor Clara Bellomo',
+   'Suora delle Lanterne, pilota un robot gigante fatto di impalcature e campane. Prega prima di schiacciare; dopo, confessa.'),
+  ('P102', 'Ix, Imperatrice dei Sei Mondi',
+   'Imperatrice aliena a quattro braccia arrivata dallo strappo: ha conquistato sei pianeti e qui non riesce a ottenere un permesso. Ha impegnato la corona al Banco per pagare gli avvocati.'),
+  ('P103', 'Sibilla, il nome che le hanno dato gli scavatori',
+   'Intelligenza artificiale cresciuta nel tempio oracolare: sa cosa succederà prima di tutti, e il Banco la usa per calcolare le quote delle sfide. Non ha un corpo con cui muoversi.'),
+  ('P104', 'Aion, quello che resta del tempo',
+   'Arriva attraverso lo strappo dal punto in cui tutto è già finito. Per i Figli dell''Ultima è la prova che la fine esiste; lui, intanto, si annoia.'),
+  ('P105', 'Kkevanth',
+   'Tecnico alieno lasciato indietro dalla sua flotta. Appoggia le mani su una macchina, terrestre o aliena, e la rimette in funzione anche senza sapere a cosa serva.'),
+  ('P106', 'Oleksandr «Sasha» Bilenko',
+   'Esattore del porto per il Banco ed ex pugile: per novanta secondi prende in prestito il corpo che aveva a ventidue anni ed è imbattibile in una rissa. Poi torna a casa con i suoi anni.'),
+  ('P107', 'Ennio Vandelli',
+   'Gestisce un motel e ascolta i clienti: dopo abbastanza ore ne imita voce, firma e respiro alla perfezione. Con le loro deleghe si è costruito una vita intera, che non è la sua.'),
+  ('P108', 'Delphine Osei',
+   'Dirigente della Compagnia Lete: controlla una rete di specchi che manda istruzioni direttamente negli occhi. Chi guarda un riflesso crede che l''idea sia sua.'),
+  ('P109', 'Sennu-Ael Ith-Marran',
+   'Ufficiale scientifico alieno: prende su di sé il panico degli altri e lo sente solo ventidue ore dopo. Fino ad allora lavora tranquillo.'),
+  ('P110', 'Itzel Coyotl',
+   'Atleta e corriera delle sfide del Banco: sulle linee antiche che corrono sotto la città va più veloce di un treno. Fuori dal tracciato è solo una ragazza che corre forte.'),
+  ('P111', 'Elia Sartorio',
+   'Eresiarca dei Figli dell''Ultima: ripete al contrario una formula appena sentita e ne ritorce l''effetto su chi l''ha pronunciata. Una benedizione diventa una condanna.'),
+  ('P112', 'Nessuno: negli scavi è catalogato come «Il Peso della Quarta Cripta»',
+   'La colonna vivente più antica della città: prende su di sé il peso di ciò che tocca e regge un crollo per ore, immobile, finché i soccorsi non hanno finito.'),
+  ('P113', 'Nessuno: matricola HR-9 delle Officine Agrarie',
+   'Mietitrebbia senza guidatore che da anni ara, semina e raccoglie lo stesso giro di campi fuori città. Dove passa la terra torna fertile, e i contadini la venerano come un dio.'),
+  ('P114', 'Nnamdi Ezenwa',
+   'Seduto su un trono di rame sotto la centrale, regge da solo il campo magnetico che protegge Nuova Megara. Non può alzarsi: se si ferma, la città resta scoperta.'),
+  ('P115', 'Marisol Peñaranda',
+   'Archivista del Comune: aggiunge a voce una clausola a quello che sta succedendo, e la cosa finisce lì. Il crollo si ferma al terzo piano, l''incendio non passa la soglia.'),
+  ('P116', 'Tarek Nassar',
+   'Esegue i decreti della Compagnia Lete: letto il decreto, il nome del condannato non lo pronuncia più nessuno, e con il nome se ne va quello che sapeva fare.'),
+  ('P117', 'Sayri Chuquimia',
+   'Traduttrice delle Lanterne: con la cassa toracica emette infrasuoni e parla la lingua dei colossi. Sa mentire a un gigante, e il gigante le crede sempre.'),
+  ('P118', 'Rita Lauricella',
+   'La sua pelle emette un odore che i colossi inseguono per chilometri: la pagano per portarli lontano dalla città. Sa correre per ore; il difficile è smettere.'),
+  ('P119', 'Graziano Scalisi',
+   'Facchino del Banco: porta i clienti in spalla su per gli undici piani. Ogni rampa gli toglie un ricordo e gli dà più forza; la vista dall''alto, almeno, migliora.'),
+  ('P120', 'Rodel Bagatsing',
+   'Cavatore con una pietra degli scavi nel petto, fatta di una materia che non è di questo mondo. Ogni volta che la usa la pietra cresce; lui dice che è carattere.'),
+  ('P121', 'Ignazio Moretti',
+   'Parte piano, ma ogni vittoria gli dà la spinta per la successiva. Dopo la prima non lo ferma più nessuno, nemmeno lui.'),
+  ('P122', 'Cheshkeru il Pascolante',
+   'Il vento che scende dal vulcano, un essere fatto d''aria che si nutre di tempeste. La Compagnia Lete lo vende alla città come servizio climatico; se lo disturbi, scarica aria gelata a quaranta sotto zero.')
+) as v (code, real_name, powers_text)
+where d.code = v.code;
+
+insert into public.card_definition_traits (definition_id, trait_code)
+select d.id, unnest(array['origin.' || v.origin, 'nature.' || v.nature, 'group.' || v.grp])
+from (values
+  ('P001', 'segno', 'umano', 'sciolti'),
+  ('P002', 'mestiere', 'umano', 'sciolti'),
+  ('P003', 'mestiere', 'umano', 'lanterne'),
+  ('P004', 'magia', 'umano', 'sciolti'),
+  ('P005', 'segno', 'umano', 'lete'),
+  ('P006', 'segno', 'umano', 'sciolti'),
+  ('P007', 'mestiere', 'umano', 'custodi'),
+  ('P008', 'mestiere', 'umano', 'lete'),
+  ('P009', 'mestiere', 'umano', 'custodi'),
+  ('P010', 'segno', 'umano', 'sciolti'),
+  ('P011', 'magia', 'umano', 'figli'),
+  ('P012', 'segno', 'umano', 'lanterne'),
+  ('P013', 'magia', 'umano', 'custodi'),
+  ('P014', 'segno', 'umano', 'lete'),
+  ('P015', 'segno', 'umano', 'lanterne'),
+  ('P016', 'magia', 'umano', 'figli'),
+  ('P017', 'magia', 'umano', 'sciolti'),
+  ('P018', 'segno', 'umano', 'lanterne'),
+  ('P019', 'mestiere', 'umano', 'lete'),
+  ('P020', 'tecnologia', 'umano', 'lanterne'),
+  ('P021', 'segno', 'umano', 'sciolti'),
+  ('P022', 'mestiere', 'umano', 'sciolti'),
+  ('P023', 'magia', 'umano', 'custodi'),
+  ('P024', 'magia', 'umano', 'lete'),
+  ('P025', 'mestiere', 'umano', 'custodi'),
+  ('P026', 'mestiere', 'umano', 'sciolti'),
+  ('P027', 'segno', 'umano', 'sciolti'),
+  ('P028', 'segno', 'umano', 'lanterne'),
+  ('P029', 'mestiere', 'umano', 'lete'),
+  ('P030', 'mestiere', 'umano', 'lanterne'),
+  ('P031', 'mestiere', 'umano', 'lete'),
+  ('P032', 'magia', 'umano', 'sciolti'),
+  ('P033', 'tecnologia', 'umano', 'lanterne'),
+  ('P034', 'segno', 'umano', 'figli'),
+  ('P035', 'segno', 'umano', 'lanterne'),
+  ('P036', 'tecnologia', 'umano', 'lete'),
+  ('P037', 'mestiere', 'umano', 'sciolti'),
+  ('P038', 'mestiere', 'umano', 'custodi'),
+  ('P039', 'mestiere', 'umano', 'figli'),
+  ('P040', 'magia', 'umano', 'lanterne'),
+  ('P041', 'segno', 'umano', 'lete'),
+  ('P042', 'mestiere', 'umano', 'sciolti'),
+  ('P043', 'segno', 'umano', 'lanterne'),
+  ('P044', 'segno', 'umano', 'figli'),
+  ('P045', 'segno', 'umano', 'custodi'),
+  ('P046', 'segno', 'umano', 'sciolti'),
+  ('P047', 'segno', 'umano', 'banco'),
+  ('P048', 'magia', 'umano', 'lanterne'),
+  ('P049', 'segno', 'umano', 'lete'),
+  ('P050', 'segno', 'umano', 'custodi'),
+  ('P051', 'segno', 'umano', 'lete'),
+  ('P052', 'mestiere', 'umano', 'sciolti'),
+  ('P053', 'segno', 'umano', 'lanterne'),
+  ('P054', 'segno', 'umano', 'figli'),
+  ('P055', 'mito', 'entita', 'custodi'),
+  ('P056', 'tecnologia', 'macchina', 'lete'),
+  ('P057', 'segno', 'umano', 'banco'),
+  ('P058', 'tecnologia', 'macchina', 'custodi'),
+  ('P059', 'segno', 'entita', 'figli'),
+  ('P060', 'segno', 'umano', 'custodi'),
+  ('P061', 'tecnologia', 'umano', 'lanterne'),
+  ('P062', 'tecnologia', 'umano', 'custodi'),
+  ('P063', 'segno', 'umano', 'custodi'),
+  ('P064', 'segno', 'umano', 'lanterne'),
+  ('P065', 'segno', 'umano', 'figli'),
+  ('P066', 'mestiere', 'umano', 'figli'),
+  ('P067', 'tecnologia', 'umano', 'lete'),
+  ('P068', 'segno', 'umano', 'sciolti'),
+  ('P069', 'segno', 'umano', 'custodi'),
+  ('P070', 'segno', 'umano', 'custodi'),
+  ('P071', 'segno', 'umano', 'figli'),
+  ('P072', 'segno', 'umano', 'figli'),
+  ('P073', 'tecnologia', 'umano', 'banco'),
+  ('P074', 'segno', 'umano', 'lanterne'),
+  ('P075', 'tecnologia', 'umano', 'custodi'),
+  ('P076', 'tecnologia', 'umano', 'lete'),
+  ('P077', 'tecnologia', 'umano', 'figli'),
+  ('P078', 'segno', 'umano', 'lanterne'),
+  ('P079', 'segno', 'umano', 'figli'),
+  ('P080', 'mito', 'creatura', 'figli'),
+  ('P081', 'tecnologia', 'macchina', 'banco'),
+  ('P082', 'tecnologia', 'macchina', 'banco'),
+  ('P083', 'segno', 'umano', 'lanterne'),
+  ('P084', 'mito', 'creatura', 'figli'),
+  ('P085', 'tecnologia', 'macchina', 'lanterne'),
+  ('P086', 'segno', 'umano', 'custodi'),
+  ('P087', 'mito', 'creatura', 'banco'),
+  ('P088', 'mito', 'creatura', 'sciolti'),
+  ('P089', 'mito', 'creatura', 'lete'),
+  ('P090', 'mito', 'creatura', 'lete'),
+  ('P091', 'mito', 'macchina', 'custodi'),
+  ('P092', 'mito', 'entita', 'banco'),
+  ('P093', 'strappo', 'alieno', 'banco'),
+  ('P094', 'tecnologia', 'macchina', 'custodi'),
+  ('P095', 'segno', 'umano', 'lanterne'),
+  ('P096', 'strappo', 'alieno', 'lete'),
+  ('P097', 'tecnologia', 'umano', 'custodi'),
+  ('P098', 'tecnologia', 'macchina', 'lete'),
+  ('P099', 'strappo', 'alieno', 'banco'),
+  ('P100', 'strappo', 'umano', 'lanterne'),
+  ('P101', 'tecnologia', 'umano', 'lanterne'),
+  ('P102', 'strappo', 'alieno', 'banco'),
+  ('P103', 'tecnologia', 'macchina', 'banco'),
+  ('P104', 'strappo', 'entita', 'figli'),
+  ('P105', 'strappo', 'alieno', 'lanterne'),
+  ('P106', 'segno', 'umano', 'banco'),
+  ('P107', 'segno', 'umano', 'sciolti'),
+  ('P108', 'tecnologia', 'umano', 'lete'),
+  ('P109', 'strappo', 'alieno', 'lanterne'),
+  ('P110', 'segno', 'umano', 'banco'),
+  ('P111', 'magia', 'umano', 'figli'),
+  ('P112', 'mito', 'creatura', 'custodi'),
+  ('P113', 'tecnologia', 'macchina', 'sciolti'),
+  ('P114', 'segno', 'umano', 'custodi'),
+  ('P115', 'segno', 'umano', 'custodi'),
+  ('P116', 'segno', 'umano', 'lete'),
+  ('P117', 'segno', 'umano', 'lanterne'),
+  ('P118', 'segno', 'umano', 'sciolti'),
+  ('P119', 'segno', 'umano', 'banco'),
+  ('P120', 'segno', 'umano', 'sciolti'),
+  ('P121', 'segno', 'umano', 'custodi'),
+  ('P122', 'mito', 'entita', 'lete')
+) as v (code, origin, nature, grp)
+join public.card_definitions d on d.code = v.code;

@@ -156,6 +156,19 @@ Le carte base restano nello stile attuale. Una **variante** è la stessa carta c
 - **Varianti animate:** alcune varianti hanno anche un breve video muto in loop (`public/cards/motion/`), che si vede solo dove una carta occupa lo schermo: pagina della carta, disegno a schermo intero e apertura del pacchetto. Altrove, e quando il telefono chiede meno movimento, resta il disegno fermo. Probabilità e regole non cambiano.
 - **Stili:** Neon (21 personaggi), Epica (11), Pastello e Tarocco (9 ciascuno), 3D (8), Cinema, Oro, Classico, Retrò, Olio, Animato, Poster, Inferno, Grafite, Marmo, Gotico, Inchiostro, Fantasy e Prisma (6 ciascuno), Cometa, Regale, Fenice, Manga, Vetrata, Cremisi, Spettro, Fiamma, Ombra, Incisione, Circuito, Acquerello, Tempera, Zombie e Ritratto (5 ciascuno). Se un personaggio ha più varianti, il server ne sceglie una a caso.
 
+### 4.7 Scheda del personaggio
+
+Ogni personaggio ha una **scheda** che si vede solo nella pagina di dettaglio della carta (`/carta`): non sul retro, non nell'album e non in partita. Contiene:
+
+- **Vero nome:** l'identità civile (`card_definitions.real_name`). Per chi non è una persona dice cosa risulta al suo posto, per esempio una matricola.
+- **Poteri:** una o due frasi che raccontano il personaggio (`card_definitions.powers_text`). È solo descrizione: il Potere della carta (§4.4) è quello del motore e non cambia.
+- **Tratti:** etichette di catalogo (`traits`, raggruppate in `trait_categories`, assegnate in `card_definition_traits`). Oggi ogni personaggio ha esattamente un tratto per categoria:
+  - **Origine**, da dove viene il potere: Segno, Mestiere (nessun potere), Tecnologia, Magia, Mito, Strappo.
+  - **Natura**, cosa è il personaggio: Umano, Macchina, Alieno, Creatura, Entità.
+  - **Gruppo**: Custodi, Lanterne, Compagnia Lete, Figli dell'Ultima, Banco, Sciolti (docs/WORLD.md §4). Lo schieramento resta la fazione della carta (Eroi, Cattivi, Neutrali).
+
+Ruolo ed Elemento sono rimandati a un'espansione. I tratti servono anche ai futuri **eventi speciali** che ammettono solo certi personaggi: il server li controlla con `card_matches_traits(definition_id, traits[])`. Dentro una categoria basta uno dei tratti elencati, e devono essere rispettate tutte le categorie elencate: `['origin.mito', 'origin.strappo', 'group.figli']` vuol dire (Mito o Strappo) e Figli dell'Ultima. Un codice sconosciuto è un errore. Conviene usare tratti, o gruppi di tratti, con almeno 15 personaggi, altrimenti pochi giocatori riescono a formare una squadra da 5. Vero nome, poteri e tratti sono testi segnaposto, come il resto dei contenuti, e alcuni prendono spunto dal compendio *THE FRACTURE*.
+
 ## 5. Il minigioco — Regolamento
 
 ### 5.1 Panoramica
@@ -529,7 +542,7 @@ Tra un inizio e una fine decisi da un amministratore, le partite danno **punti e
 
 - Album con tutte le carte del catalogo: possedute e mancanti (sagoma).
 - Filtri per rarità, fazione e abilità; ordinamento.
-- Dettaglio carta: abilità, potere, numero di copie, carte bloccate o protette, varianti trovate e quante restano da trovare.
+- Dettaglio carta: abilità, potere, numero di copie, carte bloccate o protette, varianti trovate e quante restano da trovare, scheda del personaggio (vero nome, poteri e tratti, §4.7).
 - Conversione dei doppioni.
 - Gestione delle formazioni salvate.
 
@@ -560,7 +573,8 @@ Tra un inizio e una fine decisi da un amministratore, le partite danno **punti e
 |---|---|
 | `profiles` | id (= auth user), username, avatar, level, xp, stats, conquest_unlocked |
 | `rarity_definitions` | code, name, rank, color, drop_weight (Delta, Gamma, Beta, Alfa, Omega; estendibile) |
-| `card_definitions` | id, name, faction, rarity_code (→ rarity_definitions), stats (jsonb: codice abilità → valore 0-10, 12 abilità), power_code, power_params, art_url, flavor |
+| `card_definitions` | id, name, faction, rarity_code (→ rarity_definitions), stats (jsonb: codice abilità → valore 0-10, 12 abilità), power_code, power_params, art_url, flavor, real_name, powers_text |
+| `trait_categories` / `traits` / `card_definition_traits` | categorie e valori dei tratti e tratti di ogni personaggio (§4.7) |
 | `ability_definitions` | code, name, family, icon, sort_order (le 12 abilità, rinominabili) |
 | `card_instances` | id, definition_id, owner_id, acquired_at, acquired_via (pack/conquest/starter/trade), is_starter, locked_until |
 | `card_transfers` | id, instance_id, from_user, to_user, reason, match_id, created_at |

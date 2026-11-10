@@ -58,7 +58,7 @@ Nuova Megara è una megalopoli costruita sulle rovine della Magna Grecia. Dall'O
 
 ## 4. Fazioni
 
-Le tre fazioni del catalogo restano `heroes`, `villains`, `neutrals`. I gruppi interni sono solo narrativi e non richiedono modifiche al database.
+Le tre fazioni del catalogo restano `heroes`, `villains`, `neutrals`. Ogni personaggio appartiene anche a uno dei sei gruppi interni, salvato come tratto Gruppo nella scheda del personaggio (SPEC §4.7): chi non aveva un gruppo, come buona parte delle carte da P061 in poi, ne ha ricevuto uno coerente con la sua storia. Un personaggio può essere schierato con una fazione diversa da quella del suo gruppo, come gli Sciolti schierati con i Cattivi.
 
 - **Eroi**
   - **I Custodi:** guardia civica, onesta e senza fondi.

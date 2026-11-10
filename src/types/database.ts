@@ -260,6 +260,43 @@ export type Database = {
           },
         ]
       }
+      card_definition_traits: {
+        Row: {
+          definition_id: string
+          trait_code: string
+        }
+        Insert: {
+          definition_id: string
+          trait_code: string
+        }
+        Update: {
+          definition_id?: string
+          trait_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_definition_traits_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_definition_traits_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_definition_traits_trait_code_fkey"
+            columns: ["trait_code"]
+            isOneToOne: false
+            referencedRelation: "traits"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       card_definitions: {
         Row: {
           art_url: string | null
@@ -273,7 +310,9 @@ export type Database = {
           name: string
           power_code: string | null
           power_params: Json
+          powers_text: string | null
           rarity_code: string
+          real_name: string | null
           stats: Json
           unlock_level: number | null
         }
@@ -289,7 +328,9 @@ export type Database = {
           name: string
           power_code?: string | null
           power_params?: Json
+          powers_text?: string | null
           rarity_code: string
+          real_name?: string | null
           stats: Json
           unlock_level?: number | null
         }
@@ -305,7 +346,9 @@ export type Database = {
           name?: string
           power_code?: string | null
           power_params?: Json
+          powers_text?: string | null
           rarity_code?: string
+          real_name?: string | null
           stats?: Json
           unlock_level?: number | null
         }
@@ -2110,6 +2153,56 @@ export type Database = {
         }
         Relationships: []
       }
+      trait_categories: {
+        Row: {
+          code: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          name: string
+          sort_order: number
+        }
+        Update: {
+          code?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      traits: {
+        Row: {
+          category_code: string
+          code: string
+          description: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          category_code: string
+          code: string
+          description: string
+          name: string
+          sort_order: number
+        }
+        Update: {
+          category_code?: string
+          code?: string
+          description?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "traits_category_code_fkey"
+            columns: ["category_code"]
+            isOneToOne: false
+            referencedRelation: "trait_categories"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
     }
     Views: {
       card_catalog: {
@@ -2275,6 +2368,10 @@ export type Database = {
         Returns: Json
       }
       cancel_lobby: { Args: never; Returns: undefined }
+      card_matches_traits: {
+        Args: { p_definition_id: string; p_traits: string[] }
+        Returns: boolean
+      }
       card_payload:
         | { Args: { p_definition_id: string }; Returns: Json }
         | {
