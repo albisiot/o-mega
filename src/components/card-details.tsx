@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Silhouette } from "@/components/card-view";
+import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { Sheet } from "@/components/sheet";
 import { convertDuplicates, type CatalogCard, type OwnedSummary } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
@@ -15,7 +16,6 @@ export function CopiesPanel({
   owned: OwnedSummary;
   onConverted: () => void;
 }) {
-  const [confirm, setConfirm] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const value = card.duplicateCoinValue;
@@ -23,6 +23,7 @@ export function CopiesPanel({
 
   async function convert(count: number) {
     setBusy(true);
+    setMessage(null);
     try {
       const result = await convertDuplicates(card.id, count);
       setMessage({
@@ -34,7 +35,6 @@ export function CopiesPanel({
       setMessage({ text: describeServerError(cause), isError: true });
     } finally {
       setBusy(false);
-      setConfirm(null);
     }
   }
 
@@ -54,53 +54,35 @@ export function CopiesPanel({
         )}
       </dl>
 
-      {convertible > 0 &&
-        (confirm === null ? (
+      {convertible > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-medium text-muted">
+            Tieni premuto per convertire i doppioni in monete: non si può annullare.
+          </p>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setConfirm(1);
-                setMessage(null);
-              }}
-              className="btn btn-outline flex-1"
+            <HoldToConfirmButton
+              onConfirm={() => convert(1)}
+              disabled={busy}
+              hint=""
+              fillColor="var(--comic-yellow)"
+              className="btn btn-outline flex-1 disabled:opacity-60"
             >
               Converti 1 · +{value}
-            </button>
+            </HoldToConfirmButton>
             {convertible > 1 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setConfirm(convertible);
-                  setMessage(null);
-                }}
-                className="btn btn-outline flex-1"
+              <HoldToConfirmButton
+                onConfirm={() => convert(convertible)}
+                disabled={busy}
+                hint=""
+                fillColor="var(--comic-yellow)"
+                className="btn btn-outline flex-1 disabled:opacity-60"
               >
                 Tutti ({convertible}) · +{value * convertible}
-              </button>
+              </HoldToConfirmButton>
             )}
           </div>
-        ) : (
-          <div className="flex flex-col gap-2 bg-panel p-3">
-            <p className="text-sm font-semibold">
-              Convertire {confirm === 1 ? "1 copia" : `${confirm} copie`} in {value * confirm} monete? Non si può
-              annullare.
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => convert(confirm)}
-                disabled={busy}
-                className="btn btn-primary flex-1 disabled:opacity-60"
-              >
-                {busy ? "Conversione…" : "Conferma"}
-              </button>
-              <button type="button" onClick={() => setConfirm(null)} disabled={busy} className="btn btn-ghost">
-                Annulla
-              </button>
-            </div>
-          </div>
-        ))}
+        </div>
+      )}
 
       {message && (
         <p className={`text-sm font-semibold ${message.isError ? "text-comic-magenta" : "text-comic-cyan"}`}>

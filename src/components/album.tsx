@@ -11,6 +11,7 @@ import {
   useCardListView,
 } from "@/components/card-list-controls";
 import { CardName } from "@/components/card-name";
+import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { CardArt, Silhouette, VariantTag } from "@/components/card-view";
 import { clearAlbumScroll, saveAlbumScroll, savedAlbumScroll } from "@/lib/album-scroll";
 import { cardEffects } from "@/lib/card-effects";
@@ -259,19 +260,18 @@ function ConvertAll({
   convertible: { copies: number; coins: number };
   onConverted: (result: ConversionResult) => void;
 }) {
-  const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function convert() {
     setBusy(true);
+    setError(null);
     try {
       onConverted(await convertAllDuplicates());
     } catch (cause) {
       setError(describeServerError(cause));
     } finally {
       setBusy(false);
-      setConfirming(false);
     }
   }
 
@@ -281,33 +281,19 @@ function ConvertAll({
         {convertible.copies} {convertible.copies === 1 ? "doppione convertibile" : "doppioni convertibili"} ·{" "}
         <span className="font-extrabold text-comic-yellow">+{convertible.coins} monete</span>
       </p>
-      {confirming ? (
-        <>
-          <p className="text-sm font-medium text-muted">
-            Tieni sempre almeno una copia di ogni personaggio e tutte le varianti. La conversione non si può annullare.
-          </p>
-          <div className="flex gap-2">
-            <button type="button" onClick={convert} disabled={busy} className="btn btn-primary flex-1 disabled:opacity-60">
-              {busy ? "Conversione…" : "Conferma"}
-            </button>
-            <button type="button" onClick={() => setConfirming(false)} disabled={busy} className="btn btn-ghost">
-              Annulla
-            </button>
-          </div>
-        </>
-      ) : (
-        <button
-          type="button"
-          onClick={() => {
-            setConfirming(true);
-            setError(null);
-          }}
-          className="btn btn-outline"
-        >
-          Converti tutti i doppioni
-        </button>
-      )}
-      {error &&<p className="text-sm font-semibold text-comic-magenta">{error}</p>}
+      <p className="text-xs font-medium text-muted">
+        Tieni sempre almeno una copia di ogni personaggio e tutte le varianti. La conversione non si può annullare.
+      </p>
+      <HoldToConfirmButton
+        onConfirm={convert}
+        disabled={busy}
+        hint={busy ? "" : "Tieni premuto per convertire"}
+        fillColor="var(--comic-yellow)"
+        className="btn btn-outline disabled:opacity-60"
+      >
+        {busy ? "Conversione…" : "Converti tutti i doppioni"}
+      </HoldToConfirmButton>
+      {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
     </div>
   );
 }

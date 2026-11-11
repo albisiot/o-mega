@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "11 novembre 2026",
     changes: [
+      "Anche quello che non si può annullare ora si conferma tenendo premuto: la conversione dei doppioni in monete, nella collezione e nella scheda della carta, e la scelta della carta da prendere quando vinci in Conquista. Non serve più il secondo tocco su Conferma.",
       "Niente più acquisti per sbaglio: per comprare un pacchetto, standard o speciale, nella home o nel Negozio, ora tieni premuto il pulsante per un secondo, finché la barra non si riempie. Se lasci prima, non compri nulla.",
       "Quando scegli la squadra o il mazzo, in ogni modalità (Partita, Storia, Conquista, Grande Minaccia, Allarme Triplo ed Emergenza), ora puoi ordinare le tue carte come nella collezione, per rarità, nome, numero, abilità o tratto, e filtrarle per rarità, fazione e tratti. L'ordine che scegli resta lo stesso in tutte le modalità.",
       "Nella collezione puoi ordinare le carte per tratto, Origine, Natura o Gruppo: le carte si raggruppano sotto un titolo per ogni tratto, per esempio tutti i Mito insieme. Con il pulsante Tratti puoi anche mostrare solo i personaggi con certi tratti.",

@@ -496,7 +496,7 @@ Dopo **60 secondi** in coda Conquista senza avversari, il giocatore sfida un bot
 
 - **Un pacchetto gratuito al giorno**, che scade al reset (mezzanotte `Europe/Rome`) se non aperto.
 - Pacchetto standard acquistabile con monete (default **150 monete**).
-- **Acquisti a pressione prolungata:** ogni acquisto con monete (pacchetto standard nella home e nel Negozio, pacchetti speciali) si conferma tenendo premuto il pulsante per circa un secondo (`balance.ts`, `holdToConfirm.durationMs`), mentre una barra lo riempie; un tocco o un rilascio anticipato non comprano nulla. Funziona anche da tastiera (tenendo premuto Spazio o Invio). È solo una protezione dell'interfaccia: i controlli restano tutti sul server.
+- **Acquisti a pressione prolungata:** ogni acquisto con monete (pacchetto standard nella home e nel Negozio, pacchetti speciali) si conferma tenendo premuto il pulsante per circa un secondo (`balance.ts`, `holdToConfirm.durationMs`), mentre una barra lo riempie; un tocco o un rilascio anticipato non comprano nulla. Funziona anche da tastiera (tenendo premuto Spazio o Invio). Lo stesso vale per le azioni che non si possono annullare: la conversione dei doppioni (nell'album e nella scheda della carta) e la scelta della carta da conquistare. È solo una protezione dell'interfaccia: i controlli restano tutti sul server.
 - RNG esclusivamente lato server; il risultato viene salvato prima di essere mostrato.
 - Apertura animata: carte rivelate una alla volta, animazione speciale per Alfa, Omega e varianti (§4.6).
 - Le carte vengono inserite automaticamente nella collezione.

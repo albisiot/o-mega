@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useCardDetail } from "@/components/card-detail";
 import { CardView } from "@/components/card-view";
 import { CardZoom, MAGNIFIER, PrizeCard, ZoomHint } from "@/components/card-zoom";
+import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { balance } from "@/config/balance";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
@@ -229,9 +230,15 @@ export function ConquestPick({
             )}
           </p>
         )}
-        <button type="button" onClick={pick} disabled={!chosen || busy} className="btn btn-primary w-full">
+        <HoldToConfirmButton
+          onConfirm={pick}
+          disabled={!chosen || busy}
+          hint={chosen && !busy ? "Tieni premuto per conquistare" : ""}
+          fillColor="#000"
+          className="btn btn-primary w-full"
+        >
           {busy ? "Conquista…" : chosen ? `Prendi ${chosen.name}` : "Scegli una carta"}
-        </button>
+        </HoldToConfirmButton>
       </div>
     </>
   );
