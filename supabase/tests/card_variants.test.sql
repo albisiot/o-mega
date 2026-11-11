@@ -19,7 +19,7 @@ begin
     select jsonb_object_agg(style, n) from (
       select style, count(*) as n from public.card_variants where style not in ('neon', 'epic') group by style
     ) s
-  ) = '{"cinema": 7, "pastel": 10, "gold": 6, "classic": 7, "retro": 6, "oil": 6, "cartoon": 6, "poster": 7, "inferno": 6, "graphite": 7, "marble": 6, "gothic": 6, "tarot": 10, "ink": 6, "fantasy": 6, "prism": 6, "comet": 5, "regal": 5, "render": 8, "phoenix": 5, "manga": 5, "stained": 5, "crimson": 6, "wraith": 5, "flame": 5, "shadow": 5, "etching": 5, "circuit": 6, "watercolor": 6, "tempera": 5, "zombie": 5, "portrait": 5}'::jsonb,
+  ) = '{"cinema": 7, "pastel": 10, "gold": 6, "classic": 7, "retro": 6, "oil": 6, "cartoon": 6, "poster": 7, "inferno": 6, "graphite": 7, "marble": 6, "gothic": 6, "tarot": 10, "ink": 6, "fantasy": 6, "prism": 6, "comet": 5, "regal": 6, "render": 8, "phoenix": 6, "manga": 6, "stained": 6, "crimson": 6, "wraith": 6, "flame": 6, "shadow": 6, "etching": 6, "circuit": 6, "watercolor": 6, "tempera": 6, "zombie": 5, "portrait": 6}'::jsonb,
     'every series has its expected number of variants';
   assert not exists (
     select 1 from public.card_variants v
