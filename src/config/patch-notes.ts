@@ -4,6 +4,7 @@ export const PATCH_NOTES = [
     date: "11 novembre 2026",
     changes: [
       "10 nuovi personaggi da trovare nei pacchetti: Busker, alieno che suona il mandolino ai semafori; Impound, carrozziere contro la doppia fila; Lagan, bestia del porto coperta di tutto quello che cade in acqua; Overdue, capotreno che arriva sempre tardi (Ultimo baluardo); Stentore, statua di piazza col megafono (Legame); Bisque, automa di porcellana che ascolta tutto (Spia); Bubalus, bufalo meccanico della Piana (Apripista); Gauger, doganiera aliena dello strappo (Annullatore); Mischance, il gatto nero che porta sfortuna (Sabotatore); e l'Omega Wirepuller, vecchio puparo che muove le persone con fili di luce (Riscossa), con il suo effetto speciale sulla carta grande.",
+      "Anche i 10 nuovi personaggi possono uscire dai pacchetti con un disegno speciale: Busker in Cinema, Impound in Classico, Lagan in Acquerello, Overdue in Poster, Stentore in Grafite, Bisque in Pastello, Bubalus in Circuito, Gauger in Neon, Mischance in Cremisi e Wirepuller in Tarocco.",
     ],
   },
   {
