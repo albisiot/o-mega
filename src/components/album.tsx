@@ -1,12 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  CardGroupHeading,
+  CardListControls,
+  Chip,
+  ChipRow,
+  useCardListReference,
+  useCardListView,
+} from "@/components/card-list-controls";
 import { CardName } from "@/components/card-name";
 import { CardArt, Silhouette, VariantTag } from "@/components/card-view";
 import { clearAlbumScroll, saveAlbumScroll, savedAlbumScroll } from "@/lib/album-scroll";
 import { cardEffects } from "@/lib/card-effects";
-import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
+import { applyCardListView, groupCardList, sortAbilityOf } from "@/lib/card-list";
+import type { AbilityInfo } from "@/lib/catalog";
 import {
   convertAllDuplicates,
   ownedArt,
@@ -19,23 +28,17 @@ import { loadSeenCards, saveSeenCards } from "@/lib/new-cards";
 import { rarityFrame } from "@/lib/rarity-theme";
 
 type Ownership = "all" | "owned" | "missing";
-type Filters = { ownership: Ownership; rarity: number | null; faction: string | null; sort: string };
 
-const DEFAULT_FILTERS: Filters = { ownership: "all", rarity: null, faction: null, sort: "number" };
-const FILTERS_KEY = "o-mega.album-filters";
-const SORT_OPTIONS = [
-  { value: "number", label: "Numero" },
-  { value: "rarity", label: "Rarità" },
-  { value: "name", label: "Nome" },
-  { value: "copies", label: "Copie" },
-];
+const VIEW_KEY = "o-mega.album-view";
+const OWNERSHIP_KEY = "o-mega.album-ownership";
+const EXTRA_SORTS = [{ value: "copies", label: "Copie" }];
 
-function loadFilters(): Filters {
+function loadOwnership(): Ownership {
   try {
-    const saved = sessionStorage.getItem(FILTERS_KEY);
-    return saved ? { ...DEFAULT_FILTERS, ...JSON.parse(saved) } : DEFAULT_FILTERS;
+    const saved = sessionStorage.getItem(OWNERSHIP_KEY);
+    return saved === "owned" || saved === "missing" ? saved : "all";
   } catch {
-    return DEFAULT_FILTERS;
+    return "all";
   }
 }
 
@@ -50,7 +53,9 @@ export function Album({
   abilities: AbilityInfo[];
   onChanged: () => void;
 }) {
-  const [filters, setFilters] = useState<Filters>(loadFilters);
+  const [view, updateView] = useCardListView(VIEW_KEY);
+  const [ownership, setOwnership] = useState<Ownership>(loadOwnership);
+  const { traits } = useCardListReference();
   // Lives here: the conversion panel disappears once no duplicates are left.
   const [notice, setNotice] = useState<string | null>(null);
   // Read once: the badges stay for this whole visit, and the next one no longer shows them.
@@ -70,39 +75,25 @@ export function Album({
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  function update(change: Partial<Filters>) {
-    const next = { ...filters, ...change };
-    setFilters(next);
+  function chooseOwnership(next: Ownership) {
+    setOwnership(next);
     try {
-      sessionStorage.setItem(FILTERS_KEY, JSON.stringify(next));
+      sessionStorage.setItem(OWNERSHIP_KEY, next);
     } catch {
       // Filters are a convenience: losing them is fine.
     }
   }
 
-  const sortAbility = filters.sort.startsWith("ability:") ? filters.sort.slice("ability:".length) : null;
+  const sortAbility = sortAbilityOf(view.sort);
 
-  const visible = useMemo(() => {
-    const cards = catalog.filter((card) => {
-      const isOwned = owned.has(card.id);
-      if (filters.ownership === "owned" && !isOwned) return false;
-      if (filters.ownership === "missing" && isOwned) return false;
-      if (filters.rarity !== null && card.rarity.rank !== filters.rarity) return false;
-      if (filters.faction !== null && card.faction !== filters.faction) return false;
-      return true;
+  const groups = useMemo(() => {
+    const cards = catalog.filter((card) => ownership === "all" || (ownership === "owned") === owned.has(card.id));
+    const copies = (card: CatalogCard) => owned.get(card.id)?.copies ?? 0;
+    const sorted = applyCardListView(cards, view, traits, {
+      copies: (a, b) => copies(b) - copies(a) || b.rarity.rank - a.rarity.rank || a.code.localeCompare(b.code),
     });
-    const byRarity = (a: CatalogCard, b: CatalogCard) => b.rarity.rank - a.rarity.rank || a.code.localeCompare(b.code);
-    const sorters: Record<string, (a: CatalogCard, b: CatalogCard) => number> = {
-      number: (a, b) => a.code.localeCompare(b.code),
-      rarity: byRarity,
-      name: (a, b) => a.name.localeCompare(b.name, "it"),
-      copies: (a, b) => (owned.get(b.id)?.copies ?? 0) - (owned.get(a.id)?.copies ?? 0) || byRarity(a, b),
-    };
-    const sorter = sortAbility
-      ? (a: CatalogCard, b: CatalogCard) => (b.stats[sortAbility] ?? 0) - (a.stats[sortAbility] ?? 0) || byRarity(a, b)
-      : (sorters[filters.sort] ?? sorters.number);
-    return cards.sort(sorter);
-  }, [catalog, owned, filters, sortAbility]);
+    return groupCardList(sorted, view.sort, traits);
+  }, [catalog, owned, ownership, view, traits]);
 
   const rarities = useMemo(
     () => [...new Map(catalog.map((card) => [card.rarity.rank, card.rarity])).values()].sort((a, b) => a.rank - b.rank),
@@ -151,125 +142,45 @@ export function Album({
         <section className="flex flex-col gap-2">
           <ChipRow>
             {(["all", "owned", "missing"] as const).map((value) => (
-              <Chip key={value} active={filters.ownership === value} onClick={() => update({ ownership: value })}>
+              <Chip key={value} active={ownership === value} onClick={() => chooseOwnership(value)}>
                 {{ all: "Tutte", owned: "Possedute", missing: "Mancanti" }[value]}
               </Chip>
             ))}
           </ChipRow>
-          <ChipRow>
-            <Chip active={filters.rarity === null} onClick={() => update({ rarity: null })}>
-              Ogni rarità
-            </Chip>
-            {rarities.map((rarity) => (
-              <Chip
-                key={rarity.rank}
-                active={filters.rarity === rarity.rank}
-                color={rarity.color}
-                onClick={() => update({ rarity: rarity.rank })}
-              >
-                {rarity.name}
-              </Chip>
-            ))}
-          </ChipRow>
-          <ChipRow>
-            <Chip active={filters.faction === null} onClick={() => update({ faction: null })}>
-              Ogni fazione
-            </Chip>
-            {Object.entries(FACTION_LABELS).map(([code, label]) => (
-              <Chip key={code} active={filters.faction === code} onClick={() => update({ faction: code })}>
-                {label}
-              </Chip>
-            ))}
-          </ChipRow>
-          <SortPicker value={filters.sort} abilities={abilities} onChange={(sort) => update({ sort })} />
+          <CardListControls
+            view={view}
+            onChange={updateView}
+            abilities={abilities}
+            traits={traits}
+            rarities={rarities}
+            extraSorts={EXTRA_SORTS}
+            layout="inline"
+          />
         </section>
 
-        {visible.length === 0 ? (
+        {groups[0].cards.length === 0 ? (
           <p className="py-8 text-center text-sm font-semibold text-muted">Nessuna carta con questi filtri.</p>
         ) : (
-          <ul className="grid grid-cols-3 gap-2">
-            {visible.map((card) => (
-              <li key={card.id}>
-                <AlbumTile
-                  card={card}
-                  owned={owned.get(card.id) ?? null}
-                  // Before the first visit nothing is new: an existing player's whole album would be.
-                  isNew={seenBefore !== null && owned.has(card.id) && !seenBefore.has(card.id)}
-                  sortAbility={sortAbility}
-                />
-              </li>
-            ))}
-          </ul>
+          groups.map((group) => (
+            <section key={group.key} className="flex flex-col gap-1.5">
+              {group.label && <CardGroupHeading label={group.label} count={group.cards.length} />}
+              <ul className="grid grid-cols-3 gap-2">
+                {group.cards.map((card) => (
+                  <li key={card.id}>
+                    <AlbumTile
+                      card={card}
+                      owned={owned.get(card.id) ?? null}
+                      // Before the first visit nothing is new: an existing player's whole album would be.
+                      isNew={seenBefore !== null && owned.has(card.id) && !seenBefore.has(card.id)}
+                      sortAbility={sortAbility}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))
         )}
       </main>
-    </div>
-  );
-}
-
-/** A bottom sheet in the game's style: a native select opens the system's menu. */
-function SortPicker({
-  value,
-  abilities,
-  onChange,
-}: {
-  value: string;
-  abilities: AbilityInfo[];
-  onChange: (sort: string) => void;
-}) {
-  const sheet = useRef<HTMLDialogElement>(null);
-  const abilityOptions = abilities.map((ability) => ({ value: `ability:${ability.code}`, label: ability.name }));
-  const current = [...SORT_OPTIONS, ...abilityOptions].find((option) => option.value === value) ?? SORT_OPTIONS[0];
-
-  function choose(sort: string) {
-    onChange(sort);
-    sheet.current?.close();
-  }
-
-  const options = (list: { value: string; label: string }[]) => (
-    <div className="flex flex-wrap gap-1.5">
-      {list.map((option) => (
-        <Chip key={option.value} active={option.value === current.value} onClick={() => choose(option.value)}>
-          {option.label}
-        </Chip>
-      ))}
-    </div>
-  );
-
-  return (
-    <div className="flex items-center gap-2 text-sm font-semibold text-muted">
-      Ordina per
-      <button
-        type="button"
-        aria-haspopup="dialog"
-        onClick={() => sheet.current?.showModal()}
-        className="input-comic flex min-w-0 flex-1 items-center justify-between gap-2 text-left text-foreground"
-      >
-        <span className="truncate">{current.label}</span>
-        <span aria-hidden className="text-comic-yellow">
-          ▾
-        </span>
-      </button>
-      <dialog
-        ref={sheet}
-        aria-label="Ordina per"
-        // The sheet's content fills it: a click on the dialog itself is on the backdrop.
-        onClick={(event) => {
-          if (event.target === sheet.current) sheet.current.close();
-        }}
-        className="m-0 mt-auto max-h-[80svh] w-full max-w-none border-0 border-t-[3px] border-foreground bg-panel p-0 text-foreground backdrop:bg-black/70"
-      >
-        <div className="flex flex-col gap-3 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-display text-2xl uppercase text-comic-yellow">Ordina per</h2>
-            <button type="button" onClick={() => sheet.current?.close()} className="btn btn-ghost">
-              Chiudi
-            </button>
-          </div>
-          {options(SORT_OPTIONS)}
-          <h3 className="section-title">Abilità (dalla più alta)</h3>
-          {options(abilityOptions)}
-        </div>
-      </dialog>
     </div>
   );
 }
@@ -398,36 +309,5 @@ function ConvertAll({
       )}
       {error &&<p className="text-sm font-semibold text-comic-magenta">{error}</p>}
     </div>
-  );
-}
-
-function ChipRow({ children }: { children: React.ReactNode }) {
-  return <div className="-mx-3 flex gap-1.5 overflow-x-auto px-3 pb-1 [scrollbar-width:none]">{children}</div>;
-}
-
-function Chip({
-  active,
-  color,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  color?: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`btn shrink-0 border-2 px-3 text-sm font-bold ${
-        active ? "border-transparent text-black" : "border-line bg-panel"
-      }`}
-      style={
-        active ? { backgroundColor: color ?? "var(--comic-yellow)" } : color ? { color, borderColor: color } : undefined
-      }
-    >
-      {children}
-    </button>
   );
 }

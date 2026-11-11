@@ -2,11 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useCardDetail } from "@/components/card-detail";
+import { CardGroupHeading, CardListControls, useCardListReference, useCardListView } from "@/components/card-list-controls";
 import { Silhouette } from "@/components/card-view";
 import { InfoTip } from "@/components/info-tip";
 import { balance } from "@/config/balance";
 import { artSrcSet } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
+import { applyCardListView, DEFAULT_CARD_LIST_VIEW, groupCardList, sortAbilityOf } from "@/lib/card-list";
 import type { CatalogCard } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
 import { deleteFormation, saveFormation, switchableVariants, type Formation, type VariantCopy } from "@/lib/match";
@@ -14,6 +16,9 @@ import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
 
 const LAST_TEAM_KEY = "o-mega.last-team";
+/** One order and set of filters for every team picker: the player sorts once for all modes. */
+const VIEW_KEY = "o-mega.team-view";
+const DEFAULT_VIEW = { ...DEFAULT_CARD_LIST_VIEW, sort: "rarity" };
 
 function loadLastTeam(key: string, owned: Map<string, string>): string[] {
   try {
@@ -65,13 +70,19 @@ export function TeamPicker(props: TeamPickerProps) {
   // A long press on a card, in the squad or in the list, shows it whole without picking it.
   const detail = useCardDetail();
 
-  const cards = useMemo(
-    () =>
-      catalog
-        .filter((card) => owned.has(card.id))
-        .sort((a, b) => b.rarity.rank - a.rarity.rank || a.code.localeCompare(b.code)),
-    [catalog, owned],
+  const [view, updateView] = useCardListView(VIEW_KEY, DEFAULT_VIEW);
+  const { abilities, traits } = useCardListReference();
+  const cards = useMemo(() => catalog.filter((card) => owned.has(card.id)), [catalog, owned]);
+  const groups = useMemo(
+    () => groupCardList(applyCardListView(cards, view, traits), view.sort, traits),
+    [cards, view, traits],
   );
+  const shownCount = groups.reduce((sum, group) => sum + group.cards.length, 0);
+  const rarities = useMemo(
+    () => [...new Map(cards.map((card) => [card.rarity.rank, card.rarity])).values()].sort((a, b) => a.rank - b.rank),
+    [cards],
+  );
+  const sortAbility = sortAbilityOf(view.sort);
   const byId = useMemo(() => new Map(catalog.map((card) => [card.id, card])), [catalog]);
   // Characters for which the player fields the pack copy instead of the protected starter one.
   const [staked, setStaked] = useState<Set<string>>(new Set());
@@ -280,7 +291,9 @@ export function TeamPicker(props: TeamPickerProps) {
       )}
 
       <div className="relative mt-2.5 flex min-h-11 items-center gap-2">
-        <h2 className="section-title text-base leading-5">Le tue carte · {cards.length}</h2>
+        <h2 className="section-title text-base leading-5">
+          Le tue carte · {shownCount < cards.length ? `${shownCount}/${cards.length}` : cards.length}
+        </h2>
         {intro && <InfoTip text={intro} />}
         {!squadSize && (
           <button
@@ -359,80 +372,104 @@ export function TeamPicker(props: TeamPickerProps) {
         <p className={`text-xs font-semibold ${message.isError ? "text-comic-magenta" : "text-comic-cyan"}`}>{message.text}</p>
       )}
 
+      <div className="mt-1">
+        <CardListControls
+          view={view}
+          onChange={updateView}
+          abilities={abilities}
+          traits={traits}
+          rarities={rarities}
+          layout="compact"
+        />
+      </div>
+
       {/* Only the cards scroll; the fade at the bottom says there are more. */}
       <div className="relative mt-1 min-h-0 flex-1">
         <ul className="absolute inset-0 grid grid-cols-3 content-start gap-x-1.5 gap-y-2 overflow-y-auto overscroll-contain pb-8 pr-1 pt-1">
-          {cards.map((card) => {
-            const position = selected.indexOf(card.id);
-            const top = Object.entries(card.stats)
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 3);
-            return (
-              <li key={card.id} className="min-w-0">
-                <button
-                  type="button"
-                  {...detail.press(card)}
-                  onClick={() => toggle(card.id)}
-                  aria-pressed={position >= 0}
-                  className={`relative flex w-full flex-col border-[3px] bg-panel text-left ${LONG_PRESS_CLASS} ${
-                    position >= 0 ? "shadow-[4px_4px_0_var(--comic-magenta)]" : ""
-                  }`}
-                  style={{ borderColor: position >= 0 ? "var(--comic-yellow)" : card.rarity.color }}
-                >
-                  <span className="relative block aspect-square bg-panel-raised">
-                    {card.art_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={withBasePath(card.art_url)}
-                        srcSet={artSrcSet(card.art_url)}
-                        // Three tiles per row inside the page padding and the gaps, minus each tile's 3px frame.
-                        sizes="calc((100vw - 58px) / 3)"
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        className="absolute inset-0 h-full w-full object-cover object-top"
-                      />
-                    ) : (
-                      <Silhouette
-                        faction={card.faction}
-                        accent={card.rarity.color}
-                        className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2"
-                      />
-                    )}
-                    <span
-                      aria-hidden
-                      className="absolute left-0.5 top-0.5 flex h-4 w-4 items-center justify-center text-[11px] font-black text-black"
-                      style={{ background: rarityFrame(card.rarity) }}
-                    >
-                      {rarityLetter(card.rarity)}
+          {shownCount === 0 && (
+            <li className="col-span-3 py-6 text-center text-sm font-semibold text-muted">Nessuna carta con questi filtri.</li>
+          )}
+          {groups.flatMap((group) => [
+            ...(group.label
+              ? [
+                  <li key={`group-${group.key}`} className="col-span-3 pt-1">
+                    <CardGroupHeading label={group.label} count={group.cards.length} />
+                  </li>,
+                ]
+              : []),
+            ...group.cards.map((card) => {
+              const position = selected.indexOf(card.id);
+              // The ability the list is sorted by comes first, then the card's best ones.
+              const top = Object.entries(card.stats)
+                .sort((a, b) => Number(b[0] === sortAbility) - Number(a[0] === sortAbility) || b[1] - a[1])
+                .slice(0, 3);
+              return (
+                <li key={card.id} className="min-w-0">
+                  <button
+                    type="button"
+                    {...detail.press(card)}
+                    onClick={() => toggle(card.id)}
+                    aria-pressed={position >= 0}
+                    className={`relative flex w-full flex-col border-[3px] bg-panel text-left ${LONG_PRESS_CLASS} ${
+                      position >= 0 ? "shadow-[4px_4px_0_var(--comic-magenta)]" : ""
+                    }`}
+                    style={{ borderColor: position >= 0 ? "var(--comic-yellow)" : card.rarity.color }}
+                  >
+                    <span className="relative block aspect-square bg-panel-raised">
+                      {card.art_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={withBasePath(card.art_url)}
+                          srcSet={artSrcSet(card.art_url)}
+                          // Three tiles per row inside the page padding and the gaps, minus each tile's 3px frame.
+                          sizes="calc((100vw - 58px) / 3)"
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className="absolute inset-0 h-full w-full object-cover object-top"
+                        />
+                      ) : (
+                        <Silhouette
+                          faction={card.faction}
+                          accent={card.rarity.color}
+                          className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2"
+                        />
+                      )}
+                      <span
+                        aria-hidden
+                        className="absolute left-0.5 top-0.5 flex h-4 w-4 items-center justify-center text-[11px] font-black text-black"
+                        style={{ background: rarityFrame(card.rarity) }}
+                      >
+                        {rarityLetter(card.rarity)}
+                      </span>
+                      {position >= 0 && (
+                        <span className="absolute right-0.5 top-0.5 flex h-6 w-6 -skew-x-8 items-center justify-center bg-comic-yellow font-display text-sm text-black">
+                          {position + 1}
+                        </span>
+                      )}
                     </span>
-                    {position >= 0 && (
-                      <span className="absolute right-0.5 top-0.5 flex h-6 w-6 -skew-x-8 items-center justify-center bg-comic-yellow font-display text-sm text-black">
-                        {position + 1}
+                    <span className="truncate px-1.5 pt-1 font-display text-[13px] uppercase leading-4">{card.name}</span>
+                    <span className="truncate px-1.5 text-[10px] font-bold leading-[13px]" style={{ color: card.rarity.color }}>
+                      {card.rarity.name}
+                      {card.power && <span className="text-muted"> · {card.power.name}</span>}
+                    </span>
+                    {conquerable && (
+                      <span
+                        className={`px-1.5 text-[10px] font-bold leading-[13px] ${
+                          isAtRisk(card.id) ? "text-comic-magenta" : "text-comic-cyan"
+                        }`}
+                      >
+                        {isAtRisk(card.id) ? "In palio" : "Protetta"}
                       </span>
                     )}
-                  </span>
-                  <span className="truncate px-1.5 pt-1 font-display text-[13px] uppercase leading-4">{card.name}</span>
-                  <span className="truncate px-1.5 text-[10px] font-bold leading-[13px]" style={{ color: card.rarity.color }}>
-                    {card.rarity.name}
-                    {card.power && <span className="text-muted"> · {card.power.name}</span>}
-                  </span>
-                  {conquerable && (
-                    <span
-                      className={`px-1.5 text-[10px] font-bold leading-[13px] ${
-                        isAtRisk(card.id) ? "text-comic-magenta" : "text-comic-cyan"
-                      }`}
-                    >
-                      {isAtRisk(card.id) ? "In palio" : "Protetta"}
+                    <span className="truncate px-1.5 pb-1 text-[10px] font-medium leading-[13px] text-muted">
+                      {top.map(([code, value]) => `${code} ${value}`).join(" · ")}
                     </span>
-                  )}
-                  <span className="truncate px-1.5 pb-1 text-[10px] font-medium leading-[13px] text-muted">
-                    {top.map(([code, value]) => `${code} ${value}`).join(" · ")}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
+                  </button>
+                </li>
+              );
+            }),
+          ])}
         </ul>
         <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-8 [background:linear-gradient(to_top,var(--background),transparent)]" />
       </div>

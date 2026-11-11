@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { PackArt, TabBar } from "@/components/comic-parts";
+import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { balance } from "@/config/balance";
 import { describeServerError } from "@/lib/errors";
 import { formatRomeDateTime } from "@/lib/events";
@@ -381,15 +382,16 @@ function BuySection({
         <p className="font-display text-xl">{price} monete</p>
         {until && <p className="text-xs font-bold leading-4">In vendita fino a {formatRomeDateTime(until)}</p>}
       </div>
-      <button
-        type="button"
-        onClick={buy}
+      <HoldToConfirmButton
+        onConfirm={buy}
         disabled={missing > 0 || buying}
-        className="btn relative min-h-13 bg-black font-display text-[22px] uppercase tracking-wide disabled:opacity-70"
+        hint={missing > 0 || buying ? "" : `Tieni premuto per comprare · ${price} monete`}
+        fillColor={colors.background}
+        className="btn min-h-13 bg-black font-display text-[22px] uppercase tracking-wide disabled:opacity-70"
         style={{ color: colors.background, boxShadow: missing > 0 || buying ? "none" : `4px 4px 0 ${colors.shadow}` }}
       >
         {buying ? "Acquisto…" : missing > 0 ? `Ti mancano ${missing} monete` : "Acquista e apri"}
-      </button>
+      </HoldToConfirmButton>
       {error && <p className="relative text-sm font-bold">{error}</p>}
     </section>
   );

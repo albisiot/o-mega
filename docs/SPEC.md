@@ -496,6 +496,7 @@ Dopo **60 secondi** in coda Conquista senza avversari, il giocatore sfida un bot
 
 - **Un pacchetto gratuito al giorno**, che scade al reset (mezzanotte `Europe/Rome`) se non aperto.
 - Pacchetto standard acquistabile con monete (default **150 monete**).
+- **Acquisti a pressione prolungata:** ogni acquisto con monete (pacchetto standard nella home e nel Negozio, pacchetti speciali) si conferma tenendo premuto il pulsante per circa un secondo (`balance.ts`, `holdToConfirm.durationMs`), mentre una barra lo riempie; un tocco o un rilascio anticipato non comprano nulla. Funziona anche da tastiera (tenendo premuto Spazio o Invio). È solo una protezione dell'interfaccia: i controlli restano tutti sul server.
 - RNG esclusivamente lato server; il risultato viene salvato prima di essere mostrato.
 - Apertura animata: carte rivelate una alla volta, animazione speciale per Alfa, Omega e varianti (§4.6).
 - Le carte vengono inserite automaticamente nella collezione.
@@ -621,7 +622,8 @@ Ogni giorno di gioco (da mezzanotte a mezzanotte `Europe/Rome`) ogni giocatore r
 ## 9. Collezione e album
 
 - Album con tutte le carte del catalogo: possedute e mancanti (sagoma).
-- Filtri per rarità, fazione e abilità; ordinamento.
+- Filtri per possesso, rarità, fazione e tratti (§4.7: nella stessa categoria basta uno dei tratti scelti, tra categorie servono tutti); ordinamento per numero, rarità, nome, copie, abilità (dalla più alta) o categoria di tratto (Origine, Natura, Gruppo), che raggruppa le carte sotto un titolo per ogni tratto.
+- Gli stessi controlli di ordinamento e filtro (senza possesso e copie) sono in ogni scelta della squadra o del mazzo: Partita, Storia, Conquista, Grande Minaccia, Allarme Triplo, Emergenza. L'ordine scelto vale per tutte le modalità per la durata della visita.
 - Dettaglio carta: abilità, potere, numero di copie, carte bloccate o protette, varianti trovate e quante restano da trovare, scheda del personaggio (vero nome, poteri e tratti, §4.7).
 - Conversione dei doppioni.
 - Gestione delle formazioni salvate.

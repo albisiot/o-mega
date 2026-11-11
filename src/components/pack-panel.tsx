@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ComicBurst, PackArt } from "@/components/comic-parts";
+import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { describeServerError } from "@/lib/errors";
 import { buyPack, claimDailyPack, type PackStatus } from "@/lib/packs";
 import { formatCountdown } from "@/lib/use-now";
@@ -115,14 +116,15 @@ export function PackPanel({ status, now, resetsAt, loadError, onFailed }: PackPa
             {status.standard_pack_price} monete · <span className="underline">probabilità</span>
           </p>
         </Link>
-        <button
-          type="button"
-          onClick={() => open("standard")}
+        <HoldToConfirmButton
+          onConfirm={() => open("standard")}
           disabled={!canBuy || opening !== null}
+          hint={opening === "standard" ? "" : "Tieni premuto"}
+          fillColor="var(--comic-yellow)"
           className="btn btn-outline shrink-0"
         >
           {opening === "standard" ? "…" : "Acquista"}
-        </button>
+        </HoldToConfirmButton>
       </div>
     </section>
   );

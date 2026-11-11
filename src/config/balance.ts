@@ -229,6 +229,11 @@ export const balance = {
   formations: {
     maxPerPlayer: 10,
   },
+
+  /** Purchases with coins: the button must be held, so a stray tap never buys. */
+  holdToConfirm: {
+    durationMs: 1000,
+  },
 } as const;
 
 export type Balance = typeof balance;
