@@ -363,6 +363,18 @@ Stesso metodo, con il catalogo delle Minacce che il server dà ai bot dopo le Mi
 
 Stesso metodo del Capitolo 3; motore delle partite e catalogo (122 personaggi, 75 Minacce con le loro regole) non sono cambiati. Il giocatore con la squadra casuale vince circa il 73%, 62%, 50%, 41% e 16% delle volte (10.000 partite con il bot Medio, 6.000 con Difficile, 4.000 con Super Pro). Il Capitolo 3, rimisurato nelle stesse condizioni, dà 77%, 67%, 56%, 45% e 21%: ogni missione è un po' più dura della corrispondente e la prima resta la più facile del capitolo. Solo Minacce di Nuova Megara, perché il capitolo resta nei quartieri alti; la prima di ogni missione è a tema (Incubo ricorrente, Ostaggio in banca, Epidemia di follia, Spia infiltrata, Mente alveare). Il boss schiera solo le voci dei Figli, forti in mente e magia, e la sua percentuale dipende moltissimo dalle Minacce (dal 3% al 95% tra le combinazioni provate): con quelle scelte il giocatore vince quasi sempre Collasso della città (98%), un round su tre la Minaccia d'apertura, e di rado gli altri tre (4-14%).
 
+**Capitolo 5, La porta:**
+
+| Missione | Avversario | Bot | Livelli | Premio |
+|---|---|---|---|---|
+| 1. Il trono di rame | Mekana e la Compagnia (1 Alfa, Mekana) | Medio | 2·5·1·4·3 | 70 monete |
+| 2. Il decreto | Attainder e l'ufficio legale | Medio | 6·1·3·2·4 | 80 monete |
+| 3. Le colonne | Il picchetto dei Custodi | Difficile | 3·5·1·4·2 | 90 monete |
+| 4. La vecchia licenza | Renata e le vecchie lastre (1 Alfa, Talos) | Difficile | 5·2·6·1·3 | 100 monete |
+| 5. Nessuno passa | Keelstone e i Custodi (2 Alfa, Keelstone e Impetus) | Super Pro | 4·1·6·2·5 | 120 monete e la carta Keelstone (Alfa) |
+
+Stesso metodo, sul catalogo attuale: 187 personaggi (65 in più dal Capitolo 4) e 75 Minacce con le loro regole. Il giocatore con la squadra casuale vince circa il 67%, 49%, 45%, 29% e 17% delle volte (10.000 partite con il bot Medio, 6.000 con Difficile, 4.000 con Super Pro). Il Capitolo 4, rimisurato nelle stesse condizioni, dà 69%, 52%, 69%, 31% e 20%: ogni missione è più dura della corrispondente e la prima resta la più facile del capitolo. **Il Capitolo 4 si è spostato:** era tarato su 73%, 62%, 50%, 41% e 16%. Lo sposta solo la squadra casuale del giocatore, che ora pesca anche i personaggi nuovi: con il giocatore limitato ai 122 personaggi di allora tornano 73%, 62%, 49% e 40%, mentre il catalogo che i bot usano per stimare i round non cambia nulla. Le missioni 2 e 4 sono diventate più dure, la 3 molto più facile; i Delta e Gamma nuovi hanno valori più a picchi dei vecchi (somma dei quadrati media circa 385 contro 320). Il Capitolo 5 è tarato sui valori nuovi, quindi la missione 3 è molto più dura della corrispondente; ritarare il Capitolo 4 resta da fare. Solo Minacce di Nuova Megara, perché il capitolo resta in città; la prima di ogni missione è a tema (Tempesta elettrica, Cospirazione globale, Assedio al municipio, Titano di metallo, Portale instabile).
+
 ### 5.12 Grande Minaccia (Boss)
 
 Modalità alternativa alla partita classica: due giocatori, o un giocatore e un bot, affrontano la stessa **Grande Minaccia**, un Boss con **5 fronti** visibili dall'inizio. Nome provvisorio. Si gioca contro i bot (4 difficoltà) o in amichevole tra giocatori (avversario casuale o codice amico); niente Conquista per ora.

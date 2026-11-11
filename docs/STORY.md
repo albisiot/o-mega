@@ -209,25 +209,25 @@ Squadre avversarie, Minacce e difficoltà si tarano con la simulazione, come nel
 
 ### Capitolo 5 — La porta
 
-*Atto III. Da costruire.*
+*Atto III. Testi nel database (migrazione `20261111233000_chapter_five_story.sql`); squadre e Minacce tarate con la simulazione (SPEC §5.11).*
 
 - **In una riga:** per fermare i Figli devi entrare nel tempio, e a difenderlo ci sono i buoni.
 - **La cosa strana:** la camera del tempio, con l'esplosione ferma a mezz'aria.
 - **Luogo:** la centrale, dove Perpetuum regge da solo il campo magnetico che tiene insieme quello che ne resta; poi la porta del tempio, dove sta Keelstone.
-- **Avversari:** la Compagnia, che difende la centrale e le sue prove; poi i Custodi, che difendono la porta; nel mezzo Renata.
+- **Avversari:** la Compagnia, che difende la centrale e le sue prove; poi i Custodi, che difendono la porta; nel mezzo Renata, che torna con la sua vecchia licenza da Reggente.
 - **Conflitto interno:** tra i Custodi, Nightward ha capito la bugia sul tempio e Codicil l'ha messa a verbale. Keelstone obbedisce e basta.
 - **Carte presentate:** Keelstone, Codicil, Sibilla.
 - **Boss:** Keelstone. Vinta la sfida della porta, per legge deve farti passare: è la prima volta che si sposta dall'Ora Zero.
-- **Rivelazione:** oltre la porta c'è la camera: una palla di luce con i detriti sospesi a mezz'aria, e al centro Holdout che tiene con le mani la pietra dell'Omega, la chiave di volta del sigillo. Moth gli porta da mangiare. Sibilla, l'intelligenza della centrale, calcola da allora quanto regge il sigillo: ogni lettera tolta lo indebolisce, e una scossa abbastanza forte farebbe cedere Holdout. Se cede, Nuova Megara salta in aria. Renata confessa: il permesso alla trivella l'aveva firmato lei.
-- **Gancio:** i Figli non vogliono le lettere per rimetterle a posto, ma per allentare il sigillo; per il colpo finale gli serve la scossa più forte di tutte, e sveglieranno il vulcano, dove c'è anche la Θ. Ottavia è con loro: le hanno promesso di portarla da suo fratello.
+- **Rivelazione:** oltre la porta c'è la camera: una palla di luce con i detriti sospesi a mezz'aria, e al centro Holdout che tiene con le mani la pietra dell'Omega, la chiave di volta del sigillo. Moth gli porta da mangiare. Sibilla, l'intelligenza della centrale, calcola da allora quanto regge il sigillo: ogni lettera tolta lo indebolisce, e una scossa abbastanza forte farebbe cedere Holdout. Se cede, Nuova Megara salta in aria. Renata confessa: il permesso alla trivella l'aveva firmato lei. Poi prende il posto di Keelstone davanti alla porta.
+- **Gancio:** i Figli non vogliono le lettere per rimetterle a posto, ma per allentare il sigillo; per il colpo finale gli serve la scossa più forte di tutte, e sveglieranno il vulcano, dove c'è anche la Θ. Ottavia è con loro: le hanno promesso di portarla da suo fratello. Nel testo finale lo racconta Moth, che entra ovunque; chi guida i Figli resta nascosto fino al Capitolo 6.
 
-| # | Missione | Situazione | Carte principali |
+| # | Missione | Situazione | Squadra avversaria (definitiva) |
 |---|---|---|---|
-| 1 | Il trono di rame | Alla centrale la Compagnia non vuole visite | Mekana, Swarf, Blackbody |
-| 2 | Il decreto | La Compagnia vuole far sparire il permesso firmato da Renata: Attainder cancella i nomi dagli archivi | Attainder, Semaphore, Byline |
-| 3 | Le colonne | I Custodi presidiano l'ingresso degli scavi | Bulwark, Hawser, Censor |
-| 4 | La licenza di Renata | Renata ha ancora le sue vecchie lastre, e le usa per fermarti | Talos, Dogwatch, Wardmother |
-| 5 | Nessuno passa | La sfida della porta contro il Reggente dei Custodi | Keelstone, Impetus, Codicil |
+| 1 | Il trono di rame | Alla centrale la Compagnia non vuole visite | Mekana, Swarf, Blackbody, Odonate, Typo |
+| 2 | Il decreto | La Compagnia vuole far sparire il permesso firmato da Renata: Attainder cancella i nomi dagli archivi | Attainder, Semaphore, Byline, Erasure, Signatory |
+| 3 | Le colonne | I Custodi presidiano l'ingresso degli scavi | Bulwark, Hawser, Censor, Plinth, Ignifuge |
+| 4 | La vecchia licenza | Renata ha ancora le sue vecchie lastre, e le usa per fermarti | Talos, Dogwatch, Wardmother, Apostate, Heirloom |
+| 5 | Nessuno passa | La sfida della porta contro il Reggente dei Custodi | Keelstone, Impetus, Codicil, Nightward, Precinct |
 
 ### Capitolo 6 — Mongibello
 
@@ -259,7 +259,7 @@ Squadre avversarie, Minacce e difficoltà si tarano con la simulazione, come nel
 | 2 | Ogni lettera smossa fa tremare la città e indica la successiva; i Figli sanno dove scavare e vogliono che la città tremi di più | Perché lo vogliono; chi li guida |
 | 3 | Il Banco falsifica le lettere con le lastre fuse, e quelle false fanno danni; la centrale accanto al tempio non è un caso | Cosa c'è nel tempio |
 | 4 | L'Ora Zero è un'esplosione ferma a metà sotto la città; Renata ne è responsabile; Ottavia cerca il fratello | Chi la tiene ferma; cosa succede se riparte |
-| 5 | Holdout tiene la chiave di volta; se cede, la città salta; le lettere sono il sigillo | Chi guida i Figli |
+| 5 | Holdout tiene la chiave di volta; se cede, la città salta; le lettere sono il sigillo; i Figli vogliono allentarlo e svegliare il vulcano, e Ottavia è con loro | Chi guida i Figli |
 | 6 | Il capo dei Figli è Nicola, il fratello di Ottavia | Come si richiude il sigillo; perché la Compagnia trivellò sapendo |
 
 ## 8. Regole di scrittura della storia
