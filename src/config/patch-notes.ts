@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "11 novembre 2026",
+    changes: [
+      "10 nuovi personaggi da trovare nei pacchetti: Busker, alieno che suona il mandolino ai semafori; Impound, carrozziere contro la doppia fila; Lagan, bestia del porto coperta di tutto quello che cade in acqua; Overdue, capotreno che arriva sempre tardi (Ultimo baluardo); Stentore, statua di piazza col megafono (Legame); Bisque, automa di porcellana che ascolta tutto (Spia); Bubalus, bufalo meccanico della Piana (Apripista); Gauger, doganiera aliena dello strappo (Annullatore); Mischance, il gatto nero che porta sfortuna (Sabotatore); e l'Omega Wirepuller, vecchio puparo che muove le persone con fili di luce (Riscossa), con il suo effetto speciale sulla carta grande.",
+    ],
+  },
+  {
     date: "10 novembre 2026",
     changes: [
       "Arrivano gli obiettivi del giorno: ogni giorno hai un obiettivo Facile, uno Medio e uno Difficile, per esempio \"Vinci 3 Minacce con un Supercattivo\" o \"Supera 5 Minacce in Emergenza\". Il progresso avanza da solo mentre giochi (le partite abbandonate non contano); a obiettivo completato riscatti il premio, monete o un pacchetto. Non ti piace un obiettivo? Puoi cambiarlo, fino a 3 volte al giorno in tutto, purché non sia già completato. A mezzanotte arrivano quelli nuovi e i premi non riscattati scadono. Li trovi nella home, sotto il pacchetto del giorno, e la barra si illumina quando c'è un premio da riscattare.",

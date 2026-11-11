@@ -289,6 +289,23 @@ Da P115 a P122: otto personaggi creati per i quattro poteri nuovi, due per poter
 | P121 | Alfa, Eroi | Slancio | **Impetus** (Custodi): parte piano, ma dopo la prima vittoria non si ferma più. | MAG 0, PSI 0, INT 1, TEC 1 |
 | P122 | Alfa, Cattivi | Slancio | **Katabatic** (Compagnia Lete): il vento che scende dal vulcano, venduto alla città come servizio climatico. | TEC 0, FUR 0, PSI 1, COM 1 |
 
+### Dagli spunti
+
+Da P123 a P132: dieci personaggi nati da immagini raccolte dall'utente (cartella `immagini varie`, copie rinominate con il nome della carta in `immagini varie/immagini utilizzate`). Le immagini sono servite solo come spunto per forma, sagoma e colori: i disegni sono nuovi, nello stile base, e niente ricorda personaggi esistenti (Impound, per esempio, ha perso i baffi e la tuta rossa che ricordavano un idraulico famoso). Sono personaggi di quartiere molto italiani: il carrozziere contro la doppia fila, il treno che arriva tardi, la statua che legge gli avvisi del Comune, il gatto nero. Poteri esistenti con i parametri già in uso; il nome in codice di Gauger viene dal compendio, dove è un doganiere. Si trovano tutti nei pacchetti.
+
+| Carta | Rarità e fazione | Potere | Personaggio | Il difetto nei valori |
+|---|---|---|---|---|
+| P123 | Delta, Neutrali | | **Busker** (Sciolti): alieno arrivato dallo strappo, suona il mandolino ai semafori e calma la folla. Sa una canzone sola. | FOR 0, COM 0, TEC 1 |
+| P124 | Delta, Eroi | | **Impound** (Lanterne): carrozziere che sfonda le auto in doppia fila davanti agli ospedali, poi le ripara nella sua officina. | INT 1, MAG 0, PSI 0 |
+| P125 | Delta, Cattivi | | **Lagan** (Sciolti): bestia del porto con la pelle incrostata di tutto quello che cade in acqua. | VEL 1, PSI 1, TEC 0 |
+| P126 | Gamma, Eroi | Ultimo baluardo | **Overdue** (Lanterne): capotreno dell'ultimo treno a vapore della notte, arriva sempre tardi ma con tutto il treno. | FUR 0, MAG 1, PSI 1 |
+| P127 | Gamma, Eroi | Legame | **Stentore** (Custodi): statua di piazza che legge ogni avviso del Comune con un megafono di bronzo, con i piedi ancora nel piedistallo. | VEL 0, FUR 0 |
+| P128 | Gamma, Cattivi | Spia | **Bisque** (Compagnia Lete): automa di porcellana che serve il caffè nelle riunioni e riferisce tutto. | RES 0, FOR 1 |
+| P129 | Beta, Eroi | Apripista | **Bubalus** (Sciolti): bufalo meccanico costruito per arare la Piana, carica chiunque la tocchi e non sa frenare. | INT 1, FUR 0, MAG 0, PSI 1 |
+| P130 | Beta, Neutrali | Annullatore | **Gauger** (Banco): doganiera aliena dello strappo, il suo timbro spegne i poteri alla frontiera; è incatenata alla scrivania. | FOR 1, VEL 1, FUR 0 |
+| P131 | Alfa, Neutrali | Sabotatore | **Mischance** (Sciolti): il gatto nero che la notte dell'Ora Zero attraversò la strada agli ingegneri; a chi gli sta davanti va storto un po' tutto. | FOR 1, ENE 1, COM 1, TEC 0 |
+| P132 | Omega, Cattivi | Riscossa | **Wirepuller** (Figli dell'Ultima): vecchio puparo che muove le persone come pupi con fili di luce; le sue mani sono diventate di legno. | FOR 0, COM 0, RES 1 |
+
 ## 6. Minacce
 
 Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richiede Forza e Tecnologia. Molti nomi attuali funzionano già e vanno solo ambientati a Nuova Megara. Il testo di colore può usare il tono di un bollettino del sismografo.
@@ -380,7 +397,7 @@ Gli effetti cambiano solo l'aspetto, mai valori o regole. L'abbinamento è in `s
 | Alfa | Olografico, inclinazione 3D | Olografico |
 | Omega | Olografico, inclinazione 3D, effetto personale | Olografico |
 
-Effetti personali Omega: Holdout l'aura, Absentia le scariche elettriche, Multitude il glitch, Mongibello le braci.
+Effetti personali Omega: Holdout l'aura, Absentia le scariche elettriche, Multitude il glitch, Mongibello le braci, Wirepuller i fili da puparo che pendono dall'alto e ogni tanto vengono tirati.
 
 ### Nomi delle carte
 

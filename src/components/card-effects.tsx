@@ -59,6 +59,7 @@ export function CardArtEffects({
       {effects.includes("tilt") && <span aria-hidden className="fx-layer fx-glare" />}
       {effects.includes("bolts") && <EffectCanvas draw={drawBolts} />}
       {effects.includes("embers") && <EffectCanvas draw={drawEmbers} />}
+      {effects.includes("threads") && <EffectCanvas draw={drawThreads} />}
     </>
   );
 }
@@ -66,7 +67,8 @@ export function CardArtEffects({
 type Draw = (context: CanvasRenderingContext2D, width: number, height: number, time: number, state: EffectState) => void;
 type Spark = { x: number; life: number; span: number; rise: number; size: number; seed: number };
 type Bolt = { born: number; ttl: number; path: [number, number][] };
-type EffectState = { sparks?: Spark[]; bolts?: Bolt[]; nextBolt?: number };
+type Thread = { x: number; length: number; seed: number; tugAt: number };
+type EffectState = { sparks?: Spark[]; bolts?: Bolt[]; nextBolt?: number; threads?: Thread[]; nextTug?: number };
 
 function EffectCanvas({ draw }: { draw: Draw }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -177,5 +179,48 @@ const drawBolts: Draw = (context, width, height, time, state) => {
     context.strokeStyle = `rgb(255 248 231 / ${fade})`;
     context.lineWidth = 1.2 * scale;
     context.stroke();
+  }
+};
+
+/** Puppet strings hanging from the top edge, four on each side so the face stays clear. */
+function newThreads(): Thread[] {
+  const slots = [0.06, 0.14, 0.23, 0.32, 0.68, 0.77, 0.86, 0.94];
+  return slots.map((x) => ({
+    x: x + (Math.random() - 0.5) * 0.04,
+    length: 0.4 + Math.random() * 0.5,
+    seed: Math.random() * 10,
+    tugAt: -Infinity,
+  }));
+}
+
+const drawThreads: Draw = (context, width, height, time, state) => {
+  const scale = width / 300;
+  const threads = (state.threads ??= newThreads());
+  // Every so often an unseen hand tugs one string up and lets it fall back.
+  if (time > (state.nextTug ?? 0)) {
+    threads[Math.floor(Math.random() * threads.length)].tugAt = time;
+    state.nextTug = time + 450 + Math.random() * 1100;
+  }
+  context.globalCompositeOperation = "lighter";
+  context.lineCap = "round";
+  context.shadowColor = "rgb(120 220 255 / 0.9)";
+  context.shadowBlur = 6 * scale;
+  for (const thread of threads) {
+    const since = (time - thread.tugAt) / 700;
+    const tug = since >= 0 && since < 1 ? Math.sin(Math.PI * since) : 0;
+    const top = thread.x * width;
+    const end = height * thread.length * (1 - 0.2 * tug);
+    const sway = Math.sin(time / 1300 + thread.seed) * 8 * scale;
+    const alpha = 0.3 + 0.45 * tug;
+    context.strokeStyle = `rgb(190 240 255 / ${alpha})`;
+    context.lineWidth = (0.8 + 0.7 * tug) * scale;
+    context.beginPath();
+    context.moveTo(top, 0);
+    context.quadraticCurveTo(top + sway * 0.3, end * 0.5, top + sway, end);
+    context.stroke();
+    context.fillStyle = `rgb(225 250 255 / ${alpha + 0.2})`;
+    context.beginPath();
+    context.arc(top + sway, end, 1.7 * scale, 0, Math.PI * 2);
+    context.fill();
   }
 };

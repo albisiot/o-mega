@@ -1,4 +1,4 @@
-export type CardEffect = "flash" | "tilt" | "holo" | "aura" | "bolts" | "embers" | "glitch";
+export type CardEffect = "flash" | "tilt" | "holo" | "aura" | "bolts" | "embers" | "glitch" | "threads";
 
 // Purely visual and tied to the rank, like the frames in rarity-theme: rarity never means power.
 const EFFECTS_BY_RANK: { minRank: number; effects: CardEffect[] }[] = [
@@ -20,6 +20,7 @@ const SIGNATURE_EFFECTS: Record<string, CardEffect> = {
   P092: "aura",
   P104: "glitch",
   P114: "bolts",
+  P132: "threads",
 };
 
 export function cardEffects(card: { code?: string; rarity: { rank: number } }, size: "lg" | "sm"): CardEffect[] {

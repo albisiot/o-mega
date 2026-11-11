@@ -1251,6 +1251,100 @@ const STYLES: Record<string, NameStyle> = {
     haze: true,
     slant: -8,
   },
+
+  // --- From the user's found images ---
+  // Busker: the alien busker's one song, golden waves over moonlit teal.
+  P123: {
+    font: "bubble",
+    fill: layers(waves("rgb(255 210 110 / 0.6)"), grad("#f4fbff", "#a9d6e0 50%", "#3c7f8f")),
+    rim: "#04161a",
+    side: ["#1d4e58", "#04161a"],
+    glow: "rgb(255 200 90 / 0.35)",
+    jitter: [[-4, 0.02], [3, -0.03], [-2, 0.03], [4, -0.02]],
+  },
+  // Impound: the body shop's sledgehammer, dented steel with a hi-vis stripe.
+  P124: {
+    font: "slab",
+    fill: layers(
+      "linear-gradient(180deg, transparent 0 56%, rgb(255 130 20 / 0.9) 56% 66%, transparent 66%)",
+      facets("#eef3f8", "#9fb0c0", "#4a5868"),
+    ),
+    rim: "#0a0e14",
+    side: ["#3a4656", "#0a0e14"],
+    jitter: [[-3, 0], [2, 0.03], [-1, -0.02], [3, 0.02], [-2, 0], [1, 0.03], [-3, -0.01]],
+  },
+  // Lagan: everything the port loses, jewels set in wet brown skin.
+  P125: {
+    font: "horror",
+    fill: layers(dots("rgb(255 220 120 / 0.8)", 0.22), dots("rgb(120 230 255 / 0.6)", 0.31), grad("#d9b48a", "#8a5a32 50%", "#2e1c0e")),
+    rim: "#0a0603",
+    side: ["#3a2412", "#0a0603"],
+    glow: "rgb(60 200 200 / 0.3)",
+  },
+  // Overdue: the late night steam train, polished brass and streaks of steam.
+  P126: {
+    font: "speed",
+    fill: layers(speedLines("rgb(255 255 255 / 0.35)"), metal("#fff6d8", "#e0b44a", "#7a5410", "#c08a28", "#ffe9a8")),
+    rim: "#060a1c",
+    side: ["#1a2850", "#060a1c"],
+    angle: 170,
+    slant: 12,
+  },
+  // Stentore: the marble statue that shouts, sound rings over mossy marble.
+  P127: {
+    font: "myth",
+    fill: layers(spiral("rgb(255 80 200 / 0.18)", "transparent"), veins("rgb(70 110 70 / 0.5)"), grad("#ffffff", "#ecebe4 50%", "#a8a596")),
+    rim: "#141410",
+    side: ["#5a5a50", "#141410"],
+    depth: 12,
+    tracking: 0.03,
+  },
+  // Bisque: painted porcelain, cobalt flowers and a hairline crack.
+  P128: {
+    font: "elegant",
+    fill: layers(cracks("rgb(40 50 90 / 0.45)", "3em 1.4em"), dots("rgb(40 80 200 / 0.55)", 0.28), grad("#ffffff", "#eef2fb 55%", "#b9c4dc")),
+    rim: "#0a1030",
+    side: ["#2a3c8a", "#0a1030"],
+    line: "#1a2a6a",
+  },
+  // Bubalus: the ploughing buffalo, rusted riveted plates and a red-hot core.
+  P129: {
+    font: "block",
+    fill: layers(dots("rgb(40 10 0 / 0.55)", 0.34), metal("#ffd6c0", "#d2603a", "#6a1a08", "#a83a18", "#ff9a6a")),
+    rim: "#140400",
+    side: ["#5a1606", "#140400"],
+    glow: "rgb(255 50 20 / 0.45)",
+    depth: 11,
+  },
+  // Gauger: the customs desk between two portals, a form grid in rift teal.
+  P130: {
+    font: "scifi",
+    fill: layers(blueprint("rgb(0 40 40 / 0.35)"), grad("#f0fffd", "#8fe6dc 50%", "#1f8f86")),
+    rim: "#021412",
+    side: ["#0e5a52", "#021412"],
+    split: ["rgb(0 220 255 / 0.45)", "rgb(255 40 190 / 0.45)"],
+  },
+  // Mischance: the black cat of bad luck, amber claw marks on a purple night.
+  P131: {
+    font: "gothic",
+    fill: layers(claws("rgb(255 180 40 / 0.55)"), grad("#d9c8ff", "#6a3aa8 45%", "#1a0a2a")),
+    rim: "#050208",
+    side: ["#2a1240", "#050208"],
+    glow: "rgb(150 70 255 / 0.4)",
+    jitter: [[-5, 0.03], [4, -0.02], [-2, 0.04], [6, -0.03], [-4, 0.01]],
+  },
+  // Wirepuller: the puppet master, glowing strings over crimson theatre velvet; the letters dangle.
+  P132: {
+    font: "anton",
+    fill: layers(
+      "repeating-linear-gradient(90deg, transparent 0 0.2em, rgb(170 240 255 / 0.8) 0.2em 0.23em)",
+      grad("#ffd0d0", "#c01830 45%", "#3a0008"),
+    ),
+    rim: "#080003",
+    side: ["#4a0610", "#080003"],
+    glow: "rgb(120 220 255 / 0.4)",
+    jitter: [[-6, 0.05], [4, -0.04], [-3, 0.07], [7, -0.02], [-5, 0.04], [3, -0.06]],
+  },
 };
 
 const FACTION_LOOK: Record<string, Pick<NameStyle, "fill" | "side">> = {

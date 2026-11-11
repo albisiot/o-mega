@@ -136,7 +136,7 @@ Poteri implementati:
 
 In Emergenza non c'è un personaggio avversario: Schermato, Nemesi, Spia, Annullatore e Davide non hanno effetto, Tuttofare e Crescendo sì.
 
-Annullatore, Davide, Crescendo e Slancio sono nati per personaggi nuovi (P115-P122, due per potere), senza togliere poteri alle carte esistenti. Da simulazione sul catalogo a 122 personaggi (20.000 partite Difficile contro Difficile, squadre casuali, con i modificatori), una squadra che ha la carta vince: Slancio 53%, Davide 50%, Annullatore 49%, Crescendo 49%; nelle stesse condizioni Sabotatore 59% e una squadra senza poteri 49%. Con due sole carte, l'Annullatore incontra di rado Sabotatore: da solo non ne riduce la forza media.
+Annullatore, Davide, Crescendo e Slancio sono nati per personaggi nuovi (P115-P122, due per potere), senza togliere poteri alle carte esistenti. Da simulazione sul catalogo a 122 personaggi (20.000 partite Difficile contro Difficile, squadre casuali, con i modificatori), una squadra che ha la carta vince: Slancio 53%, Davide 50%, Annullatore 49%, Crescendo 49%; nelle stesse condizioni Sabotatore 59% e una squadra senza poteri 49%. Con due sole carte, l'Annullatore incontra di rado Sabotatore: da solo non ne riduce la forza media. In seguito l'Annullatore è andato anche a Gauger (P130), un personaggio nuovo, e Sabotatore a Mischance (P131): tre carte ciascuno.
 
 I poteri dei prossimi aggiornamenti sono in `docs/POWERS-BACKLOG.md`: 14 sono già pronti nel motore di regole e nel database, ma nessuna carta li ha ancora.
 

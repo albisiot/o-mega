@@ -28,11 +28,12 @@ declare
   v_match uuid;
   v_state jsonb;
 begin
-  assert not exists (
-    select 1 from public.power_definitions p
+  -- Two cards each, made for the power; Gauger (P130) came later as a third Annullatore.
+  assert (
+    select jsonb_object_agg(p.code, (select count(*) from public.card_definitions d where d.power_code = p.code and d.is_active))
+    from public.power_definitions p
     where p.code in ('nullifier', 'giant_slayer', 'crescendo', 'momentum')
-      and (select count(*) from public.card_definitions d where d.power_code = p.code and d.is_active) <> 2
-  ), 'each new power is on two cards';
+  ) = '{"nullifier": 3, "giant_slayer": 2, "crescendo": 2, "momentum": 2}'::jsonb, 'cards with each new power';
   assert (select count(*) from public.card_definitions where code between 'P115' and 'P122' and is_active) = 8,
     'eight new characters';
   assert public.power_text('giant_slayer', '{"bonus": 3, "min_gap": 2}')

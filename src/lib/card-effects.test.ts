@@ -21,12 +21,14 @@ describe("cardEffects", () => {
     expect(cardEffects(card(5, "P092"), "lg")).toContain("aura");
     expect(cardEffects(card(5, "P104"), "lg")).toContain("glitch");
     expect(cardEffects(card(5, "P114"), "lg")).toContain("bolts");
+    expect(cardEffects(card(5, "P132"), "lg")).toContain("threads");
   });
 
   it("keeps small cards calm", () => {
     expect(cardEffects(card(3), "sm")).toEqual([]);
     expect(cardEffects(card(4), "sm")).toEqual(["holo"]);
     expect(cardEffects(card(5, "P060"), "sm")).toEqual(["holo"]);
+    expect(cardEffects(card(5, "P132"), "sm")).toEqual(["holo"]);
   });
 
   it("works without a code and for a new rarity above Omega", () => {
