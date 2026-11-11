@@ -306,6 +306,23 @@ Da P123 a P132: dieci personaggi nati da immagini raccolte dall'utente (cartella
 | P131 | Alfa, Neutrali | Sabotatore | **Mischance** (Sciolti): il gatto nero che la notte dell'Ora Zero attraversò la strada agli ingegneri; a chi gli sta davanti va storto un po' tutto. | FOR 1, ENE 1, COM 1, TEC 0 |
 | P132 | Omega, Cattivi | Riscossa | **Wirepuller** (Figli dell'Ultima): vecchio puparo che muove le persone come pupi con fili di luce; le sue mani sono diventate di legno. | FOR 0, COM 0, RES 1 |
 
+### Dal compendio, secondo gruppo
+
+Da P133 a P142: altre dieci schede del compendio *THE FRACTURE*, con lo stesso metodo di P105-P114 (valori in scala dalle dodici statistiche, rarità dal livello Ω, vero nome e frase dalla scheda; le frasi troppo lunghe per la carta sono accorciate). Il disegno segue il prompt per l'illustrazione della scheda (foglio CARTE): figura, luce, palette e i dettagli da leggere a misura di carta restano quelli del compendio; lo stile diventa quello base, le ambientazioni di Vesper diventano Nuova Megara e l'inquadratura tiene sempre il volto in alto. Scartate Glebe (la scheda descrive una bambina) e Numen (troppo vicino a Re Tifeo). Poteri esistenti con i parametri già in uso. Si trovano tutti nei pacchetti.
+
+| Carta | Scheda | Rarità e fazione | Potere | Personaggio | Il difetto nei valori |
+|---|---|---|---|---|---|
+| P133 | TF-207 | Delta, Eroi | | **Bascule** (Custodi): capoponti di 68 anni, l'unica che sa alzare a mano i ponti mobili del porto. | VEL 1, MAG 0, PSI 0 |
+| P134 | TF-229 | Delta, Neutrali | | **Heading** (Sciolti): ingegnera di scavo della metropolitana, tocca la roccia e sa dove la galleria regge. | COM 1, MAG 0, PSI 0 |
+| P135 | TF-163 | Delta, Cattivi | | **Hecatomb** (Figli dell'Ultima): conosce il tariffario dei tributi alle creature svegliate negli scavi. | ENE 0, PSI 1 |
+| P136 | TF-140 | Gamma, Cattivi | Schermato | **Indemnity** (Compagnia Lete): assicura contro le maledizioni, ripartendole fra tutti gli assicurati. | COM 0, ENE 1, PSI 1 |
+| P137 | TF-136 | Gamma, Eroi | Legame | **Collegium** (Lanterne): sindacalista dei portatori di rune, regge il carico di nove colleghi. | VEL 1, MAG 1, PSI 1 |
+| P138 | TF-221 | Gamma, Neutrali | Specialità (PER) | **Dowser** (Sciolti): anziana con la bacchetta di ferro, trova il punto in cui qualcuno è sparito. | ENE 0, COM 1 |
+| P139 | TF-237 | Beta, Cattivi | Implacabile | **Herma** (Banco, schierato con i Cattivi): cippo di confine vivente, esiste solo lungo i confini. | VEL 0, TEC 0, INT 1, FUR 1 |
+| P140 | TF-303 | Beta, Eroi | Ultimo baluardo | **Vulnerary** (Lanterne): guaritore che prende su di sé il tempo di guarigione degli altri. | COM 1, ENE 1 |
+| P141 | TF-393 | Alfa, Eroi | Riscossa | **Palladium** (Custodi): appeso nella Sala del Palladio regge lo scudo sulla città; quando cede, tocca al prossimo della famiglia. | VEL 0, TEC 0, FUR 1 |
+| P142 | TF-382 | Omega, Neutrali | Sfavorito | **Parabellum** (Banco): arma di undici metri su zampe da mantide, chiusa nel caveau del Banco. | PER 0, PSI 0, FUR 0, VEL 1 |
+
 ## 6. Minacce
 
 Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richiede Forza e Tecnologia. Molti nomi attuali funzionano già e vanno solo ambientati a Nuova Megara. Il testo di colore può usare il tono di un bollettino del sismografo.
@@ -397,7 +414,7 @@ Gli effetti cambiano solo l'aspetto, mai valori o regole. L'abbinamento è in `s
 | Alfa | Olografico, inclinazione 3D | Olografico |
 | Omega | Olografico, inclinazione 3D, effetto personale | Olografico |
 
-Effetti personali Omega: Holdout l'aura, Absentia le scariche elettriche, Multitude il glitch, Mongibello le braci, Wirepuller i fili da puparo che pendono dall'alto e ogni tanto vengono tirati.
+Effetti personali Omega: Holdout l'aura, Absentia le scariche elettriche, Multitude il glitch, Mongibello le braci, Wirepuller i fili da puparo che pendono dall'alto e ogni tanto vengono tirati, Parabellum il mirino di dodici lenti che si sposta sulla carta e aggancia un bersaglio.
 
 ### Nomi delle carte
 

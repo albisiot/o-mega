@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { NAME_FONTS, nameCss, nameShadow, nameStyle, nameWidth, STYLED_CODES, type NameFont } from "./card-names";
 
-const CODES = Array.from({ length: 132 }, (_, i) => `P${String(i + 1).padStart(3, "0")}`);
+const CODES = Array.from({ length: 142 }, (_, i) => `P${String(i + 1).padStart(3, "0")}`);
 const HEX = /^#[0-9a-f]{6}$/i;
 
 describe("card name styles", () => {

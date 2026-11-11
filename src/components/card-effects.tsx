@@ -60,6 +60,7 @@ export function CardArtEffects({
       {effects.includes("bolts") && <EffectCanvas draw={drawBolts} />}
       {effects.includes("embers") && <EffectCanvas draw={drawEmbers} />}
       {effects.includes("threads") && <EffectCanvas draw={drawThreads} />}
+      {effects.includes("lenses") && <EffectCanvas draw={drawLenses} />}
     </>
   );
 }
@@ -68,7 +69,15 @@ type Draw = (context: CanvasRenderingContext2D, width: number, height: number, t
 type Spark = { x: number; life: number; span: number; rise: number; size: number; seed: number };
 type Bolt = { born: number; ttl: number; path: [number, number][] };
 type Thread = { x: number; length: number; seed: number; tugAt: number };
-type EffectState = { sparks?: Spark[]; bolts?: Bolt[]; nextBolt?: number; threads?: Thread[]; nextTug?: number };
+type Sight = { x: number; y: number; toX: number; toY: number; lockedAt: number; moveAt: number };
+type EffectState = {
+  sparks?: Spark[];
+  bolts?: Bolt[];
+  nextBolt?: number;
+  threads?: Thread[];
+  nextTug?: number;
+  sight?: Sight;
+};
 
 function EffectCanvas({ draw }: { draw: Draw }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -222,5 +231,59 @@ const drawThreads: Draw = (context, width, height, time, state) => {
     context.beginPath();
     context.arc(top + sway, end, 1.7 * scale, 0, Math.PI * 2);
     context.fill();
+  }
+};
+
+const LENSES = 12;
+const LOCK_MS = 700;
+
+/** A ring of twelve lenses that drifts over the art, stops, locks on a target with a flash, then moves on. */
+const drawLenses: Draw = (context, width, height, time, state) => {
+  const scale = width / 300;
+  const sight = (state.sight ??= { x: width / 2, y: height * 0.3, toX: width / 2, toY: height * 0.3, lockedAt: -Infinity, moveAt: 0 });
+  if (time > sight.moveAt) {
+    sight.toX = width * (0.2 + Math.random() * 0.6);
+    sight.toY = height * (0.15 + Math.random() * 0.45);
+    sight.lockedAt = Infinity;
+    sight.moveAt = Infinity;
+  }
+  sight.x += (sight.toX - sight.x) * 0.05;
+  sight.y += (sight.toY - sight.y) * 0.05;
+  if (sight.lockedAt === Infinity && Math.hypot(sight.toX - sight.x, sight.toY - sight.y) < 1.5 * scale) {
+    sight.lockedAt = time;
+    sight.moveAt = time + LOCK_MS + 500 + Math.random() * 900;
+  }
+  const since = (time - sight.lockedAt) / LOCK_MS;
+  const lock = since >= 0 && since < 1 ? Math.sin(Math.PI * since) : 0;
+  const radius = width * 0.1 * (1 - 0.18 * lock);
+  const turn = time / 2400;
+  const alpha = 0.55 + 0.45 * lock;
+  context.globalCompositeOperation = "lighter";
+  context.shadowColor = "rgb(255 210 140 / 0.9)";
+  context.shadowBlur = 8 * scale;
+  context.strokeStyle = `rgb(255 236 200 / ${alpha * 0.7})`;
+  context.lineWidth = 1 * scale;
+  context.beginPath();
+  context.arc(sight.x, sight.y, radius, 0, Math.PI * 2);
+  context.stroke();
+  context.fillStyle = `rgb(255 240 210 / ${alpha})`;
+  for (let lens = 0; lens < LENSES; lens++) {
+    const angle = turn + (lens / LENSES) * Math.PI * 2;
+    context.beginPath();
+    context.arc(sight.x + Math.cos(angle) * radius, sight.y + Math.sin(angle) * radius, (1.8 + 1.2 * lock) * scale, 0, Math.PI * 2);
+    context.fill();
+  }
+  if (lock > 0) {
+    // The cross of the sight, only while it holds the target.
+    const inner = radius * 0.35;
+    const outer = radius * 0.8;
+    context.strokeStyle = `rgb(255 245 225 / ${lock})`;
+    context.lineWidth = 1.1 * scale;
+    context.beginPath();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      context.moveTo(sight.x + dx * inner, sight.y + dy * inner);
+      context.lineTo(sight.x + dx * outer, sight.y + dy * outer);
+    }
+    context.stroke();
   }
 };

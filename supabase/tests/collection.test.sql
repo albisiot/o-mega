@@ -154,7 +154,7 @@ set local role anon;
 
 do $$
 begin
-  assert (select count(*) from public.card_catalog) = 132, 'anon cannot read the album catalog';
+  assert (select count(*) from public.card_catalog) = 142, 'anon cannot read the album catalog';
   assert not exists (
     select 1 from public.card_catalog where rarity_rank > 1 and power_text is null
   ), 'a rare card has no power text in the catalog';

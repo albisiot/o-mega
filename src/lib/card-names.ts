@@ -1345,6 +1345,88 @@ const STYLES: Record<string, NameStyle> = {
     glow: "rgb(120 220 255 / 0.4)",
     jitter: [[-6, 0.05], [4, -0.04], [-3, 0.07], [7, -0.02], [-5, 0.04], [3, -0.06]],
   },
+
+  // --- From the compendium, second group ---
+  // Bascule: the bridge operator, signal red stripes on oilcloth blue.
+  P133: {
+    font: "slab",
+    fill: layers(stripes("rgb(230 40 40 / 0.55)", 135, 0.09), grad("#e8f2ff", "#5f8fd0 50%", "#1d3d73")),
+    rim: "#050d1c",
+    side: ["#1d3d73", "#050d1c"],
+  },
+  // Heading: reads the rock with her palm, orange seams in iron-grey stone.
+  P134: {
+    font: "stencil",
+    fill: layers(cracks("rgb(255 130 30 / 0.85)"), grad("#d9dce0", "#7c838c 45%", "#2c3036")),
+    rim: "#0c0d0f",
+    side: ["#3c4048", "#0c0d0f"],
+    glow: "rgb(255 120 20 / 0.35)",
+  },
+  // Hecatomb: the tribute tariff, tally marks over felt grey turning to red.
+  P135: {
+    font: "gothic",
+    fill: layers(
+      "repeating-linear-gradient(90deg, rgb(120 10 10 / 0.5) 0 0.04em, transparent 0.04em 0.16em)",
+      grad("#e6e2dc", "#8a8580 50%", "#5a1010"),
+    ),
+    rim: "#0e0505",
+    side: ["#4a0e0e", "#0e0505"],
+  },
+  // Indemnity: the curse policy, gold ruling on bottle green.
+  P136: {
+    font: "elegant",
+    fill: layers(stripes("rgb(255 210 90 / 0.5)", 180, 0.02), grad("#f2fff6", "#3c8a5a 50%", "#0e2e1c")),
+    rim: "#030c07",
+    side: ["#14402a", "#030c07"],
+    line: "#d9b24a",
+  },
+  // Collegium: the rune bearers' union, chalk and flag red over iron.
+  P137: {
+    font: "anton",
+    fill: layers(bricks("rgb(30 30 34 / 0.45)"), grad("#ffffff", "#e8e4dc 30%", "#d22a2a 60%", "#5a0c0c")),
+    rim: "#140404",
+    side: ["#5a5a62", "#140404"],
+    tracking: 0.03,
+  },
+  // Dowser: the trembling iron rod, rust waves on indigo.
+  P138: {
+    font: "comic",
+    fill: layers(waves("rgb(220 110 50 / 0.6)"), grad("#e6e8ff", "#5a62c0 50%", "#1c1f52")),
+    rim: "#06071a",
+    side: ["#2a2f7a", "#06071a"],
+  },
+  // Herma: the boundary stone, travertine with moss.
+  P139: {
+    font: "block",
+    fill: layers(grain("rgb(80 110 60 / 0.35)"), veins("rgb(70 110 60 / 0.55)"), grad("#f6f1e4", "#cfc6ae 50%", "#8a836e")),
+    rim: "#16140e",
+    side: ["#5e5a4a", "#16140e"],
+    depth: 12,
+    angle: 90,
+  },
+  // Vulnerary: the healer who takes the wound's time, linen stitches and copper.
+  P140: {
+    font: "bubble",
+    fill: layers(stitches("rgb(60 70 140 / 0.55)"), grad("#fbf6ea", "#d8ccb0 50%", "#b06a3a")),
+    rim: "#0a1a1a",
+    side: ["#2e6a6a", "#0a1a1a"],
+  },
+  // Palladium: the shield over the city, brass under a pale blue dome.
+  P141: {
+    font: "myth",
+    fill: layers(spiral("rgb(160 210 255 / 0.25)", "transparent"), metal("#fff8e0", "#e6c25a", "#7a5a12", "#c09a32", "#fff0b8")),
+    rim: "#060a1c",
+    side: ["#1a2a5a", "#060a1c"],
+    glow: "rgb(140 200 255 / 0.45)",
+  },
+  // Parabellum: the twelve-lens weapon, ceramic dots on burnished brass.
+  P142: {
+    font: "scifi",
+    fill: layers(dots("rgb(255 240 210 / 0.6)", 0.3), metal("#fffaf0", "#d8b468", "#6a4a14", "#b08a40", "#f6ead2")),
+    rim: "#0e0a04",
+    side: ["#5a4214", "#0e0a04"],
+    tracking: 0.05,
+  },
 };
 
 const FACTION_LOOK: Record<string, Pick<NameStyle, "fill" | "side">> = {
