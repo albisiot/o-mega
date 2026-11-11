@@ -28,12 +28,14 @@ declare
   v_match uuid;
   v_state jsonb;
 begin
-  -- Two cards each, made for the power; Gauger (P130) came later as a third Annullatore.
+  -- Two cards each, made for the power; later characters took them too: Gauger (P130)
+  -- and Injunction (P179) Annullatore, Miliarium (P161) and Holloway (P177) Crescendo,
+  -- Quarantine (P182) Slancio.
   assert (
     select jsonb_object_agg(p.code, (select count(*) from public.card_definitions d where d.power_code = p.code and d.is_active))
     from public.power_definitions p
     where p.code in ('nullifier', 'giant_slayer', 'crescendo', 'momentum')
-  ) = '{"nullifier": 3, "giant_slayer": 2, "crescendo": 2, "momentum": 2}'::jsonb, 'cards with each new power';
+  ) = '{"nullifier": 4, "giant_slayer": 2, "crescendo": 4, "momentum": 3}'::jsonb, 'cards with each new power';
   assert (select count(*) from public.card_definitions where code between 'P115' and 'P122' and is_active) = 8,
     'eight new characters';
   assert public.power_text('giant_slayer', '{"bonus": 3, "min_gap": 2}')

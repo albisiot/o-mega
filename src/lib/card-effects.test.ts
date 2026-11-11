@@ -23,6 +23,9 @@ describe("cardEffects", () => {
     expect(cardEffects(card(5, "P114"), "lg")).toContain("bolts");
     expect(cardEffects(card(5, "P132"), "lg")).toContain("threads");
     expect(cardEffects(card(5, "P142"), "lg")).toContain("lenses");
+    expect(cardEffects(card(5, "P185"), "lg")).toContain("threads");
+    expect(cardEffects(card(5, "P186"), "lg")).toContain("embers");
+    expect(cardEffects(card(5, "P187"), "lg")).toContain("ripples");
   });
 
   it("keeps small cards calm", () => {

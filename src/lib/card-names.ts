@@ -1427,6 +1427,340 @@ const STYLES: Record<string, NameStyle> = {
     side: ["#5a4214", "#0e0a04"],
     tracking: 0.05,
   },
+  // --- From the compendium, third group ---
+  // Abdicant: the off-duty paramedic, a reflective band on signal orange.
+  P143: {
+    font: "stencil",
+    fill: layers("linear-gradient(180deg, transparent 0 52%, rgb(220 255 220 / 0.8) 52% 60%, transparent 60%)", grad("#ffd2a8", "#ff7a1a 50%", "#8a3a06")),
+    rim: "#0a1a10",
+    side: ["#2e5a3a", "#0a1a10"],
+  },
+  // Dosimeter: the sensor technician, gauge lines on instrument green.
+  P144: {
+    font: "scifi",
+    fill: layers(scanlines("rgb(0 40 30 / 0.35)"), grad("#e8fff4", "#7fd6b0 50%", "#1f5a46")),
+    rim: "#04140e",
+    side: ["#1f5a46", "#04140e"],
+  },
+  // Undercroft: the service tunnels, old brick.
+  P145: {
+    font: "block",
+    fill: layers(bricks("rgb(60 30 10 / 0.4)"), grad("#f2ead8", "#b08a5a 50%", "#4a3218")),
+    rim: "#120a04",
+    side: ["#4a3218", "#120a04"],
+  },
+  // Ropework: the roped squad, stitched rope on brick red.
+  P146: {
+    font: "anton",
+    fill: layers(stitches("rgb(30 10 5 / 0.55)"), grad("#fff4ea", "#c8644a 50%", "#5a1e10")),
+    rim: "#0a0402",
+    side: ["#3a1a10", "#0a0402"],
+  },
+  // Isonomy: the activist's voice, sound waves on megaphone yellow.
+  P147: {
+    font: "comic",
+    fill: layers(waves("rgb(120 40 0 / 0.5)"), grad("#ffffff", "#ffd23a 50%", "#c05a00")),
+    rim: "#1e0e00",
+    side: ["#7a3a00", "#1e0e00"],
+    tracking: 0.03,
+  },
+  // Ultravires: the public defender, a ruled brief in violet.
+  P148: {
+    font: "elegant",
+    fill: layers(blueprint("rgb(40 30 90 / 0.3)"), grad("#f4f0ff", "#9a8ad0 50%", "#3a2a6a")),
+    rim: "#0c0820",
+    side: ["#3a2a6a", "#0c0820"],
+    line: "#c9b06a",
+  },
+  // Custos: the butler of the archives, ruled ledger paper.
+  P149: {
+    font: "myth",
+    fill: layers(stripes("rgb(80 60 20 / 0.3)", 180, 0.02), grad("#fff6e0", "#d6c08a 50%", "#6a5426")),
+    rim: "#140f04",
+    side: ["#5a4620", "#140f04"],
+  },
+  // Blotter: the crime reporter, newsprint dots on camel.
+  P150: {
+    font: "slab",
+    fill: layers(dots("rgb(40 30 20 / 0.4)", 0.18), grad("#fff0dc", "#c99a6a 50%", "#5a3a1e")),
+    rim: "#120a04",
+    side: ["#4a2e14", "#120a04"],
+  },
+  // Jurat: the marine loss inspector, sea waves on steel blue.
+  P151: {
+    font: "bubble",
+    fill: layers(waves("rgb(255 255 255 / 0.45)"), grad("#e8f6ff", "#6aa8c8 50%", "#1c4a66")),
+    rim: "#061620",
+    side: ["#1c4a66", "#061620"],
+  },
+  // Higgler: the pedlar's cart, dusty sand under tarpaulin blue.
+  P152: {
+    font: "horror",
+    fill: layers(grain("rgb(90 60 20 / 0.35)"), grad("#fff6d8", "#d8b46a 50%", "#6a4a1e")),
+    rim: "#0a1622",
+    side: ["#3a5a7a", "#0a1622"],
+  },
+  // Recusant: the recovery agent's tapes, grey screen lines.
+  P153: {
+    font: "pixel",
+    fill: layers(scanlines("rgb(20 20 25 / 0.35)"), grad("#eef0f2", "#9aa0a8 50%", "#3a3e46")),
+    rim: "#0c0e12",
+    side: ["#3a3e46", "#0c0e12"],
+  },
+  // Periplus: the moving map, a survey grid in sea blue.
+  P154: {
+    font: "speed",
+    fill: layers(blueprint("rgb(20 40 60 / 0.4)"), grad("#f6fbff", "#a8c8e0 50%", "#3a5a7a")),
+    rim: "#081420",
+    side: ["#2a4a6a", "#081420"],
+    slant: 8,
+  },
+  // Almoner: the garden of sorrow, green veins of roots.
+  P155: {
+    font: "gothic",
+    fill: layers(veins("rgb(40 90 40 / 0.5)"), grad("#f6ffe8", "#9ad07a 50%", "#2a5a1a")),
+    rim: "#081a04",
+    side: ["#2a5a1a", "#081a04"],
+  },
+  // Signatory: the admiral's pen, gold braid on navy.
+  P156: {
+    font: "elegant",
+    fill: layers(stripes("rgb(255 215 120 / 0.5)", 90, 0.03), grad("#eef2ff", "#3a4a8a 50%", "#0e1438")),
+    rim: "#050818",
+    side: ["#1a2458", "#050818"],
+    line: "#e6c46a",
+  },
+  // Hollowbone: the colossus hunter, cracked old bone.
+  P157: {
+    font: "horror",
+    fill: layers(cracks("rgb(60 40 20 / 0.6)"), grad("#fffaf0", "#e0d6be 50%", "#7a6a4a")),
+    rim: "#0c1208",
+    side: ["#3a4a2a", "#0c1208"],
+  },
+  // Contumax: the old villain who makes it rain, drizzle on storm grey.
+  P158: {
+    font: "gothic",
+    fill: layers(drips("rgb(120 160 200 / 0.6)"), grad("#e6eef6", "#6a7a8a 50%", "#1e2630")),
+    rim: "#080c10",
+    side: ["#2a3440", "#080c10"],
+  },
+  // Erasure: the live broadcast, a split signal in studio pink.
+  P159: {
+    font: "scifi",
+    fill: layers(scanlines("rgb(60 0 30 / 0.3)"), grad("#ffffff", "#ff7ab0 50%", "#7a1040")),
+    rim: "#14020a",
+    side: ["#5a0c30", "#14020a"],
+    split: ["rgb(0 255 255 / 0.4)", "rgb(255 0 120 / 0.4)"],
+  },
+  // Theriarch: the priestess of the blind amphibian, fish scales.
+  P160: {
+    font: "myth",
+    fill: layers(scales("rgb(40 90 80 / 0.55)"), grad("#eafff8", "#6ab8a0 50%", "#1a4a3e")),
+    rim: "#041410",
+    side: ["#1a4a3e", "#041410"],
+  },
+  // Miliarium: the prophet of milestones, road-stone grey.
+  P161: {
+    font: "block",
+    fill: layers(stripes("rgb(60 60 60 / 0.4)", 0, 0.05), grad("#f4f4f0", "#bcb8a8 50%", "#5a564a")),
+    rim: "#100e0a",
+    side: ["#4a463a", "#100e0a"],
+  },
+  // Praecursor: the rescuer who arrives first, speed lines on rescue orange.
+  P162: {
+    font: "speed",
+    fill: layers(speedLines("rgb(255 255 255 / 0.4)"), grad("#ffffff", "#ff8a2a 50%", "#a03a00")),
+    rim: "#200a00",
+    side: ["#8a3000", "#200a00"],
+    slant: 15,
+  },
+  // Refector: the restorer of spells, resin veins on sage.
+  P163: {
+    font: "elegant",
+    fill: layers(veins("rgb(140 100 40 / 0.5)"), grad("#f8f2e0", "#a8b48a 50%", "#4a5a32")),
+    rim: "#10140a",
+    side: ["#4a5a32", "#10140a"],
+  },
+  // Subpoena: the reader of old scenes, grainy mustard.
+  P164: {
+    font: "stencil",
+    fill: layers(dots("rgb(255 220 120 / 0.5)", 0.2), grad("#fff6d6", "#d0a83a 50%", "#5a4410")),
+    rim: "#121214",
+    side: ["#5a5a5e", "#121214"],
+  },
+  // Interpres: the translator between people and machines, brass circuits.
+  P165: {
+    font: "scifi",
+    fill: layers(circuit("rgb(255 220 150 / 0.6)"), grad("#fffaf0", "#d8a85a 50%", "#6a4a1a")),
+    rim: "#140e04",
+    side: ["#6a4a1a", "#140e04"],
+  },
+  // Histrio: the actor, stars of the film set on maroon.
+  P166: {
+    font: "comic",
+    fill: layers(stars("rgb(255 240 200 / 0.7)"), grad("#ffe6e6", "#a83a4a 50%", "#3a0a14")),
+    rim: "#14040a",
+    side: ["#5a1a24", "#14040a"],
+  },
+  // Necropsy: the coroner, cold tiles of the morgue.
+  P167: {
+    font: "anton",
+    fill: layers(scanlines("rgb(120 140 160 / 0.3)"), grad("#f6fbff", "#c8d6e0 50%", "#6a7a88")),
+    rim: "#10161c",
+    side: ["#4a5a68", "#10161c"],
+  },
+  // Hireling: the night shift, hazard stripes on hi-vis yellow.
+  P168: {
+    font: "speed",
+    fill: layers(stripes("rgb(30 30 60 / 0.5)", 135, 0.1), grad("#ffffd0", "#ffe23a 50%", "#a08a00")),
+    rim: "#060818",
+    side: ["#1a2050", "#060818"],
+    slant: 10,
+  },
+  // Tourniquet: the clandestine doctor, red stitches on bandage white.
+  P169: {
+    font: "bubble",
+    fill: layers(stitches("rgb(160 30 30 / 0.55)"), grad("#ffffff", "#e8e0d8 50%", "#a89888")),
+    rim: "#1a0404",
+    side: ["#6a1a1a", "#1a0404"],
+  },
+  // Pentimento: the painter who cannot paint badly, brushed rose.
+  P170: {
+    font: "elegant",
+    fill: layers(grain("rgb(160 60 120 / 0.35)"), grad("#fff0f6", "#e07aa8 50%", "#6a1a44")),
+    rim: "#18040e",
+    side: ["#6a1a44", "#18040e"],
+  },
+  // Leeward: the basalt mooring man, storm waves on dark stone.
+  P171: {
+    font: "block",
+    fill: layers(waves("rgb(200 230 255 / 0.5)"), grad("#e6e6ea", "#5a5a64 50%", "#1a1a20")),
+    rim: "#080c10",
+    side: ["#2a3a4a", "#080c10"],
+  },
+  // Portitor: the rescuer with a door on his back, brick and brass.
+  P172: {
+    font: "slab",
+    fill: layers(bricks("rgb(60 30 10 / 0.4)"), grad("#fff4e0", "#c89a4a 50%", "#5a3a10")),
+    rim: "#140c02",
+    side: ["#5a3a10", "#140c02"],
+  },
+  // Sanctuary: the pergola of asylum, green tendrils on straw.
+  P173: {
+    font: "myth",
+    fill: layers(veins("rgb(60 110 40 / 0.5)"), grad("#fbf3e0", "#c8b07a 50%", "#6a5a2a")),
+    rim: "#0c1608",
+    side: ["#3a5a2a", "#0c1608"],
+  },
+  // Noophage: the predator of ideas, violet claw marks on bone grey.
+  P174: {
+    font: "horror",
+    fill: layers(claws("rgb(160 120 255 / 0.55)"), grad("#e8e6f0", "#6a6680 50%", "#1a1828")),
+    rim: "#08060e",
+    side: ["#2a2640", "#08060e"],
+  },
+  // Eudaemon: the curator of happiness, porcelain glaze and gold.
+  P175: {
+    font: "elegant",
+    fill: layers(dots("rgb(255 200 220 / 0.5)", 0.24), grad("#ffffff", "#f6e6c8 50%", "#c8a060")),
+    rim: "#1e1606",
+    side: ["#8a6a30", "#1e1606"],
+    glow: "rgb(255 230 150 / 0.4)",
+  },
+  // Hospes: the host, evening velvet in wine red.
+  P176: {
+    font: "gothic",
+    fill: layers(stripes("rgb(80 0 30 / 0.45)", 90, 0.05), grad("#ffe6ee", "#a01a4a 50%", "#2a0410")),
+    rim: "#10020a",
+    side: ["#4a0818", "#10020a"],
+  },
+  // Holloway: the closed metro line, flickering platform green.
+  P177: {
+    font: "pixel",
+    fill: layers(scanlines("rgb(0 40 0 / 0.35)"), grad("#e8ffe8", "#5ab05a 50%", "#123a12")),
+    rim: "#020a02",
+    side: ["#123a12", "#020a02"],
+    split: ["rgb(120 255 120 / 0.35)", "transparent"],
+  },
+  // Clepsydra: the hourglass automaton, amber rings on bronze.
+  P178: {
+    font: "myth",
+    fill: layers(spiral("rgb(255 180 60 / 0.3)", "transparent"), grad("#fff6e0", "#e0a040 50%", "#5a3a0a")),
+    rim: "#080e08",
+    side: ["#2a3a2a", "#080e08"],
+  },
+  // Injunction: the halted site, red barrier stripes on travertine.
+  P179: {
+    font: "stencil",
+    fill: layers(stripes("rgb(200 40 40 / 0.5)", 45, 0.08), grad("#f6f6f0", "#c8c4b0 50%", "#6a6450")),
+    rim: "#100e0a",
+    side: ["#4a463a", "#100e0a"],
+  },
+  // Groma: the sacred surveyor, the ancient grid in terracotta.
+  P180: {
+    font: "myth",
+    fill: layers(blueprint("rgb(120 60 30 / 0.45)"), grad("#fff4e8", "#c87a4a 50%", "#5a2a10")),
+    rim: "#160802",
+    side: ["#5a2a10", "#160802"],
+    tracking: 0.04,
+  },
+  // Principal: the walking ledger, nailed brass plates.
+  P181: {
+    font: "block",
+    fill: layers(stripes("rgb(80 50 10 / 0.35)", 180, 0.03), metal("#fff4d0", "#e0b040", "#6a4a0a", "#b08a30", "#ffe8a0")),
+    rim: "#140e02",
+    side: ["#5a3e10", "#140e02"],
+    depth: 11,
+  },
+  // Quarantine: the man in the sphere, a cell lattice in clear cyan.
+  P182: {
+    font: "bubble",
+    fill: layers(honeycomb("rgb(140 230 255 / 0.5)"), grad("#f4ffff", "#9ae6e6 50%", "#2a7a8a")),
+    rim: "#06181c",
+    side: ["#2a6a7a", "#06181c"],
+    glow: "rgb(140 230 255 / 0.4)",
+  },
+  // Mainstay: the colossus with trees on its back, moss on rock.
+  P183: {
+    font: "block",
+    fill: layers(veins("rgb(40 80 30 / 0.5)"), grad("#eef0e0", "#8a9a6a 50%", "#3a4a28")),
+    rim: "#0c1008",
+    side: ["#3a4a28", "#0c1008"],
+    depth: 13,
+    angle: 90,
+  },
+  // Antecessor: the sovereign of soft stone, golden seams.
+  P184: {
+    font: "myth",
+    fill: layers(cracks("rgb(255 210 120 / 0.6)"), grad("#f8f0e0", "#b8a888 50%", "#5a4e3a")),
+    rim: "#14100a",
+    side: ["#5a4e3a", "#14100a"],
+    depth: 12,
+  },
+  // Ordito: the loom of durations, taut linen threads on dusk violet.
+  P185: {
+    font: "elegant",
+    fill: layers("repeating-linear-gradient(90deg, transparent 0 0.12em, rgb(255 250 230 / 0.7) 0.12em 0.14em)", grad("#f6eef8", "#8a6aa8 50%", "#2a1a40")),
+    rim: "#0c0818",
+    side: ["#3a2a58", "#0c0818"],
+    glow: "rgb(255 240 210 / 0.35)",
+  },
+  // Mordacchia: the muzzled beast, cracked ceramic on ash grey.
+  P186: {
+    font: "horror",
+    fill: layers(cracks("rgb(255 255 255 / 0.6)"), grad("#e6e6e6", "#7a7a7a 50%", "#2a2a2a")),
+    rim: "#0a0a0a",
+    side: ["#3a3a3a", "#0a0a0a"],
+    glow: "rgb(255 120 40 / 0.35)",
+  },
+  // Ansa: the serpent that closes the gulf, salt-crusted scales.
+  P187: {
+    font: "anton",
+    fill: layers(scales("rgb(40 80 90 / 0.5)"), grad("#f0fbff", "#5ab0c0 50%", "#123a44")),
+    rim: "#03101a",
+    side: ["#123a44", "#03101a"],
+    depth: 11,
+  },
 };
 
 const FACTION_LOOK: Record<string, Pick<NameStyle, "fill" | "side">> = {

@@ -323,6 +323,58 @@ Da P133 a P142: altre dieci schede del compendio *THE FRACTURE*, con lo stesso m
 | P141 | TF-393 | Alfa, Eroi | Riscossa | **Palladium** (Custodi): appeso nella Sala del Palladio regge lo scudo sulla città; quando cede, tocca al prossimo della famiglia. | VEL 0, TEC 0, FUR 1 |
 | P142 | TF-382 | Omega, Neutrali | Sfavorito | **Parabellum** (Banco): arma di undici metri su zampe da mantide, chiusa nel caveau del Banco. | PER 0, PSI 0, FUR 0, VEL 1 |
 
+### Dal compendio, terzo gruppo
+
+Da P143 a P187: quarantacinque schede del compendio, con lo stesso metodo dei due gruppi precedenti (valori in scala dalle statistiche, rarità dal livello Ω, vero nome e frase dalla scheda, frasi accorciate per la carta, disegno dal prompt del foglio CARTE nello stile base e a Nuova Megara). Molti Delta sono persone senza Segno, di mestiere: nel compendio hanno statistiche simili, e la carta le riporta così. Ordito, Mordacchia e Ansa tengono il nome in codice italiano del compendio, perché le schede Ω-V con nome inglese erano fenomeni senza figura. Scartate Unwritten (un uomo senza volto con cappello e cappotto ricorda un personaggio esistente) e, per non avere troppi funzionari, Surrogate, Overtime, Floodline, Mulct e Misericord. Poteri esistenti con i parametri già in uso. Si trovano tutti nei pacchetti.
+
+| Carta | Scheda | Rarità e fazione | Potere | Personaggio | Il difetto nei valori |
+|---|---|---|---|---|---|
+| P143 | TF-112 | Delta, Eroi |  | **Abdicant** (Lanterne): autista d'ambulanza, erede di supereroi che ha rinunciato al debutto. | PER 0, MAG 0, PSI 0, ENE 1 |
+| P144 | TF-173 | Delta, Eroi |  | **Dosimeter** (Custodi): tecnica che entra ogni giorno nelle zone dello strappo. | ENE 0, PSI 0, COM 0, MAG 1 |
+| P145 | TF-298 | Delta, Eroi |  | **Undercroft** (Lanterne): soccorritrice dei cunicoli sotto i palazzi nobili. | MAG 0, PSI 0, PER 1, ENE 1 |
+| P146 | TF-286 | Delta, Eroi |  | **Ropework** (Custodi): squadra di soccorso legata in cordata. | ENE 0, PSI 0, MAG 1, COM 1 |
+| P147 | TF-347 | Delta, Eroi |  | **Isonomy** (Lanterne): attivista col megafono per chi non ha il Segno. | MAG 0, ENE 1 |
+| P148 | TF-300 | Delta, Eroi |  | **Ultravires** (Custodi): avvocata d'ufficio, distingue i ricordi riscritti. | MAG 0, PSI 0, ENE 1 |
+| P149 | TF-070 | Delta, Neutrali |  | **Custos** (Banco): maggiordomo e archivista di una casata. | MAG 0, PSI 0, ENE 1 |
+| P150 | TF-199 | Delta, Neutrali |  | **Blotter** (Sciolti): cronista di nera. | MAG 0, PSI 0, COM 0, ENE 1 |
+| P151 | TF-245 | Delta, Neutrali |  | **Jurat** (Banco): ispettore di sinistri marittimi. | MAG 0, PSI 0, ENE 1, COM 1 |
+| P152 | TF-355 | Delta, Neutrali |  | **Higgler** (Sciolti): ambulante che porta con sé l'aria di un altro mondo. | ENE 0, PSI 0, MAG 1, COM 1 |
+| P153 | TF-190 | Delta, Neutrali |  | **Recusant** (Sciolti): agente dei recuperi con un archivio segreto. | ENE 0, PSI 0, MAG 1 |
+| P154 | TF-161 | Delta, Neutrali |  | **Periplus** (Banco): cartografo di una costa che non sta ferma. | MAG 0, PSI 0, ENE 1, COM 1 |
+| P155 | TF-175 | Delta, Cattivi |  | **Almoner** (Compagnia Lete): sovrintendente dei giardini che bevono il dolore. | MAG 0, PSI 0, ENE 1 |
+| P156 | TF-440 | Delta, Cattivi |  | **Signatory** (Compagnia Lete): ammiraglia della flotta del porto, firma solo ciò che ha letto. | ENE 0, PSI 0, MAG 1 |
+| P157 | TF-093 | Delta, Cattivi |  | **Hollowbone** (Sciolti, schierato con i Cattivi): cacciatore di colossi, ne vende le ossa. | PER 0, MAG 0, PSI 0, VEL 1, ENE 1 |
+| P158 | TF-115 | Gamma, Cattivi | Nemesi | **Contumax** (Sciolti, schierato con i Cattivi): vecchio supercattivo diventato opinionista in TV. | FOR 1, VEL 1, MAG 1, PSI 1 |
+| P159 | TF-078 | Gamma, Cattivi | Spia | **Erasure** (Compagnia Lete): conduttrice di Stato, riscrive i ricordi in diretta. | COM 0, ENE 1, MAG 1 |
+| P160 | TF-166 | Gamma, Cattivi | Affinità (Potere) | **Theriarch** (Figli dell'Ultima): sacerdotessa del culto di un anfibio cieco. | ENE 1, PSI 1, COM 1, TEC 1 |
+| P161 | TF-023 | Gamma, Cattivi | Crescendo | **Miliarium** (Figli dell'Ultima): profeta delle pietre miliari. | ENE 1, PSI 1, TEC 1 |
+| P162 | TF-278 | Gamma, Eroi | Apripista | **Praecursor** (Custodi): soccorritrice che arriva prima dell'incidente. | FOR 0, COM 0, MAG 1, PSI 1 |
+| P163 | TF-143 | Gamma, Eroi | Specialità (MAG) | **Refector** (Lanterne): restauratrice di incantesimi antichi. | VEL 0, COM 0, ENE 1, PSI 1 |
+| P164 | TF-290 | Gamma, Eroi | Spia | **Subpoena** (Lanterne): documentarista che ricostruisce le scene. | COM 0, ENE 1, MAG 1, PSI 1 |
+| P165 | TF-092 | Gamma, Eroi | Tuttofare | **Interpres** (Custodi): traduttrice fra persone e macchine. | ENE 1, MAG 1, COM 1 |
+| P166 | TF-345 | Gamma, Neutrali | Legame | **Histrio** (Sciolti): attore che al cinema fa un eroe vero. | TEC 0, ENE 1, MAG 1 |
+| P167 | TF-018 | Gamma, Neutrali | Specialità (INT) | **Necropsy** (Banco): medico legale delle anomalie. | COM 0, ENE 1, MAG 1 |
+| P168 | TF-244 | Gamma, Neutrali | Specialità (VEL) | **Hireling** (Sciolti): portuale del turno di notte, il tempo le scorre più lento. | PER 0, MAG 1, PSI 1, COM 1 |
+| P169 | TF-065 | Gamma, Neutrali | Schermato | **Tourniquet** (Sciolti): medico clandestino che prende su di sé il dolore. | MAG 1, PSI 1 |
+| P170 | TF-177 | Gamma, Neutrali | Terreno favorevole | **Pentimento** (Banco): ritrattista del Comune che non sa dipingere male. | COM 0, VEL 1, ENE 1, PSI 1 |
+| P171 | TF-251 | Beta, Eroi | Ultimo baluardo | **Leeward** (Lanterne): ormeggiatore del Molo Nove dalla pelle di basalto. | VEL 1, PSI 1, FUR 1 |
+| P172 | TF-277 | Beta, Eroi | Apripista | **Portitor** (Custodi): soccorritore con una porta legata sulla schiena. | COM 0, PSI 1 |
+| P173 | TF-288 | Beta, Eroi | Legame | **Sanctuary** (Lanterne): dà asilo agli anomali feriti. | COM 0, PSI 1 |
+| P174 | TF-269 | Beta, Cattivi | Affinità (Mente) | **Noophage** (Figli dell'Ultima): predatore senza occhi che caccia le idee. | TEC 0, RES 1, MAG 1 |
+| P175 | TF-097 | Beta, Cattivi | Implacabile | **Eudaemon** (Compagnia Lete): curatore della felicità pubblica. | MAG 1, COM 1 |
+| P176 | TF-063 | Beta, Cattivi | Terreno favorevole | **Hospes** (Figli dell'Ultima): l'ospite che, invitato, diventa padrone di casa. | TEC 0, PSI 1 |
+| P177 | TF-015 | Beta, Neutrali | Crescendo | **Holloway** (Sciolti): entità fatta di pendolari nella metro chiusa. | TEC 0, INT 1, PSI 1 |
+| P178 | TF-034 | Beta, Neutrali | Specialità (TEC) | **Clepsydra** (Banco): automa a clessidra che ripara le rovine. | VEL 0, COM 0, PSI 1, FUR 1 |
+| P179 | TF-227 | Beta, Neutrali | Annullatore | **Injunction** (Banco): ispettrice della Soprintendenza, blocca i cantieri. | COM 0, PSI 1 |
+| P180 | TF-236 | Alfa, Cattivi | Veggente | **Groma** (Figli dell'Ultima): agrimensora sacra, rimette in vigore il catasto antico. | ENE 1, PSI 1, COM 1 |
+| P181 | TF-394 | Alfa, Cattivi | Sabotatore | **Principal** (Banco, schierato con i Cattivi): il registro degli incantesimi che cammina e riscuote. | VEL 0, TEC 0, FUR 0, ENE 1, PSI 1 |
+| P182 | TF-283 | Alfa, Eroi | Slancio | **Quarantine** (Custodi): chiuso in una sfera, impone la biologia del suo mondo. | MAG 1, PSI 1 |
+| P183 | TF-370 | Alfa, Eroi | Riscossa | **Mainstay** (Custodi): colosso che protegge un paese di montagna. | TEC 0, ENE 1, PSI 1 |
+| P184 | TF-030 | Alfa, Neutrali | Sfavorito | **Antecessor** (Sciolti): sovrano antico risvegliato negli scavi del tempio. | VEL 0, TEC 0, ENE 1, PSI 1, FUR 1 |
+| P185 | TF-602 | Omega, Neutrali | Sfavorito | **Ordito** (Sciolti): la titolare della merceria, taglia ogni giorno un filo del telaio. | PSI 0, TEC 1 |
+| P186 | TF-603 | Omega, Cattivi | Riscossa | **Mordacchia** (Figli dell'Ultima): bestia con un cuneo di ceramica tra le fauci, scioglie i patti. | PER 0, PSI 0, TEC 0, INT 1 |
+| P187 | TF-604 | Omega, Neutrali | Sfavorito | **Ansa** (Banco): serpente che chiude il golfo tenendosi la coda. | PSI 0, TEC 0 |
+
 ## 6. Minacce
 
 Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richiede Forza e Tecnologia. Molti nomi attuali funzionano già e vanno solo ambientati a Nuova Megara. Il testo di colore può usare il tono di un bollettino del sismografo.
@@ -414,7 +466,7 @@ Gli effetti cambiano solo l'aspetto, mai valori o regole. L'abbinamento è in `s
 | Alfa | Olografico, inclinazione 3D | Olografico |
 | Omega | Olografico, inclinazione 3D, effetto personale | Olografico |
 
-Effetti personali Omega: Holdout l'aura, Absentia le scariche elettriche, Multitude il glitch, Mongibello le braci, Wirepuller i fili da puparo che pendono dall'alto e ogni tanto vengono tirati, Parabellum il mirino di dodici lenti che si sposta sulla carta e aggancia un bersaglio.
+Effetti personali Omega: Holdout l'aura, Absentia le scariche elettriche, Multitude il glitch, Mongibello le braci, Wirepuller i fili da puparo che pendono dall'alto e ogni tanto vengono tirati, Parabellum il mirino di dodici lenti che si sposta sulla carta e aggancia un bersaglio, Ordito i fili come Wirepuller, Mordacchia le braci, Ansa gli anelli d'acqua che si allargano.
 
 ### Nomi delle carte
 

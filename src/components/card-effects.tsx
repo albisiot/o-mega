@@ -61,6 +61,7 @@ export function CardArtEffects({
       {effects.includes("embers") && <EffectCanvas draw={drawEmbers} />}
       {effects.includes("threads") && <EffectCanvas draw={drawThreads} />}
       {effects.includes("lenses") && <EffectCanvas draw={drawLenses} />}
+      {effects.includes("ripples") && <EffectCanvas draw={drawRipples} />}
     </>
   );
 }
@@ -70,7 +71,10 @@ type Spark = { x: number; life: number; span: number; rise: number; size: number
 type Bolt = { born: number; ttl: number; path: [number, number][] };
 type Thread = { x: number; length: number; seed: number; tugAt: number };
 type Sight = { x: number; y: number; toX: number; toY: number; lockedAt: number; moveAt: number };
+type Ripple = { x: number; y: number; born: number; ttl: number };
 type EffectState = {
+  ripples?: Ripple[];
+  nextRipple?: number;
   sparks?: Spark[];
   bolts?: Bolt[];
   nextBolt?: number;
@@ -231,6 +235,38 @@ const drawThreads: Draw = (context, width, height, time, state) => {
     context.beginPath();
     context.arc(top + sway, end, 1.7 * scale, 0, Math.PI * 2);
     context.fill();
+  }
+};
+
+/** Rings of water that spread from a point of the art and fade, three to a ripple. */
+const drawRipples: Draw = (context, width, height, time, state) => {
+  const scale = width / 300;
+  if (time > (state.nextRipple ?? 0)) {
+    (state.ripples ??= []).push({
+      x: width * (0.15 + Math.random() * 0.7),
+      y: height * (0.2 + Math.random() * 0.6),
+      born: time,
+      ttl: 2200 + Math.random() * 900,
+    });
+    state.nextRipple = time + 700 + Math.random() * 900;
+  }
+  state.ripples = (state.ripples ?? []).filter((ripple) => time - ripple.born < ripple.ttl);
+  context.globalCompositeOperation = "lighter";
+  context.shadowColor = "rgb(120 220 240 / 0.8)";
+  context.shadowBlur = 5 * scale;
+  for (const ripple of state.ripples) {
+    const age = (time - ripple.born) / ripple.ttl;
+    for (let ring = 0; ring < 3; ring++) {
+      const grow = age - ring * 0.12;
+      if (grow <= 0) continue;
+      const radius = grow * width * 0.22;
+      context.strokeStyle = `rgb(200 245 255 / ${(1 - age) * 0.55})`;
+      context.lineWidth = (1.4 - ring * 0.35) * scale;
+      context.beginPath();
+      // Flattened circles, like rings on water seen at an angle.
+      context.ellipse(ripple.x, ripple.y, radius, radius * 0.45, 0, 0, Math.PI * 2);
+      context.stroke();
+    }
   }
 };
 
