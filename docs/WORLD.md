@@ -65,7 +65,7 @@ Le tre fazioni del catalogo restano `heroes`, `villains`, `neutrals`. Ogni perso
   - **Le Lanterne:** volontari dei quartieri poveri, senza divisa né permessi.
 - **Cattivi**
   - **La Compagnia Lete:** ha privatizzato l'energia dell'Ora Zero e vende la soluzione ai problemi che crea.
-  - **I Figli dell'Ultima:** vogliono completare l'alfabeto, cioè arrivare alla fine.
+  - **I Figli dell'Ultima:** vogliono che l'Ora Zero arrivi alla sua ultima ora, convinti che restituirà chi si è presa (vedi `docs/STORY.md` §2).
 - **Neutrali**
   - **Il Banco:** gestisce licenze, sfide e Diritto di Presa. Vince sempre.
   - **Gli Sciolti:** contrabbandieri, mercenari e chiunque abbia smesso di scegliere.
