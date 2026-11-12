@@ -399,6 +399,10 @@ Il sismografo comincia a registrare scosse lontane: altre pietre dell'Alfabeto a
 
 Le regole e le Minacce sono in `docs/SPEC.md` §5.4.
 
+### Le Minacce rare
+
+Ogni tanto l'ago del sismografo esce dalla carta: il Comune chiama queste scosse **fuori scala** e le classifica per quanto sono rare, dalle Rare alle Uniche. Alcune hanno una regola tutta loro, spiegata nella storia: nella Sala degli specchi rotti ognuno combatte con la forza di chi ha davanti, nel Mondo capovolto vince chi fa meno, sotto Megara Due i deboli sono forti. La più temuta è **La Fine del Mondo**: la Montagna erutta, il cielo si spacca e l'Alfabeto gira sopra la città, e per fermarla serve tutto, tutte e dodici le abilità. I Reggenti tengono il conto di ciò che hanno affrontato nel **Bestiario**. Nomi e testi sono segnaposto; regole e probabilità in `docs/SPEC.md` §5.15.
+
 ### La Grande Minaccia
 
 A volte il sismografo non segna una scossa, ma cinque nello stesso punto: qualcosa di grande sta premendo su Nuova Megara da più lati. Il Comune la chiama **Grande Minaccia** e la pubblica intera, perché non c'è tempo per i segreti: i cinque fronti e quanto paga ognuno, ora per ora, perché più si aspetta più il danno cresce. Due Reggenti ricevono l'incarico insieme e ognuno piazza un Eco alla volta su un fronte, dove resta di guardia fino alla fine. Il Comune paga ogni ora chi tiene ogni fronte: chi è da solo, o l'Eco più forte se ce ne sono due. Regole in `docs/SPEC.md` §5.12.

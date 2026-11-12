@@ -154,7 +154,7 @@ export function resolveRound(
     round: currentRoundNumber(state),
     threatId: threat.id,
     plays,
-    winner: compareScores(plays.a, plays.b),
+    winner: compareScores(plays.a, plays.b, threat),
   };
   return { state: { ...state, rounds: [...state.rounds, round] }, round };
 }

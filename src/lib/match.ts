@@ -1,3 +1,4 @@
+import type { ThreatRarity } from "@/lib/threat-rarity";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { BotDifficulty, Character, Power, ThreatModifier } from "@o-mega/game-engine";
 import { getSupabase } from "@/lib/supabase/client";
@@ -47,7 +48,10 @@ export type MatchRound = {
   round: number;
   level: number;
   modifier: ThreatModifier | null;
-  threat: { name: string; abilities: string[]; flavor: string };
+  /** The tier of a rare threat (SPEC §5.15); null for the usual ones. */
+  rarity?: ThreatRarity | null;
+  /** `hidden`: Al buio, the abilities come only once the round is resolved. */
+  threat: { name: string; abilities: string[]; flavor: string; hidden?: boolean };
   deadline_at: string;
   resolved: boolean;
   winner: "me" | "opponent" | "none" | null;
@@ -75,7 +79,10 @@ export type MatchView = {
   /** null against a bot. */
   opponent: { username: string; avatar_url: string | null; level: number; last_seen_at: string | null } | null;
   current_round: number;
-  threat_levels: number[];
+  /** null: Livello ignoto, until its round. */
+  threat_levels: (number | null)[];
+  /** The tier of every round's threat, public from the start: null for the usual ones. */
+  threat_rarities?: (ThreatRarity | null)[];
   rounds_won: { me: number; opponent: number };
   total_score: { me: number; opponent: number };
   result: "win" | "loss" | "draw" | null;
@@ -87,7 +94,14 @@ export type MatchView = {
   /** Veggente: the threats of the following rounds, once the player has played it. */
   /** Spia: opposing characters it revealed, each with the round the Spia was played in. */
   spied_cards?: (MatchCard & { round: number })[];
-  foreseen_threats?: { round: number; level: number; name: string; abilities: string[]; modifier: ThreatModifier | null }[];
+  foreseen_threats?: {
+    round: number;
+    level: number;
+    name: string;
+    abilities: string[];
+    modifier: ThreatModifier | null;
+    rarity?: ThreatRarity | null;
+  }[];
   server_now: string;
   my_team: (MatchCard & { instance_id: string; played_round: number | null })[];
   rounds: MatchRound[];
@@ -355,6 +369,8 @@ export type MatchHistoryEntry = {
   points_me?: number;
   points_opponent?: number;
   boss_name?: string | null;
+  /** The rare threats the match revealed, the rarest first (SPEC §5.15). */
+  rare_threats?: { name: string; rarity: string; color: string }[];
   coins: number;
   opponent: string | null;
   conquest: {

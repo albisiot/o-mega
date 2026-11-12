@@ -2,6 +2,7 @@
 // the calls to the "match" Edge Function, and the previews the screen shows.
 // Previews come from the pure rules engine; the server alone decides.
 
+import type { ThreatRarity } from "@/lib/threat-rarity";
 import {
   previewTriplePlay,
   type AbilityFamilies,
@@ -23,6 +24,10 @@ export type TripleThreat = {
   abilities: string[];
   flavor: string;
   modifier: ThreatModifier | null;
+  /** The tier of a rare threat (SPEC §5.15); null for the usual ones. */
+  rarity?: ThreatRarity | null;
+  /** Al buio: the abilities come once a round on this threat is resolved. */
+  hidden?: boolean;
 };
 
 export type TripleContest = {

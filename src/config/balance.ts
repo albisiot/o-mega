@@ -134,6 +134,25 @@ export const balance = {
     underdogEliteMinRank: 4,
   },
 
+  /**
+   * The rules of the rare threats (SPEC §5.15). Their chances (1 match in N) are in the
+   * threat_rarities table, which admins edit; Territorio ostile and Sottovalutati use the
+   * numbers of `threatModifiers`, Negativo `cards.abilityMax`.
+   */
+  rareThreats: {
+    /** Tutto o niente: lowest value of a required ability that counts. */
+    allOrNothingMin: 5,
+    /** Ultimi i primi: points for every rarity rank below the top one. */
+    lastFirstBonus: 2,
+    lastFirstTopRank: 5,
+    /** Il prezzo: a required ability at this value or less costs points instead. */
+    priceMaxValue: 1,
+    priceMalus: 3,
+    /** Il conteggio: points for every required ability at this value or more. */
+    countMin: 5,
+    countPoints: 1,
+  },
+
   /** The rules of the places beyond Nuova Megara, fixed for each of their threats (SPEC §5.4). */
   places: {
     /** Il conto lungo: points of the side that has won fewer rounds. */

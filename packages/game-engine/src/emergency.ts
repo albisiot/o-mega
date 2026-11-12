@@ -4,9 +4,9 @@
 // or at the failure limit. Pure: the Edge Function loads and stores.
 
 import type { Rng } from "./rng.ts";
-import { abilityMalusFrom, carriedBonusAfter, powersSilenced, scorePlay } from "./scoring.ts";
-import { drawThreatLevels, pickThreats } from "./threats.ts";
-import type { AbilityFamilies, Character, MatchRules, PlayScore, Threat, ThreatLevelRules } from "./types.ts";
+import { abilityMalusFrom, carriedBonusAfter, lowerWins, powersSilenced, scorePlay } from "./scoring.ts";
+import { drawMatchThreats } from "./threats.ts";
+import type { AbilityFamilies, Character, MatchRules, PlayScore, RareThreat, Threat, ThreatLevelRules } from "./types.ts";
 
 export type EmergencyRules = {
   /** Threats of a run, and characters of a squad: each answers exactly one. */
@@ -22,15 +22,20 @@ export type EmergencyAttempt = { character: Character; passed: boolean; /** Leve
 
 export type EmergencyOutcome = {
   score: PlayScore;
-  /** Score this character needed: the threat's target, minus its power's discounts. */
+  /** Score this character needed: the threat's target, minus its power's discounts. Under Rovescio, the most it could score. */
   required: number;
   passed: boolean;
 };
 
-/** The threats of a day: same draw as a match, with a longer sequence. */
-export function drawEmergencyThreats(rng: Rng, catalog: readonly Threat[], rules: EmergencyRules): Threat[] {
+/** The threats of a day: same draw as a match, with a longer sequence, rare threats included. */
+export function drawEmergencyThreats(
+  rng: Rng,
+  catalog: readonly Threat[],
+  rules: EmergencyRules,
+  rare: readonly RareThreat[] = [],
+): Threat[] {
   const levelRules = { threatsPerMatch: rules.threatsPerRun, threatLevels: rules.threatLevels } as MatchRules;
-  return pickThreats(rng, catalog, drawThreatLevels(rng, levelRules));
+  return drawMatchThreats(rng, catalog, rare, levelRules);
 }
 
 /**
@@ -41,8 +46,10 @@ export function drawEmergencyThreats(rng: Rng, catalog: readonly Threat[], rules
  * Opportunista, Riflesso and Nebbia need an opposing character: they do nothing.
  */
 export function requiredScore(character: Character, threat: Threat, rules: Pick<EmergencyRules, "targets">): number {
-  const target = rules.targets[threat.level];
+  // A rare threat has its own target; under Rovescio it is the most a play may score.
+  const target = threat.target ?? rules.targets[threat.level];
   if (target === undefined) throw new Error(`No target for threat level ${threat.level}`);
+  if (lowerWins(threat)) return target;
   // Silenzio della tomba: no power, so no discount. Emergenza draws only threats of
   // Nuova Megara, which have no such effect; this keeps the rule right anyway.
   const silenced = powersSilenced(threat);
@@ -78,7 +85,7 @@ export function resolveEmergencyPlay(params: {
     played: attempts.map((a) => a.character),
   });
   const required = requiredScore(character, threat, rules);
-  return { score, required, passed: score.total >= required };
+  return { score, required, passed: lowerWins(threat) ? score.total <= required : score.total >= required };
 }
 
 /** The run ends at the last threat or when the failures reach the limit. */

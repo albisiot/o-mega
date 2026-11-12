@@ -10,10 +10,10 @@ import {
   computeAbilityMeans,
   drawBossValues,
   drawEmergencyThreats,
-  drawThreatLevels,
+  drawMatchThreats,
   pickOne,
-  pickThreats,
   placeModifier,
+  withRuleAbilities,
   chooseQuadrantBotPlacement,
   quadrantBotView,
   quadrantSideToMove,
@@ -43,6 +43,7 @@ import {
   type QuadrantPlacement,
   type QuadrantRules,
   type QuadrantState,
+  type RareThreat,
   type Rng,
   type RoundRecord,
   type Side,
@@ -142,8 +143,10 @@ type Loaded = {
   quadrant: QuadrantRules;
   graceSeconds: number;
   catalog: BotMatchCatalog;
-  /** Threats of Nuova Megara only: Emergenza never draws the places beyond it. */
+  /** Usual threats of Nuova Megara only: Emergenza never draws the places beyond it. */
   emergencyCatalog: Threat[];
+  /** The rare threats (SPEC §5.15), with their chance: in every mode that draws threats. */
+  rareCatalog: RareThreat[];
   definitions: Map<string, Definition>;
   threats: Map<string, Threat>;
 };
@@ -163,14 +166,15 @@ function toCharacter(definition: Definition, id = definition.id): Character {
 
 async function load(): Promise<Loaded> {
   if (cache && Date.now() - cache.at < 60_000) return cache.loaded;
-  const [definitions, rarities, threats, abilities, config] = await Promise.all([
+  const [definitions, rarities, threats, abilities, config, threatRarities] = await Promise.all([
     admin.from("card_definitions").select("id, faction, rarity_code, stats, power_code, power_params, is_active"),
     admin.from("rarity_definitions").select("code, rank"),
     admin
       .from("threat_definitions")
-      .select("id, level, required_abilities, is_active, region, modifier_code, modifier_params"),
+      .select("id, level, required_abilities, is_active, region, modifier_code, modifier_params, rarity_code, emergency_target"),
     admin.from("ability_definitions").select("code, family"),
     admin.from("game_config").select("key, value"),
+    admin.from("threat_rarities").select("code, one_in"),
   ]);
   const values = new Map(check(config).map((row) => [row.key, Number(row.value)]));
   const value = (key: string) => {
@@ -191,12 +195,31 @@ async function load(): Promise<Loaded> {
     region: string;
     modifier_code: string | null;
     modifier_params: Record<string, unknown> | null;
+    rarity_code: string | null;
+    emergency_target: number | null;
   }[];
+  const oneIn = new Map((check(threatRarities) as { code: string; one_in: number }[]).map((r) => [r.code, r.one_in]));
   const activeCharacters = definitionRows.filter((d) => d.is_active).map((d) => toCharacter(d));
   const places = {
     longCountBonus: value("places.long_count_bonus"),
     frostCap: value("places.frost_cap"),
     duelCount: value("places.duel_count"),
+    rare: {
+      hostileBonus: value("threat_modifiers.hostile_bonus"),
+      hostileMalus: value("threat_modifiers.hostile_malus"),
+      underdogBonus: value("threat_modifiers.underdog_bonus"),
+      underdogMalus: value("threat_modifiers.underdog_malus"),
+      underdogCommonMaxRank: value("threat_modifiers.underdog_common_max_rank"),
+      underdogEliteMinRank: value("threat_modifiers.underdog_elite_min_rank"),
+      allOrNothingMin: value("rare_threats.all_or_nothing_min"),
+      lastFirstBonus: value("rare_threats.last_first_bonus"),
+      lastFirstTopRank: value("rare_threats.last_first_top_rank"),
+      priceMaxValue: value("rare_threats.price_max_value"),
+      priceMalus: value("rare_threats.price_malus"),
+      countMin: value("rare_threats.count_min"),
+      countPoints: value("rare_threats.count_points"),
+      negativeMax: value("cards.ability_max"),
+    },
   };
   const threatList = threatRows.map((t) => ({
     id: t.id,
@@ -206,8 +229,13 @@ async function load(): Promise<Loaded> {
     region: t.region,
     // A place's own rule: the bots plan future rounds knowing it.
     modifier: placeModifier(t.modifier_code, t.modifier_params, places),
+    rarity: t.rarity_code,
+    target: t.emergency_target,
   }));
-  const activeThreats = threatList.filter((t) => t.active);
+  const activeThreats = threatList.filter((t) => t.active && !t.rarity);
+  const rareCatalog: RareThreat[] = threatList
+    .filter((t) => t.active && t.rarity)
+    .map(({ id, level, abilities, modifier, rarity, target }) => ({ id, level, abilities, modifier, rarity, target, oneIn: oneIn.get(rarity!) ?? 0 }));
 
   const loaded: Loaded = {
     rules: {
@@ -261,6 +289,7 @@ async function load(): Promise<Loaded> {
     catalog: {
       characters: activeCharacters,
       threatCatalog: activeThreats.map(({ id, level, abilities, modifier }) => ({ id, level, abilities, modifier })),
+      rareCatalog,
       families: Object.fromEntries(check(abilities).map((a) => [a.code, a.family])),
       abilityMeans: computeAbilityMeans(activeCharacters),
     },
@@ -268,14 +297,16 @@ async function load(): Promise<Loaded> {
       .filter((t) => t.region === "megara")
       .map(({ id, level, abilities }) => ({ id, level, abilities })),
     definitions: new Map(definitionRows.map((d) => [d.id, d])),
-    threats: new Map(threatList.map(({ id, level, abilities }) => [id, { id, level, abilities }])),
+    rareCatalog,
+    threats: new Map(threatList.map(({ id, level, abilities, rarity, target }) => [id, { id, level, abilities, rarity, target }])),
   };
   cache = { loaded, at: Date.now() };
   return loaded;
 }
 
+/** The usual draw, then the rare threats that turn up, if any (SPEC §5.15). */
 function planThreats(loaded: Loaded): string[] {
-  return pickThreats(rng, loaded.catalog.threatCatalog, drawThreatLevels(rng, loaded.rules)).map((t) => t.id);
+  return drawMatchThreats(rng, loaded.catalog.threatCatalog, loaded.rareCatalog, loaded.rules).map((t) => t.id);
 }
 
 // ---------------------------------------------------------------------------
@@ -410,7 +441,8 @@ async function loadMatch(userId: string, matchId: string) {
     threats: match.threat_ids.map((id, i) => {
       const threat = loaded.threats.get(id);
       if (!threat) throw new Error(`Unknown threat ${id}`);
-      return { ...threat, modifier: match.threat_modifiers[i] ?? null };
+      // Al buio, Eco, Livello ignoto: the abilities the match drew.
+      return withRuleAbilities({ ...threat, modifier: match.threat_modifiers[i] ?? null });
     }),
     teams,
     rounds: resolved,
@@ -550,7 +582,7 @@ function tripleState(
   const threats = match.threat_ids.slice(0, perRound).map((id, i) => {
     const threat = loaded.threats.get(id);
     if (!threat) throw new Error(`Unknown threat ${id}`);
-    return { ...threat, modifier: match.threat_modifiers[i] ?? null };
+    return withRuleAbilities({ ...threat, modifier: match.threat_modifiers[i] ?? null });
   });
   const resolvedRounds = Math.floor(roundRows.filter((r) => r.resolved_at).length / perRound);
   const rounds: TripleRoundRecord[] = Array.from({ length: resolvedRounds }, (_, r) => {
@@ -1169,7 +1201,12 @@ async function submitChoice(userId: string, body: Record<string, unknown>) {
 
 /** The first request of the day draws the threats; the database keeps that draw for everyone. */
 async function ensureEmergencyDay(loaded: Loaded) {
-  const threats = drawEmergencyThreats(rng, loaded.emergencyCatalog, loaded.emergency);
+  const threats = drawEmergencyThreats(
+    rng,
+    loaded.emergencyCatalog,
+    loaded.emergency,
+    loaded.rareCatalog.filter((t) => t.target !== null && t.target !== undefined),
+  );
   const { error } = await admin.rpc("emergency_ensure_day", { p_threat_ids: threats.map((t) => t.id) });
   if (error) throw new Error(error.message);
 }
@@ -1181,6 +1218,8 @@ async function emergencyState(userId: string) {
 type EmergencyContext = {
   run: { id: string; status: string; current_round: number; card_instance_ids: string[]; definition_ids: string[] } | null;
   threat_ids: string[] | null;
+  /** The fixed rules of the day's threats, as drawn (rare threats; the others have none). */
+  threat_modifiers: (ThreatModifier | null)[] | null;
   plays: { card_instance_id: string; passed: boolean }[];
 };
 
@@ -1203,7 +1242,13 @@ async function playEmergency(userId: string, body: Record<string, unknown>) {
 
   // Today's attempt in one request: the game day comes from the database, never computed here.
   const [loaded, context] = await Promise.all([load(), admin.rpc("emergency_play_context", { p_user: userId })]);
-  const { run, threat_ids: threatIds, plays } = check(context) as EmergencyContext;
+  const { run, threat_ids: threatIds, threat_modifiers: modifiers, plays } = check(context) as EmergencyContext;
+  // A threat of the day as it plays: with its fixed rule and what the rule drew.
+  const dayThreat = (i: number) => {
+    const threat = loaded.threats.get(threatIds![i]);
+    if (!threat) throw new Error("Unknown threat of the day");
+    return withRuleAbilities({ ...threat, modifier: modifiers?.[i] ?? null });
+  };
   if (!run || !threatIds) throw new GameError("emergency_not_started");
   if (run.status !== "active") throw new GameError("emergency_already_played");
   if (run.current_round !== body.round) throw new GameError("round_already_resolved");
@@ -1213,8 +1258,7 @@ async function playEmergency(userId: string, body: Record<string, unknown>) {
     if (!definition) throw new Error(`Unknown card definition ${definitionId}`);
     return toCharacter(definition, run.card_instance_ids[i]);
   });
-  const threat = loaded.threats.get(threatIds[run.current_round - 1]);
-  if (!threat) throw new Error("Unknown threat of the day");
+  const threat = dayThreat(run.current_round - 1);
 
   const character = squad.find((c) => c.id === choice);
   if (!character || plays.some((p) => p.card_instance_id === choice)) throw new GameError("character_not_available");
@@ -1223,7 +1267,7 @@ async function playEmergency(userId: string, body: Record<string, unknown>) {
   const attempts: EmergencyAttempt[] = plays.map((p, i) => ({
     character: squad.find((c) => c.id === p.card_instance_id)!,
     passed: p.passed,
-    level: loaded.threats.get(threatIds[i])!.level,
+    level: dayThreat(i).level,
   }));
   const outcome = resolveEmergencyPlay({
     character,
@@ -1232,7 +1276,7 @@ async function playEmergency(userId: string, body: Record<string, unknown>) {
     attempts,
     rules: loaded.emergency,
     families: loaded.catalog.families,
-    threatLevels: threatIds.map((id) => loaded.threats.get(id)!.level),
+    threatLevels: threatIds.map((_, i) => dayThreat(i).level),
   });
 
   return check(

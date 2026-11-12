@@ -1,12 +1,27 @@
+import type { ThreatModifier } from "@o-mega/game-engine";
 import { invokeFunction, type MatchCard } from "@/lib/match";
+import type { ThreatRarity } from "@/lib/threat-rarity";
 import { getSupabase } from "@/lib/supabase/client";
 
-export type EmergencyThreat = { name: string; abilities: string[]; flavor: string };
+export type EmergencyThreat = {
+  name: string;
+  abilities: string[];
+  flavor: string;
+  /** A rare threat's fixed rule (SPEC §5.15); the usual threats of Emergenza have none. */
+  modifier?: ThreatModifier | null;
+  rarity?: ThreatRarity | null;
+  /** A rare threat's own target (the most it allows, under Rovescio). */
+  target?: number | null;
+  /** Al buio: the abilities come once the threat is played. */
+  hidden?: boolean;
+};
 
 export type EmergencyPlay = {
   round: number;
   level: number;
   threat: EmergencyThreat;
+  modifier?: ThreatModifier | null;
+  rarity?: ThreatRarity | null;
   instance_id: string;
   definition_id: string;
   base: number;
@@ -37,7 +52,9 @@ export type EmergencyRun = {
 export type EmergencyView = {
   day: string;
   server_now: string;
-  threat_levels: number[];
+  /** null: Livello ignoto, until it is the current threat. */
+  threat_levels: (number | null)[];
+  threat_rarities?: (ThreatRarity | null)[];
   rules: {
     threats_per_run: number;
     max_failures: number;

@@ -67,9 +67,48 @@ export function baseScore(character: Character, threat: Threat, malus = 0): numb
         .sort((x, y) => y - x)
         .slice(0, modifier.count)
         .reduce((total, value) => total + value, 0);
+    case "all_or_nothing":
+      return values.reduce((total, value) => total + (value >= modifier.min ? value : 0), 0);
+    case "price":
+      return values.reduce((total, value) => total + (value <= modifier.maxValue ? -modifier.malus : value), 0);
+    case "one_force": {
+      const group = threat.abilities.map((ability, i) => (modifier.abilities.includes(ability) ? values[i] : null));
+      const counted = group.filter((value): value is number => value !== null);
+      if (counted.length === 0) return sum;
+      const rest = values.reduce((total, value, i) => (group[i] === null ? total + value : total), 0);
+      return rest + Math.max(...counted) * counted.length;
+    }
+    case "count":
+      return values.filter((value) => value >= modifier.min).length * modifier.points;
+    case "negative":
+      return values.reduce((total, value) => total + Math.max(0, modifier.max - value), 0);
     default:
       return sum;
   }
+}
+
+/** Rovescio: the lower score wins the round. */
+export function lowerWins(threat: Threat | null | undefined): boolean {
+  return threat?.modifier?.code === "reverse";
+}
+
+/**
+ * Whether a side wants low values of its own on this threat: under Rovescio the lower
+ * score wins; under Specchio the opponent scores with them. Bots aim the other way.
+ */
+export function prefersLowOwnValues(threat: Threat | null | undefined): boolean {
+  const code = threat?.modifier?.code;
+  return code === "reverse" || code === "mirror";
+}
+
+/** Al buio: the abilities stay hidden until both sides have chosen. */
+export function hiddenUntilChosen(threat: Threat | null | undefined): boolean {
+  return threat?.modifier?.code === "blind";
+}
+
+/** Specchio: each side scores with the opposing character's values, keeping its own power. */
+export function scoresWithOpponentValues(threat: Threat | null | undefined): boolean {
+  return threat?.modifier?.code === "mirror";
 }
 
 /** Silenzio della tomba: in this round no power acts, on either side. */
@@ -95,6 +134,8 @@ export function modifierBonus(character: Character, threat: Threat, standing?: S
     case "underdogs":
       if (character.rarityRank <= modifier.commonMaxRank) return modifier.bonus;
       return character.rarityRank >= modifier.eliteMinRank ? -modifier.malus : 0;
+    case "last_first":
+      return Math.max(0, modifier.topRank - character.rarityRank) * modifier.bonus;
     default:
       return 0;
   }
@@ -108,7 +149,11 @@ export function modifierPoints(character: Character, threat: Threat, standing?: 
 
 /** Highest single value among the required abilities (tie-break, no bonuses). */
 export function highestRequired(character: Character, threat: Threat, malus = 0): number {
-  return Math.max(0, ...threat.abilities.map((ability) => abilityValue(character, ability, malus)));
+  const values = threat.abilities.map((ability) => abilityValue(character, ability, malus));
+  // Negativo: the values count reversed, the tie-break too.
+  const modifier = threat.modifier;
+  if (modifier?.code === "negative") return Math.max(0, ...values.map((value) => modifier.max - value));
+  return Math.max(0, ...values);
 }
 
 /** What a character with Sabotatore takes from each ability of the opposing character. */
@@ -327,7 +372,9 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
   // Schermato and Riflesso: immune to Sabotatore.
   if (immuneToSabotage(character)) context = { ...context, abilityMalus: 0 };
   const malus = context.abilityMalus ?? 0;
-  const base = baseScore(character, threat, malus);
+  // Specchio: the values are the opposing character's; without one (Emergenza, a preview) its own.
+  const values = scoresWithOpponentValues(threat) && context.opponent ? { ...character, stats: context.opponent.stats } : character;
+  const base = baseScore(values, threat, malus);
   // Sacrificio: the character gives up the round, whatever it would have scored.
   if (code === "sacrifice") return { characterId: character.id, base, bonus: -base, total: 0, highest: 0 };
   const power = powerBonus(character, threat, context) * powerMultiplier(context);
@@ -339,7 +386,7 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
     base,
     bonus: total - base,
     total,
-    highest: highestRequired(character, threat, malus),
+    highest: highestRequired(values, threat, malus),
     ...(code === "relentless" ? { relentless: true } : {}),
   };
 }
@@ -358,10 +405,15 @@ export function carriedBonusAfter(character: Character, outcome: PlayOutcome): n
   return 0;
 }
 
-/** Higher total wins; then Implacabile; then the higher single required value; otherwise void (SPEC §5.6). */
-export function compareScores(a: PlayScore, b: PlayScore): Side | null {
-  if (a.total !== b.total) return a.total > b.total ? "a" : "b";
+/**
+ * Higher total wins; then Implacabile; then the higher single required value; otherwise
+ * void (SPEC §5.6). Under Rovescio the lower total wins, then the lower single value.
+ */
+export function compareScores(a: PlayScore, b: PlayScore, threat?: Threat | null): Side | null {
+  const lower = lowerWins(threat);
+  const better = (x: number, y: number): Side => ((x > y) !== lower ? "a" : "b");
+  if (a.total !== b.total) return better(a.total, b.total);
   if (Boolean(a.relentless) !== Boolean(b.relentless)) return a.relentless ? "a" : "b";
-  if (a.highest !== b.highest) return a.highest > b.highest ? "a" : "b";
+  if (a.highest !== b.highest) return better(a.highest, b.highest);
   return null;
 }

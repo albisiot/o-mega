@@ -14,6 +14,7 @@ import {
   asPlayedAgainst,
   baseScore,
   compareScores,
+  prefersLowOwnValues,
   hidesIdentity,
   scorePlay,
   type ScoreContext,
@@ -105,7 +106,11 @@ function model(view: TripleBotView): Model {
   const typical: Character = { id: "typical", definitionId: "typical", faction: "", rarityRank: 0, stats: view.abilityMeans, power: null };
   const expected = view.threats.map((threat) => baseScore(typical, threat));
   const scale = view.threats.map((threat) => 2.5 * Math.sqrt(threat.level));
-  const chance = (score: number, slot: number) => 1 / (1 + Math.exp(-(score - expected[slot]) / scale[slot]));
+  // Rovescio and Specchio: a low score of its own is what wins.
+  const chance = (score: number, slot: number) => {
+    const ahead = prefersLowOwnValues(view.threats[slot]) ? expected[slot] - score : score - expected[slot];
+    return 1 / (1 + Math.exp(-ahead / scale[slot]));
+  };
   const odds = view.hand.map((card) =>
     view.threats.map((threat, slot) =>
       chance(scorePlay(asPlayedAgainst(card, undefined, threat), threat, view.contexts[slot]).total, slot),
@@ -126,7 +131,7 @@ function model(view: TripleBotView): Model {
       abilityMalus: abilityMalusOn(b, a),
       opponent: a,
     });
-    const winner = compareScores(mine, other);
+    const winner = compareScores(mine, other, threat);
     const result = { value: winner === "a" ? 1 : winner === "b" ? -1 : 0, lead: mine.total - other.total };
     cache.set(key, result);
     return result;

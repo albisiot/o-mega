@@ -20,14 +20,16 @@ import {
   baseScore,
   carriedBonusAfter,
   compareScores,
+  hiddenUntilChosen,
   hidesIdentity,
   powersSilenced,
+  prefersLowOwnValues,
   revealsFutureThreats,
   scorePlay,
   type ScoreContext,
 } from "./scoring.ts";
 import type { PlayOutcome } from "./scoring.ts";
-import type { AbilityCode, AbilityFamilies, Character, MatchState, Side, Threat } from "./types.ts";
+import type { AbilityCode, AbilityFamilies, Character, MatchState, RareThreat, Side, Threat } from "./types.ts";
 
 export type BotDifficulty = "easy" | "medium" | "hard" | "super_pro";
 
@@ -75,10 +77,16 @@ export type BotView = {
   threatLevels: number[];
   /** Own characters already played, as they played (Capobranco, Catalizzatore, Riverbero). */
   played: Character[];
+  /** Rarity tier of the threats of the following rounds, public from the start; null for the usual ones. */
+  futureRarities?: (string | null)[];
+  /** Rare catalog threats that may still come up. */
+  rarePool?: Threat[];
 };
 
 export type BotKnowledge = {
   threatCatalog: Threat[];
+  /** The rare threats (SPEC §5.15): a future round of a rare tier is one of these. */
+  rareCatalog?: RareThreat[];
   families: AbilityFamilies;
   abilityMeans: Record<AbilityCode, number>;
   /** Every active character, as the bot may field them (id = definition id). */
@@ -118,8 +126,10 @@ export function botView(state: MatchState, side: Side, knowledge: BotKnowledge):
     scoreLead: totals[side] - totals[opponent],
     roundsToWin: state.rules.roundsToWin,
     available: availableCharacters(state, side),
-    currentThreat: currentThreat(state),
+    currentThreat: visibleThreat(currentThreat(state), knowledge.threatCatalog),
     futureLevels: state.threats.slice(state.rounds.length + 1).map((threat) => threat.level),
+    futureRarities: state.threats.slice(state.rounds.length + 1).map((threat) => threat.rarity ?? null),
+    rarePool: (knowledge.rareCatalog ?? []).filter((threat) => !revealed.has(threat.id)),
     roundsWon: won[side],
     opponentRoundsWon: won[otherSide(side)],
     carriedBonus: carriedBonus(state, side),
@@ -127,6 +137,25 @@ export function botView(state: MatchState, side: Side, knowledge: BotKnowledge):
     families: knowledge.families,
     abilityMeans: knowledge.abilityMeans,
   };
+}
+
+/**
+ * The current threat as a player sees it when choosing. Al buio hides its abilities:
+ * the bot plays as if it were a usual threat of the same level.
+ */
+function visibleThreat(threat: Threat, catalog: readonly Threat[]): Threat {
+  if (!hiddenUntilChosen(threat)) return threat;
+  const standIn = catalog.find((t) => t.level === threat.level && !t.modifier);
+  return standIn ? { ...standIn, id: threat.id } : { ...threat, abilities: [], modifier: null };
+}
+
+/** The catalog threats a future round may be: of its rarity tier and level. */
+function futureOptions(view: BotView, index: number): Threat[] {
+  const level = view.futureLevels[index];
+  const rarity = view.futureRarities?.[index] ?? null;
+  return rarity
+    ? (view.rarePool ?? []).filter((threat) => threat.rarity === rarity && threat.level === level)
+    : view.threatPool.filter((threat) => threat.level === level);
 }
 
 export function computeAbilityMeans(characters: readonly Character[]): Record<AbilityCode, number> {
@@ -184,6 +213,12 @@ function effectiveScore(character: Character, threat: Threat, context: ScoreCont
   return score;
 }
 
+/** What a bot maximises: the score, or its opposite where low values of its own are better. */
+function merit(character: Character, threat: Threat, context: ScoreContext, opponents?: readonly Character[]): number {
+  const score = effectiveScore(character, threat, context, opponents);
+  return prefersLowOwnValues(threat) ? -score : score;
+}
+
 /** Chooses the character the bot plays this round (its id). */
 export function chooseBotPlay(difficulty: BotDifficulty, view: BotView, rng: Rng): string {
   if (view.available.length === 0) throw new Error("The bot has no character left");
@@ -191,12 +226,15 @@ export function chooseBotPlay(difficulty: BotDifficulty, view: BotView, rng: Rng
   const scoreOf = (character: Character) => scorePlay(character, view.currentThreat, context).total;
 
   switch (difficulty) {
-    case "easy":
-      // Random, slightly preferring good scores.
-      return pickWeighted(rng, view.available, (character) => (scoreOf(character) + 1) ** 2).id;
+    case "easy": {
+      // Random, slightly preferring good scores (low ones where they are better).
+      const low = prefersLowOwnValues(view.currentThreat);
+      const top = Math.max(...view.available.map(scoreOf));
+      return pickWeighted(rng, view.available, (character) => ((low ? top - scoreOf(character) : scoreOf(character)) + 1) ** 2).id;
+    }
     case "medium": {
       // Greedy: best score for the current threat, no planning.
-      const value = (character: Character) => effectiveScore(character, view.currentThreat, context, view.opponentPool);
+      const value = (character: Character) => merit(character, view.currentThreat, context, view.opponentPool);
       const best = Math.max(...view.available.map(value));
       return pickOne(rng, view.available.filter((character) => value(character) === best)).id;
     }
@@ -224,10 +262,10 @@ function sample<T>(rng: Rng, items: readonly T[], count: number): T[] {
 function sampleFutureThreats(view: BotView, rng: Rng): Threat[] {
   if (view.foreseenThreats) return view.foreseenThreats;
   const threats: Threat[] = [];
-  for (const level of view.futureLevels) {
-    const options = view.threatPool.filter((threat) => threat.level === level && !threats.includes(threat));
+  view.futureLevels.forEach((_, i) => {
+    const options = futureOptions(view, i).filter((threat) => !threats.includes(threat));
     if (options.length > 0) threats.push(pickOne(rng, options));
-  }
+  });
   return threats;
 }
 
@@ -289,7 +327,7 @@ function playOut(view: BotView, first: Character, opponents: Character[], threat
       abilityMalus: abilityMalusOn(theirActing, ownActing),
       opponent: ownActing,
     });
-    const winner = compareScores(ownScore, theirScore);
+    const winner = compareScores(ownScore, theirScore, threat);
     lead += ownScore.total - theirScore.total;
     if (winner === "a") won += 1;
     if (winner === "b") lost += 1;
@@ -312,7 +350,7 @@ function takeBest(characters: Character[], threat: Threat, context: ScoreContext
   let index = 0;
   let ties = 0;
   characters.forEach((character, i) => {
-    const total = effectiveScore(character, threat, context);
+    const total = merit(character, threat, context);
     if (total > best) {
       best = total;
       index = i;
@@ -361,7 +399,9 @@ function winChance(
   // Duello counts fewer abilities, so scores spread less.
   const counted = threat.modifier?.code === "duel" ? Math.min(threat.level, threat.modifier.count) : threat.level;
   const scale = 2.5 * Math.sqrt(counted);
-  return 1 / (1 + Math.exp(-(score - expected) / scale));
+  // Rovescio and Specchio: a low score of its own is what wins.
+  const ahead = prefersLowOwnValues(threat) ? expected - score : score - expected;
+  return 1 / (1 + Math.exp(-ahead / scale));
 }
 
 /**
@@ -384,9 +424,8 @@ function planHardPlay(view: BotView, rng: Rng): string {
       const opponentBonus = modifier?.code === "long_count" && view.opponentRoundsWon < view.roundsWon ? modifier.bonus : 0;
       return winChance(score, view.currentThreat, view.abilityMeans, opponentBonus);
     }
-    const level = view.futureLevels[roundIndex - 1];
     const known = view.foreseenThreats?.[roundIndex - 1];
-    const threats = known ? [known] : view.threatPool.filter((threat) => threat.level === level);
+    const threats = known ? [known] : futureOptions(view, roundIndex - 1);
     if (threats.length === 0) return 0.5;
     const before = roundIndex === 1 ? view.currentThreat.level : view.futureLevels[roundIndex - 2];
     const atRound = { ...futureContext, round: view.round + roundIndex, previousLevel: before };

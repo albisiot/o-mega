@@ -17,7 +17,7 @@ begin
   ), 'each place has three threats and one rule';
   assert not exists (
     select 1 from public.threat_definitions
-    where (region = 'megara') <> (modifier_code is null)
+    where rarity_code is null and (region = 'megara') <> (modifier_code is null)
   ), 'a rule on a threat of Nuova Megara, or a place without one';
   assert (select count(distinct level) from public.threat_definitions where region <> 'megara') = 6,
     'the places cover every level';
@@ -38,8 +38,8 @@ begin
   end;
   begin
     insert into public.threat_definitions (code, name, level, required_abilities, modifier_code)
-    values ('TX02', 'Prova', 1, array['FOR'], 'focus');
-    raise exception 'ASSERT: a drawn modifier became a fixed rule';
+    values ('TX02', 'Prova', 1, array['FOR'], 'fog');
+    raise exception 'ASSERT: an unknown rule was accepted';
   exception when check_violation then null;
   end;
 end $$;

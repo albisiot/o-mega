@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { AdminLink } from "@/components/admin-link";
 import { useAuth, useRequireSignedIn } from "@/components/auth-provider";
 import { TabBar } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
@@ -178,6 +179,9 @@ function ProfileView({ profile }: { profile: Profile }) {
               <Link href="/collezione" className={ROW}>
                 <RowLabel>Vai alla collezione</RowLabel>
               </Link>
+              <Link href="/bestiario" className={ROW}>
+                <RowLabel>Bestiario delle Minacce</RowLabel>
+              </Link>
               <TutorialButton className="min-h-12" />
               <button type="button" aria-haspopup="dialog" onClick={() => worldSheet.current?.showModal()} className={ROW}>
                 <RowLabel>Il mondo</RowLabel>
@@ -191,6 +195,7 @@ function ProfileView({ profile }: { profile: Profile }) {
               <button type="button" onClick={signOut} className="btn btn-ghost shrink-0">
                 Esci
               </button>
+              <AdminLink />
             </>
           )}
         </div>

@@ -90,6 +90,13 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   invalid_objective: "Controlla l'obiettivo: titolo da 3 a 80 caratteri, soglia da 1 a 100, pacchetti da 0 a 5 e almeno un premio.",
   objective_in_use: "Questo obiettivo è già stato assegnato: disattivalo invece di eliminarlo.",
   objectives_too_few: "Ogni difficoltà deve avere almeno tanti obiettivi attivi quanti se ne danno al giorno.",
+  threat_not_found: "Minaccia non trovata: ricarica la pagina.",
+  rarity_not_found: "Fascia di rarità non trovata: ricarica la pagina.",
+  invalid_name: "Il nome deve avere da 1 a 60 caratteri (30 per una fascia).",
+  invalid_flavor: "Il testo può avere al massimo 300 caratteri.",
+  missing_target: "Una Minaccia rara ha bisogno della soglia per l'Emergenza.",
+  invalid_chance: "La probabilità deve essere un numero intero da 0 (mai) a 10.000.000.",
+  too_few_threats: "Ogni livello deve tenere almeno 8 Minacce normali di Nuova Megara attive.",
 };
 
 export function describeServerError(error: unknown): string {

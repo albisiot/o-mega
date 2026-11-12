@@ -259,7 +259,7 @@ export function resolveTripleRound(
         opponent,
       });
     }
-    const winner = compareScores(scores.a, scores.b);
+    const winner = compareScores(scores.a, scores.b, threat);
     winners.push(winner);
     for (const side of SIDES) {
       plays[side].push({

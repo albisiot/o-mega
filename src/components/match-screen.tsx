@@ -54,6 +54,8 @@ import {
   wasSilenced,
   type PowerNote,
 } from "@/lib/round-powers";
+import { RareThreatAlert } from "@/components/rare-threat-alert";
+import { knownLevels, levelText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
@@ -439,18 +441,20 @@ function LevelTrack({ view, opponentName, abilities }: { view: MatchView; oppone
           const played = round?.opponent_play ?? null;
           const foreseen = view.foreseen_threats?.find((t) => t.round === i + 1) ?? null;
           const isCurrent = view.status === "active" && view.current_round === i + 1;
+          // A rare threat glows in its tier's colour from the start (SPEC §5.15).
+          const rarity = view.threat_rarities?.[i] ?? null;
           const style = isCurrent
             ? "bg-comic-yellow text-black"
             : round?.winner
               ? WINNER_STYLES[round.winner]
               : "border-2 border-line text-foreground";
-          const label = `Livello ${level}${played ? `, ${opponentName} ha giocato ${played.name}` : ""}${
-            foreseen ? `, Minaccia prevista: ${foreseen.name}` : ""
-          }`;
+          const label = `Livello ${levelText(level)}${rarity ? `, ${rarityTitle(rarity)}` : ""}${
+            played ? `, ${opponentName} ha giocato ${played.name}` : ""
+          }${foreseen ? `, Minaccia prevista: ${foreseen.name}` : ""}`;
           const cell = `relative flex h-11 w-full -skew-x-8 items-center justify-center font-display text-[21px] ${style}`;
           const marks = (
             <>
-              {level}
+              {levelText(level)}
               {played?.art_url && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -479,11 +483,12 @@ function LevelTrack({ view, opponentName, abilities }: { view: MatchView; oppone
                   aria-expanded={open === i}
                   aria-label={label}
                   className={`${cell} ${LONG_PRESS_CLASS}`}
+                  style={rarityGlow(rarity)}
                 >
                   {marks}
                 </button>
               ) : (
-                <span aria-label={label} className={cell}>
+                <span aria-label={label} className={cell} style={rarityGlow(rarity)}>
                   {marks}
                 </span>
               )}
@@ -582,7 +587,7 @@ function ChoosePhase({
         team: view.my_team.map((member) => toCharacter(member, member.instance_id)),
         previousLevel: previous?.level,
         previousOutcome: previous ? outcomeOf(previous.winner, "me") : undefined,
-        threatLevels: view.threat_levels,
+        threatLevels: knownLevels(view.threat_levels),
         played: myPlayed,
       }),
     }))
@@ -602,20 +607,34 @@ function ChoosePhase({
       <section className="cut-bottom relative mx-3 mt-1 flex min-h-0 flex-1 flex-col overflow-hidden bg-comic-magenta px-4 pb-5 text-black">
         <div aria-hidden className="halftone absolute inset-0 [mask-image:linear-gradient(135deg,transparent_45%,#000_100%)]" />
         {/* The diorama gets the room the screen has left, above the threat's name. */}
-        <div className="relative -mx-4 min-h-9 flex-1">
+        <div
+          className="relative -mx-4 min-h-9 flex-1"
+          style={round.rarity ? { boxShadow: `inset 0 0 0 4px ${round.rarity.color}, inset 0 0 26px ${round.rarity.color}` } : undefined}
+        >
           <ThreatDiorama key={round.round} name={round.threat.name} level={round.level} fill />
         </div>
+        <RareThreatAlert alertKey={`${view.id}:${round.round}`} rarity={round.rarity} name={round.threat.name} />
         <div className="relative">
           <div className="flex items-end justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-extrabold">
                 Round {round.round} · Livello {round.level}
+                {round.rarity && (
+                  <span className="ml-1.5 bg-black px-1.5 py-0.5 uppercase" style={{ color: round.rarity.color }}>
+                    {rarityTitle(round.rarity)}
+                  </span>
+                )}
               </p>
               <p className="font-display text-[30px] uppercase leading-8">{round.threat.name}</p>
             </div>
             <RoundTimer key={deadline} deadline={deadline} offset={offset} />
           </div>
           <div className="mt-1.5 flex flex-wrap gap-1">
+            {round.threat.hidden && (
+              <span className="bg-black px-1.5 py-0.5 text-xs font-extrabold text-muted">
+                Abilità nascoste: si scoprono dopo la scelta
+              </span>
+            )}
             {round.threat.abilities.map((code, index) => {
               const ability = abilityName(code);
               return (

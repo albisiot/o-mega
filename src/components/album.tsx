@@ -125,6 +125,9 @@ export function Album({
               style={{ width: `${(owned.size / Math.max(catalog.length, 1)) * 100}%` }}
             />
           </div>
+          <Link href="/bestiario" className="mt-2 inline-flex min-h-9 items-center bg-black px-3 text-sm font-extrabold uppercase text-foreground">
+            Bestiario delle Minacce →
+          </Link>
         </section>
 
         {convertible.copies > 0 && (

@@ -848,18 +848,21 @@ export type Database = {
           day: string
           threat_ids: string[]
           threat_levels: number[]
+          threat_modifiers: Json
         }
         Insert: {
           created_at?: string
           day: string
           threat_ids: string[]
           threat_levels: number[]
+          threat_modifiers?: Json
         }
         Update: {
           created_at?: string
           day?: string
           threat_ids?: string[]
           threat_levels?: number[]
+          threat_modifiers?: Json
         }
         Relationships: []
       }
@@ -2301,6 +2304,7 @@ export type Database = {
           art_url: string | null
           code: string
           created_at: string
+          emergency_target: number | null
           flavor: string
           id: string
           is_active: boolean
@@ -2308,13 +2312,16 @@ export type Database = {
           modifier_code: string | null
           modifier_params: Json
           name: string
+          rarity_code: string | null
           region: string
           required_abilities: string[]
+          updated_at: string
         }
         Insert: {
           art_url?: string | null
           code: string
           created_at?: string
+          emergency_target?: number | null
           flavor?: string
           id?: string
           is_active?: boolean
@@ -2322,13 +2329,16 @@ export type Database = {
           modifier_code?: string | null
           modifier_params?: Json
           name: string
+          rarity_code?: string | null
           region?: string
           required_abilities: string[]
+          updated_at?: string
         }
         Update: {
           art_url?: string | null
           code?: string
           created_at?: string
+          emergency_target?: number | null
           flavor?: string
           id?: string
           is_active?: boolean
@@ -2336,10 +2346,86 @@ export type Database = {
           modifier_code?: string | null
           modifier_params?: Json
           name?: string
+          rarity_code?: string | null
           region?: string
           required_abilities?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "threat_definitions_rarity_code_fkey"
+            columns: ["rarity_code"]
+            isOneToOne: false
+            referencedRelation: "threat_rarities"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      threat_rarities: {
+        Row: {
+          code: string
+          color: string
+          name: string
+          one_in: number
+          rank: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          color: string
+          name: string
+          one_in: number
+          rank: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          color?: string
+          name?: string
+          one_in?: number
+          rank?: number
+          updated_at?: string
         }
         Relationships: []
+      }
+      threat_sightings: {
+        Row: {
+          first_seen_at: string
+          last_seen_at: string
+          threat_id: string
+          times: number
+          user_id: string
+        }
+        Insert: {
+          first_seen_at?: string
+          last_seen_at?: string
+          threat_id: string
+          times?: number
+          user_id: string
+        }
+        Update: {
+          first_seen_at?: string
+          last_seen_at?: string
+          threat_id?: string
+          times?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "threat_sightings_threat_id_fkey"
+            columns: ["threat_id"]
+            isOneToOne: false
+            referencedRelation: "threat_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "threat_sightings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trait_categories: {
         Row: {
@@ -2445,6 +2531,7 @@ export type Database = {
       admin_list_events: { Args: never; Returns: Json }
       admin_list_pack_cards: { Args: never; Returns: Json }
       admin_list_special_packs: { Args: never; Returns: Json }
+      admin_list_threats: { Args: never; Returns: Json }
       admin_pack_cards_payload: { Args: never; Returns: Json }
       admin_save_boss_table: {
         Args: {
@@ -2521,6 +2608,28 @@ export type Database = {
         Returns: Json
       }
       admin_special_packs_payload: { Args: never; Returns: Json }
+      admin_update_threat: {
+        Args: {
+          p_code: string
+          p_emergency_target: number
+          p_flavor: string
+          p_is_active: boolean
+          p_modifier_code: string
+          p_modifier_params: Json
+          p_name: string
+          p_rarity_code: string
+        }
+        Returns: undefined
+      }
+      admin_update_threat_rarity: {
+        Args: {
+          p_code: string
+          p_color: string
+          p_name: string
+          p_one_in: number
+        }
+        Returns: undefined
+      }
       advance_daily_objectives: {
         Args: { p_amount?: number; p_metric: string; p_user: string }
         Returns: undefined
@@ -2711,6 +2820,10 @@ export type Database = {
         }
         Returns: string
       }
+      draw_fixed_modifiers: {
+        Args: { p_threat_ids: string[] }
+        Returns: Json[]
+      }
       draw_match_modifiers: { Args: { p_threat_ids: string[] }; Returns: Json }
       draw_pack_definitions: {
         Args: { p_count: number; p_guaranteed_min_rank: number }
@@ -2722,6 +2835,10 @@ export type Database = {
         Returns: string
       }
       draw_threat_modifiers: { Args: { p_levels: number[] }; Returns: Json }
+      draw_threat_rule: {
+        Args: { p_previous: string; p_threat_id: string }
+        Returns: Json
+      }
       draw_variant: { Args: { p_definition_id: string }; Returns: string }
       draw_variant_at: {
         Args: { p_chance_percent: number; p_definition_id: string }
@@ -2796,6 +2913,7 @@ export type Database = {
       forfeit_match: { Args: { p_match_id: string }; Returns: Json }
       game_day: { Args: { p_at?: string }; Returns: string }
       get_active_match: { Args: never; Returns: Json }
+      get_bestiary: { Args: never; Returns: Json }
       get_collection: {
         Args: never
         Returns: {
@@ -3242,6 +3360,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      record_threat_sighting: {
+        Args: { p_at: string; p_threat_id: string; p_user: string }
+        Returns: undefined
+      }
       redeem_bonus_code: { Args: { p_code: string }; Returns: Json }
       refresh_daily_objective: {
         Args: { p_objective_id: string }
@@ -3250,6 +3372,23 @@ export type Database = {
       resolve_conquest_claim: {
         Args: { p_auto: boolean; p_instance_id: string; p_match_id: string }
         Returns: undefined
+      }
+      rule_abilities: {
+        Args: { p_modifier: Json; p_required: string[] }
+        Returns: Json
+      }
+      rule_levels: {
+        Args: { p_modifiers: Json; p_threat_ids: string[] }
+        Returns: number[]
+      }
+      rule_threat_entry: {
+        Args: {
+          p_entry: Json
+          p_hide: boolean
+          p_modifier: Json
+          p_required: string[]
+        }
+        Returns: Json
       }
       save_formation: {
         Args: {
@@ -3337,6 +3476,7 @@ export type Database = {
       }
       team_size_for: { Args: { p_format: string }; Returns: number }
       team_value: { Args: { p_definition_ids: string[] }; Returns: number }
+      threat_rarity_payload: { Args: { p_threat_id: string }; Returns: Json }
       trait_admitted_count: { Args: { p_traits: string[] }; Returns: number }
       trait_catalog_payload: { Args: never; Returns: Json }
       traits_description: { Args: { p_traits: string[] }; Returns: Json }
@@ -3359,8 +3499,27 @@ export type Database = {
         Args: { p_format: string; p_instance_ids: string[]; p_user: string }
         Returns: string[]
       }
-      with_place_modifiers: {
-        Args: { p_modifiers: Json; p_threat_ids: string[] }
+      visible_modifier: {
+        Args: { p_hide: boolean; p_modifier: Json }
+        Returns: Json
+      }
+      with_place_modifiers:
+        | { Args: { p_modifiers: Json; p_threat_ids: string[] }; Returns: Json }
+        | {
+            Args: {
+              p_modifiers: Json
+              p_previous: Json
+              p_threat_ids: string[]
+            }
+            Returns: Json
+          }
+      with_rare_rules: {
+        Args: { p_match_id: string; p_payload: Json; p_side: string }
+        Returns: Json
+      }
+      with_rare_threats: { Args: { p_threat_ids: string[] }; Returns: string[] }
+      with_rare_triple_rules: {
+        Args: { p_match_id: string; p_payload: Json }
         Returns: Json
       }
     }

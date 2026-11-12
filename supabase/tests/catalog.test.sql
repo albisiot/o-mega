@@ -50,14 +50,14 @@ begin
     where (r.rank in (2, 3) and p.tier <> 'simple') or (r.rank in (4, 5) and p.tier <> 'distinctive')
   ), 'power tier does not match rarity';
 
-  select count(*) into v_count from public.threat_definitions where is_active and region = 'megara';
+  select count(*) into v_count from public.threat_definitions where is_active and region = 'megara' and rarity_code is null;
   assert v_count = 60, format('expected 60 threats in Nuova Megara, got %s', v_count);
 
   assert not exists (
-    select level from public.threat_definitions where region = 'megara' group by level having count(*) <> 10
+    select level from public.threat_definitions where region = 'megara' and rarity_code is null group by level having count(*) <> 10
   ), 'every level must have 10 threats in Nuova Megara';
 
-  assert (select count(distinct level) from public.threat_definitions) = 6, 'levels 1-6 must all exist';
+  assert (select count(distinct level) from public.threat_definitions where rarity_code is null) = 6, 'levels 1-6 must all exist';
 
   -- Every ability is required by at least 10 threats across the catalog.
   assert not exists (

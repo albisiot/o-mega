@@ -4,7 +4,7 @@
 import { botView, buildBotTeam, chooseBotPlay, type BotDifficulty, type BotKnowledge } from "./bots.ts";
 import { availableCharacters, isFinished, matchResult, resolveRound } from "./match.ts";
 import { pickOne, type Rng } from "./rng.ts";
-import { drawThreatLevels, pickThreats } from "./threats.ts";
+import { drawMatchThreats } from "./threats.ts";
 import type { Character, MatchResult, MatchRules, MatchState, RoundRecord, Side, Threat } from "./types.ts";
 
 export type BotMatchCatalog = BotKnowledge;
@@ -22,9 +22,8 @@ export function planBotMatch(params: {
   rng: Rng;
 }): { threats: Threat[]; botTeam: Character[] } {
   const { rules, catalog, difficulty, teamDifficulty = difficulty, rng } = params;
-  const levels = drawThreatLevels(rng, rules);
   return {
-    threats: pickThreats(rng, catalog.threatCatalog, levels),
+    threats: drawMatchThreats(rng, catalog.threatCatalog, catalog.rareCatalog ?? [], rules),
     botTeam: buildBotTeam(teamDifficulty, catalog.characters, rules.teamSize, rng),
   };
 }

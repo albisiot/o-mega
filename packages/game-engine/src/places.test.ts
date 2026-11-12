@@ -132,7 +132,7 @@ describe("placeModifier", () => {
   });
 
   it("refuses an unknown rule or an Abissi without abilities", () => {
-    expect(() => placeModifier("focus", {}, rules)).toThrow(/Unknown place rule/);
+    expect(() => placeModifier("fog", {}, rules)).toThrow(/Unknown place rule/);
     expect(() => placeModifier("abyss", {}, rules)).toThrow(/abilities/);
   });
 });

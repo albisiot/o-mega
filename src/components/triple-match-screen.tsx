@@ -23,6 +23,8 @@ import {
   type MatchCard,
 } from "@/lib/match";
 import { matchXp } from "@/lib/progression";
+import { RareThreatAlert } from "@/components/rare-threat-alert";
+import { oddsText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
 import { describeThreatModifier } from "@/lib/threat-modifiers";
 import {
   playTripleRound,
@@ -480,6 +482,10 @@ function ChooseRound({
   const isBot = view.bot_difficulty !== null;
   const hand = round.hand ?? [];
   const previews = useMemo(() => triplePreviews(view, families), [view, families]);
+  // The rarest of the rare threats on the table is announced once (SPEC §5.15).
+  const rarest = view.threats
+    .filter((threat) => threat.rarity)
+    .sort((x, y) => (y.rarity?.rank ?? 0) - (x.rarity?.rank ?? 0))[0];
   const detail = useCardDetail();
   const cardOf = (id: string | null) => hand.find((card) => card.instance_id === id) ?? null;
   const slotOf = (id: string) => placement.indexOf(id);
@@ -547,6 +553,7 @@ function ChooseRound({
         </div>
       </section>
 
+      <RareThreatAlert alertKey={`${view.id}:rare`} rarity={rarest?.rarity} name={rarest?.name ?? ""} />
       {/* The three threats, with the card placed on each and the preview of the card being placed. */}
       <div className="grid min-h-0 flex-1 grid-cols-3 gap-1.5 px-3 pt-2">
         {view.threats.map((threat) => {
@@ -574,7 +581,13 @@ function ChooseRound({
                     ? "border-comic-yellow bg-panel"
                     : "border-dashed border-line bg-panel"
               } ${placed && drag?.id === placed.instance_id ? "opacity-50" : ""}`}
+              style={rarityGlow(threat.rarity)}
             >
+              {threat.rarity && (
+                <span className="text-[9px] font-extrabold uppercase leading-3" style={{ color: threat.rarity.color }}>
+                  {rarityTitle(threat.rarity)}
+                </span>
+              )}
               <span className="flex items-center justify-between gap-1">
                 <span className="text-[10px] font-extrabold text-muted">Lv {threat.level}</span>
                 <ThreatRecord view={view} slot={threat.slot} />
@@ -583,7 +596,7 @@ function ChooseRound({
                 {threat.name}
               </span>
               <span className="mt-0.5 line-clamp-2 text-[9.5px] font-bold leading-3 text-muted">
-                {threat.abilities.map((code) => abilityName(abilities, code)).join(" · ")}
+                {threat.hidden ? "Abilità nascoste" : threat.abilities.map((code) => abilityName(abilities, code)).join(" · ")}
               </span>
               {twist && (
                 <span className="mt-0.5 line-clamp-2 bg-comic-magenta px-1 text-[9px] font-extrabold leading-3 text-black">{twist}</span>
@@ -872,8 +885,14 @@ function ThreatList({ view, abilities }: { view: TripleView; abilities: AbilityI
                 <span className="font-display text-lg uppercase leading-5">{threat.name}</span>
                 <ThreatRecord view={view} slot={threat.slot} />
               </p>
+              {threat.rarity && (
+                <p className="text-xs font-extrabold uppercase" style={{ color: threat.rarity.color }}>
+                  {rarityTitle(threat.rarity)} · {oddsText(threat.rarity.one_in)}
+                </p>
+              )}
               <p className="text-xs font-bold text-muted">
-                Livello {threat.level} · {threat.abilities.map((code) => abilityName(abilities, code)).join(" · ")}
+                Livello {threat.level} ·{" "}
+                {threat.hidden ? "abilità nascoste" : threat.abilities.map((code) => abilityName(abilities, code)).join(" · ")}
               </p>
               {twist && <p className="text-xs font-bold text-comic-magenta">{twist}</p>}
               <p className="text-xs italic text-muted">{threat.flavor}</p>

@@ -13,7 +13,10 @@ import { InfoTip } from "@/components/info-tip";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { TeamPicker } from "@/components/team-picker";
+import { RareThreatAlert } from "@/components/rare-threat-alert";
 import { ThreatDiorama } from "@/components/threat-diorama";
+import { knownLevels, levelText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
+import { modifierLine } from "@/lib/threat-modifiers";
 import { balance } from "@/config/balance";
 import { describeEventPoints } from "@/lib/events";
 import { thumbArtUrl } from "@/lib/art";
@@ -131,7 +134,10 @@ function LevelTrack({ view, abilities, inline = false }: { view: EmergencyView; 
                 ? "bg-comic-magenta text-black"
                 : "border-2 border-line text-foreground";
           const outcome = play ? (play.passed ? ", superata" : ", fallita") : "";
-          const label = `Livello ${level}${outcome}${foreseen ? `, Minaccia prevista: ${foreseen.name}` : ""}`;
+          const rarity = view.threat_rarities?.[i] ?? null;
+          const label = `Livello ${levelText(level)}${rarity ? `, ${rarityTitle(rarity)}` : ""}${outcome}${
+            foreseen ? `, Minaccia prevista: ${foreseen.name}` : ""
+          }`;
           const cell = `relative flex w-full -skew-x-8 items-center justify-center font-display ${
             inline ? "h-11 text-lg" : "h-10 text-[20px]"
           } ${style}`;
@@ -144,16 +150,17 @@ function LevelTrack({ view, abilities, inline = false }: { view: EmergencyView; 
                   aria-expanded={open === i}
                   aria-label={label}
                   className={cell}
+                  style={rarityGlow(rarity)}
                 >
-                  {level}
+                  {levelText(level)}
                   <svg viewBox="0 0 16 10" className="absolute right-0.5 top-0.5 h-2.5 w-4" aria-hidden>
                     <path d="M1 5c2-3 4.5-4 7-4s5 1 7 4c-2 3-4.5 4-7 4S3 8 1 5z" fill="currentColor" />
                     <circle cx="8" cy="5" r="2" fill="var(--background)" />
                   </svg>
                 </button>
               ) : (
-                <span aria-label={label} className={cell}>
-                  {level}
+                <span aria-label={label} className={cell} style={rarityGlow(rarity)}>
+                  {levelText(level)}
                 </span>
               )}
             </li>
@@ -353,18 +360,26 @@ function ChoosePhase({
       card,
       outcome: resolveEmergencyPlay({
         character: toCharacter(card, card.instance_id),
-        threat: { id: threat.id, level: threat.level, abilities: threat.abilities },
+        threat: {
+          id: threat.id,
+          level: threat.level,
+          abilities: threat.abilities,
+          modifier: threat.modifier ?? null,
+          target: threat.target ?? null,
+        },
         squad,
         attempts,
         rules,
         families,
-        threatLevels: view.threat_levels,
+        threatLevels: knownLevels(view.threat_levels),
       }),
     }))
     .sort((a, b) => b.outcome.score.total - b.outcome.required - (a.outcome.score.total - a.outcome.required));
   const chosen = previews.find(({ card }) => card.instance_id === selected)?.card;
   const abilityName = (code: string) => abilities.find((a) => a.code === code);
-  const baseTarget = view.rules.targets[String(threat.level)];
+  // A rare threat brings its own target; under Rovescio it is the most a play may score.
+  const baseTarget = threat.target ?? view.rules.targets[String(threat.level)];
+  const atMost = threat.modifier?.code === "reverse";
 
   async function play() {
     if (!chosen) return;
@@ -392,28 +407,40 @@ function ChoosePhase({
       <section className="cut-bottom relative mx-3 mt-1 flex min-h-0 flex-1 flex-col overflow-hidden bg-comic-magenta px-4 pb-5 text-black">
         <div aria-hidden className="halftone absolute inset-0 [mask-image:linear-gradient(135deg,transparent_45%,#000_100%)]" />
         {/* The diorama gets the room the screen has left, above the threat's name. */}
-        <div className="relative -mx-4 min-h-9 flex-1">
+        <div
+          className="relative -mx-4 min-h-9 flex-1"
+          style={threat.rarity ? { boxShadow: `inset 0 0 0 4px ${threat.rarity.color}, inset 0 0 26px ${threat.rarity.color}` } : undefined}
+        >
           <ThreatDiorama key={threat.round} name={threat.name} level={threat.level} fill />
         </div>
+        <RareThreatAlert alertKey={`emergency:${view.day}:${threat.round}`} rarity={threat.rarity} name={threat.name} />
         <div className="relative">
           <div className="flex items-end justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-extrabold">
                 Minaccia {threat.round} di {view.rules.threats_per_run} · Livello {threat.level}
+                {threat.rarity && (
+                  <span className="ml-1.5 bg-black px-1.5 py-0.5 uppercase" style={{ color: threat.rarity.color }}>
+                    {rarityTitle(threat.rarity)}
+                  </span>
+                )}
               </p>
               <p className="font-display text-[30px] uppercase leading-8">{threat.name}</p>
             </div>
             <p
-              aria-label={`Servono ${baseTarget} punti`}
+              aria-label={atMost ? `Al massimo ${baseTarget} punti` : `Servono ${baseTarget} punti`}
               className="mb-0.5 flex h-12 w-12 shrink-0 rotate-3 flex-col items-center justify-center bg-black font-display text-[26px] leading-none text-comic-yellow"
             >
               {baseTarget}
               <span aria-hidden className="mt-0.5 font-sans text-[8px] font-extrabold uppercase tracking-wide text-foreground">
-                servono
+                {atMost ? "al max" : "servono"}
               </span>
             </p>
           </div>
           <div className="mt-1.5 flex flex-wrap gap-1">
+            {threat.hidden && (
+              <span className="bg-black px-1.5 py-0.5 text-xs font-extrabold text-muted">Abilità nascoste: si scoprono dopo la scelta</span>
+            )}
             {threat.abilities.map((code) => {
               const ability = abilityName(code);
               return (
@@ -427,6 +454,11 @@ function ChoosePhase({
               );
             })}
           </div>
+          {threat.modifier && (
+            <p className="mt-1.5 bg-black px-2 py-1 text-xs font-bold text-foreground">
+              {modifierLine(threat.modifier, abilityName(threat.abilities[0] ?? "")?.name ?? "", (code) => abilityName(code)?.name ?? code)}
+            </p>
+          )}
           <p className="mt-1.5 text-xs font-bold">
             <span className="font-extrabold uppercase">Emergenza</span> · Superate {run.passed} · Fallite {run.failed} su{" "}
             {view.rules.max_failures}
@@ -543,7 +575,7 @@ function PlayReveal({
       card={card ?? null}
       stats={card ? play.threat.abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ") : ""}
       score={play.score}
-      target={rules.targets[String(play.level)] ?? play.required}
+      target={play.rarity ? play.required : (rules.targets[String(play.level)] ?? play.required)}
       required={play.required}
       passed={play.passed}
       notes={notes}

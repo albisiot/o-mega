@@ -86,6 +86,11 @@ function HistoryRow({ entry }: { entry: MatchHistoryEntry }) {
           {entry.end_reason === "forfeit" && " · abbandono"}
         </p>
         <ConquestLine entry={entry} />
+        {entry.rare_threats?.map((threat) => (
+          <p key={threat.name} className="truncate text-xs font-bold" style={{ color: threat.color }}>
+            Minaccia {threat.rarity}: {threat.name}
+          </p>
+        ))}
       </div>
       <div className="shrink-0 text-right">
         <p className={`font-display text-lg uppercase ${result.className}`}>{result.label}</p>

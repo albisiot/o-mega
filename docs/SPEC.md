@@ -190,7 +190,7 @@ Due giocatori si affrontano con una **squadra segreta di 5 personaggi** ciascuno
 
 ### 5.4 Le Minacce
 
-Ogni Minaccia ha un **livello da 1 a 6**, che corrisponde al **numero di abilità richieste**:
+Ogni Minaccia ha un **livello da 1 a 6** (fino a 12 per le Minacce rare, §5.15), che corrisponde al **numero di abilità richieste**:
 
 | Livello | Abilità in gioco | Esempio |
 |---|---|---|
@@ -283,7 +283,7 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 - **Punteggio richiesto:** una Minaccia è superata se il punteggio arriva alla soglia del suo livello: 7, 13, 18, 23, 28, 32 (dal livello 1 al 6).
 - **Fine:** dopo l'ultima Minaccia o alla **terza fallita**.
 - **Livelli:** stesse regole di §5.4, con somma tra 24 e 32.
-- **Solo Nuova Megara:** l'Emergenza estrae solo le 60 Minacce di Nuova Megara, mai quelle dei luoghi (§5.4): con Gelo o Duello alcune soglie sarebbero irraggiungibili (livello 2 al massimo 12 contro 13, livello 5 al massimo 20 contro 28). Così soglie e difficoltà restano quelle tarate.
+- **Solo Nuova Megara:** l'Emergenza estrae solo le 60 Minacce normali di Nuova Megara, più le Minacce rare quando escono (§5.15, ognuna con la sua soglia), mai quelle dei luoghi (§5.4): con Gelo o Duello alcune soglie sarebbero irraggiungibili (livello 2 al massimo 12 contro 13, livello 5 al massimo 20 contro 28). Così soglie e difficoltà restano quelle tarate.
 - **Premi:** 10 monete a 3 Minacce superate, altre 15 a 5, altre 25 a 8 (massimo 50 al giorno). Si ricevono subito, quindi restano anche se il tentativo non viene finito. Nessuna esperienza e nessun effetto sulle statistiche di partita o sullo sblocco della Conquista.
 - **Classifica di giornata:** solo i tentativi finiti, per Minacce superate, poi punteggio totale, poi chi ha finito prima. Non mostra i personaggi giocati, che rivelerebbero le Minacce.
 
@@ -495,6 +495,98 @@ Modalità alternativa alla partita classica, chiesta dall'utente il 12 novembre 
 Conclusioni: come in FLIP, senza correttivo chi gioca per secondo vince 4 volte su 5; i 3 Sigilli di FLIP lo riportano vicino alla parità (42-47% per chi apre), 4 lo ribalterebbero. Giocare bene conta molto (contro chi gioca a caso si vince sempre), la rarità meno che nella partita classica (Gamma su Delta 52% contro 63%), perché conta il valore di 4 abilità su 12 e un lato basso si può nascondere ruotando. Il numero è in `balance.ts` (`quadrant.firstPlayerSeals`) e `game_config` (`quadrant.first_player_seals`).
 
 **Tecnica:** motore in `packages/game-engine/src/quadrant.ts` e `quadrant-bots.ts`; numeri in `balance.ts` (`quadrant`) e `game_config` (`quadrant.*`). Una partita è una riga di `matches` senza Minacce, con `quadrant_abilities` (i 4 codici in ordine di lato), `quadrant_first` e `quadrant_board` (la griglia dopo l'ultima mossa: celle con carta, lati già ruotati e Sigilli dei due lati); `points_a`/`points_b` sono i Sigilli. Ogni mossa è una riga di `match_rounds` (round = mossa, un timer ciascuna) e di `round_plays` con `cell_x`, `cell_y`, `rotation` (base_score = carte battute, bonus = Sigilli tolti, score = Sigilli messi). L'ordine di pesca è l'ordine di `match_teams`, mescolato dal database e mai letto dai client. `match_record_quadrant_move` controlla mossa, turno, che la carta sia nella mano, la casella, la scelta inviata o la scadenza, che le carte già in gioco restino uguali e la nuova abbia i lati giusti per la sua rotazione, che i Sigilli di chi muove crescano solo di quelli messi e quelli dell'altro calino solo di quelli tolti, entro i 15, e il risultato finale. Tra giocatori `match_submit_quadrant` accetta solo la mossa di chi è di turno e la partita la risolve subito. Edge Function `match`: azioni `quadrant_start`, `quadrant_play` (il bot risponde nella stessa chiamata, e apre subito se tocca a lui), `quadrant_submit`; `queue` e il codice amico portano il formato. Chi entra con un codice amico ne legge prima il formato (`get_lobby_format`), così sceglie un mazzo della misura giusta.
+
+### 5.15 Minacce rare
+
+Chieste dall'utente il 12 novembre 2026: Minacce che escono di rado, anche molto di rado, con un diorama 3D ciascuna. La più attesa è **La Fine del Mondo**, che richiede tutte e 12 le abilità. Le regole della partita non cambiano: le rare prendono soltanto il posto di una Minaccia normale.
+
+- **Fasce di rarità** (`threat_rarities`: codice, nome, rango, colore, `one_in`). Ogni Minaccia di una fascia esce **da sola**, circa una volta ogni `one_in` partite (0: mai). Le fasce le modifica solo un admin (`/gestione-minacce`); i giocatori vedono le probabilità nel Bestiario.
+
+| Fascia | Colore | Ogni Minaccia esce | Minacce |
+|---|---|---|---|
+| Rara | azzurro | 1 partita su 200 | 8 |
+| Epica | viola | 1 su 700 | 7 |
+| Leggendaria | arancione | 1 su 2.400 | 6 |
+| Mitica | rosso | 1 su 3.000 | 3 |
+| Apocalittica | cremisi | 1 su 5.000 | 1 (La Fine del Mondo) |
+| Unica | oro | 1 su 20.000 | 4 |
+
+  In tutto, circa 1 partita su 19 ha una Minaccia rara.
+- **Estrazione:** il server estrae le Minacce come sempre (§5.4), tra quelle normali; poi tira una volta per ogni Minaccia rara attiva e mette quelle uscite al posto di Minacce normali a caso, una per round, tenendo tra le altre, se può, una Minaccia di livello 1-2 e una di livello 5-6. La partita classica e l'Emergenza estraggono nella Edge Function (`drawMatchThreats`, `drawEmergencyThreats`), l'Allarme Triplo nel database (`with_rare_threats` dentro `insert_triple_match`). In Emergenza la giornata è la stessa per tutti: se esce una rara, la incontrano tutti quel giorno.
+- **Modalità:** partita classica (bot, amichevole, Conquista), Emergenza e Allarme Triplo. Grande Minaccia, Storia e Quadrante non estraggono Minacce: lì non cambia nulla.
+- **Livello:** è sempre il numero di abilità richieste, ora fino a 12. Una rara non riceve mai un modificatore sorteggiato: ha la sua regola fissa (`modifier_code`, come i luoghi) oppure nessuna (La Fine del Mondo).
+- **Emergenza:** ogni rara ha la sua soglia (`emergency_target`, obbligatoria per le rare). Sotto Rovescio la soglia è il **massimo**: si supera stando a quella cifra o sotto. Le soglie sono tarate per simulazione (vedi sotto).
+
+**Regole delle rare.** Quelle già note (♻) funzionano come in §5.4; Duello e Gelo possono avere un numero proprio (`modifier_params.count`, `.cap`). Territorio ostile ha le fazioni fisse nella Minaccia. Le regole nuove:
+
+| Regola | Effetto | Spareggio |
+|---|---|---|
+| Specchio | Ognuno segna con i valori del personaggio avversario, tenendo il proprio potere. In Emergenza, senza avversario, conta il proprio | Valore più alto dei valori usati |
+| Rovescio | Vince il punteggio **più basso** | Il valore più alto più **basso**; poi nullo |
+| Tutto o niente | Le abilità sotto 5 contano 0 | Normale |
+| Ultimi i primi | +2 per ogni grado di rarità sotto Omega (Delta +8, Omega 0) | Normale |
+| Il prezzo | Le abilità a 0 o 1 valgono −3 | Normale |
+| Una sola forza | Tra Energia, Magia e Psiche conta solo la più alta, tante volte quante sono richieste | Normale |
+| Al buio | Le abilità (6 su 12, estratte alla creazione della partita) si vedono solo dopo che entrambi hanno scelto. Veggente le vede prima | Normale |
+| Eco | Richiede anche le abilità della Minaccia del round prima che non ha già (nel round 1 nessuna) | Normale |
+| Il conteggio | 1 punto per ogni abilità almeno a 5, qualunque sia il valore | Normale |
+| Livello ignoto | Da 3 a 6 abilità estratte a caso alla creazione della partita; nella sequenza dei livelli compare "?" finché il round non si apre | Normale |
+| Negativo | Ogni abilità vale 10 meno il suo valore | Il valore più alto, rovesciato |
+
+I poteri restano tutti attivi anche sotto le regole che ribaltano il round (scelta dell'utente: "poi vediamo"): per esempio sotto Rovescio un bonus fa perdere e Sabotatore aiuta l'avversario. Nessun tetto a Sabotatore, che sulla Fine del Mondo vale fino a −12. Al buio e Livello ignoto sono l'unica eccezione a "le abilità di una Minaccia sono definite nel catalogo, non casuali" (§5.4): nel catalogo la lista è il pool da cui si estrae, e la partita salva le abilità estratte in `matches.threat_modifiers` (riscrivendo i modificatori, una missione della Storia non le cambia). I numeri sono in `balance.ts` (`rareThreats`, più `threatModifiers` per Territorio ostile e Sottovalutati) e `game_config` (`rare_threats.*`).
+
+**Le 29 Minacce** (testi segnaposto, tutti a Nuova Megara; tra parentesi la soglia in Emergenza):
+
+| Codice | Minaccia | Liv. | Abilità | Regola |
+|---|---|---|---|---|
+| RA01 | Il Vulcano si sveglia | 7 | FOR RES ENE VEL VOL PER COM | Gelo (33) |
+| RA02 | Notte senza Rintocco | 1 | PER | Silenzio della tomba (8) |
+| RA03 | Sala degli specchi rotti | 3 | PER PSI MAG | Specchio (17) |
+| RA04 | Nube di droni | 8 | VEL PER TEC ENE INT FUR COM RES | Anello debole (42) |
+| RA05 | Mercato nero dei Segni | 4 | FUR INT VOL PSI | Territorio ostile: Cattivi +3, Eroi −2 (25) |
+| RA06 | Campione dei container | 2 | FOR COM | Colpo mirato (18) |
+| RA07 | Marea nera | 5 | RES ENE MAG PER VOL | Abissi (40) |
+| RA08 | Blackout totale | 6 | TEC ENE INT PER FUR VOL | Tutto o niente (31) |
+| EP01 | Il Colosso di bronzo | 8 | FOR RES ENE COM TEC VOL VEL PER | Duello (20) |
+| EP02 | Il Labirinto sotto Megara | 4 | PER INT RES VOL | Anello debole (32) |
+| EP03 | Il mondo capovolto | 5 | FOR VEL INT MAG FUR | Rovescio (al massimo 20) |
+| EP04 | La lettera mancante | 1 | MAG | Ultimi i primi (12) |
+| EP05 | Assedio dei mille Echi | 9 | tutte tranne MAG PSI FUR | Sottovalutati (49) |
+| EP06 | L'ingorgo eterno | 3 | VEL TEC VOL | Il conto lungo (18) |
+| EP07 | La nave dei folli | 6 | PSI MAG VOL PER RES COM | Silenzio della tomba (33) |
+| LE01 | Il gigante della baia | 10 | tutte tranne PSI FUR | Il prezzo (47) |
+| LE02 | L'Oracolo sepolto | 3 | PSI PER INT | Duello su una sola abilità (10) |
+| LE03 | La centrale dell'Ora Zero | 7 | ENE MAG PSI TEC INT RES VOL | Una sola forza (48) |
+| LE04 | Lo stormo dell'Alfabeto | 6 | INT MAG FUR VEL VOL TEC | Colpo mirato (41) |
+| LE05 | Il Banco salta | 4 | INT FUR TEC COM | Tutto o niente (19) |
+| LE06 | L'ombra di mezzogiorno | 5 | FUR PER PSI VEL MAG | Rovescio (al massimo 16) |
+| MI01 | Il Diluvio | 11 | tutte tranne FUR | Abissi (68) |
+| MI02 | La notte lunga un anno | 6 | 6 su 12 a caso | Al buio (32) |
+| MI03 | L'Ora Zero, di nuovo | 4+ | FOR ENE MAG TEC + Eco | Eco (34) |
+| AP01 | **La Fine del Mondo** | 12 | tutte | nessuna (58) |
+| UN01 | L'Alfabeto completo | 12 | tutte | Il conteggio (7) |
+| UN02 | Il sismografo impazzito | ? | 3-6 su 12 a caso | Livello ignoto (25) |
+| UN03 | Megara Due | 6 | FOR INT ENE COM VOL FUR | Negativo (34) |
+| UN04 | Il tredicesimo rintocco | 12 | tutte | Negativo (67) |
+
+**Cosa vede il giocatore.** Fin dall'inizio, nella sequenza dei livelli, il tassello di una rara si illumina del colore della sua fascia (un "?" per Livello ignoto): lo stato della partita porta la fascia di ogni round (`threat_rarities`), mai il nome. Quando la Minaccia si svela compare per circa 2,6 secondi un avviso a tutto schermo, "Il sismografo è fuori scala", con la fascia, il nome e la probabilità ("circa 1 partita su 5.000"); il telefono vibra dove il browser lo permette (non su iPhone) e un tocco lo chiude. Poi il diorama ha la cornice del colore della fascia. Lo **Storico** segna le rare incontrate in ogni partita.
+
+**Bestiario** (`/bestiario`, dalla Collezione e dal profilo): tutte le Minacce attive, divise in Nuova Megara, i cinque luoghi e le fasce rare. Quelle già incontrate si vedono intere (nome, livello, abilità, regola, testo, quante volte); le altre sono sagome con solo livello e fascia. Una Minaccia si conta incontrata quando si apre il suo round (partita classica, Allarme Triplo, Storia) o quando la si gioca in Emergenza (`threat_sightings`, scritto dai trigger; all'arrivo del Bestiario si è contato anche lo storico). Le rare non danno monete: incontrarle conta solo per il Bestiario, così non conviene cercarle giocando a ripetizione contro i bot.
+
+**Admin** (`/gestione-minacce`, dai collegamenti admin del profilo e della privacy): fasce (nome, colore, 1 partita su N) e per ogni Minaccia nome, testo, regola con i suoi parametri, rarità, soglia per l'Emergenza, attiva sì/no. Il server controlla l'admin, le regole e che ogni livello tenga almeno 8 Minacce normali di Nuova Megara attive (una sequenza di Emergenza). Il diorama è legato al nome: rinominare una Minaccia le toglie il diorama finché l'app non si aggiorna. Le partite in corso tengono la regola con cui sono iniziate.
+
+**Diorami:** ogni rara ha la sua scena 3D (`src/lib/threat-scene.ts`, `threat-diorama.ts`); per i livelli oltre il 6 le quantità che crescono col livello hanno un tetto, così la scena resta leggera sul telefono.
+
+**Bot:** vedono la fascia dei round futuri (pubblica) e li stimano con le rare di quella fascia e livello; sotto Rovescio e Specchio cercano un punteggio proprio basso; Al buio, prima di scegliere, giocano come su una Minaccia normale dello stesso livello.
+
+**Simulazioni** (catalogo reale a 187 personaggi):
+
+- *Soglie dell'Emergenza:* con le soglie dei livelli 1-6 un personaggio a caso del catalogo supera una Minaccia normale il 27,5% delle volte; ogni soglia rara è quella che dà la percentuale più vicina con la sua regola (tra 20% e 34%, salvo Il tredicesimo rintocco: 11%, perché i suoi punteggi sono pochi e lontani).
+- *Round tra due personaggi a caso* (tra parentesi le Minacce normali dello stesso livello): sulla Fine del Mondo vince il più raro il **98%** (58%) e il più "a picchi" il 79%: senza regola conta il totale dei punti, che dipende dalla rarità (§4.3), come previsto in proposta; l'utente ha scelto di lasciarla così per ora. Il tredicesimo rintocco ribalta: il più raro vince il 12%. Specchio 36%, Ultimi i primi 39%, Rovescio 43-44%, Sottovalutati 44% aiutano le carte comuni; Colosso di bronzo (Duello) 71%, Una sola forza 71%, Marea nera 70%, Il Diluvio 77% le rare.
+- *Partite intere bot contro bot* (300 per Minaccia, ogni rara forzata nel round 3, Difficile contro Facile): nessun errore; il Difficile vince quel round tra il 52% e l'80% (59% su una Minaccia normale), tranne Al buio, 49%, dove nessuno vede le abilità.
+- Con 1 partita su 19, le rare non spostano i rapporti di forza di §4.3.
+
+**Tecnica:** migrazione `20261112230000_rare_threats.sql` (fasce, colonne `rarity_code` ed `emergency_target`, livelli 1-12, regole, estrazione, `emergency_days.threat_modifiers`, `threat_sightings`, `get_bestiary`, Storico, funzioni admin, catalogo); motore `threats.ts` (`drawRareThreats`, `withRareThreats`, `drawMatchThreats`, `withRuleAbilities`), `scoring.ts`, `bots.ts`, `emergency.ts`; test `rare-threats.test.ts`, `supabase/tests/rare_threats.test.sql`.
 
 ## 6. Conquista delle carte
 
@@ -788,6 +880,7 @@ Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy
 | Minacce oltre Nuova Megara | Regola fissa per luogo, non nuovi modificatori sorteggiati; i modificatori sorteggiati restano alle Minacce di Nuova Megara; l'Emergenza non estrae le Minacce dei luoghi (§5.4, §5.10). |
 | Grande Minaccia | Modalità con un Boss a 5 fronti e la tabella dei punti visibile (§5.12): prima contro i bot, poi amichevole tra giocatori; niente monete, niente Conquista finché non ci sono dati reali. Approvata il 9 novembre 2026 con tutti i valori di default; lo stesso giorno l'utente ha chiesto le carte fisse sui fronti, che pagano sempre a chi è da solo. |
 | Allarme Triplo | Modalità con 3 Minacce fisse estratte a caso (di qualsiasi livello) e un mazzo di 9 carte, 3 pescate a caso per round (§5.13): bot e amichevole tra giocatori, niente monete né Conquista. Approvata il 10 novembre 2026 con i valori di default, tranne le Minacce completamente a caso; nessuna correzione contro il caso della pesca finché non ci sono dati reali. |
+| Minacce rare | 29 Minacce in sei fasce di rarità (§5.15), ognuna con la sua probabilità per partita, in partita classica, Emergenza e Allarme Triplo; fasce, testi, regole e rarità modificabili solo dagli admin; nessuna moneta, solo il Bestiario. La Fine del Mondo senza regola; poteri attivi anche sotto le regole che ribaltano il round; nessun tetto a Sabotatore. Approvate il 12 novembre 2026. |
 
 ### 13.2 Aperte (usare il default)
 

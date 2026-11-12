@@ -46,6 +46,9 @@ export function AdminLink() {
       <Link href="/gestione-obiettivi" className={LINK}>
         Obiettivi del giorno
       </Link>
+      <Link href="/gestione-minacce" className={LINK}>
+        Minacce
+      </Link>
     </nav>
   );
 }
