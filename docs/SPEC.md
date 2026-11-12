@@ -306,7 +306,7 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 
 ### 5.11 Storia
 
-Capitoli di missioni da giocare da soli contro gli avversari di Nuova Megara. La trama dei capitoli è in `docs/STORY.md`; i testi nel database restano **segnaposto** finché non vengono riscritti su quella base.
+Capitoli di missioni da giocare da soli contro gli avversari di Nuova Megara. Sei capitoli formano la Stagione 1, *Il Rintocco*. La trama dei capitoli è in `docs/STORY.md`; i testi nel database restano **segnaposto** finché non vengono riscritti su quella base.
 
 - **Missione:** una partita contro un bot con squadra, 5 Minacce e modificatori scelti a mano (`story_missions`), non sorteggiati. Il giocatore vede in anticipo solo i livelli, come in ogni partita. Le regole sono quelle di §5. Una missione con una Minaccia di un luogo ne tiene sempre la regola, qualunque modificatore scelga.
 - **Ordine:** la prima missione è aperta; ogni altra si apre completando quella prima, anche tra un capitolo e l'altro.
@@ -374,6 +374,18 @@ Stesso metodo del Capitolo 3; motore delle partite e catalogo (122 personaggi, 7
 | 5. Nessuno passa | Keelstone e i Custodi (2 Alfa, Keelstone e Impetus) | Super Pro | 4·1·6·2·5 | 120 monete e la carta Keelstone (Alfa) |
 
 Stesso metodo, sul catalogo attuale: 187 personaggi (65 in più dal Capitolo 4) e 75 Minacce con le loro regole. Il giocatore con la squadra casuale vince circa il 67%, 49%, 45%, 29% e 17% delle volte (10.000 partite con il bot Medio, 6.000 con Difficile, 4.000 con Super Pro). Il Capitolo 4, rimisurato nelle stesse condizioni, dà 69%, 52%, 69%, 31% e 20%: ogni missione è più dura della corrispondente e la prima resta la più facile del capitolo. **Il Capitolo 4 si è spostato:** era tarato su 73%, 62%, 50%, 41% e 16%. Lo sposta solo la squadra casuale del giocatore, che ora pesca anche i personaggi nuovi: con il giocatore limitato ai 122 personaggi di allora tornano 73%, 62%, 49% e 40%, mentre il catalogo che i bot usano per stimare i round non cambia nulla. Le missioni 2 e 4 sono diventate più dure, la 3 molto più facile; i Delta e Gamma nuovi hanno valori più a picchi dei vecchi (somma dei quadrati media circa 385 contro 320). Il Capitolo 5 è tarato sui valori nuovi, quindi la missione 3 è molto più dura della corrispondente; ritarare il Capitolo 4 resta da fare. Solo Minacce di Nuova Megara, perché il capitolo resta in città; la prima di ogni missione è a tema (Tempesta elettrica, Cospirazione globale, Assedio al municipio, Titano di metallo, Portale instabile).
+
+**Capitolo 6, Mongibello** (finale della Stagione 1):
+
+| Missione | Avversario | Bot | Livelli | Premio |
+|---|---|---|---|---|
+| 1. Evacuazione | Kiln e i fuochisti | Medio | 3·1·5·2·4 | 80 monete |
+| 2. Le campane | Belladonna e Tacet | Medio | 2·4·1·5·3 | 90 monete |
+| 3. La strada che sale | Rubicon e la banda (1 Alfa, Mischance) | Difficile | 2·5·1·4·3 | 100 monete |
+| 4. Chi trova, di nuovo | Vera Kross e i segugi (1 Alfa, Vera Kross) | Difficile | 5·2·6·1·3 | 110 monete |
+| 5. Lo sguardo | Ottavia e i Figli (2 Alfa, Effigy e Groma) | Super Pro | 5·1·6·2·4 | 130 monete e la carta Effigy (Alfa) |
+
+Stesso metodo del Capitolo 5, sullo stesso catalogo: 187 personaggi e 75 Minacce comuni con le loro regole. Le 29 Minacce rare (§5.15) non entrano nelle missioni né in quello che i bot sanno dei round futuri, come nel server; le ricompense delle partite (§8.4, riga `story`) si aggiungono ai premi della missione e non cambiano la partita. Il giocatore con la squadra casuale vince circa il 65%, 48%, 43%, 26% e 15% delle volte (10.000 partite con il bot Medio, 6.000 con Difficile, 4.000 con Super Pro). Il Capitolo 5, rimisurato nelle stesse condizioni, dà 67%, 50%, 45%, 28% e 17%: ogni missione è un po' più dura della corrispondente, la prima resta la più facile del capitolo e il boss è la sfida più dura della stagione. Con altri 30 personaggi (P188-P217) nella squadra casuale del giocatore le percentuali diventano circa 65%, 44%, 39%, 27% e 13%. Solo Minacce di Nuova Megara, perché nessun luogo del catalogo è il vulcano; la prima di ogni missione è a tema (Laboratorio in fiamme, Ipnotizzatore, Gang dei motociclisti, Caccia nel buio, Culto dell'eclissi). Con Gigante risvegliato come prima Minaccia del boss il giocatore vinceva quel round quasi 8 volte su 10 e il boss non scendeva sotto il 19%.
 
 ### 5.12 Grande Minaccia (Boss)
 

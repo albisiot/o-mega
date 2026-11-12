@@ -43,7 +43,7 @@ L'esplosione è ancora lì, nella camera del tempio: una palla di luce con i det
 
 ### Il registro delle lettere
 
-Da tenere aggiornato capitolo per capitolo.
+Da tenere aggiornato capitolo per capitolo. La Stagione 1 è completa (Capitolo 6 nel database): la colonna di destra è lo stato attuale.
 
 | Lettere | A inizio serie | A fine Stagione 1 |
 |---|---|---|
@@ -51,7 +51,7 @@ Da tenere aggiornato capitolo per capitolo.
 | Ε | Nel caveau della Compagnia Lete | Al Banco, usata come stampo per le lettere false |
 | Ζ | Nel petto di Xenolith | Nel petto di Xenolith, nascosto dalle Lanterne |
 | Η | Mai trovata | Ne esiste solo una falsa, colata dal Banco |
-| Θ | Nel vulcano | Al Banco, che la mette all'asta |
+| Θ | Nel vulcano | Al Banco, che la mette all'asta: uscita dal cratere con l'eruzione mancata, il dottor Spanò l'ha presa «in custodia» (Capitolo 6) |
 | Ι … Ψ | Sepolte | Sepolte. Nicola sa dove sono; i Figli ne hanno alcune |
 | Ω | Nella camera del tempio, tra le mani di Holdout: è la chiave di volta. Il Comune ne conosce solo il nome, che usa per la classe più rara | Tra le mani di Holdout |
 
@@ -231,7 +231,7 @@ Squadre avversarie, Minacce e difficoltà si tarano con la simulazione, come nel
 
 ### Capitolo 6 — Mongibello
 
-*Atto III, finale di stagione. Albo* Mongibello. *Da costruire.*
+*Atto III, finale di stagione. Albo* Mongibello. *Testi nel database (migrazione `20261113110000_chapter_six_story.sql`); squadre e Minacce tarate con la simulazione (SPEC §5.11).*
 
 - **In una riga:** i Figli dell'Ultima svegliano il vulcano per far cedere Holdout, e l'unico che può fermare l'eruzione non sa combattere.
 - **La cosa strana:** Mongibello, che trattiene un'eruzione dentro di sé.
@@ -239,17 +239,17 @@ Squadre avversarie, Minacce e difficoltà si tarano con la simulazione, come nel
 - **Avversari:** i Figli dell'Ultima al completo, con Ottavia come loro Reggente. Per una volta la Compagnia sta dalla tua parte: se l'esplosione finisce, la centrale finisce con lei.
 - **Conflitto interno:** Vera Kross vuole il botto e basta; Antiphon comincia a dubitare che torni qualcuno; Effigy ha un'idea più semplice: Holdout non può morire, ma può diventare pietra, e la pietra non trattiene niente.
 - **Carte presentate:** Mongibello, Effigy, Carillon.
-- **Boss:** Effigy, schierata da Ottavia. Nel catalogo Effigy non ha un gruppo: qui la mettiamo tra i Figli dell'Ultima (solo nella storia, niente cambia nel database).
+- **Boss:** Effigy, schierata da Ottavia. Nel catalogo Effigy è già tra i Figli dell'Ultima (gruppo assegnato con le schede dei personaggi).
 - **Rivelazione:** Mongibello sale sul cratere e trattiene l'eruzione dentro di sé; Holdout regge. Sul cratere Ottavia incontra finalmente il capo dei Figli: è Nicola, suo fratello, vivo, con un Segno che gli fa sentire dove sono le lettere. Le chiede di restare: quando l'esplosione finirà, dice, torneranno tutti. Lei rifiuta, e lui sparisce.
 - **Gancio di stagione:** la Θ è uscita dal cratere con l'eruzione mancata, e il dottor Spanò l'ha già presa: *"L'asta si apre a mezzanotte."*
 
-| # | Missione | Situazione | Carte principali |
+| # | Missione | Situazione | Squadra avversaria (definitiva) |
 |---|---|---|---|
-| 1 | Evacuazione | I Figli appiccano fuochi per rallentare i soccorsi | Kiln, Cineris, Quicklime |
-| 2 | Le campane | Carillon suona per avvertire la città e i Figli vogliono farla tacere | Belladonna, Tacet, Lullaby |
-| 3 | La strada che sale | La banda di Rubicon, pagata dai Figli, blocca l'unica strada che sale | Rubicon, Falx, Odonate |
-| 4 | Chi trova, di nuovo | Vera Kross cerca Mongibello per impedirgli di salire | Vera Kross, Antiphon, Patina |
-| 5 | Lo sguardo | Sul cratere Ottavia schiera Effigy | Effigy, Kiln, Credo |
+| 1 | Evacuazione | I Figli appiccano fuochi per rallentare i soccorsi | Kiln, Cineris, Quicklime, Hecatomb, Dredge |
+| 2 | Le campane | Carillon suona per avvertire la città e i Figli vogliono farla tacere | Belladonna, Tacet, Lullaby, Hospes, Theriarch |
+| 3 | La strada che sale | La banda di Rubicon, pagata dai Figli, blocca l'unica strada che sale | Rubicon, Falx, Odonate, Hireling, Mischance |
+| 4 | Chi trova, di nuovo | Vera Kross cerca Mongibello per impedirgli di salire | Vera Kross, Antiphon, Patina, Noophage, Epigone |
+| 5 | Lo sguardo | Sul cratere Ottavia schiera Effigy | Effigy, Kiln, Credo, Miliarium, Groma |
 
 ## 7. Mappa delle rivelazioni
 
@@ -298,7 +298,7 @@ Valgono i default finché non si decide altrimenti.
 | Nomi di Renata, Ottavia, Nicola e Spanò | Segnaposto, da verificare prima di pubblicare |
 | Il quartiere del giocatore | Le Fosse, segnaposto |
 | Aion | Fuori dalla Stagione 1 |
-| Effigy tra i Figli dell'Ultima | Sì, solo nella storia |
+| Effigy tra i Figli dell'Ultima | Sì, anche nel catalogo (gruppo Figli dell'Ultima) |
 | Premi dei capitoli | La carta del boss, come nel Capitolo 1: cinque Alfa e un Beta in sei capitoli. Da verificare con l'economia (SPEC §8) |
 | Lettere e rarità | Le lettere della storia non sono rarità; un'eventuale rarità nuova userà Θ |
 | Testo finale di capitolo | Fatto: `story_chapters.outro`, mostrato nella pagina Storia. Non compare ancora nella schermata di fine partita |

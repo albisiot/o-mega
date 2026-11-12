@@ -46,7 +46,7 @@ export function StoryRewardPanel({ reward, abilities }: { reward: StoryReward; a
     </p>
   );
   const last = reward.is_last && (
-    <p className="font-semibold">Hai finito tutti i capitoli disponibili. Il prossimo arriva presto.</p>
+    <p className="font-semibold">Hai finito la Stagione 1, Il Rintocco. La prossima stagione arriva presto.</p>
   );
   if (!reward.card) {
     return (

@@ -126,7 +126,8 @@ function StoryPageContent() {
             )}
             {allDone && shown === chapters.length - 1 && (
               <p className="text-sm font-semibold text-comic-cyan">
-                Hai finito tutti i capitoli disponibili. Il prossimo arriva presto.
+                {/* Season 1 is the whole story for now: change this when a season 2 chapter comes out. */}
+                Hai finito la Stagione 1, Il Rintocco. La prossima stagione arriva presto.
               </p>
             )}
           </>
