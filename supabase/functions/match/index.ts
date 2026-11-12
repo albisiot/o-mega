@@ -510,7 +510,11 @@ function quadrantPlacementOf(value: unknown): QuadrantPlacement | null {
   return { characterId: v.card_instance_id, x: v.x, y: v.y, rotation: v.rotation };
 }
 
-/** Plays the bot's moves while it is its turn: at the start when it opens, after each move of the player. */
+/**
+ * Plays the bot's moves while it is its turn: at the start when it opens, after each move
+ * of the player. Answers with the last state and, in `previous`, the states before it
+ * (`last` first), so the screen can show the player's move before the bot's.
+ */
 async function playQuadrantBotTurns(
   matchId: string,
   state: QuadrantState,
@@ -519,14 +523,15 @@ async function playQuadrantBotTurns(
   last: unknown,
 ) {
   let current = state;
-  let payload = last;
+  const steps: unknown[] = [last];
   while (quadrantSideToMove(current) === "b") {
     const placement = chooseQuadrantBotPlacement(quadrantBotView(current, "b", catalog), difficulty, rng);
     const played = playQuadrantMove({ state: current, placement, rng });
-    payload = check(await recordQuadrantMove(matchId, current, played, "a"));
+    steps.push(check(await recordQuadrantMove(matchId, current, played, "a")));
     current = played.state;
   }
-  return payload;
+  const final = steps.at(-1) as Record<string, unknown>;
+  return { ...final, previous: steps.slice(0, -1) };
 }
 
 /**

@@ -119,7 +119,7 @@ export const balance = {
     /** Time for one move. */
     moveTimerSeconds: 20,
     /** Pause to show a move before the next timer starts. */
-    movePauseSeconds: 2,
+    movePauseSeconds: 4,
   },
 
   /** Twists on the threats of a match; Emergenza has none. Tuned by simulation (SPEC §5.4). */

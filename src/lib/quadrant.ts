@@ -88,6 +88,11 @@ export type QuadrantView = {
   level_unlocks?: { name: string; level: number }[];
   server_now: string;
   opponent: { username: string; avatar_url: string | null; level: number; last_seen_at: string | null } | null;
+  /**
+   * Against a bot, the states before this one in the same answer: after the player's move,
+   * then after each bot move but the last. The screen shows them one at a time.
+   */
+  previous?: QuadrantView[];
 };
 
 export function isQuadrantView(view: { format?: string }): view is QuadrantView {
@@ -160,16 +165,30 @@ export function legalCells(view: QuadrantView): { x: number; y: number }[] {
   return quadrantLegalCells(knownQuadrantBoard(view), view.variant, view.size);
 }
 
-/** What a move would do now: seals the player gains, seals the opponent loses, cards beaten. */
-export function previewQuadrantMove(
-  view: QuadrantView,
-  card: MatchCard,
-  x: number,
-  y: number,
-  rotation: number,
-): { gained: number; removed: number; beaten: number } {
+/** How the seals on one cell changed: the player's and the opponent's, up or down. */
+export type SealDelta = { x: number; y: number; me: number; opponent: number };
+
+type SealCell = { x: number; y: number; seals: { me: number; opponent: number } };
+
+/** The cells whose seals changed from one grid to the next (a new card counts from zero). */
+export function sealDeltas(before: readonly SealCell[], after: readonly SealCell[]): SealDelta[] {
+  const old = new Map(before.map((cell) => [`${cell.x},${cell.y}`, cell.seals]));
+  const deltas: SealDelta[] = [];
+  for (const cell of after) {
+    const was = old.get(`${cell.x},${cell.y}`) ?? { me: 0, opponent: 0 };
+    const delta = { x: cell.x, y: cell.y, me: cell.seals.me - was.me, opponent: cell.seals.opponent - was.opponent };
+    if (delta.me !== 0 || delta.opponent !== 0) deltas.push(delta);
+  }
+  return deltas;
+}
+
+export type MovePreview = { gained: number; removed: number; beaten: number; deltas: SealDelta[] };
+
+/** What a move would do now: seals the player places, seals the opponent loses, cards beaten, and where. */
+export function previewQuadrantMove(view: QuadrantView, card: MatchCard, x: number, y: number, rotation: number): MovePreview {
+  const before = knownQuadrantBoard(view);
   const outcome = applyQuadrantMove(
-    knownQuadrantBoard(view),
+    before,
     quadrantRulesOf(view),
     "a",
     { characterId: "preview", definitionId: card.definition_id, values: cardValues(view, card, rotation) },
@@ -177,7 +196,24 @@ export function previewQuadrantMove(
     y,
     view.move === 1,
   );
-  return { gained: outcome.placed, removed: outcome.removed, beaten: outcome.beaten };
+  const asCells = (board: QuadrantBoard) =>
+    [...board.cells.values()].map((c) => ({ x: c.x, y: c.y, seals: { me: c.seals.a, opponent: c.seals.b } }));
+  return {
+    gained: outcome.placed,
+    removed: outcome.removed,
+    beaten: outcome.beaten,
+    deltas: sealDeltas(asCells(before), asCells(outcome.board)),
+  };
+}
+
+/** The best quarter turn for a card on a cell: the one that gains the most now (placed plus removed). */
+export function bestRotation(view: QuadrantView, card: MatchCard, x: number, y: number): { rotation: number; gain: number } {
+  let best = { rotation: 0, gain: -Infinity };
+  for (let rotation = 0; rotation < 4; rotation++) {
+    const p = previewQuadrantMove(view, card, x, y, rotation);
+    if (p.gained + p.removed > best.gain) best = { rotation, gain: p.gained + p.removed };
+  }
+  return best;
 }
 
 /**

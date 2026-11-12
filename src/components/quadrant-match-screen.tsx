@@ -14,6 +14,7 @@ import { describeEventPoints } from "@/lib/events";
 import { claimVictory, DIFFICULTY_LABELS, fetchMatchState, forfeitMatch, pingMatch, subscribeToUpdates, type MatchCard } from "@/lib/match";
 import { matchXp } from "@/lib/progression";
 import {
+  bestRotation,
   cardValues,
   frozenAxes,
   legalCells,
@@ -22,11 +23,14 @@ import {
   QUADRANT_GRID_LABELS,
   quadrantWindow,
   resolveQuadrantMove,
+  sealDeltas,
   submitQuadrantMove,
   type QuadrantCellView,
   type QuadrantPlacementInput,
   type QuadrantView,
+  type SealDelta,
 } from "@/lib/quadrant";
+import { useCardDrag } from "@/lib/use-card-drag";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow, useSecondsLeft } from "@/lib/use-now";
 
@@ -37,6 +41,16 @@ const TUTORIAL_KEY = "o-mega.quadrant-tutorial-seen";
 /** Arrows for the four sides, in direction order: top, right, bottom, left. */
 const ARROWS = ["▲", "▶", "▼", "◀"] as const;
 const SIDE_NAMES = ["in alto", "a destra", "in basso", "a sinistra"] as const;
+/** Against a bot: how long the player's move stays alone on the grid before the bot's. */
+const BOT_THINK_MS = 1_600;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** What the last move changed: who played it, and the seals on each cell. */
+type MoveChanges = { move: number; mine: boolean; deltas: SealDelta[] };
+
+/** "1 Sigillo", "3 Sigilli". */
+const seals = (n: number) => `${n} Sigill${n === 1 ? "o" : "i"}`;
 
 function seenTutorial(): boolean {
   try {
@@ -63,7 +77,10 @@ export function QuadrantMatchScreen({ initial }: { initial: QuadrantView }) {
 type Draft = { instanceId: string; x: number | null; y: number | null; rotation: number };
 
 function QuadrantSteps({ initial }: { initial: QuadrantView }) {
-  const [view, setView] = useState(initial);
+  // Against a bot that opens, the empty grid first, then its card (see the effect below).
+  const [view, setView] = useState(() => initial.previous?.[0] ?? initial);
+  const [changes, setChanges] = useState<MoveChanges | null>(null);
+  const [botThinking, setBotThinking] = useState(false);
   // Server time minus device time: countdowns follow the server clock.
   const [offset, setOffset] = useState(() => Date.parse(initial.server_now) - Date.now());
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -85,13 +102,59 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
     }
   };
 
-  const apply = useCallback((next: QuadrantView) => {
-    setView((shown) => {
-      if (next.move !== shown.move || next.status !== shown.status) setDraft(null);
-      return next;
-    });
+  // The state on screen, to tell what each new state changed.
+  const shown = useRef<QuadrantView>(initial.previous?.[0] ?? initial);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  const showState = useCallback((next: QuadrantView) => {
+    const before = shown.current;
+    if (next.moves.length > before.moves.length) {
+      const last = next.moves.at(-1)!;
+      // Seal by seal only when exactly one move is new; otherwise just who moved.
+      const deltas = next.moves.length === before.moves.length + 1 ? sealDeltas(before.board, next.board) : [];
+      setChanges({ move: last.move, mine: last.mine, deltas });
+    }
+    if (next.move !== before.move || next.status !== before.status) setDraft(null);
+    shown.current = next;
+    setView(next);
     setOffset(Date.parse(next.server_now) - Date.now());
   }, []);
+
+  /**
+   * Shows a new state. Against a bot an answer brings the states in between (the player's
+   * move, then each bot move): one at a time, the bot "thinking" before each of its moves.
+   */
+  const apply = useCallback(
+    async (next: QuadrantView, delayFirst = false) => {
+      const steps = [...(next.previous ?? []), next];
+      for (const [i, step] of steps.entries()) {
+        if (i > 0 || delayFirst) {
+          setBotThinking(true);
+          await sleep(BOT_THINK_MS);
+          if (!mounted.current) return;
+        }
+        showState({ ...step, previous: undefined });
+      }
+      setBotThinking(false);
+    },
+    [showState],
+  );
+
+  // A bot that opens plays its first card a moment after the grid appears.
+  const opening = useRef(initial.previous && initial.previous.length > 0 ? initial : null);
+  useEffect(() => {
+    const pending = opening.current;
+    if (!pending) return;
+    opening.current = null;
+    apply({ ...pending, previous: pending.previous!.slice(1) }, true);
+  }, [apply]);
+
   const fetchQuadrant = useCallback(async (id: string) => (await fetchMatchState(id)) as unknown as QuadrantView, []);
 
   const isBot = view.bot_difficulty !== null;
@@ -104,12 +167,12 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
       setBusy(true);
       setError(null);
       try {
-        if (isBot) apply(await playQuadrantMove(view.id, move, placement));
-        else apply(placement === null ? await resolveQuadrantMove(view.id) : await submitQuadrantMove(view.id, move, placement));
+        if (isBot) await apply(await playQuadrantMove(view.id, move, placement));
+        else await apply(placement === null ? await resolveQuadrantMove(view.id) : await submitQuadrantMove(view.id, move, placement));
       } catch (cause) {
         // Someone (the timer, another tab) was faster: reload the state.
         if (cause instanceof Error && ["round_already_resolved", "match_not_active", "not_your_turn"].includes(cause.message)) {
-          apply(await fetchQuadrant(view.id));
+          await apply(await fetchQuadrant(view.id));
         } else if (cause instanceof Error && cause.message === "invalid_placement") {
           setError("Mossa non valida: scegli una carta della mano e una casella libera accanto a una carta.");
         } else {
@@ -318,7 +381,9 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
           view={view}
           rival={rival}
           draft={draft}
-          busy={busy}
+          changes={changes}
+          botThinking={botThinking}
+          busy={busy || botThinking}
           deadline={deadline}
           offset={offset}
           onDraft={setDraft}
@@ -350,6 +415,8 @@ function PlayArea({
   view,
   rival,
   draft,
+  changes,
+  botThinking,
   busy,
   deadline,
   offset,
@@ -360,6 +427,8 @@ function PlayArea({
   view: QuadrantView;
   rival: string;
   draft: Draft | null;
+  changes: MoveChanges | null;
+  botThinking: boolean;
   busy: boolean;
   deadline: number | null;
   offset: number;
@@ -370,57 +439,70 @@ function PlayArea({
   const detail = useCardDetail();
   const isActive = view.status === "active";
   const myTurn = isActive && view.to_move === "me";
+  const canPlay = myTurn && !busy;
   const area = quadrantWindow(view);
   const legal = useMemo(() => (myTurn ? legalCells(view) : []), [view, myTurn]);
   const isLegal = (x: number, y: number) => legal.some((c) => c.x === x && c.y === y);
-  const card = draft ? (view.my_hand.find((c) => c.instance_id === draft.instanceId) ?? null) : null;
-  const placed = card && draft && draft.x !== null && draft.y !== null ? { x: draft.x, y: draft.y } : null;
-  const preview = card && placed && draft ? previewQuadrantMove(view, card, placed.x, placed.y, draft.rotation) : null;
+  const handCard = (id: string | null | undefined) => view.my_hand.find((c) => c.instance_id === id) ?? null;
+
+  /** Puts a card on a free cell, turned the way that gains the most there. */
+  function put(instanceId: string, x: number, y: number) {
+    const card = handCard(instanceId);
+    if (!card || !canPlay || !isLegal(x, y)) return;
+    onDraft({ instanceId, x, y, rotation: bestRotation(view, card, x, y).rotation });
+  }
+
+  // Drag a card of the hand (or the one already on the grid) onto a free cell.
+  const { drag, start, ghostRef } = useCardDrag((id, zone) => {
+    if (zone === null || zone === "hand") {
+      // Back to the hand, or dropped nowhere: the card stays chosen, off the grid.
+      if (draft?.instanceId === id || zone === "hand") onDraft({ instanceId: id, x: null, y: null, rotation: 0 });
+      return;
+    }
+    const [x, y] = zone.split(",").map(Number);
+    put(id, x, y);
+  }, !canPlay);
+
+  // The card being placed: the one in the finger, else the one chosen.
+  const card = handCard(drag?.id ?? draft?.instanceId);
+  const placed = !drag && draft && draft.x !== null && draft.y !== null ? { x: draft.x, y: draft.y } : null;
+  const hovered = drag?.over && drag.over !== "hand" ? drag.over.split(",").map(Number) : null;
+  // What the move would do: the card placed, or the card dragged over a free cell (best turn).
+  const preview = (() => {
+    if (!card) return null;
+    if (placed && draft) return previewQuadrantMove(view, card, placed.x, placed.y, draft.rotation);
+    if (hovered && isLegal(hovered[0], hovered[1])) {
+      const { rotation } = bestRotation(view, card, hovered[0], hovered[1]);
+      return previewQuadrantMove(view, card, hovered[0], hovered[1], rotation);
+    }
+    return null;
+  })();
+  // On the grid: the preview of the move being prepared, else what the last move did.
+  const shownDeltas = preview ? preview.deltas : (changes?.deltas ?? []);
+  const deltaAt = (x: number, y: number) => shownDeltas.find((d) => d.x === x && d.y === y) ?? null;
   const last = view.moves.at(-1) ?? null;
   const frozen = frozenAxes(view);
 
-  // A cell the chosen card can go on: the gain for each turn of the card, the best one shown.
-  const bestGain = (x: number, y: number) => {
-    if (!card) return null;
-    let top = -Infinity;
-    for (let rotation = 0; rotation < 4; rotation++) {
-      const p = previewQuadrantMove(view, card, x, y, rotation);
-      top = Math.max(top, p.gained + p.removed);
-    }
-    return top;
-  };
-
   function tapCell(x: number, y: number) {
-    if (busy || !myTurn || !draft) return;
+    if (!canPlay || !draft) return;
     if (placed && placed.x === x && placed.y === y) {
       onDraft({ ...draft, rotation: (draft.rotation + 1) % 4 });
       return;
     }
-    if (!isLegal(x, y)) return;
-    // The best turn here, to start from.
-    let best = draft.rotation;
-    let top = -Infinity;
-    for (let rotation = 0; rotation < 4; rotation++) {
-      const p = previewQuadrantMove(view, card!, x, y, rotation);
-      if (p.gained + p.removed > top) {
-        top = p.gained + p.removed;
-        best = rotation;
-      }
-    }
-    onDraft({ ...draft, x, y, rotation: best });
+    put(draft.instanceId, x, y);
   }
 
   const cellsByKey = new Map(view.board.map((cell) => [`${cell.x},${cell.y}`, cell]));
   const status = !isActive
     ? "Partita finita"
-    : myTurn
-      ? draft === null
-        ? "Tocca a te: scegli una carta"
-        : placed === null
-          ? "Ora tocca una casella libera"
-          : "Ruota la carta o giocala"
-      : busy && view.bot_difficulty
-        ? `${rival} sta giocando…`
+    : botThinking
+      ? `${rival} sta pensando…`
+      : myTurn
+        ? draft === null
+          ? "Tocca a te: trascina una carta"
+          : placed === null
+            ? "Portala su una casella libera"
+            : "Ruota la carta o giocala"
         : `Tocca a ${rival}`;
 
   return (
@@ -434,20 +516,15 @@ function PlayArea({
               {view.variant === "shifting" && ` · ${frozen.columns ? "colonne bloccate" : "colonne libere"}, ${frozen.rows ? "righe bloccate" : "righe libere"}`}
             </p>
             <p className="font-display text-[20px] uppercase leading-6">{status}</p>
-            {last && (
-              <p className="mt-0.5 truncate text-[11px] font-bold">
-                {last.mine ? "Tu" : rival}: {last.name}
-                {last.beaten > 0 ? `, batte ${last.beaten}` : ", nessuna battuta"}
-                {last.removed > 0 ? `, toglie ${last.removed} sigill${last.removed === 1 ? "o" : "i"}` : ""}
-                {last.auto_played ? " (tempo scaduto)" : ""}
-              </p>
-            )}
           </div>
-          {deadline !== null && isActive && <MoveTimer key={deadline} deadline={deadline} offset={offset} mine={myTurn} />}
+          {deadline !== null && isActive && !botThinking && <MoveTimer key={deadline} deadline={deadline} offset={offset} mine={myTurn} />}
         </div>
       </section>
 
-      <div className="px-3 pt-1.5">
+      {last && !preview && <LastMove view={view} rival={rival} key={last.move} />}
+      {preview && <MovePreviewLine preview={preview} rival={rival} />}
+
+      <div className="px-3 pt-1">
         <AbilityLegend view={view} />
       </div>
 
@@ -469,41 +546,67 @@ function PlayArea({
             Array.from({ length: area.columns }, (_, c) => {
               const x = area.minX + c;
               const y = area.minY + r;
-              const cell = cellsByKey.get(`${x},${y}`);
+              const key = `${x},${y}`;
+              const delta = deltaAt(x, y);
+              const cell = cellsByKey.get(key);
               if (cell) {
-                const isLast = last !== null && last.x === x && last.y === y;
+                const isLast = !preview && last !== null && last.x === x && last.y === y;
                 return (
-                  <BoardCard key={`${x},${y}`} cell={cell} highlight={isLast} press={detail.press(cell.card)} />
+                  <BoardCard
+                    key={key}
+                    cell={cell}
+                    highlight={isLast}
+                    delta={delta}
+                    tentative={Boolean(preview)}
+                    stampKey={preview ? "preview" : String(changes?.move ?? 0)}
+                    press={detail.press(cell.card)}
+                  />
                 );
               }
               const here = placed && placed.x === x && placed.y === y;
               if (here && card && draft) {
                 return (
                   <button
-                    key={`${x},${y}`}
+                    key={key}
                     type="button"
+                    data-drop={key}
                     onClick={() => tapCell(x, y)}
-                    aria-label={`${card.name} qui. Tocca per ruotarla`}
-                    className="relative min-h-0 min-w-0"
+                    onPointerDown={start(draft.instanceId)}
+                    onDragStart={(event) => event.preventDefault()}
+                    aria-label={`${card.name} qui. Tocca per ruotarla, trascinala per spostarla`}
+                    className="relative min-h-0 min-w-0 touch-none select-none"
                   >
                     <QuadCard card={card} values={cardValues(view, card, draft.rotation)} tone="draft" />
+                    {delta && <DeltaBadges delta={delta} tentative stampKey="preview" />}
                   </button>
                 );
               }
               const legalHere = myTurn && isLegal(x, y);
-              const gain = legalHere && card ? bestGain(x, y) : null;
+              const gain = legalHere && card ? bestRotation(view, card, x, y).gain : null;
+              const isHovered = hovered !== null && hovered[0] === x && hovered[1] === y;
               return (
                 <button
-                  key={`${x},${y}`}
+                  key={key}
                   type="button"
+                  data-drop={legalHere ? key : undefined}
                   onClick={() => tapCell(x, y)}
                   disabled={!legalHere || !card || busy}
-                  aria-label={legalHere ? `Casella libera${gain !== null ? `: fino a ${gain} sigilli` : ""}` : "Casella"}
-                  className={`flex min-h-0 min-w-0 items-center justify-center border-2 ${
-                    legalHere ? (card ? "border-dashed border-comic-yellow bg-panel" : "border-dashed border-line bg-panel") : "border-transparent bg-panel/40"
+                  aria-label={legalHere ? `Casella libera${gain !== null ? `: fino a ${seals(gain)}` : ""}` : "Casella"}
+                  className={`relative flex min-h-0 min-w-0 items-center justify-center border-2 ${
+                    isHovered && legalHere
+                      ? "border-comic-yellow bg-panel-raised shadow-[3px_3px_0_var(--comic-cyan)]"
+                      : legalHere
+                        ? card
+                          ? "border-dashed border-comic-yellow bg-panel"
+                          : "border-dashed border-line bg-panel"
+                        : "border-transparent bg-panel/40"
                   }`}
                 >
-                  {gain !== null && gain > 0 && <span className="font-display text-lg text-comic-yellow">+{gain}</span>}
+                  {isHovered && card && preview ? (
+                    <span className="font-display text-xl text-comic-cyan">+{preview.gained}</span>
+                  ) : (
+                    gain !== null && gain > 0 && <span className="font-display text-lg text-comic-yellow">+{gain}</span>
+                  )}
                 </button>
               );
             }),
@@ -519,27 +622,32 @@ function PlayArea({
         </div>
       ) : (
         <>
-          {/* The hand. */}
-          <div role="group" aria-label="La tua mano" className="flex justify-center gap-2 px-3 pb-1.5 pt-1">
-            {view.my_hand.map((handCard) => {
-              const selected = draft?.instanceId === handCard.instance_id;
+          {/* The hand: drag a card onto a free cell, or tap it and then the cell. */}
+          <div role="group" aria-label="La tua mano" data-drop="hand" className="flex justify-center gap-2 px-3 pb-1.5 pt-1">
+            {view.my_hand.map((inHand) => {
+              const selected = draft?.instanceId === inHand.instance_id;
+              const onGrid = selected && placed !== null;
               return (
-                <button
-                  key={handCard.instance_id}
-                  type="button"
-                  {...detail.press(handCard)}
-                  onClick={() =>
-                    myTurn && !busy && onDraft(selected ? null : { instanceId: handCard.instance_id, x: null, y: null, rotation: 0 })
-                  }
-                  disabled={!myTurn || busy}
-                  aria-pressed={selected}
-                  aria-label={`${handCard.name}: ${cardValues(view, handCard, 0)
-                    .map((v, d) => `${SIDE_NAMES[d]} ${v}`)
-                    .join(", ")}`}
-                  className={`w-[calc((100%-1rem)/3)] max-w-[104px] ${selected ? "-translate-y-1.5" : ""} ${!myTurn ? "opacity-70" : ""}`}
+                <div
+                  key={inHand.instance_id}
+                  onPointerDown={canPlay ? start(inHand.instance_id) : undefined}
+                  onDragStart={(event) => event.preventDefault()}
+                  className={`w-[calc((100%-1rem)/3)] max-w-[104px] touch-none select-none ${drag?.id === inHand.instance_id || onGrid ? "opacity-40" : ""}`}
                 >
-                  <QuadCard card={handCard} values={cardValues(view, handCard, selected && draft ? draft.rotation : 0)} tone={selected ? "draft" : "hand"} />
-                </button>
+                  <button
+                    type="button"
+                    {...detail.press(inHand)}
+                    onClick={() => canPlay && onDraft(selected ? null : { instanceId: inHand.instance_id, x: null, y: null, rotation: 0 })}
+                    disabled={!canPlay}
+                    aria-pressed={selected}
+                    aria-label={`${inHand.name}: ${cardValues(view, inHand, 0)
+                      .map((v, d) => `${SIDE_NAMES[d]} ${v}`)
+                      .join(", ")}`}
+                    className={`block w-full ${selected && !onGrid ? "-translate-y-1.5" : ""} ${!myTurn ? "opacity-70" : ""}`}
+                  >
+                    <QuadCard card={inHand} values={cardValues(view, inHand, 0)} tone={selected && !onGrid ? "draft" : "hand"} />
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -548,12 +656,6 @@ function PlayArea({
           </p>
 
           <div className="border-t-[3px] border-foreground bg-black px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
-            {preview && (
-              <p className="mb-1.5 text-center text-xs font-bold text-muted">
-                {preview.beaten > 0 ? `Batte ${preview.beaten} cart${preview.beaten === 1 ? "a" : "e"}: +${preview.gained} sigilli` : preview.gained > 0 ? `+${preview.gained} sigilli` : "Non batte nessuna carta"}
-                {preview.removed > 0 && `, ne toglie ${preview.removed} a ${rival}`}
-              </p>
-            )}
             <div className="flex gap-2">
               <button
                 type="button"
@@ -572,13 +674,80 @@ function PlayArea({
                 disabled={!placed || busy || !myTurn}
                 className="btn btn-primary min-w-0 flex-1"
               >
-                {busy ? (view.bot_difficulty ? "Il bot risponde…" : "Invio…") : myTurn ? "Gioca la carta" : `Turno di ${rival}`}
+                {botThinking
+                  ? `${rival} sta pensando…`
+                  : busy
+                    ? "Invio…"
+                    : myTurn
+                      ? "Gioca la carta"
+                      : `Turno di ${rival}`}
               </button>
             </div>
           </div>
         </>
       )}
+      {drag && card && (
+        <div ref={ghostRef} aria-hidden className="pointer-events-none fixed left-0 top-0 z-50 w-20">
+          <QuadCard card={card} values={cardValues(view, card, 0)} tone="draft" />
+        </div>
+      )}
     </main>
+  );
+}
+
+/** The last move in words, from the player's side: what it placed and took, and from whom. */
+function LastMove({ view, rival }: { view: QuadrantView; rival: string }) {
+  const last = view.moves.at(-1)!;
+  const who = last.mine ? "Tu" : rival;
+  const whose = last.mine ? rival : "tuoi";
+  const parts = [
+    last.beaten > 0 ? `batte ${last.beaten} cart${last.beaten === 1 ? "a" : "e"}` : "non batte nessuna carta",
+    last.placed > 0 ? `+${seals(last.placed)} ${last.mine ? "tuoi" : "suoi"}` : null,
+    last.removed > 0 ? `−${seals(last.removed)} ${last.mine ? `a ${whose}` : whose}` : null,
+  ].filter(Boolean);
+  return (
+    <p
+      className={`mx-3 mt-1 line-clamp-2 px-2 py-0.5 text-[12px] font-extrabold leading-4 ${last.mine ? "bg-comic-cyan/20 text-comic-cyan" : "bg-comic-orange/20 text-comic-orange"}`}
+      style={flash}
+    >
+      {who}: {last.name} · {parts.join(", ")}
+      {last.auto_played ? " (tempo scaduto)" : ""}
+    </p>
+  );
+}
+
+/** What the move being prepared would do, before playing it. */
+function MovePreviewLine({ preview, rival }: { preview: { gained: number; removed: number; beaten: number }; rival: string }) {
+  return (
+    <p className="mx-3 mt-1 line-clamp-2 bg-comic-yellow/15 px-2 py-0.5 text-[12px] font-extrabold leading-4 text-comic-yellow">
+      Se la giochi qui:{" "}
+      {preview.beaten > 0 ? `batte ${preview.beaten} cart${preview.beaten === 1 ? "a" : "e"}, +${seals(preview.gained)}` : preview.gained > 0 ? `+${seals(preview.gained)}` : "nessun Sigillo"}
+      {preview.removed > 0 && `, −${seals(preview.removed)} a ${rival}`}
+    </p>
+  );
+}
+
+/**
+ * How the seals on a cell change: "+1" or "−1" in the colour of the side whose seals they
+ * are (cyan the player, orange the opponent). Tentative while the move is a preview.
+ */
+function DeltaBadges({ delta, tentative = false, stampKey }: { delta: SealDelta; tentative?: boolean; stampKey: string }) {
+  const badge = (n: number, tone: "me" | "opponent") => (
+    <span
+      key={`${tone}-${stampKey}`}
+      className={`flex h-[18px] min-w-[24px] items-center justify-center border-2 border-black px-0.5 font-display text-[13px] leading-none text-black ${
+        tone === "me" ? "bg-comic-cyan" : "bg-comic-orange"
+      } ${tentative ? "opacity-90" : ""}`}
+      style={tentative ? undefined : stamp(0.15)}
+    >
+      {n > 0 ? `+${n}` : `−${-n}`}
+    </span>
+  );
+  return (
+    <span className="pointer-events-none absolute -right-1.5 -top-1.5 z-[4] flex flex-col items-end gap-px" aria-hidden>
+      {delta.me !== 0 && badge(delta.me, "me")}
+      {delta.opponent !== 0 && badge(delta.opponent, "opponent")}
+    </span>
   );
 }
 
@@ -610,7 +779,7 @@ function QuadCard({
 }: {
   card: MatchCard;
   values: readonly number[];
-  tone: "mine" | "opponent" | "hand" | "draft";
+  tone: "mine" | "opponent" | "neutral" | "hand" | "draft";
   seals?: { me: number; opponent: number };
 }) {
   const frame =
@@ -618,9 +787,11 @@ function QuadCard({
       ? "border-comic-cyan"
       : tone === "opponent"
         ? "border-comic-orange"
-        : tone === "draft"
-          ? "border-comic-yellow shadow-[3px_3px_0_var(--comic-magenta)]"
-          : "border-panel-raised";
+        : tone === "neutral"
+          ? "border-white/50"
+          : tone === "draft"
+            ? "border-comic-yellow shadow-[3px_3px_0_var(--comic-magenta)]"
+            : "border-panel-raised";
   const number = "absolute z-[3] flex h-[18px] min-w-[18px] items-center justify-center bg-black px-0.5 font-display text-[14px] leading-none text-comic-yellow";
   return (
     <span className={`relative block aspect-square w-full overflow-hidden border-[3px] bg-panel-raised ${frame}`}>
@@ -646,27 +817,45 @@ function QuadCard({
 }
 
 const flash: CSSProperties = { animation: "comic-in 0.5s ease-out both" };
+const stamp = (delay: number): CSSProperties => ({ animation: `comic-stamp 0.45s ease-out ${delay}s both` });
+
+/** Whose colour a card on the grid wears: the side with more seals on it; nobody's on a tie. */
+function controllerOf(cell: QuadrantCellView): "mine" | "opponent" | "neutral" {
+  if (cell.seals.me > cell.seals.opponent) return "mine";
+  if (cell.seals.opponent > cell.seals.me) return "opponent";
+  return "neutral";
+}
+
+const CONTROL_NAMES = { mine: "la controlli tu", opponent: "la controlla l'avversario", neutral: "non la controlla nessuno" } as const;
 
 function BoardCard({
   cell,
   highlight,
+  delta,
+  tentative,
+  stampKey,
   press,
 }: {
   cell: QuadrantCellView;
   highlight: boolean;
+  delta: SealDelta | null;
+  tentative: boolean;
+  stampKey: string;
   press: ReturnType<ReturnType<typeof useCardDetail>["press"]>;
 }) {
+  const control = controllerOf(cell);
   return (
     <span
       {...press}
       role="gridcell"
-      aria-label={`${cell.card.name}, ${cell.mine ? "tua" : "avversaria"}: ${cell.values
+      aria-label={`${cell.card.name}, giocata ${cell.mine ? "da te" : "dall'avversario"}, ${CONTROL_NAMES[control]}: ${cell.values
         .map((v, d) => `${SIDE_NAMES[d]} ${v}`)
         .join(", ")}. Sigilli: tuoi ${cell.seals.me}, avversari ${cell.seals.opponent}`}
       className={`relative min-h-0 min-w-0 ${highlight ? "outline outline-2 outline-offset-1 outline-comic-yellow" : ""}`}
       style={highlight ? flash : undefined}
     >
-      <QuadCard card={cell.card} values={cell.values} tone={cell.mine ? "mine" : "opponent"} seals={cell.seals} />
+      <QuadCard card={cell.card} values={cell.values} tone={control} seals={cell.seals} />
+      {delta && <DeltaBadges delta={delta} tentative={tentative} stampKey={stampKey} />}
     </span>
   );
 }
