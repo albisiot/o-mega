@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { EventBanner } from "@/components/event-banner";
 import { LoadingScreen } from "@/components/loading-screen";
@@ -22,22 +22,26 @@ import { isQuadrantFormat, QUADRANT_FORMATS, QUADRANT_GRID_LABELS, type Quadrant
 import { chapterUnlocked, fetchStory, seenStory, type StoryChapter } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
-const BOTS = [
-  { difficulty: "easy", detail: "Sceglie quasi a caso. Ideale per imparare.", short: "Ideale per imparare" },
-  { difficulty: "medium", detail: "Gioca sempre il personaggio migliore per la Minaccia del momento.", short: "Il migliore del round" },
-  { difficulty: "hard", detail: "Pianifica: tiene da parte specialisti e generalisti per i round giusti.", short: "Pianifica i round" },
-  { difficulty: "super_pro", detail: "Simula mille partite possibili prima di ogni mossa.", short: "Simula mille partite" },
-] as const;
+const DIFFICULTIES = ["easy", "medium", "hard", "super_pro"] as const;
 
 const MODES = [
-  { key: "story", label: "Storia", detail: "Missioni a Nuova Megara, con carte in premio", color: "rays-gold" },
-  { key: "friendly", label: "Amichevole", detail: "Contro un bot, un giocatore o un amico", color: "bg-comic-cyan" },
-  { key: "boss", label: "Grande Minaccia", detail: "Un Boss, cinque fronti: contro un bot o un giocatore", color: "bg-comic-orange" },
-  { key: "triple", label: "Allarme Triplo", detail: "Tre Minacce, nove carte, tre round", color: "bg-comic-yellow" },
-  { key: "quadrant", label: "Quadrante", detail: "Una griglia 4×4, quattro abilità sui lati", color: "bg-comic-cyan" },
-  { key: "conquest", label: "Conquista", detail: "Chi vince prende una carta", color: "bg-comic-magenta" },
-  { key: "emergency", label: "Emergenza", detail: "La sfida del giorno, da solo", color: "bg-foreground" },
+  { key: "classic", label: "Partita classica", detail: "Contro un bot, online o in Conquista", color: "bg-comic-magenta", group: "versus" },
+  { key: "story", label: "Storia", detail: "Missioni a Nuova Megara, con carte in premio", color: "rays-gold", group: "solo" },
+  { key: "emergency", label: "Emergenza", detail: "La sfida del giorno, con la classifica", color: "bg-foreground", group: "solo" },
+  { key: "boss", label: "Grande Minaccia", detail: "Un Boss, cinque fronti", color: "bg-comic-orange", group: "other" },
+  { key: "triple", label: "Allarme Triplo", detail: "Tre Minacce, nove carte, tre round", color: "bg-comic-yellow", group: "other" },
+  { key: "quadrant", label: "Quadrante", detail: "Una griglia 4×4, quattro abilità sui lati", color: "bg-comic-cyan", group: "other" },
 ] as const;
+
+/** The headings the menu groups its modes under, in order. */
+const GROUPS = [
+  { key: "versus", label: "5 contro 5" },
+  { key: "solo", label: "Da solo" },
+  { key: "other", label: "Altre modalità" },
+] as const;
+
+/** Modes the menu used to have, now inside another: a remembered one reopens its new home. */
+const MOVED_MODES: Record<string, ModeKey> = { friendly: "classic", conquest: "classic" };
 
 type Mode = (typeof MODES)[number];
 type ModeKey = Mode["key"];
@@ -133,6 +137,65 @@ function StorySection({ disabled }: { disabled: boolean }) {
   );
 }
 
+type Difficulty = (typeof DIFFICULTIES)[number];
+/** How a bot plays in one mode: in full for screen readers, short on its tile. */
+type BotTexts = Record<Difficulty, { detail: string; short: string }>;
+
+const CLASSIC_BOTS: BotTexts = {
+  easy: { detail: "Sceglie quasi a caso. Ideale per imparare.", short: "Ideale per imparare" },
+  medium: { detail: "Gioca sempre il personaggio migliore per la Minaccia del momento.", short: "Il migliore del round" },
+  hard: { detail: "Pianifica: tiene da parte specialisti e generalisti per i round giusti.", short: "Pianifica i round" },
+  super_pro: { detail: "Simula mille partite possibili prima di ogni mossa.", short: "Simula mille partite" },
+};
+
+/** The four bots of a mode, two by two: a tap opens the team screen against that bot. */
+function BotGrid({ query, texts, color }: { query: string; texts: BotTexts; color: string }) {
+  return (
+    <>
+      <GroupTitle>Contro bot · amichevole</GroupTitle>
+      <div className="grid grid-cols-2 gap-2">
+        {DIFFICULTIES.map((difficulty) => (
+          <Link
+            key={difficulty}
+            href={`/squadra/?${query}difficulty=${difficulty}`}
+            aria-label={`Contro il bot ${DIFFICULTY_LABELS[difficulty]}: ${texts[difficulty].detail}`}
+            className={`flex min-h-14 flex-col justify-center px-3 py-1.5 text-black ${color}`}
+          >
+            <span className="font-display text-xl uppercase leading-6">{DIFFICULTY_LABELS[difficulty]}</span>
+            <span className="text-xs font-bold leading-4">{texts[difficulty].short}</span>
+          </Link>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/** Friendly online play in a mode: a random player, a code for a friend, or a friend's code. */
+function OnlineGroup({ query, randomDetail }: { query: string; randomDetail: string }) {
+  return (
+    <>
+      <GroupTitle>Online · amichevole</GroupTitle>
+      <div className="grid grid-cols-2 gap-2">
+        <Link
+          href={`/squadra/?mode=queue${query}`}
+          className="flex min-h-14 flex-col justify-center bg-comic-yellow px-3 py-1.5 text-black"
+        >
+          <span className="font-display text-xl uppercase leading-6">Avversario casuale</span>
+          <span className="text-xs font-bold leading-4">{randomDetail}</span>
+        </Link>
+        <Link
+          href={`/squadra/?mode=lobby${query}`}
+          className="flex min-h-14 flex-col justify-center bg-panel px-3 py-1.5 text-foreground"
+        >
+          <span className="font-display text-xl uppercase leading-6">Crea un codice</span>
+          <span className="text-xs font-bold leading-4 text-muted">Mandalo a un amico</span>
+        </Link>
+      </div>
+      <JoinCodeForm />
+    </>
+  );
+}
+
 /** Grande Minaccia (SPEC §5.12): against a bot, or friendly between players. */
 function BossSection({ disabled }: { disabled: boolean }) {
   return (
@@ -142,29 +205,17 @@ function BossSection({ disabled }: { disabled: boolean }) {
         fronte libero e resta lì fino alla fine: ogni fronte occupato paga a ogni turno, a chi è da solo o a chi fa più
         punti. Nessuna carta in gioco e nessuna moneta.
       </p>
-      {BOTS.map((bot) => (
-        <OptionRow
-          key={bot.difficulty}
-          href={`/squadra/?format=boss&difficulty=${bot.difficulty}`}
-          title={`Bot ${DIFFICULTY_LABELS[bot.difficulty]}`}
-          detail={BOSS_BOTS[bot.difficulty]}
-        />
-      ))}
-      <OptionRow href="/squadra/?mode=queue&format=boss" title="Cerca un avversario" detail="Sfida il primo giocatore disponibile." />
-      <OptionRow
-        href="/squadra/?mode=lobby&format=boss"
-        title="Crea un codice"
-        detail="Mandalo a un amico: lo usa in Amichevole, con Entra."
-      />
+      <BotGrid query="format=boss&" texts={BOSS_BOTS} color="bg-comic-orange" />
+      <OnlineGroup query="&format=boss" randomDetail="Il primo giocatore libero" />
     </div>
   );
 }
 
-const BOSS_BOTS: Record<(typeof BOTS)[number]["difficulty"], string> = {
-  easy: "Sceglie quasi a caso. Ideale per imparare.",
-  medium: "Mette ogni turno la carta dove rende di più fino alla fine.",
-  hard: "Simula le partite possibili prima di ogni mossa.",
-  super_pro: "Simula molte più partite, con mani avversarie plausibili.",
+const BOSS_BOTS: BotTexts = {
+  easy: { detail: "Sceglie quasi a caso. Ideale per imparare.", short: "Ideale per imparare" },
+  medium: { detail: "Mette ogni turno la carta dove rende di più fino alla fine.", short: "Il fronte che rende di più" },
+  hard: { detail: "Simula le partite possibili prima di ogni mossa.", short: "Simula le partite" },
+  super_pro: { detail: "Simula molte più partite, con mani avversarie plausibili.", short: "Simula molte più partite" },
 };
 
 /** Allarme Triplo (SPEC §5.13): against a bot, or friendly between players. */
@@ -177,29 +228,17 @@ function TripleSection({ disabled }: { disabled: boolean }) {
         partita. Ogni round peschi {threats} carte e ne metti una per Minaccia: ogni Minaccia vinta vale un punto. Dopo{" "}
         {rounds} round vince chi ha più punti. Nessuna carta in gioco e nessuna moneta.
       </p>
-      {BOTS.map((bot) => (
-        <OptionRow
-          key={bot.difficulty}
-          href={`/squadra/?format=triple&difficulty=${bot.difficulty}`}
-          title={`Bot ${DIFFICULTY_LABELS[bot.difficulty]}`}
-          detail={TRIPLE_BOTS[bot.difficulty]}
-        />
-      ))}
-      <OptionRow href="/squadra/?mode=queue&format=triple" title="Cerca un avversario" detail="Sfida il primo giocatore disponibile." />
-      <OptionRow
-        href="/squadra/?mode=lobby&format=triple"
-        title="Crea un codice"
-        detail="Mandalo a un amico: lo usa in Amichevole, con Entra."
-      />
+      <BotGrid query="format=triple&" texts={TRIPLE_BOTS} color="bg-comic-yellow" />
+      <OnlineGroup query="&format=triple" randomDetail="Il primo giocatore libero" />
     </div>
   );
 }
 
-const TRIPLE_BOTS: Record<(typeof BOTS)[number]["difficulty"], string> = {
-  easy: "Piazza quasi a caso. Ideale per imparare.",
-  medium: "Mette ogni carta sulla Minaccia dove rende di più.",
-  hard: "Prova le mani avversarie possibili prima di piazzare. Mazzo forte.",
-  super_pro: "Ne prova molte di più. Mazzo fortissimo.",
+const TRIPLE_BOTS: BotTexts = {
+  easy: { detail: "Piazza quasi a caso. Ideale per imparare.", short: "Ideale per imparare" },
+  medium: { detail: "Mette ogni carta sulla Minaccia dove rende di più.", short: "Dove rende di più" },
+  hard: { detail: "Prova le mani avversarie possibili prima di piazzare. Mazzo forte.", short: "Prova le mani · mazzo forte" },
+  super_pro: { detail: "Ne prova molte di più. Mazzo fortissimo.", short: "Ne prova di più · mazzo fortissimo" },
 };
 
 /** Quadrante (SPEC §5.14): two grids, each against a bot or friendly between players. */
@@ -222,7 +261,7 @@ function QuadrantSection({ disabled }: { disabled: boolean }) {
             aria-checked={grid === format}
             onClick={() => setGrid(format)}
             className={`flex min-h-11 flex-col items-start justify-center px-2.5 py-1 text-left ${
-              grid === format ? "bg-comic-cyan text-black" : "bg-panel text-foreground"
+              grid === format ? "bg-foreground text-black" : "bg-panel text-foreground"
             }`}
           >
             <span className="font-display text-lg uppercase leading-5">{QUADRANT_GRID_LABELS[format]}</span>
@@ -230,20 +269,8 @@ function QuadrantSection({ disabled }: { disabled: boolean }) {
           </button>
         ))}
       </div>
-      {BOTS.map((bot) => (
-        <OptionRow
-          key={bot.difficulty}
-          href={`/squadra/?format=${grid}&difficulty=${bot.difficulty}`}
-          title={`Bot ${DIFFICULTY_LABELS[bot.difficulty]}`}
-          detail={QUADRANT_BOTS[bot.difficulty]}
-        />
-      ))}
-      <OptionRow href={`/squadra/?mode=queue&format=${grid}`} title="Cerca un avversario" detail="Sfida il primo giocatore disponibile sulla stessa griglia." />
-      <OptionRow
-        href={`/squadra/?mode=lobby&format=${grid}`}
-        title="Crea un codice"
-        detail="Mandalo a un amico: lo usa in Amichevole, con Entra."
-      />
+      <BotGrid query={`format=${grid}&`} texts={QUADRANT_BOTS} color="bg-comic-cyan" />
+      <OnlineGroup query={`&format=${grid}`} randomDetail="Sulla stessa griglia" />
     </div>
   );
 }
@@ -253,21 +280,23 @@ const QUADRANT_GRID_DETAILS: Record<QuadrantFormat, string> = {
   quadrant_shifting: "Si sposta finché non arriva a 4",
 };
 
-const QUADRANT_BOTS: Record<(typeof BOTS)[number]["difficulty"], string> = {
-  easy: "Gioca quasi a caso. Ideale per imparare.",
-  medium: "Prende più Sigilli che può, senza scoprirsi troppo.",
-  hard: "Prova le risposte possibili prima di giocare. Mazzo forte.",
-  super_pro: "Ne prova molte di più. Mazzo fortissimo.",
+const QUADRANT_BOTS: BotTexts = {
+  easy: { detail: "Gioca quasi a caso. Ideale per imparare.", short: "Ideale per imparare" },
+  medium: { detail: "Prende più Sigilli che può, senza scoprirsi troppo.", short: "Più Sigilli, senza scoprirsi" },
+  hard: { detail: "Prova le risposte possibili prima di giocare. Mazzo forte.", short: "Prova le risposte · mazzo forte" },
+  super_pro: { detail: "Ne prova molte di più. Mazzo fortissimo.", short: "Ne prova di più · mazzo fortissimo" },
 };
 
-function ConquestSection({ status, disabled }: { status: ConquestStatus | null; disabled: boolean }) {
+/** Conquista (SPEC §6), inside the classic match: the winner takes a card, once unlocked. */
+function ConquestGroup({ status, disabled }: { status: ConquestStatus | null; disabled: boolean }) {
   const { maxCardsLostPerDay, unlockAfterMatches, unlockAtLevel, loserCoins, minConquerableCards } = balance.conquest;
   const limitReached = status !== null && status.cards_lost_today >= maxCardsLostPerDay;
   const available = status?.unlocked && !limitReached && !disabled;
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium text-muted">
+      <GroupTitle>Conquista · con le carte in palio</GroupTitle>
+      <p className="text-[13px] font-medium leading-4 text-muted">
         Chi vince prende una carta dell&apos;avversario, chi perde guadagna {loserCoins} monete. Si rischia solo ciò
         che si porta in campo: servono almeno {minConquerableCards} carte non starter.
       </p>
@@ -285,15 +314,22 @@ function ConquestSection({ status, disabled }: { status: ConquestStatus | null; 
           </span>
         </Link>
       ) : (
-        <div className="bg-panel px-4 py-2">
-          <p className="font-display text-lg uppercase text-faint">Non disponibile</p>
-          <p className="text-sm font-medium text-muted">
-            {status && !status.unlocked
-              ? `Completa ${unlockAfterMatches} partite (${status.completed_matches}/${unlockAfterMatches}) o raggiungi il livello ${unlockAtLevel} (sei al ${status.level}).`
-              : limitReached
-                ? `Hai perso ${maxCardsLostPerDay} carte oggi: la Conquista torna dopo la mezzanotte.`
-                : "Finisci prima la partita in corso."}
-          </p>
+        <div className="flex items-center justify-between gap-3 bg-panel px-4 py-2">
+          <div>
+            <p className="font-display text-lg uppercase leading-6 text-faint">Non disponibile</p>
+            <p className="text-[13px] font-medium leading-4 text-muted">
+              {status && !status.unlocked
+                ? `Completa ${unlockAfterMatches} partite (${status.completed_matches}/${unlockAfterMatches}) o raggiungi il livello ${unlockAtLevel} (sei al ${status.level}).`
+                : limitReached
+                  ? `Hai perso ${maxCardsLostPerDay} carte oggi: la Conquista torna dopo la mezzanotte.`
+                  : "Finisci prima la partita in corso."}
+            </p>
+          </div>
+          {status && !status.unlocked && (
+            <span className="shrink-0 text-xl" aria-label="Da sbloccare">
+              🔒
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -319,65 +355,60 @@ function GroupTitle({ children }: { children: string }) {
   return <h3 className="pt-1 font-display text-lg uppercase leading-5 text-comic-yellow">{children}</h3>;
 }
 
-/** Friendly matches, nothing at stake: against a bot (training), a random player or a friend with a code. */
-function FriendlySection({ disabled }: { disabled: boolean }) {
+/**
+ * A friend's code, from any mode: the code knows its own format, so the team screen asks for
+ * the right number of cards.
+ */
+function JoinCodeForm() {
   const router = useRouter();
   const [code, setCode] = useState("");
   const normalized = code.toUpperCase().replace(/[^A-Z0-9]/g, "");
 
   return (
-    <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
-      <p className="text-sm font-medium text-muted">Solo per divertimento o per allenarti: nessuna carta in gioco e nessuna moneta.</p>
+    <form
+      className="flex gap-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (normalized.length === 6) router.push(`/squadra/?mode=join&code=${normalized}`);
+      }}
+    >
+      <input
+        value={code}
+        onChange={(event) => setCode(event.target.value)}
+        maxLength={6}
+        placeholder="Codice dell'amico"
+        aria-label="Codice dell'amico"
+        autoCapitalize="characters"
+        autoComplete="off"
+        spellCheck={false}
+        className="input-comic min-w-0 flex-1 uppercase tracking-[0.2em] placeholder:normal-case placeholder:tracking-normal"
+      />
+      <button type="submit" disabled={normalized.length !== 6} className="btn btn-outline">
+        Entra
+      </button>
+    </form>
+  );
+}
 
-      <GroupTitle>Contro bot</GroupTitle>
-      <div className="grid grid-cols-2 gap-2">
-        {BOTS.map((bot) => (
-          <Link
-            key={bot.difficulty}
-            href={disabled ? "#" : `/squadra/?difficulty=${bot.difficulty}`}
-            aria-disabled={disabled}
-            aria-label={`Contro il bot ${DIFFICULTY_LABELS[bot.difficulty]}: ${bot.detail}`}
-            className="flex min-h-14 flex-col justify-center bg-comic-cyan px-3 py-1.5 text-black"
-          >
-            <span className="font-display text-xl uppercase leading-6">{DIFFICULTY_LABELS[bot.difficulty]}</span>
-            <span className="text-xs font-bold leading-4">{bot.short}</span>
-          </Link>
-        ))}
+/**
+ * The classic match (SPEC §5): 5 characters against 5 Threats. Against a bot or online it is a
+ * friendly, nothing at stake; in Conquista (SPEC §6) the winner takes a card.
+ */
+function ClassicSection({ conquest, disabled }: { conquest: ConquestStatus | null; disabled: boolean }) {
+  const { teamSize, roundsToWin } = balance.match;
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm font-medium text-muted">
+        {teamSize} personaggi contro {teamSize} Minacce: vince chi fa {roundsToWin} round. Contro i bot e online è
+        un&apos;amichevole, senza carte in gioco né monete.
+      </p>
+
+      <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
+        <BotGrid query="" texts={CLASSIC_BOTS} color="bg-comic-cyan" />
+        <OnlineGroup query="" randomDetail="Il primo giocatore libero" />
       </div>
 
-      <GroupTitle>Online</GroupTitle>
-      <Link href="/squadra/?mode=queue" className="flex min-h-14 items-center justify-between gap-3 bg-comic-yellow px-4 py-2 text-black">
-        <div>
-          <p className="font-display text-xl uppercase leading-6">Cerca un avversario</p>
-          <p className="text-[13px] font-semibold leading-4">Sfida il primo giocatore disponibile.</p>
-        </div>
-        <span className="font-display text-2xl" aria-hidden>
-          →
-        </span>
-      </Link>
-      <OptionRow href="/squadra/?mode=lobby" title="Crea un codice" detail="Mandalo a un amico per sfidarlo." />
-      <form
-        className="flex gap-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (normalized.length === 6) router.push(`/squadra/?mode=join&code=${normalized}`);
-        }}
-      >
-        <input
-          value={code}
-          onChange={(event) => setCode(event.target.value)}
-          maxLength={6}
-          placeholder="Codice dell'amico"
-          aria-label="Codice dell'amico"
-          autoCapitalize="characters"
-          autoComplete="off"
-          spellCheck={false}
-          className="input-comic min-w-0 flex-1 uppercase tracking-[0.2em] placeholder:normal-case placeholder:tracking-normal"
-        />
-        <button type="submit" disabled={normalized.length !== 6} className="btn btn-outline">
-          Entra
-        </button>
-      </form>
+      <ConquestGroup status={conquest} disabled={disabled} />
     </div>
   );
 }
@@ -497,7 +528,8 @@ export default function PlayPage() {
 
   // The modes wait for the answer: a match in progress would block them anyway.
   const blocked = Boolean(active) || (active === undefined && !error);
-  const opened = MODES.find((mode) => mode.key === openMode) ?? null;
+  const openKey = (openMode && MOVED_MODES[openMode]) ?? openMode;
+  const opened = MODES.find((mode) => mode.key === openKey) ?? null;
 
   return (
     <div className="home-shell">
@@ -515,16 +547,22 @@ export default function PlayPage() {
         {opened ? (
           <section className="flex flex-col gap-2">
             <ModeTile mode={opened} open onToggle={() => setOpenMode(null)} />
+            {opened.key === "classic" && <ClassicSection conquest={conquest} disabled={blocked} />}
             {opened.key === "story" && <StorySection disabled={blocked} />}
-            {opened.key === "friendly" && <FriendlySection disabled={blocked} />}
+            {opened.key === "emergency" && <EmergencySection />}
             {opened.key === "boss" && <BossSection disabled={blocked} />}
             {opened.key === "triple" && <TripleSection disabled={blocked} />}
             {opened.key === "quadrant" && <QuadrantSection disabled={blocked} />}
-            {opened.key === "conquest" && <ConquestSection status={conquest} disabled={blocked} />}
-            {opened.key === "emergency" && <EmergencySection />}
           </section>
         ) : (
-          MODES.map((mode) => <ModeTile key={mode.key} mode={mode} open={false} onToggle={() => setOpenMode(mode.key)} />)
+          GROUPS.map((group) => (
+            <Fragment key={group.key}>
+              <h2 className="shrink-0 font-display text-base uppercase leading-4 tracking-wide text-faint">{group.label}</h2>
+              {MODES.filter((mode) => mode.group === group.key).map((mode) => (
+                <ModeTile key={mode.key} mode={mode} open={false} onToggle={() => setOpenMode(mode.key)} />
+              ))}
+            </Fragment>
+          ))
         )}
       </main>
 

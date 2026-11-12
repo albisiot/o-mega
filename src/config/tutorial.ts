@@ -115,19 +115,19 @@ export const TUTORIAL_POWERS = [
 
 export const TUTORIAL_MODES = [
   {
-    name: "Amichevole",
+    name: "Partita classica",
     color: "bg-comic-cyan",
-    text: `Nessuna carta in gioco e nessuna moneta. Contro bot, per allenarti, con quattro difficoltà: Facile, Medio, Difficile e Super Pro (${progression.botWinXp} XP se vinci, ${progression.botParticipationXp} se perdi). Online, contro il primo giocatore libero o contro un amico con un codice di 6 caratteri: dà più esperienza (${progression.pvpWinXp} XP se vinci, ${progression.pvpParticipationXp} se perdi).`,
-  },
-  {
-    name: "Grande Minaccia",
-    color: "bg-comic-orange",
-    text: `Un Boss con cinque fronti, tutti visibili, e una tabella di quanti punti vale ognuno in ogni turno. Ogni turno metti un personaggio su un tuo fronte libero: resta lì fino alla fine, e ogni turno ogni fronte occupato paga a chi è da solo o a chi fa più punti. Contro un bot o un giocatore, senza carte in gioco.`,
+    text: `${match.teamSize} personaggi contro ${match.teamSize} Minacce. Contro i bot è un'amichevole per allenarti, con quattro difficoltà: Facile, Medio, Difficile e Super Pro (${progression.botWinXp} XP se vinci, ${progression.botParticipationXp} se perdi). Online, contro il primo giocatore libero o contro un amico con un codice di 6 caratteri, è ancora un'amichevole ma dà più esperienza (${progression.pvpWinXp} XP se vinci, ${progression.pvpParticipationXp} se perdi). Nessuna carta in gioco e nessuna moneta.`,
   },
   {
     name: "Conquista",
     color: "bg-comic-magenta",
-    text: `Come l'online, ma con le carte in palio: chi vince ne prende una all'avversario. Si sblocca dopo ${conquest.unlockAfterMatches} partite completate, anche contro i bot, o al livello ${conquest.unlockAtLevel}.`,
+    text: `Dentro la Partita classica: come l'online, ma con le carte in palio, e chi vince ne prende una all'avversario. Si sblocca dopo ${conquest.unlockAfterMatches} partite completate, anche contro i bot, o al livello ${conquest.unlockAtLevel}.`,
+  },
+  {
+    name: "Altre modalità",
+    color: "bg-comic-orange",
+    text: "Grande Minaccia, Allarme Triplo e Quadrante cambiano le regole: un Boss con cinque fronti, tre Minacce per tutta la partita, una griglia 4×4. Contro un bot o un giocatore, senza carte in gioco. Da solo ci sono la Storia e l'Emergenza del giorno.",
   },
 ];
 

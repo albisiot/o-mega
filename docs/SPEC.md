@@ -177,7 +177,7 @@ Due giocatori si affrontano con una **squadra segreta di 5 personaggi** ciascuno
 
 ### 5.2 Preparazione
 
-1. Il giocatore sceglie la modalità: **Amichevole** (nessun trasferimento di carte) oppure **Conquista** (§6).
+1. Il giocatore sceglie la modalità, dentro la voce **Partita classica** del menu Gioca: **Amichevole**, contro un bot o online (nessun trasferimento di carte), oppure **Conquista** (§6).
 2. Sceglie una **squadra di 5 personaggi** tra le carte possedute. Le squadre si possono salvare come formazioni.
    - **Vietato schierare due copie dello stesso personaggio**: i 5 personaggi devono avere `definition_id` tutti diversi.
 3. Matchmaking: avversario casuale, amico tramite codice, oppure bot (§5.9).
@@ -732,7 +732,12 @@ Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy
 3. **Apertura pacchetto** (animazione).
 4. **Collezione / Album.**
 5. **Formazioni:** scelta e salvataggio della squadra.
-6. **Gioca:** scelta modalità → matchmaking / codice amico / bot.
+6. **Gioca:** scelta modalità → matchmaking / codice amico / bot. Le voci sono in tre gruppi:
+   - **5 contro 5:** **Partita classica** (§5), con dentro i bot (sempre amichevoli, 4 difficoltà), l'amichevole online (avversario casuale, crea un codice, Entra con il codice di un amico) e la **Conquista** (§6) con il suo sblocco;
+   - **Da solo:** **Storia** ed **Emergenza**;
+   - **Altre modalità:** **Grande Minaccia**, **Allarme Triplo** e **Quadrante**, ciascuna con i suoi bot e la sua amichevole online.
+
+   Il campo "Entra" con il codice di un amico c'è in ogni voce con l'online: il codice sa già per quale modalità è.
 7. **Partita:** sequenza dei livelli delle Minacce, Minaccia svelata, la propria squadra, i personaggi avversari già giocati, timer, scelta segreta, rivelazione, punteggio.
 8. **Fine partita:** esito, monete, schermata di conquista (scelta della carta).
 9. **Profilo:** statistiche e storico conquiste e perdite.
