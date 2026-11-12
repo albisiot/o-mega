@@ -44,9 +44,18 @@
 html {
   color-scheme: dark;
   -webkit-text-size-adjust: 100%;
-  /* No zoom anywhere (pinch or double tap): scrolling only. Every element inherits the limit,
-     elements with touch-action: none (3D drags) keep handling their own gestures. See NoZoom. */
-  touch-action: pan-x pan-y;
+}
+
+/* No zoom anywhere (pinch or double tap): scrolling only. touch-action is not inherited, and
+   the browser stops reading the ancestors' at the nearest scrolling box, so a value on html
+   alone leaves zoom on inside every scrolling panel: every element sets it. In the base layer,
+   so elements that handle their own gestures (touch-none, touch-pan-y) still win. See NoZoom. */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    touch-action: pan-x pan-y;
+  }
 }
 
 body {

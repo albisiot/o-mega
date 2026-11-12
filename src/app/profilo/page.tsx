@@ -130,7 +130,7 @@ function ProfileView({ profile }: { profile: Profile }) {
 
         <TabBar tabs={TABS} current={tab} onPick={setTab} label="Profilo" />
 
-        <div role="tabpanel" data-keep-scroll="panel" className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain">
+        <div role="tabpanel" data-keep-scroll="panel" className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden overscroll-contain">
           {tab === "stats" && (
             <section className="grid grid-cols-2 gap-1.5">
               {stats.map((stat) => (
@@ -192,7 +192,8 @@ function ProfileView({ profile }: { profile: Profile }) {
               <Link href="/privacy" className={ROW}>
                 <RowLabel>Privacy</RowLabel>
               </Link>
-              <button type="button" onClick={signOut} className="btn btn-ghost shrink-0">
+              {/* Inset: the slanted button would stick out of the panel and let it slide sideways. */}
+              <button type="button" onClick={signOut} className="btn btn-ghost mx-1 shrink-0">
                 Esci
               </button>
               <AdminLink />
