@@ -624,6 +624,39 @@ html.screen-locked body {
   transform: var(--nm-letter);
 }
 
+/* Quadrante: two facing numbers clash; the winner swells in its side's colour. */
+@keyframes quad-num-win-me {
+  0%, 100% { scale: 1; }
+  35% { scale: 1.9; background: var(--comic-cyan); color: #000; }
+  75% { scale: 1.4; background: var(--comic-cyan); color: #000; }
+}
+@keyframes quad-num-win-opponent {
+  0%, 100% { scale: 1; }
+  35% { scale: 1.9; background: var(--comic-orange); color: #000; }
+  75% { scale: 1.4; background: var(--comic-orange); color: #000; }
+}
+/* rotate, not translate: the numbers are placed with translate. */
+@keyframes quad-num-lose {
+  0%, 100% { scale: 1; rotate: 0deg; opacity: 1; }
+  30% { scale: 1.4; }
+  50% { rotate: -14deg; opacity: 0.45; }
+  65% { rotate: 14deg; opacity: 0.45; }
+  80% { rotate: -6deg; }
+}
+@keyframes quad-num-tie {
+  0%, 100% { scale: 1; }
+  40% { scale: 1.6; background: #fff; color: #000; }
+}
+@keyframes quad-spark {
+  0% { opacity: 0; scale: 0; rotate: 0deg; }
+  35% { opacity: 1; scale: 1.3; rotate: 15deg; }
+  100% { opacity: 0; scale: 0.7; rotate: 40deg; }
+}
+@keyframes quad-ring {
+  0% { opacity: 1; scale: 0.7; }
+  100% { opacity: 0; scale: 1.25; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pack-shine,
   .animate-rays-spin,
@@ -657,8 +690,9 @@ html.screen-locked body {
   .comic-stamp,
   .comic-fade,
   .comic-hero,
-  .comic-verdict:has(.comic-stamp) {
-    animation: none;
+  .comic-verdict:has(.comic-stamp),
+  .quad-fx {
+    animation: none !important;
   }
 
   .comic-twist {

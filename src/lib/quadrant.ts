@@ -238,3 +238,97 @@ export function quadrantWindow(view: QuadrantView): { minX: number; minY: number
 export function frozenAxes(view: QuadrantView): { columns: boolean; rows: boolean } {
   return quadrantFrozenAxes(knownQuadrantBoard(view), view.variant, view.size);
 }
+
+// ---------------------------------------------------------------------------
+// The story of a move, for the screen's effects
+// ---------------------------------------------------------------------------
+
+const STEP: readonly (readonly [number, number])[] = [
+  [0, -1],
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+];
+
+/** One side of the card just played against the facing side of a neighbour. */
+export type QuadrantClash = {
+  /** The neighbour's cell; `side` is the played card's side that faces it (0 top … 3 left). */
+  x: number;
+  y: number;
+  side: number;
+  value: number;
+  against: number;
+  outcome: "win" | "tie" | "lose";
+};
+
+/** A beaten card that beat one of its own neighbours, which lost a seal of the other side. */
+export type QuadrantRipple = {
+  /** The beaten card, and its side towards the card that lost a seal. */
+  from: { x: number; y: number };
+  side: number;
+  to: { x: number; y: number };
+  value: number;
+  against: number;
+};
+
+export type QuadrantMoveStory = {
+  x: number;
+  y: number;
+  mine: boolean;
+  clashes: QuadrantClash[];
+  ripples: QuadrantRipple[];
+  deltas: SealDelta[];
+};
+
+/**
+ * What a move did, rebuilt from the grid before and after it: every comparison of the
+ * card played with its neighbours, and every ripple that took a seal away. The server
+ * decided all of it; this only explains it on screen.
+ */
+export function quadrantMoveStory(
+  before: readonly QuadrantCellView[],
+  after: readonly QuadrantCellView[],
+  move: { x: number; y: number; mine: boolean },
+): QuadrantMoveStory | null {
+  const at = (x: number, y: number) => after.find((c) => c.x === x && c.y === y);
+  const played = at(move.x, move.y);
+  if (!played) return null;
+  const deltas = sealDeltas(before, after);
+  const clashes: QuadrantClash[] = [];
+  for (let side = 0; side < 4; side++) {
+    const neighbour = at(move.x + STEP[side][0], move.y + STEP[side][1]);
+    if (!neighbour) continue;
+    const value = played.values[side];
+    const against = neighbour.values[(side + 2) % 4];
+    clashes.push({ x: neighbour.x, y: neighbour.y, side, value, against, outcome: value > against ? "win" : value === against ? "tie" : "lose" });
+  }
+  // The other side's seals that went away: a ripple took them.
+  const lostBy = (x: number, y: number) => {
+    const d = deltas.find((delta) => delta.x === x && delta.y === y);
+    return d ? (move.mine ? d.opponent : d.me) < 0 : false;
+  };
+  const ripples: QuadrantRipple[] = [];
+  for (const clash of clashes.filter((c) => c.outcome === "win")) {
+    const beaten = at(clash.x, clash.y)!;
+    for (let side = 0; side < 4; side++) {
+      const target = at(beaten.x + STEP[side][0], beaten.y + STEP[side][1]);
+      if (!target || target === played) continue;
+      const value = beaten.values[side];
+      const against = target.values[(side + 2) % 4];
+      if (value > against && lostBy(target.x, target.y)) {
+        ripples.push({ from: { x: beaten.x, y: beaten.y }, side, to: { x: target.x, y: target.y }, value, against });
+      }
+    }
+  }
+  return { x: move.x, y: move.y, mine: move.mine, clashes, ripples, deltas };
+}
+
+/** Seconds between two comparisons, and between two ripples, in the move's effects. */
+export const CLASH_SECONDS = 0.55;
+export const RIPPLE_SECONDS = 0.6;
+
+/** How long the effects of a move last, in seconds. */
+export function storySeconds(story: QuadrantMoveStory | null): number {
+  if (!story) return 0;
+  return 0.3 + story.clashes.length * CLASH_SECONDS + story.ripples.length * RIPPLE_SECONDS + 0.5;
+}

@@ -23,9 +23,14 @@ import {
   QUADRANT_GRID_LABELS,
   quadrantWindow,
   resolveQuadrantMove,
+  CLASH_SECONDS,
+  quadrantMoveStory,
+  RIPPLE_SECONDS,
   sealDeltas,
+  storySeconds,
   submitQuadrantMove,
   type QuadrantCellView,
+  type QuadrantMoveStory,
   type QuadrantPlacementInput,
   type QuadrantView,
   type SealDelta,
@@ -41,13 +46,15 @@ const TUTORIAL_KEY = "o-mega.quadrant-tutorial-seen";
 /** Arrows for the four sides, in direction order: top, right, bottom, left. */
 const ARROWS = ["▲", "▶", "▼", "◀"] as const;
 const SIDE_NAMES = ["in alto", "a destra", "in basso", "a sinistra"] as const;
-/** Against a bot: how long the player's move stays alone on the grid before the bot's. */
+/** Against a bot: how long the player's move stays alone on the grid before the bot's, at least. */
 const BOT_THINK_MS = 1_600;
+/** And at most, however long the move's effects: the timer's pause is 4 seconds. */
+const BOT_THINK_MAX_MS = 3_400;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** What the last move changed: who played it, and the seals on each cell. */
-type MoveChanges = { move: number; mine: boolean; deltas: SealDelta[] };
+type MoveChanges = { move: number; mine: boolean; deltas: SealDelta[]; story: QuadrantMoveStory | null };
 
 /** "1 Sigillo", "3 Sigilli". */
 const seals = (n: number) => `${n} Sigill${n === 1 ? "o" : "i"}`;
@@ -112,18 +119,23 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
     };
   }, []);
 
-  const showState = useCallback((next: QuadrantView) => {
+  /** Shows a state; answers how long the effects of its new move last, in seconds. */
+  const showState = useCallback((next: QuadrantView): number => {
     const before = shown.current;
+    let seconds = 0;
     if (next.moves.length > before.moves.length) {
       const last = next.moves.at(-1)!;
-      // Seal by seal only when exactly one move is new; otherwise just who moved.
-      const deltas = next.moves.length === before.moves.length + 1 ? sealDeltas(before.board, next.board) : [];
-      setChanges({ move: last.move, mine: last.mine, deltas });
+      // Seal by seal, with its effects, only when exactly one move is new; otherwise just who moved.
+      const single = next.moves.length === before.moves.length + 1;
+      const story = single ? quadrantMoveStory(before.board, next.board, last) : null;
+      setChanges({ move: last.move, mine: last.mine, deltas: single ? sealDeltas(before.board, next.board) : [], story });
+      seconds = storySeconds(story);
     }
     if (next.move !== before.move || next.status !== before.status) setDraft(null);
     shown.current = next;
     setView(next);
     setOffset(Date.parse(next.server_now) - Date.now());
+    return seconds;
   }, []);
 
   /**
@@ -133,13 +145,16 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
   const apply = useCallback(
     async (next: QuadrantView, delayFirst = false) => {
       const steps = [...(next.previous ?? []), next];
+      // The bot waits for the effects of the move before it, then "thinks" a moment.
+      let wait = BOT_THINK_MS;
       for (const [i, step] of steps.entries()) {
         if (i > 0 || delayFirst) {
           setBotThinking(true);
-          await sleep(BOT_THINK_MS);
+          await sleep(wait);
           if (!mounted.current) return;
         }
-        showState({ ...step, previous: undefined });
+        const seconds = showState({ ...step, previous: undefined });
+        wait = Math.min(BOT_THINK_MAX_MS, Math.max(BOT_THINK_MS, seconds * 1000 + 700));
       }
       setBotThinking(false);
     },
@@ -480,6 +495,8 @@ function PlayArea({
   // On the grid: the preview of the move being prepared, else what the last move did.
   const shownDeltas = preview ? preview.deltas : (changes?.deltas ?? []);
   const deltaAt = (x: number, y: number) => shownDeltas.find((d) => d.x === x && d.y === y) ?? null;
+  // The last move's effects, cell by cell, while no new move is being prepared.
+  const effects = useMemo(() => (changes?.story ? effectsOf(changes.story) : new Map<string, CellEffects>()), [changes]);
   const last = view.moves.at(-1) ?? null;
   const frozen = frozenAxes(view);
 
@@ -556,6 +573,7 @@ function PlayArea({
                     key={key}
                     cell={cell}
                     highlight={isLast}
+                    effects={preview ? undefined : effects.get(key)}
                     delta={delta}
                     tentative={Boolean(preview)}
                     stampKey={preview ? "preview" : String(changes?.move ?? 0)}
@@ -727,18 +745,122 @@ function MovePreviewLine({ preview, rival }: { preview: { gained: number; remove
   );
 }
 
+/** A number of a card in a comparison: who won it, and when (seconds after the move appears). */
+type NumberEffect = { tone: "win-me" | "win-opponent" | "lose" | "tie"; delay: number };
+
+/** What a card on the grid shows while the last move is explained. */
+type CellEffects = {
+  /** By side, 0 top … 3 left. */
+  numbers: Map<number, NumberEffect>;
+  /** A burst on the edge where two numbers meet (on the card just played). */
+  sparks: { side: number; tone: NumberEffect["tone"]; delay: number }[];
+  /** A ring when a ripple takes one of this card's seals. */
+  ring: { delay: number; mine: boolean } | null;
+  /** When the seal badges stamp in. */
+  badgeDelay: number;
+};
+
+/**
+ * The timeline of a move: each comparison in turn (the two numbers clash, the higher one
+ * lights up in the mover's colour), the seals landing on the beaten card and on the card
+ * played, then each ripple (the beaten card's number against its neighbour, a ring, a seal off).
+ */
+function effectsOf(story: QuadrantMoveStory): Map<string, CellEffects> {
+  const map = new Map<string, CellEffects>();
+  const of = (x: number, y: number) => {
+    const key = `${x},${y}`;
+    let cell = map.get(key);
+    if (!cell) {
+      cell = { numbers: new Map(), sparks: [], ring: null, badgeDelay: 0.3 };
+      map.set(key, cell);
+    }
+    return cell;
+  };
+  const win: NumberEffect["tone"] = story.mine ? "win-me" : "win-opponent";
+  const lose: NumberEffect["tone"] = story.mine ? "win-opponent" : "win-me";
+  const played = of(story.x, story.y);
+  story.clashes.forEach((clash, i) => {
+    const delay = 0.3 + i * CLASH_SECONDS;
+    const mine: NumberEffect["tone"] = clash.outcome === "win" ? win : clash.outcome === "tie" ? "tie" : "lose";
+    const theirs: NumberEffect["tone"] = clash.outcome === "win" ? "lose" : clash.outcome === "tie" ? "tie" : lose;
+    played.numbers.set(clash.side, { tone: mine, delay });
+    played.sparks.push({ side: clash.side, tone: mine, delay });
+    const other = of(clash.x, clash.y);
+    other.numbers.set((clash.side + 2) % 4, { tone: theirs, delay });
+    other.badgeDelay = delay + 0.35;
+  });
+  const clashesEnd = 0.3 + story.clashes.length * CLASH_SECONDS;
+  played.badgeDelay = clashesEnd;
+  story.ripples.forEach((ripple, i) => {
+    const delay = clashesEnd + 0.15 + i * RIPPLE_SECONDS;
+    const from = of(ripple.from.x, ripple.from.y);
+    from.numbers.set(ripple.side, { tone: win, delay });
+    from.sparks.push({ side: ripple.side, tone: win, delay });
+    const to = of(ripple.to.x, ripple.to.y);
+    to.numbers.set((ripple.side + 2) % 4, { tone: "lose", delay });
+    to.ring = { delay: delay + 0.15, mine: story.mine };
+    to.badgeDelay = Math.max(to.badgeDelay, delay + 0.4);
+  });
+  return map;
+}
+
+const SPARK_POSITION = [
+  "left-1/2 top-0 -translate-x-1/2 -translate-y-1/2",
+  "right-0 top-1/2 translate-x-1/2 -translate-y-1/2",
+  "bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2",
+  "left-0 top-1/2 -translate-x-1/2 -translate-y-1/2",
+] as const;
+
+const SPARK_FILL = { "win-me": "var(--comic-cyan)", "win-opponent": "var(--comic-orange)", tie: "#fff", lose: "#fff" } as const;
+
+/** The burst where two numbers meet: a comic star in the winner's colour, "=" on a tie. */
+function Spark({ side, tone, delay }: { side: number; tone: NumberEffect["tone"]; delay: number }) {
+  return (
+    <span
+      aria-hidden
+      className={`quad-fx pointer-events-none absolute z-[6] h-9 w-9 ${SPARK_POSITION[side]}`}
+      style={{ animation: `quad-spark 0.6s ease-out ${delay}s both` }}
+    >
+      <svg viewBox="-20 -20 40 40" className="h-full w-full overflow-visible">
+        <polygon
+          points="0,-19 5,-7 18,-9 8,0 16,12 3,7 -4,18 -6,6 -18,9 -9,-2 -16,-13 -4,-8"
+          fill={SPARK_FILL[tone]}
+          stroke="#000"
+          strokeWidth={2.5}
+          strokeLinejoin="round"
+        />
+        {tone === "tie" && (
+          <text x="0" y="5" textAnchor="middle" fontSize="14" fontWeight="900" fill="#000">
+            =
+          </text>
+        )}
+      </svg>
+    </span>
+  );
+}
+
 /**
  * How the seals on a cell change: "+1" or "−1" in the colour of the side whose seals they
  * are (cyan the player, orange the opponent). Tentative while the move is a preview.
  */
-function DeltaBadges({ delta, tentative = false, stampKey }: { delta: SealDelta; tentative?: boolean; stampKey: string }) {
+function DeltaBadges({
+  delta,
+  tentative = false,
+  stampKey,
+  delay = 0.15,
+}: {
+  delta: SealDelta;
+  tentative?: boolean;
+  stampKey: string;
+  delay?: number;
+}) {
   const badge = (n: number, tone: "me" | "opponent") => (
     <span
       key={`${tone}-${stampKey}`}
       className={`flex h-[18px] min-w-[24px] items-center justify-center border-2 border-black px-0.5 font-display text-[13px] leading-none text-black ${
         tone === "me" ? "bg-comic-cyan" : "bg-comic-orange"
       } ${tentative ? "opacity-90" : ""}`}
-      style={tentative ? undefined : stamp(0.15)}
+      style={tentative ? undefined : stamp(delay)}
     >
       {n > 0 ? `+${n}` : `−${-n}`}
     </span>
@@ -770,17 +892,34 @@ function Seals({ me, opponent }: { me: number; opponent: number }) {
   );
 }
 
+const NUMBER_POSITION = [
+  "left-1/2 top-0 -translate-x-1/2",
+  "right-0 top-1/2 -translate-y-1/2",
+  "bottom-0 left-1/2 -translate-x-1/2",
+  "left-0 top-1/2 -translate-y-1/2",
+] as const;
+
+/** How a number of a comparison moves: the winner swells in its colour, the loser shakes. */
+const NUMBER_ANIMATION = {
+  "win-me": "quad-num-win-me 0.7s ease-out",
+  "win-opponent": "quad-num-win-opponent 0.7s ease-out",
+  lose: "quad-num-lose 0.7s ease-out",
+  tie: "quad-num-tie 0.7s ease-out",
+} as const;
+
 /** A square card: the face, and the four numbers on its sides. */
 function QuadCard({
   card,
   values,
   tone,
   seals,
+  numbers,
 }: {
   card: MatchCard;
   values: readonly number[];
   tone: "mine" | "opponent" | "neutral" | "hand" | "draft";
   seals?: { me: number; opponent: number };
+  numbers?: Map<number, NumberEffect>;
 }) {
   const frame =
     tone === "mine"
@@ -807,10 +946,18 @@ function QuadCard({
       ) : (
         <Silhouette faction={card.faction} accent={card.rarity.color} className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2" />
       )}
-      <span className={`${number} left-1/2 top-0 -translate-x-1/2`}>{values[0]}</span>
-      <span className={`${number} right-0 top-1/2 -translate-y-1/2`}>{values[1]}</span>
-      <span className={`${number} bottom-0 left-1/2 -translate-x-1/2`}>{values[2]}</span>
-      <span className={`${number} left-0 top-1/2 -translate-y-1/2`}>{values[3]}</span>
+      {NUMBER_POSITION.map((position, side) => {
+        const effect = numbers?.get(side);
+        return (
+          <span
+            key={side}
+            className={`${number} ${position} ${effect ? "quad-fx" : ""}`}
+            style={effect ? { animation: `${NUMBER_ANIMATION[effect.tone]} ${effect.delay}s both` } : undefined}
+          >
+            {values[side]}
+          </span>
+        );
+      })}
       {seals && <Seals me={seals.me} opponent={seals.opponent} />}
     </span>
   );
@@ -831,6 +978,7 @@ const CONTROL_NAMES = { mine: "la controlli tu", opponent: "la controlla l'avver
 function BoardCard({
   cell,
   highlight,
+  effects,
   delta,
   tentative,
   stampKey,
@@ -838,6 +986,7 @@ function BoardCard({
 }: {
   cell: QuadrantCellView;
   highlight: boolean;
+  effects?: CellEffects;
   delta: SealDelta | null;
   tentative: boolean;
   stampKey: string;
@@ -854,8 +1003,16 @@ function BoardCard({
       className={`relative min-h-0 min-w-0 ${highlight ? "outline outline-2 outline-offset-1 outline-comic-yellow" : ""}`}
       style={highlight ? flash : undefined}
     >
-      <QuadCard card={cell.card} values={cell.values} tone={control} seals={cell.seals} />
-      {delta && <DeltaBadges delta={delta} tentative={tentative} stampKey={stampKey} />}
+      <QuadCard card={cell.card} values={cell.values} tone={control} seals={cell.seals} numbers={effects?.numbers} />
+      {effects?.sparks.map((spark) => <Spark key={`${stampKey}-${spark.side}`} {...spark} />)}
+      {effects?.ring && (
+        <span
+          aria-hidden
+          className={`quad-fx pointer-events-none absolute inset-0 z-[5] border-4 ${effects.ring.mine ? "border-comic-cyan" : "border-comic-orange"}`}
+          style={{ animation: `quad-ring 0.7s ease-out ${effects.ring.delay}s both` }}
+        />
+      )}
+      {delta && <DeltaBadges delta={delta} tentative={tentative} stampKey={stampKey} delay={effects?.badgeDelay} />}
     </span>
   );
 }
