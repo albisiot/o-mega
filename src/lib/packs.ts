@@ -19,7 +19,7 @@ export type PackCard = {
 export type PackOpening = {
   id: string;
   /** "bonus" and "event": the cards chosen for a bonus code or an event target, shown like a pack. */
-  pack_type: "daily" | "standard" | "bonus" | "event" | "special";
+  pack_type: "daily" | "standard" | "bonus" | "event" | "special" | "match";
   /** Name and colour of a special pack; null for the others. */
   pack_name: string | null;
   pack_color: string | null;

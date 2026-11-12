@@ -60,8 +60,12 @@ export const balance = {
       level5: 28,
       level6: 32,
     },
-    /** Paid once per run, when the threats passed reach each tier. */
+    /**
+     * Paid once per run, when the threats passed reach each tier; finishXp at the end of the run.
+     * Defaults: admins change them from /gestione-ricompense.
+     */
     rewards: {
+      finishXp: 0,
       tier1Passed: 3,
       tier1Coins: 10,
       tier2Passed: 5,
@@ -170,9 +174,10 @@ export const balance = {
     starterSetMaxRarityRank: 1,
     /** Non-starter cards required in a Conquest team, so nobody plays risk-free. */
     minConquerableCards: 3,
-    /** The only coins matches pay: to the Conquest loser (both players on a draw). */
-    loserCoins: 10,
-    /** Paid to the winner when none of the loser's cards can be taken. */
+    /**
+     * Paid to the winner when none of the loser's cards can be taken (default: admins change it).
+     * What a Conquest match pays otherwise is in match_reward_rules (see matchRewards).
+     */
     noCardBonusCoins: 50,
     /** Completed matches (abandoned ones do not count). */
     unlockAfterMatches: 5,
@@ -253,11 +258,17 @@ export const balance = {
     widenAfterSeconds: 30,
   },
 
+  /**
+   * What each match pays lives in the match_reward_rules table (mode x opponent x outcome),
+   * changed by admins from /gestione-ricompense. These are the daily caps on what matches
+   * pay, defaults too (0: no cap).
+   */
+  matchRewards: {
+    dailyCoinCap: 0,
+    dailyPackCap: 3,
+  },
+
   progression: {
-    pvpWinXp: 30,
-    pvpParticipationXp: 10,
-    botWinXp: 10,
-    botParticipationXp: 3,
     /** XP needed for level L is levelXpBase * L * (L - 1). */
     levelXpBase: 50,
     /** Coins for reaching level L are levelRewardBase + levelRewardPerLevel * L. */

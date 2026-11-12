@@ -635,6 +635,9 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
             {run.coins > 0 && (
               <p className="-skew-x-8 bg-black px-2.5 py-0.5 text-[13px] font-extrabold text-comic-yellow">+{run.coins} monete</p>
             )}
+            {(run.xp ?? 0) > 0 && (
+              <p className="-skew-x-8 bg-black px-2.5 py-0.5 text-[13px] font-extrabold text-foreground">+{run.xp} XP</p>
+            )}
             {eventPoints && (
               <p className="-skew-x-8 bg-comic-yellow px-2.5 py-0.5 text-[13px] font-extrabold text-black">
                 {describeEventPoints(eventPoints)}

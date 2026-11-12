@@ -49,6 +49,9 @@ export function AdminLink() {
       <Link href="/gestione-minacce" className={LINK}>
         Minacce
       </Link>
+      <Link href="/gestione-ricompense" className={LINK}>
+        Ricompense partite
+      </Link>
     </nav>
   );
 }

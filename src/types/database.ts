@@ -959,6 +959,7 @@ export type Database = {
           status: string
           total_score: number
           user_id: string
+          xp: number
         }
         Insert: {
           card_instance_ids: string[]
@@ -974,6 +975,7 @@ export type Database = {
           status?: string
           total_score?: number
           user_id: string
+          xp?: number
         }
         Update: {
           card_instance_ids?: string[]
@@ -989,6 +991,7 @@ export type Database = {
           status?: string
           total_score?: number
           user_id?: string
+          xp?: number
         }
         Relationships: [
           {
@@ -1400,6 +1403,36 @@ export type Database = {
           },
         ]
       }
+      match_reward_rules: {
+        Row: {
+          coins: number
+          mode_key: string
+          opponent: string
+          outcome: string
+          packs: number
+          updated_at: string
+          xp: number
+        }
+        Insert: {
+          coins?: number
+          mode_key: string
+          opponent: string
+          outcome: string
+          packs?: number
+          updated_at?: string
+          xp?: number
+        }
+        Update: {
+          coins?: number
+          mode_key?: string
+          opponent?: string
+          outcome?: string
+          packs?: number
+          updated_at?: string
+          xp?: number
+        }
+        Relationships: []
+      }
       match_rounds: {
         Row: {
           deadline_at: string
@@ -1512,6 +1545,10 @@ export type Database = {
           result: string | null
           reward_coins_a: number | null
           reward_coins_b: number | null
+          reward_opening_ids_a: string[]
+          reward_opening_ids_b: string[]
+          reward_xp_a: number | null
+          reward_xp_b: number | null
           rounds_won_a: number
           rounds_won_b: number
           status: string
@@ -1543,6 +1580,10 @@ export type Database = {
           result?: string | null
           reward_coins_a?: number | null
           reward_coins_b?: number | null
+          reward_opening_ids_a?: string[]
+          reward_opening_ids_b?: string[]
+          reward_xp_a?: number | null
+          reward_xp_b?: number | null
           rounds_won_a?: number
           rounds_won_b?: number
           status?: string
@@ -1574,6 +1615,10 @@ export type Database = {
           result?: string | null
           reward_coins_a?: number | null
           reward_coins_b?: number | null
+          reward_opening_ids_a?: string[]
+          reward_opening_ids_b?: string[]
+          reward_xp_a?: number | null
+          reward_xp_b?: number | null
           rounds_won_a?: number
           rounds_won_b?: number
           status?: string
@@ -2569,6 +2614,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_save_match_rewards: {
+        Args: { p_rules: Json; p_settings: Json }
+        Returns: Json
+      }
       admin_save_special_pack: {
         Args: {
           p_cards: Json
@@ -2888,6 +2937,7 @@ export type Database = {
         Returns: string
       }
       emergency_state_payload: { Args: { p_user: string }; Returns: Json }
+      emergency_state_payload_base: { Args: { p_user: string }; Returns: Json }
       ensure_daily_objectives: { Args: { p_user: string }; Returns: string }
       event_payload: {
         Args: { p_event_id: string; p_user: string }
@@ -2932,6 +2982,8 @@ export type Database = {
       get_event_points_for: { Args: { p_ref_id: string }; Returns: Json }
       get_lobby_format: { Args: { p_code: string }; Returns: string }
       get_match_history: { Args: { p_limit?: number }; Returns: Json }
+      get_match_reward: { Args: { p_match_id: string }; Returns: Json }
+      get_match_rewards: { Args: never; Returns: Json }
       get_match_state: { Args: { p_match_id: string }; Returns: Json }
       get_pack_odds: { Args: never; Returns: Json }
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
@@ -3210,6 +3262,40 @@ export type Database = {
         }
         Returns: Json
       }
+      match_reward_mode: {
+        Args: { p_match: Database["public"]["Tables"]["matches"]["Row"] }
+        Returns: string
+      }
+      match_reward_rule: {
+        Args: {
+          p_match: Database["public"]["Tables"]["matches"]["Row"]
+          p_outcome: string
+        }
+        Returns: {
+          coins: number
+          mode_key: string
+          opponent: string
+          outcome: string
+          packs: number
+          updated_at: string
+          xp: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "match_reward_rules"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      match_reward_setting_bounds: {
+        Args: never
+        Returns: {
+          key: string
+          max_value: number
+          min_value: number
+        }[]
+      }
+      match_rewards_payload: { Args: never; Returns: Json }
       match_round_context: {
         Args: { p_match_id: string; p_user: string }
         Returns: Json

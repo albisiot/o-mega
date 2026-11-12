@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { EventBanner } from "@/components/event-banner";
+import { useMatchRewards } from "@/components/match-reward";
 import { LoadingScreen } from "@/components/loading-screen";
 import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
 import { describeServerError } from "@/lib/errors";
+import { rewardRule } from "@/lib/match-rewards";
 import {
   DIFFICULTY_LABELS,
   fetchActiveMatch,
@@ -289,7 +291,9 @@ const QUADRANT_BOTS: BotTexts = {
 
 /** Conquista (SPEC §6), inside the classic match: the winner takes a card, once unlocked. */
 function ConquestGroup({ status, disabled }: { status: ConquestStatus | null; disabled: boolean }) {
-  const { maxCardsLostPerDay, unlockAfterMatches, unlockAtLevel, loserCoins, minConquerableCards } = balance.conquest;
+  const { maxCardsLostPerDay, unlockAfterMatches, unlockAtLevel, minConquerableCards } = balance.conquest;
+  const rewards = useMatchRewards();
+  const loserCoins = rewards ? (rewardRule(rewards.rules, "conquest", "person", "loss")?.coins ?? 0) : 0;
   const limitReached = status !== null && status.cards_lost_today >= maxCardsLostPerDay;
   const available = status?.unlocked && !limitReached && !disabled;
 
@@ -297,7 +301,8 @@ function ConquestGroup({ status, disabled }: { status: ConquestStatus | null; di
     <div className="flex flex-col gap-2">
       <GroupTitle>Conquista · con le carte in palio</GroupTitle>
       <p className="text-[13px] font-medium leading-4 text-muted">
-        Chi vince prende una carta dell&apos;avversario, chi perde guadagna {loserCoins} monete. Si rischia solo ciò
+        Chi vince prende una carta dell&apos;avversario
+        {loserCoins > 0 ? `, chi perde guadagna ${loserCoins} monete` : ""}. Si rischia solo ciò
         che si porta in campo: servono almeno {minConquerableCards} carte non starter.
       </p>
       {available ? (
@@ -337,12 +342,16 @@ function ConquestGroup({ status, disabled }: { status: ConquestStatus | null; di
 }
 
 function EmergencySection() {
-  const { threatsPerRun, rewards } = balance.emergency;
+  const { threatsPerRun } = balance.emergency;
+  const settings = useMatchRewards()?.settings;
+  const maxCoins = settings
+    ? settings["emergency.rewards.tier1_coins"] + settings["emergency.rewards.tier2_coins"] + settings["emergency.rewards.tier3_coins"]
+    : null;
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm font-medium text-muted">
         {threatsPerRun} Minacce uguali per tutti e un solo tentativo al giorno, con una classifica. Nessuna carta in
-        gioco, fino a {rewards.tier1Coins + rewards.tier2Coins + rewards.tier3Coins} monete. Si può giocare anche con una
+        gioco{maxCoins !== null && `, fino a ${maxCoins} monete`}. Si può giocare anche con una
         partita in corso.
       </p>
       <OptionRow href="/emergenza" title="Apri l'Emergenza di oggi" detail="Guarda i livelli, poi scegli la squadra." />

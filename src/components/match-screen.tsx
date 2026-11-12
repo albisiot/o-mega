@@ -42,7 +42,7 @@ import {
   type MatchRound,
   type MatchView,
 } from "@/lib/match";
-import { matchXp } from "@/lib/progression";
+import { RewardChips, hasReward, useMatchReward } from "@/components/match-reward";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import {
   carriedInto,
@@ -1088,8 +1088,7 @@ function MatchResult({
     view.end_reason === "forfeit" && view.result === "loss"
       ? "Hai abbandonato"
       : { win: "Vittoria!", loss: "Sconfitta", draw: "Pareggio" }[view.result ?? "draw"];
-  const coins = view.reward_coins ?? 0;
-  const xp = matchXp(view);
+  const reward = useMatchReward(view.id);
   const cardOf = (instanceId: string | null | undefined) => view.my_team.find((c) => c.instance_id === instanceId);
   const storyReward = useStoryReward(view.id, story);
   const eventPoints = useEventPointsFor(view.id);
@@ -1110,8 +1109,7 @@ function MatchResult({
   );
   const gains = (
     <>
-      {xp > 0 && <p className={`${chip} bg-black text-foreground`}>+{xp} XP</p>}
-      {coins > 0 && <p className={`${chip} bg-black text-comic-yellow`}>+{coins} monete</p>}
+      <RewardChips reward={reward} chip={chip} />
       {eventPoints && (
         <p className={`${chip} bg-comic-yellow text-black`}>
           {describeEventPoints(eventPoints)}
@@ -1168,7 +1166,7 @@ function MatchResult({
         ) : (
           <>
             {score}
-            {(xp > 0 || coins > 0 || eventPoints) && <div className="relative flex flex-wrap justify-center gap-2">{gains}</div>}
+            {(hasReward(reward) || eventPoints) && <div className="relative flex flex-wrap justify-center gap-2">{gains}</div>}
             {levels}
           </>
         )}

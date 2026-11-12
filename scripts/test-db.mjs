@@ -39,9 +39,16 @@ const flat = new Map();
 
 const config = supabase(["db", "query", "--linked", '"select key, value from public.game_config"']);
 const rows = config.status === 0 ? JSON.parse(config.stdout).rows : null;
-// Keys admins change from the app (the Grande Minaccia table, /gestione-minaccia):
+// Keys admins change from the app (/gestione-minaccia, /gestione-ricompense):
 // balance.ts holds their defaults, so a different live value is reported, not a failure.
-const ADMIN_KEYS = new Set(["boss.hot_fronts", "boss.hot_value", "boss.hot_growth", "boss.base_value"]);
+const ADMIN_KEYS = new Set([
+  "boss.hot_fronts", "boss.hot_value", "boss.hot_growth", "boss.base_value",
+  // /gestione-ricompense
+  "match_rewards.daily_coin_cap", "match_rewards.daily_pack_cap", "conquest.no_card_bonus_coins",
+  "emergency.rewards.finish_xp",
+  "emergency.rewards.tier1_passed", "emergency.rewards.tier2_passed", "emergency.rewards.tier3_passed",
+  "emergency.rewards.tier1_coins", "emergency.rewards.tier2_coins", "emergency.rewards.tier3_coins",
+]);
 const describe = (row) =>
   `${row.key}: database ${JSON.stringify(row.value)}, balance.ts ${flat.has(row.key) ? JSON.stringify(flat.get(row.key)) : "missing"}`;
 const differs = (row) => !flat.has(row.key) || flat.get(row.key) !== row.value;

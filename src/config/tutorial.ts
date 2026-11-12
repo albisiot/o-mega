@@ -117,7 +117,7 @@ export const TUTORIAL_MODES = [
   {
     name: "Partita classica",
     color: "bg-comic-cyan",
-    text: `${match.teamSize} personaggi contro ${match.teamSize} Minacce. Contro i bot è un'amichevole per allenarti, con quattro difficoltà: Facile, Medio, Difficile e Super Pro (${progression.botWinXp} XP se vinci, ${progression.botParticipationXp} se perdi). Online, contro il primo giocatore libero o contro un amico con un codice di 6 caratteri, è ancora un'amichevole ma dà più esperienza (${progression.pvpWinXp} XP se vinci, ${progression.pvpParticipationXp} se perdi). Nessuna carta in gioco e nessuna moneta.`,
+    text: `${match.teamSize} personaggi contro ${match.teamSize} Minacce. Contro i bot è un'amichevole per allenarti, con quattro difficoltà: Facile, Medio, Difficile e Super Pro. Online, contro il primo giocatore libero o contro un amico con un codice di 6 caratteri, è ancora un'amichevole ma dà più esperienza. Nessuna carta in gioco. Quanto hai guadagnato lo vedi a fine partita.`,
   },
   {
     name: "Conquista",
@@ -245,7 +245,7 @@ export const TUTORIAL_STEPS = [
     title: "Monete e livelli",
     points: [
       "Monete: le ottieni convertendo i doppioni e salendo di livello.",
-      `In Conquista chi perde riceve ${conquest.loserCoins} monete (in caso di pareggio entrambi). Chi vince ne riceve ${conquest.noCardBonusCoins} se nessuna carta era conquistabile.`,
+      "In Conquista chi perde riceve delle monete (in caso di pareggio entrambi); chi vince prende una carta, o delle monete se nessuna carta era conquistabile. Le partite che pagano monete, e quante, sono elencate nel Negozio, sotto «Movimenti».",
       `Livelli: ogni partita dà esperienza e ogni nuovo livello regala monete, ${firstLevelReward} al livello 2 e sempre di più dopo. Alcuni personaggi si sbloccano solo salendo di livello.`,
     ],
   },

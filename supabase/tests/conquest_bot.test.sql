@@ -160,7 +160,7 @@ begin
   assert v_state -> 'conquest' ->> 'role' = 'loser', 'loser role';
   assert (v_state -> 'conquest' ->> 'resolved')::boolean, 'the bot pick is immediate';
   assert not (v_state -> 'conquest' ->> 'auto_assigned')::boolean, 'not a timer';
-  assert (v_state ->> 'reward_coins')::integer = public.config_int('conquest.loser_coins'), 'loser coins';
+  assert (v_state ->> 'reward_coins')::integer = (select r.coins from public.match_reward_rules r where r.mode_key = 'conquest' and r.opponent = 'bot' and r.outcome = 'loss'), 'loser coins';
   v_lost := (select instance_id from public.card_transfers where match_id = v_match and to_user is null and from_user = v_user);
   assert v_lost = any (v_team[1:3]), 'the lost card';
   assert (select owner_id is null and out_of_play_at is not null and converted_at is null

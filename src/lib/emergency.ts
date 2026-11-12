@@ -40,6 +40,8 @@ export type EmergencyRun = {
   failed: number;
   total_score: number;
   coins: number;
+  /** XP paid at the end of the run (emergency.rewards.finish_xp). */
+  xp?: number;
   squad: EmergencySquadCard[];
   plays: EmergencyPlay[];
   /** null once the run is over. */
@@ -60,6 +62,8 @@ export type EmergencyView = {
     max_failures: number;
     targets: Record<string, number>;
     rewards: { passed: number; coins: number }[];
+    /** XP at the end of the run, 0 for none. */
+    finish_xp?: number;
   };
   /** null until the player fields a squad. */
   run: EmergencyRun | null;

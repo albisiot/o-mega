@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { PackArt, TabBar } from "@/components/comic-parts";
 import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
-import { balance } from "@/config/balance";
+import { useMatchRewards } from "@/components/match-reward";
 import { describeServerError } from "@/lib/errors";
 import { formatRomeDateTime } from "@/lib/events";
+import { coinSources } from "@/lib/match-rewards";
 import { packColor } from "@/lib/pack-colors";
 import {
   buyPack,
@@ -55,6 +56,7 @@ const TABS: { key: ShopTab; label: string }[] = [
  */
 export function ShopView({ status, odds, specials, history, onFailed, onRedeemed }: ShopViewProps) {
   const [tab, setTab] = useState<ShopTab>("odds");
+  const rewards = useMatchRewards();
   // 0 is the standard pack, then the special packs in order.
   const [shown, setShown] = useState(0);
   const carousel = useRef<HTMLDivElement>(null);
@@ -170,11 +172,16 @@ export function ShopView({ status, odds, specials, history, onFailed, onRedeemed
                     </Link>{" "}
                     della collezione.
                   </li>
-                  <li>Perdi una sfida di Conquista: +{balance.conquest.loserCoins} (chi vince prende una carta).</li>
-                  <li>
-                    Vinci in Conquista quando nessuna carta è conquistabile: +{balance.conquest.noCardBonusCoins} al
-                    posto della carta.
-                  </li>
+                  {rewards &&
+                    coinSources(rewards.rules).map((line) => (
+                      <li key={line}>Partite · {line}.</li>
+                    ))}
+                  {rewards && rewards.settings["conquest.no_card_bonus_coins"] > 0 && (
+                    <li>
+                      Vinci in Conquista quando nessuna carta è conquistabile: +
+                      {rewards.settings["conquest.no_card_bonus_coins"]} al posto della carta.
+                    </li>
+                  )}
                 </ul>
               </section>
               {history.length === 0 ? (

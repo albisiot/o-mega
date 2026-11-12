@@ -33,7 +33,7 @@ export function StoryRewardPanel({ reward, abilities }: { reward: StoryReward; a
         <p className="font-display text-xl uppercase">{reward.title}</p>
         <p className="text-sm font-medium text-muted">
           {reward.completed_before
-            ? "Missione già completata: le partite rigiocate non danno premi."
+            ? "Missione già completata: le partite rigiocate non danno più il premio della missione."
             : "Missione non completata: vinci per ottenere il premio e aprire la prossima."}
         </p>
       </section>

@@ -30,6 +30,7 @@ const PACK_TITLES: Record<PackOpening["pack_type"], string> = {
   bonus: "Carte bonus",
   event: "Premio evento",
   special: "Pacchetto speciale",
+  match: "Premio partita",
 };
 
 /** Sealed pack → cards revealed one at a time → summary, then the next pack if any. */

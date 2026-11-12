@@ -34,7 +34,7 @@ import {
   pingMatch,
   subscribeToUpdates,
 } from "@/lib/match";
-import { matchXp } from "@/lib/progression";
+import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow, useSecondsLeft } from "@/lib/use-now";
@@ -864,7 +864,7 @@ function BossResult({ view, rival }: { view: BossView; rival: string }) {
     view.end_reason === "forfeit" && view.result === "loss"
       ? "Hai abbandonato"
       : { win: "Vittoria!", loss: "Sconfitta", draw: "Pareggio" }[view.result ?? "draw"];
-  const xp = matchXp(view);
+  const reward = useMatchReward(view.id);
   const eventPoints = useEventPointsFor(view.id);
   const chip = "relative -skew-x-8 px-3 py-1 text-sm font-extrabold";
 
@@ -885,7 +885,7 @@ function BossResult({ view, rival }: { view: BossView; rival: string }) {
           Punti {view.points.me} – {view.points.opponent} · fronti {view.fronts_taken.me} – {view.fronts_taken.opponent}
         </p>
         <div className="relative flex flex-wrap justify-center gap-2">
-          {xp > 0 && <p className={`${chip} bg-black text-foreground`}>+{xp} XP</p>}
+          <RewardChips reward={reward} chip={chip} />
           {eventPoints && (
             <p className={`${chip} bg-comic-yellow text-black`}>
               {describeEventPoints(eventPoints)}

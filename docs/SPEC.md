@@ -284,7 +284,7 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 - **Fine:** dopo l'ultima Minaccia o alla **terza fallita**.
 - **Livelli:** stesse regole di §5.4, con somma tra 24 e 32.
 - **Solo Nuova Megara:** l'Emergenza estrae solo le 60 Minacce normali di Nuova Megara, più le Minacce rare quando escono (§5.15, ognuna con la sua soglia), mai quelle dei luoghi (§5.4): con Gelo o Duello alcune soglie sarebbero irraggiungibili (livello 2 al massimo 12 contro 13, livello 5 al massimo 20 contro 28). Così soglie e difficoltà restano quelle tarate.
-- **Premi:** 10 monete a 3 Minacce superate, altre 15 a 5, altre 25 a 8 (massimo 50 al giorno). Si ricevono subito, quindi restano anche se il tentativo non viene finito. Nessuna esperienza e nessun effetto sulle statistiche di partita o sullo sblocco della Conquista.
+- **Premi:** 10 monete a 3 Minacce superate, altre 15 a 5, altre 25 a 8 (massimo 50 al giorno). Si ricevono subito, quindi restano anche se il tentativo non viene finito. Esperienza solo a tentativo finito, se l'amministratore la imposta (default 0, §8.4); nessun effetto sulle statistiche di partita. Soglie, monete ed esperienza si cambiano da *Ricompense partite* (§8.4).
 - **Classifica di giornata:** solo i tentativi finiti, per Minacce superate, poi punteggio totale, poi chi ha finito prima. Non mostra i personaggi giocati, che rivelerebbero le Minacce.
 
 **I poteri in Emergenza:** le Minacce superate contano come round vinti e quelle fallite come round persi. La squadra è quella di 8.
@@ -761,6 +761,30 @@ Ogni giorno di gioco (da mezzanotte a mezzanotte `Europe/Rome`) ogni giocatore r
 - **Dati:** `daily_objective_definitions` (catalogo), `daily_objective_days` (giorno estratto e cambi usati), `daily_objectives` (obiettivi del giocatore con progresso, completamento, riscatto e cambio). Nessun client legge le tabelle: tutto passa da `get_daily_objectives`, `claim_daily_objective` e `refresh_daily_objective`.
 - **Il giocatore vede:** nella home, sotto il pacchetto del giorno, la barra *Obiettivi del giorno* con "1 su 3 completati"; quando c'è un premio diventa gialla con "Riscatta". La pagina `/obiettivi` mostra per ogni obiettivo difficoltà, premio, barra di progresso e il tasto Riscatta o Cambia, il tempo ai nuovi obiettivi e i cambi rimasti.
 
+### 8.4 Ricompense delle partite
+
+Cosa guadagna un giocatore a fine partita lo decide una tabella nel database, `match_reward_rules`, letta solo dal server (`finish_match`) nella stessa transazione che chiude la partita. Una riga per **modalità × avversario × esito**, con tre valori:
+
+- **Monete:** in `coin_ledger` con motivo `match_reward`, da 0 a 10.000.
+- **XP:** da 0 a 10.000, poi premi di livello come sempre.
+- **Pacchetti standard:** da 0 a 3, aperti subito (`pack_openings.pack_type = 'match'`): a fine partita il giocatore li vede con il link *apri*. Non contano per l'obiettivo "Apri un pacchetto".
+
+| Modalità (`mode_key`) | Avversari |
+|---|---|
+| `classic` Partita classica | bot · persona (amichevole online o codice amico) |
+| `conquest` Conquista | persona · bot di Conquista |
+| `boss` Grande Minaccia, `triple` Allarme Triplo, `quadrant` e `quadrant_shifting` Quadrante (griglia fissa e mobile) | bot · persona |
+| `story` Missioni della Storia | bot (ogni partita, anche rigiocata; il premio della prima vittoria resta quello della missione, §5.11) |
+| `default` Modalità future | bot · persona |
+
+- **Quale riga:** una missione della Storia usa `story`, una partita di Conquista `conquest`, le altre il loro formato (`matches.format`). L'avversario è "bot" se la partita ha una difficoltà del bot. Una modalità senza righe sue (una nuova, futura) usa le righe `default` finché una migrazione non le dà le sue.
+- **Esiti:** vittoria, pareggio, sconfitta. **Chi abbandona non prende nulla**, e nemmeno le partite chiuse per abbandono di entrambi; chi vince perché l'altro abbandona prende la vittoria. Questa regola non è configurabile.
+- **Valori iniziali:** quelli in vigore prima della tabella, così il gioco non cambia finché l'amministratore non li modifica: contro un bot 10 XP vittoria, 3 pareggio e sconfitta; contro una persona 30 e 10; monete solo in Conquista, 10 a chi perde e a entrambi sul pareggio, anche contro il bot di Conquista; nessun pacchetto.
+- **Tetti giornalieri** (giorno di gioco `Europe/Rome`, per giocatore, su tutte le partite): monete `match_rewards.daily_coin_cap` (default 0 = nessun tetto) e pacchetti `match_rewards.daily_pack_cap` (default 3). Servono se si danno monete o pacchetti contro i bot, che si possono giocare senza limiti. Una partita che supera il tetto paga solo quello che resta.
+- **Altro sulla stessa pagina:** le monete al vincitore di Conquista quando nessuna carta è conquistabile (`conquest.no_card_bonus_coins`, default 50) e i premi dell'Emergenza (§5.10): tre soglie di Minacce superate con le loro monete (le soglie crescono e non superano le Minacce della sfida; ogni soglia paga almeno 1 moneta) e l'XP a fine tentativo (`emergency.rewards.finish_xp`, default 0).
+- **Gestione dall'app, solo amministratori:** il link *Ricompense partite* (`/gestione-ricompense`), con gli altri link di gestione nel profilo (scheda *Altro*) e in fondo all'informativa. La scheda *Partite* mostra una sezione per modalità, con XP, monete e pacchetti per vittoria, pareggio e sconfitta di ogni avversario; la scheda *Tetti ed Emergenza* il resto. Un solo *Salva* manda tutte le modifiche insieme ad `admin_save_match_rewards`, che verifica l'amministratore e ogni valore sul server e salva tutto o niente. Vale per le partite che finiscono dopo il salvataggio. Le modalità non si aggiungono né si tolgono dalla pagina: arrivano con il codice.
+- **Il giocatore vede:** a fine partita i guadagni veri, letti dal server (`get_match_reward`). I testi di Gioca e del Negozio (*Movimenti*: quali partite danno monete e quante) leggono la tabella (`get_match_rewards`, in sola lettura per tutti).
+
 ## 9. Collezione e album
 
 - Album con tutte le carte del catalogo: possedute e mancanti (sagoma).
@@ -871,7 +895,7 @@ Tutte le tabelle hanno RLS. Scritture solo tramite RPC: `claim_daily_pack`, `buy
 | Rarità | Delta → Gamma → Beta → Alfa → Omega (lettere greche, estendibili con le espansioni) |
 | Abilità | 12 in 4 famiglie: Corpo (Forza, Velocità, Resistenza), Mente (Intelletto, Volontà, Percezione), Potere (Energia, Magia, Psiche), Mestiere (Combattimento, Tecnologia, Furtività) |
 | Bot | Difficoltà selezionabile: Facile, Medio, Difficile, Super Pro |
-| Monete dalle partite (sostituisce §8) | Solo la Conquista paga: chi perde +10 monete, chi vince prende la carta (e +50 solo se nessuna carta è conquistabile); pareggio +10 a entrambi. Bot e amichevoli non pagano monete. Chi abbandona non guadagna nulla. Emergenza ha i suoi premi (§5.10). |
+| Monete dalle partite (sostituisce §8) | Solo la Conquista paga: chi perde +10 monete, chi vince prende la carta (e +50 solo se nessuna carta è conquistabile); pareggio +10 a entrambi. Bot e amichevoli non pagano monete. Chi abbandona non guadagna nulla. Emergenza ha i suoi premi (§5.10). Dal 12 novembre 2026 questi sono i valori iniziali della tabella *Ricompense partite* (§8.4), che gli amministratori possono cambiare. |
 | Premi di livello | Raggiungere il livello L paga una sola volta 30 + 10 × L monete (livello 2: 50, livello 3: 60), in qualsiasi modalità. Chi supera più livelli insieme li riceve tutti. |
 | Codice amico | Solo amichevole: nessuno scambio di carte, nessuna moneta. La Conquista si gioca solo con avversario casuale. |
 | Squadra in Conquista | Almeno 3 carte conquistabili (non starter). Se un personaggio è posseduto sia come starter sia come doppione, il giocatore sceglie quale copia schierare (di default la starter, protetta). |

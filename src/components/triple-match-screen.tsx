@@ -22,7 +22,7 @@ import {
   subscribeToUpdates,
   type MatchCard,
 } from "@/lib/match";
-import { matchXp } from "@/lib/progression";
+import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
 import { oddsText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
 import { describeThreatModifier } from "@/lib/threat-modifiers";
@@ -948,7 +948,7 @@ function TripleResult({ view, rival }: { view: TripleView; rival: string }) {
     view.end_reason === "forfeit" && view.result === "loss"
       ? "Hai abbandonato"
       : { win: "Vittoria!", loss: "Sconfitta", draw: "Pareggio" }[view.result ?? "draw"];
-  const xp = matchXp(view);
+  const reward = useMatchReward(view.id);
   const eventPoints = useEventPointsFor(view.id);
   const chip = "relative -skew-x-8 px-3 py-1 text-sm font-extrabold";
 
@@ -970,7 +970,7 @@ function TripleResult({ view, rival }: { view: TripleView; rival: string }) {
           {view.points.me === view.points.opponent && ` · punteggi ${view.total_score.me} – ${view.total_score.opponent}`}
         </p>
         <div className="relative flex flex-wrap justify-center gap-2">
-          {xp > 0 && <p className={`${chip} bg-black text-foreground`}>+{xp} XP</p>}
+          <RewardChips reward={reward} chip={chip} />
           {eventPoints && <p className={`${chip} bg-comic-yellow text-black`}>{describeEventPoints(eventPoints)}</p>}
           {view.level_rewards.map((reward) => (
             <p key={reward.level} className={`${chip} bg-comic-cyan text-black`}>
