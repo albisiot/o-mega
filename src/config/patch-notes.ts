@@ -1,6 +1,13 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "12 novembre 2026",
+    changes: [
+      "Nuova modalità in Gioca: Quadrante. Porti un mazzo di 10 personaggi e ne hai sempre 3 in mano. In ogni partita escono 4 abilità, una per lato della carta: il numero su ogni lato è il valore del personaggio in quell'abilità, quindi ogni carta cambia forma da una partita all'altra. A turno metti una carta accanto a quelle già in gioco, ruotata come vuoi: ogni lato che supera quello della carta vicina mette un tuo Sigillo sulla carta battuta e uno sulla tua, e se la carta battuta batte a sua volta una vicina, a quella togli un Sigillo avversario. Dopo 8 carte a testa vince chi ha più Sigilli sulla griglia. Due griglie: fissa, con i bordi del 4×4 dall'inizio, e mobile, che si sposta finché le carte non occupano 4 colonne o 4 righe. Si gioca contro i bot, dal Facile al Super Pro, o in amichevole contro un giocatore o un amico con un codice. Nessuna carta in gioco.",
+      "Entrando con il codice di un amico, la scelta della squadra ora sa già per quale modalità è il codice e ti chiede il numero giusto di carte: 9 per Allarme Triplo, 10 per Quadrante.",
+    ],
+  },
+  {
     date: "11 novembre 2026",
     changes: [
       "Anche quello che non si può annullare ora si conferma tenendo premuto: la conversione dei doppioni in monete, nella collezione e nella scheda della carta, e la scelta della carta da prendere quando vinci in Conquista. Non serve più il secondo tocco su Conferma.",

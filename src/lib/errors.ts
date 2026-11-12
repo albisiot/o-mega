@@ -26,6 +26,7 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   invalid_boss_values: "La tabella della Grande Minaccia è appena cambiata: riprova.",
   boss_not_found: "Nessuna Grande Minaccia disponibile in questo momento.",
   invalid_placement: "Metti una carta pescata su ogni Minaccia, una sola volta ciascuna.",
+  not_your_turn: "Non è il tuo turno.",
   too_many_formations: "Hai raggiunto il numero massimo di formazioni.",
   invalid_formation_name: "Il nome della formazione deve avere da 1 a 30 caratteri.",
   formation_not_found: "Formazione non trovata.",

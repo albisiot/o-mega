@@ -14,11 +14,16 @@ import {
   pickOne,
   pickThreats,
   placeModifier,
+  chooseQuadrantBotPlacement,
+  quadrantBotView,
+  quadrantSideToMove,
+  quadrantValues,
   planBotMatch,
   playBossBotTurn,
   playBossPvpTurn,
   playBotRound,
   playPvpRound,
+  playQuadrantMove,
   playTripleBotRound,
   playTriplePvpRound,
   resolveEmergencyPlay,
@@ -33,6 +38,11 @@ import {
   type MatchResult,
   type MatchRules,
   type MatchState,
+  type QuadrantBoard,
+  type QuadrantMoveRecord,
+  type QuadrantPlacement,
+  type QuadrantRules,
+  type QuadrantState,
   type Rng,
   type RoundRecord,
   type Side,
@@ -83,6 +93,7 @@ const CLIENT_ERRORS = new Set([
   "invalid_front",
   "boss_not_found",
   "invalid_placement",
+  "not_your_turn",
 ]);
 
 class GameError extends Error {}
@@ -128,6 +139,7 @@ type Loaded = {
   emergency: EmergencyRules;
   boss: BossRules;
   triple: TripleRules;
+  quadrant: QuadrantRules;
   graceSeconds: number;
   catalog: BotMatchCatalog;
   /** Threats of Nuova Megara only: Emergenza never draws the places beyond it. */
@@ -237,6 +249,14 @@ async function load(): Promise<Loaded> {
       threats: value("triple.threats"),
       classicRounds: value("match.threats_per_match"),
     },
+    quadrant: {
+      size: value("quadrant.size"),
+      deckSize: value("quadrant.deck_size"),
+      handSize: value("quadrant.hand_size"),
+      cardsPerSide: value("quadrant.cards_per_side"),
+      seals: value("quadrant.seals"),
+      firstPlayerSeals: value("quadrant.first_player_seals"),
+    },
     graceSeconds: value("match.timeout_grace_seconds"),
     catalog: {
       characters: activeCharacters,
@@ -279,18 +299,29 @@ type PlayRow = {
   /** Grande Minaccia only: 1-based front where the character stays, points the side took that turn. */
   front_slot: number | null;
   points: number | null;
+  /** Quadrante only: the cell and the quarter turns of the card. */
+  cell_x?: number | null;
+  cell_y?: number | null;
+  rotation?: number | null;
 };
+
+const QUADRANT_FORMATS = ["quadrant", "quadrant_shifting"] as const;
+type QuadrantFormat = (typeof QUADRANT_FORMATS)[number];
+const isQuadrantFormat = (format: unknown): format is QuadrantFormat =>
+  typeof format === "string" && (QUADRANT_FORMATS as readonly string[]).includes(format);
 
 type MatchContext = {
   side: Side;
   match: {
     status: string;
-    format: "classic" | "boss" | "triple";
+    format: "classic" | "boss" | "triple" | QuadrantFormat;
     bot_difficulty: BotDifficulty | null;
     current_round: number;
     threat_ids: string[];
     threat_modifiers: (ThreatModifier | null)[];
     boss_values: number[][] | null;
+    quadrant_abilities?: string[] | null;
+    quadrant_first?: Side | null;
   };
   teams: { side: Side; card_instance_ids: string[] | null; definition_ids: string[] }[];
   rounds: {
@@ -303,7 +334,15 @@ type MatchContext = {
   }[];
   plays: PlayRow[];
   /** Choices already submitted for the current round (matches between players). */
-  pending: { side: Side; card_instance_id: string; front_slot: number | null; round?: number }[];
+  pending: {
+    side: Side;
+    card_instance_id: string;
+    front_slot: number | null;
+    round?: number;
+    cell_x?: number | null;
+    cell_y?: number | null;
+    rotation?: number | null;
+  }[];
 };
 
 /** Rebuilds the full engine state of a match from the database, in one request. */
@@ -333,11 +372,15 @@ async function loadMatch(userId: string, matchId: string) {
 
   if (match.format === "boss") {
     const boss = bossState(loaded, match, teams, roundRows, playRows);
-    return { loaded, match, side, state: null, boss, triple: null, pending, deadline };
+    return { loaded, match, side, state: null, boss, triple: null, quadrant: null, pending, deadline };
   }
   if (match.format === "triple") {
     const triple = tripleState(loaded, match, teams, roundRows, playRows);
-    return { loaded, match, side, state: null, boss: null, triple, pending, deadline };
+    return { loaded, match, side, state: null, boss: null, triple, quadrant: null, pending, deadline };
+  }
+  if (isQuadrantFormat(match.format)) {
+    const quadrant = quadrantState(loaded, match, teams, playRows);
+    return { loaded, match, side, state: null, boss: null, triple: null, quadrant, pending, deadline };
   }
 
   const resolved: RoundRecord[] = roundRows
@@ -372,7 +415,118 @@ async function loadMatch(userId: string, matchId: string) {
     teams,
     rounds: resolved,
   };
-  return { loaded, match, side, state, boss: null, triple: null, pending, deadline };
+  return { loaded, match, side, state, boss: null, triple: null, quadrant: null, pending, deadline };
+}
+
+/** The engine state of a Quadrante: the decks in draw order and every move, replayed in order. */
+function quadrantState(
+  loaded: Loaded,
+  match: MatchContext["match"],
+  decks: QuadrantState["decks"],
+  playRows: PlayRow[],
+): QuadrantState {
+  const abilities = match.quadrant_abilities;
+  const first = match.quadrant_first;
+  if (!abilities || !first) throw new Error("A Quadrante without abilities or first side");
+  const moves: QuadrantMoveRecord[] = [...playRows]
+    .sort((p, q) => p.round - q.round)
+    .map((p) => {
+      const characterId = p.card_instance_id ?? p.definition_id;
+      const character = decks[p.side].find((c) => c.id === characterId);
+      if (!character) throw new Error(`Unknown character ${characterId}`);
+      const rotation = p.rotation ?? 0;
+      return {
+        move: p.round,
+        side: p.side,
+        characterId,
+        x: p.cell_x ?? 0,
+        y: p.cell_y ?? 0,
+        rotation,
+        autoPlayed: p.auto_played,
+        values: quadrantValues(character, abilities, rotation),
+        beaten: p.base_score,
+        placed: p.score,
+        removed: p.bonus,
+      };
+    });
+  return {
+    rules: loaded.quadrant,
+    variant: match.format === "quadrant_shifting" ? "shifting" : "fixed",
+    abilities,
+    first,
+    decks,
+    moves,
+  };
+}
+
+/** Stores a move computed by the engine, with the grid after it; answers with the match as `side` sees it. */
+function recordQuadrantMove(
+  matchId: string,
+  state: QuadrantState,
+  played: { move: QuadrantMoveRecord; board: QuadrantBoard; finished: boolean; result: MatchResult | null },
+  side: Side,
+) {
+  const character = state.decks[played.move.side].find((c) => c.id === played.move.characterId)!;
+  // Bots own no cards: their character id is the definition id.
+  const instanceOf = (id: string, definitionId: string) => (id === definitionId ? null : id);
+  return admin.rpc("match_record_quadrant_move_state", {
+    p_match_id: matchId,
+    p_move: played.move.move,
+    p_play: {
+      card_instance_id: instanceOf(character.id, character.definitionId),
+      definition_id: character.definitionId,
+      x: played.move.x,
+      y: played.move.y,
+      rotation: played.move.rotation,
+      beaten: played.move.beaten,
+      placed: played.move.placed,
+      removed: played.move.removed,
+      auto_played: played.move.autoPlayed,
+    },
+    p_board: [...played.board.cells.values()].map((cell) => ({
+      x: cell.x,
+      y: cell.y,
+      side: cell.side,
+      definition_id: cell.definitionId,
+      instance_id: instanceOf(cell.characterId, cell.definitionId),
+      values: cell.values,
+      seals_a: cell.seals.a,
+      seals_b: cell.seals.b,
+    })),
+    p_result: played.finished ? played.result : null,
+    p_side: side,
+  });
+}
+
+/** A move sent by the client: { card_instance_id, x, y, rotation }, or null when the timer expired. */
+function quadrantPlacementOf(value: unknown): QuadrantPlacement | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "object") throw new GameError("invalid_placement");
+  const v = value as Record<string, unknown>;
+  const integer = (n: unknown): n is number => typeof n === "number" && Number.isInteger(n);
+  if (typeof v.card_instance_id !== "string" || !integer(v.x) || !integer(v.y) || !integer(v.rotation)) {
+    throw new GameError("invalid_placement");
+  }
+  return { characterId: v.card_instance_id, x: v.x, y: v.y, rotation: v.rotation };
+}
+
+/** Plays the bot's moves while it is its turn: at the start when it opens, after each move of the player. */
+async function playQuadrantBotTurns(
+  matchId: string,
+  state: QuadrantState,
+  catalog: BotMatchCatalog,
+  difficulty: BotDifficulty,
+  last: unknown,
+) {
+  let current = state;
+  let payload = last;
+  while (quadrantSideToMove(current) === "b") {
+    const placement = chooseQuadrantBotPlacement(quadrantBotView(current, "b", catalog), difficulty, rng);
+    const played = playQuadrantMove({ state: current, placement, rng });
+    payload = check(await recordQuadrantMove(matchId, current, played, "a"));
+    current = played.state;
+  }
+  return payload;
 }
 
 /**
@@ -761,6 +915,85 @@ async function playTripleBotRoundFor(userId: string, body: Record<string, unknow
   return check(saved);
 }
 
+// ---------------------------------------------------------------------------
+// Quadrante against a bot (SPEC §5.14)
+// ---------------------------------------------------------------------------
+
+/** The database draws the abilities and the side that opens and shuffles the decks; the engine builds the bot's deck. */
+async function startQuadrantBotMatch(userId: string, body: Record<string, unknown>) {
+  const difficulty = body.difficulty as BotDifficulty;
+  if (!DIFFICULTIES.includes(difficulty)) throw new GameError("invalid_difficulty");
+  if (!isQuadrantFormat(body.format)) throw new GameError("invalid_request");
+  const cards = cardIds(body.card_instance_ids);
+  const { quadrant, catalog } = await load();
+  const matchId = check(
+    await admin.rpc("match_create_quadrant_bot", {
+      p_user: userId,
+      p_difficulty: difficulty,
+      p_format: body.format,
+      p_card_instance_ids: cards,
+      p_bot_definition_ids: buildBotTeam(difficulty, catalog.characters, quadrant.deckSize, rng).map((c) => c.definitionId),
+    }),
+  ) as string;
+  // The bot may open: its first card goes down straight away.
+  const { loaded, quadrant: state } = await loadMatch(userId, matchId);
+  return playQuadrantBotTurns(matchId, state!, loaded.catalog, difficulty, await stateFor(matchId, "a"));
+}
+
+async function playQuadrantBotMoveFor(userId: string, body: Record<string, unknown>) {
+  const matchId = body.match_id;
+  const placement = quadrantPlacementOf(body.placement);
+  if (typeof matchId !== "string") throw new GameError("invalid_request");
+
+  const { loaded, match, quadrant, deadline } = await loadMatch(userId, matchId);
+  const difficulty = match.bot_difficulty;
+  if (!difficulty || !quadrant) throw new GameError("match_not_found");
+  if (body.move !== quadrant.moves.length + 1) throw new GameError("round_already_resolved");
+  if (quadrantSideToMove(quadrant) !== "a") throw new GameError("not_your_turn");
+
+  const expired = Date.now() > deadline + loaded.graceSeconds * 1000;
+  if (placement === null && !expired) throw new GameError("round_not_expired");
+
+  const record = async (playerPlacement: QuadrantPlacement | null) => {
+    let played;
+    try {
+      played = playQuadrantMove({ state: quadrant, placement: playerPlacement, rng });
+    } catch (cause) {
+      // A card out of the hand, a cell that is not free or not next to a card.
+      if (cause instanceof Error && cause.message === "invalid_placement") throw new GameError("invalid_placement");
+      throw cause;
+    }
+    return { played, saved: await recordQuadrantMove(matchId, quadrant, played, "a") };
+  };
+
+  let attempt = await record(expired ? null : placement);
+  // Clocks can disagree by a moment: if the database says the time is up, the move
+  // is played at random for the player, as the rules require.
+  if (attempt.saved.error?.message === "round_expired") attempt = await record(null);
+  const payload = check(attempt.saved);
+  return playQuadrantBotTurns(matchId, attempt.played.state, loaded.catalog, difficulty, payload);
+}
+
+/** Quadrante between players: the move of the side whose turn it is, resolved at once. */
+async function submitQuadrant(userId: string, body: Record<string, unknown>) {
+  const placement = quadrantPlacementOf(body.placement);
+  if (typeof body.match_id !== "string" || placement === null || typeof body.move !== "number") {
+    throw new GameError("invalid_request");
+  }
+  check(
+    await admin.rpc("match_submit_quadrant", {
+      p_user: userId,
+      p_match_id: body.match_id,
+      p_move: body.move,
+      p_card_instance_id: placement.characterId,
+      p_x: placement.x,
+      p_y: placement.y,
+      p_rotation: placement.rotation,
+    }),
+  );
+  return resolvePvpRound(userId, body.match_id);
+}
+
 /** A story mission: the database builds the match from the mission, then it plays as any bot match. */
 async function startStoryMission(userId: string, body: Record<string, unknown>) {
   if (typeof body.mission !== "string") throw new GameError("invalid_request");
@@ -816,6 +1049,10 @@ async function joinQueue(userId: string, body: Record<string, unknown>) {
     if (body.format === "triple") {
       return { p_threat_ids: planThreats(loaded), p_format: "triple" };
     }
+    // A Quadrante between players: the database draws abilities and first side, and shuffles the decks.
+    if (isQuadrantFormat(body.format)) {
+      return { p_threat_ids: null, p_format: body.format };
+    }
     return { p_threat_ids: planThreats(loaded) };
   };
   const { data, error } = await withBossTable((loaded) =>
@@ -830,14 +1067,26 @@ async function joinQueue(userId: string, body: Record<string, unknown>) {
  * up. Safe to call from both clients at once: the database accepts one result.
  */
 async function resolvePvpRound(userId: string, matchId: string) {
-  const { loaded, match, side, state, boss, triple, pending, deadline } = await loadMatch(userId, matchId);
+  const { loaded, match, side, state, boss, triple, quadrant, pending, deadline } = await loadMatch(userId, matchId);
   if (match.bot_difficulty) throw new GameError("match_not_found");
 
   const pendingOf = (pendingSide: Side) => pending.find((p) => p.side === pendingSide) ?? null;
   const expired = Date.now() > deadline + loaded.graceSeconds * 1000;
 
   let saved;
-  if (triple) {
+  if (quadrant) {
+    // Only the side whose turn it is plays: its choice, or a random move once the time is up.
+    const mover = quadrantSideToMove(quadrant);
+    if (mover === null) return stateFor(matchId, side);
+    const choice = pendingOf(mover);
+    const placement =
+      choice && choice.cell_x != null && choice.cell_y != null && choice.rotation != null
+        ? { characterId: choice.card_instance_id, x: choice.cell_x, y: choice.cell_y, rotation: choice.rotation }
+        : null;
+    if (placement === null && !expired) return stateFor(matchId, side);
+    const played = playQuadrantMove({ state: quadrant, placement, rng });
+    saved = await recordQuadrantMove(matchId, quadrant, played, side);
+  } else if (triple) {
     // A side has placed when its choice is there for every contest of the round.
     const first = triple.rounds.length * triple.threats.length + 1;
     const placementOfSide = (placeSide: Side) => {
@@ -1021,6 +1270,12 @@ Deno.serve(async (req) => {
         return json(await playTripleBotRoundFor(userId, body));
       case "triple_submit":
         return json(await submitTriple(userId, body));
+      case "quadrant_start":
+        return json(await startQuadrantBotMatch(userId, body));
+      case "quadrant_play":
+        return json(await playQuadrantBotMoveFor(userId, body));
+      case "quadrant_submit":
+        return json(await submitQuadrant(userId, body));
       case "story_start":
         return json(await startStoryMission(userId, body));
       case "join_lobby":

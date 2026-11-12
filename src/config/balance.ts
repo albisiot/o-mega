@@ -102,6 +102,26 @@ export const balance = {
     roundTimerSeconds: 45,
   },
 
+  /**
+   * Quadrante (SPEC §5.14): a size × size grid filled in turns, with four abilities drawn
+   * as the sides of every card. Seals go on the cards a side beats; the most seals win.
+   */
+  quadrant: {
+    size: 4,
+    deckSize: 10,
+    handSize: 3,
+    /** Cards each side plays: size² / 2. */
+    cardsPerSide: 8,
+    /** Seals each side has. */
+    seals: 15,
+    /** Free seals on the opening card of the side that plays first. */
+    firstPlayerSeals: 3,
+    /** Time for one move. */
+    moveTimerSeconds: 20,
+    /** Pause to show a move before the next timer starts. */
+    movePauseSeconds: 2,
+  },
+
   /** Twists on the threats of a match; Emergenza has none. Tuned by simulation (SPEC §5.4). */
   threatModifiers: {
     minPerMatch: 1,

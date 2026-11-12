@@ -68,7 +68,8 @@ function HistoryRow({ entry }: { entry: MatchHistoryEntry }) {
   const result = RESULT_STYLES[entry.result];
   const boss = entry.format === "boss";
   const triple = entry.format === "triple";
-  const mode = `${boss ? `${entry.boss_name ?? "Grande Minaccia"} · ` : triple ? "Allarme Triplo · " : ""}${
+  const quadrant = entry.format === "quadrant" || entry.format === "quadrant_shifting";
+  const mode = `${boss ? `${entry.boss_name ?? "Grande Minaccia"} · ` : triple ? "Allarme Triplo · " : quadrant ? "Quadrante · " : ""}${
     entry.mode === "bot"
       ? `Bot ${DIFFICULTY_LABELS[entry.bot_difficulty ?? "easy"]}`
       : `${entry.mode === "conquest" ? "Conquista" : "Amichevole"} · ${
@@ -91,6 +92,8 @@ function HistoryRow({ entry }: { entry: MatchHistoryEntry }) {
         <p className="font-display text-base">
           {boss
             ? `${entry.points_me ?? 0} – ${entry.points_opponent ?? 0} punti`
+            : quadrant
+              ? `${entry.points_me ?? 0} – ${entry.points_opponent ?? 0} sigilli`
             : triple
               ? `${entry.rounds_me} – ${entry.rounds_opponent} punti`
               : `${entry.rounds_me} – ${entry.rounds_opponent}`}

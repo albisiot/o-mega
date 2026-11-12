@@ -12,16 +12,19 @@ import { TeamPicker } from "@/components/team-picker";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
 import { startBossBotMatch } from "@/lib/boss";
 import { balance } from "@/config/balance";
+import { isQuadrantFormat, QUADRANT_GRID_LABELS, startQuadrantBotMatch } from "@/lib/quadrant";
 import { startTripleBotMatch } from "@/lib/triple";
 import { describeServerError } from "@/lib/errors";
 import { startStoryMission, storyMatchHref } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import {
+  asMatchFormat,
   createLobby,
   DIFFICULTY_LABELS,
   fetchConquestInstances,
   fetchFormations,
   fetchInstanceDefinitions,
+  fetchLobbyFormat,
   fetchOwnedInstances,
   joinLobby,
   startBotMatch,
@@ -41,6 +44,8 @@ const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
 // /squadra/?story=C1M1                          (a story mission)
 // &format=boss with difficulty, queue or lobby  (a Grande Minaccia)
 // &format=triple with difficulty, queue or lobby (an Allarme Triplo)
+// &format=quadrant|quadrant_shifting with difficulty, queue or lobby (a Quadrante)
+// A join reads the format of its code from the server, so the team has the right size.
 export default function TeamPage() {
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -80,17 +85,32 @@ function readMode(params: URLSearchParams): Mode {
   return { kind: "bot", difficulty: difficulty && DIFFICULTIES.includes(difficulty) ? difficulty : "easy" };
 }
 
-/** A Grande Minaccia or an Allarme Triplo: against a bot, or friendly between players (never Conquest or Story). */
+/** A Grande Minaccia, an Allarme Triplo or a Quadrante: against a bot, or friendly between players (never Conquest or Story). */
 function readFormat(params: URLSearchParams, mode: Mode): MatchFormat {
-  const format = params.get("format");
-  return (format === "boss" || format === "triple") && ["bot", "queue", "lobby"].includes(mode.kind) ? format : "classic";
+  const format = asMatchFormat(params.get("format"));
+  return ["bot", "queue", "lobby"].includes(mode.kind) ? format : "classic";
 }
 
 const TRIPLE_DECK = balance.triple.rounds * balance.triple.threats;
 
 const TRIPLE_INTRO = `Scegli ${TRIPLE_DECK} personaggi diversi: le Minacce le scopri dopo. Ogni round ne peschi ${balance.triple.threats} a caso e li metti uno per Minaccia, quindi conviene un mazzo vario, con specialisti di più abilità. Con una pressione lunga su una carta la vedi intera.`;
 
-const FORMAT_LABELS: Record<MatchFormat, string> = { classic: "", boss: "Grande Minaccia · ", triple: "Allarme Triplo · " };
+const QUADRANT_DECK = balance.quadrant.deckSize;
+
+const QUADRANT_INTRO = `Scegli ${QUADRANT_DECK} personaggi diversi: le 4 abilità che fanno da lati le scopri dopo. Hai sempre ${balance.quadrant.handSize} carte in mano e ne giochi ${balance.quadrant.cardsPerSide}: conviene un mazzo con picchi alti in abilità diverse. Con una pressione lunga su una carta la vedi intera.`;
+
+const FORMAT_LABELS: Record<MatchFormat, string> = {
+  classic: "",
+  boss: "Grande Minaccia · ",
+  triple: "Allarme Triplo · ",
+  quadrant: `Quadrante, ${QUADRANT_GRID_LABELS.quadrant.toLowerCase()} · `,
+  quadrant_shifting: `Quadrante, ${QUADRANT_GRID_LABELS.quadrant_shifting.toLowerCase()} · `,
+};
+
+/** Characters a team of a format has. */
+function squadSizeOf(format: MatchFormat): number | undefined {
+  return format === "triple" ? TRIPLE_DECK : isQuadrantFormat(format) ? QUADRANT_DECK : undefined;
+}
 
 const BOSS_INTRO =
   "Scegli 5 personaggi diversi: il Boss lo scopri dopo. Ogni turno uno di loro entra su un fronte e ci resta fino alla fine, uno per fronte: servono specialisti per i fronti piccoli e generalisti per quelli grandi. Con una pressione lunga su una carta la vedi intera.";
@@ -111,7 +131,10 @@ function TeamPageContent() {
   const router = useRouter();
   const params = useSearchParams();
   const mode = readMode(params);
-  const format = readFormat(params, mode);
+  // A join learns its format from the code; until then the picker waits.
+  const [joinFormat, setJoinFormat] = useState<MatchFormat | null>(null);
+  const format = mode.kind === "join" ? (joinFormat ?? "classic") : readFormat(params, mode);
+  const joinCode = mode.kind === "join" ? mode.code : null;
   const isConquest = mode.kind === "conquest";
   const { session } = useRequireSignedIn();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -119,6 +142,22 @@ function TeamPageContent() {
   const [starting, setStarting] = useState(false);
   // The page fits the screen: only the card grid scrolls, inside the team picker.
   useLockedScreen(true);
+
+  useEffect(() => {
+    if (!session || joinCode === null) return;
+    let cancelled = false;
+    fetchLobbyFormat(joinCode)
+      .then((found) => {
+        if (!cancelled) setJoinFormat(found ?? "classic");
+      })
+      .catch(() => {
+        // An unknown code is refused when joining, with its own message.
+        if (!cancelled) setJoinFormat("classic");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session, joinCode]);
 
   useEffect(() => {
     if (!session) return;
@@ -149,7 +188,9 @@ function TeamPageContent() {
               ? await startBossBotMatch(mode.difficulty, cardInstanceIds)
               : format === "triple"
                 ? await startTripleBotMatch(mode.difficulty, cardInstanceIds)
-                : await startBotMatch(mode.difficulty, cardInstanceIds);
+                : isQuadrantFormat(format)
+                  ? await startQuadrantBotMatch(mode.difficulty, format, cardInstanceIds)
+                  : await startBotMatch(mode.difficulty, cardInstanceIds);
           router.push(`/partita/?id=${view.id}`);
           break;
         }
@@ -188,7 +229,7 @@ function TeamPageContent() {
         <BackLink href={mode.kind === "story" ? "/storia" : "/gioca"} label={`Torna a ${mode.kind === "story" ? "Storia" : "Gioca"}`} />
         <div className="min-w-0">
           <h1 className="font-display text-[22px] uppercase leading-6 text-comic-yellow">
-            {format === "triple" ? "Il tuo mazzo" : "La tua squadra"}
+            {format === "triple" || isQuadrantFormat(format) ? "Il tuo mazzo" : "La tua squadra"}
           </h1>
           <p className="truncate text-[11px] font-bold text-muted">
             {FORMAT_LABELS[format]}
@@ -208,7 +249,7 @@ function TeamPageContent() {
             )}
           </p>
         )}
-        {loaded ? (
+        {loaded && (mode.kind !== "join" || joinFormat !== null) ? (
           // A long press on a card shows it whole (CardDetailProvider).
           <CardDetailProvider>
             <TeamPicker
@@ -223,13 +264,16 @@ function TeamPageContent() {
               startLabel={COPY[mode.kind].start(mode)}
               starting={starting}
               onStart={start}
-              squadSize={format === "triple" ? TRIPLE_DECK : undefined}
+              key={format}
+              squadSize={squadSizeOf(format)}
               intro={
                 format === "boss"
                   ? BOSS_INTRO
                   : format === "triple"
                     ? TRIPLE_INTRO
-                    : "Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello basso e i generalisti per quelle alte. Con una pressione lunga su una carta la vedi intera."
+                    : isQuadrantFormat(format)
+                      ? QUADRANT_INTRO
+                      : "Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello basso e i generalisti per quelle alte. Con una pressione lunga su una carta la vedi intera."
               }
             />
           </CardDetailProvider>

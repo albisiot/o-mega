@@ -11,6 +11,7 @@ import { WORLD_SEARCH_LINES } from "@/config/world";
 import { BASE_PATH } from "@/lib/base-path";
 import { describeServerError } from "@/lib/errors";
 import {
+  asMatchFormat,
   cancelLobby,
   fetchActiveMatch,
   fetchMyLobby,
@@ -22,6 +23,7 @@ import {
   type MatchFormat,
   type QueueMode,
 } from "@/lib/match";
+import { QUADRANT_GRID_LABELS } from "@/lib/quadrant";
 import { formatCountdown, useNow } from "@/lib/use-now";
 
 const SEARCH_LINE_SECONDS = 4;
@@ -44,9 +46,9 @@ function WaitingContent() {
   const params = useSearchParams();
   const mode = params.get("mode") === "lobby" ? "lobby" : "queue";
   const queueMode: QueueMode = params.get("type") === "conquest" ? "conquest" : "friendly";
-  // A Grande Minaccia and an Allarme Triplo are friendly only.
-  const asked = params.get("format");
-  const format: MatchFormat = (asked === "boss" || asked === "triple") && queueMode === "friendly" ? asked : "classic";
+  // A Grande Minaccia, an Allarme Triplo and a Quadrante are friendly only.
+  const asked = asMatchFormat(params.get("format"));
+  const format: MatchFormat = queueMode === "friendly" ? asked : "classic";
   const { session } = useRequireSignedIn();
   if (!session) return <LoadingScreen />;
   return (
@@ -188,7 +190,9 @@ function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: Q
               ? "Ricerca di un avversario per la Grande Minaccia…"
               : format === "triple"
                 ? "Ricerca di un avversario per Allarme Triplo…"
-                : "Ricerca di un avversario…"}
+                : format === "quadrant" || format === "quadrant_shifting"
+                  ? `Ricerca di un avversario per Quadrante (${QUADRANT_GRID_LABELS[format].toLowerCase()})…`
+                  : "Ricerca di un avversario…"}
         </p>
         <p className="mt-1 font-display text-2xl text-comic-yellow">{waited} s</p>
         <p key={line} className="animate-panel-fade mt-1 text-sm font-semibold text-comic-cyan">
@@ -288,7 +292,9 @@ function LobbyWait({ userId }: { userId: string }) {
           ? "Grande Minaccia: dai questo codice al tuo amico:"
           : lobby.format === "triple"
             ? "Allarme Triplo: dai questo codice al tuo amico (gli servono 9 carte):"
-            : "Dai questo codice al tuo amico:"}
+            : lobby.format === "quadrant" || lobby.format === "quadrant_shifting"
+              ? `Quadrante, ${QUADRANT_GRID_LABELS[lobby.format].toLowerCase()}: dai questo codice al tuo amico (gli servono ${balance.quadrant.deckSize} carte):`
+              : "Dai questo codice al tuo amico:"}
       </p>
       <p className="-skew-x-8 select-all bg-comic-yellow px-5 py-2 font-display text-5xl tracking-[0.15em] text-black shadow-[5px_5px_0_var(--comic-magenta)]">
         {lobby.code}

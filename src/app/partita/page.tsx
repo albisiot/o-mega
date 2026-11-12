@@ -7,10 +7,12 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { BossMatchScreen } from "@/components/boss-match-screen";
 import { LoadingScreen } from "@/components/loading-screen";
 import { MatchScreen } from "@/components/match-screen";
+import { QuadrantMatchScreen } from "@/components/quadrant-match-screen";
 import { TripleMatchScreen } from "@/components/triple-match-screen";
 import { isBossView } from "@/lib/boss";
 import { describeServerError } from "@/lib/errors";
 import { cachedMatchView, fetchMatchState, type MatchView } from "@/lib/match";
+import { isQuadrantView } from "@/lib/quadrant";
 import { isTripleView } from "@/lib/triple";
 
 // /partita/?id=<match id>: query string, see CLAUDE.md (static export).
@@ -60,5 +62,7 @@ function MatchPageContent() {
   if (isBossView(view)) return <BossMatchScreen key={view.id} initial={view} />;
   // So does an Allarme Triplo.
   if (isTripleView(view)) return <TripleMatchScreen key={view.id} initial={view} />;
+  // And a Quadrante.
+  if (isQuadrantView(view)) return <QuadrantMatchScreen key={view.id} initial={view} />;
   return <MatchScreen key={view.id} initial={view} story={story} />;
 }

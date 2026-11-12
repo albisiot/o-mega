@@ -13,3 +13,5 @@ export * from "./boss.ts";
 export * from "./boss-bots.ts";
 export * from "./triple.ts";
 export * from "./triple-bots.ts";
+export * from "./quadrant.ts";
+export * from "./quadrant-bots.ts";

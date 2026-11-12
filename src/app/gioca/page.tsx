@@ -18,6 +18,7 @@ import {
   type ConquestStatus,
 } from "@/lib/match";
 import { useRememberedState } from "@/lib/place-memory";
+import { isQuadrantFormat, QUADRANT_FORMATS, QUADRANT_GRID_LABELS, type QuadrantFormat } from "@/lib/quadrant";
 import { chapterUnlocked, fetchStory, seenStory, type StoryChapter } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
@@ -33,6 +34,7 @@ const MODES = [
   { key: "friendly", label: "Amichevole", detail: "Contro un bot, un giocatore o un amico", color: "bg-comic-cyan" },
   { key: "boss", label: "Grande Minaccia", detail: "Un Boss, cinque fronti: contro un bot o un giocatore", color: "bg-comic-orange" },
   { key: "triple", label: "Allarme Triplo", detail: "Tre Minacce, nove carte, tre round", color: "bg-comic-yellow" },
+  { key: "quadrant", label: "Quadrante", detail: "Una griglia 4×4, quattro abilità sui lati", color: "bg-comic-cyan" },
   { key: "conquest", label: "Conquista", detail: "Chi vince prende una carta", color: "bg-comic-magenta" },
   { key: "emergency", label: "Emergenza", detail: "La sfida del giorno, da solo", color: "bg-foreground" },
 ] as const;
@@ -200,6 +202,64 @@ const TRIPLE_BOTS: Record<(typeof BOTS)[number]["difficulty"], string> = {
   super_pro: "Ne prova molte di più. Mazzo fortissimo.",
 };
 
+/** Quadrante (SPEC §5.14): two grids, each against a bot or friendly between players. */
+function QuadrantSection({ disabled }: { disabled: boolean }) {
+  const [grid, setGrid] = useRememberedState<QuadrantFormat>("quadrant-grid", "quadrant");
+  const { deckSize, handSize, cardsPerSide } = balance.quadrant;
+  return (
+    <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
+      <p className="text-sm font-medium text-muted">
+        Porti un mazzo di {deckSize} personaggi e ne hai sempre {handSize} in mano. Escono 4 abilità, una per lato della carta:
+        a turno metti una carta accanto alle altre e ogni lato che supera quello vicino vale Sigilli. Dopo {cardsPerSide} carte a
+        testa vince chi ha più Sigilli. Nessuna carta in gioco e nessuna moneta.
+      </p>
+      <div role="radiogroup" aria-label="La griglia" className="grid grid-cols-2 gap-1.5">
+        {QUADRANT_FORMATS.map((format) => (
+          <button
+            key={format}
+            type="button"
+            role="radio"
+            aria-checked={grid === format}
+            onClick={() => setGrid(format)}
+            className={`flex min-h-11 flex-col items-start justify-center px-2.5 py-1 text-left ${
+              grid === format ? "bg-comic-cyan text-black" : "bg-panel text-foreground"
+            }`}
+          >
+            <span className="font-display text-lg uppercase leading-5">{QUADRANT_GRID_LABELS[format]}</span>
+            <span className="text-[11px] font-semibold leading-4 opacity-80">{QUADRANT_GRID_DETAILS[format]}</span>
+          </button>
+        ))}
+      </div>
+      {BOTS.map((bot) => (
+        <OptionRow
+          key={bot.difficulty}
+          href={`/squadra/?format=${grid}&difficulty=${bot.difficulty}`}
+          title={`Bot ${DIFFICULTY_LABELS[bot.difficulty]}`}
+          detail={QUADRANT_BOTS[bot.difficulty]}
+        />
+      ))}
+      <OptionRow href={`/squadra/?mode=queue&format=${grid}`} title="Cerca un avversario" detail="Sfida il primo giocatore disponibile sulla stessa griglia." />
+      <OptionRow
+        href={`/squadra/?mode=lobby&format=${grid}`}
+        title="Crea un codice"
+        detail="Mandalo a un amico: lo usa in Amichevole, con Entra."
+      />
+    </div>
+  );
+}
+
+const QUADRANT_GRID_DETAILS: Record<QuadrantFormat, string> = {
+  quadrant: "I bordi ci sono dall'inizio",
+  quadrant_shifting: "Si sposta finché non arriva a 4",
+};
+
+const QUADRANT_BOTS: Record<(typeof BOTS)[number]["difficulty"], string> = {
+  easy: "Gioca quasi a caso. Ideale per imparare.",
+  medium: "Prende più Sigilli che può, senza scoprirsi troppo.",
+  hard: "Prova le risposte possibili prima di giocare. Mazzo forte.",
+  super_pro: "Ne prova molte di più. Mazzo fortissimo.",
+};
+
 function ConquestSection({ status, disabled }: { status: ConquestStatus | null; disabled: boolean }) {
   const { maxCardsLostPerDay, unlockAfterMatches, unlockAtLevel, loserCoins, minConquerableCards } = balance.conquest;
   const limitReached = status !== null && status.cards_lost_today >= maxCardsLostPerDay;
@@ -361,7 +421,13 @@ function ActiveMatchBanner({ match, onForfeit }: { match: ActiveMatch; onForfeit
         <span className="min-w-0">
           <span className="block font-display text-[17px] uppercase leading-5">Hai una partita in corso</span>
           <span className="block text-xs font-bold leading-4">
-            {match.format === "boss" ? "Grande Minaccia · " : match.format === "triple" ? "Allarme Triplo · " : ""}
+            {match.format === "boss"
+              ? "Grande Minaccia · "
+              : match.format === "triple"
+                ? "Allarme Triplo · "
+                : isQuadrantFormat(match.format)
+                  ? "Quadrante · "
+                  : ""}
             {match.mode === "bot"
               ? `Contro il bot ${DIFFICULTY_LABELS[match.bot_difficulty ?? "easy"]}`
               : match.mode === "conquest"
@@ -369,7 +435,7 @@ function ActiveMatchBanner({ match, onForfeit }: { match: ActiveMatch; onForfeit
                   ? `Conquista contro il bot ${DIFFICULTY_LABELS[match.bot_difficulty]}`
                   : "Conquista contro un giocatore"
                 : "Amichevole contro un giocatore"}{" "}
-            · {match.format === "boss" ? "turno" : "round"}{" "}
+            · {match.format === "boss" ? "turno" : isQuadrantFormat(match.format) ? "mossa" : "round"}{" "}
             {match.format === "triple" ? Math.floor((match.current_round - 1) / balance.triple.threats) + 1 : match.current_round}
           </span>
         </span>
@@ -453,6 +519,7 @@ export default function PlayPage() {
             {opened.key === "friendly" && <FriendlySection disabled={blocked} />}
             {opened.key === "boss" && <BossSection disabled={blocked} />}
             {opened.key === "triple" && <TripleSection disabled={blocked} />}
+            {opened.key === "quadrant" && <QuadrantSection disabled={blocked} />}
             {opened.key === "conquest" && <ConquestSection status={conquest} disabled={blocked} />}
             {opened.key === "emergency" && <EmergencySection />}
           </section>

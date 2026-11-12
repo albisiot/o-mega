@@ -458,6 +458,42 @@ Conclusioni: mettere ogni carta sulla Minaccia giusta conta molto (contro chi pi
 
 **Tecnica:** motore in `packages/game-engine/src/triple.ts` e `triple-bots.ts`; numeri in `balance.ts` (`triple`) e `game_config` (`triple.*`). Una partita è una riga di `matches` con `format = 'triple'`; ogni confronto (una Minaccia in un round) è una riga di `match_rounds`, come un round classico: confronto c = (round − 1) × 3 + Minaccia, quindi `threat_ids` e `threat_levels` contengono le tre Minacce tre volte, i modificatori si sorteggiano sulle tre e si ripetono, `current_round` è il primo confronto del round in corso e `rounds_won_*` sono i punti. L'ordine di pesca è l'ordine di `match_teams.card_instance_ids`, mescolato dal database alla creazione e mai letto dai client: il payload (`triple_state_payload`) mostra il mazzo in un ordine neutro e solo le mani dei round già aperti. `match_record_triple_round` controlla che ognuno giochi esattamente le carte pescate, una per Minaccia, le scelte inviate o la scadenza, chi vince ogni Minaccia rispetto ai punteggi e il risultato; `match_submit_triple` riceve le tre carte in una volta (le scelte di una carta sola sono rifiutate). Edge Function `match`: azioni `triple_start`, `triple_play`, `triple_submit`; `queue` e il codice amico portano il formato.
 
+### 5.14 Quadrante
+
+Modalità alternativa alla partita classica, chiesta dall'utente il 12 novembre 2026 sulla base del suo prototipo FLIP: una griglia 4×4 riempita a turno, con quattro abilità come lati delle carte. Si gioca contro i bot (4 difficoltà) o in amichevole tra giocatori (avversario casuale o codice amico); niente Conquista per ora. Due griglie, ognuna con la sua coda: **fissa** (`format = 'quadrant'`) e **mobile** (`'quadrant_shifting'`).
+
+1. **Mazzo:** 10 personaggi diversi (`definition_id` tutti diversi, come in §5.2), scelto **prima** di vedere le abilità. Le 10 carte iniziali bastano.
+2. **Le quattro abilità:** il server ne estrae 4 diverse tra le 12 e ne assegna una a ogni lato (in alto, a destra, in basso, a sinistra), uguali per tutte le carte e per entrambi. Il numero su un lato è il valore del personaggio in quell'abilità, da 0 a 10: ogni carta cambia forma da una partita all'altra. I poteri delle carte non valgono e non ci sono Minacce.
+3. **Mano:** il server mescola i mazzi; ognuno tiene 3 carte e ne pesca una dopo ogni giocata. Si giocano 8 carte a testa: 2 restano in mano.
+4. **Turni alterni:** il server sorteggia chi apre. Nel suo turno un giocatore posa una carta della mano, ruotata come vuole (a quarti di giro, una volta posata non si ruota più), in una casella libera accanto (non in diagonale) a una carta già in gioco. Timer di 20 secondi per mossa, più 2 di pausa per vedere la mossa precedente; allo scadere il server gioca una carta a caso, in una casella a caso, ruotata a caso.
+   - **Griglia fissa:** i bordi del 4×4 ci sono dall'inizio; la prima carta va in una casella qualsiasi.
+   - **Griglia mobile:** la prima carta fa da origine; la griglia si sposta finché le carte non occupano 4 colonne (si bloccano destra e sinistra) o 4 righe (si bloccano alto e basso). Ogni carta deve stare in un quadrato 4×4. Alla fine la griglia è sempre un 4×4 pieno.
+5. **Sigilli** (i cubetti di FLIP): ogni giocatore ne ha 15. Ogni lato della carta posata che supera **strettamente** il lato della carta vicina che lo tocca mette un Sigillo del giocatore sulla carta battuta e uno sulla carta posata; a parità niente. Le carte non hanno padrone: si possono battere anche le proprie. Se i Sigilli non bastano si piazzano quelli che restano, prima sulle carte battute (in ordine alto, destra, basso, sinistra), poi sulla propria.
+6. **Onda d'urto** (la ripercussione di FLIP): se una carta battuta a sua volta batte una sua vicina (non la carta appena posata), da quella vicina si toglie un Sigillo avversario, che torna al suo proprietario. Un passo solo; una rimozione per ogni coppia carta battuta-vicina. In FLIP è facoltativa: qui è automatica, perché togliere un Sigillo avversario conviene sempre.
+7. **Chi apre** riceve 3 Sigilli gratis sulla prima carta, che non ha vicine da battere (FLIP, compensazione ×3 a due giocatori).
+8. **Fine:** dopo 16 carte vince chi ha più Sigilli sulla griglia; a parità chi **controlla** più carte (più Sigilli suoi che dell'altro su quella carta); poi chi ha giocato per secondo. Nessun pareggio.
+9. **Premi:** come bot e amichevoli (§13.1): nessuna moneta, esperienza normale, punti evento del tipo di partita, statistiche normali. Gli obiettivi del giorno possono nominare le due griglie (`format`); "Minacce vinte" non conta nulla qui.
+
+**Bot:** vedono la griglia, la propria mano e le carte avversarie già giocate, mai la mano o l'ordine dei mazzi. Facile: quasi a caso, preferendo le mosse che rendono. Medio: la mossa con più Sigilli subito (presi più tolti), meno un costo per i lati deboli lasciati scoperti. Difficile e Super Pro: le 6 e 10 mosse migliori per Medio, ognuna contro la miglior risposta avversaria con 12 e 32 mani plausibili pescate dal catalogo. I mazzi dei bot si costruiscono come in §5.9 (10 carte).
+
+**Simulazioni** (`scripts/simulate-quadrant.mts`, catalogo reale a 187 personaggi, 400 partite per riga, 300 o 200 con Difficile e Super Pro; Medio contro Medio salvo dove scritto; tra parentesi la griglia mobile):
+
+| Prova | Risultato |
+|---|---|
+| Chi apre vince, senza Sigilli gratis | 20% (21%) |
+| … con +2, +3, +4 Sigilli gratis | 35%, **42%**, 55% (38%, **47%**, 57%) |
+| Alfa+Omega contro Delta | 82% (74%) |
+| Gamma contro Delta, Beta contro Gamma | 52%, 59% (52%, 58%) |
+| Stesso mazzo: Medio contro mosse a caso; Medio contro Facile | 100%, 97% (100%, 96%) |
+| Difficile contro Medio, Super Pro contro Medio | 54%, 59% (66%, 67%) |
+| Delta giocato da Difficile contro Alfa+Omega giocato da Medio | 27% (33%) |
+| Parità di Sigilli (decise dal controllo nella maggior parte dei casi) | 13% (11%) |
+| Partite in cui qualcuno finisce i Sigilli | 2% (4%) |
+
+Conclusioni: come in FLIP, senza correttivo chi gioca per secondo vince 4 volte su 5; i 3 Sigilli di FLIP lo riportano vicino alla parità (42-47% per chi apre), 4 lo ribalterebbero. Giocare bene conta molto (contro chi gioca a caso si vince sempre), la rarità meno che nella partita classica (Gamma su Delta 52% contro 63%), perché conta il valore di 4 abilità su 12 e un lato basso si può nascondere ruotando. Il numero è in `balance.ts` (`quadrant.firstPlayerSeals`) e `game_config` (`quadrant.first_player_seals`).
+
+**Tecnica:** motore in `packages/game-engine/src/quadrant.ts` e `quadrant-bots.ts`; numeri in `balance.ts` (`quadrant`) e `game_config` (`quadrant.*`). Una partita è una riga di `matches` senza Minacce, con `quadrant_abilities` (i 4 codici in ordine di lato), `quadrant_first` e `quadrant_board` (la griglia dopo l'ultima mossa: celle con carta, lati già ruotati e Sigilli dei due lati); `points_a`/`points_b` sono i Sigilli. Ogni mossa è una riga di `match_rounds` (round = mossa, un timer ciascuna) e di `round_plays` con `cell_x`, `cell_y`, `rotation` (base_score = carte battute, bonus = Sigilli tolti, score = Sigilli messi). L'ordine di pesca è l'ordine di `match_teams`, mescolato dal database e mai letto dai client. `match_record_quadrant_move` controlla mossa, turno, che la carta sia nella mano, la casella, la scelta inviata o la scadenza, che le carte già in gioco restino uguali e la nuova abbia i lati giusti per la sua rotazione, che i Sigilli di chi muove crescano solo di quelli messi e quelli dell'altro calino solo di quelli tolti, entro i 15, e il risultato finale. Tra giocatori `match_submit_quadrant` accetta solo la mossa di chi è di turno e la partita la risolve subito. Edge Function `match`: azioni `quadrant_start`, `quadrant_play` (il bot risponde nella stessa chiamata, e apre subito se tocca a lui), `quadrant_submit`; `queue` e il codice amico portano il formato. Chi entra con un codice amico ne legge prima il formato (`get_lobby_format`), così sceglie un mazzo della misura giusta.
+
 ## 6. Conquista delle carte
 
 ### 6.1 Regola base

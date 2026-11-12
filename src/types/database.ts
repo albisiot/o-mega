@@ -1503,6 +1503,9 @@ export type Database = {
           player_b: string | null
           points_a: number
           points_b: number
+          quadrant_abilities: string[] | null
+          quadrant_board: Json | null
+          quadrant_first: string | null
           result: string | null
           reward_coins_a: number | null
           reward_coins_b: number | null
@@ -1531,6 +1534,9 @@ export type Database = {
           player_b?: string | null
           points_a?: number
           points_b?: number
+          quadrant_abilities?: string[] | null
+          quadrant_board?: Json | null
+          quadrant_first?: string | null
           result?: string | null
           reward_coins_a?: number | null
           reward_coins_b?: number | null
@@ -1559,6 +1565,9 @@ export type Database = {
           player_b?: string | null
           points_a?: number
           points_b?: number
+          quadrant_abilities?: string[] | null
+          quadrant_board?: Json | null
+          quadrant_first?: string | null
           result?: string | null
           reward_coins_a?: number | null
           reward_coins_b?: number | null
@@ -1695,24 +1704,33 @@ export type Database = {
       pending_plays: {
         Row: {
           card_instance_id: string
+          cell_x: number | null
+          cell_y: number | null
           front_slot: number | null
           match_id: string
+          rotation: number | null
           round: number
           side: string
           submitted_at: string
         }
         Insert: {
           card_instance_id: string
+          cell_x?: number | null
+          cell_y?: number | null
           front_slot?: number | null
           match_id: string
+          rotation?: number | null
           round: number
           side: string
           submitted_at?: string
         }
         Update: {
           card_instance_id?: string
+          cell_x?: number | null
+          cell_y?: number | null
           front_slot?: number | null
           match_id?: string
+          rotation?: number | null
           round?: number
           side?: string
           submitted_at?: string
@@ -1863,6 +1881,8 @@ export type Database = {
           base_score: number
           bonus: number
           card_instance_id: string | null
+          cell_x: number | null
+          cell_y: number | null
           created_at: string
           definition_id: string
           front_slot: number | null
@@ -1870,6 +1890,7 @@ export type Database = {
           match_id: string
           points: number | null
           required: number | null
+          rotation: number | null
           round: number
           score: number
           side: string
@@ -1879,6 +1900,8 @@ export type Database = {
           base_score: number
           bonus: number
           card_instance_id?: string | null
+          cell_x?: number | null
+          cell_y?: number | null
           created_at?: string
           definition_id: string
           front_slot?: number | null
@@ -1886,6 +1909,7 @@ export type Database = {
           match_id: string
           points?: number | null
           required?: number | null
+          rotation?: number | null
           round: number
           score: number
           side: string
@@ -1895,6 +1919,8 @@ export type Database = {
           base_score?: number
           bonus?: number
           card_instance_id?: string | null
+          cell_x?: number | null
+          cell_y?: number | null
           created_at?: string
           definition_id?: string
           front_slot?: number | null
@@ -1902,6 +1928,7 @@ export type Database = {
           match_id?: string
           points?: number | null
           required?: number | null
+          rotation?: number | null
           round?: number
           score?: number
           side?: string
@@ -2785,6 +2812,7 @@ export type Database = {
       get_emergency_leaderboard: { Args: { p_limit?: number }; Returns: Json }
       get_event: { Args: never; Returns: Json }
       get_event_points_for: { Args: { p_ref_id: string }; Returns: Json }
+      get_lobby_format: { Args: { p_code: string }; Returns: string }
       get_match_history: { Args: { p_limit?: number }; Returns: Json }
       get_match_state: { Args: { p_match_id: string }; Returns: Json }
       get_pack_odds: { Args: never; Returns: Json }
@@ -2849,6 +2877,22 @@ export type Database = {
         }
         Returns: string
       }
+      insert_quadrant_match: {
+        Args: {
+          p_abilities?: string[]
+          p_bot_difficulty: string
+          p_definitions_a: string[]
+          p_definitions_b: string[]
+          p_first?: string
+          p_format: string
+          p_mode: string
+          p_player_a: string
+          p_player_b: string
+          p_team_a: string[]
+          p_team_b: string[]
+        }
+        Returns: string
+      }
       insert_triple_match: {
         Args: {
           p_bot_difficulty: string
@@ -2874,6 +2918,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_quadrant: { Args: { p_format: string }; Returns: boolean }
       leave_queue: { Args: never; Returns: undefined }
       level_for_xp: { Args: { p_xp: number }; Returns: number }
       mark_event_rewards_seen: {
@@ -2906,6 +2951,18 @@ export type Database = {
           p_bot_definition_ids: string[]
           p_difficulty: string
           p_threat_ids: string[]
+          p_user: string
+        }
+        Returns: string
+      }
+      match_create_quadrant_bot: {
+        Args: {
+          p_abilities?: string[]
+          p_bot_definition_ids: string[]
+          p_card_instance_ids: string[]
+          p_difficulty: string
+          p_first?: string
+          p_format: string
           p_user: string
         }
         Returns: string
@@ -2965,6 +3022,27 @@ export type Database = {
           p_result: string
           p_side: string
           p_turn: number
+        }
+        Returns: Json
+      }
+      match_record_quadrant_move: {
+        Args: {
+          p_board: Json
+          p_match_id: string
+          p_move: number
+          p_play: Json
+          p_result: string
+        }
+        Returns: undefined
+      }
+      match_record_quadrant_move_state: {
+        Args: {
+          p_board: Json
+          p_match_id: string
+          p_move: number
+          p_play: Json
+          p_result: string
+          p_side: string
         }
         Returns: Json
       }
@@ -3036,6 +3114,18 @@ export type Database = {
         }
         Returns: string
       }
+      match_submit_quadrant: {
+        Args: {
+          p_card_instance_id: string
+          p_match_id: string
+          p_move: number
+          p_rotation: number
+          p_user: string
+          p_x: number
+          p_y: number
+        }
+        Returns: string
+      }
       match_submit_triple: {
         Args: {
           p_card_instance_ids: string[]
@@ -3066,6 +3156,10 @@ export type Database = {
         Args: { p_pack_type: string; p_user: string }
         Returns: string
       }
+      open_quadrant_move: {
+        Args: { p_match_id: string; p_move: number }
+        Returns: undefined
+      }
       open_special_pack: {
         Args: { p_pack_id: string; p_user: string }
         Returns: string
@@ -3082,6 +3176,46 @@ export type Database = {
       power_text: {
         Args: { p_params: Json; p_power_code: string }
         Returns: string
+      }
+      quadrant_cell_legal: {
+        Args: { p_board: Json; p_format: string; p_x: number; p_y: number }
+        Returns: boolean
+      }
+      quadrant_controlled: {
+        Args: { p_board: Json; p_side: string }
+        Returns: number
+      }
+      quadrant_hand: {
+        Args: { p_match_id: string; p_side: string }
+        Returns: {
+          definition_id: string
+          instance_id: string
+          ord: number
+        }[]
+      }
+      quadrant_result_of: {
+        Args: { p_board: Json; p_first: string }
+        Returns: string
+      }
+      quadrant_seals: {
+        Args: { p_board: Json; p_side: string }
+        Returns: number
+      }
+      quadrant_side_of_move: {
+        Args: { p_first: string; p_move: number }
+        Returns: string
+      }
+      quadrant_state_payload: {
+        Args: { p_match_id: string; p_side: string }
+        Returns: Json
+      }
+      quadrant_values: {
+        Args: {
+          p_abilities: string[]
+          p_definition_id: string
+          p_rotation: number
+        }
+        Returns: number[]
       }
       queue_candidates: {
         Args: {

@@ -68,7 +68,7 @@ export type MatchView = {
    * "boss": a Grande Minaccia, whose state is a BossView (src/lib/boss.ts); "triple": an
    * Allarme Triplo, a TripleView (src/lib/triple.ts). Missing before they existed.
    */
-  format?: "classic" | "boss" | "triple";
+  format?: MatchFormat;
   bot_difficulty: BotDifficulty | null;
   status: "active" | "finished";
   my_side: "a" | "b";
@@ -196,8 +196,25 @@ export function joinQueue(
 
 export type QueueMode = "friendly" | "conquest";
 
-/** A classic match, a Grande Minaccia or an Allarme Triplo (both friendly only). */
-export type MatchFormat = "classic" | "boss" | "triple";
+/**
+ * A classic match, a Grande Minaccia, an Allarme Triplo or a Quadrante on its fixed or
+ * shifting grid (all but the classic friendly only).
+ */
+export type MatchFormat = "classic" | "boss" | "triple" | "quadrant" | "quadrant_shifting";
+
+const MATCH_FORMATS: readonly MatchFormat[] = ["classic", "boss", "triple", "quadrant", "quadrant_shifting"];
+
+/** A format read from a URL or a row: anything unknown is a classic match. */
+export function asMatchFormat(value: unknown): MatchFormat {
+  return MATCH_FORMATS.includes(value as MatchFormat) ? (value as MatchFormat) : "classic";
+}
+
+/** The format of a friend code still valid, so the guest picks a team of the right size; null if it is not. */
+export async function fetchLobbyFormat(code: string): Promise<MatchFormat | null> {
+  const { data, error } = await getSupabase().rpc("get_lobby_format", { p_code: code });
+  if (error) throw error;
+  return data ? asMatchFormat(data) : null;
+}
 
 export type ConquestStatus = {
   unlocked: boolean;
@@ -256,7 +273,7 @@ export async function createLobby(cardInstanceIds: string[], format: MatchFormat
 export async function fetchMyLobby(): Promise<Lobby | null> {
   const { data, error } = await getSupabase().from("match_lobbies").select("code, expires_at, format").maybeSingle();
   if (error) throw error;
-  return data ? { ...data, format: data.format === "boss" || data.format === "triple" ? data.format : "classic" } : null;
+  return data ? { ...data, format: asMatchFormat(data.format) } : null;
 }
 
 export async function cancelLobby(): Promise<void> {
