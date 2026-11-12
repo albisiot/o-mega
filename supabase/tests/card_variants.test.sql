@@ -13,13 +13,13 @@ insert into auth.users (id, aud, role, email, raw_user_meta_data, created_at, up
 -- The catalog: no variant on a level card, which no pack can give.
 do $$
 begin
-  assert (select count(*) from public.card_variants where style = 'neon') = 23, 'neon series should have 23 variants';
+  assert (select count(*) from public.card_variants where style = 'neon') = 24, 'neon series should have 24 variants';
   assert (select count(*) from public.card_variants where style = 'epic') = 12, 'epic series should have 12 variants';
   assert (
     select jsonb_object_agg(style, n) from (
       select style, count(*) as n from public.card_variants where style not in ('neon', 'epic') group by style
     ) s
-  ) = '{"cinema": 8, "pastel": 11, "gold": 7, "classic": 8, "retro": 8, "oil": 7, "cartoon": 7, "poster": 8, "inferno": 7, "graphite": 8, "marble": 8, "gothic": 8, "tarot": 12, "ink": 8, "fantasy": 8, "prism": 7, "comet": 6, "regal": 7, "render": 9, "phoenix": 7, "manga": 7, "stained": 8, "crimson": 8, "wraith": 7, "flame": 7, "shadow": 7, "etching": 8, "circuit": 8, "watercolor": 8, "tempera": 7, "zombie": 6, "portrait": 7}'::jsonb,
+  ) = '{"cinema": 9, "pastel": 12, "gold": 8, "classic": 9, "retro": 9, "oil": 8, "cartoon": 8, "poster": 8, "inferno": 8, "graphite": 9, "marble": 9, "gothic": 8, "tarot": 13, "ink": 9, "fantasy": 9, "prism": 8, "comet": 7, "regal": 8, "render": 10, "phoenix": 8, "manga": 8, "stained": 9, "crimson": 9, "wraith": 8, "flame": 7, "shadow": 8, "etching": 10, "circuit": 9, "watercolor": 9, "tempera": 8, "zombie": 6, "portrait": 8}'::jsonb,
     'every series has its expected number of variants';
   assert not exists (
     select 1 from public.card_variants v

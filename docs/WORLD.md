@@ -375,6 +375,43 @@ Da P143 a P187: quarantacinque schede del compendio, con lo stesso metodo dei du
 | P186 | TF-603 | Omega, Cattivi | Riscossa | **Mordacchia** (Figli dell'Ultima): bestia con un cuneo di ceramica tra le fauci, scioglie i patti. | PER 0, PSI 0, TEC 0, INT 1 |
 | P187 | TF-604 | Omega, Neutrali | Sfavorito | **Ansa** (Banco): serpente che chiude il golfo tenendosi la coda. | PSI 0, TEC 0 |
 
+### Dal compendio, quarto gruppo
+
+Da P188 a P217: trenta schede del compendio, con lo stesso metodo dei gruppi precedenti. Escluse le schede che descrivono bambini o ragazzini, un eroe in posa con il petto a V e il mantello (ricordava un personaggio famoso) e un barista troppo simile a Publican. Penates entra come terza carta con Davide, Clementia come quinta con Sabotatore, Contromano come quarta con Veggente. Gli Omega usano effetti già esistenti: il glitch per Prosody, l'aura per Novenarium. Ogni personaggio ha anche una variante, in uno stile esistente con colori propri. Si trovano tutti nei pacchetti.
+
+| Carta | Scheda | Rarità e fazione | Potere | Personaggio | Il difetto nei valori |
+|---|---|---|---|---|---|
+| P188 | TF-032 | Delta, Eroi |  | **Strata** (Custodi): archeologo degli scavi della metro, riconosce l'età delle pietre con la lingua. | MAG 0, PSI 0, ENE 1 |
+| P189 | TF-217 | Delta, Eroi |  | **Febrifuge** (Lanterne): medico della febbre dello strappo. | MAG 0, PSI 0, COM 0, FOR 1, ENE 1 |
+| P190 | TF-282 | Delta, Eroi |  | **Signifer** (Custodi): vecchio istruttore delle squadre di soccorso. | MAG 0, PSI 0, VEL 1, ENE 1 |
+| P191 | TF-646 | Delta, Eroi |  | **Diaria** (Custodi): caposquadra che conta i passi di tutti. | MAG 0, PSI 0, ENE 1 |
+| P192 | TF-223 | Delta, Neutrali |  | **Depositum** (Banco): custode del deposito delle cose indistruttibili. | VEL 0, MAG 0, PSI 0, FUR 0, ENE 1, COM 1 |
+| P193 | TF-690 | Delta, Neutrali |  | **Portineria** (Banco): portinaia di un palazzo dove vale la tregua. | MAG 0, ENE 1, PSI 1 |
+| P194 | TF-480 | Delta, Neutrali |  | **Tariffario** (Sciolti): libera le case dalle presenze in quattro ore. | MAG 0, PSI 0, ENE 1, COM 1 |
+| P195 | TF-500 | Delta, Cattivi |  | **Sottovento** (Sciolti, schierato con i Cattivi): cacciatore di cacciatori. | MAG 0, PSI 0, TEC 0, ENE 1 |
+| P196 | TF-689 | Delta, Cattivi |  | **Onorario** (Compagnia Lete): arrotino e sicario su mandato scritto. | MAG 0, PSI 0, ENE 1, TEC 1 |
+| P197 | TF-324 | Delta, Cattivi |  | **Ademption** (Compagnia Lete): impiegato anonimo che prende il posto degli altri leggendone le abitudini. | MAG 0, PSI 0, ENE 1 |
+| P198 | TF-423 | Gamma, Eroi | Ultimo baluardo | **Wick** (Lanterne): accende la lanterna della scala e paga lei il prezzo dei poteri altrui. | COM 0, FOR 1, MAG 1, PSI 1, TEC 1 |
+| P199 | TF-400 | Gamma, Eroi | Legame | **Sampler** (Lanterne): la sarta del primo costume da eroe. | VEL 0, COM 0, FOR 1, ENE 1, PSI 1 |
+| P200 | TF-068 | Gamma, Eroi | Specialità (FOR) | **Scion** (Custodi): erede che indossa i cimeli di famiglia. | TEC 0, VOL 1, MAG 1, PSI 1 |
+| P201 | TF-522 | Gamma, Cattivi | Specialità (PSI) | **Affissione** (Compagnia Lete): uomo-cartellone, affitta la pelle alla pubblicità. | ENE 1, MAG 1 |
+| P202 | TF-525 | Gamma, Cattivi | Spia | **Custodia** (Compagnia Lete): edicola che custodisce i ricordi in deposito. | FOR 0, COM 0, FUR 0, ENE 1, MAG 1 |
+| P203 | TF-254 | Gamma, Cattivi | Tuttofare | **Monopsony** (Compagnia Lete): mercante con un caveau nel petto, compra solo pezzi unici. | VEL 0, MAG 1, PSI 1, COM 1 |
+| P204 | TF-017 | Gamma, Neutrali | Implacabile | **Deadweight** (Sciolti): contrabbandiera che toglie il peso alle cose. | VEL 1, MAG 1, PSI 1 |
+| P205 | TF-198 | Gamma, Neutrali | Affinità (Corpo) | **Ballast** (Sciolti): traghettatore della darsena sommersa. | VEL 0, TEC 0, ENE 1, PSI 1 |
+| P206 | TF-131 | Gamma, Neutrali | Davide | **Penates** (Lanterne): coppia di anziani che recita un quartiere abitato. | ENE 1, PSI 1, COM 1 |
+| P207 | TF-299 | Beta, Eroi | Specialità (ENE) | **Tribune** (Lanterne): trasforma il proprio corpo in corrente. | VEL 1, PSI 1, FUR 1 |
+| P208 | TF-310 | Beta, Eroi | Terreno favorevole | **Viaticum** (Lanterne): vecchio infermiere che custodisce ciò che resta delle persone. | PSI 1 |
+| P209 | TF-332 | Beta, Cattivi | Nemesi | **Emendatio** (Figli dell'Ultima): doppione che la realtà cerca di cancellare come un refuso. | COM 0, PSI 1 |
+| P210 | TF-102 | Beta, Cattivi | Apripista | **Tenant** (Figli dell'Ultima): tornato due volte dall'altra parte dello strappo. | PSI 1, TEC 1 |
+| P211 | TF-360 | Beta, Neutrali | Ultimo baluardo | **Inhumer** (Sciolti): becchina che impedisce ai morti di tornare. | VEL 1, PSI 1, TEC 1 |
+| P212 | TF-134 | Beta, Neutrali | Legame | **Warren** (Sciolti): branco di sessanta animali con una mente sola. | TEC 0, MAG 1, PSI 1 |
+| P213 | TF-305 | Alfa, Eroi | Riscossa | **Unbidden** (Lanterne): intelligenza di quartiere con quaranta braccia meccaniche. | FOR 0, FUR 0, MAG 1, PSI 1, COM 1 |
+| P214 | TF-185 | Alfa, Cattivi | Sabotatore | **Clementia** (Figli dell'Ultima): eroina fondatrice, intorno a lei ogni ostilità si spegne. | ENE 1, PSI 1 |
+| P215 | TF-477 | Alfa, Neutrali | Veggente | **Contromano** (Sciolti): ricorda le prossime quarantun ore e dimentica il resto. | ENE 1, MAG 1 |
+| P216 | TF-385 | Omega, Neutrali | Sfavorito | **Prosody** (Sciolti): fronte di bassorilievi che riscrive la materia. | PSI 0, VEL 1, TEC 1 |
+| P217 | TF-381 | Omega, Cattivi | Riscossa | **Novenarium** (Figli dell'Ultima): i nove secondi dell'Ora Zero, che non sono mai finiti. | PSI 0 |
+
 ## 6. Minacce
 
 Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richiede Forza e Tecnologia. Molti nomi attuali funzionano già e vanno solo ambientati a Nuova Megara. Il testo di colore può usare il tono di un bollettino del sismografo.

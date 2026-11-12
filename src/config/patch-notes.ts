@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "13 novembre 2026",
+    changes: [
+      "Arrivano altri 30 personaggi dal compendio, tutti da trovare nei pacchetti e ognuno con un suo disegno speciale: 10 Delta, 9 Gamma, 6 Beta, 3 Alfa e 2 Omega. Tra gli altri Portineria, la portinaia che sa sempre chi c'è e a che piano; Custodia, l'edicola che custodisce i ricordi (Spia); Penates, i due anziani che tengono vivo un quartiere vuoto (Davide); Contromano, che ricorda le prossime 41 ore (Veggente); Clementia, l'eroina fondatrice che spegne ogni ostilità (Sabotatore); e i due Omega Prosody, il fronte di bassorilievi che riscrive la materia, e Novenarium, i nove secondi dell'Ora Zero che non sono mai finiti.",
+    ],
+  },
+  {
     date: "12 novembre 2026",
     changes: [
       "A fine partita ora vedi esattamente cosa hai guadagnato, in ogni modalità: esperienza, monete e, quando previsto, un pacchetto da aprire subito con un tocco. Le ricompense possono cambiare per modalità e per esito (vittoria, pareggio o sconfitta): nel Negozio, sotto Movimenti, trovi quali partite danno monete e quante. Per ora restano quelle di prima.",

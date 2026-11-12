@@ -1761,6 +1761,238 @@ const STYLES: Record<string, NameStyle> = {
     side: ["#123a44", "#03101a"],
     depth: 11,
   },
+  // --- From the compendium, fourth group ---
+  // Strata: the tunnel archaeologist, strata of dust and lamp yellow.
+  P188: {
+    font: "block",
+    fill: layers(stripes("rgb(90 60 30 / 0.4)", 180, 0.06), grad("#fff3cc", "#c8a060 50%", "#5a4020")),
+    rim: "#140e06",
+    side: ["#5a4020", "#140e06"],
+  },
+  // Febrifuge: the fever doctor, hospital green with an orange stitch line.
+  P189: {
+    font: "anton",
+    fill: layers(stitches("rgb(255 120 30 / 0.6)"), grad("#e8fff2", "#5ab88a 50%", "#1a4a34")),
+    rim: "#04120c",
+    side: ["#1a4a34", "#04120c"],
+  },
+  // Signifer: the old rescue instructor, a copper disc on iron grey.
+  P190: {
+    font: "myth",
+    fill: layers(spiral("rgb(220 130 70 / 0.3)", "transparent"), grad("#f6f6f4", "#9a9ea6 50%", "#3a3e46")),
+    rim: "#0c0e12",
+    side: ["#3a3e46", "#0c0e12"],
+  },
+  // Diaria: counting steps, orange tally marks on military green.
+  P191: {
+    font: "stencil",
+    fill: layers("repeating-linear-gradient(90deg, rgb(255 130 30 / 0.6) 0 0.03em, transparent 0.03em 0.18em)", grad("#eef4e0", "#7a8a4a 50%", "#2a3418")),
+    rim: "#0a0e04",
+    side: ["#2a3418", "#0a0e04"],
+  },
+  // Depositum: the frozen vault, ice cracks on ochre.
+  P192: {
+    font: "slab",
+    fill: layers(cracks("rgb(220 240 255 / 0.7)"), grad("#fff6e0", "#c8a46a 50%", "#5a4420")),
+    rim: "#0e1418",
+    side: ["#4a5a6a", "#0e1418"],
+  },
+  // Portineria: the concierge's brass keys on midnight blue.
+  P193: {
+    font: "elegant",
+    fill: layers(dots("rgb(230 190 100 / 0.5)", 0.26), grad("#eef2ff", "#3a4a8a 50%", "#0e1438")),
+    rim: "#04060e",
+    side: ["#141e4a", "#04060e"],
+    line: "#d8b45a",
+  },
+  // Tariffario: the ghost cleaner, workwear blue with an orange band.
+  P194: {
+    font: "bubble",
+    fill: layers("linear-gradient(180deg, transparent 0 55%, rgb(255 130 30 / 0.85) 55% 64%, transparent 64%)", grad("#eef6ff", "#5a86c0 50%", "#1a3460")),
+    rim: "#060c18",
+    side: ["#1a3460", "#060c18"],
+  },
+  // Sottovento: the hunter of hunters, dirty grey with claw marks.
+  P195: {
+    font: "horror",
+    fill: layers(claws("rgb(40 30 20 / 0.55)"), grad("#e6e2dc", "#8a847a 50%", "#34302a")),
+    rim: "#0e0a06",
+    side: ["#4a3420", "#0e0a06"],
+  },
+  // Onorario: the knife-grinder, sharpened steel facets.
+  P196: {
+    font: "speed",
+    fill: layers(facets("#f2f4f6", "#a8b0b8", "#4a5058")),
+    rim: "#140c06",
+    side: ["#5a3e24", "#140c06"],
+    slant: 14,
+  },
+  // Ademption: the ordinary man, plain grey that fades.
+  P197: {
+    font: "anton",
+    fill: grad("#eeeeec", "#a6a6a2 50%", "#5a5a56"),
+    rim: "#0c120c",
+    side: ["#3a4a3a", "#0c120c"],
+    split: ["transparent", "rgb(160 160 160 / 0.35)"],
+    haze: true,
+  },
+  // Wick: the lantern on the stairs, ochre light on soot.
+  P198: {
+    font: "comic",
+    fill: layers(spiral("rgb(255 230 150 / 0.35)", "transparent"), grad("#fff6d8", "#e0a040 50%", "#3a2208")),
+    rim: "#080402",
+    side: ["#2a1a08", "#080402"],
+    glow: "rgb(255 200 100 / 0.45)",
+  },
+  // Sampler: the seamstress, faded pink cross-stitch.
+  P199: {
+    font: "elegant",
+    fill: layers(stitches("rgb(120 60 80 / 0.5)"), grad("#fff4f6", "#e6a8b8 50%", "#8a4a5e")),
+    rim: "#180a10",
+    side: ["#6a3a4a", "#180a10"],
+  },
+  // Scion: the heir's brass relics with laurel green.
+  P200: {
+    font: "myth",
+    fill: layers(stripes("rgb(60 120 60 / 0.35)", 135, 0.05), metal("#fff6d8", "#e0b44a", "#6a4a10", "#b08a30", "#ffeaa8")),
+    rim: "#0c1608",
+    side: ["#3a5a2a", "#0c1608"],
+  },
+  // Affissione: the walking billboard, torn poster paper.
+  P201: {
+    font: "block",
+    fill: layers(bricks("rgb(120 40 20 / 0.35)"), grad("#fffbe0", "#ffd84a 50%", "#c04a20")),
+    rim: "#1e0a04",
+    side: ["#7a2a10", "#1e0a04"],
+  },
+  // Custodia: the memory kiosk, enamel yellow with a receipt grid.
+  P202: {
+    font: "stencil",
+    fill: layers(blueprint("rgb(60 50 0 / 0.35)"), grad("#fffbe8", "#ffd23a 50%", "#8a6a00")),
+    rim: "#080808",
+    side: ["#2a2a2a", "#080808"],
+  },
+  // Monopsony: the safe-bodied merchant, counter green and brass rivets.
+  P203: {
+    font: "slab",
+    fill: layers(dots("rgb(230 190 90 / 0.6)", 0.3), grad("#ecfff4", "#3a8a5a 50%", "#0e2a1a")),
+    rim: "#030c07",
+    side: ["#14402a", "#030c07"],
+    line: "#d8b45a",
+  },
+  // Deadweight: the weightless cargo, container yellow and tar black.
+  P204: {
+    font: "stencil",
+    fill: layers(stripes("rgb(20 20 20 / 0.5)", 45, 0.1), grad("#fffbd8", "#ffd23a 50%", "#a07a00")),
+    rim: "#050505",
+    side: ["#1a1a1a", "#050505"],
+    jitter: [[0, -0.05], [0, 0.02], [0, -0.03], [0, 0.04], [0, -0.02]],
+  },
+  // Ballast: the ferryman of still water, dead green ripples.
+  P205: {
+    font: "gothic",
+    fill: layers(waves("rgb(200 230 160 / 0.4)"), grad("#e8f2e0", "#5a7a5a 50%", "#142414")),
+    rim: "#040a04",
+    side: ["#1a2a1a", "#040a04"],
+    glow: "rgb(230 190 90 / 0.35)",
+  },
+  // Penates: the old couple's lamplit windows.
+  P206: {
+    font: "bubble",
+    fill: layers(bricks("rgb(255 220 120 / 0.45)"), grad("#fff6e8", "#c89a6a 50%", "#5a3a20")),
+    rim: "#140c06",
+    side: ["#5a3a20", "#140c06"],
+  },
+  // Tribune: the man who is a power line, copper and arcs.
+  P207: {
+    font: "block",
+    fill: layers(zigzag("rgb(140 220 255 / 0.8)"), metal("#ffe6d6", "#d0784a", "#6a2a10", "#b0582a", "#ffc8a8")),
+    rim: "#120402",
+    side: ["#4a1a08", "#120402"],
+    glow: "rgb(120 200 255 / 0.4)",
+  },
+  // Viaticum: the old nurse, amber light kept in jars.
+  P208: {
+    font: "myth",
+    fill: layers(dots("rgb(255 190 90 / 0.45)", 0.34), grad("#ffffff", "#e8e4dc 50%", "#a08a6a")),
+    rim: "#160e06",
+    side: ["#6a5030", "#160e06"],
+  },
+  // Emendatio: the proofreader of reality, a red correction stroke.
+  P209: {
+    font: "elegant",
+    fill: layers("linear-gradient(170deg, transparent 0 46%, rgb(200 20 20 / 0.85) 46% 52%, transparent 52%)", grad("#fbf8ee", "#d6cfb4 50%", "#6a6a50")),
+    rim: "#080c08",
+    side: ["#2a3a2a", "#080c08"],
+    line: "#1a1a10",
+  },
+  // Tenant: back from the rift, acid green seams in tar black.
+  P210: {
+    font: "horror",
+    fill: layers(cracks("rgb(160 255 80 / 0.7)"), grad("#d8dcd0", "#5a6058 50%", "#1a1c18")),
+    rim: "#08090a",
+    side: ["#2a3020", "#08090a"],
+    glow: "rgb(150 255 80 / 0.35)",
+  },
+  // Inhumer: the gravedigger, earth brown with spade strokes.
+  P211: {
+    font: "slab",
+    fill: layers(stripes("rgb(30 20 10 / 0.45)", 120, 0.06), grad("#f2e8dc", "#8a6a4a 50%", "#2e1e10")),
+    rim: "#0a0604",
+    side: ["#2e1e10", "#0a0604"],
+    depth: 10,
+    angle: 90,
+  },
+  // Warren: the pack, red eyes in tunnel black.
+  P212: {
+    font: "horror",
+    fill: layers(dots("rgb(255 40 40 / 0.6)", 0.4), grad("#ece8e0", "#6a645c 50%", "#141210")),
+    rim: "#080202",
+    side: ["#2a1010", "#080202"],
+    jitter: [[-3, 0.02], [2, -0.02], [-2, 0.03], [3, -0.01], [-1, 0.02], [2, -0.03]],
+  },
+  // Unbidden: the block's machine, a row of amber position lamps.
+  P213: {
+    font: "scifi",
+    fill: layers(circuit("rgb(255 190 60 / 0.6)"), grad("#f4f6f8", "#a8b0b8 50%", "#3a424a")),
+    rim: "#0c0e10",
+    side: ["#3a424a", "#0c0e10"],
+    glow: "rgb(255 190 60 / 0.35)",
+  },
+  // Clementia: the founder on her throne, old gold on indigo.
+  P214: {
+    font: "elegant",
+    fill: layers(stars("rgb(255 230 160 / 0.6)"), metal("#f2f0ff", "#8a84d8", "#2a2460", "#5a54a8", "#e6e2ff")),
+    rim: "#08061a",
+    side: ["#2a2460", "#08061a"],
+    line: "#d8b45a",
+  },
+  // Contromano: memory running backwards, pinned paper slips.
+  P215: {
+    font: "comic",
+    fill: layers(stripes("rgb(60 60 60 / 0.35)", 100, 0.05), grad("#ffffff", "#e8e4dc 50%", "#e0702a")),
+    rim: "#140802",
+    side: ["#5a2a0a", "#140802"],
+    slant: -10,
+  },
+  // Prosody: the advancing relief, carved tufa triangles.
+  P216: {
+    font: "myth",
+    fill: layers(zigzag("rgb(90 80 50 / 0.5)"), grad("#fff6d0", "#d8c070 50%", "#6a5a2a")),
+    rim: "#100e0a",
+    side: ["#4a4436", "#100e0a"],
+    depth: 12,
+    tracking: 0.03,
+  },
+  // Novenarium: the nine seconds that never ended, bands of soot and lime.
+  P217: {
+    font: "anton",
+    fill: layers("repeating-linear-gradient(180deg, rgb(20 20 20 / 0.55) 0 0.05em, transparent 0.05em 0.16em)", grad("#ffffff", "#e6e6e0 50%", "#8a8a84")),
+    rim: "#050505",
+    side: ["#2a2a2a", "#050505"],
+    glow: "rgb(255 255 255 / 0.35)",
+    split: ["rgb(255 255 255 / 0.3)", "rgb(255 255 255 / 0.3)"],
+  },
 };
 
 const FACTION_LOOK: Record<string, Pick<NameStyle, "fill" | "side">> = {
