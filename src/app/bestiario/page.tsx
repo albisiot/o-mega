@@ -9,6 +9,7 @@ import { describeServerError } from "@/lib/errors";
 import { bestiarySections, fetchBestiary, type Bestiary, type BestiaryThreat } from "@/lib/threat-catalog";
 import { modifierLine } from "@/lib/threat-modifiers";
 import { levelText, oddsText, type ThreatRarity } from "@/lib/threat-rarity";
+import { useLockedScreen } from "@/lib/use-locked-screen";
 
 /**
  * The Bestiario (SPEC §5.15): every threat of the game, those already met in full,
@@ -19,6 +20,7 @@ export default function BestiaryPage() {
   const [bestiary, setBestiary] = useState<Bestiary | null>(null);
   const [abilities, setAbilities] = useState<AbilityInfo[]>(() => seenAbilities() ?? []);
   const [error, setError] = useState<string | null>(null);
+  useLockedScreen(true);
 
   useEffect(() => {
     if (!session) return;
@@ -42,9 +44,13 @@ export default function BestiaryPage() {
   const nameOf = (code: string) => abilities.find((a) => a.code === code)?.name ?? code;
 
   return (
-    <div className="flex flex-1 flex-col">
+    // The page fits the screen (see .game-shell): the title stays, only the threats scroll.
+    <div className="game-shell">
       <PageHeader backHref="/collezione" backLabel="Collezione" title="Bestiario" subtitle={bestiary ? `${seen}/${bestiary.threats.length} Minacce incontrate` : undefined} />
-      <main className="flex flex-1 flex-col gap-5 px-3 pb-8">
+      <main
+        data-keep-scroll="main"
+        className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden overscroll-contain px-3 pb-[calc(env(safe-area-inset-bottom)+16px)]"
+      >
         {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
         {bestiary && (
           <p className="text-sm font-medium text-muted">

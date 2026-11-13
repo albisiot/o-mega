@@ -27,7 +27,7 @@ export function Sheet({
       onClick={(event) => {
         if (event.target === sheetRef.current) sheetRef.current.close();
       }}
-      className="m-0 mt-auto w-full max-w-none overscroll-contain border-0 border-t-[3px] border-foreground bg-background p-0 text-foreground backdrop:bg-black/70"
+      className="m-0 mt-auto w-full max-w-none overflow-y-auto overflow-x-hidden overscroll-contain border-0 border-t-[3px] border-foreground bg-background p-0 text-foreground backdrop:bg-black/70"
     >
       <div className="sticky top-0 z-10 bg-background">
         <div className="mx-auto flex max-w-sm items-center justify-between gap-3 px-4 pb-2 pt-3">

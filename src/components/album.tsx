@@ -13,7 +13,7 @@ import {
 import { CardName } from "@/components/card-name";
 import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { CardArt, Silhouette, VariantTag } from "@/components/card-view";
-import { clearAlbumScroll, saveAlbumScroll, savedAlbumScroll } from "@/lib/album-scroll";
+import { ALBUM_SCROLL_BOX, albumScrollBox, clearAlbumScroll, saveAlbumScroll, savedAlbumScroll } from "@/lib/album-scroll";
 import { cardEffects } from "@/lib/card-effects";
 import { applyCardListView, groupCardList, sortAbilityOf } from "@/lib/card-list";
 import type { AbilityInfo } from "@/lib/catalog";
@@ -27,6 +27,7 @@ import {
 import { describeServerError } from "@/lib/errors";
 import { loadSeenCards, saveSeenCards } from "@/lib/new-cards";
 import { rarityFrame } from "@/lib/rarity-theme";
+import { useLockedScreen } from "@/lib/use-locked-screen";
 
 type Ownership = "all" | "owned" | "missing";
 
@@ -61,6 +62,7 @@ export function Album({
   const [notice, setNotice] = useState<string | null>(null);
   // Read once: the badges stay for this whole visit, and the next one no longer shows them.
   const [seenBefore] = useState(loadSeenCards);
+  useLockedScreen(true);
 
   useEffect(() => saveSeenCards([...owned.keys()]), [owned]);
 
@@ -70,7 +72,8 @@ export function Album({
     if (y === null) return;
     // A frame later, so it runs after the router's own scroll.
     const frame = requestAnimationFrame(() => {
-      window.scrollTo(0, y);
+      const box = albumScrollBox();
+      if (box) box.scrollTop = y;
       clearAlbumScroll();
     });
     return () => cancelAnimationFrame(frame);
@@ -110,26 +113,31 @@ export function Album({
   );
 
   return (
-    <div className="flex flex-1 flex-col">
-      <main className="flex flex-1 flex-col gap-3 px-3 pb-6 pt-2">
-        <section className="cut-bottom bg-comic-cyan px-3.5 pb-5 pt-2.5 text-black">
-          <div className="flex items-baseline justify-between gap-2">
-            <h1 className="font-display text-[32px] uppercase leading-10">Collezione</h1>
-            <p className="text-right text-sm font-extrabold">
-              {owned.size}/{catalog.length} personaggi · {totalCards} carte
-            </p>
-          </div>
-          <div className="mt-1 h-2 bg-black">
-            <div
-              className="h-full bg-foreground"
-              style={{ width: `${(owned.size / Math.max(catalog.length, 1)) * 100}%` }}
-            />
-          </div>
-          <Link href="/bestiario" className="mt-2 inline-flex min-h-9 items-center bg-black px-3 text-sm font-extrabold uppercase text-foreground">
-            Bestiario delle Minacce →
-          </Link>
-        </section>
+    // The page fits the screen above the bottom bar (see .home-shell): the title stays, the
+    // album scrolls inside its own panel and never sideways.
+    <div className="home-shell">
+      <section className="cut-bottom mx-3 mt-2 shrink-0 bg-comic-cyan px-3.5 pb-5 pt-2.5 text-black">
+        <div className="flex items-baseline justify-between gap-2">
+          <h1 className="font-display text-[32px] uppercase leading-10">Collezione</h1>
+          <p className="text-right text-sm font-extrabold">
+            {owned.size}/{catalog.length} personaggi · {totalCards} carte
+          </p>
+        </div>
+        <div className="mt-1 h-2 bg-black">
+          <div
+            className="h-full bg-foreground"
+            style={{ width: `${(owned.size / Math.max(catalog.length, 1)) * 100}%` }}
+          />
+        </div>
+        <Link href="/bestiario" className="mt-2 inline-flex min-h-9 items-center bg-black px-3 text-sm font-extrabold uppercase text-foreground">
+          Bestiario delle Minacce →
+        </Link>
+      </section>
 
+      <main
+        data-keep-scroll={ALBUM_SCROLL_BOX}
+        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden overscroll-contain px-3 pb-6 pt-3"
+      >
         {convertible.copies > 0 && (
           <ConvertAll
             convertible={convertible}

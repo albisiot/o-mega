@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { describeServerError } from "@/lib/errors";
 import { DIFFICULTY_LABELS, fetchMatchHistory, type MatchHistoryEntry } from "@/lib/match";
+import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const RESULT_STYLES = {
   win: { label: "Vittoria", className: "text-comic-cyan" },
@@ -20,6 +21,7 @@ export default function HistoryPage() {
   const { session } = useRequireSignedIn();
   const [history, setHistory] = useState<MatchHistoryEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  useLockedScreen(true);
 
   useEffect(() => {
     if (!session) return;
@@ -39,10 +41,11 @@ export default function HistoryPage() {
   if (!history && !error) return <LoadingScreen />;
 
   return (
-    <div className="flex flex-1 flex-col">
+    // The page fits the screen above the bottom bar (see .home-shell): only the list scrolls.
+    <div className="home-shell">
       <PageHeader backHref="/profilo" backLabel="Profilo" title="Storico partite" />
 
-      <main className="flex flex-1 flex-col gap-2 px-3 pb-6">
+      <main data-keep-scroll="main" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain px-3 pb-6">
         {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
         {history?.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-12 text-center">
