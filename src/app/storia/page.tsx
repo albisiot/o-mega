@@ -10,7 +10,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { fetchAbilities, seenAbilities, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
 import { DIFFICULTY_LABELS } from "@/lib/match";
-import { chapterUnlocked, fetchStory, type StoryChapter, type StoryMission } from "@/lib/story";
+import { chapterUnlocked, fetchStory, unlockHint, type StoryChapter, type StoryMission } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 // /storia/?capitolo=<n> opens that chapter: query string, see CLAUDE.md (static export).
@@ -77,7 +77,6 @@ function StoryPageContent() {
 
   const chapter = chapters[shown];
   const mission = chapter?.missions.find((m) => m.code === open && m.unlocked) ?? null;
-  const allDone = chapters.every((c) => c.missions.every((m) => m.completed));
   const firstLocked = chapter?.missions.find((m) => !m.unlocked)?.code;
 
   return (
@@ -85,6 +84,13 @@ function StoryPageContent() {
       <header className="flex shrink-0 items-center gap-2.5 px-3 pb-1 pt-2">
         <BackLink href="/gioca" label="Torna a Gioca" />
         <h1 className="font-display text-4xl uppercase text-comic-yellow">Storia</h1>
+        {/* The season of the chapter on screen: the arrows page across seasons too. */}
+        {chapter && (
+          <p className="ml-auto min-w-0 text-right text-xs font-extrabold uppercase leading-4 text-muted">
+            Stagione {chapter.season}
+            <span className="block truncate text-comic-cyan">{chapter.season_title}</span>
+          </p>
+        )}
       </header>
 
       {/* What a short window cannot fit scrolls inside, rather than being cut. */}
@@ -110,7 +116,7 @@ function StoryPageContent() {
                   {m.code === firstLocked && (
                     <p className="-mt-1 pb-1.5 pl-15 pr-3 text-xs font-medium leading-4 text-muted">
                       {m.ord === 1 && shown > 0
-                        ? `Completa il Capitolo ${chapters[shown - 1].chapter} per sbloccarlo.`
+                        ? unlockHint(chapters[shown - 1], chapter)
                         : "Completa la missione precedente."}
                     </p>
                   )}
@@ -124,11 +130,9 @@ function StoryPageContent() {
                 <p className="mt-1 text-sm font-medium">{chapter.outro}</p>
               </section>
             )}
-            {allDone && shown === chapters.length - 1 && (
-              <p className="text-sm font-semibold text-comic-cyan">
-                {/* Season 1 is the whole story for now: change this when a season 2 chapter comes out. */}
-                Hai finito la Stagione 1, Il Rintocco. La prossima stagione arriva presto.
-              </p>
+            {/* Only on the last chapter of a season, once the whole season is completed. */}
+            {chapter?.season_ending && (
+              <p className="shrink-0 text-sm font-semibold text-comic-cyan">{chapter.season_ending}</p>
             )}
           </>
         )}
@@ -159,7 +163,7 @@ function ChapterBanner({
       <div className="relative">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-extrabold">
-            Capitolo {chapter.chapter} · {progress}
+            Capitolo {chapter.number} · {progress}
           </p>
           {paged && (
             <div className="-my-1 flex shrink-0 gap-1.5">

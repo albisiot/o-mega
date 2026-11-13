@@ -1,11 +1,26 @@
 -- Integration test for the story mode: missions open in order, also from one
 -- chapter to the next, their matches are the hand-made ones, and the first win
--- pays once. The service-only functions are called as the database owner, as
+-- pays once; chapters belong to seasons, and a season's ending shows once it is
+-- completed. The service-only functions are called as the database owner, as
 -- the Edge Function would with service_role. Runs inside a rolled-back
 -- transaction:
 --   npm run test:db
 
 begin;
+
+-- Seasons: the order of the whole story (chapter) is the order of seasons and of
+-- chapters inside them, every season numbers its chapters from 1 without gaps.
+do $$
+begin
+  assert (select array_agg(chapter order by chapter) from public.story_chapters)
+       = (select array_agg(chapter order by season, number) from public.story_chapters),
+    'chapter order and season order disagree';
+  assert not exists (
+    select season from public.story_chapters group by season having min(number) <> 1 or max(number) <> count(*)
+  ), 'chapter numbers of a season';
+  assert (select title from public.story_seasons where season = 1) = 'Il Rintocco', 'season 1';
+  assert (select count(*) from public.story_chapters where season = 1) = 6, 'six chapters in season 1';
+end $$;
 
 insert into auth.users (id, aud, role, email, raw_user_meta_data, created_at, updated_at) values
   ('00000000-0000-4000-8000-0000000000e1', 'authenticated', 'authenticated', 'story-a@example.test',
@@ -49,10 +64,21 @@ begin
                      where m ? 'bot_definition_ids' or m ? 'threat_ids'), 'secrets reached the client';
   assert not exists (select 1 from jsonb_array_elements(v_story) c where c -> 'outro' is distinct from 'null'::jsonb),
     'ending of a chapter not completed';
+  assert not exists (select 1 from jsonb_array_elements(v_story) c
+                     where (c ->> 'season')::integer <> 1 or c ->> 'season_title' <> 'Il Rintocco'
+                        or (c ->> 'number')::integer <> (c ->> 'chapter')::integer),
+    'season and number of the chapters of season 1';
+  assert not exists (select 1 from jsonb_array_elements(v_story) c where c -> 'season_ending' is distinct from 'null'::jsonb),
+    'ending of a season not completed';
 
   begin
     perform count(*) from public.story_missions;
     raise exception 'ASSERT: a client read the missions';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform count(*) from public.story_seasons;
+    raise exception 'ASSERT: a client read the seasons';
   exception when insufficient_privilege then null;
   end;
 end $$;
@@ -228,6 +254,8 @@ declare
 begin
   assert v_story -> 4 ->> 'outro' like 'Oltre la porta%', 'ending of the completed chapter 5';
   assert v_story -> 5 -> 'outro' = 'null'::jsonb, 'ending of chapter 6 before playing it';
+  assert not exists (select 1 from jsonb_array_elements(v_story) c where c -> 'season_ending' is distinct from 'null'::jsonb),
+    'ending of season 1 before its last chapter';
   assert (v_sixth -> 0 ->> 'unlocked')::boolean and not (v_sixth -> 1 ->> 'unlocked')::boolean, 'chapter 6 opens at its first mission';
   assert not exists (select 1 from jsonb_array_elements(v_sixth) m where (m ->> 'completed')::boolean), 'chapter 6 already completed';
 end $$;
@@ -354,15 +382,18 @@ begin
   assert (v_reward ->> 'completed_now')::boolean and (v_reward ->> 'coins')::integer = 120, 'reward of the chapter 5 boss';
   assert v_reward -> 'card' ->> 'code' = 'P055' and (v_reward -> 'card' ->> 'instance_id') is not null, 'chapter 5 reward card';
   assert not (v_reward ->> 'is_last')::boolean, 'chapter 6 follows chapter 5';
+  assert v_reward -> 'season_ending' = 'null'::jsonb, 'season 1 ended at chapter 5';
 
   v_reward := public.get_story_reward(v_boss6);
   assert (v_reward ->> 'completed_now')::boolean and (v_reward ->> 'coins')::integer = 130, 'reward of the chapter 6 boss';
   assert v_reward -> 'card' ->> 'code' = 'P079' and (v_reward -> 'card' ->> 'instance_id') is not null, 'chapter 6 reward card';
   assert (v_reward ->> 'is_last')::boolean, 'last mission';
+  assert v_reward ->> 'season_ending' like 'Hai finito la Stagione 1, Il Rintocco.%', 'ending of season 1 on its last mission';
 
   v_reward := public.get_story_reward(v_replay);
   assert not (v_reward ->> 'completed_now')::boolean and (v_reward ->> 'completed_before')::boolean, 'replay reward';
   assert (v_reward ->> 'coins')::integer = 0 and v_reward -> 'card' = 'null'::jsonb, 'replay paid';
+  assert v_reward -> 'season_ending' = 'null'::jsonb, 'a replay ended the season again';
 
   assert (select bool_and((m ->> 'completed')::boolean)
           from jsonb_array_elements(v_story) c, jsonb_array_elements(c -> 'missions') m), 'chapters not completed';
@@ -372,6 +403,11 @@ begin
   assert v_story -> 3 ->> 'outro' like 'Sconfitto Antiphon%', 'ending of chapter 4';
   assert v_story -> 4 ->> 'outro' like 'Oltre la porta%', 'ending of chapter 5';
   assert v_story -> 5 ->> 'outro' like 'Mongibello%', 'ending of chapter 6';
+  -- The ending of season 1 sits on its last chapter only.
+  assert v_story -> 5 ->> 'season_ending' like 'Hai finito la Stagione 1, Il Rintocco.%', 'ending of season 1';
+  assert not exists (select 1 from jsonb_array_elements(v_story) with ordinality as c(chapter, ord)
+                     where c.ord < 6 and c.chapter -> 'season_ending' is distinct from 'null'::jsonb),
+    'ending of season 1 before its last chapter';
 end $$;
 
 rollback;

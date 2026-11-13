@@ -45,9 +45,8 @@ export function StoryRewardPanel({ reward, abilities }: { reward: StoryReward; a
       {reward.coins > 0 && ` · +${reward.coins} monete`}
     </p>
   );
-  const last = reward.is_last && (
-    <p className="font-semibold">Hai finito la Stagione 1, Il Rintocco. La prossima stagione arriva presto.</p>
-  );
+  // The last mission of a season: how the season ends, from the database.
+  const last = reward.season_ending && <p className="font-semibold">{reward.season_ending}</p>;
   if (!reward.card) {
     return (
       <section className="flex shrink-0 flex-col items-center gap-1 bg-comic-yellow px-4 py-3 text-center text-sm text-black">

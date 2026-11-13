@@ -21,7 +21,7 @@ import {
 } from "@/lib/match";
 import { useRememberedState } from "@/lib/place-memory";
 import { isQuadrantFormat, QUADRANT_FORMATS, QUADRANT_GRID_LABELS, type QuadrantFormat } from "@/lib/quadrant";
-import { chapterUnlocked, fetchStory, seenStory, type StoryChapter } from "@/lib/story";
+import { chapterUnlocked, fetchStory, seenStory, unlockHint, type StoryChapter } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const DIFFICULTIES = ["easy", "medium", "hard", "super_pro"] as const;
@@ -82,7 +82,7 @@ function LockedRow({ title, detail }: { title: string; detail: string }) {
   );
 }
 
-/** Every chapter, the locked ones too: each opens the Story on itself. */
+/** Every chapter, the locked ones too, under the title of its season: each opens the Story on itself. */
 function StorySection({ disabled }: { disabled: boolean }) {
   const [chapters, setChapters] = useState<StoryChapter[] | null>(() => seenStory());
 
@@ -106,30 +106,35 @@ function StorySection({ disabled }: { disabled: boolean }) {
       </p>
       {chapters && chapters.length > 0 ? (
         chapters.map((chapter, index) => {
-          const title = `Capitolo ${chapter.chapter}: ${chapter.title}`;
+          const previous = chapters[index - 1];
+          // The chapters come in story order, so a season starts where the one before changes.
+          const season = previous?.season !== chapter.season && (
+            <GroupTitle>{`Stagione ${chapter.season} · ${chapter.season_title}`}</GroupTitle>
+          );
+          const title = `Capitolo ${chapter.number}: ${chapter.title}`;
           if (!chapterUnlocked(chapter)) {
-            const previous = chapters[index - 1];
             return (
-              <LockedRow
-                key={chapter.chapter}
-                title={title}
-                detail={previous ? `Completa il Capitolo ${previous.chapter} per sbloccarlo.` : "Non ancora disponibile."}
-              />
+              <Fragment key={chapter.chapter}>
+                {season}
+                <LockedRow title={title} detail={unlockHint(previous, chapter)} />
+              </Fragment>
             );
           }
           const done = chapter.missions.filter((m) => m.completed).length;
           return (
-            <OptionRow
-              key={chapter.chapter}
-              href={`/storia/?capitolo=${chapter.chapter}`}
-              title={title}
-              detail={
-                done === chapter.missions.length
-                  ? "Completato: rileggi com'è finita."
-                  : `${done}/${chapter.missions.length} missioni completate`
-              }
-              disabled={disabled}
-            />
+            <Fragment key={chapter.chapter}>
+              {season}
+              <OptionRow
+                href={`/storia/?capitolo=${chapter.chapter}`}
+                title={title}
+                detail={
+                  done === chapter.missions.length
+                    ? "Completato: rileggi com'è finita."
+                    : `${done}/${chapter.missions.length} missioni completate`
+                }
+                disabled={disabled}
+              />
+            </Fragment>
           );
         })
       ) : (

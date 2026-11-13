@@ -2204,22 +2204,36 @@ export type Database = {
         Row: {
           chapter: number
           intro: string
+          number: number
           outro: string | null
+          season: number
           title: string
         }
         Insert: {
           chapter: number
           intro: string
+          number: number
           outro?: string | null
+          season: number
           title: string
         }
         Update: {
           chapter?: number
           intro?: string
+          number?: number
           outro?: string | null
+          season?: number
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "story_chapters_season_fkey"
+            columns: ["season"]
+            isOneToOne: false
+            referencedRelation: "story_seasons"
+            referencedColumns: ["season"]
+          },
+        ]
       }
       story_missions: {
         Row: {
@@ -2343,6 +2357,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      story_seasons: {
+        Row: {
+          ending: string
+          season: number
+          title: string
+        }
+        Insert: {
+          ending: string
+          season: number
+          title: string
+        }
+        Update: {
+          ending?: string
+          season?: number
+          title?: string
+        }
+        Relationships: []
       }
       threat_definitions: {
         Row: {

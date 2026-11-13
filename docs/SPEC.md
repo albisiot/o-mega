@@ -306,11 +306,12 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 
 ### 5.11 Storia
 
-Capitoli di missioni da giocare da soli contro gli avversari di Nuova Megara. Sei capitoli formano la Stagione 1, *Il Rintocco*. La trama dei capitoli è in `docs/STORY.md`; i testi nel database restano **segnaposto** finché non vengono riscritti su quella base.
+Capitoli di missioni da giocare da soli contro gli avversari di Nuova Megara. Sei capitoli formano la Stagione 1, *Il Rintocco*; la Stagione 2, *La marea*, è scritta in `docs/STORY.md` §6 e si costruisce un capitolo alla volta. La trama dei capitoli è in `docs/STORY.md`; i testi nel database restano **segnaposto** finché non vengono riscritti su quella base.
 
 - **Missione:** una partita contro un bot con squadra, 5 Minacce e modificatori scelti a mano (`story_missions`), non sorteggiati. Il giocatore vede in anticipo solo i livelli, come in ogni partita. Le regole sono quelle di §5. Una missione con una Minaccia di un luogo ne tiene sempre la regola, qualunque modificatore scelga.
 - **Ordine:** la prima missione è aperta; ogni altra si apre completando quella prima, anche tra un capitolo e l'altro.
 - **Finale del capitolo:** un testo (`story_chapters.outro`) che il server manda solo a chi ha completato tutte le missioni del capitolo; la pagina Storia lo mostra sotto l'elenco.
+- **Stagioni:** i capitoli sono raggruppati in stagioni (`story_seasons`: titolo e messaggio di fine stagione), e il menu Gioca li elenca sotto il titolo della loro stagione. Il giocatore legge il numero del capitolo dentro la stagione (`story_chapters.number`, da 1 in ogni stagione); l'ordine in cui si aprono le missioni resta quello di tutta la storia (`story_chapters.chapter`: 1-6 la Stagione 1, 7-12 la Stagione 2), anche da una stagione all'altra. Il messaggio di fine stagione arriva solo a chi ha completato tutte le missioni della stagione: sotto il suo ultimo capitolo e sul risultato della sua ultima missione. Finché una stagione non è finita di costruire, il suo messaggio dice che il prossimo capitolo arriva presto; il primo capitolo di una stagione nuova aggiorna il messaggio di quella prima.
 - **Premi solo alla prima vittoria**, pagati dal database nella stessa transazione che chiude la partita: monete a ogni missione, e una carta per il boss di fine capitolo. Le missioni si possono rigiocare senza premi. Sconfitte e abbandoni non pagano.
 - **Carte premio:** copie normali (`acquired_via = 'story'`), conquistabili come quelle dei pacchetti. Mai Omega.
 - Esperienza e statistiche come una partita contro bot. Le squadre avversarie e le Minacce restano segrete: il client legge solo `get_story` e `get_story_reward`.

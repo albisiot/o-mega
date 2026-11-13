@@ -19,18 +19,28 @@ export type StoryMission = {
 };
 
 export type StoryChapter = {
+  /** Order of the whole story, across seasons: also what links use (/storia/?capitolo=). */
   chapter: number;
+  season: number;
+  season_title: string;
+  /** The chapter's number inside its season: the one the player reads. */
+  number: number;
   title: string;
   intro: string;
   /** How the chapter ends: only once all its missions are completed. */
   outro: string | null;
+  /** Only on the last chapter of a season, once every mission of the season is completed. */
+  season_ending: string | null;
   missions: StoryMission[];
 };
 
 export type StoryReward = {
   mission: string;
   title: string;
+  /** No mission follows in the whole story. */
   is_last: boolean;
+  /** This match completed the last mission of a season: how the season ends. */
+  season_ending: string | null;
   /** This match completed the mission for the first time: the reward was paid. */
   completed_now: boolean;
   completed_before: boolean;
@@ -50,6 +60,14 @@ export const seenStory = () => lastSeen<StoryChapter[]>("story");
 /** A chapter opens once every mission before it is completed: its first mission tells. */
 export function chapterUnlocked(chapter: StoryChapter): boolean {
   return chapter.missions[0]?.unlocked ?? false;
+}
+
+/** What opens a locked chapter: the chapter before it, or the whole season before when it starts a new one. */
+export function unlockHint(previous: StoryChapter | undefined, chapter: StoryChapter): string {
+  if (!previous) return "Non ancora disponibile.";
+  return previous.season === chapter.season
+    ? `Completa il Capitolo ${previous.number} per sbloccarlo.`
+    : `Completa la Stagione ${previous.season} per sbloccarlo.`;
 }
 
 export async function startStoryMission(mission: string, cardInstanceIds: string[]): Promise<MatchView> {
