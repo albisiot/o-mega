@@ -8,7 +8,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { fetchAdminEvents, type AdminEvents } from "@/lib/event-admin";
 import { describeServerError } from "@/lib/errors";
 
-// Reached only from the link at the bottom of the privacy page, shown to admins.
+// Reached from the EDITOR page (src/app/editor), which only admins see.
 // The page itself is public: every function behind it checks the admin on the server.
 export default function EventAdminPage() {
   const { session } = useRequireSignedIn();

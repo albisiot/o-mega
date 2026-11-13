@@ -8,7 +8,7 @@ import { SpecialPackAdmin } from "@/components/special-pack-admin";
 import { describeServerError } from "@/lib/errors";
 import { fetchAdminSpecialPacks, type AdminSpecialPacks } from "@/lib/special-pack-admin";
 
-// Reached only from the link at the bottom of the privacy page, shown to admins.
+// Reached from the EDITOR page (src/app/editor), which only admins see.
 // The page itself is public: every function behind it checks the admin on the server.
 export default function SpecialPackAdminPage() {
   const { session } = useRequireSignedIn();

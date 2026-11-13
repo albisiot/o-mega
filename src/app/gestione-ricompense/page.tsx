@@ -9,7 +9,7 @@ import { fetchIsAdmin } from "@/lib/bonus-code-admin";
 import { describeServerError } from "@/lib/errors";
 import { fetchMatchRewards, type MatchRewards } from "@/lib/match-rewards";
 
-// Reached from the admin links (profile, «Altro», and the privacy page). Every player may
+// Reached from the EDITOR page (src/app/editor). Every player may
 // read the rewards; only admins see this page, and the save is checked on the server.
 export default function MatchRewardAdminPage() {
   const { session } = useRequireSignedIn();

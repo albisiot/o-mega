@@ -22,7 +22,7 @@ import { oddsText } from "@/lib/threat-rarity";
 const INPUT = "min-h-10 w-full border-2 border-line bg-black px-2 text-sm font-semibold text-foreground";
 const LABEL = "flex flex-col gap-1 text-xs font-extrabold uppercase text-muted";
 
-// Reached from the admin links (profile and privacy pages). The page itself is public:
+// Reached from the EDITOR page (src/app/editor). The page itself is public:
 // every function behind it checks the admin on the server.
 export default function ThreatAdminPage() {
   const { session } = useRequireSignedIn();
@@ -62,7 +62,7 @@ export default function ThreatAdminPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader backHref="/profilo" backLabel="Profilo" title="Minacce" subtitle="Testi, regole e rarità" />
+      <PageHeader backHref="/editor" backLabel="Editor" title="Minacce" subtitle="Testi, regole e rarità" />
       <main className="flex flex-1 flex-col gap-6 px-3 pb-10">
         <RaritiesEditor data={data} onSaved={() => setReloadKey((k) => k + 1)} />
         <ThreatsEditor data={data} abilities={abilities} onSaved={() => setReloadKey((k) => k + 1)} />

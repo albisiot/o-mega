@@ -8,7 +8,7 @@ import { PackPoolAdmin } from "@/components/pack-pool-admin";
 import { describeServerError } from "@/lib/errors";
 import { fetchPackPool, type PackPool } from "@/lib/pack-pool-admin";
 
-// Reached only from the link at the bottom of the privacy page, shown to admins.
+// Reached from the EDITOR page (src/app/editor), which only admins see.
 // The page itself is public: every function behind it checks the admin on the server.
 export default function PackPoolAdminPage() {
   const { session } = useRequireSignedIn();

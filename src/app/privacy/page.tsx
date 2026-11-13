@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AdminLink } from "@/components/admin-link";
 import { ExitLink } from "@/components/exit-link";
 
 const CONTROLLER = "albisiot";
@@ -136,7 +135,6 @@ export default function PrivacyPage() {
       </Section>
 
       <ExitLink />
-      <AdminLink />
     </main>
   );
 }

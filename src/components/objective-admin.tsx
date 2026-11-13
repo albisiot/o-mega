@@ -35,7 +35,7 @@ export function ObjectiveAdmin({ data, onChange }: { data: AdminObjectives; onCh
   return (
     <div className="game-shell">
       <header className="flex shrink-0 items-center gap-2.5 px-3 pb-1 pt-2">
-        <BackLink href="/privacy" label="Torna all'informativa" />
+        <BackLink href="/editor" label="Torna all'Editor" />
         <h1 className="font-display text-[32px] uppercase leading-10 text-comic-yellow">Obiettivi</h1>
       </header>
       <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">

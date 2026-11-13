@@ -91,7 +91,7 @@ export function MatchRewardAdmin({ initial }: { initial: MatchRewards }) {
   return (
     <div className="game-shell">
       <header className="flex shrink-0 items-center gap-2.5 px-3 pb-1 pt-2">
-        <BackLink href="/privacy" label="Torna all'informativa" />
+        <BackLink href="/editor" label="Torna all'Editor" />
         <div className="min-w-0">
           <h1 className="truncate font-display text-[28px] uppercase leading-8 text-comic-yellow">Ricompense</h1>
           <p className="text-xs font-semibold leading-4 text-muted">Quanto dà ogni partita, per modalità ed esito.</p>

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { AdminLink } from "@/components/admin-link";
 import { useAuth, useRequireSignedIn } from "@/components/auth-provider";
 import { TabBar } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
@@ -16,6 +15,7 @@ import { fetchConquestHistory, type ConquestHistoryEntry } from "@/lib/match";
 import { bootstrapPlayer, updateUsername, type Profile } from "@/lib/player";
 import { levelProgress, xpForLevel } from "@/lib/progression";
 import { useRememberedState } from "@/lib/place-memory";
+import { useIsAdmin } from "@/lib/use-is-admin";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { isValidUsername } from "@/lib/username";
 
@@ -60,6 +60,7 @@ function ProfileView({ profile }: { profile: Profile }) {
   const nameSheet = useRef<HTMLDialogElement>(null);
   const worldSheet = useRef<HTMLDialogElement>(null);
   const notesSheet = useRef<HTMLDialogElement>(null);
+  const isAdmin = useIsAdmin();
   useLockedScreen(true);
 
   useEffect(() => {
@@ -192,11 +193,16 @@ function ProfileView({ profile }: { profile: Profile }) {
               <Link href="/privacy" className={ROW}>
                 <RowLabel>Privacy</RowLabel>
               </Link>
+              {/* Only admins see the way in; every admin function checks again on the server. */}
+              {isAdmin && (
+                <Link href="/editor" className={ROW}>
+                  <RowLabel>Editor</RowLabel>
+                </Link>
+              )}
               {/* Inset: the slanted button would stick out of the panel and let it slide sideways. */}
               <button type="button" onClick={signOut} className="btn btn-ghost mx-1 shrink-0">
                 Esci
               </button>
-              <AdminLink />
             </>
           )}
         </div>

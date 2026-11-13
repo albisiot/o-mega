@@ -8,7 +8,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { fetchBossTable, type BossTableSettings } from "@/lib/boss-table-admin";
 import { describeServerError } from "@/lib/errors";
 
-// Reached only from the link at the bottom of the privacy page, shown to admins.
+// Reached from the EDITOR page (src/app/editor), which only admins see.
 // The page itself is public: every function behind it checks the admin on the server.
 export default function BossTableAdminPage() {
   const { session } = useRequireSignedIn();

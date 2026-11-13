@@ -8,7 +8,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { fetchAdminBonusCodes, type AdminBonusCodes } from "@/lib/bonus-code-admin";
 import { describeServerError } from "@/lib/errors";
 
-// Reached only from the link at the bottom of the privacy page, shown to admins.
+// Reached from the EDITOR page (src/app/editor), which only admins see.
 // The page itself is public: every function behind it checks the admin on the server.
 export default function BonusCodeAdminPage() {
   const { session } = useRequireSignedIn();

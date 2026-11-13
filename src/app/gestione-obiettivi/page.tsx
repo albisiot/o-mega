@@ -8,7 +8,7 @@ import { ObjectiveAdmin } from "@/components/objective-admin";
 import { describeServerError } from "@/lib/errors";
 import { fetchAdminObjectives, type AdminObjectives } from "@/lib/objective-admin";
 
-// Reached only from the link at the bottom of the privacy page, shown to admins.
+// Reached from the EDITOR page (src/app/editor), which only admins see.
 // The page itself is public: every function behind it checks the admin on the server.
 export default function ObjectiveAdminPage() {
   const { session } = useRequireSignedIn();
