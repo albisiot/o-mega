@@ -284,7 +284,7 @@ Ganci già aperti, da non chiudere prima del tempo. Una minaccia alla volta.
 
 ## 6. Stagione 2: *La marea*
 
-*Scritta, in costruzione: nel database c'è il Capitolo 1. I capitoli entrano nel database uno alla volta, come quelli della Stagione 1: quando un capitolo è costruito, la sua scheda diventa definitiva e le carte principali diventano le squadre avversarie tarate con la simulazione (SPEC §5.11). Fino ad allora tutto è una proposta.*
+*Scritta, in costruzione: nel database ci sono i Capitoli 1 e 2. I capitoli entrano nel database uno alla volta, come quelli della Stagione 1: quando un capitolo è costruito, la sua scheda diventa definitiva e le carte principali diventano le squadre avversarie tarate con la simulazione (SPEC §5.11). Fino ad allora tutto è una proposta.*
 
 ### 6.1 Premessa
 
@@ -364,7 +364,7 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 
 #### Capitolo 2 — Tra due onde
 
-*Atto I. Da costruire.*
+*Atto I. Testi nel database (migrazione `20261113170000_season_two_chapter_two_story.sql`, capitolo 8 nell'ordine di tutta la storia, missioni C8M1-C8M5); squadre e Minacce tarate con la simulazione (SPEC §5.11).*
 
 - **In una riga:** quattro pietre da portare dal Comune al tempio, sottoterra, nelle otto ore tra un'onda e l'altra.
 - **La cosa strana:** una lettera che torna al suo posto, e l'esplosione che arretra di un battito.
@@ -377,13 +377,13 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 - **Rivelazione:** Renata appoggia l'alfa al suo posto nell'anello, e la pietra ci scivola dentro da sola. Nella camera i detriti sospesi arretrano di un palmo: per la prima volta dall'Ora Zero l'esplosione è tornata indietro di un battito. Con quattro lettere al loro posto l'onda delle tre arriva più bassa, e Holdout apre gli occhi.
 - **Gancio:** tre notti dopo l'onda torna a crescere, e Longwave registra scosse che non vengono dalle tue pietre: qualcuno tira fuori le lettere dall'altra parte, dalla iota in avanti. Mentre tu le rimetti dall'alfa, Nicola le toglie.
 
-| # | Missione | Situazione | Carte principali |
+| # | Missione | Situazione | Squadra avversaria (definitiva) |
 |---|---|---|---|
-| 1 | Il protocollo | All'Ufficio Licenze nessuno firma l'uscita delle quattro pietre: senza, come si chiameranno le lastre? Gli impiegati schierano gli Echi dell'archivio | Custos, Ultravires, Diaria |
-| 2 | Il vincolo | Injunction blocca il trasporto: le pietre sono reperti vincolati, e lei sa che sotto è ancora acceso | Injunction, Clepsydra, Pentimento |
-| 3 | La linea chiusa | Il convoglio passa per la linea chiusa dall'Ora Zero, dove i pendolari di Holloway aspettano ancora la prossima fermata, e gli Sciolti della Compagnia aspettano te | Holloway, Sottovento, Recusant |
-| 4 | Una basta | Nicola sente le pietre passare sotto le Fosse e manda i Figli a prenderne una: senza l'alfa la cerniera non parte | Hecatomb, Miliarium, Credo |
-| 5 | L'occhio solo | All'ingresso degli scavi Polifemo, che abita alle Fosse, sbarra la strada per conto della Compagnia | Polifemo, Almoner, Malleus |
+| 1 | Il protocollo | All'Ufficio Licenze nessuno firma l'uscita delle quattro pietre: senza, come si chiameranno le lastre? Gli impiegati schierano gli Echi dell'archivio | Custos, Ultravires, Diaria, Signifer, Sextant |
+| 2 | Il vincolo | Injunction blocca il trasporto: le pietre sono reperti vincolati, e lei sa che sotto è ancora acceso | Injunction, Clepsydra, Pentimento, Dosimeter, Headway |
+| 3 | La linea chiusa | Il convoglio passa per la linea chiusa dall'Ora Zero, dove i pendolari di Holloway aspettano ancora la prossima fermata, e gli Sciolti della Compagnia aspettano te | Holloway, Sottovento, Recusant, Hireling, Dowser |
+| 4 | Una basta | Nicola sente le pietre passare sotto le Fosse e manda i Figli a prenderne una: senza l'alfa la cerniera non parte | Hecatomb, Miliarium, Credo, Falx, Cineris |
+| 5 | L'occhio solo | All'ingresso degli scavi Polifemo, che abita alle Fosse, sbarra la strada per conto della Compagnia | Polifemo, Almoner, Malleus, Inhumer, Antecessor |
 
 #### Capitolo 3 — Il pegno
 
@@ -490,7 +490,7 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 
 ### 6.7 Il registro delle lettere
 
-Il piano della stagione. Come in §2, si aggiorna capitolo per capitolo quando i capitoli entrano nel database. **Stato attuale** (Capitolo 1 nel database): la Θ è stata comprata dal Comune e rubata dai Figli, e ce l'ha Nicola; tutte le altre lettere sono dove erano a fine Stagione 1.
+Il piano della stagione. Come in §2, si aggiorna capitolo per capitolo quando i capitoli entrano nel database. **Stato attuale** (Capitoli 1 e 2 nel database): Α Β Γ Δ sono nel sigillo, portate dal Comune al tempio e rimesse nell'anello da Renata; la Θ è stata comprata dal Comune e rubata dai Figli, e ce l'ha Nicola, che ha cominciato a tirare fuori le lettere dall'altra parte, dalla iota in avanti; tutte le altre lettere sono dove erano a fine Stagione 1.
 
 | Lettere | A fine Stagione 1 | Nella Stagione 2 | A fine Stagione 2 (previsto) |
 |---|---|---|---|
