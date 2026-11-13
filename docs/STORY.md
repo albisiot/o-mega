@@ -46,7 +46,7 @@ L'esplosione è ancora lì, nella camera del tempio: una palla di luce con i det
 
 ### Il registro delle lettere
 
-Da tenere aggiornato capitolo per capitolo. La Stagione 1 è completa (Capitolo 6 nel database): la colonna di destra è lo stato attuale. Il piano della Stagione 2 è in §6.7.
+Da tenere aggiornato capitolo per capitolo. La Stagione 1 è completa (Capitolo 6 nel database): la colonna di destra è lo stato a fine stagione. Il piano della Stagione 2 e lo stato attuale sono in §6.7.
 
 | Lettere | A inizio serie | A fine Stagione 1 |
 |---|---|---|
@@ -284,7 +284,7 @@ Ganci già aperti, da non chiudere prima del tempo. Una minaccia alla volta.
 
 ## 6. Stagione 2: *La marea*
 
-*Scritta, da costruire. I capitoli entrano nel database uno alla volta, come quelli della Stagione 1: quando un capitolo è costruito, la sua scheda diventa definitiva e le carte principali diventano le squadre avversarie tarate con la simulazione (SPEC §5.11). Fino ad allora tutto è una proposta.*
+*Scritta, in costruzione: nel database c'è il Capitolo 1. I capitoli entrano nel database uno alla volta, come quelli della Stagione 1: quando un capitolo è costruito, la sua scheda diventa definitiva e le carte principali diventano le squadre avversarie tarate con la simulazione (SPEC §5.11). Fino ad allora tutto è una proposta.*
 
 ### 6.1 Premessa
 
@@ -340,7 +340,7 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 
 #### Capitolo 1 — L'asta
 
-*Atto I. Da costruire.*
+*Atto I. Testi nel database (migrazione `20261113160000_season_two_chapter_one_story.sql`, capitolo 7 nell'ordine di tutta la storia, missioni C7M1-C7M5); squadre e Minacce tarate con la simulazione (SPEC §5.11).*
 
 - **In una riga:** il Banco vende la Θ al miglior offerente, e la stessa notte nel golfo si sveglia Cariddi.
 - **La cosa strana:** Cariddi, il gorgo che beve il golfo e lo risputa.
@@ -354,13 +354,13 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 - **Rivelazione:** vinci l'asta e la Θ è del Comune, pagata con i soldi delle Fosse. Poi l'onda della mezzanotte entra nella Dogana, salta la luce, e quando torna la Θ non c'è più. Spanò: *"Consegnata. Quello che succede dopo la consegna non ci riguarda."* Renata ti spiega il conto di Sibilla: Cariddi cresce perché l'energia, chiuso il vulcano, ha trovato la strada del mare, e per richiudere la spaccatura servono le prime otto lettere, rimesse in ordine.
 - **Gancio:** una barca senza luci esce dal porto verso il gorgo: la Θ ce l'ha Nicola. E la prima lettera da rimettere, l'alfa, è al Comune, che non la vuole dare.
 
-| # | Missione | Situazione | Carte principali |
+| # | Missione | Situazione | Squadra avversaria (definitiva) |
 |---|---|---|---|
-| 1 | Porto chiuso | La prima onda butta le barche sulle banchine e gli Sciolti saccheggiano i carichi arenati: se spariscono, domani al mercato delle Fosse non c'è niente | Lagan, Deadweight, Higgler |
-| 2 | I ponti mobili | Bascule deve alzare a mano i ponti per far entrare i soccorsi, e i rimorchiatori della Compagnia, che entrano a pagamento, li vogliono giù | Indemnity, Ballast, Onorario |
-| 3 | Il prestanome | All'asta i Figli non si fanno vedere: per loro rilancia Histrio, attore di film d'azione, con i soldi di Nicola | Histrio, Emendatio, Lullaby |
-| 4 | Il rilancio | La Compagnia rilancia per chiudere la Θ nel suo caveau, insieme alle lettere che compra per toglierle di mezzo | Errata, Bisque, Affissione |
-| 5 | Aggiudicata | Il Banco difende il prezzo di riserva: Ottavia sconta il suo debito schierando Gauger | Gauger, Herma, Jurat |
+| 1 | Porto chiuso | La prima onda butta le barche sulle banchine e gli Sciolti saccheggiano i carichi arenati: se spariscono, domani al mercato delle Fosse non c'è niente | Lagan, Deadweight, Higgler, Gantry, Busker |
+| 2 | I ponti mobili | Bascule deve alzare a mano i ponti per far entrare i soccorsi, e i rimorchiatori della Compagnia, che entrano a pagamento, li vogliono giù | Indemnity, Ballast, Onorario, Heading, Huckster |
+| 3 | Il prestanome | All'asta i Figli non si fanno vedere: per loro rilancia Histrio, attore di film d'azione, con i soldi di Nicola | Histrio, Emendatio, Lullaby, Lure, Busker |
+| 4 | Il rilancio | La Compagnia rilancia per chiudere la Θ nel suo caveau, insieme alle lettere che compra per toglierle di mezzo; il caveau lo sorveglia Vetrix | Errata, Bisque, Affissione, Mekana, Vetrix |
+| 5 | Aggiudicata | Il Banco difende il prezzo di riserva: Ottavia sconta il suo debito schierando Gauger | Gauger, Herma, Jurat, Harrow, Cerbero |
 
 #### Capitolo 2 — Tra due onde
 
@@ -490,7 +490,7 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 
 ### 6.7 Il registro delle lettere
 
-Il piano della stagione. Come in §2, si aggiorna capitolo per capitolo quando i capitoli entrano nel database.
+Il piano della stagione. Come in §2, si aggiorna capitolo per capitolo quando i capitoli entrano nel database. **Stato attuale** (Capitolo 1 nel database): la Θ è stata comprata dal Comune e rubata dai Figli, e ce l'ha Nicola; tutte le altre lettere sono dove erano a fine Stagione 1.
 
 | Lettere | A fine Stagione 1 | Nella Stagione 2 | A fine Stagione 2 (previsto) |
 |---|---|---|---|
@@ -534,7 +534,7 @@ Valgono i default finché non si decide altrimenti.
 | Spanò | Perde per la prima volta nel Capitolo 3 |
 | Holdout | Parla una volta sola, nel finale |
 | Personaggi nuovi fuori dalle carte | Nessuno |
-| Nel database | Deciso: i capitoli si leggono da 1 in ogni stagione (`story_chapters.number`), ma nell'ordine di tutta la storia sono 7-12 e le missioni hanno i codici C7M1-C12M5 (SPEC §5.11). La migrazione del Capitolo 1 inserisce la Stagione 2 in `story_seasons` e riscrive il messaggio di fine della Stagione 1, che ora dice «La prossima stagione arriva presto»; finché la stagione non è completa, il suo messaggio dice che il prossimo capitolo arriva presto |
+| Nel database | Fatto con il Capitolo 1 (migrazione `20261113160000_season_two_chapter_one_story.sql`): i capitoli si leggono da 1 in ogni stagione (`story_chapters.number`), ma nell'ordine di tutta la storia sono 7-12 e le missioni hanno i codici C7M1-C12M5 (SPEC §5.11). La Stagione 2 è in `story_seasons`; il messaggio di fine della Stagione 1 ora dice «Hai finito la Stagione 1, Il Rintocco. Ti aspetta la Stagione 2, La marea.», e quello della Stagione 2, finché la stagione non è completa, «Il prossimo capitolo della Stagione 2, La marea, arriva presto.» |
 | Albi | Uno per capitolo, come nella Stagione 1; *Absentia* (Capitolo 4) e *Cariddi* (Capitolo 6) sono i due principali. Da aggiungere a WORLD §7 quando si scrivono |
 
 ## 7. Regole di scrittura della storia

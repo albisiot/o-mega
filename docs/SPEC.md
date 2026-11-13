@@ -306,7 +306,7 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 
 ### 5.11 Storia
 
-Capitoli di missioni da giocare da soli contro gli avversari di Nuova Megara. Sei capitoli formano la Stagione 1, *Il Rintocco*; la Stagione 2, *La marea*, è scritta in `docs/STORY.md` §6 e si costruisce un capitolo alla volta. La trama dei capitoli è in `docs/STORY.md`; i testi nel database restano **segnaposto** finché non vengono riscritti su quella base.
+Capitoli di missioni da giocare da soli contro gli avversari di Nuova Megara. Sei capitoli formano la Stagione 1, *Il Rintocco*; la Stagione 2, *La marea*, è scritta in `docs/STORY.md` §6 e si costruisce un capitolo alla volta (nel database c'è il Capitolo 1). La trama dei capitoli è in `docs/STORY.md`; i testi nel database restano **segnaposto** finché non vengono riscritti su quella base.
 
 - **Missione:** una partita contro un bot con squadra, 5 Minacce e modificatori scelti a mano (`story_missions`), non sorteggiati. Il giocatore vede in anticipo solo i livelli, come in ogni partita. Le regole sono quelle di §5. Una missione con una Minaccia di un luogo ne tiene sempre la regola, qualunque modificatore scelga.
 - **Ordine:** la prima missione è aperta; ogni altra si apre completando quella prima, anche tra un capitolo e l'altro.
@@ -387,6 +387,18 @@ Stesso metodo, sul catalogo attuale: 187 personaggi (65 in più dal Capitolo 4) 
 | 5. Lo sguardo | Ottavia e i Figli (2 Alfa, Effigy e Groma) | Super Pro | 5·1·6·2·4 | 130 monete e la carta Effigy (Alfa) |
 
 Stesso metodo del Capitolo 5, sullo stesso catalogo: 187 personaggi e 75 Minacce comuni con le loro regole. Le 29 Minacce rare (§5.15) non entrano nelle missioni né in quello che i bot sanno dei round futuri, come nel server; le ricompense delle partite (§8.4, riga `story`) si aggiungono ai premi della missione e non cambiano la partita. Il giocatore con la squadra casuale vince circa il 65%, 48%, 43%, 26% e 15% delle volte (10.000 partite con il bot Medio, 6.000 con Difficile, 4.000 con Super Pro). Il Capitolo 5, rimisurato nelle stesse condizioni, dà 67%, 50%, 45%, 28% e 17%: ogni missione è un po' più dura della corrispondente, la prima resta la più facile del capitolo e il boss è la sfida più dura della stagione. Con altri 30 personaggi (P188-P217) nella squadra casuale del giocatore le percentuali diventano circa 65%, 44%, 39%, 27% e 13%. Solo Minacce di Nuova Megara, perché nessun luogo del catalogo è il vulcano; la prima di ogni missione è a tema (Laboratorio in fiamme, Ipnotizzatore, Gang dei motociclisti, Caccia nel buio, Culto dell'eclissi). Con Gigante risvegliato come prima Minaccia del boss il giocatore vinceva quel round quasi 8 volte su 10 e il boss non scendeva sotto il 19%.
+
+**Stagione 2, Capitolo 1, L'asta** (nell'ordine di tutta la storia è il capitolo 7, missioni C7M1-C7M5):
+
+| Missione | Avversario | Bot | Livelli | Premio |
+|---|---|---|---|---|
+| 1. Porto chiuso | Lagan e gli Sciolti | Medio | 3·1·5·2·4 | 90 monete |
+| 2. I ponti mobili | Indemnity e i rimorchiatori | Medio | 1·4·2·5·3 | 100 monete |
+| 3. Il prestanome | Histrio e la claque | Difficile | 2·5·1·4·3 | 110 monete |
+| 4. Il rilancio | Errata e la Compagnia (2 Alfa, Mekana e Vetrix) | Difficile | 4·2·6·1·3 | 120 monete |
+| 5. Aggiudicata | Ottavia e il Banco (1 Alfa, Harrow) | Super Pro | 2·5·1·6·4 | 140 monete e la carta Gauger (Beta) |
+
+Stesso metodo del Capitolo 6, sul catalogo attuale: 217 personaggi (i 30 nuovi, P188-P217, ora sono anche nella squadra casuale del giocatore) e 75 Minacce comuni con le loro regole; le Minacce rare restano fuori dalle missioni e da quello che i bot sanno. Il giocatore con la squadra casuale vince circa il 63%, 42%, 38%, 24% e 11% delle volte (10.000 partite con il bot Medio, 6.000 con Difficile, 4.000 con Super Pro). Il Capitolo 6 della Stagione 1, rimisurato nelle stesse condizioni, dà 66%, 45%, 39%, 27% e 14%: ogni missione è un po' più dura della corrispondente, la prima resta la più facile del capitolo e il boss la più dura. Solo Minacce di Nuova Megara, perché il capitolo non esce dal porto; la prima di ogni missione è a tema (Contrabbando al porto, Rissa al porto, Spia infiltrata, Colpo al caveau, Ostaggio in banca). Con Tribunale degli spettri come prima Minaccia del boss il giocatore vinceva quel round quasi 9 volte su 10; con Ostaggio in banca, dove le lastre del Banco sono più forti, circa una volta su quattro. Le monete proseguono la progressione della Stagione 1 (da 90 a 140; la Storia ne paga 2.870 in tutto).
 
 ### 5.12 Grande Minaccia (Boss)
 
