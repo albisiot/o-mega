@@ -6,7 +6,7 @@ import type { CardData } from "@/components/card-view";
 import { balance } from "@/config/balance";
 import type { AbilityInfo } from "@/lib/catalog";
 
-const { conquest, match, matchmaking, packs, progression } = balance;
+const { conquest, dailyObjectives, match, matchmaking, packs, progression } = balance;
 
 export const TUTORIAL_RARITIES = [
   { name: "Delta", rank: 1, color: "#c9c4b6" },
@@ -113,21 +113,25 @@ export const TUTORIAL_POWERS = [
   { name: "Implacabile", text: "A parità di punteggio vince il round." },
 ];
 
+/** The three groups of the Gioca menu, in its order and colours. */
 export const TUTORIAL_MODES = [
   {
     name: "Partita classica",
-    color: "bg-comic-cyan",
-    text: `${match.teamSize} personaggi contro ${match.teamSize} Minacce. Contro i bot è un'amichevole per allenarti, con quattro difficoltà: Facile, Medio, Difficile e Super Pro. Online, contro il primo giocatore libero o contro un amico con un codice di 6 caratteri, è ancora un'amichevole ma dà più esperienza. Nessuna carta in gioco. Quanto hai guadagnato lo vedi a fine partita.`,
-  },
-  {
-    name: "Conquista",
+    group: "5 contro 5",
     color: "bg-comic-magenta",
-    text: `Dentro la Partita classica: come l'online, ma con le carte in palio, e chi vince ne prende una all'avversario. Si sblocca dopo ${conquest.unlockAfterMatches} partite completate, anche contro i bot, o al livello ${conquest.unlockAtLevel}.`,
+    text: `${match.teamSize} personaggi contro ${match.teamSize} Minacce. Contro i bot ti alleni, dal Facile al Super Pro. Online sfidi il primo giocatore libero o un amico con un codice di 6 caratteri, e guadagni più esperienza. Nessuna carta in gioco, tranne nella Conquista: chi vince ne prende una all'avversario. La Conquista si sblocca dopo ${conquest.unlockAfterMatches} partite completate, anche contro i bot, o al livello ${conquest.unlockAtLevel}.`,
   },
   {
-    name: "Altre modalità",
-    color: "bg-comic-orange",
-    text: "Grande Minaccia, Allarme Triplo e Quadrante cambiano le regole: un Boss con cinque fronti, tre Minacce per tutta la partita, una griglia 4×4. Contro un bot o un giocatore, senza carte in gioco. Da solo ci sono la Storia e l'Emergenza del giorno.",
+    name: "Storia ed Emergenza",
+    group: "Da solo",
+    color: "rays-gold",
+    text: "La Storia sono missioni a Nuova Megara, con squadre e Minacce preparate e carte in premio. L'Emergenza è la sfida del giorno: 8 Minacce uguali per tutti, un solo tentativo e la classifica.",
+  },
+  {
+    name: "Grande Minaccia, Allarme Triplo, Quadrante",
+    group: "Altre modalità",
+    color: "bg-comic-cyan",
+    text: "Cambiano le regole: un Boss con cinque fronti, tre Minacce per tutta la partita, una griglia 4×4. Contro un bot o un giocatore, senza carte in gioco. La prima volta ognuna ti spiega come si gioca.",
   },
 ];
 
@@ -138,16 +142,16 @@ export const TUTORIAL_STEPS = [
     key: "welcome",
     title: "Come si gioca",
     points: [
-      "Ti bastano un paio di minuti. Puoi saltare e rivedere tutto quando vuoi da Gioca o dal Profilo.",
+      "Ti bastano un paio di minuti. Puoi saltare e rivedere tutto quando vuoi da Gioca o dal Profilo, sotto Altro.",
     ],
   },
   {
     key: "pack",
-    title: "Il pacchetto del giorno",
+    title: "Ogni giorno",
     points: [
-      `Parti con ${conquest.starterSetSize} carte starter. Ogni giorno, poi, hai un pacchetto gratis in Home: ${packs.cardsPerPack} carte, almeno una Gamma o superiore.`,
-      "Scade a mezzanotte, ora italiana: se non lo apri, lo perdi.",
-      `Con ${packs.standardPackPrice} monete ne compri altri, nel Negozio trovi anche le probabilità.`,
+      `Parti con ${conquest.starterSetSize} carte starter. Ogni giorno, poi, hai un pacchetto gratis in Home: ${packs.cardsPerPack} carte, almeno una Gamma o superiore. Scade a mezzanotte, ora italiana: se non lo apri, lo perdi.`,
+      `Sotto il pacchetto ci sono ${dailyObjectives.perDay.easy + dailyObjectives.perDay.medium + dailyObjectives.perDay.hard} obiettivi del giorno, Facile, Medio e Difficile: avanzano mentre giochi e danno monete o un pacchetto. Uno non ti piace? Puoi cambiarlo.`,
+      `Con ${packs.standardPackPrice} monete compri altri pacchetti: tieni premuto il pulsante finché la barra non si riempie. Nel Negozio trovi anche i pacchetti speciali e le probabilità.`,
     ],
   },
   {
@@ -156,6 +160,7 @@ export const TUTORIAL_STEPS = [
     points: [
       "In alto il nome e la rarità. Sul disegno la fazione: Eroi, Cattivi o Neutrali.",
       "Sotto, se ce l'ha, il Potere. In fondo le 12 abilità, da 0 a 10: sono i numeri che vincono le partite.",
+      "Aprendo una carta dalla Collezione trovi la sua scheda: il vero nome sotto il disegno e, toccandolo, i poteri e i tratti (Origine, Natura e Gruppo). Alcuni eventi ammettono solo certi tratti.",
     ],
   },
   {
@@ -170,7 +175,7 @@ export const TUTORIAL_STEPS = [
     key: "rarity",
     title: "Rarità e varianti",
     points: [
-      "Più rara vuol dire più forte: ogni rarità ha più punti di quella sotto, profili più estremi e, dalle Gamma in su, un Potere. Le Delta non sono da buttare: con le scelte giuste e Minacce come Sottovalutati possono ancora battere una squadra di Omega.",
+      "Più rara vuol dire più forte: ogni rarità ha più punti di quella sotto, profili più estremi e, dalle Gamma in su, un Potere. Le Delta non sono da buttare: con le scelte giuste possono ancora battere una squadra di Omega.",
       `Varianti ★: stessa carta con un disegno più raro. Il ${packs.variantChancePercent}% delle volte, sui personaggi che ne hanno una. Valori e Potere non cambiano.`,
       "Doppioni: le copie in più si convertono in monete dalla Collezione. Le starter e le varianti no.",
     ],
@@ -181,7 +186,7 @@ export const TUTORIAL_STEPS = [
     points: [
       `Prima di ogni partita scegli ${match.teamSize} personaggi tutti diversi. L'avversario non li vede: li scopre uno alla volta, quando li giochi.`,
       "Ogni personaggio si usa una sola volta per partita: cinque personaggi per cinque Minacce.",
-      "Le squadre migliori si salvano come formazioni.",
+      "Puoi ordinare e filtrare le carte per rarità, abilità o tratti, e salvare le squadre migliori come formazioni. Tieni premuta una carta per vederla intera.",
     ],
   },
   {
@@ -190,6 +195,7 @@ export const TUTORIAL_STEPS = [
     points: [
       "Ogni partita ha 5 Minacce. All'inizio conosci solo i loro livelli, le abilità richieste si scoprono round per round.",
       "Il livello è il numero di abilità che contano: una al livello 1, sei al livello 6. Gli specialisti brillano in basso, i generalisti in alto.",
+      "Alcune hanno un modificatore che cambia la carta giusta da mandare, per esempio Colpo mirato (un'abilità conta doppio) o Sottovalutati (le Delta prendono un bonus). Le Minacce rare escono di rado, con regole tutte loro. Ogni Minaccia incontrata finisce nel Bestiario.",
     ],
   },
   {
@@ -226,14 +232,14 @@ export const TUTORIAL_STEPS = [
   },
   {
     key: "modes",
-    title: "Tre modi di giocare",
-    points: [],
+    title: "Il menu Gioca",
+    points: ["In Gioca le modalità sono divise in tre gruppi. Sceglierne una apre le sue opzioni."],
   },
   {
     key: "conquest",
     title: "La Conquista",
     points: [
-      `Chi vince sceglie una delle ${match.teamSize} carte schierate da chi perde e la tiene (${conquest.pickTimerSeconds} secondi, poi la assegna il server). Si rischia solo ciò che porti in campo, mai il resto della collezione.`,
+      `Chi vince sceglie una delle ${match.teamSize} carte schierate da chi perde e la tiene, confermando con una pressione prolungata (${conquest.pickTimerSeconds} secondi, poi la assegna il server). Si rischia solo ciò che porti in campo, mai il resto della collezione.`,
       `Le starter non si possono prendere, ma in squadra servono almeno ${conquest.minConquerableCards} carte non starter.`,
       "Puoi prendere solo carte rare al massimo quanto la più rara della tua squadra: con sole Delta prendi solo Delta. Portare una Omega alza il limite, ma la mette a rischio.",
       `Protezioni: massimo ${conquest.maxCardsLostPerDay} carte perse al giorno, una sfida ogni ${conquest.samePairCooldownHours} ore con lo stesso avversario, e una carta appena conquistata non torna in Conquista per ${conquest.conqueredCardLockHours} ore.`,
@@ -244,7 +250,7 @@ export const TUTORIAL_STEPS = [
     key: "coins",
     title: "Monete e livelli",
     points: [
-      "Monete: le ottieni convertendo i doppioni e salendo di livello.",
+      "Monete: le ottieni con gli obiettivi del giorno, convertendo i doppioni e salendo di livello.",
       "In Conquista chi perde riceve delle monete (in caso di pareggio entrambi); chi vince prende una carta, o delle monete se nessuna carta era conquistabile. Le partite che pagano monete, e quante, sono elencate nel Negozio, sotto «Movimenti».",
       `Livelli: ogni partita dà esperienza e ogni nuovo livello regala monete, ${firstLevelReward} al livello 2 e sempre di più dopo. Alcuni personaggi si sbloccano solo salendo di livello.`,
     ],
@@ -254,7 +260,7 @@ export const TUTORIAL_STEPS = [
     title: "Tocca a te",
     points: [
       "Il modo migliore per imparare è giocare: prova il bot Facile, non rischi nulla.",
-      "Non dimenticare il pacchetto del giorno. Questa guida resta in Gioca e nel Profilo.",
+      "Non dimenticare il pacchetto e gli obiettivi del giorno. Questa guida resta in Gioca e nel Profilo.",
     ],
   },
 ] as const;

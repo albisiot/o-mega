@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "13 novembre 2026",
     changes: [
+      "Il tutorial Come si gioca ha un nuovo look da albo a fumetti: lo racconta Omi, una piccola Ω che parla nei fumetti, le pagine entrano di slancio, la barra in alto è una striscia di vignette, nei momenti chiave compaiono WOW!, ZIP! e POW! e alla fine piovono i coriandoli. Se sul telefono hai ridotto le animazioni, resta fermo. I testi sono aggiornati all'app di oggi: obiettivi del giorno, acquisti tenendo premuto, modificatori e Minacce rare con il Bestiario, scheda del personaggio con i tratti, ordinamento delle carte e il menu Gioca nei suoi tre gruppi.",
       "Arrivano altri 30 personaggi dal compendio, tutti da trovare nei pacchetti e ognuno con un suo disegno speciale: 10 Delta, 9 Gamma, 6 Beta, 3 Alfa e 2 Omega. Tra gli altri Portineria, la portinaia che sa sempre chi c'è e a che piano; Custodia, l'edicola che custodisce i ricordi (Spia); Penates, i due anziani che tengono vivo un quartiere vuoto (Davide); Contromano, che ricorda le prossime 41 ore (Veggente); Clementia, l'eroina fondatrice che spegne ogni ostilità (Sabotatore); e i due Omega Prosody, il fronte di bassorilievi che riscrive la materia, e Novenarium, i nove secondi dell'Ora Zero che non sono mai finiti.",
     ],
   },

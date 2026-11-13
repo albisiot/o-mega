@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { CardView, type CardData } from "@/components/card-view";
-import { PackArt } from "@/components/comic-parts";
+import { ComicBurst, PackArt } from "@/components/comic-parts";
 import { RoundComic } from "@/components/round-comic";
 import {
   DOGWATCH,
@@ -66,53 +66,154 @@ export function TutorialButton({ compact = false, className = "" }: { compact?: 
   );
 }
 
+/** The sound effect stamped next to the title of the key pages. */
+const STEP_SFX: Partial<Record<TutorialStepKey, { text: string; fill: string }>> = {
+  welcome: { text: "WOW!", fill: "#16c8ff" },
+  pack: { text: "ZIP!", fill: "#ff2e6c" },
+  threats: { text: "BRRR!", fill: "#ff8a00" },
+  win: { text: "POW!", fill: "#16c8ff" },
+  conquest: { text: "ZAC!", fill: "#ff2e6c" },
+  done: { text: "VIA!", fill: "#16c8ff" },
+};
+
+/** Pages where Omi is amazed rather than smiling. */
+const OMI_WOW: readonly TutorialStepKey[] = ["welcome", "threats", "conquest", "done"];
+
 function TutorialPanels({ onClose: close }: { onClose: () => void }) {
   const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState<"next" | "prev">("next");
 
   const panel = TUTORIAL_STEPS[step];
   const last = step === TUTORIAL_STEPS.length - 1;
+  const sfx = STEP_SFX[panel.key];
+  const [first, ...others] = panel.points;
+
+  const go = (to: number) => {
+    setDirection(to > step ? "next" : "prev");
+    setStep(to);
+  };
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={panel.title} className="fixed inset-0 z-30 flex flex-col bg-background">
-      <header className="flex flex-col gap-2 border-b-[3px] border-foreground px-4 pb-2 pt-[calc(var(--safe-top)+8px)]">
+    <div role="dialog" aria-modal="true" aria-label={panel.title} className="rays-dark fixed inset-0 z-30 flex flex-col overflow-hidden">
+      <header className="flex flex-col gap-2 border-b-[3px] border-black bg-background px-4 pb-2.5 pt-[calc(var(--safe-top)+8px)]">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-bold text-muted">
-            {step + 1} di {TUTORIAL_STEPS.length}
+          <p className="-skew-x-8 bg-comic-yellow px-2 py-0.5 font-display text-sm uppercase text-black">
+            Pagina {step + 1} di {TUTORIAL_STEPS.length}
           </p>
           <button type="button" onClick={close} className="btn btn-ghost">
             {last ? "Chiudi" : "Salta"}
           </button>
         </div>
-        <div className="flex gap-1" aria-hidden>
+        {/* The pages as a strip of panels: the ones read in yellow, this one in magenta. */}
+        <div className="flex h-5 items-end gap-1" aria-hidden>
           {TUTORIAL_STEPS.map((item, index) => (
-            <span key={item.key} className={`h-2 flex-1 -skew-x-8 ${index <= step ? "bg-comic-yellow" : "bg-panel-raised"}`} />
+            <span
+              key={index === step ? `${item.key}-now` : item.key}
+              className={`flex-1 -skew-x-8 border-2 border-black ${
+                index === step ? "tut-tick h-5 bg-comic-magenta" : index < step ? "h-3 bg-comic-yellow" : "h-3 bg-panel-raised"
+              }`}
+            />
           ))}
         </div>
       </header>
 
-      {/* The key restarts the scroll and the fade at every step. */}
-      <main key={panel.key} className="animate-panel-fade flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-4 py-4">
-        <h2 className="-skew-x-8 font-display text-4xl uppercase text-comic-yellow [text-shadow:3px_3px_0_var(--comic-magenta)]">
-          {panel.title}
-        </h2>
-        {panel.points.map((point) => (
-          <p key={point} className="text-base font-semibold">
+      {/* The key restarts the scroll and the entrance at every page. */}
+      <main
+        key={panel.key}
+        className={`tut-whip-${direction} flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-4`}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="-skew-x-8 border-[3px] border-black bg-comic-yellow px-3 py-0.5 font-display text-[32px] uppercase leading-10 text-black shadow-[5px_5px_0_var(--comic-magenta)]">
+            {panel.title}
+          </h2>
+          {sfx && (
+            <ComicBurst fill={sfx.fill} className="tut-sfx relative -mr-1 -mt-1 h-20 w-20 shrink-0" textClassName="text-2xl">
+              {sfx.text}
+            </ComicBurst>
+          )}
+        </div>
+
+        {first && (
+          <div className="mt-1 flex items-start gap-3">
+            <Omi wow={OMI_WOW.includes(panel.key)} className="tut-omi h-[72px] w-[72px] shrink-0 -rotate-6" />
+            <p className="tut-balloon tut-balloon-tail tut-pop min-w-0 flex-1 px-3 py-2 text-[15px] font-semibold leading-5">{first}</p>
+          </div>
+        )}
+        {others.map((point, index) => (
+          <p
+            key={point}
+            className="tut-balloon tut-pop px-3 py-2 text-[15px] font-semibold leading-5"
+            style={{ animationDelay: `${0.12 * (index + 1)}s` }}
+          >
             {point}
           </p>
         ))}
         <StepDemo step={panel.key} onClose={close} />
       </main>
 
-      <footer className="flex gap-2 border-t-[3px] border-foreground px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+      <footer className="flex gap-2 border-t-[3px] border-black bg-background px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
         {step > 0 && (
-          <button type="button" onClick={() => setStep(step - 1)} className="btn btn-ghost">
+          <button type="button" onClick={() => go(step - 1)} className="btn btn-ghost">
             Indietro
           </button>
         )}
-        <button type="button" onClick={last ? close : () => setStep(step + 1)} className="btn btn-primary flex-1">
+        <button type="button" onClick={last ? close : () => go(step + 1)} className="btn btn-primary flex-1">
           {last ? "Inizia" : "Avanti"}
         </button>
       </footer>
+
+      {last && <Confetti />}
+    </div>
+  );
+}
+
+/** Omi, the Ω that narrates the tutorial: smiling, or amazed with `wow`. */
+function Omi({ wow = false, className = "" }: { wow?: boolean; className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" className={className} aria-hidden>
+      <path
+        d="M50 8C27 8 12 25 12 46c0 14 7 25 17 31H16v13h30V75c-10-4-17-15-17-28 0-14 9-25 21-25s21 11 21 25c0 13-7 24-17 28v15h30V77H71c10-6 17-17 17-31C88 25 73 8 50 8Z"
+        fill="#ffd60a"
+        stroke="#000"
+        strokeWidth="5"
+        strokeLinejoin="round"
+      />
+      <ellipse cx="40" cy="44" rx="6" ry={wow ? 9 : 8} fill="#000" />
+      <ellipse cx="60" cy="44" rx="6" ry={wow ? 9 : 8} fill="#000" />
+      <circle cx="42" cy="41" r="2.2" fill="#fff" />
+      <circle cx="62" cy="41" r="2.2" fill="#fff" />
+      {wow ? (
+        <ellipse cx="50" cy="61" rx="5" ry="6" fill="#000" />
+      ) : (
+        <path d="M41 58q9 8 18 0" fill="none" stroke="#000" strokeWidth="4" strokeLinecap="round" />
+      )}
+    </svg>
+  );
+}
+
+const CONFETTI_COLORS = ["#ffd60a", "#ff2e6c", "#16c8ff", "#ff8a00", "#fff8e7"];
+
+/** One shower of confetti on the last page: fixed positions, so it looks the same each time. */
+function Confetti() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden" aria-hidden>
+      {Array.from({ length: 36 }, (_, index) => (
+        <span
+          key={index}
+          className="tut-confetti"
+          style={
+            {
+              left: `${(index * 37) % 100}%`,
+              background: CONFETTI_COLORS[index % CONFETTI_COLORS.length],
+              borderRadius: index % 3 === 0 ? "50%" : 0,
+              "--delay": `${(index % 9) * 0.12}s`,
+              "--fall": `${2.2 + (index % 5) * 0.35}s`,
+              "--drift": `${((index * 53) % 80) - 40}px`,
+              "--spin": `${index % 2 ? 540 : -480}deg`,
+            } as CSSProperties
+          }
+        />
+      ))}
     </div>
   );
 }
@@ -166,8 +267,8 @@ const VERBS = [
 function WelcomeDemo() {
   return (
     <ul className="flex flex-col gap-2">
-      {VERBS.map((verb) => (
-        <li key={verb.name} className={`px-4 py-2.5 text-black ${verb.color}`}>
+      {VERBS.map((verb, index) => (
+        <li key={verb.name} className={`tut-pop px-4 py-2.5 text-black ${verb.color}`} style={{ animationDelay: `${0.25 + 0.1 * index}s` }}>
           <p className="-skew-x-8 font-display text-3xl uppercase">{verb.name}</p>
           <p className="text-sm font-bold">{verb.text}</p>
         </li>
@@ -476,9 +577,10 @@ function PowersList() {
 function ModesDemo() {
   return (
     <ul className="flex flex-col gap-2">
-      {TUTORIAL_MODES.map((mode) => (
-        <li key={mode.name} className={`px-4 py-3 text-black ${mode.color}`}>
-          <p className="-skew-x-8 font-display text-2xl uppercase">{mode.name}</p>
+      {TUTORIAL_MODES.map((mode, index) => (
+        <li key={mode.name} className={`tut-pop px-4 py-3 text-black ${mode.color}`} style={{ animationDelay: `${0.25 + 0.1 * index}s` }}>
+          <p className="text-xs font-extrabold uppercase tracking-wide">{mode.group}</p>
+          <p className="-skew-x-8 font-display text-2xl uppercase leading-7">{mode.name}</p>
           <p className="mt-1 text-sm font-bold">{mode.text}</p>
         </li>
       ))}

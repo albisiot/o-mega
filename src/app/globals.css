@@ -728,3 +728,89 @@ html.screen-locked body {
     --safe-top: calc(env(safe-area-inset-top) + min(env(safe-area-inset-top), 2rem));
   }
 }
+
+/* Tutorial (src/components/tutorial.tsx): a comic book that Omi narrates. Each page whips
+   in from the side it comes from, the balloons pop one after the other, a sound effect
+   stamps the key pages and confetti rains on the last one. */
+@keyframes tut-whip-next {
+  0% { opacity: 0; transform: translateX(48px) skewX(-8deg); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes tut-whip-prev {
+  0% { opacity: 0; transform: translateX(-48px) skewX(8deg); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes tut-pop {
+  0% { opacity: 0; scale: 0.6; }
+  70% { opacity: 1; scale: 1.06; }
+  100% { opacity: 1; scale: 1; }
+}
+@keyframes tut-omi {
+  0% { opacity: 0; transform: translateY(24px) rotate(-12deg); }
+  60% { opacity: 1; transform: translateY(-6px) rotate(10deg); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes tut-sfx {
+  0% { opacity: 0; scale: 0; rotate: -40deg; }
+  60% { opacity: 1; scale: 1.25; rotate: 18deg; }
+  100% { opacity: 1; scale: 1; rotate: 12deg; }
+}
+@keyframes tut-tick {
+  0% { scale: 1 0.4; }
+  60% { scale: 1 1.35; }
+  100% { scale: 1 1; }
+}
+@keyframes tut-confetti {
+  0% { opacity: 1; transform: translate3d(0, -12vh, 0) rotate(0deg); }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(var(--drift), 105dvh, 0) rotate(var(--spin)); }
+}
+
+.tut-whip-next { animation: tut-whip-next 0.38s cubic-bezier(0.2, 1.1, 0.4, 1) both; }
+.tut-whip-prev { animation: tut-whip-prev 0.38s cubic-bezier(0.2, 1.1, 0.4, 1) both; }
+.tut-pop { transform-origin: 0 50%; animation: tut-pop 0.4s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+.tut-omi { animation: tut-omi 0.55s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+.tut-sfx { animation: tut-sfx 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) 0.35s both; }
+.tut-tick { transform-origin: 50% 100%; animation: tut-tick 0.35s ease-out both; }
+.tut-confetti {
+  position: absolute;
+  top: 0;
+  width: 9px;
+  height: 14px;
+  border: 1.5px solid #000;
+  animation: tut-confetti var(--fall) cubic-bezier(0.3, 0.6, 0.6, 1) var(--delay) both;
+}
+
+/* The speech balloon: a cream panel with a black outline and a tail towards Omi. */
+.tut-balloon {
+  position: relative;
+  border: 3px solid #000;
+  background: var(--foreground);
+  color: #000;
+  box-shadow: 4px 4px 0 #000;
+}
+.tut-balloon-tail::before,
+.tut-balloon-tail::after {
+  content: "";
+  position: absolute;
+  top: 18px;
+  border-style: solid;
+  border-color: transparent;
+}
+.tut-balloon-tail::before { left: -16px; border-width: 10px 16px 10px 0; border-right-color: #000; }
+.tut-balloon-tail::after { left: -10px; top: 21px; border-width: 7px 11px 7px 0; border-right-color: var(--foreground); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tut-whip-next,
+  .tut-whip-prev,
+  .tut-pop,
+  .tut-omi,
+  .tut-sfx,
+  .tut-tick {
+    animation: none !important;
+  }
+
+  .tut-confetti {
+    display: none;
+  }
+}
