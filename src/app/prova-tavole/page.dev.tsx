@@ -220,6 +220,26 @@ const SCENES: Record<string, Scene> = {
     winner: "opponent",
     decisive: { side: "opponent", index: 0, text: "Senza Contrattacco finiva 21 a 22." },
   },
+  // Four abilities wrap the chips onto two rows: every chip gets Sabotatore's −1, on both sides.
+  "sabotatore-quattro": {
+    kind: "round",
+    threat: "Assalto alla torre",
+    abilities: ["FOR", "VEL", "INT", "MAG"],
+    me: [talos, 21, [n("Sabotatore", "sabotage", "−1 a ogni abilità rivale")]],
+    op: [dredge, 13, [n("Sabotatore", "sabotage", "−1 a ogni abilità rivale")]],
+    winner: "me",
+  },
+  // Five abilities with the rule's mark and Sabotatore's: two marks over a chip of the second row.
+  "sabotatore-regola": {
+    kind: "round",
+    threat: "Il mondo capovolto",
+    abilities: ["FOR", "VEL", "INT", "MAG", "FUR"],
+    rule: { code: "focus" },
+    twist: { name: "Colpo mirato", text: "Forza conta doppio." },
+    me: [dredge, 30, [n("Riflesso", "reflect", "rimanda −1 a ogni abilità")]],
+    op: [talos, 31, [n("Sabotatore", "sabotage", "−1 a ogni abilità rivale")]],
+    winner: "opponent",
+  },
   "grande-minaccia": { kind: "boss" },
   "triplo-mappa": { kind: "triple-map" },
   "emergenza": { kind: "emergency" },

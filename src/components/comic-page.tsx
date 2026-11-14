@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useEffectEvent, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Silhouette } from "@/components/card-view";
 import { WinnerName } from "@/components/winner-name";
 import type { AbilityChip } from "@/lib/ability-marks";
@@ -474,12 +474,37 @@ export function AbilityChips({
   struck: boolean;
   hidden?: boolean;
 }) {
+  // Room above every row of chips for the marks its chips will get, so nothing else is laid
+  // out there: when the chips wrap, a mark over the second row must not cover the first. Until
+  // the rows are measured (before the screen paints) every row gets the room of the most marked chip.
+  const box = useRef<HTMLParagraphElement>(null);
+  const [rows, setRows] = useState<{ top: number; gap: number } | null>(null);
+  const most = markRows(chips);
+  const counts = chips.map(markCount).join();
+  useLayoutEffect(() => {
+    const element = box.current;
+    if (!element || most === 0) return;
+    const measure = () => {
+      const items = [...element.children] as HTMLElement[];
+      const first = items[0]?.offsetTop ?? 0;
+      const marks = counts.split(",").map(Number);
+      const top = Math.max(0, ...items.map((item, i) => (item.offsetTop <= first + 1 ? marks[i] : 0)));
+      const gap = Math.max(0, ...items.map((item, i) => (item.offsetTop > first + 1 ? marks[i] : 0)));
+      setRows((now) => (now?.top === top && now.gap === gap ? now : { top, gap }));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [most, counts]);
+  const room = (marks: number) => (marks ? marks * 17 + 4 : 3);
   return (
-    // Room above the chips for the marks they will get, so nothing else is laid out there.
     <p
+      ref={box}
       data-fx={`${side}-chips`}
       className={`flex flex-wrap gap-[3px] ${side === "opponent" ? "justify-end" : ""}`}
-      style={markRows(chips) ? { paddingTop: markRows(chips) * 17 + 4 } : undefined}
+      style={most ? { paddingTop: rows ? (rows.top ? room(rows.top) : 0) : room(most), rowGap: room(rows ? rows.gap : most) } : undefined}
     >
       {chips.map((chip, index) => {
         const marks = [
@@ -518,8 +543,11 @@ export function AbilityChips({
   );
 }
 
-/** How many marks the most marked chip gets: the rule's and Sabotatore's. */
-const markRows = (chips: ComicChip[]) => Math.max(0, ...chips.map((chip) => (chip.mark ? 1 : 0) + (chip.malus > 0 ? 1 : 0)));
+/** How many marks a chip gets: the rule's and Sabotatore's. */
+const markCount = (chip: ComicChip) => (chip.mark ? 1 : 0) + (chip.malus > 0 ? 1 : 0);
+
+/** How many marks the most marked chip gets. */
+const markRows = (chips: ComicChip[]) => Math.max(0, ...chips.map(markCount));
 
 /** A ribbon the threat drops on a card: its faction, its rarity, or being behind. */
 /** It goes first among the card's balloons (NoteStack), on the side away from them, so it never covers one. */
@@ -617,14 +645,20 @@ export function NoteStack({
   const list = useRef<HTMLDivElement>(null);
   const [squeeze, setSqueeze] = useState<Squeeze>(0);
   const compact = squeeze > 0;
+  const fits = () => {
+    const outer = box.current;
+    const inner = list.current;
+    if (outer && inner && inner.offsetHeight > outer.clientHeight + 1) setSqueeze((level) => (level < 2 ? ((level + 1) as Squeeze) : level));
+  };
+  // A squeeze may leave the sizes as they were (one balloon: the last one stays whole), so the
+  // observer would not fire again: check once more after every step.
+  useLayoutEffect(fits, [squeeze]);
   useEffect(() => {
     const outer = box.current;
     const inner = list.current;
     if (!outer || !inner || typeof ResizeObserver === "undefined") return;
     // Measured before the screen paints: the balloons never show over the chips first.
-    const observer = new ResizeObserver(() => {
-      if (inner.offsetHeight > outer.clientHeight + 1) setSqueeze((level) => (level < 2 ? ((level + 1) as Squeeze) : level));
-    });
+    const observer = new ResizeObserver(fits);
     observer.observe(outer);
     observer.observe(inner);
     return () => observer.disconnect();
