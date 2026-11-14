@@ -17,6 +17,7 @@ import {
   ThinkBalloon,
   useBeats,
   useVerdictBuzz,
+  useWhenDone,
 } from "@/components/comic-page";
 import type { BossEntry, BossSide } from "@/lib/boss-powers";
 import { playSound } from "@/lib/comic-sound";
@@ -62,6 +63,8 @@ export type BossComicProps = {
   onContinue: () => void;
   /** The turn's totals are out, played or skipped to. */
   onVerdict?: () => void;
+  /** Every beat has played (or the page was skipped to the end): the time to read it starts. */
+  onDone?: () => void;
 };
 
 type Beat =
@@ -395,6 +398,7 @@ export function BossComic(props: BossComicProps) {
   });
   const turnWinner: BossSide | null = points.me > points.opponent ? "me" : points.opponent > points.me ? "opponent" : null;
   useVerdictBuzz(has("total"), turnWinner === "me" ? "win" : turnWinner === "opponent" ? "lose" : "void", props.onVerdict);
+  useWhenDone(done, props.onDone);
 
   // A front's stripe takes the new holder's colour once its entry is settled.
   const holderNow = (front: number) => {

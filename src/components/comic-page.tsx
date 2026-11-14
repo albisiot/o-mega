@@ -72,6 +72,14 @@ export function useBeats<T extends { at: number }>(beats: T[]) {
  * The phone buzzes with the verdict where it can (not Safari on iPhone). `onVerdict` hears it
  * too, played or skipped to: the match strip waits for it to show the outcome.
  */
+/** Tells `onDone` once, when the page has played all its beats (or was skipped to the end). */
+export function useWhenDone(done: boolean, onDone?: () => void) {
+  const tell = useEffectEvent(() => onDone?.());
+  useEffect(() => {
+    if (done) tell();
+  }, [done]);
+}
+
 export function useVerdictBuzz(verdict: boolean, tone: "win" | "lose" | "void", onVerdict?: () => void) {
   const announce = useEffectEvent(() => onVerdict?.());
   useEffect(() => {

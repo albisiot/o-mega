@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { BossView } from "./boss";
 import type { EmergencyView } from "./emergency";
 import type { MatchView } from "./match";
-import { bossBeforeTurn, emergencyBeforePlay, matchBeforeRound, tripleBeforeRound } from "./reveal-hold";
+import { bossBeforeTurn, emergencyBeforePlay, matchBeforeRound, revealEnd, tripleBeforeRound } from "./reveal-hold";
 import type { TripleView } from "./triple";
 
 const card = { name: "Rivale", art_url: null };
@@ -122,5 +122,25 @@ describe("emergencyBeforePlay", () => {
   it("has nothing to hide before the run starts", () => {
     const none = { run: null } as unknown as EmergencyView;
     expect(emergencyBeforePlay(none, 1)).toBe(none);
+  });
+});
+
+describe("revealEnd", () => {
+  it("waits the longest pause while the page still plays", () => {
+    expect(revealEnd(1000, null, 11)).toBe(12000);
+  });
+
+  it("never leaves before the shortest pause, even with a quick page", () => {
+    expect(revealEnd(1000, 3000, 11)).toBe(7000);
+  });
+
+  it("leaves time to read a long page once it is over", () => {
+    expect(revealEnd(1000, 8000, 11)).toBe(11500);
+  });
+
+  it("never goes past the longest pause", () => {
+    expect(revealEnd(1000, 10500, 11)).toBe(12000);
+    // Conquest: the pick's timer is running, the page leaves at the shortest pause.
+    expect(revealEnd(1000, 8000, 6)).toBe(7000);
   });
 });

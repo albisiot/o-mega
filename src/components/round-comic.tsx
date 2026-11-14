@@ -24,6 +24,7 @@ import {
   ThinkBalloon,
   useBeats,
   useVerdictBuzz,
+  useWhenDone,
   VerdictPanel,
   type ComicChip,
 } from "@/components/comic-page";
@@ -101,6 +102,8 @@ export type RoundComicProps = {
   onContinue: () => void;
   /** The verdict is out (SBAM!), played or skipped to. */
   onVerdict?: () => void;
+  /** Every beat has played (or the page was skipped to the end): the time to read it starts. */
+  onDone?: () => void;
 };
 
 type Beat =
@@ -516,6 +519,7 @@ export function RoundComic(props: RoundComicProps) {
   const cutNote = cut ? props[cut.side].notes[cut.index] : null;
 
   useVerdictBuzz(verdict, winner === "me" ? "win" : winner === "opponent" ? "lose" : "void", props.onVerdict);
+  useWhenDone(done, props.onDone);
 
   const winnerSide = winner === "none" ? null : props[winner];
   const title = winner === "me" ? "Round vinto!" : winner === "opponent" ? "Round perso" : "Round nullo";

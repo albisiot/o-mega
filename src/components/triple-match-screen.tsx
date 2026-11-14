@@ -230,7 +230,7 @@ function TripleSteps({ initial }: { initial: TripleView }) {
     const timer = setTimeout(() => {
       settle(revealing);
       setRevealing(null);
-    }, balance.match.revealPauseSeconds * 1000);
+    }, balance.match.revealMinSeconds * 1000);
     return () => clearTimeout(timer);
   }, [revealing, view.status, settle]);
 

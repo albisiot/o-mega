@@ -36,7 +36,7 @@ import {
 } from "@/lib/match";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
-import { bossBeforeTurn, useRevealHold } from "@/lib/reveal-hold";
+import { bossBeforeTurn, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow, useSecondsLeft } from "@/lib/use-now";
 
@@ -223,15 +223,12 @@ function BossSteps({ initial }: { initial: BossView }) {
     return () => clearTimeout(timer);
   }, [round, deadline, offset, submit]);
 
-  // A turn result stays on screen for the reveal pause; the last one waits for a tap.
-  useEffect(() => {
-    if (revealing === null || view.status !== "active") return;
-    const timer = setTimeout(() => {
-      settle(revealing);
-      setRevealing(null);
-    }, balance.match.revealPauseSeconds * 1000);
-    return () => clearTimeout(timer);
-  }, [revealing, view.status, settle]);
+  // A turn result stays on screen until its animation is over and there was time to read it;
+  // the last one waits for a tap.
+  const onRevealDone = useRevealPause(revealing, view.status === "active", (round) => {
+    settle(round);
+    setRevealing(null);
+  });
 
   async function forfeit() {
     setBusy(true);
@@ -370,6 +367,7 @@ function BossSteps({ initial }: { initial: BossView }) {
           round={shownRound}
           rival={rival}
           onVerdict={() => settle(shownRound.round)}
+          onDone={onRevealDone}
           onContinue={() => {
             settle(shownRound.round);
             setRevealing(null);
@@ -731,6 +729,7 @@ function TurnReveal({
   rival,
   onContinue,
   onVerdict,
+  onDone,
   finished,
 }: {
   view: BossView;
@@ -739,6 +738,8 @@ function TurnReveal({
   onContinue: () => void;
   /** The turn's totals are out: the strip at the top may show them. */
   onVerdict: () => void;
+  /** The page has played all its beats. */
+  onDone: () => void;
   finished: boolean;
 }) {
   const detail = useCardDetail();
@@ -781,6 +782,7 @@ function TurnReveal({
       notices={notices}
       onContinue={onContinue}
       onVerdict={onVerdict}
+      onDone={onDone}
       hint={(complete) => (
         <p className="py-1 text-center text-xs font-extrabold uppercase tracking-wide text-black">
           {!complete ? "Tocca per saltare" : finished ? "Tocca per il risultato" : "Tocca per continuare"}

@@ -60,7 +60,7 @@ import {
   type PowerNote,
 } from "@/lib/round-powers";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
-import { matchBeforeRound, useRevealHold } from "@/lib/reveal-hold";
+import { matchBeforeRound, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
 import { knownLevels, levelText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -256,16 +256,18 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
     return () => clearTimeout(timer);
   }, [round, deadline, offset, submit]);
 
-  // A round result stays on screen for the reveal pause, then the next threat. The last one
-  // waits for a tap, unless the conquest pick follows: its timer is already running.
-  useEffect(() => {
-    if (revealing === null || (view.status !== "active" && !pickOpen)) return;
-    const timer = setTimeout(() => {
-      settle(revealing);
+  // A round result stays on screen until its animation is over and there was time to read it,
+  // then the next threat. The last one waits for a tap, unless the conquest pick follows: its
+  // timer is already running, so that page leaves at the shortest pause.
+  const onRevealDone = useRevealPause(
+    revealing,
+    view.status === "active" || pickOpen,
+    (round) => {
+      settle(round);
       setRevealing(null);
-    }, balance.match.revealPauseSeconds * 1000);
-    return () => clearTimeout(timer);
-  }, [revealing, view.status, pickOpen, settle]);
+    },
+    view.status === "active" ? balance.match.revealPauseSeconds : balance.match.revealMinSeconds,
+  );
 
   async function forfeit() {
     setBusy(true);
@@ -397,6 +399,7 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
             spied: (view.spied_cards ?? []).filter((c) => c.round === shownRound.round),
           }}
           onVerdict={() => settle(shownRound.round)}
+          onDone={onRevealDone}
           onContinue={() => {
             settle(shownRound.round);
             setRevealing(null);
@@ -903,6 +906,7 @@ function RoundReveal({
   opponentName,
   onContinue,
   onVerdict,
+  onDone,
   finished,
   pickDeadline,
   offset,
@@ -921,6 +925,8 @@ function RoundReveal({
   onContinue: () => void;
   /** The verdict is out: the strip at the top may show it. */
   onVerdict: () => void;
+  /** The page has played all its beats. */
+  onDone: () => void;
   finished: boolean;
   /** After the last round of a won Conquest: when the time to pick a card is up (server time, ms). */
   pickDeadline: number | null;
@@ -1093,6 +1099,7 @@ function RoundReveal({
       notices={notices}
       onContinue={onContinue}
       onVerdict={onVerdict}
+      onDone={onDone}
       hint={(complete) => (
         // The whole screen continues; this stays as the hint and the keyboard's way on.
         <button

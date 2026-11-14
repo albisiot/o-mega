@@ -22,8 +22,15 @@ export const balance = {
     threatsPerMatch: 5,
     roundsToWin: 3,
     roundTimerSeconds: 30,
-    /** Time to show a round result before the next timer starts. */
-    revealPauseSeconds: 6,
+    /**
+     * Time a round result may stay on screen before the next timer starts (server side too:
+     * game_config match.reveal_pause_seconds). The page leaves earlier when it is told:
+     */
+    revealPauseSeconds: 11,
+    /** ...once its animation is over, plus this time to read it again... */
+    revealReadSeconds: 3.5,
+    /** ...but never before this (Allarme Triplo, whose page has no animation, always waits this). */
+    revealMinSeconds: 6,
     /** Network tolerance after a deadline before the server auto-plays. */
     timeoutGraceSeconds: 3,
     reconnectGraceSeconds: 30,
