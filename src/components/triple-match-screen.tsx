@@ -1,15 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AbilityFamilies } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { useEventPointsFor } from "@/components/event-banner";
 import { Silhouette } from "@/components/card-view";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
-import { PowerPill, prefersReducedMotion } from "@/components/comic-page";
-import { contestNotes } from "@/lib/triple-powers";
 import { Sheet } from "@/components/sheet";
 import { balance } from "@/config/balance";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
@@ -27,8 +25,7 @@ import {
 import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
 import { tripleBeforeRound, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
-import { TripleRoundComics } from "@/components/triple-comic";
-import { tieBreakReason, tieWonByRelentless } from "@/lib/round-powers";
+import { TripleMapReveal } from "@/components/triple-comic";
 import { oddsText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
 import { describeThreatModifier } from "@/lib/threat-modifiers";
 import {
@@ -37,7 +34,6 @@ import {
   roundPoints,
   submitTriplePlacement,
   triplePreviews,
-  type TripleContest,
   type TripleRound,
   type TripleThreat,
   type TripleView,
@@ -370,26 +366,19 @@ function TripleSteps({ initial }: { initial: TripleView }) {
       {error && <p className="mx-3 mt-1 text-sm font-semibold text-comic-magenta">{error}</p>}
 
       {shownRound ? (
-        <TripleRoundComics
+        <TripleMapReveal
           key={shownRound.round}
           view={view}
           round={shownRound}
           rival={rival}
           abilities={abilities}
-          summary={
-            <RoundReveal
-              view={view}
-              round={shownRound}
-              rival={rival}
-              finished={view.status === "finished"}
-              onVerdict={() => settle(shownRound.round)}
-              onDone={onRevealDone}
-              onContinue={() => {
-                settle(shownRound.round);
-                setRevealing(null);
-              }}
-            />
-          }
+          finished={view.status === "finished"}
+          onVerdict={() => settle(shownRound.round)}
+          onDone={onRevealDone}
+          onContinue={() => {
+            settle(shownRound.round);
+            setRevealing(null);
+          }}
         />
       ) : view.status === "finished" ? (
         <TripleResult view={view} rival={rival} />
@@ -790,155 +779,6 @@ function OpponentAbsent({
           Rivendica la vittoria
         </button>
       )}
-    </div>
-  );
-}
-
-const comicIn = (delay: number): CSSProperties => ({ animation: `comic-in 0.35s ease-out ${delay}s both` });
-const comicStamp = (delay: number): CSSProperties => ({ animation: `comic-stamp 0.45s ease-out ${delay}s both` });
-
-/** One threat of a resolved round: the two cards, their scores, who took the point. */
-function ContestPanel({
-  view,
-  round,
-  contest,
-  rival,
-  delay,
-}: {
-  view: TripleView;
-  round: TripleRound;
-  contest: TripleContest;
-  rival: string;
-  delay: number;
-}) {
-  const detail = useCardDetail();
-  const threat = view.threats[contest.slot];
-  const mine = view.my_deck.find((card) => card.instance_id === contest.my_play?.instance_id) ?? null;
-  const theirs = contest.opponent_play;
-  const won = contest.winner === "me";
-  const lost = contest.winner === "opponent";
-  // Equal totals: what settled the threat (SPEC §5.6), for both players.
-  const myPlay = contest.my_play;
-  const tie =
-    myPlay && theirs && myPlay.score === theirs.score
-      ? tieBreakReason(
-          won ? myPlay : lost ? theirs : null,
-          won ? theirs : myPlay,
-          threat?.modifier,
-          won && tieWonByRelentless(mine, theirs, threat?.modifier)
-            ? (mine?.name ?? null)
-            : lost && tieWonByRelentless(theirs, mine, threat?.modifier)
-              ? theirs.name
-              : null,
-        )
-      : null;
-  // The powers of each card on this threat, in their family's colours (effect-families.ts).
-  const notesOf = (tone: "me" | "opponent") => contestNotes(view, round, contest, tone);
-  const side = (card: MatchCard | null, score: number, tone: "me" | "opponent", winner: boolean) => (
-    <span
-      {...(card ? detail.press(card) : {})}
-      className={`flex min-w-0 flex-1 flex-col items-center px-1 py-1 ${tone === "opponent" ? "text-right" : "text-left"} ${
-        winner ? (tone === "me" ? "bg-comic-cyan text-black" : "bg-comic-orange text-black") : "bg-panel text-muted"
-      }`}
-    >
-      <span className="w-full truncate text-center text-[11px] font-extrabold uppercase">{card?.name ?? "—"}</span>
-      <span className="font-display text-[28px] leading-8">{score}</span>
-      <span className="flex max-w-full flex-col items-center gap-0.5">
-        {notesOf(tone).map((note, index) => (
-          <PowerPill key={index} note={note} delay={delay + 0.25 + index * 0.12} />
-        ))}
-      </span>
-    </span>
-  );
-  return (
-    <li className="relative flex flex-col gap-1 border-[3px] border-black bg-white px-1.5 pb-1.5 pt-1 text-black" style={comicIn(delay)}>
-      {/* The level stays next to the name, clear of the sticker that says who took the point. */}
-      <p className="flex items-baseline gap-2 pr-[124px]">
-        <span className="truncate font-display text-[17px] uppercase leading-5">{threat?.name}</span>
-        <span className="shrink-0 text-[10px] font-extrabold">Lv {threat?.level}</span>
-      </p>
-      <div className="flex items-stretch gap-1">
-        {side(mine, contest.my_play?.score ?? 0, "me", won)}
-        <span className="flex items-center font-display text-lg">vs</span>
-        {side(theirs, theirs?.score ?? 0, "opponent", lost)}
-      </div>
-      {tie && <p className="text-center text-[11px] font-bold leading-[14px]">Pari: {tie}.</p>}
-      <span
-        className={`absolute -right-2 -top-3 max-w-[124px] -rotate-6 truncate px-1.5 font-display text-lg uppercase leading-6 ${
-          won ? "bg-comic-cyan" : lost ? "bg-comic-orange" : "bg-black text-comic-yellow"
-        }`}
-        style={comicStamp(delay + 0.35)}
-      >
-        {won ? "+1 a te" : lost ? `+1 a ${rival}` : "Pari"}
-      </span>
-    </li>
-  );
-}
-
-function RoundReveal({
-  view,
-  round,
-  rival,
-  finished,
-  onContinue,
-  onVerdict,
-  onDone,
-}: {
-  view: TripleView;
-  round: TripleRound;
-  rival: string;
-  finished: boolean;
-  onContinue: () => void;
-  /** The round's totals are on the page: the strip at the top may show them. */
-  onVerdict: () => void;
-  /** The recap has landed: the time to read it starts. */
-  onDone: () => void;
-}) {
-  const contests = [...round.contests].sort((a, b) => a.slot - b.slot);
-  const points = roundPoints(round);
-  const upTo = view.rounds.filter((r) => r.resolved && r.round <= round.round).map(roundPoints);
-  const totals = upTo.reduce((sum, p) => ({ me: sum.me + p.me, opponent: sum.opponent + p.opponent }), { me: 0, opponent: 0 });
-  const auto = contests.some((c) => c.my_play?.auto_played);
-  const theirAuto = contests.some((c) => c.opponent_play?.auto_played);
-  const last = contests.length * 0.6;
-  // The totals line lands last (at once with reduced motion): then the strip catches up.
-  const announce = useEffectEvent(() => {
-    onVerdict();
-    onDone();
-  });
-  useEffect(() => {
-    const timer = setTimeout(announce, prefersReducedMotion() ? 0 : (last + 0.3) * 1000);
-    return () => clearTimeout(timer);
-  }, [round.round, last]);
-
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onContinue}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") onContinue();
-      }}
-      className="cut-bottom relative mx-3 mt-1 flex min-h-0 flex-1 cursor-pointer flex-col gap-2 overflow-y-auto bg-comic-yellow px-3 pb-6 pt-2 text-left text-black"
-      aria-label={`Round ${round.round}: tu ${points.me}, ${rival} ${points.opponent}. Tocca per continuare`}
-    >
-      <div aria-hidden className="halftone absolute inset-0 opacity-40" />
-      <p className="relative font-display text-3xl uppercase leading-8" style={comicIn(0)}>
-        Round {round.round}
-      </p>
-      <ol className="relative flex flex-col gap-3 pr-2">
-        {contests.map((contest, i) => (
-          <ContestPanel key={contest.slot} view={view} round={round} contest={contest} rival={rival} delay={0.2 + i * 0.6} />
-        ))}
-      </ol>
-      <div className="relative mt-auto flex flex-col items-center gap-1" style={comicIn(last + 0.3)}>
-        <p className="-skew-x-8 bg-black px-3 py-1 font-display text-2xl uppercase text-comic-yellow">
-          Round {points.me}–{points.opponent} · Totale {totals.me}–{totals.opponent}
-        </p>
-        {auto && <p className="text-xs font-extrabold">Tempo scaduto: il server ha piazzato le tue carte a caso.</p>}
-        {theirAuto && <p className="text-xs font-extrabold">{rival} non ha piazzato in tempo.</p>}
-        <p className="text-xs font-extrabold uppercase tracking-wide">{finished ? "Tocca per il risultato" : "Tocca per continuare"}</p>
-      </div>
     </div>
   );
 }

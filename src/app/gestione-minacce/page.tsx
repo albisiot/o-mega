@@ -12,11 +12,14 @@ import {
   REGION_LABELS,
   RULE_OPTIONS,
   ruleProblem,
+  fetchThreatDistricts,
   saveThreat,
+  saveThreatDistrict,
   saveThreatRarity,
   type AdminThreat,
   type AdminThreats,
 } from "@/lib/threat-catalog";
+import { DISTRICTS } from "@/lib/city-districts";
 import { oddsText } from "@/lib/threat-rarity";
 
 const INPUT = "min-h-10 w-full border-2 border-line bg-black px-2 text-sm font-semibold text-foreground";
@@ -239,6 +242,19 @@ function ThreatForm({
   onSaved: () => void;
 }) {
   const [draft, setDraft] = useState<AdminThreat>(threat);
+  // Where it lights up on the Allarme Triplo map: "" is "from its name".
+  const [district, setDistrict] = useState<{ saved: string; draft: string } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetchThreatDistricts()
+      .then((all) => {
+        if (alive) setDistrict({ saved: all[threat.code] ?? "", draft: all[threat.code] ?? "" });
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [threat.code]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
   const rule = RULE_OPTIONS.find((r) => r.code === (draft.modifier_code ?? ""));
@@ -256,6 +272,10 @@ function ThreatForm({
     setMessage(null);
     try {
       await saveThreat(draft);
+      if (district && district.draft !== district.saved) {
+        await saveThreatDistrict(threat.code, district.draft || null);
+        setDistrict({ saved: district.draft, draft: district.draft });
+      }
       setMessage({ text: "Salvata: vale per le partite create da adesso.", error: false });
       onSaved();
     } catch (cause) {
@@ -312,6 +332,22 @@ function ThreatForm({
           />
         </label>
       </div>
+      <label className={LABEL}>
+        Zona sulla mappa (Allarme Triplo)
+        <select
+          className={INPUT}
+          value={district?.draft ?? ""}
+          disabled={!district}
+          onChange={(e) => district && setDistrict({ ...district, draft: e.target.value })}
+        >
+          <option value="">Dal nome (automatica)</option>
+          {DISTRICTS.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
+          ))}
+        </select>
+      </label>
       <label className={LABEL}>
         Regola
         <select

@@ -2387,6 +2387,7 @@ export type Database = {
           art_url: string | null
           code: string
           created_at: string
+          district: string | null
           emergency_target: number | null
           flavor: string
           id: string
@@ -2404,6 +2405,7 @@ export type Database = {
           art_url?: string | null
           code: string
           created_at?: string
+          district?: string | null
           emergency_target?: number | null
           flavor?: string
           id?: string
@@ -2421,6 +2423,7 @@ export type Database = {
           art_url?: string | null
           code?: string
           created_at?: string
+          district?: string | null
           emergency_target?: number | null
           flavor?: string
           id?: string
@@ -2694,7 +2697,12 @@ export type Database = {
         Args: { p_active: boolean; p_id: string }
         Returns: Json
       }
+      admin_set_threat_district: {
+        Args: { p_code: string; p_district: string }
+        Returns: undefined
+      }
       admin_special_packs_payload: { Args: never; Returns: Json }
+      admin_threat_districts: { Args: never; Returns: Json }
       admin_update_threat: {
         Args: {
           p_code: string
@@ -3661,6 +3669,10 @@ export type Database = {
       }
       with_rare_threats: { Args: { p_threat_ids: string[] }; Returns: string[] }
       with_rare_triple_rules: {
+        Args: { p_match_id: string; p_payload: Json }
+        Returns: Json
+      }
+      with_triple_districts: {
         Args: { p_match_id: string; p_payload: Json }
         Returns: Json
       }

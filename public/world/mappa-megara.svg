@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600">
+<!-- Nuova Megara for the Allarme Triplo map (src/lib/city-districts.ts holds the districts' spots and labels). -->
+<defs>
+  <pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="1" fill="#000" opacity=".18"/></pattern>
+  <pattern id="waves" width="28" height="14" patternUnits="userSpaceOnUse"><path d="M0 9 Q7 4 14 9 T28 9" fill="none" stroke="#2f6a87" stroke-width="2"/></pattern>
+  <radialGradient id="lava" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#ffd23f"/><stop offset=".5" stop-color="#ff8a00"/><stop offset="1" stop-color="#d4321e"/></radialGradient>
+  <radialGradient id="rift" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#e6fbff"/><stop offset=".45" stop-color="#2ee6ff"/><stop offset="1" stop-color="#2ee6ff" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="400" height="600" fill="#1d4a63"/><rect width="400" height="600" fill="url(#waves)"/>
+  <polygon points="0,0 175,0 170,95 150,190 0,200" fill="#4d5f45" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="175,0 270,0 285,95 330,125 400,120 400,250 280,255 240,200 170,95" fill="#6f5f96" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="270,0 400,0 400,120 330,125 285,95" fill="#5a2a26" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="150,190 170,95 240,200 280,255 260,320 150,320" fill="#cdbd93" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="0,200 150,190 150,320 120,350 0,360" fill="#545a68" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="280,255 400,250 400,410 300,420 260,320" fill="#8c5644" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="0,360 120,350 150,320 140,400 112,470 100,385" fill="#c4a467" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="150,320 260,320 300,420 280,500 112,470 140,400" fill="#3f5f7d" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="300,420 400,410 400,545 280,500" fill="#7a4a2a" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="0,0 175,0 170,95 150,190 0,200" fill="url(#dots)"/>
+  <polygon points="175,0 270,0 285,95 330,125 400,120 400,250 280,255 240,200 170,95" fill="url(#dots)"/>
+  <polygon points="270,0 400,0 400,120 330,125 285,95" fill="url(#dots)"/>
+  <polygon points="150,190 170,95 240,200 280,255 260,320 150,320" fill="url(#dots)"/>
+  <polygon points="0,200 150,190 150,320 120,350 0,360" fill="url(#dots)"/>
+  <polygon points="280,255 400,250 400,410 300,420 260,320" fill="url(#dots)"/>
+  <polygon points="0,360 120,350 150,320 140,400 112,470 100,385" fill="url(#dots)"/>
+  <polygon points="150,320 260,320 300,420 280,500 112,470 140,400" fill="url(#dots)"/>
+  <polygon points="300,420 400,410 400,545 280,500" fill="url(#dots)"/>
+<g>
+  <path d="M205 488 C210 420 205 360 212 320 S 232 230 262 180 S 300 120 330 112" fill="none" stroke="#1c1b22" stroke-width="8" stroke-linecap="round"/>
+  <path d="M205 488 C210 420 205 360 212 320 S 232 230 262 180 S 300 120 330 112" fill="none" stroke="#56525f" stroke-width="2" stroke-dasharray="6 6"/>
+  <path d="M0 300 C80 292 160 300 230 290 S 340 268 400 270" fill="none" stroke="#1c1b22" stroke-width="7" stroke-linecap="round"/>
+  <path d="M0 300 C80 292 160 300 230 290 S 340 268 400 270" fill="none" stroke="#56525f" stroke-width="2" stroke-dasharray="6 6"/>
+  <path d="M0 272 L150 268" stroke="#111" stroke-width="7"/><path d="M0 272 L150 268" stroke="#9a96a6" stroke-width="2" stroke-dasharray="3 4"/></g>
+<g stroke="#000" stroke-width="2.5" stroke-linejoin="round">
+  <!-- Vulcano -->
+  <path d="M292 108 L338 22 L352 22 L398 108 Z" fill="#3b1c1a"/>
+  <path d="M332 34 L338 22 L352 22 L358 34 L350 30 L345 40 L339 30 Z" fill="url(#lava)"/>
+  <path d="M345 36 C340 56 352 70 344 92" fill="none" stroke="#ff8a00" stroke-width="3"/>
+  <circle cx="352" cy="10" r="7" fill="#555" stroke="none" opacity=".8"/><circle cx="364" cy="4" r="5" fill="#555" stroke="none" opacity=".6"/>
+  <!-- Necropoli: cipressi e archi -->
+  <g fill="#2d3a29"><ellipse cx="25" cy="70" rx="6" ry="17"/><ellipse cx="140" cy="88" rx="6" ry="17"/><ellipse cx="75" cy="160" rx="6" ry="17"/><ellipse cx="128" cy="180" rx="5" ry="14"/></g>
+  <path d="M60 92 v-18 a12 12 0 0 1 24 0 v18 Z" fill="#b8ad8c"/><path d="M66 92 v-14 a6 6 0 0 1 12 0 v14 Z" fill="#1b1a20"/>
+  <path d="M96 72 l10 -10 l10 10 v16 h-20 Z" fill="#b8ad8c"/>
+  <!-- Quartieri alti: torri e la torre Lete -->
+  <rect x="214" y="58" width="16" height="56" fill="#9a8cc4"/><rect x="234" y="40" width="18" height="74" fill="#b7a8e0"/><rect x="256" y="66" width="14" height="48" fill="#9a8cc4"/>
+  <path d="M238 40 l5 -14 l5 14 Z" fill="#ffd23f"/>
+  <rect x="300" y="176" width="22" height="14" fill="#d9cfe9"/><path d="M298 176 l13 -10 l13 10 Z" fill="#8c5644"/>
+  <rect x="345" y="186" width="22" height="14" fill="#d9cfe9"/><path d="M343 186 l13 -10 l13 10 Z" fill="#8c5644"/>
+  <!-- Centro: tempio e cupola -->
+  <path d="M182 232 l26 -16 l26 16 Z" fill="#efe6cc"/><rect x="184" y="232" width="48" height="4" fill="#efe6cc"/>
+  <g fill="#efe6cc"><rect x="187" y="236" width="5" height="20"/><rect x="197" y="236" width="5" height="20"/><rect x="207" y="236" width="5" height="20"/><rect x="217" y="236" width="5" height="20"/><rect x="226" y="236" width="5" height="20"/></g>
+  <rect x="182" y="256" width="52" height="5" fill="#efe6cc"/>
+  <path d="M176 190 a18 16 0 0 1 36 0 Z" fill="#7fa79a"/><rect x="176" y="190" width="36" height="16" fill="#efe6cc"/>
+  <!-- Stazione: tettoia -->
+  <path d="M44 252 Q74 232 104 252 Z" fill="#8f96a6"/><rect x="44" y="252" width="60" height="12" fill="#c9ced8"/>
+  <rect x="20" y="276" width="40" height="11" rx="3" fill="#ffd23f"/><rect x="62" y="276" width="34" height="11" rx="3" fill="#ffd23f"/>
+  <!-- Quartieri popolari: case fitte e panni stesi -->
+  <g fill="#b9735c"><rect x="300" y="312" width="16" height="22"/><rect x="318" y="306" width="14" height="28"/><rect x="334" y="316" width="16" height="18"/><rect x="352" y="308" width="14" height="26"/><rect x="368" y="314" width="16" height="20"/></g>
+  <path d="M302 340 Q340 352 382 340" fill="none" stroke="#000" stroke-width="1.5"/>
+  <g stroke-width="1.5"><rect x="314" y="342" width="7" height="9" fill="#2ee6ff"/><rect x="334" y="346" width="7" height="9" fill="#ff2e88"/><rect x="356" y="344" width="7" height="9" fill="#ffd23f"/></g>
+  <!-- Lungomare: ruota panoramica e palme -->
+  <circle cx="64" cy="414" r="20" fill="none" stroke-width="3"/><g stroke-width="1.5"><path d="M44 414 H84 M64 394 V434 M50 400 L78 428 M78 400 L50 428"/></g>
+  <path d="M56 446 L64 414 L72 446" fill="none"/>
+  <path d="M120 392 v-18" stroke-width="3"/><path d="M120 374 q-10 -2 -14 6 M120 374 q10 -2 14 6 M120 374 q-4 -10 -12 -10 M120 374 q4 -10 12 -10" fill="none" stroke="#2f5a3a" stroke-width="3"/>
+  <!-- Porto: moli, gru e container -->
+  <rect x="150" y="480" width="22" height="58" fill="#6d7d8c"/><rect x="200" y="486" width="22" height="64" fill="#6d7d8c"/><rect x="248" y="494" width="20" height="46" fill="#6d7d8c"/>
+  <path d="M182 470 V410 M182 412 H222 M182 412 L198 426 M214 412 V432" fill="none" stroke-width="3"/>
+  <path d="M244 478 V424 M244 426 H276 M244 426 L258 438" fill="none" stroke-width="3"/>
+  <g stroke-width="1.5"><rect x="150" y="430" width="14" height="9" fill="#ff8a00"/><rect x="166" y="430" width="14" height="9" fill="#2ee6ff"/><rect x="150" y="441" width="14" height="9" fill="#ff2e88"/><rect x="226" y="452" width="14" height="9" fill="#ffd23f"/><rect x="242" y="452" width="14" height="9" fill="#2ee6ff"/></g>
+  <!-- Isola del carcere -->
+  <path d="M42 520 q28 -18 58 0 q-6 16 -30 16 q-24 0 -28 -16 Z" fill="#3f5f7d"/><rect x="58" y="506" width="24" height="14" fill="#8a8f99"/>
+  <g stroke-width="1"><path d="M62 506 v14 M67 506 v14 M72 506 v14 M77 506 v14"/></g>
+  <!-- Cantiere dell'Ora Zero: ciminiere e lo scavo -->
+  <rect x="330" y="420" width="10" height="44" fill="#9a6a44"/><rect x="346" y="428" width="10" height="36" fill="#9a6a44"/>
+  <circle cx="335" cy="412" r="7" fill="#8a8a8a" stroke="none" opacity=".75"/><circle cx="351" cy="420" r="6" fill="#8a8a8a" stroke="none" opacity=".6"/>
+  <ellipse cx="350" cy="498" rx="30" ry="14" fill="#1b1a20"/><ellipse cx="350" cy="498" rx="24" ry="10" fill="url(#rift)" stroke="none"/></g>
+</svg>

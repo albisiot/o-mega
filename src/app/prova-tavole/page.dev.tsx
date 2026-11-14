@@ -8,12 +8,15 @@
 import { useEffect, useState } from "react";
 import type { ThreatModifier } from "@o-mega/game-engine";
 import { BossComic } from "@/components/boss-comic";
+import { CardDetailProvider } from "@/components/card-detail";
 import { EmergencyComic } from "@/components/emergency-comic";
 import { RoundComic, type ComicSide } from "@/components/round-comic";
+import { TripleMapReveal } from "@/components/triple-comic";
 import { abilityChips, chipsTotal } from "@/lib/ability-marks";
 import type { BossEntry } from "@/lib/boss-powers";
 import type { MatchCard } from "@/lib/match";
 import type { PowerNote } from "@/lib/round-powers";
+import type { TripleView } from "@/lib/triple";
 
 const RARITY = ["", "delta", "gamma", "beta", "alfa", "omega"];
 const card = (name: string, art: string, stats: Record<string, number>, faction = "heroes", rank = 3): MatchCard => ({
@@ -60,7 +63,7 @@ type RoundScene = {
   triple?: boolean;
   slots?: boolean;
 };
-type Scene = RoundScene | { kind: "boss" } | { kind: "emergency" };
+type Scene = RoundScene | { kind: "boss" } | { kind: "emergency" } | { kind: "triple-map" };
 
 const SCENES: Record<string, Scene> = {
   "tutto-insieme": {
@@ -174,6 +177,7 @@ const SCENES: Record<string, Scene> = {
     winner: "me",
   },
   "grande-minaccia": { kind: "boss" },
+  "triplo-mappa": { kind: "triple-map" },
   "emergenza": { kind: "emergency" },
 };
 
@@ -209,8 +213,50 @@ function bossEntry(side: "me" | "opponent", c: MatchCard, front: number, score: 
   };
 }
 
+/** An Allarme Triplo round on the map: three threats in three districts, one each way. */
+function tripleView(): TripleView {
+  const mine = [dredge, talos, plinth].map((c, i) => ({ ...c, instance_id: `m${i}`, drawn_round: 1, played: true }));
+  const theirs = [malleus, tifeo, mongi];
+  const play = (score: number) => ({ base: score, bonus: 0, score, highest: 10, auto_played: false });
+  const threat = (slot: number, name: string, level: number, district: string) => ({
+    slot, name, level, district, abilities: ["FOR", "RES", "ENE", "TEC", "VEL", "MAG"].slice(0, level), flavor: "", modifier: null,
+  });
+  return {
+    id: "prova", mode: "bot", format: "triple", bot_difficulty: "hard", status: "active", my_side: "a", current_round: 2, rounds_count: 3,
+    threats: [threat(0, "Rissa al porto", 1, "porto"), threat(1, "Spettro del museo", 2, "centro"), threat(2, "Gigante risvegliato", 5, "vulcano")],
+    points: { me: 2, opponent: 1 }, total_score: { me: 0, opponent: 0 }, result: null, end_reason: null, reward_coins: null, level_rewards: [],
+    server_now: new Date().toISOString(), opponent: null, my_deck: mine,
+    rounds: [
+      {
+        round: 1, deadline_at: "", resolved: true, hand: null, my_pending: null, opponent_has_chosen: false,
+        contests: [0, 1, 2].map((slot) => ({
+          slot,
+          winner: (["me", "opponent", "me"] as const)[slot],
+          my_play: { ...play([12, 14, 33][slot]), instance_id: `m${slot}`, definition_id: mine[slot].definition_id },
+          opponent_play: { ...theirs[slot], ...play([9, 17, 31][slot]) },
+        })),
+      },
+    ],
+  } as unknown as TripleView;
+}
+
 function SceneView({ id }: { id: string }) {
   const scene = SCENES[id];
+  if (scene?.kind === "triple-map") {
+    const view = tripleView();
+    return (
+      <TripleMapReveal
+        view={view}
+        round={view.rounds[0]}
+        rival="Bot Difficile"
+        abilities={[]}
+        finished={false}
+        onVerdict={() => {}}
+        onDone={() => window.setTimeout(markDone, 1500)}
+        onContinue={() => {}}
+      />
+    );
+  }
   if (!scene) return <p className="p-4">Scene: {Object.keys(SCENES).join(", ")}</p>;
   if (scene.kind === "boss") {
     return (
@@ -314,7 +360,11 @@ export default function LayoutCheckPage() {
     <div className="flex h-dvh flex-col bg-background">
       {/* As tall as a match's strip at the top, so the page gets the room it has in a match. */}
       <div className="h-16 shrink-0 bg-panel" />
-      {id !== null && <SceneView id={id} />}
+      {id !== null && (
+        <CardDetailProvider>
+          <SceneView id={id} />
+        </CardDetailProvider>
+      )}
     </div>
   );
 }

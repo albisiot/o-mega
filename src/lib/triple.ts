@@ -28,6 +28,8 @@ export type TripleThreat = {
   rarity?: ThreatRarity | null;
   /** Al buio: the abilities come once a round on this threat is resolved. */
   hidden?: boolean;
+  /** Where it lights up on the map of Nuova Megara (city-districts.ts); null: from its name. */
+  district?: string | null;
 };
 
 export type TripleContest = {

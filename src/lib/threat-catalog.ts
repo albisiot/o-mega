@@ -166,3 +166,15 @@ export async function saveThreatRarity(rarity: Pick<ThreatRarity, "code" | "name
   });
   if (error) throw error;
 }
+
+/** The district of every threat on the Allarme Triplo map, by code (null: placed from its name). */
+export async function fetchThreatDistricts(): Promise<Record<string, string | null>> {
+  const { data, error } = await getSupabase().rpc("admin_threat_districts");
+  if (error) throw error;
+  return (data ?? {}) as Record<string, string | null>;
+}
+
+export async function saveThreatDistrict(code: string, district: string | null): Promise<void> {
+  const { error } = await getSupabase().rpc("admin_set_threat_district", { p_code: code, p_district: district as string });
+  if (error) throw error;
+}

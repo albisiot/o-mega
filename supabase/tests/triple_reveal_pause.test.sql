@@ -26,7 +26,7 @@ declare
   v_match uuid;
   v_timer integer := public.config_int('triple.round_timer_seconds');
 begin
-  assert public.config_int('triple.reveal_pause_seconds') = 40, 'the longer pause';
+  assert public.config_int('triple.reveal_pause_seconds') = 50, 'the longer pause';
 
   v_match := public.match_create_triple_bot(v_a, 'hard', v_deck, v_bot, v_threats);
   assert (select bool_and(deadline_at = now() + make_interval(secs => public.config_int('match.reveal_pause_seconds') + v_timer))
@@ -36,7 +36,26 @@ begin
   assert (select count(*) from public.match_rounds where match_id = v_match and round between 4 and 6) = 3, 'round 2 opened';
   assert (select bool_and(deadline_at = now() + make_interval(secs => public.config_int('triple.reveal_pause_seconds') + v_timer))
           from public.match_rounds where match_id = v_match and round between 4 and 6), 'round 2: the pause for the pages';
+  -- Each threat comes with its district of Nuova Megara (20261114170000_threat_districts.sql).
+  assert (select array_agg(e ->> 'district' order by (e ->> 'slot')::integer)
+          from jsonb_array_elements(public.match_state_payload(v_match, 'a') -> 'threats') e)
+    = (select array_agg(t.district order by t.code) from public.threat_definitions t where t.id = any (v_threats)),
+    format('districts %s', public.match_state_payload(v_match, 'a') -> 'threats');
   perform public.finish_match(v_match, 'b', 'forfeit');
+end $$;
+
+-- Every threat of Nuova Megara has a district; only admins change one.
+do $$
+begin
+  assert not exists (
+    select 1 from public.threat_definitions where region = 'megara' and rarity_code is null and district is null
+  ), 'a threat of Nuova Megara without a district';
+  begin
+    perform public.admin_set_threat_district('T107', 'centro');
+    assert false, 'not an admin';
+  exception when others then
+    assert sqlerrm = 'not_admin', sqlerrm;
+  end;
 end $$;
 
 rollback;

@@ -85,10 +85,10 @@ async function sample({ minShare }) {
   const found = new Map();
   let doneAt = null;
   const started = performance.now();
-  while (performance.now() - started < 25000) {
+  while (performance.now() - started < 60000) {
     if (doneAt === null && document.documentElement.dataset.done) doneAt = performance.now();
     if (doneAt !== null && performance.now() - doneAt > 1500) break;
-    const root = document.querySelector(".comic-fx-layer")?.parentElement;
+    const root = document.body;
     const boxes = [];
     if (root) {
       const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -161,7 +161,7 @@ try {
     console.log(`\n${viewport.name}`);
     for (const scene of scenes) {
       await page.goto(`${base}/prova-tavole/?s=${scene}`);
-      await page.waitForSelector(".comic-fx-layer", { timeout: 60000 });
+      await page.waitForFunction(() => document.body.innerText.length > 0, null, { timeout: 60000 });
       const result = await page.evaluate(sample, { minShare: MIN_SHARE });
       const bad = result.pairs.filter((pair) => pair.run >= MIN_SAMPLES);
       failures += bad.length + (result.done ? 0 : 1);

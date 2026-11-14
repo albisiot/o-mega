@@ -1,22 +1,26 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
 import { abilityMalusOn, modifierPoints, type Threat } from "@o-mega/game-engine";
 import { useCardDetail } from "@/components/card-detail";
+import { prefersReducedMotion } from "@/components/comic-page";
 import { RoundComic } from "@/components/round-comic";
 import { balance } from "@/config/balance";
 import { abilityChips, chipsTotal } from "@/lib/ability-marks";
+import { withBasePath } from "@/lib/base-path";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
+import { DISTRICTS, MAP_HEIGHT, MAP_WIDTH, placeThreats } from "@/lib/city-districts";
 import { toCharacter, type MatchCard } from "@/lib/match";
 import { decisiveNote, tieBreakReason, tieWonByRelentless, wasNullified, wasSilenced } from "@/lib/round-powers";
 import { describeThreatModifier } from "@/lib/threat-modifiers";
-import type { TripleContest, TripleRound, TripleView } from "@/lib/triple";
+import { roundPoints, type TripleContest, type TripleRound, type TripleView } from "@/lib/triple";
 import { contestNotes } from "@/lib/triple-powers";
 
-// An Allarme Triplo round told like a classic one: each threat is a comic page of its own
-// (round-comic.tsx), with the same balloons, effects and verdict, one after the other. A page
-// moves on once it is over and there was time to read it, or at a tap; then `summary`, the
-// round's recap with its totals, closes the round. Nothing here decides anything.
+// An Allarme Triplo round told on the map of Nuova Megara: the three threats light up in
+// their districts, the camera moves to each in turn, the clash rises from its pin as a comic
+// page of its own (round-comic.tsx, the same balloons, effects and verdict), closes back into
+// the pin, which takes the colour of who won, and the whole map comes back with the totals.
+// Nothing here decides anything.
 
 const TITLES = { win: "Minaccia presa!", lose: "Minaccia persa", void: "Minaccia pari" };
 
@@ -168,46 +172,293 @@ function ContestComic({
   );
 }
 
+type Step =
+  | { kind: "overview" }
+  | { kind: "back" }
+  | { kind: "final" }
+  | { kind: "pan" | "page" | "close" | "settle"; i: number };
+
+/** The steps of a round on the map, in order. */
+function planSteps(count: number): Step[] {
+  const steps: Step[] = [{ kind: "overview" }];
+  for (let i = 0; i < count; i++) {
+    for (const kind of ["pan", "page", "close", "settle"] as const) steps.push({ kind, i });
+  }
+  // The camera goes back to the whole map, then the totals land.
+  steps.push({ kind: "back" }, { kind: "final" });
+  return steps;
+}
+
+/** How long each step lasts by itself (ms); the page waits for its comic instead. */
+const STEP_MS: Record<"overview" | "pan" | "close" | "settle" | "back", number> = { overview: 1400, pan: 850, close: 420, settle: 750, back: 850 };
+/** How close the camera comes to a threat. */
+const ZOOM = 1.8;
+const PIN_TONE = { me: "bg-comic-cyan", opponent: "bg-comic-magenta", none: "bg-[#cfc6ad]" } as const;
+const stampText = (winner: "me" | "opponent" | "none", rival: string) =>
+  winner === "me" ? "+1 a te" : winner === "opponent" ? `+1 a ${rival}` : "Pari";
+
 /**
- * The round's threats as comic pages, one after the other, then `summary`. Each page moves on
- * once its animation is over plus balance.triple.contestReadSeconds, or at a tap once it is over.
+ * The round on the map. A tap skips a camera move; on a page it skips to the end of the
+ * clash, then moves on. Once the totals are on the map, `onVerdict` and `onDone` (the time
+ * to read starts), and a tap is `onContinue`.
  */
-export function TripleRoundComics({
+export function TripleMapReveal({
   view,
   round,
   rival,
   abilities,
-  summary,
+  finished,
+  onVerdict,
+  onDone,
+  onContinue,
 }: {
   view: TripleView;
   round: TripleRound;
   rival: string;
   abilities: AbilityInfo[];
-  summary: ReactNode;
+  finished: boolean;
+  onVerdict: () => void;
+  onDone: () => void;
+  onContinue: () => void;
 }) {
   const contests = [...round.contests].sort((a, b) => a.slot - b.slot).filter((c) => c.my_play || c.opponent_play);
-  const [step, setStep] = useState(0);
-  const [doneStep, setDoneStep] = useState<number | null>(null);
-  useEffect(() => {
-    if (doneStep === null || doneStep !== step || step >= contests.length) return;
-    const timer = setTimeout(() => setStep((s) => Math.max(s, doneStep + 1)), balance.triple.contestReadSeconds * 1000);
-    return () => clearTimeout(timer);
-  }, [doneStep, step, contests.length]);
+  const threats = contests.map((c) => view.threats[c.slot]);
+  const placed = placeThreats(threats.map((t) => ({ name: t?.name ?? "", district: t?.district })));
+  const [steps] = useState(() => planSteps(contests.length));
+  const [at, setAt] = useState(0);
+  const [pageDone, setPageDone] = useState<number | null>(null);
+  // Once a page has risen over the whole map, the map underneath is hidden until it closes.
+  const [covered, setCovered] = useState<number | null>(null);
+  const step = steps[Math.min(at, steps.length - 1)];
+  const still = prefersReducedMotion();
+  const next = () => setAt((n) => Math.min(n + 1, steps.length - 1));
 
-  const contest = contests[step];
-  if (!contest) return <>{summary}</>;
+  // The stage's size, for where the map's points fall on screen.
+  const stage = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const element = stage.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => setSize({ w: element.clientWidth, h: element.clientHeight }));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  // The whole map fits the stage (object-fit: contain), the sea around it.
+  const scale = Math.min(size.w / MAP_WIDTH, size.h / MAP_HEIGHT) || 1;
+  const ox = (size.w - MAP_WIDTH * scale) / 2;
+  const oy = (size.h - MAP_HEIGHT * scale) / 2;
+  const onMap = (x: number, y: number) => ({ left: x * scale + ox, top: y * scale + oy });
+
+  // Steps that last by themselves move on by themselves.
+  useEffect(() => {
+    if (step.kind === "page" || step.kind === "final") return;
+    const ms = STEP_MS[step.kind];
+    const timer = setTimeout(next, still ? Math.min(ms, 400) : ms);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [at]);
+  // Once the page has risen (0.45 s), the map underneath it is hidden.
+  useEffect(() => {
+    if (step.kind !== "page") return;
+    const page = step.i;
+    const timer = setTimeout(() => setCovered(page), still ? 200 : 480);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [at]);
+  // A page moves on once it is over and there was time to read it.
+  useEffect(() => {
+    if (step.kind !== "page" || pageDone !== step.i) return;
+    const timer = setTimeout(next, balance.triple.contestReadSeconds * 1000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [at, pageDone]);
+  // The totals are on the map: the strip may show them, the time to read starts.
+  const landed = step.kind === "final";
+  const tellVerdict = useEffectEvent(() => {
+    onVerdict();
+    onDone();
+  });
+  useEffect(() => {
+    if (landed) tellVerdict();
+  }, [landed]);
+
+  // Where the camera looks: the whole map, or a threat in the middle of the screen.
+  const focus = step.kind === "overview" || step.kind === "back" || step.kind === "final" ? null : step.i;
+  const focusSpot = focus === null ? null : placed[focus];
+  // The threat as near the middle as the map allows: the camera never shows past its edges.
+  const camera: CSSProperties = (() => {
+    if (!focusSpot || still) return { transform: "none" };
+    const p = onMap(focusSpot.x, focusSpot.y);
+    // Where the zoomed map is smaller than the screen, it stays in the middle.
+    const clamp = (value: number, min: number, max: number) => (min > max ? (min + max) / 2 : Math.min(max, Math.max(min, value)));
+    const tx = clamp(size.w / 2 - p.left * ZOOM, size.w - (ox + MAP_WIDTH * scale) * ZOOM, -ox * ZOOM);
+    const ty = clamp(size.h / 2 - p.top * ZOOM, size.h - (oy + MAP_HEIGHT * scale) * ZOOM, -oy * ZOOM);
+    return { transform: `translate(${tx}px, ${ty}px) scale(${ZOOM})` };
+  })();
+  // How many threats are settled, and so show who won.
+  const settledUpTo =
+    step.kind === "final" || step.kind === "back" ? contests.length : step.kind === "settle" ? step.i + 1 : step.kind === "overview" ? 0 : step.i;
+
+  const points = roundPoints(round);
+  const totals = view.rounds
+    .filter((r) => r.resolved && r.round <= round.round)
+    .map(roundPoints)
+    .reduce((sum, p) => ({ me: sum.me + p.me, opponent: sum.opponent + p.opponent }), { me: 0, opponent: 0 });
+  const auto = contests.some((c) => c.my_play?.auto_played);
+  const theirAuto = contests.some((c) => c.opponent_play?.auto_played);
+  const omega = onMap(350, 498);
+  const cityName = onMap(8, 584);
+
   return (
-    <ContestComic
-      key={`${round.round}-${contest.slot}`}
-      view={view}
-      round={round}
-      contest={contest}
-      position={step}
-      count={contests.length}
-      rival={rival}
-      abilities={abilities}
-      onContinue={() => setStep((s) => Math.max(s, step + 1))}
-      onDone={() => setDoneStep(step)}
-    />
+    <div
+      ref={stage}
+      role="button"
+      tabIndex={0}
+      aria-label={`Round ${round.round} sulla mappa di Nuova Megara: tu ${points.me}, ${rival} ${points.opponent}`}
+      className="relative mt-1 min-h-0 flex-1 cursor-pointer overflow-hidden bg-[#1d4a63] bg-[repeating-linear-gradient(170deg,transparent_0_12px,rgb(47_106_135/0.35)_12px_14px)]"
+      onClick={() => {
+        if (step.kind === "page") return; // the page has its own taps
+        if (step.kind === "final") onContinue();
+        else next();
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        if (step.kind === "final") onContinue();
+        else if (step.kind !== "page") next();
+      }}
+    >
+      <div
+        className={`absolute inset-0 origin-top-left ${step.kind === "page" && covered === step.i ? "invisible" : ""}`}
+        style={{ ...camera, transition: still ? "none" : "transform 0.8s cubic-bezier(0.5, 0, 0.2, 1)" }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={withBasePath("/world/mappa-megara.svg")} alt="" className="absolute inset-0 h-full w-full object-contain" />
+        <span
+          aria-hidden
+          className="absolute -translate-x-1/2 -translate-y-1/2 font-display leading-none text-black"
+          style={{ left: omega.left, top: omega.top, fontSize: 14 * scale }}
+        >
+          Ω
+        </span>
+        {DISTRICTS.map((district) => {
+          const p = onMap(district.label[0], district.label[1]);
+          return (
+            <span
+              key={district.id}
+              aria-hidden
+              className="absolute -translate-y-full whitespace-nowrap border-2 border-black bg-white font-display uppercase leading-none text-black"
+              style={{ left: p.left, top: p.top, fontSize: 11 * scale, padding: `${2 * scale}px ${4 * scale}px` }}
+            >
+              {district.name}
+            </span>
+          );
+        })}
+        <span
+          aria-hidden
+          className={`absolute -rotate-[4deg] whitespace-nowrap bg-black px-2 font-sfx tracking-wide text-comic-yellow transition-opacity duration-300 ${
+            landed ? "opacity-0" : ""
+          }`}
+          style={{ left: cityName.left, top: cityName.top - 26 * scale, fontSize: 22 * scale, lineHeight: `${28 * scale}px` }}
+        >
+          Nuova Megara
+        </span>
+        {contests.map((contest, i) => {
+          const spot = placed[i];
+          const threat = threats[i];
+          if (!spot || !threat) return null;
+          const done = i < settledUpTo;
+          const winner = contest.winner ?? "none";
+          const active = focus === i && !done;
+          return (
+            <div
+              key={contest.slot}
+              className={`absolute z-[2] flex -translate-y-full flex-col gap-0.5 ${
+                spot.x > MAP_WIDTH * 0.72 ? "-translate-x-[calc(100%-16px)] items-end" : spot.x < MAP_WIDTH * 0.28 ? "-translate-x-[16px] items-start" : "-translate-x-1/2 items-center"
+              }`}
+              style={onMap(spot.x, spot.y)}
+            >
+              <span
+                className={`max-w-[150px] border-2 border-black bg-white px-1.5 py-0.5 text-center text-black shadow-[2px_2px_0_#000] ${
+                  active ? "outline outline-2 outline-comic-yellow" : ""
+                }`}
+              >
+                <span className="block text-[8px] font-extrabold uppercase leading-[10px] tracking-wide">
+                  Minaccia {i + 1} · Lv {threat.level}
+                </span>
+                <span className="block truncate font-display text-[12px] uppercase leading-[14px]">{threat.name}</span>
+              </span>
+              {/* The pin, with the result stamped beside it on the side of the map with room. */}
+              <span className="relative">
+                <span
+                  className={`grid h-7 w-7 -rotate-45 place-items-center rounded-[50%_50%_50%_0] border-[3px] border-black transition-colors duration-300 ${
+                    done ? PIN_TONE[winner] : "bg-comic-yellow"
+                  }`}
+                  style={threat.rarity ? { boxShadow: `0 0 0 3px ${threat.rarity.color}` } : undefined}
+                >
+                  <span className="rotate-45 font-display text-[14px] leading-none text-black">{i + 1}</span>
+                </span>
+                {done && (
+                  <span
+                    className={`comic-stamp absolute top-0.5 -rotate-6 whitespace-nowrap border-[3px] border-black px-1 font-display text-[13px] uppercase leading-[18px] shadow-[2px_2px_0_#000] ${
+                      spot.x > MAP_WIDTH * 0.6 ? "right-[calc(100%+4px)]" : "left-[calc(100%+4px)]"
+                    } ${winner === "me" ? "bg-comic-cyan text-black" : winner === "opponent" ? "bg-comic-magenta text-black" : "bg-black text-comic-yellow"}`}
+                  >
+                    {stampText(winner, rival)}
+                  </span>
+                )}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {(step.kind === "page" || step.kind === "close") && contests[step.i] && (
+        <div
+          key={`page-${step.i}`}
+          className="absolute inset-0 z-20 flex flex-col bg-background"
+
+          style={{
+            animation: still
+              ? "panel-fade 0.2s ease-out both"
+              : step.kind === "close"
+                ? "map-page-out 0.4s ease-in both"
+                : "map-page-in 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) both",
+          }}
+        >
+          <ContestComic
+            view={view}
+            round={round}
+            contest={contests[step.i]}
+            position={step.i}
+            count={contests.length}
+            rival={rival}
+            abilities={abilities}
+            onContinue={() => {
+              if (step.kind === "page") next();
+            }}
+            onDone={() => setPageDone(step.i)}
+          />
+        </div>
+      )}
+
+      <div
+        className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-1 px-3 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-8 transition-opacity duration-300 ${
+          landed ? "opacity-100" : "opacity-0"
+        }`}
+        style={{ background: "linear-gradient(transparent, rgb(0 0 0 / 0.78) 40%)" }}
+      >
+        <p className="-skew-x-8 bg-black px-3 py-1 font-display text-2xl uppercase text-comic-yellow">
+          Round {points.me}–{points.opponent} · Totale {totals.me}–{totals.opponent}
+        </p>
+        {auto && <p className="text-xs font-extrabold text-foreground">Tempo scaduto: il server ha piazzato le tue carte a caso.</p>}
+        {theirAuto && <p className="text-xs font-extrabold text-foreground">{rival} non ha piazzato in tempo.</p>}
+        <p className="text-xs font-extrabold uppercase tracking-wide text-foreground">{finished ? "Tocca per il risultato" : "Tocca per continuare"}</p>
+      </div>
+      {!landed && step.kind !== "page" && step.kind !== "close" && (
+        <p className="pointer-events-none absolute inset-x-0 bottom-2 z-10 text-center text-[10px] font-extrabold uppercase tracking-widest text-foreground/80">
+          Tocca per andare avanti
+        </p>
+      )}
+    </div>
   );
 }

@@ -115,7 +115,7 @@ export const balance = {
      * Time a round's result (a comic page per threat, then the recap) may stay before the next
      * timer starts, from the second round on; the pages leave earlier once they are over.
      */
-    revealPauseSeconds: 40,
+    revealPauseSeconds: 50,
     /** On each threat's page: once its animation is over, this time to read it (client only). */
     contestReadSeconds: 2.5,
   },

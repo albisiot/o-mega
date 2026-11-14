@@ -957,3 +957,13 @@ html.screen-locked body {
     display: none;
   }
 }
+
+/* Allarme Triplo map (triple-comic.tsx): the clash rises from its pin and closes back into it. */
+@keyframes map-page-in {
+  from { opacity: 0; transform: scale(0.08); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes map-page-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.08); }
+}
