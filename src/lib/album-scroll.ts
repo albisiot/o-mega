@@ -34,3 +34,24 @@ export function clearAlbumScroll() {
     // Nothing to clean up.
   }
 }
+
+// The owned characters the album showed, in its order and with its filters, when a card was
+// opened: the card's page browses them with a swipe. Kept with the scroll, for this visit.
+const ORDER_KEY = "o-mega.album-order";
+
+export function saveAlbumOrder(ids: readonly string[]) {
+  try {
+    sessionStorage.setItem(ORDER_KEY, JSON.stringify(ids));
+  } catch {
+    // Browsing is a convenience: without the list the card simply stands alone.
+  }
+}
+
+export function savedAlbumOrder(): string[] {
+  try {
+    const value: unknown = JSON.parse(sessionStorage.getItem(ORDER_KEY) ?? "[]");
+    return Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}

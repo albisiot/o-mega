@@ -13,7 +13,14 @@ import {
 import { CardName } from "@/components/card-name";
 import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { CardArt, Silhouette, VariantTag } from "@/components/card-view";
-import { ALBUM_SCROLL_BOX, albumScrollBox, clearAlbumScroll, saveAlbumScroll, savedAlbumScroll } from "@/lib/album-scroll";
+import {
+  ALBUM_SCROLL_BOX,
+  albumScrollBox,
+  clearAlbumScroll,
+  saveAlbumOrder,
+  saveAlbumScroll,
+  savedAlbumScroll,
+} from "@/lib/album-scroll";
 import { cardEffects } from "@/lib/card-effects";
 import { applyCardListView, groupCardList, sortAbilityOf } from "@/lib/card-list";
 import type { AbilityInfo } from "@/lib/catalog";
@@ -98,6 +105,16 @@ export function Album({
     });
     return groupCardList(sorted, view.sort, traits);
   }, [catalog, owned, ownership, view, traits]);
+
+  // What a card's page swipes through: the owned characters shown, in the order shown.
+  const browseIds = useMemo(
+    () => groups.flatMap((group) => group.cards.filter((card) => owned.has(card.id)).map((card) => card.id)),
+    [groups, owned],
+  );
+  const openCard = () => {
+    saveAlbumScroll();
+    saveAlbumOrder(browseIds);
+  };
 
   const rarities = useMemo(
     () => [...new Map(catalog.map((card) => [card.rarity.rank, card.rarity])).values()].sort((a, b) => a.rank - b.rank),
@@ -185,6 +202,7 @@ export function Album({
                       // Before the first visit nothing is new: an existing player's whole album would be.
                       isNew={seenBefore !== null && owned.has(card.id) && !seenBefore.has(card.id)}
                       sortAbility={sortAbility}
+                      onOpen={openCard}
                     />
                   </li>
                 ))}
@@ -202,17 +220,19 @@ function AlbumTile({
   owned,
   isNew,
   sortAbility,
+  onOpen,
 }: {
   card: CatalogCard;
   owned: OwnedSummary | null;
   isNew: boolean;
   sortAbility: string | null;
+  onOpen: () => void;
 }) {
   const number = card.code.replace(/^\D+/, "");
   return (
     <Link
       href={`/carta/?id=${card.id}`}
-      onClick={saveAlbumScroll}
+      onClick={onOpen}
       className="relative flex flex-col rounded-[7px] p-1"
       style={{ background: owned ? rarityFrame(card.rarity) : "var(--panel-raised)" }}
     >
