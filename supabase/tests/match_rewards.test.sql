@@ -51,8 +51,10 @@ reset role;
 do $$
 declare
   v_p uuid := '00000000-0000-4000-8000-0000000000f2';
-  v_team uuid[] := (select array_agg(s.id) from (
-    select id from public.card_instances where owner_id = v_p order by acquired_at, id limit 5) s);
+  -- One card per character: the starter cards can repeat one, and a team cannot.
+  v_team uuid[] := (select array_agg(s.id order by s.definition_id) from (
+    select distinct on (definition_id) id, definition_id from public.card_instances
+    where owner_id = v_p order by definition_id, acquired_at, id limit 5) s);
   v_bot uuid[] := (select array_agg(s.id) from (select id from public.card_definitions order by code limit 5) s);
   v_threats uuid[];
   v_match uuid;
@@ -224,8 +226,10 @@ delete from public.emergency_days;
 do $$
 declare
   v_p uuid := '00000000-0000-4000-8000-0000000000f2';
-  v_squad uuid[] := (select array_agg(s.id) from (
-    select id from public.card_instances where owner_id = v_p order by acquired_at, id limit 8) s);
+  -- One card per character: the starter cards can repeat one, and a squad cannot.
+  v_squad uuid[] := (select array_agg(s.id order by s.definition_id) from (
+    select distinct on (definition_id) id, definition_id from public.card_instances
+    where owner_id = v_p order by definition_id, acquired_at, id limit 8) s);
   v_threats uuid[];
   v_xp integer := (select xp from public.profiles where id = v_p);
   v_state jsonb;
