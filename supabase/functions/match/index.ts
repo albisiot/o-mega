@@ -629,6 +629,8 @@ function recordTripleRound(
         score: play.total,
         highest: play.highest,
         auto_played: play.autoPlayed,
+        // Where the bonus comes from, for the result page: the database checks they add up.
+        ...(play.parts ? { parts: play.parts } : {}),
       };
     });
   return admin.rpc("match_record_triple_round_state", {
@@ -721,6 +723,8 @@ function recordBossTurn(
       highest: play.highest,
       auto_played: play.autoPlayed,
       points: play.points,
+      // Where the bonus comes from, for the result page: the database checks they add up.
+      ...(play.parts ? { parts: play.parts } : {}),
     };
   };
   return admin.rpc("match_record_boss_turn_state", {
@@ -1290,6 +1294,8 @@ async function playEmergency(userId: string, body: Record<string, unknown>) {
       p_bonus: outcome.score.bonus,
       p_score: outcome.score.total,
       p_required: outcome.required,
+      // Where the bonus comes from, for the result page: the database checks they add up.
+      p_parts: outcome.score.parts ?? null,
     }),
   );
 }

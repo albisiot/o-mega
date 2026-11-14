@@ -57,3 +57,12 @@ describe("emergencyPowerNotes", () => {
     expect(emergencyPowerNotes(card(null), play(2, true), before)).toEqual([{ name: "Riscossa", effect: "+2", active: true, points: 2 }]);
   });
 });
+
+describe("emergencyPowerNotes with the server's parts", () => {
+  it("takes the power's points from the parts, including a rare threat's rule points", () => {
+    // Ultimi i primi gave +6: the bonus alone would credit it to the power.
+    const parts = { power: 3, carried: 0, pack: 0, modifier: 6, floor: 0 };
+    const notes = emergencyPowerNotes(power("level_bonus", "Terreno favorevole", { bonus: 3, max_level: 5 }), { ...play(9, true), parts }, [], true);
+    expect(notes).toEqual([{ name: "Terreno favorevole", effect: "+3", active: true, points: 3, code: "level_bonus", source: "own" }]);
+  });
+});

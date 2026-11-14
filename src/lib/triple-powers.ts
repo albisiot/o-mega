@@ -44,7 +44,8 @@ export function contestNotes(view: TripleView, round: TripleRound, contest: Trip
     play,
     { level: threat.level, abilities: threat.abilities, modifier: threat.modifier },
     {
-      carried: carried.points,
+      // The server's parts, when it sent them, say exactly what came from where.
+      carried: play.parts?.carried ?? carried.points,
       carriedFrom: carried.from,
       carriedCode: carried.code,
       lost: contest.winner === other,
@@ -54,6 +55,8 @@ export function contestNotes(view: TripleView, round: TripleRound, contest: Trip
       opponentShielded: rivalActing !== null && immuneToSabotage(rivalActing),
       opponentSabotage: rivalActing ? abilityMalusFrom(rivalActing) : 0,
       opponentHasPower: Boolean(rival?.power),
+      pack: play.parts?.pack,
+      parts: play.parts,
     },
     true,
   );

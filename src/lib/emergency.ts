@@ -1,4 +1,4 @@
-import type { ThreatModifier } from "@o-mega/game-engine";
+import type { ScoreParts, ThreatModifier } from "@o-mega/game-engine";
 import { invokeFunction, type MatchCard } from "@/lib/match";
 import type { ThreatRarity } from "@/lib/threat-rarity";
 import { getSupabase } from "@/lib/supabase/client";
@@ -26,6 +26,8 @@ export type EmergencyPlay = {
   definition_id: string;
   base: number;
   bonus: number;
+  /** Where the bonus comes from, as the server counted it; missing for plays stored before it did. */
+  parts?: ScoreParts | null;
   score: number;
   required: number;
   passed: boolean;

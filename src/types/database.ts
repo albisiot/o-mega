@@ -873,6 +873,7 @@ export type Database = {
           card_instance_id: string
           created_at: string
           definition_id: string
+          parts: Json | null
           passed: boolean
           required_score: number
           round: number
@@ -886,6 +887,7 @@ export type Database = {
           card_instance_id: string
           created_at?: string
           definition_id: string
+          parts?: Json | null
           passed: boolean
           required_score: number
           round: number
@@ -899,6 +901,7 @@ export type Database = {
           card_instance_id?: string
           created_at?: string
           definition_id?: string
+          parts?: Json | null
           passed?: boolean
           required_score?: number
           round?: number
@@ -2960,6 +2963,7 @@ export type Database = {
           p_base: number
           p_bonus: number
           p_card_instance_id: string
+          p_parts?: Json
           p_required: number
           p_round: number
           p_score: number
@@ -3658,6 +3662,10 @@ export type Database = {
       with_rare_threats: { Args: { p_threat_ids: string[] }; Returns: string[] }
       with_rare_triple_rules: {
         Args: { p_match_id: string; p_payload: Json }
+        Returns: Json
+      }
+      with_triple_play_parts: {
+        Args: { p_match_id: string; p_payload: Json; p_side: string }
         Returns: Json
       }
     }

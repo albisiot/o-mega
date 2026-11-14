@@ -103,6 +103,8 @@ export function bossTurnEntries(
     const lastCard = last ? cardOf(view, side, last.plays[side].characterId) : null;
     const holder = fromSide(record.holders[play.front]);
     const nullified = Boolean(card?.power) && acting !== undefined && acting.power === null;
+    // The server's parts, when it sent them, say exactly what came from where.
+    const parts = (bossSide === "me" ? round.my_play : round.opponent_play)?.parts ?? null;
 
     const notes =
       card && acting
@@ -111,7 +113,7 @@ export function bossTurnEntries(
             { bonus: play.bonus },
             { level: threat.level, abilities: threat.abilities, modifier: null },
             {
-              carried: context.carriedBonus ?? 0,
+              carried: parts?.carried ?? context.carriedBonus ?? 0,
               carriedFrom: context.carriedBonus ? lastCard?.power?.name : undefined,
               carriedCode: context.carriedBonus ? lastCard?.power?.code : undefined,
               lost: holder !== null && holder !== bossSide,
@@ -126,7 +128,8 @@ export function bossTurnEntries(
               opponentHasPower: Boolean(opposing?.power ?? facingCharacter?.power),
               opponentShielded: opposing !== undefined && immuneToSabotage(opposing),
               opponentSabotage: opposing ? abilityMalusFrom(opposing) : 0,
-              pack: packBonus(acting, context.played ?? []),
+              pack: parts?.pack ?? packBonus(acting, context.played ?? []),
+              parts,
               standing: { roundsWon: context.roundsWon ?? 0, opponentRoundsWon: context.opponentRoundsWon ?? 0 },
             },
             annotate,

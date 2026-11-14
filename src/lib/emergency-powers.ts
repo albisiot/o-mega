@@ -30,7 +30,7 @@ const NEED_OPPONENT = new Set([
  */
 export function emergencyPowerNotes(
   card: MatchCard,
-  play: Pick<EmergencyPlay, "round" | "level" | "threat" | "bonus" | "passed">,
+  play: Pick<EmergencyPlay, "round" | "level" | "threat" | "bonus" | "passed" | "parts">,
   /** The plays before this one, in order, each with its card. */
   before: { card: MatchCard; passed: boolean }[],
   /** Adds each note's power code and source, for the page's visual families (round-powers.ts). */
@@ -43,13 +43,15 @@ export function emergencyPowerNotes(
     { bonus: play.bonus },
     { level: play.level, abilities: play.threat.abilities, modifier: null },
     {
-      carried: carried.points,
+      // The server's parts, when it sent them, say exactly what came from where.
+      carried: play.parts?.carried ?? carried.points,
       carriedFrom: carried.from,
       carriedCode: carried.code,
       lost: !play.passed,
       won: play.passed,
       wonTie: false,
-      pack: packBonus(
+      parts: play.parts,
+      pack: play.parts?.pack ?? packBonus(
         toCharacter(card, card.definition_id),
         before.map((b) => toCharacter(b.card, b.card.definition_id)),
       ),

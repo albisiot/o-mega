@@ -66,3 +66,13 @@ describe("contestNotes", () => {
     expect(notes[0]).toMatchObject({ name: "Sabotatore", active: true, code: "sabotage" });
   });
 });
+
+describe("contestNotes with the server's parts", () => {
+  it("takes the points and the carried bonus from the parts", () => {
+    const parts = { power: 6, carried: 0, pack: 0, modifier: 0, floor: 0 };
+    const first = round(1, [{ ...contest(0, opener, rival, 16, 10, 6), my_play: { ...contest(0, opener, rival, 16, 10, 6).my_play!, parts } }]);
+    expect(contestNotes(view([first]), first, first.contests[0], "me")).toEqual([
+      { name: "Apripista", effect: "+6", active: true, points: 6, code: "opener", source: "own" },
+    ]);
+  });
+});
