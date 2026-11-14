@@ -129,33 +129,33 @@ function playBeat(beat: Beat, entries: Record<BossSide, BossEntry>, fx: ComicFx)
     case "strike":
     case "stop":
       fx.bolt(self, `${side}-facing`);
-      fx.word(`${side}-facing`, powerSfx(note.code), family === "stop" ? "stop" : "harm", { dy: -30 });
+      fx.word(`${side}-facing`, powerSfx(note.code), family === "stop" ? "stop" : "harm", { size: 28 });
       fx.shake(`${side}-facing`, 6);
       playSound(family === "stop" ? "stop" : "down");
       return;
     case "shield":
-      fx.word(self, powerSfx(note.code), "shield", { dy: -26 });
+      fx.word(self, powerSfx(note.code), "shield", { above: true, size: 26, dx: side === "me" ? 40 : -40 });
       if (note.points) fx.token(self, score, points, "shield", { arc: 20 });
       playSound("shield");
       return;
     case "tiebreak":
-      fx.word(score, powerSfx(note.code), "tie", { dx: side === "me" ? 50 : -50 });
+      fx.word(score, powerSfx(note.code), "tie", { dx: side === "me" ? 64 : -64, size: 30 });
       playSound("hit");
       return;
     case "reveal":
     case "copy":
-      fx.word(self, powerSfx(note.code), "info", { dy: -26 });
+      fx.word(self, powerSfx(note.code), "info", { above: true, size: 26, dx: side === "me" ? 40 : -40 });
       playSound("reveal");
       return;
     case "forward":
-      fx.word(self, powerSfx(note.code), "forward", { dy: -26 });
+      fx.word(self, powerSfx(note.code), "forward", { above: true, size: 26, dx: side === "me" ? 40 : -40 });
       playSound("whoosh");
       return;
     default: {
       const source = chargeSource(note.code);
       fx.token(source === "threat" ? "fronts" : source === "rival" ? `${side}-facing` : `${side}-label`, score, points, "help");
       window.setTimeout(() => {
-        fx.word(score, powerSfx(note.code), "help", { dx: side === "me" ? 50 : -50 });
+        fx.word(score, powerSfx(note.code), "help", { dx: side === "me" ? 64 : -64, size: 30 });
         fx.sparks(score);
       }, paced(480));
       playSound("up");
@@ -298,7 +298,10 @@ function EntryPanel({
           {note.text}
         </span>
       )}
-      <Crack />
+      {/* The crack splits the card's art, not the front's name and abilities beside it. */}
+      <div className={`pointer-events-none absolute inset-y-0 w-[40%] ${mine ? "left-0" : "right-0"}`}>
+        <Crack />
+      </div>
     </section>
   );
 }

@@ -108,7 +108,7 @@ function playBeat(beat: Beat, props: EmergencyComicProps, fx: ComicFx) {
   if (beat.kind === "target") {
     const word = ruleSfx(props.rule);
     if (props.rule) playSound("threat");
-    if (word) fx.word("rule", word, "rule", { dx: 80, dy: -30, size: 30 });
+    if (word) fx.word("rule", word, "rule", { above: true, dx: 80, size: 30 });
     (props.chips ?? [])
       .map((chip, index) => ({ chip, index }))
       .filter(({ chip }) => chip.mark)
@@ -128,7 +128,7 @@ function playBeat(beat: Beat, props: EmergencyComicProps, fx: ComicFx) {
     props.notes.forEach((note, index) => {
       if (note.active && note.timing === "after") {
         fx.token("panel", "counter", note.effect?.split(" ")[0] ?? "", "forward", { arc: 60, duration: 700 });
-        fx.word(`note-${index}`, powerSfx(note.code), "forward", { dy: -30 });
+        fx.word(`note-${index}`, powerSfx(note.code), "forward", { above: true, size: 30, dx: 50 });
       }
     });
     playSound("whoosh");
@@ -152,7 +152,7 @@ function playBeat(beat: Beat, props: EmergencyComicProps, fx: ComicFx) {
     return;
   }
   if (family === "reveal" || family === "copy") {
-    fx.word(`note-${beat.index}`, powerSfx(note.code), "info", { dy: -30 });
+    fx.word(`note-${beat.index}`, powerSfx(note.code), "info", { above: true, size: 30, dx: 50 });
     playSound("reveal");
     return;
   }
@@ -160,7 +160,7 @@ function playBeat(beat: Beat, props: EmergencyComicProps, fx: ComicFx) {
   const source = chargeSource(note.code);
   fx.token(source === "threat" ? "threat-abs" : source === "round" ? "counter" : "name", "score", points, help ? "help" : "harm");
   window.setTimeout(() => {
-    fx.word("score", powerSfx(note.code), help ? "help" : "harm", { dx: -56, dy: 8 });
+    fx.word("score", powerSfx(note.code), help ? "help" : "harm", { dx: -76, dy: -4, size: 34 });
     fx.sparks("score", help ? "help" : "harm");
   }, paced(480));
   playSound(help ? "up" : "down");

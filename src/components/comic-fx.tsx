@@ -19,7 +19,11 @@ export type ComicFx = {
   /** A jagged bolt between two anchors. */
   bolt: (from: Anchor, to: Anchor, tone?: FxTone) => void;
   /** A sound effect word stamped on an anchor, that fades after a moment. */
-  word: (at: Anchor, text: string, tone: FxTone, options?: { dx?: number; dy?: number; size?: number }) => void;
+  /**
+   * `above`: the word sits over the anchor's top edge instead of its centre, so a balloon's
+   * text stays readable under it.
+   */
+  word: (at: Anchor, text: string, tone: FxTone, options?: { dx?: number; dy?: number; size?: number; above?: boolean }) => void;
   /** A ring of sparks around an anchor. */
   sparks: (at: Anchor, tone?: FxTone) => void;
   /** A short shake of an anchor. */
@@ -130,6 +134,11 @@ export function comicFx(layerElement: HTMLDivElement | null): ComicFx {
       const anchor = find(at);
       if (!getLayer() || !anchor) return;
       const point = centre(anchor);
+      if (options.above) {
+        // From the anchor's own height, not its box on screen: a balloon still popping in is scaled down.
+        const height = anchor instanceof HTMLElement ? anchor.offsetHeight : anchor.getBoundingClientRect().height;
+        point.y = point.y - height / 2 - (options.size ?? 40) / 2;
+      }
       const word = add("span", `fx-word fx-${tone}`, text);
       word.style.left = `${point.x + (options.dx ?? 0)}px`;
       word.style.top = `${point.y + (options.dy ?? 0)}px`;

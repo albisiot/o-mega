@@ -839,7 +839,8 @@ function ContestPanel({
   );
   return (
     <li className="relative flex flex-col gap-1 border-[3px] border-black bg-white px-1.5 pb-1.5 pt-1 text-black" style={comicIn(delay)}>
-      <p className="flex items-baseline justify-between gap-2">
+      {/* The level stays next to the name, clear of the sticker that says who took the point. */}
+      <p className="flex items-baseline gap-2 pr-[124px]">
         <span className="truncate font-display text-[17px] uppercase leading-5">{threat?.name}</span>
         <span className="shrink-0 text-[10px] font-extrabold">Lv {threat?.level}</span>
       </p>
@@ -850,7 +851,7 @@ function ContestPanel({
       </div>
       {tie && <p className="text-center text-[11px] font-bold leading-[14px]">Pari: {tie}.</p>}
       <span
-        className={`absolute -right-2 -top-3 -rotate-6 px-1.5 font-display text-lg uppercase leading-6 ${
+        className={`absolute -right-2 -top-3 max-w-[124px] -rotate-6 truncate px-1.5 font-display text-lg uppercase leading-6 ${
           won ? "bg-comic-cyan" : lost ? "bg-comic-orange" : "bg-black text-comic-yellow"
         }`}
         style={comicStamp(delay + 0.35)}

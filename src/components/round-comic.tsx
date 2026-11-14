@@ -209,7 +209,7 @@ function playBeat(beat: Beat, props: RoundComicProps, fx: ComicFx) {
     case "twist": {
       playSound("threat");
       const word = ruleSfx(props.rule);
-      if (word) fx.word("rule", word, rulePageEffect(props.rule) === "frost" ? "ice" : "rule", { dx: 90, dy: -34, size: 32 });
+      if (word) fx.word("rule", word, rulePageEffect(props.rule) === "frost" ? "ice" : "rule", { above: true, dx: 90, size: 30 });
       for (const side of SIDES) {
         (props[side].chips ?? [])
           .map((chip, index) => ({ chip, index }))
@@ -261,7 +261,7 @@ function playNote(side: ComicKey, index: number, props: RoundComicProps, fx: Com
       const from = source === "threat" ? "threat-abs" : source === "round" ? "round-cap" : source === "rival" ? `${rival}-panel` : `${side}-name`;
       fx.token(from, score, points, help ? "help" : "harm");
       window.setTimeout(() => {
-        fx.word(score, powerSfx(note.code), help ? "help" : "harm", { dx: side === "me" ? 56 : -56, dy: 8 });
+        fx.word(score, powerSfx(note.code), help ? "help" : "harm", { dx: side === "me" ? 76 : -76, dy: -4, size: 34 });
         fx.sparks(score, help ? "help" : "harm");
       }, paced(480));
       playSound(help ? "up" : "down");
@@ -269,24 +269,24 @@ function playNote(side: ComicKey, index: number, props: RoundComicProps, fx: Com
     }
     case "strike":
       fx.bolt(self, `${rival}-chips`);
-      fx.word(`${rival}-chips`, powerSfx(note.code), "harm", { dy: -44 });
+      fx.word(`${rival}-chips`, powerSfx(note.code), "harm", { above: true, size: 34, dy: -28 });
       fx.shake(`${rival}-panel`, 7);
       playSound("down");
       return;
     case "shield":
       if (note.code === "reflect") {
         fx.bolt(`${side}-shield`, `${rival}-chips`, "shield");
-        fx.word(`${side}-shield`, powerSfx(note.code), "shield", { dy: -40 });
+        fx.word(`${side}-shield`, powerSfx(note.code), "shield", { above: true, size: 32 });
         fx.shake(`${rival}-panel`, 6);
       } else {
         fx.bolt(`${rival}-panel`, `${side}-shield`);
-        fx.word(`${side}-shield`, powerSfx(note.code), "shield", { dy: -40 });
+        fx.word(`${side}-shield`, powerSfx(note.code), "shield", { above: true, size: 32 });
         if (note.points) window.setTimeout(() => fx.token(`${side}-shield`, score, points, "shield", { arc: 20 }), paced(250));
       }
       playSound("shield");
       return;
     case "stop":
-      fx.word(self, powerSfx(note.code), "stop", { dy: -30 });
+      fx.word(self, powerSfx(note.code), "stop", { above: true, size: 30, dx: side === "me" ? 50 : -50 });
       fx.token(self, `${rival}-panel`, "STOP", "stop", { arc: 30 });
       playSound("stop");
       return;
@@ -298,17 +298,17 @@ function playNote(side: ComicKey, index: number, props: RoundComicProps, fx: Com
     case "forward":
       fx.token(`${side}-panel`, `${side}-slot`, points, "forward", { arc: 80, duration: 700 });
       fx.sparks(`${side}-panel`, "forward");
-      fx.word(self, powerSfx(note.code), "forward", { dy: -30 });
+      fx.word(self, powerSfx(note.code), "forward", { above: true, size: 30, dx: side === "me" ? 50 : -50 });
       playSound("whoosh");
       return;
     case "copy":
       fx.token("round-cap", self, "×", "info", { arc: 20 });
-      fx.word(self, powerSfx(note.code), "info", { dy: -30 });
+      fx.word(self, powerSfx(note.code), "info", { above: true, size: 30, dx: side === "me" ? 50 : -50 });
       if (note.points) window.setTimeout(() => fx.token(self, score, points, "help", { arc: 20 }), paced(300));
       playSound("reveal");
       return;
     case "reveal":
-      fx.word(self, powerSfx(note.code), "info", { dy: -30 });
+      fx.word(self, powerSfx(note.code), "info", { above: true, size: 30, dx: side === "me" ? 50 : -50 });
       playSound("reveal");
       return;
   }

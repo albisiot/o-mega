@@ -301,10 +301,20 @@ const PILL_TONE: Record<PowerFamily, string> = {
   reveal: "bg-white text-black",
 };
 
-/** A power as a small label in its family's colours, where a whole balloon would not fit. */
+/** The number of an effect ("+3", "−1", "×2"), without the words around it; null when it has none. */
+export function effectAmount(effect: string | null): string | null {
+  const first = effect?.split(" ")[0] ?? "";
+  return /^[+−×-]\d/.test(first) ? first : null;
+}
+
+/**
+ * A power as a small label in its family's colours, where a whole balloon would not fit:
+ * the name and the number only ("Sabotatore −1"); the family's colour and icon say the rest.
+ */
 export function PowerPill({ note, delay }: { note: PowerNote; delay?: number }) {
   const family = powerFamily(note.code);
   const idle = !note.active && note.cancelled !== "blocked";
+  const amount = effectAmount(note.effect);
   return (
     <span
       className={`comic-pop inline-flex max-w-full items-center gap-1 border-2 border-black px-1 text-[10px] font-extrabold uppercase leading-4 ${PILL_TONE[family]} ${
@@ -313,9 +323,9 @@ export function PowerPill({ note, delay }: { note: PowerNote; delay?: number }) 
       style={delay !== undefined ? { animationDelay: `${delay}s` } : undefined}
     >
       <FamilyIcon family={family} className="h-3 w-3" />
-      <span className="truncate">
+      <span className="truncate" title={note.effect ? `${note.name}: ${note.effect}` : note.name}>
         {note.name}
-        {note.effect ? ` ${note.effect}` : ""}
+        {amount ? ` ${amount}` : ""}
       </span>
     </span>
   );
