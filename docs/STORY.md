@@ -284,7 +284,7 @@ Ganci già aperti, da non chiudere prima del tempo. Una minaccia alla volta.
 
 ## 6. Stagione 2: *La marea*
 
-*Scritta, in costruzione: nel database ci sono i Capitoli 1 e 2. I capitoli entrano nel database uno alla volta, come quelli della Stagione 1: quando un capitolo è costruito, la sua scheda diventa definitiva e le carte principali diventano le squadre avversarie tarate con la simulazione (SPEC §5.11). Fino ad allora tutto è una proposta.*
+*Scritta, in costruzione: nel database ci sono i Capitoli 1, 2 e 3. I capitoli entrano nel database uno alla volta, come quelli della Stagione 1: quando un capitolo è costruito, la sua scheda diventa definitiva e le carte principali diventano le squadre avversarie tarate con la simulazione (SPEC §5.11). Fino ad allora tutto è una proposta.*
 
 ### 6.1 Premessa
 
@@ -387,7 +387,7 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 
 #### Capitolo 3 — Il pegno
 
-*Atto II. Da costruire.*
+*Atto II. Testi nel database (migrazione `20261113180000_season_two_chapter_three_story.sql`, capitolo 9 nell'ordine di tutta la storia, missioni C9M1-C9M5); squadre e Minacce tarate con la simulazione (SPEC §5.11).*
 
 - **In una riga:** il Banco vende la epsilon solo insieme a una eta, e per pagarle il Comune dà in pegno le licenze dei Reggenti, la tua compresa.
 - **La cosa strana:** Principal, il registro dei debiti del Banco: un libro mastro di quattrocentotrent'anni che cammina da solo e riscuote.
@@ -397,16 +397,16 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 - **Conflitto interno:** al Monte dei Pegni lavora gente delle Fosse, che il pegno lo conosce anche dall'altra parte del bancone; Spanò vuole chiudere l'affare prima che qualcuno guardi la eta con la lente.
 - **Carte presentate:** Principal, Strata, Monopsony.
 - **Boss:** Principal (P181, Alfa), schierato dal Reggente del Banco per riscuotere il pegno. Premio: la carta Principal.
-- **Rivelazione:** Strata, l'archeologo degli scavi, assaggia la eta e dice che ha due mesi; Renata la guarda con la lente: le lettere vere sono scolpite a scalpello, questa è colata e ha le bollicine. È la eta falsa della fornace, e nel sigillo l'avrebbe spaccato. Per le regole del Banco una vendita falsa è nulla e chi vende paga la penale: la epsilon va al Comune gratis e le licenze tornano ai Reggenti. Spanò, per la prima volta, perde: *"Me lo segno."*
+- **Rivelazione:** Strata, l'archeologo degli scavi, assaggia la eta e dice che ha due mesi; Renata la guarda con la lente: le lettere vere sono scolpite a scalpello, questa è colata e ha le bollicine. È la eta falsa della fornace, e nel sigillo l'avrebbe spaccato. Per le regole del Banco una vendita falsa è nulla e chi vende paga la penale: la epsilon va al Comune gratis, le licenze tornano ai Reggenti e Renata mette la epsilon nell'anello, dopo la delta. Spanò, per la prima volta, perde: *"Me lo segno."*
 - **Gancio:** la eta vera non l'ha mai trovata nessuno. Longwave riascolta le registrazioni della notte in cui si mosse la zeta (Stagione 1, Capitolo 2): oltre alla scossa alla torre del Banco ce n'era una piccola, che si spostava. Di notte, alle Fosse, la eta vera cammina.
 
-| # | Missione | Situazione | Carte principali |
+| # | Missione | Situazione | Squadra avversaria (definitiva) |
 |---|---|---|---|
-| 1 | La stima | Al Monte dei Pegni i periti del Banco stimano le licenze dei Reggenti: se la tua vale poco, il Comune non arriva al prezzo | Necropsy, Periplus, Depositum |
-| 2 | Pezzi unici | Monopsony, il mercante della Compagnia con un caveau nel petto, vuole la epsilon prima di te: compra solo pezzi unici | Monopsony, Custodia, Ademption |
-| 3 | La lingua | Strata riconosce l'età di una pietra assaggiandola, e il Banco ha messo i suoi davanti alla teca della eta perché non ci arrivi | Warren, Portineria, Gradus |
-| 4 | Il caveau | La vendita è nulla, ma nel caveau i Reggenti del Banco hanno già caricato la epsilon su un furgone della Compagnia | Regina Ix, Actuary, Escrow |
-| 5 | Interessi | Principal viene a riscuotere il pegno lo stesso: se perdi, le licenze restano al Banco | Principal, Parabellum, Collateral |
+| 1 | La stima | Al Monte dei Pegni i periti del Banco stimano le licenze dei Reggenti: se la tua vale poco, il Comune non arriva al prezzo | Necropsy, Periplus, Depositum, Blotter, Futures |
+| 2 | Pezzi unici | Monopsony, il mercante della Compagnia con un caveau nel petto, vuole la epsilon prima di te: compra solo pezzi unici | Monopsony, Custodia, Ademption, Attainder, Odonate |
+| 3 | La lingua | Strata riconosce l'età di una pietra assaggiandola, e il Banco ha messo i suoi davanti alla teca della eta perché non ci arrivi | Warren, Portineria, Gradus, Cerbero, Derelict |
+| 4 | Il caveau | La vendita è nulla, ma nel caveau i Reggenti del Banco hanno già caricato la epsilon su un furgone della Compagnia | Regina Ix, Actuary, Escrow, Jurat, Huckster |
+| 5 | Interessi | Principal viene a riscuotere il pegno lo stesso: se perdi, le licenze restano al Banco | Principal, Parabellum, Collateral, Herma, Cursor |
 
 #### Capitolo 4 — Absentia
 
@@ -490,7 +490,7 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 
 ### 6.7 Il registro delle lettere
 
-Il piano della stagione. Come in §2, si aggiorna capitolo per capitolo quando i capitoli entrano nel database. **Stato attuale** (Capitoli 1 e 2 nel database): Α Β Γ Δ sono nel sigillo, portate dal Comune al tempio e rimesse nell'anello da Renata; la Θ è stata comprata dal Comune e rubata dai Figli, e ce l'ha Nicola, che ha cominciato a tirare fuori le lettere dall'altra parte, dalla iota in avanti; tutte le altre lettere sono dove erano a fine Stagione 1.
+Il piano della stagione. Come in §2, si aggiorna capitolo per capitolo quando i capitoli entrano nel database. **Stato attuale** (Capitoli 1, 2 e 3 nel database): Α Β Γ Δ sono nel sigillo, portate dal Comune al tempio e rimesse nell'anello da Renata; la Ε è nel sigillo anche lei, dopo che la vendita del Banco è stata dichiarata nulla perché la Η venduta insieme era la falsa della fornace (il Banco non ha più lo stampo); la Η vera non l'ha trovata nessuno, ma di notte cammina per le Fosse; la Θ è stata comprata dal Comune e rubata dai Figli, e ce l'ha Nicola, che ha cominciato a tirare fuori le lettere dall'altra parte, dalla iota in avanti; tutte le altre lettere sono dove erano a fine Stagione 1.
 
 | Lettere | A fine Stagione 1 | Nella Stagione 2 | A fine Stagione 2 (previsto) |
 |---|---|---|---|
