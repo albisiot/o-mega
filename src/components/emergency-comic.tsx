@@ -1,18 +1,28 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from "react";
+import type { ThreatModifier } from "@o-mega/game-engine";
+import { comicFx, FxLayer, useComicFx, type ComicFx } from "@/components/comic-fx";
 import {
+  AbilityChips,
   BEAT_MS,
   ComicArt,
   Crack,
+  CutIn,
+  paced,
   pageStyle,
+  PowerBalloon,
+  prefersReducedMotion,
   Rolling,
-  ShoutBalloon,
+  SoundToggle,
   ThinkBalloon,
   useBeats,
   useVerdictBuzz,
   VerdictPanel,
+  type ComicChip,
 } from "@/components/comic-page";
+import { playSound } from "@/lib/comic-sound";
+import { chargeSource, pointsHelp, powerFamily, powerSfx, ruleSfx } from "@/lib/effect-families";
 import type { EmergencyNote } from "@/lib/emergency-powers";
 import type { MatchCard } from "@/lib/match";
 import { LONG_PRESS_CLASS, type LongPressHandlers } from "@/lib/use-long-press";
@@ -35,6 +45,12 @@ export type EmergencyComicProps = {
   abilities: string[];
   card: MatchCard | null;
   stats: string;
+  /** The abilities as chips, with the marks of a rare threat's rule. */
+  chips?: ComicChip[];
+  /** A rare threat's rule, worded, and the tier's colour. */
+  twist?: { name: string; text: string } | null;
+  rule?: ThreatModifier | null;
+  tierColor?: string | null;
   score: number;
   /** The level's score, before the powers that lower it. */
   target: number;
@@ -54,19 +70,29 @@ export type EmergencyComicProps = {
   onVerdict?: () => void;
 };
 
-type Beat = { at: number; kind: "target" | "base" | "idle" | "verdict" | "after" } | { at: number; kind: "note"; index: number };
+type Beat = { at: number; kind: "target" | "base" | "idle" | "verdict" | "after" } | { at: number; kind: "note" | "cutin"; index: number };
 
-function planBeats(notes: EmergencyNote[]): Beat[] {
+const carriedIn = (note: EmergencyNote) => note.source === "carried" || note.source === "pack";
+
+function planBeats(notes: EmergencyNote[], decisive: number | null): Beat[] {
   const beats: Beat[] = [{ at: BEAT_MS.twist, kind: "target" }];
   let at = BEAT_MS.twist + BEAT_MS.base;
   beats.push({ at, kind: "base" });
   at += BEAT_MS.baseCount;
-  notes.forEach((note, index) => {
-    if (note.active && note.timing !== "after") {
-      beats.push({ at, kind: "note", index });
-      at += BEAT_MS.power;
+  // The bonus carried from the card before first, then the card's own power.
+  const order = notes
+    .map((note, index) => ({ note, index }))
+    .filter(({ note }) => note.active && note.timing !== "after")
+    .sort((a, b) => Number(carriedIn(b.note)) - Number(carriedIn(a.note)));
+  for (const { index } of order) {
+    // The power that saved the threat gets a cut-in across the page.
+    if (index === decisive && !prefersReducedMotion()) {
+      beats.push({ at, kind: "cutin", index });
+      at += Math.round(BEAT_MS.cutIn * 0.8);
     }
-  });
+    beats.push({ at, kind: "note", index });
+    at += BEAT_MS.power + (notes[index].threshold ? paced(150) : 0);
+  }
   if (notes.some((note) => !note.active)) {
     beats.push({ at, kind: "idle" });
     at += BEAT_MS.power / 2;
@@ -77,16 +103,93 @@ function planBeats(notes: EmergencyNote[]): Beat[] {
   return beats;
 }
 
+/** The effects of a beat as it plays (effect-families.ts): there is no opponent, so what hits, hits the threshold. */
+function playBeat(beat: Beat, props: EmergencyComicProps, fx: ComicFx) {
+  if (beat.kind === "target") {
+    const word = ruleSfx(props.rule);
+    if (props.rule) playSound("threat");
+    if (word) fx.word("rule", word, "rule", { dx: 80, dy: -30, size: 30 });
+    (props.chips ?? [])
+      .map((chip, index) => ({ chip, index }))
+      .filter(({ chip }) => chip.mark)
+      .slice(0, 4)
+      .forEach(({ chip, index }) => fx.token("rule", `me-chip-${index}`, chip.mark!.text, chip.mark!.tone === "down" ? "harm" : "rule", { arc: 10 }));
+    return;
+  }
+  if (beat.kind === "verdict") {
+    playSound(props.passed ? "win" : "lose");
+    return;
+  }
+  if (beat.kind === "cutin") {
+    playSound("cutin");
+    return;
+  }
+  if (beat.kind === "after") {
+    props.notes.forEach((note, index) => {
+      if (note.active && note.timing === "after") {
+        fx.token("panel", "counter", note.effect?.split(" ")[0] ?? "", "forward", { arc: 60, duration: 700 });
+        fx.word(`note-${index}`, powerSfx(note.code), "forward", { dy: -30 });
+      }
+    });
+    playSound("whoosh");
+    return;
+  }
+  if (beat.kind !== "note") return;
+  const note = props.notes[beat.index];
+  if (!note) return;
+  const points = note.effect?.split(" ")[0] ?? "";
+  if (carriedIn(note)) {
+    fx.token("counter", "score", points, "forward", { arc: -10 });
+    playSound("whoosh");
+    return;
+  }
+  const family = powerFamily(note.code);
+  if (note.threshold) {
+    // Sabotatore and Implacabile lower the threshold: the line takes the hit.
+    if (family === "strike") fx.bolt(`note-${beat.index}`, "line");
+    fx.word("line", powerSfx(note.code), family === "strike" ? "harm" : "tie", { dx: -60, dy: -30 });
+    playSound(family === "strike" ? "down" : "hit");
+    return;
+  }
+  if (family === "reveal" || family === "copy") {
+    fx.word(`note-${beat.index}`, powerSfx(note.code), "info", { dy: -30 });
+    playSound("reveal");
+    return;
+  }
+  const help = note.points === undefined || pointsHelp(note.points, props.rule);
+  const source = chargeSource(note.code);
+  fx.token(source === "threat" ? "threat-abs" : source === "round" ? "counter" : "name", "score", points, help ? "help" : "harm");
+  window.setTimeout(() => {
+    fx.word("score", powerSfx(note.code), help ? "help" : "harm", { dx: -56, dy: 8 });
+    fx.sparks("score", help ? "help" : "harm");
+  }, paced(480));
+  playSound(help ? "up" : "down");
+}
+
 /** The result of an Emergenza play as a comic page. */
 export function EmergencyComic(props: EmergencyComicProps) {
   const { notes, score, target, required, passed } = props;
   // A new play is a new page.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const beats = useMemo(() => planBeats(notes), [props.number]);
+  const beats = useMemo(() => planBeats(notes, props.decisive?.index ?? null), [props.number]);
   const { fired, done, skipped, complete } = useBeats(beats);
   const has = (kind: Beat["kind"]) => fired.some((beat) => beat.kind === kind);
   const verdict = has("verdict");
   useVerdictBuzz(verdict, passed ? "win" : "lose", props.onVerdict);
+  const { layer } = useComicFx();
+  const played = useRef(0);
+  useEffect(() => {
+    const fresh = fired.slice(played.current);
+    played.current = fired.length;
+    if (skipped) return;
+    const fx = comicFx(layer.current);
+    fresh.forEach((beat) => playBeat(beat, props, fx));
+    // Only the beats count: the props of a page do not change while it plays.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fired.length, skipped]);
+  const order = fired.flatMap((beat) => (beat.kind === "note" ? [beat.index] : []));
+  const cut = skipped ? undefined : [...fired].reverse().find((beat) => beat.kind === "cutin");
+  const cutNote = cut && "index" in cut ? notes[cut.index] : null;
 
   const shown = new Set(fired.flatMap((beat) => (beat.kind === "note" ? [beat.index] : [])));
   // The score climbs from the abilities, then each power adds its points as it speaks;
@@ -100,9 +203,8 @@ export function EmergencyComic(props: EmergencyComicProps) {
   const max = Math.max(target, score) + 4;
   const percent = (value: number) => `${Math.max(0, Math.min(100, (value / max) * 100))}%`;
   const missing = required - score;
-  const shouts = notes.map((note, index) => ({ note, index })).filter(({ note, index }) => note.active && note.timing !== "after" && shown.has(index));
   const idle = notes.filter((note) => !note.active);
-  const after = notes.filter((note) => note.active && note.timing === "after");
+  const after = notes.map((note, index) => ({ note, index })).filter(({ note }) => note.active && note.timing === "after");
 
   return (
     <main
@@ -114,13 +216,13 @@ export function EmergencyComic(props: EmergencyComicProps) {
         aria-label={`Minaccia ${props.number}: ${props.threatName}`}
         className="comic-panel halftone relative shrink-0 bg-comic-orange px-3 pb-2.5 pt-2 text-black"
       >
-        <p className="inline-block border-2 border-black bg-comic-yellow px-2 text-[11px] font-extrabold uppercase leading-5">
+        <p data-fx="counter" className="inline-block border-2 border-black bg-comic-yellow px-2 text-[11px] font-extrabold uppercase leading-5">
           Minaccia {props.number} di {props.of} · {props.passedBefore} {props.passedBefore === 1 ? "superata" : "superate"} ·{" "}
           {props.failedBefore} {props.failedBefore === 1 ? "fallita" : "fallite"}
         </p>
         <div className="mt-1 max-w-[calc(100%-96px)]">
           <p className="font-display text-[28px] uppercase leading-[30px]">{props.threatName}</p>
-          <p className="mt-1 flex flex-wrap gap-1">
+          <p data-fx="threat-abs" className="mt-1 flex flex-wrap gap-1">
             {props.abilities.map((code) => (
               <span key={code} className="bg-black px-1.5 text-[11px] font-extrabold leading-[18px] text-foreground">
                 {code}
@@ -136,6 +238,17 @@ export function EmergencyComic(props: EmergencyComicProps) {
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-foreground">Serve</span>
           <span className="font-display text-[40px] leading-[40px]">{target}</span>
         </div>
+        {props.twist && (
+          <p
+            data-fx="rule"
+            className={`comic-twist comic-rule relative mt-1.5 max-w-[calc(100%-96px)] border-[3px] border-black bg-white px-2.5 py-1 text-[12px] font-semibold leading-4 shadow-[4px_4px_0_#000] ${
+              props.rule?.code === "tomb_silence" ? "comic-rule-dark" : ""
+            } ${has("target") ? "comic-on" : ""}`}
+            style={props.tierColor ? ({ "--rule-color": props.tierColor } as CSSProperties) : undefined}
+          >
+            <span className="font-display uppercase">{props.twist.name}!</span> {props.twist.text}
+          </p>
+        )}
         {props.lastChance && (
           <p className={`comic-twist mt-1.5 inline-block border-2 border-black bg-comic-magenta px-2 text-[11px] font-extrabold uppercase leading-5 ${has("target") ? "comic-on" : ""}`}>
             Alla prossima fallita finisce
@@ -145,6 +258,7 @@ export function EmergencyComic(props: EmergencyComicProps) {
 
       <section
         {...props.press}
+        data-fx="panel"
         aria-label="La tua giocata"
         className={`comic-panel ${verdict && !passed ? "comic-lost" : ""} ${LONG_PRESS_CLASS} relative min-h-[220px] flex-1 overflow-hidden bg-comic-cyan text-black`}
         style={{ animationDelay: "100ms" }}
@@ -168,6 +282,7 @@ export function EmergencyComic(props: EmergencyComicProps) {
             </div>
           )}
           <div
+            data-fx="line"
             className={`absolute -left-4 -right-2 z-[3] h-0 border-t-4 transition-[bottom] duration-500 ${
               has("target") ? "opacity-100" : "opacity-0"
             } ${verdict && passed ? "border-solid border-comic-magenta" : "border-dashed border-black"}`}
@@ -183,29 +298,37 @@ export function EmergencyComic(props: EmergencyComicProps) {
           </div>
         </div>
 
-        <div className="comic-dim absolute right-2.5 top-1.5 z-[4] grid h-[62px] w-[62px] place-items-center rounded-full border-[3px] border-foreground bg-black font-display text-[30px] tabular-nums text-comic-yellow">
+        <div data-fx="score" className="comic-dim absolute right-2.5 top-1.5 z-[4] grid h-[62px] w-[62px] place-items-center rounded-full border-[3px] border-foreground bg-black font-display text-[30px] tabular-nums text-comic-yellow">
           {scoreShown === null ? "–" : <Rolling value={scoreShown} instant={skipped} />}
         </div>
 
-        <div className="absolute left-1.5 top-[70px] z-[5] flex max-w-[64%] flex-col items-start gap-1.5">
-          <ShoutBalloon notes={shouts} decisiveIndex={props.decisive?.index ?? null} verdict={verdict} />
+        <div className="absolute left-1.5 top-[70px] z-[7] flex max-w-[64%] flex-col items-start gap-1">
+          {order.map((index) => (
+            <PowerBalloon
+              key={index}
+              note={notes[index]}
+              side="me"
+              fxName={`note-${index}`}
+              harm={Boolean(notes[index].points) && !pointsHelp(notes[index].points!, props.rule)}
+              decisive={verdict && props.decisive?.index === index}
+            />
+          ))}
+          {has("after") &&
+            after.map(({ note, index }) => <PowerBalloon key={`after-${index}`} note={note} side="me" fxName={`note-${index}`} />)}
           {has("idle") && <ThinkBalloon notes={idle} />}
         </div>
 
-        {has("after") && after.length > 0 && (
-          <div className="absolute bottom-[74px] left-1.5 z-[6] flex flex-col items-start gap-1">
-            {after.map((note, index) => (
-              <span key={index} className="comic-pop border-2 border-black bg-comic-yellow px-1.5 text-[11px] font-extrabold uppercase leading-5">
-                {note.name} {note.effect}
-              </span>
-            ))}
+        <div className="absolute bottom-1.5 left-1.5 z-[3] flex w-[calc(68%-12px)] flex-col gap-1">
+          {props.chips && (
+            <div className="comic-dim">
+              <AbilityChips side="me" chips={props.chips} ruled={has("target")} struck={false} />
+            </div>
+          )}
+          <div data-fx="name" className="comic-dim border-2 border-black bg-comic-yellow px-2 py-0.5">
+            <p className="text-[10px] font-extrabold uppercase leading-3">Tu</p>
+            <p className="truncate font-display text-[20px] uppercase leading-[22px]">{props.card?.name ?? "?"}</p>
+            {!props.chips && <p className="text-[11px] font-extrabold leading-[13px]">{props.stats}</p>}
           </div>
-        )}
-
-        <div className="comic-dim absolute bottom-1.5 left-1.5 z-[3] w-[calc(68%-12px)] border-2 border-black bg-comic-yellow px-2 py-0.5">
-          <p className="text-[10px] font-extrabold uppercase leading-3">Tu</p>
-          <p className="truncate font-display text-[20px] uppercase leading-[22px]">{props.card?.name ?? "?"}</p>
-          <p className="text-[11px] font-extrabold leading-[13px]">{props.stats}</p>
         </div>
         <Crack />
       </section>
@@ -228,9 +351,14 @@ export function EmergencyComic(props: EmergencyComicProps) {
         )}
       </VerdictPanel>
 
-      <div className="shrink-0 px-1.5 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-0.5" onClick={(event) => event.stopPropagation()}>
-        {props.action(done, complete)}
+      <div className="flex shrink-0 items-center gap-1 px-1.5 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-0.5" onClick={(event) => event.stopPropagation()}>
+        <div className="min-w-0 flex-1">{props.action(done, complete)}</div>
+        <SoundToggle />
       </div>
+      {cut && cutNote && (
+        <CutIn key={`cut-${props.number}`} card={props.card} side="me" title={`${cutNote.name}!`} text={cutNote.effect} harm={powerFamily(cutNote.code) === "strike"} />
+      )}
+      <FxLayer layerRef={layer} />
     </main>
   );
 }

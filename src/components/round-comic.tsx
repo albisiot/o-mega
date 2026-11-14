@@ -1,27 +1,51 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from "react";
+import type { ThreatModifier } from "@o-mega/game-engine";
+import { comicFx, FxLayer, useComicFx, type ComicFx, type FxTone } from "@/components/comic-fx";
 import {
+  AbilityChips,
   BEAT_MS,
   ComicArt,
   Crack,
+  CutIn,
   paced,
   pageStyle,
+  PowerBalloon,
+  prefersReducedMotion,
   Rolling,
-  ShoutBalloon,
+  RuleRibbon,
+  ShieldPlate,
+  SoundToggle,
   ThinkBalloon,
   useBeats,
   useVerdictBuzz,
   VerdictPanel,
+  type ComicChip,
 } from "@/components/comic-page";
+import type { MarkTone } from "@/lib/ability-marks";
+import { playSound } from "@/lib/comic-sound";
+import {
+  chargeSource,
+  familyOrder,
+  isDistinctive,
+  pointsHelp,
+  powerFamily,
+  powerSfx,
+  rulePageEffect,
+  ruleSfx,
+} from "@/lib/effect-families";
 import type { MatchCard } from "@/lib/match";
 import type { PowerNote } from "@/lib/round-powers";
 import { LONG_PRESS_CLASS, type LongPressHandlers } from "@/lib/use-long-press";
 
-// A round result told as a comic page, read in order (direction D of the clash drafts):
-// the threat with its twist, the two cards with their powers speaking one at a time in
-// balloons, then the last panel with the winner breaking out of its frame. The loser greys
-// out and its panel cracks. The shared pieces are in comic-page.tsx.
+// A round result told as a comic page, read in order (direction D of the clash drafts), with
+// the special abilities shown by family (effect-families.ts): the threat's rule lands as a
+// caption and marks the abilities it touches, then the scores count, the bonus carried from
+// the round before flies in, the stops, strikes and shields, the charges, Implacabile on a
+// tie, the verdict, and what goes on to the next round. Points fly from what set them off to
+// the score; distinctive or decisive powers get a cut-in across the page. The shared pieces
+// are in comic-page.tsx and comic-fx.tsx.
 
 export type ComicKey = "me" | "opponent";
 
@@ -29,10 +53,17 @@ export type ComicSide = {
   /** "Tu" or the opponent's name. */
   label: string;
   card: MatchCard | null;
-  /** The abilities of the threat with this card's values. */
+  /** The abilities of the threat with this card's values, as one line (when there are no chips). */
   stats: string;
+  /** The abilities as chips, with the marks of the rule and of Sabotatore. */
+  chips?: ComicChip[];
   score: number;
+  /** Annotated notes (roundPowerNotes with annotate) get their family's balloon and effects. */
   notes: PowerNote[];
+  /** Points the threat's rule gave or took (factions, rarities, who is behind), as a ribbon. */
+  flag?: { text: string; points: number } | null;
+  /** Points Sabotatore took from this card: the score counts them first and drops when the strike lands. */
+  struckPoints?: number;
   press?: LongPressHandlers;
 };
 
@@ -43,6 +74,10 @@ export type RoundComicProps = {
   abilities: string[];
   /** The threat modifier, already worded: shown as the twist caption. */
   twist: { name: string; text: string } | null;
+  /** The modifier itself, for its effects on the page. */
+  rule?: ThreatModifier | null;
+  /** A rare threat's tier colour: the caption's stripes take it. */
+  tierColor?: string | null;
   me: ComicSide;
   opponent: ComicSide;
   winner: ComicKey | "none";
@@ -60,50 +95,248 @@ export type RoundComicProps = {
 };
 
 type Beat =
-  | { at: number; kind: "twist" | "base" | "idle" | "verdict" | "after" }
-  | { at: number; kind: "note"; side: ComicKey; index: number };
+  | { at: number; kind: "twist" | "base" | "flags" | "level" | "idle" | "verdict" }
+  | { at: number; kind: "note" | "cutin"; side: ComicKey; index: number };
+
+type CutBeat = { at: number; kind: "cutin"; side: ComicKey; index: number };
 
 const SIDES: ComicKey[] = ["me", "opponent"];
+const other = (side: ComicKey): ComicKey => (side === "me" ? "opponent" : "me");
+const MAX_CUT_INS = 2;
+
+/** Where a note speaks on the page: before the verdict, on a tie, after it. */
+function phase(note: PowerNote): "before" | "tie" | "after" | "idle" {
+  if (note.cancelled) return "before";
+  if (!note.active) return "idle";
+  if (note.timing === "tie") return "tie";
+  if (note.timing === "after" || powerFamily(note.code) === "reveal") return "after";
+  return "before";
+}
+
+/** The order of a note before the verdict: silenced powers, bonus carried in, then by family. */
+function rank(note: PowerNote): number {
+  if (note.cancelled === "silenced") return -2;
+  if (note.source === "carried" || note.source === "pack") return -1;
+  // An Annullatore's victim right after the stop.
+  if (note.cancelled === "nullified") return familyOrder("stop") + 0.5;
+  // A strike a shield stopped still speaks, as a strike.
+  return familyOrder(powerFamily(note.code));
+}
+
+/** The notes that get a cut-in: the decisive one first, then distinctive powers, at most two. */
+function cutIns(props: Pick<RoundComicProps, "me" | "opponent" | "decisive">): Set<string> {
+  if (prefersReducedMotion()) return new Set();
+  const keys: string[] = [];
+  if (props.decisive) keys.push(`${props.decisive.side}-${props.decisive.index}`);
+  for (const side of SIDES) {
+    props[side].notes.forEach((note, index) => {
+      if (note.source === "own" && note.active && !note.cancelled && phase(note) === "before" && isDistinctive(note.code)) {
+        keys.push(`${side}-${index}`);
+      }
+    });
+  }
+  return new Set([...new Set(keys)].slice(0, MAX_CUT_INS));
+}
 
 /** The beats of the page, in time order. */
-function planBeats(props: Pick<RoundComicProps, "twist" | "me" | "opponent">): Beat[] {
+function planBeats(props: Pick<RoundComicProps, "twist" | "rule" | "me" | "opponent" | "decisive">, cuts: Set<string>): Beat[] {
   const beats: Beat[] = [];
   let at = 0;
   if (props.twist) {
-    beats.push({ at: BEAT_MS.twist, kind: "twist" });
     at = BEAT_MS.twist;
+    beats.push({ at, kind: "twist" });
+    // The page turns over under Rovescio: the count waits for it.
+    if (rulePageEffect(props.rule) === "flip") at += paced(500);
   }
   at += BEAT_MS.base;
   beats.push({ at, kind: "base" });
   at += BEAT_MS.baseCount;
-  // Powers that act in the round, mine first; then the ones that did nothing, together.
-  for (const side of SIDES) {
-    props[side].notes.forEach((note, index) => {
-      if (note.active && !note.timing) {
-        beats.push({ at, kind: "note", side, index });
-        at += BEAT_MS.power;
-      }
-    });
-  }
-  if (SIDES.some((side) => props[side].notes.some((note) => !note.active))) {
+
+  const before = SIDES.flatMap((side) =>
+    props[side].notes.flatMap((note, index) => (phase(note) === "before" ? [{ side, index, note }] : [])),
+  ).sort((a, b) => rank(a.note) - rank(b.note) || SIDES.indexOf(a.side) - SIDES.indexOf(b.side) || a.index - b.index);
+  const flagsAt = SIDES.some((side) => props[side].flag) ? before.findIndex(({ note }) => rank(note) >= 0) : -1;
+  const pushFlags = () => {
+    beats.push({ at, kind: "flags" });
+    at += BEAT_MS.flags;
+  };
+  before.forEach(({ side, index, note }, n) => {
+    if (n === flagsAt) pushFlags();
+    if (cuts.has(`${side}-${index}`)) {
+      beats.push({ at, kind: "cutin", side, index });
+      at += Math.round(BEAT_MS.cutIn * 0.8);
+    }
+    beats.push({ at, kind: "note", side, index });
+    // A strike or a shield needs the time for the bolt to land.
+    const family = powerFamily(note.code);
+    at += BEAT_MS.power + (family === "strike" || family === "shield" ? paced(150) : 0);
+  });
+  if (flagsAt === -1 && SIDES.some((side) => props[side].flag)) pushFlags();
+
+  if (SIDES.some((side) => props[side].notes.some((note) => phase(note) === "idle"))) {
     beats.push({ at, kind: "idle" });
     at += BEAT_MS.power / 2;
   }
   // Implacabile speaks once the scores stand level.
+  const ties = SIDES.flatMap((side) => props[side].notes.flatMap((note, index) => (phase(note) === "tie" ? [{ side, index }] : [])));
+  if (ties.length > 0) {
+    at += BEAT_MS.verdict;
+    beats.push({ at, kind: "level" });
+    for (const { side, index } of ties) {
+      at += BEAT_MS.level;
+      beats.push({ at, kind: "note", side, index });
+    }
+  }
+  at += BEAT_MS.verdict;
+  beats.push({ at, kind: "verdict" });
+  // Then what goes on to the next round, and what only shows something.
   for (const side of SIDES) {
     props[side].notes.forEach((note, index) => {
-      if (note.active && note.timing === "tie") {
-        at += BEAT_MS.verdict;
+      if (phase(note) === "after") {
+        at += BEAT_MS.after;
         beats.push({ at, kind: "note", side, index });
       }
     });
   }
-  at += BEAT_MS.verdict;
-  beats.push({ at, kind: "verdict" });
-  if (SIDES.some((side) => props[side].notes.some((note) => note.active && note.timing === "after"))) {
-    beats.push({ at: at + BEAT_MS.after, kind: "after" });
-  }
   return beats;
+}
+
+const MARK_TONE: Record<MarkTone, FxTone> = { up: "rule", down: "harm", ice: "ice", off: "info", ok: "info" };
+
+/** The effects of a beat as it plays. */
+function playBeat(beat: Beat, props: RoundComicProps, fx: ComicFx) {
+  switch (beat.kind) {
+    case "twist": {
+      playSound("threat");
+      const word = ruleSfx(props.rule);
+      if (word) fx.word("rule", word, rulePageEffect(props.rule) === "frost" ? "ice" : "rule", { dx: 90, dy: -34, size: 32 });
+      for (const side of SIDES) {
+        (props[side].chips ?? [])
+          .map((chip, index) => ({ chip, index }))
+          .filter(({ chip }) => chip.mark)
+          .slice(0, 4)
+          .forEach(({ chip, index }) => fx.token("rule", `${side}-chip-${index}`, chip.mark!.text, MARK_TONE[chip.mark!.tone], { arc: 10 }));
+      }
+      return;
+    }
+    case "flags": {
+      const flag = props.me.flag ?? props.opponent.flag;
+      if (flag) playSound(pointsHelp(props.me.flag?.points ?? 0, props.rule) ? "up" : "down");
+      return;
+    }
+    case "cutin":
+      playSound("cutin");
+      return;
+    case "verdict":
+      playSound(props.winner === "me" ? "win" : props.winner === "opponent" ? "lose" : "void");
+      return;
+    case "note":
+      playNote(beat.side, beat.index, props, fx);
+      return;
+    default:
+  }
+}
+
+function playNote(side: ComicKey, index: number, props: RoundComicProps, fx: ComicFx) {
+  const note = props[side].notes[index];
+  if (!note) return;
+  const rival = other(side);
+  const self = `${side}-note-${index}`;
+  const score = `${side}-score`;
+  const points = note.effect?.split(" ")[0] ?? "";
+  if (note.cancelled) {
+    playSound(note.cancelled === "silenced" ? "stop" : note.cancelled === "blocked" ? "down" : "hit");
+    return;
+  }
+  if (note.source === "carried" || note.source === "pack") {
+    fx.token(`${side}-slot`, score, points, "forward", { arc: -10 });
+    playSound("whoosh");
+    return;
+  }
+  const family = powerFamily(note.code);
+  const help = note.points === undefined || pointsHelp(note.points, props.rule);
+  switch (family) {
+    case "charge": {
+      const source = chargeSource(note.code);
+      const from = source === "threat" ? "threat-abs" : source === "round" ? "round-cap" : source === "rival" ? `${rival}-panel` : `${side}-name`;
+      fx.token(from, score, points, help ? "help" : "harm");
+      window.setTimeout(() => {
+        fx.word(score, powerSfx(note.code), help ? "help" : "harm", { dx: side === "me" ? 56 : -56, dy: 8 });
+        fx.sparks(score, help ? "help" : "harm");
+      }, paced(480));
+      playSound(help ? "up" : "down");
+      return;
+    }
+    case "strike":
+      fx.bolt(self, `${rival}-chips`);
+      fx.word(`${rival}-chips`, powerSfx(note.code), "harm", { dy: -44 });
+      fx.shake(`${rival}-panel`, 7);
+      playSound("down");
+      return;
+    case "shield":
+      if (note.code === "reflect") {
+        fx.bolt(`${side}-shield`, `${rival}-chips`, "shield");
+        fx.word(`${side}-shield`, powerSfx(note.code), "shield", { dy: -40 });
+        fx.shake(`${rival}-panel`, 6);
+      } else {
+        fx.bolt(`${rival}-panel`, `${side}-shield`);
+        fx.word(`${side}-shield`, powerSfx(note.code), "shield", { dy: -40 });
+        if (note.points) window.setTimeout(() => fx.token(`${side}-shield`, score, points, "shield", { arc: 20 }), paced(250));
+      }
+      playSound("shield");
+      return;
+    case "stop":
+      fx.word(self, powerSfx(note.code), "stop", { dy: -30 });
+      fx.token(self, `${rival}-panel`, "STOP", "stop", { arc: 30 });
+      playSound("stop");
+      return;
+    case "tiebreak":
+      fx.word("eq", powerSfx(note.code), "tie", { dy: -44 });
+      fx.shake("eq", 5);
+      playSound("hit");
+      return;
+    case "forward":
+      fx.token(`${side}-panel`, `${side}-slot`, points, "forward", { arc: 80, duration: 700 });
+      fx.sparks(`${side}-panel`, "forward");
+      fx.word(self, powerSfx(note.code), "forward", { dy: -30 });
+      playSound("whoosh");
+      return;
+    case "copy":
+      fx.token("round-cap", self, "×", "info", { arc: 20 });
+      fx.word(self, powerSfx(note.code), "info", { dy: -30 });
+      if (note.points) window.setTimeout(() => fx.token(self, score, points, "help", { arc: 20 }), paced(300));
+      playSound("reveal");
+      return;
+    case "reveal":
+      fx.word(self, powerSfx(note.code), "info", { dy: -30 });
+      playSound("reveal");
+      return;
+  }
+}
+
+/** A slot on the threat panel: what a side carries in from the round before or passes on. */
+function Slot({ side, round, carried, passed }: { side: ComicKey; round: number; carried: string | null; passed: string | null }) {
+  const full = carried ?? passed;
+  return (
+    <span
+      data-fx={`${side}-slot`}
+      className={`comic-slot ${full ? "comic-slot-full comic-pop" : ""} flex h-[26px] items-center justify-center gap-1 px-1 text-[10px] font-extrabold uppercase leading-none text-black ${
+        side === "me" ? "border-l-[5px] !border-l-comic-cyan" : "border-l-[5px] !border-l-comic-magenta"
+      }`}
+    >
+      {carried ? (
+        <>
+          <span className="font-display text-[15px]">{carried}</span> dal R{round - 1}
+        </>
+      ) : passed ? (
+        <>
+          <span className="font-display text-[15px]">{passed}</span> al R{round + 1}
+        </>
+      ) : (
+        <>R{round + 1}</>
+      )}
+    </span>
+  );
 }
 
 function CardPanel({
@@ -113,30 +346,39 @@ function CardPanel({
   scoreShown,
   instant,
   showIdle,
-  showAfter,
+  showFlag,
+  struck,
+  shielded,
+  ruled,
+  hidden,
+  harmful,
   outcome,
   decisiveIndex,
   verdict,
 }: {
   side: ComicKey;
   data: ComicSide;
-  /** The notes whose balloon has appeared. */
-  shown: Set<number>;
+  /** The notes whose balloon has appeared, in the order they spoke. */
+  shown: number[];
   scoreShown: number | null;
   instant: boolean;
   showIdle: boolean;
-  showAfter: boolean;
+  showFlag: boolean;
+  struck: boolean;
+  shielded: boolean;
+  ruled: boolean;
+  hidden: boolean;
+  harmful: (note: PowerNote) => boolean;
   outcome: "won" | "lost" | "void" | null;
   decisiveIndex: number | null;
   verdict: boolean;
 }) {
   const isMe = side === "me";
-  const shouts = data.notes.map((note, index) => ({ note, index })).filter(({ note, index }) => note.active && note.timing !== "after" && shown.has(index));
-  const idle = data.notes.filter((note) => !note.active);
-  const after = data.notes.filter((note) => note.active && note.timing === "after");
+  const idle = data.notes.filter((note) => phase(note) === "idle");
   return (
     <section
       {...data.press}
+      data-fx={`${side}-panel`}
       aria-label={isMe ? "La tua giocata" : `La giocata di ${data.label}`}
       className={`comic-panel ${isMe ? "bg-comic-cyan" : "halftone bg-comic-magenta"} ${
         outcome === "lost" ? "comic-lost" : outcome === "void" ? "comic-void" : outcome === "won" ? "comic-won" : ""
@@ -145,33 +387,46 @@ function CardPanel({
     >
       {data.card && <ComicArt card={data.card} className="comic-dim absolute inset-0 h-full w-full" />}
       <div
+        data-fx={`${side}-score`}
         className={`comic-dim absolute top-1.5 z-[4] grid h-14 w-14 place-items-center rounded-full border-[3px] border-foreground bg-black font-display text-[28px] tabular-nums text-comic-yellow ${
           isMe ? "left-1.5" : "right-1.5"
         }`}
       >
         {scoreShown === null ? "–" : <Rolling value={scoreShown} instant={instant} />}
       </div>
+      {showFlag && data.flag && <RuleRibbon side={side} text={data.flag.text} help={!harmful({ name: "", effect: null, active: true, points: data.flag.points })} />}
 
-      <div className={`absolute inset-x-1 top-[66px] z-[5] flex flex-col gap-1.5 ${isMe ? "items-start" : "items-end"}`}>
-        <ShoutBalloon notes={shouts} decisiveIndex={decisiveIndex} verdict={verdict} />
-        {showIdle && <ThinkBalloon notes={idle} />}
+      <div className={`absolute inset-x-1 top-[66px] z-[7] flex flex-col gap-1 ${isMe ? "items-start" : "items-end"}`}>
+        {shown.map((index) => {
+          const note = data.notes[index];
+          return (
+            <PowerBalloon
+              key={index}
+              note={note}
+              side={side}
+              fxName={`${side}-note-${index}`}
+              harm={harmful(note)}
+              decisive={verdict && decisiveIndex === index}
+            />
+          );
+        })}
+        {showIdle && idle.length > 0 && <ThinkBalloon notes={idle} />}
       </div>
 
-      {showAfter && after.length > 0 && (
-        <div className={`absolute bottom-[70px] z-[6] flex flex-col gap-1 ${isMe ? "left-1.5 items-start" : "right-1.5 items-end"}`}>
-          {after.map((note, index) => (
-            <span key={index} className="comic-pop border-2 border-black bg-comic-yellow px-1.5 text-[11px] font-extrabold uppercase leading-5">
-              {note.name} {note.effect}
-            </span>
-          ))}
+      <div className="absolute inset-x-1.5 bottom-1.5 z-[3] flex flex-col gap-1">
+        {/* The chips sit above the name, so the rule's marks rise over the art, never over the name. */}
+        {data.chips && (
+          <div className="comic-dim">
+            <AbilityChips side={side} chips={data.chips} ruled={ruled} struck={struck} hidden={hidden} />
+          </div>
+        )}
+        <div data-fx={`${side}-name`} className={`comic-dim border-2 border-black bg-comic-yellow px-2 py-0.5 ${isMe ? "" : "text-right"}`}>
+          <p className="truncate text-[10px] font-extrabold uppercase leading-3">{data.label}</p>
+          <p className="truncate font-display text-[20px] uppercase leading-[22px]">{data.card?.name ?? "?"}</p>
+          {!data.chips && <p className="text-[11px] font-extrabold leading-[13px]">{data.stats}</p>}
         </div>
-      )}
-
-      <div className={`comic-dim absolute inset-x-1.5 bottom-1.5 z-[3] border-2 border-black bg-comic-yellow px-2 py-0.5 ${isMe ? "" : "text-right"}`}>
-        <p className="truncate text-[10px] font-extrabold uppercase leading-3">{data.label}</p>
-        <p className="truncate font-display text-[20px] uppercase leading-[22px]">{data.card?.name ?? "?"}</p>
-        <p className="text-[11px] font-extrabold leading-[13px]">{data.stats}</p>
       </div>
+      {shielded && <ShieldPlate side={side} />}
       <Crack />
     </section>
   );
@@ -179,78 +434,157 @@ function CardPanel({
 
 /** The round result as a comic page. */
 export function RoundComic(props: RoundComicProps) {
-  const { me, opponent, winner, twist } = props;
+  const { me, opponent, winner, twist, rule } = props;
   // The beats depend only on the round: a new round is a new page.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const beats = useMemo(() => planBeats({ twist, me, opponent }), [props.round]);
+  const cuts = useMemo(() => cutIns(props), [props.round]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const beats = useMemo(() => planBeats({ twist, rule, me, opponent, decisive: props.decisive }, cuts), [props.round]);
   const { fired, done, skipped, complete } = useBeats(beats);
   const has = (kind: Beat["kind"]) => fired.some((beat) => beat.kind === kind);
   const verdict = has("verdict");
+  const ruled = !twist || has("twist");
+  const { layer } = useComicFx();
 
-  const shown = (side: ComicKey) =>
-    new Set(fired.flatMap((beat) => (beat.kind === "note" && beat.side === side ? [beat.index] : [])));
-  // The score climbs from the abilities alone, then each power adds its points as it speaks.
+  // The travelling effects of each beat, as it plays; none once the page is skipped.
+  const played = useRef(0);
+  useEffect(() => {
+    const fresh = fired.slice(played.current);
+    played.current = fired.length;
+    if (skipped) return;
+    const fx = comicFx(layer.current);
+    fresh.forEach((beat) => playBeat(beat, props, fx));
+    // Only the beats count: the props of a page do not change while it plays.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fired.length, skipped]);
+
+  const shownList = (side: ComicKey) =>
+    fired.flatMap((beat) => (beat.kind === "note" && beat.side === side ? [beat.index] : []));
+  const shown = (side: ComicKey) => new Set(shownList(side));
+  // The score climbs from the abilities alone, then each power and ribbon adds its points as it lands.
   const scoreOf = (side: ComicKey) => {
     if (!has("base")) return null;
     const data = props[side];
     const visible = shown(side);
     const pending = data.notes.reduce((sum, note, index) => sum + (note.points && !visible.has(index) ? note.points : 0), 0);
-    return data.score - pending;
+    const flag = data.flag && !has("flags") ? data.flag.points : 0;
+    const struck = struckOn(side) ? 0 : (data.struckPoints ?? 0);
+    return data.score - pending - flag + struck;
   };
   const outcomeOf = (side: ComicKey) =>
     !verdict ? null : winner === "none" ? ("void" as const) : winner === side ? ("won" as const) : ("lost" as const);
+  // A side's abilities are hit when the other side's Sabotatore (or its Riflesso) has spoken.
+  const struckOn = (side: ComicKey) => {
+    const rival = props[other(side)];
+    const seen = shown(other(side));
+    return rival.notes.some((note, index) => (note.code === "sabotage" || note.code === "reflect") && note.active && seen.has(index));
+  };
+  const shieldedOn = (side: ComicKey) => {
+    const seen = shown(side);
+    return props[side].notes.some((note, index) => powerFamily(note.code) === "shield" && note.active && !note.cancelled && seen.has(index));
+  };
+  const harmful = (note: PowerNote) => Boolean(note.points) && !pointsHelp(note.points!, rule);
+
+  // Slots on the threat panel: a bonus waiting from the round before, or passed on to the next.
+  const slotOf = (side: ComicKey) => {
+    const data = props[side];
+    const visible = shown(side);
+    const carriedIndex = data.notes.findIndex((note) => note.source === "carried" || note.source === "pack");
+    const passedIndex = data.notes.findIndex((note) => note.active && note.timing === "after");
+    if (carriedIndex < 0 && passedIndex < 0) return null;
+    const carried = carriedIndex >= 0 && !visible.has(carriedIndex) ? `+${data.notes[carriedIndex].points ?? 0}` : null;
+    const passed = passedIndex >= 0 && visible.has(passedIndex) ? (data.notes[passedIndex].effect?.split(" ")[0] ?? "") : null;
+    return { carried, passed };
+  };
+
+  const page = rulePageEffect(rule);
+  const pageClass = !has("twist") || !page ? "" : page === "flip" || page === "mirror" ? (skipped ? "" : `fx-${page}`) : `fx-${page}`;
+  const tieNote = SIDES.flatMap((side) => props[side].notes.flatMap((note, index) => (phase(note) === "tie" && shown(side).has(index) ? [side] : [])))[0];
+  const cut = !skipped
+    ? [...fired].reverse().find((beat): beat is CutBeat => beat.kind === "cutin")
+    : undefined;
+  const cutNote = cut ? props[cut.side].notes[cut.index] : null;
 
   useVerdictBuzz(verdict, winner === "me" ? "win" : winner === "opponent" ? "lose" : "void", props.onVerdict);
 
   const winnerSide = winner === "none" ? null : props[winner];
   const title = winner === "me" ? "Round vinto!" : winner === "opponent" ? "Round perso" : "Round nullo";
   const sfx = winner === "me" ? "SBAM!" : winner === "opponent" ? "KRAK!" : "PARI!";
+  const slots = SIDES.map((side) => ({ side, slot: slotOf(side) })).filter((s) => s.slot);
 
   return (
     <main
-      className="comic-page relative mt-1 flex min-h-0 flex-1 cursor-pointer flex-col gap-1.5 overflow-hidden px-1.5 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1.5"
+      className={`comic-page relative mt-1 flex min-h-0 flex-1 cursor-pointer flex-col gap-1.5 overflow-hidden px-1.5 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1.5 ${pageClass}`}
       style={pageStyle}
       onClick={() => (done ? props.onContinue() : complete())}
     >
       <section aria-label={`Round ${props.round}: ${props.threatName}`} className="comic-panel halftone relative shrink-0 bg-comic-orange px-3 pb-2.5 pt-2 text-black">
-        <p className="inline-block border-2 border-black bg-comic-yellow px-2 text-[11px] font-extrabold uppercase leading-5">
+        <p data-fx="round-cap" className="inline-block border-2 border-black bg-comic-yellow px-2 text-[11px] font-extrabold uppercase leading-5">
           Round {props.round} · Livello {props.level}
         </p>
+        {slots.length > 0 && (
+          <div className="absolute right-2 top-2 z-[2] flex flex-col items-end gap-1">
+            {slots.map(({ side, slot }) => (
+              <Slot key={side} side={side} round={props.round} carried={slot!.carried} passed={slot!.passed} />
+            ))}
+          </div>
+        )}
         <p className="mt-1 font-display text-[28px] uppercase leading-[30px]">{props.threatName}</p>
-        <p className="mt-1 flex flex-wrap gap-1">
+        <p data-fx="threat-abs" className="mt-1 flex flex-wrap gap-1">
           {props.abilities.map((code) => (
             <span key={code} className="bg-black px-1.5 text-[11px] font-extrabold leading-[18px] text-foreground">
-              {code}
+              {rule?.code === "blind" && !has("twist") ? "?" : code}
             </span>
           ))}
         </p>
         {twist && (
-          <p className={`comic-twist relative mt-2 border-[3px] border-black bg-white px-2.5 py-1 text-[13px] font-semibold leading-4 shadow-[4px_4px_0_#000] ${has("twist") ? "comic-on" : ""}`}>
+          <p
+            data-fx="rule"
+            className={`comic-twist comic-rule relative mt-2 border-[3px] border-black bg-white px-2.5 py-1 text-[13px] font-semibold leading-4 shadow-[4px_4px_0_#000] ${
+              rule?.code === "tomb_silence" ? "comic-rule-dark" : ""
+            } ${has("twist") ? "comic-on" : ""}`}
+            style={props.tierColor ? ({ "--rule-color": props.tierColor } as CSSProperties) : undefined}
+          >
             <span className="font-display uppercase">{twist.name}!</span> {twist.text}
           </p>
         )}
       </section>
 
-      <div className="grid min-h-[230px] flex-1 grid-cols-2 gap-1.5">
+      <div className="relative grid min-h-[230px] flex-1 grid-cols-2 gap-1.5">
         {SIDES.map((side) => {
           const data = props[side];
-          const decisive = props.decisive?.side === side ? props.decisive.index : null;
           return (
             <CardPanel
               key={side}
               side={side}
               data={data}
-              shown={shown(side)}
+              shown={shownList(side)}
               scoreShown={scoreOf(side)}
               instant={skipped}
               showIdle={has("idle")}
-              showAfter={has("after")}
+              showFlag={has("flags")}
+              struck={struckOn(side)}
+              shielded={shieldedOn(side)}
+              ruled={ruled}
+              hidden={rule?.code === "blind" && !has("twist")}
+              harmful={harmful}
               outcome={outcomeOf(side)}
-              decisiveIndex={decisive}
+              decisiveIndex={props.decisive?.side === side ? props.decisive.index : null}
               verdict={verdict}
             />
           );
         })}
+        {has("level") && (
+          <span
+            data-fx="eq"
+            className={`comic-eq absolute left-1/2 top-[44%] z-[8] -translate-x-1/2 border-4 border-black px-3 pb-1 font-display text-[40px] leading-[44px] text-black shadow-[4px_4px_0_#000] ${
+              tieNote ? "bg-comic-orange" : "bg-foreground"
+            }`}
+            key={tieNote ?? "level"}
+          >
+            {tieNote === "me" ? ">" : tieNote === "opponent" ? "<" : "="}
+          </span>
+        )}
       </div>
 
       <VerdictPanel
@@ -272,7 +606,22 @@ export function RoundComic(props: RoundComicProps) {
         ))}
       </VerdictPanel>
 
-      <div className="flex shrink-0 justify-center">{props.hint(done)}</div>
+      <div className="flex shrink-0 items-center justify-center gap-2">
+        {props.hint(done)}
+        <SoundToggle />
+      </div>
+
+      {cut && cutNote && (
+        <CutIn
+          key={`${cut.side}-${cut.index}`}
+          card={props[cut.side].card}
+          side={cut.side}
+          title={`${cutNote.name}!`}
+          text={cutNote.effect}
+          harm={powerFamily(cutNote.code) === "strike" || harmful(cutNote)}
+        />
+      )}
+      <FxLayer layerRef={layer} />
     </main>
   );
 }

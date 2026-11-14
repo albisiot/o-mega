@@ -16,7 +16,8 @@ import { TeamPicker } from "@/components/team-picker";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
 import { ThreatDiorama } from "@/components/threat-diorama";
 import { knownLevels, levelText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
-import { modifierLine } from "@/lib/threat-modifiers";
+import { abilityChips } from "@/lib/ability-marks";
+import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { balance } from "@/config/balance";
 import { describeEventPoints } from "@/lib/events";
 import { thumbArtUrl } from "@/lib/art";
@@ -105,6 +106,7 @@ function EmergencySteps({ initial }: { initial: EmergencyView }) {
           play={revealing}
           run={run}
           rules={view.rules}
+          abilities={abilities}
           onVerdict={() => settle(revealing.round)}
           onContinue={() => {
             settle(revealing.round);
@@ -569,12 +571,14 @@ function PlayReveal({
   play,
   run,
   rules,
+  abilities,
   onContinue,
   onVerdict,
 }: {
   play: EmergencyPlay;
   run: EmergencyRun;
   rules: EmergencyView["rules"];
+  abilities: AbilityInfo[];
   onContinue: () => void;
   /** The verdict is out: the levels strip may show it. */
   onVerdict: () => void;
@@ -586,9 +590,14 @@ function PlayReveal({
     const played = run.squad.find((c) => c.instance_id === p.instance_id);
     return played ? [{ card: played, passed: p.passed }] : [];
   });
-  const notes = card ? emergencyPowerNotes(card, play, before) : [];
+  const notes = card ? emergencyPowerNotes(card, play, before, true) : [];
   const failedBefore = earlier.filter((p) => !p.passed).length;
   const isLast = run.plays.every((p) => p.round <= play.round);
+  // A rare threat's rule: its caption and the marks it puts on the abilities (SPEC §5.15).
+  const modifier = play.modifier ?? null;
+  const nameOf = (code: string) => abilities.find((a) => a.code === code)?.name ?? code;
+  const twist = modifier ? describeThreatModifier(modifier, nameOf(play.threat.abilities[0] ?? ""), nameOf) : null;
+  const chips = card ? abilityChips(card.stats, { abilities: play.threat.abilities, modifier }) : undefined;
   return (
     <EmergencyComic
       key={play.round}
@@ -601,6 +610,10 @@ function PlayReveal({
       level={play.level}
       abilities={play.threat.abilities}
       card={card ?? null}
+      chips={chips}
+      twist={twist}
+      rule={modifier}
+      tierColor={play.rarity?.color ?? null}
       stats={card ? play.threat.abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ") : ""}
       score={play.score}
       target={play.rarity ? play.required : (rules.targets[String(play.level)] ?? play.required)}

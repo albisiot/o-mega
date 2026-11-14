@@ -1,19 +1,23 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { comicFx, FxLayer, useComicFx, type ComicFx } from "@/components/comic-fx";
 import {
   BEAT_MS,
   ComicArt,
   Crack,
   paced,
   pageStyle,
+  PowerBalloon,
   Rolling,
-  ShoutBalloon,
+  SoundToggle,
   ThinkBalloon,
   useBeats,
   useVerdictBuzz,
 } from "@/components/comic-page";
 import type { BossEntry, BossSide } from "@/lib/boss-powers";
+import { playSound } from "@/lib/comic-sound";
+import { chargeSource, powerFamily, powerSfx } from "@/lib/effect-families";
 import { tieBreakReason } from "@/lib/round-powers";
 import { LONG_PRESS_CLASS, type LongPressHandlers } from "@/lib/use-long-press";
 
@@ -73,13 +77,15 @@ function planBeats(entries: Record<BossSide, BossEntry>): Beat[] {
     at += BOSS_MS.base;
     beats.push({ at, kind: "base", side });
     at += BEAT_MS.baseCount;
-    notes.forEach((note, index) => {
-      if (note.active && !note.timing) {
+    notes
+      .map((note, index) => ({ note, index }))
+      .filter(({ note }) => (note.active && !note.timing) || note.cancelled)
+      .sort((a, b) => Number(Boolean(b.note.source && b.note.source !== "own")) - Number(Boolean(a.note.source && a.note.source !== "own")))
+      .forEach(({ index }) => {
         beats.push({ at, kind: "note", side, index });
         at += BOSS_MS.power;
-      }
-    });
-    if (notes.some((note) => !note.active)) beats.push({ at, kind: "idle", side });
+      });
+    if (notes.some((note) => !note.active && !note.cancelled)) beats.push({ at, kind: "idle", side });
     notes.forEach((note, index) => {
       if (note.active && note.timing === "tie") {
         at += BOSS_MS.power;
@@ -94,6 +100,67 @@ function planBeats(entries: Record<BossSide, BossEntry>): Beat[] {
   beats.push({ at, kind: "payout" });
   beats.push({ at: at + BOSS_MS.total, kind: "total" });
   return beats;
+}
+
+/**
+ * The effects of a beat as it plays (effect-families.ts). An entry's strike hits the card
+ * already on the front, or the one arriving with it; its charges fly into its score.
+ */
+function playBeat(beat: Beat, entries: Record<BossSide, BossEntry>, fx: ComicFx) {
+  if (beat.kind !== "note") return;
+  const entry = entries[beat.side];
+  const note = entry.notes[beat.index];
+  if (!note) return;
+  const side = beat.side;
+  const self = `${side}-note-${beat.index}`;
+  const score = `${side}-score`;
+  const points = note.effect?.split(" ")[0] ?? "";
+  if (note.cancelled) {
+    playSound(note.cancelled === "blocked" ? "down" : "hit");
+    return;
+  }
+  if (note.source === "carried" || note.source === "pack") {
+    fx.token(`${side}-label`, score, points, "forward", { arc: 20 });
+    playSound("whoosh");
+    return;
+  }
+  const family = powerFamily(note.code);
+  switch (family) {
+    case "strike":
+    case "stop":
+      fx.bolt(self, `${side}-facing`);
+      fx.word(`${side}-facing`, powerSfx(note.code), family === "stop" ? "stop" : "harm", { dy: -30 });
+      fx.shake(`${side}-facing`, 6);
+      playSound(family === "stop" ? "stop" : "down");
+      return;
+    case "shield":
+      fx.word(self, powerSfx(note.code), "shield", { dy: -26 });
+      if (note.points) fx.token(self, score, points, "shield", { arc: 20 });
+      playSound("shield");
+      return;
+    case "tiebreak":
+      fx.word(score, powerSfx(note.code), "tie", { dx: side === "me" ? 50 : -50 });
+      playSound("hit");
+      return;
+    case "reveal":
+    case "copy":
+      fx.word(self, powerSfx(note.code), "info", { dy: -26 });
+      playSound("reveal");
+      return;
+    case "forward":
+      fx.word(self, powerSfx(note.code), "forward", { dy: -26 });
+      playSound("whoosh");
+      return;
+    default: {
+      const source = chargeSource(note.code);
+      fx.token(source === "threat" ? "fronts" : source === "rival" ? `${side}-facing` : `${side}-label`, score, points, "help");
+      window.setTimeout(() => {
+        fx.word(score, powerSfx(note.code), "help", { dx: side === "me" ? 50 : -50 });
+        fx.sparks(score);
+      }, paced(480));
+      playSound("up");
+    }
+  }
 }
 
 /** The power without which the entry would not have taken (or kept) its front. */
@@ -152,8 +219,8 @@ function EntryPanel({
   const voided = settled && entry.holder === null;
   const decisive = decisiveIndex(entry);
   const note = sticker(entry);
-  const after = entry.notes.filter((n) => n.active && n.timing === "after");
-  const shouts = entry.notes.map((n, index) => ({ note: n, index })).filter(({ note: n, index }) => n.active && n.timing !== "after" && shown.has(index));
+  const after = entry.notes.map((n, index) => ({ note: n, index })).filter(({ note: n }) => n.active && n.timing === "after");
+  const order = fired.flatMap((beat) => (beat.kind === "note" && beat.side === side ? [beat.index] : []));
 
   if (!mark("in")) {
     return <section aria-hidden className="comic-panel relative min-h-[132px] flex-1 bg-panel-raised" />;
@@ -161,11 +228,13 @@ function EntryPanel({
   return (
     <section
       {...press}
+      data-fx={`${side}-panel`}
       aria-label={`${label}: ${entry.card?.name ?? "?"} su ${frontName}`}
       className={`comic-panel ${mine ? "bg-comic-cyan" : "halftone bg-comic-magenta"} ${lost ? "comic-lost" : voided ? "comic-void" : ""} ${LONG_PRESS_CLASS} relative min-h-[132px] flex-1 overflow-hidden text-black`}
     >
       {entry.card && <ComicArt card={entry.card} className={`comic-dim absolute inset-y-0 h-full w-[40%] ${mine ? "left-0" : "right-0"}`} />}
       <div
+        data-fx={`${side}-score`}
         className={`comic-dim absolute top-1.5 z-[4] grid h-[50px] w-[50px] place-items-center rounded-full border-[3px] border-foreground bg-black font-display text-[24px] tabular-nums text-comic-yellow ${
           mine ? "left-1.5" : "right-1.5"
         }`}
@@ -181,7 +250,7 @@ function EntryPanel({
       </span>
 
       <div className={`absolute top-1.5 ${mine ? "left-[calc(40%+8px)] right-1.5" : "left-1.5 right-[calc(40%+8px)]"}`}>
-        <p className="text-[10px] font-extrabold uppercase leading-3">{label} su</p>
+        <p data-fx={`${side}-label`} className="text-[10px] font-extrabold uppercase leading-3">{label} su</p>
         <p className="font-display text-[18px] uppercase leading-5">{frontName}</p>
         <p className="text-[10.5px] font-extrabold leading-3">{stats}</p>
       </div>
@@ -197,7 +266,7 @@ function EntryPanel({
             <br />
             {entry.facing.together ? "arriva insieme" : `c'è dal turno ${entry.facing.since}`}
           </p>
-          <div className="relative h-[66px] border-[3px] border-black bg-black shadow-[3px_3px_0_#000]">
+          <div data-fx={`${side}-facing`} className="relative h-[66px] border-[3px] border-black bg-black shadow-[3px_3px_0_#000]">
             {entry.facing.card && <ComicArt card={entry.facing.card} className="comic-dim absolute inset-0 h-full w-full" />}
             <span className="comic-dim absolute -right-2 top-1 z-[2] grid h-8 w-8 place-items-center rounded-full border-2 border-foreground bg-black font-display text-[16px] text-foreground">
               {entry.facing.score}
@@ -207,20 +276,19 @@ function EntryPanel({
         </div>
       )}
 
-      <div className={`absolute top-[58px] z-[5] flex max-w-[58%] flex-col gap-1 ${mine ? "left-1 items-start" : "right-1 items-end"}`}>
-        <ShoutBalloon notes={shouts} decisiveIndex={decisive} verdict={settled} />
-        {mark("idle") && <ThinkBalloon notes={entry.notes.filter((n) => !n.active)} />}
+      <div className={`absolute top-[58px] z-[7] flex max-w-[58%] flex-col gap-1 ${mine ? "left-1 items-start" : "right-1 items-end"}`}>
+        {order.map((index) => (
+          <PowerBalloon
+            key={index}
+            note={entry.notes[index]}
+            side={side}
+            fxName={`${side}-note-${index}`}
+            decisive={settled && decisive === index}
+          />
+        ))}
+        {settled && after.map(({ note: n, index }) => <PowerBalloon key={`after-${index}`} note={n} side={side} fxName={`${side}-note-${index}`} />)}
+        {mark("idle") && <ThinkBalloon notes={entry.notes.filter((n) => !n.active && !n.cancelled)} />}
       </div>
-
-      {settled && after.length > 0 && (
-        <div className={`absolute bottom-8 z-[6] flex flex-col gap-0.5 ${mine ? "left-1.5 items-start" : "right-1.5 items-end"}`}>
-          {after.map((n, index) => (
-            <span key={index} className="comic-pop border-2 border-black bg-comic-yellow px-1 text-[10px] font-extrabold uppercase leading-4">
-              {n.name} {n.effect}
-            </span>
-          ))}
-        </div>
-      )}
       {settled && (
         <span
           className={`comic-stamp absolute bottom-2 z-[8] border-[3px] px-2 font-display text-[19px] uppercase leading-7 shadow-[3px_3px_0_#000] ${
@@ -259,6 +327,20 @@ export function BossComic(props: BossComicProps) {
   const beats = useMemo(() => planBeats(entries), [props.turn]);
   const { fired, done, skipped, complete } = useBeats(beats);
   const has = (kind: Beat["kind"]) => fired.some((beat) => beat.kind === kind);
+  const { layer } = useComicFx();
+  const played = useRef(0);
+  useEffect(() => {
+    const fresh = fired.slice(played.current);
+    played.current = fired.length;
+    if (skipped) return;
+    const fx = comicFx(layer.current);
+    fresh.forEach((beat) => {
+      if (beat.kind === "total") playSound(points.me > points.opponent ? "win" : points.opponent > points.me ? "lose" : "void");
+      else playBeat(beat, entries, fx);
+    });
+    // Only the beats count: the props of a page do not change while it plays.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fired.length, skipped]);
   const settledOn = (side: BossSide) => fired.some((beat) => beat.kind === "result" && beat.side === side);
   const lowest = Math.min(...values);
   const turnWinner: BossSide | null = points.me > points.opponent ? "me" : points.opponent > points.me ? "opponent" : null;
@@ -291,7 +373,7 @@ export function BossComic(props: BossComicProps) {
           Turno {props.turn} di {props.turns} · ogni fronte occupato paga
         </p>
         <p className="mt-0.5 font-display text-[22px] uppercase leading-6">{props.bossName}</p>
-        <ol className="mt-1 grid grid-cols-5 gap-1">
+        <ol data-fx="fronts" className="mt-1 grid grid-cols-5 gap-1">
           {props.fronts.map((front, index) => {
             const hot = values[index] > lowest;
             const holder = holderNow(index);
@@ -378,7 +460,11 @@ export function BossComic(props: BossComicProps) {
         )}
       </section>
 
-      <div className="flex shrink-0 justify-center">{props.hint(done)}</div>
+      <div className="flex shrink-0 items-center justify-center gap-2">
+        {props.hint(done)}
+        <SoundToggle />
+      </div>
+      <FxLayer layerRef={layer} />
     </main>
   );
 }

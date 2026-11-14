@@ -59,7 +59,12 @@ function characterOf(state: BossState, side: Side, id: string): Character | unde
  * counts them in a Grande Minaccia (SPEC §5.12): the turn is the round, fronts held
  * so far are rounds won, Riscossa and Slancio come from the side's previous character.
  */
-export function bossTurnEntries(view: BossView, round: BossRound): Record<BossSide, BossEntry> | null {
+export function bossTurnEntries(
+  view: BossView,
+  round: BossRound,
+  /** Adds each note's power code and source, for the page's visual families (round-powers.ts). */
+  annotate = false,
+): Record<BossSide, BossEntry> | null {
   if (!round.resolved || !round.my_play || !round.opponent_play) return null;
   const state = knownBossState(view);
   const record = state.turns.find((turn) => turn.turn === round.round);
@@ -108,6 +113,7 @@ export function bossTurnEntries(view: BossView, round: BossRound): Record<BossSi
             {
               carried: context.carriedBonus ?? 0,
               carriedFrom: context.carriedBonus ? lastCard?.power?.name : undefined,
+              carriedCode: context.carriedBonus ? lastCard?.power?.code : undefined,
               lost: holder !== null && holder !== bossSide,
               won: holder === bossSide,
               wonTie:
@@ -123,6 +129,7 @@ export function bossTurnEntries(view: BossView, round: BossRound): Record<BossSi
               pack: packBonus(acting, context.played ?? []),
               standing: { roundsWon: context.roundsWon ?? 0, opponentRoundsWon: context.opponentRoundsWon ?? 0 },
             },
+            annotate,
           )
         : [];
 

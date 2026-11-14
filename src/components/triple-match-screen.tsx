@@ -8,7 +8,8 @@ import { useEventPointsFor } from "@/components/event-banner";
 import { Silhouette } from "@/components/card-view";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
-import { prefersReducedMotion } from "@/components/comic-page";
+import { PowerPill, prefersReducedMotion } from "@/components/comic-page";
+import { contestNotes } from "@/lib/triple-powers";
 import { Sheet } from "@/components/sheet";
 import { balance } from "@/config/balance";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
@@ -786,11 +787,13 @@ const comicStamp = (delay: number): CSSProperties => ({ animation: `comic-stamp 
 /** One threat of a resolved round: the two cards, their scores, who took the point. */
 function ContestPanel({
   view,
+  round,
   contest,
   rival,
   delay,
 }: {
   view: TripleView;
+  round: TripleRound;
   contest: TripleContest;
   rival: string;
   delay: number;
@@ -816,6 +819,8 @@ function ContestPanel({
               : null,
         )
       : null;
+  // The powers of each card on this threat, in their family's colours (effect-families.ts).
+  const notesOf = (tone: "me" | "opponent") => contestNotes(view, round, contest, tone);
   const side = (card: MatchCard | null, score: number, tone: "me" | "opponent", winner: boolean) => (
     <span
       {...(card ? detail.press(card) : {})}
@@ -825,6 +830,11 @@ function ContestPanel({
     >
       <span className="w-full truncate text-center text-[11px] font-extrabold uppercase">{card?.name ?? "—"}</span>
       <span className="font-display text-[28px] leading-8">{score}</span>
+      <span className="flex max-w-full flex-col items-center gap-0.5">
+        {notesOf(tone).map((note, index) => (
+          <PowerPill key={index} note={note} delay={delay + 0.25 + index * 0.12} />
+        ))}
+      </span>
     </span>
   );
   return (
@@ -898,7 +908,7 @@ function RoundReveal({
       </p>
       <ol className="relative flex flex-col gap-3 pr-2">
         {contests.map((contest, i) => (
-          <ContestPanel key={contest.slot} view={view} contest={contest} rival={rival} delay={0.2 + i * 0.6} />
+          <ContestPanel key={contest.slot} view={view} round={round} contest={contest} rival={rival} delay={0.2 + i * 0.6} />
         ))}
       </ol>
       <div className="relative mt-auto flex flex-col items-center gap-1" style={comicIn(last + 0.3)}>

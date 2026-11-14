@@ -4,7 +4,9 @@ import Link from "next/link";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   abilityMalusFrom,
+  abilityMalusOn,
   immuneToSabotage,
+  modifierPoints,
   packBonus,
   scorePlay,
   type AbilityFamilies,
@@ -24,7 +26,8 @@ import { balance } from "@/config/balance";
 import { describeEventPoints } from "@/lib/events";
 import { artSrcSet, thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
-import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
+import { abilityChips, chipsTotal } from "@/lib/ability-marks";
+import { FACTION_LABELS, fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
 import {
   claimVictory,
@@ -948,6 +951,7 @@ function RoundReveal({
       ? roundPowerNotes(mine, round.my_play, threat, {
           carried: myCarried.points,
           carriedFrom: myCarried.from,
+          carriedCode: myCarried.code,
           lost: round.winner === "opponent",
           won: round.winner === "me",
           wonTie: Boolean(tieWonBy) && round.winner === "me",
@@ -958,12 +962,13 @@ function RoundReveal({
           silenced: wasSilenced(mine, round.modifier),
           standing: myStanding,
           opponentHasPower: Boolean(theirs?.power),
-        })
+        }, true)
       : [];
   const theirNotes = theirs
     ? roundPowerNotes(theirs, theirs, threat, {
         carried: theirCarried.points,
         carriedFrom: theirCarried.from,
+        carriedCode: theirCarried.code,
         lost: round.winner === "me",
         won: round.winner === "opponent",
         wonTie: Boolean(tieWonBy) && round.winner === "opponent",
@@ -974,8 +979,40 @@ function RoundReveal({
         silenced: wasSilenced(theirs, round.modifier),
         standing: theirStanding,
         opponentHasPower: Boolean(mine?.power),
-      })
+      }, true)
     : [];
+
+  // Each card's abilities as chips: the rule's marks and what Sabotatore took (SPEC §5.4, §5.15).
+  const ruleThreat = roundThreat(round);
+  const asPlayed = (card: MatchCard, other: MatchCard | null | undefined) => {
+    const character = toCharacter(card, card.definition_id);
+    return powerless(card, other) ? { ...character, power: null } : character;
+  };
+  const myCharacter = mine ? asPlayed(mine, theirs) : null;
+  const theirCharacter = theirs ? asPlayed(theirs, mine) : null;
+  const mirror = round.modifier?.code === "mirror";
+  const chipsOf = (card: MatchCard | null | undefined, otherCard: MatchCard | null | undefined, malus: number) =>
+    card && !round.threat.hidden
+      ? abilityChips(mirror && otherCard ? otherCard.stats : card.stats, ruleThreat, malus).map((chip) =>
+          mirror ? { ...chip, mark: { text: "⇄", tone: "ok" as const } } : chip,
+        )
+      : undefined;
+  const myMalus = myCharacter && theirCharacter ? abilityMalusOn(myCharacter, theirCharacter) : 0;
+  const theirMalus = myCharacter && theirCharacter ? abilityMalusOn(theirCharacter, myCharacter) : 0;
+  const myChips = chipsOf(mine, theirs, myMalus);
+  const theirChips = chipsOf(theirs, mine, theirMalus);
+  // What Sabotatore cost each card: the page counts it first, then takes it away with the strike.
+  const struckPoints = (chips: typeof myChips, card: MatchCard | null | undefined, otherCard: MatchCard | null | undefined) =>
+    chips && card ? chipsTotal(chipsOf(card, otherCard, 0) ?? []) - chipsTotal(chips) : 0;
+  // The ribbon a rule drops on a card: its faction, its rarity, or being behind.
+  const flagOf = (card: MatchCard | null | undefined, character: ReturnType<typeof toCharacter> | null, standing: typeof myStanding) => {
+    if (!card || !character || !round.modifier) return null;
+    const points = modifierPoints(character, ruleThreat, standing);
+    if (!points) return null;
+    const code = round.modifier.code;
+    const who = code === "hostile_ground" ? (FACTION_LABELS[card.faction] ?? card.faction) : code === "long_count" ? "Chi è sotto" : card.rarity.name;
+    return { text: `${who} ${points > 0 ? "+" : "−"}${Math.abs(points)}`, points };
+  };
 
   const nameOf = (code: string) => abilities.find((a) => a.code === code)?.name ?? code;
   const twist = round.modifier ? describeThreatModifier(round.modifier, nameOf(round.threat.abilities[0]), nameOf) : null;
@@ -1014,13 +1051,28 @@ function RoundReveal({
       threatName={round.threat.name}
       abilities={round.threat.abilities}
       twist={twist}
-      me={{ label: "Tu", card: mine ?? null, stats: statsOf(mine), score: myScore, notes: myNotes, press: mine ? detail.press(mine) : undefined }}
+      rule={round.modifier}
+      tierColor={round.rarity?.color ?? null}
+      me={{
+        label: "Tu",
+        card: mine ?? null,
+        stats: statsOf(mine),
+        chips: myChips,
+        score: myScore,
+        notes: myNotes,
+        flag: flagOf(mine, myCharacter, myStanding),
+        struckPoints: struckPoints(myChips, mine, theirs),
+        press: mine ? detail.press(mine) : undefined,
+      }}
       opponent={{
         label: opponentName,
         card: theirs,
         stats: statsOf(theirs),
+        chips: theirChips,
         score: theirScore,
         notes: theirNotes,
+        flag: flagOf(theirs, theirCharacter, theirStanding),
+        struckPoints: struckPoints(theirChips, theirs, mine),
         press: theirs ? detail.press(theirs) : undefined,
       }}
       winner={winner}

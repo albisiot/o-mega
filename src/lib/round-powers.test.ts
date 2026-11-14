@@ -57,7 +57,7 @@ describe("roundPowerNotes", () => {
 describe("carriedInto", () => {
   it("passes Riscossa on only after a lost round", () => {
     const comeback = card({ code: "comeback", params: { bonus: 2 }, name: "Riscossa", text: "" });
-    expect(carriedInto(comeback, "lost")).toEqual({ points: 2, from: "Riscossa" });
+    expect(carriedInto(comeback, "lost")).toEqual({ points: 2, from: "Riscossa", code: "comeback" });
     expect(carriedInto(comeback, "won").points).toBe(0);
     expect(carriedInto(null, "lost").points).toBe(0);
   });
@@ -65,7 +65,7 @@ describe("carriedInto", () => {
   it("passes Slancio on only after a won round, and nothing past an Annullatore", () => {
     const momentum = card({ code: "momentum", params: { bonus: 2 }, name: "Slancio", text: "" });
     const nullifier = card({ code: "nullifier", params: {}, name: "Annullatore", text: "" });
-    expect(carriedInto(momentum, "won")).toEqual({ points: 2, from: "Slancio" });
+    expect(carriedInto(momentum, "won")).toEqual({ points: 2, from: "Slancio", code: "momentum" });
     expect(carriedInto(momentum, "void").points).toBe(0);
     expect(carriedInto(momentum, "won", nullifier).points).toBe(0);
   });
@@ -201,5 +201,34 @@ describe("tieWonByRelentless", () => {
     const nullifier = card({ code: "nullifier", name: "Annullatore", text: "", params: {} });
     expect(tieWonByRelentless(relentless, nullifier, null)).toBe(false);
     expect(tieWonByRelentless(relentless, plain, { code: "tomb_silence" })).toBe(false);
+  });
+});
+
+describe("roundPowerNotes with annotate", () => {
+  it("adds each note's power code and where it comes from", () => {
+    const allRounder = card({ code: "all_rounder", params: { bonus: 3, min_value: 5 }, name: "Tuttofare", text: "" });
+    const notes = roundPowerNotes(allRounder, { bonus: 3 + 2 + 1 }, threat, { ...calm, carried: 2, carriedFrom: "Slancio", carriedCode: "momentum", pack: 1 }, true);
+    expect(notes.map((n) => [n.code, n.source])).toEqual([
+      ["all_rounder", "own"],
+      ["momentum", "carried"],
+      ["pack_leader", "pack"],
+    ]);
+  });
+
+  it("says why a power did nothing", () => {
+    const opener = card({ code: "opener", params: { bonus: 2, max_round: 2 }, name: "Apripista", text: "" });
+    expect(roundPowerNotes(opener, { bonus: 0 }, threat, { ...calm, nullified: true }, true)[0].cancelled).toBe("nullified");
+    expect(roundPowerNotes(opener, { bonus: 0 }, threat, { ...calm, silenced: true }, true)[0].cancelled).toBe("silenced");
+    expect(roundPowerNotes(opener, { bonus: 2 }, threat, calm)[0].code).toBeUndefined();
+  });
+});
+
+describe("roundPowerNotes with annotate, against a shield", () => {
+  it("lets a stopped Sabotatore speak as stopped", () => {
+    const sabotage = card({ code: "sabotage", params: { malus: 1 }, name: "Sabotatore", text: "" });
+    const plain = roundPowerNotes(sabotage, { bonus: 0 }, threat, { ...calm, opponentShielded: true });
+    expect(plain).toEqual([{ name: "Sabotatore", effect: null, active: false }]);
+    const annotated = roundPowerNotes(sabotage, { bonus: 0 }, threat, { ...calm, opponentShielded: true }, true);
+    expect(annotated[0]).toMatchObject({ effect: "fermato dallo scudo", cancelled: "blocked", active: false });
   });
 });

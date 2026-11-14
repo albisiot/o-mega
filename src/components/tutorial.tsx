@@ -24,6 +24,7 @@ import {
 } from "@/config/tutorial";
 import { withBasePath } from "@/lib/base-path";
 import type { MatchCard } from "@/lib/match";
+import type { PowerNote } from "@/lib/round-powers";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { hasSeenTutorial, markTutorialSeen } from "@/lib/tutorial-seen";
 
@@ -490,7 +491,7 @@ function PowersDemo() {
         key={replay}
         round={round}
         threat={threat}
-        me={{ card: me, score: myScore, notes: [{ name: me.power?.name ?? "", effect: `+${me.bonus}`, active: true, points: me.bonus }] }}
+        me={{ card: me, score: myScore, notes: [{ name: me.power?.name ?? "", effect: `+${me.bonus}`, active: true, points: me.bonus, code: "last_stand", source: "own" }] }}
         opponent={{ card: opponent, score: theirScore, label: "Avversario" }}
         winner="me"
         resultLine={`${me.name} batte ${opponent.name} · ${myScore} a ${theirScore}.`}
@@ -530,7 +531,7 @@ function DemoComic({
 }: {
   round: number;
   threat: { name: string; level: number; abilities: string[] };
-  me: { card: CardData; score: number; notes?: { name: string; effect: string; active: boolean; points?: number }[] };
+  me: { card: CardData; score: number; notes?: PowerNote[] };
   opponent: { card: CardData; score: number; label: string };
   winner: "me" | "opponent";
   resultLine: string;

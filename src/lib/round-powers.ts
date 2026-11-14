@@ -15,13 +15,29 @@ import { toCharacter, type MatchCard, type MatchRound } from "@/lib/match";
  * is what it added to this card's score in this round; `timing` says when it shows: on a tie it
  * settled (Implacabile) or after the result, for the next card (Riscossa, Slancio and the like).
  */
-export type PowerNote = { name: string; effect: string | null; active: boolean; points?: number; timing?: "tie" | "after" };
+export type PowerNote = {
+  name: string;
+  effect: string | null;
+  active: boolean;
+  points?: number;
+  timing?: "tie" | "after";
+  /**
+   * The power's code, for its family on the page (effect-families.ts); `source` says whose
+   * power it is: this card's own, the one that passed a bonus from the card before, or
+   * Capobranco. `cancelled`: why the card's own power did nothing. Only with `annotate`.
+   */
+  code?: string;
+  source?: "own" | "carried" | "pack";
+  cancelled?: "nullified" | "silenced" | "blocked";
+};
 
 export type RoundOutcome = {
   /** Bonus this card received from the previous card of its side (Riscossa or Slancio). */
   carried: number;
   /** Name of the power that passed that bonus; Riscossa when not given. */
   carriedFrom?: string;
+  /** Code of that power (annotated notes only); Riscossa's when not given. */
+  carriedCode?: string;
   lost: boolean;
   won?: boolean;
   /** An opposing Annullatore took this card's power away. */
@@ -52,6 +68,8 @@ export function roundPowerNotes(
   play: { bonus: number },
   threat: { level: number; abilities: string[]; modifier: ThreatModifier | null },
   outcome: RoundOutcome,
+  /** Adds each note's power code and source, for the page's visual families. */
+  annotate = false,
 ): PowerNote[] {
   const notes: PowerNote[] = [];
   const power = card.power;
@@ -125,10 +143,32 @@ export function roundPowerNotes(
       }
     }
   }
-  if (outcome.carried > 0) {
-    notes.push({ name: outcome.carriedFrom ?? "Riscossa", effect: `+${outcome.carried}`, active: true, points: outcome.carried });
+  if (annotate && power && notes[0]) {
+    const cancelled = outcome.silenced ? "silenced" : outcome.nullified ? "nullified" : undefined;
+    notes[0] = { ...notes[0], code: power.code, source: "own", ...(cancelled ? { cancelled } : {}) };
+    // Sabotatore against Schermato or Riflesso: it struck, the shield stopped it.
+    if (!cancelled && power.code === "sabotage" && outcome.opponentShielded) {
+      notes[0] = { ...notes[0], effect: "fermato dallo scudo", cancelled: "blocked" };
+    }
   }
-  if (outcome.pack) notes.push({ name: "Capobranco", effect: `+${outcome.pack}`, active: true, points: outcome.pack });
+  if (outcome.carried > 0) {
+    notes.push({
+      name: outcome.carriedFrom ?? "Riscossa",
+      effect: `+${outcome.carried}`,
+      active: true,
+      points: outcome.carried,
+      ...(annotate ? { code: outcome.carriedCode ?? "comeback", source: "carried" as const } : {}),
+    });
+  }
+  if (outcome.pack) {
+    notes.push({
+      name: "Capobranco",
+      effect: `+${outcome.pack}`,
+      active: true,
+      points: outcome.pack,
+      ...(annotate ? { code: "pack_leader", source: "pack" as const } : {}),
+    });
+  }
   return notes;
 }
 
@@ -220,12 +260,12 @@ export function carriedInto(
   previousOutcome: PlayOutcome,
   previousOpponent?: MatchCard | null,
   previousThreat?: Threat | null,
-): { points: number; from: string | undefined } {
+): { points: number; from: string | undefined; code?: string } {
   if (!previousCard) return { points: 0, from: undefined };
   const opponent = previousOpponent ? toCharacter(previousOpponent, "opponent") : null;
   const character = asPlayedAgainst(toCharacter(previousCard, previousCard.definition_id), opponent, previousThreat);
   const points = carriedBonusAfter(character, previousOutcome);
-  return { points, from: points > 0 ? previousCard.power?.name : undefined };
+  return points > 0 ? { points, from: previousCard.power?.name, code: previousCard.power?.code } : { points, from: undefined };
 }
 
 /** How a round ended for the viewer's side, from the winner the server reports. */

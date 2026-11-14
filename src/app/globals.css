@@ -427,6 +427,129 @@ html.screen-locked body {
   80% { translate: 3px 2px; }
 }
 
+/* The special abilities on a result page (comic-page.tsx, comic-fx.tsx, effect-families.ts).
+   Cards speak in balloons, one shape per family; threats in captions with hazard stripes.
+   Yellow helps, magenta on black hits, white dashed only tells. */
+.comic-fx-layer { position: absolute; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; }
+.fx-token { position: absolute; translate: -50% -50%; z-index: 2; padding: 3px 8px; border: 3px solid #000; border-radius: 999px; box-shadow: 3px 3px 0 #000; font: 17px/1 var(--sfx-font); letter-spacing: 0.03em; white-space: nowrap; color: #000; background: var(--comic-yellow); }
+.fx-token.fx-harm { background: #000; color: var(--comic-magenta); border-color: var(--comic-magenta); border-radius: 0; }
+.fx-token.fx-shield { background: var(--comic-cyan); }
+.fx-token.fx-forward { background: var(--comic-orange); box-shadow: 0 0 16px 5px rgb(255 138 0 / 0.75); }
+.fx-token.fx-rule { background: var(--comic-orange); border-radius: 0; }
+.fx-token.fx-ice { background: #bfe9ff; color: #003a57; border-radius: 0; }
+.fx-token.fx-info, .fx-token.fx-stop { background: #fff; }
+.fx-token.fx-broken { background: #6c6c74; color: var(--foreground); }
+.fx-word { position: absolute; translate: -50% -50%; rotate: -8deg; z-index: 3; font: 40px/1 var(--sfx-font); letter-spacing: 0.04em; white-space: nowrap; color: var(--comic-yellow); -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 4px 4px 0 #000; }
+.fx-word.fx-harm { color: var(--comic-magenta); }
+.fx-word.fx-shield { color: var(--comic-cyan); }
+.fx-word.fx-stop, .fx-word.fx-info { color: #fff; }
+.fx-word.fx-forward, .fx-word.fx-tie, .fx-word.fx-rule { color: var(--comic-orange); }
+.fx-word.fx-ice { color: #bfe9ff; }
+.fx-spark { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border: 2px solid #000; background: var(--comic-yellow); }
+.fx-spark.fx-forward { background: var(--comic-orange); }
+.fx-spark.fx-harm { background: var(--comic-magenta); }
+.fx-bolt { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.fx-bolt polyline { fill: none; stroke-linejoin: round; }
+.fx-bolt-ink { stroke: #000; stroke-width: 9; }
+.fx-bolt-light { stroke: var(--comic-magenta); stroke-width: 4; }
+.fx-bolt.fx-shield .fx-bolt-light { stroke: var(--comic-cyan); }
+
+.comic-balloon path { stroke: #000; stroke-width: 3; stroke-linejoin: round; }
+.comic-balloon-flip > svg { scale: -1 1; }
+.comic-balloon-charge path { fill: var(--comic-yellow); }
+.comic-balloon-strike path { fill: #000; stroke: var(--comic-magenta); }
+.comic-balloon-strike .comic-balloon-text { color: var(--comic-magenta); }
+.comic-balloon-strike .comic-balloon-text span + span { color: var(--foreground); }
+.comic-balloon-shield path { fill: var(--comic-cyan); }
+.comic-balloon-stop path { fill: #fff; stroke-width: 5; }
+.comic-balloon-stop .comic-balloon-text svg { color: var(--comic-magenta); }
+.comic-balloon-tiebreak path, .comic-balloon-forward path { fill: var(--comic-orange); }
+.comic-balloon-copy path { fill: rgb(255 255 255 / 0.72); stroke-dasharray: 2 3; }
+.comic-balloon-reveal path { fill: #fff; stroke-dasharray: 7 5; }
+.comic-balloon-text { color: #000; }
+.comic-balloon-dead { filter: grayscale(1); }
+.comic-balloon-dead .comic-balloon-text { opacity: 0.6; text-decoration: line-through; }
+.comic-balloon-sealed .comic-balloon-text { filter: blur(2px); opacity: 0.45; }
+
+.comic-chip-open { animation: comic-chip-flip calc(0.3s * var(--comic-pace, 1)) ease-out both; }
+.comic-chip-ice { background: #bfe9ff; color: #003a57; outline: 2px solid #003a57; }
+.comic-chip-ice b { color: #003a57; }
+.comic-chip-off { opacity: 0.45; text-decoration: line-through; }
+.comic-chip-hit b { color: var(--comic-magenta); }
+.comic-mark { z-index: 6; }
+.comic-mark-up { background: var(--comic-yellow); color: #000; }
+.comic-mark-down { background: var(--comic-magenta); color: #000; }
+.comic-mark-ice { background: #bfe9ff; color: #003a57; }
+.comic-mark-off, .comic-mark-ok { background: #fff; color: #000; }
+.comic-ribbon { clip-path: polygon(0 0, 100% 0, 93% 50%, 100% 100%, 0 100%, 7% 50%); animation: comic-ribbon calc(0.5s * var(--comic-pace, 1)) cubic-bezier(0.3, 1.3, 0.5, 1) both; }
+.comic-shield path { fill: rgb(22 200 255 / 0.38); stroke: var(--comic-cyan); stroke-width: 4; }
+
+/* The threat's caption: hazard stripes, in the tier's colour for a rare threat. */
+.comic-rule { position: relative; padding-left: 22px; }
+.comic-rule::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 14px; border-right: 3px solid #000; background: repeating-linear-gradient(45deg, var(--rule-color, var(--comic-orange)) 0 6px, #000 6px 12px); }
+.comic-rule-dark { background: #000 !important; color: var(--foreground) !important; border-color: var(--foreground) !important; }
+
+/* What a card passes to the next round, waiting in a slot on the threat panel. */
+.comic-slot { min-width: 54px; border: 2px dashed rgb(0 0 0 / 0.55); background: rgb(255 255 255 / 0.35); }
+.comic-slot-full { border: 2px solid #000; background: var(--comic-orange); box-shadow: 0 0 12px 2px rgb(255 138 0 / 0.65); }
+
+.comic-eq { animation: comic-pop calc(0.35s * var(--comic-pace, 1)) cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+
+.comic-cutin { position: absolute; left: -20px; right: -20px; top: 34%; z-index: 45; height: 170px; overflow: hidden; transform: skewY(-6deg); border-block: 5px solid #000; background: var(--comic-yellow); pointer-events: none; opacity: 0; }
+.comic-cutin-me { animation: comic-cutin-left calc(0.78s * var(--comic-pace, 1)) cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.comic-cutin-opponent { animation: comic-cutin-right calc(0.78s * var(--comic-pace, 1)) cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.comic-cutin-harm { background: #000; color: var(--foreground); }
+.comic-cutin-speed { position: absolute; inset: 0; background-image: repeating-linear-gradient(0deg, transparent 0 12px, rgb(0 0 0 / 0.16) 12px 15px); }
+.comic-cutin-harm .comic-cutin-speed { background-image: repeating-linear-gradient(0deg, transparent 0 12px, rgb(255 46 108 / 0.25) 12px 15px); }
+.comic-cutin-inner { position: absolute; inset: 0; display: flex; align-items: center; gap: 12px; padding: 0 30px; transform: skewY(6deg); color: #000; }
+.comic-cutin-harm .comic-cutin-inner { color: var(--foreground); }
+.comic-cutin-art { position: relative; width: 116px; height: 170px; flex: none; object-fit: cover; object-position: center 12%; border-inline: 5px solid #000; }
+.comic-cutin-title { font-size: 40px; line-height: 1; letter-spacing: 0.03em; color: #fff; -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 4px 4px 0 #000; }
+.comic-cutin-harm .comic-cutin-title { color: var(--comic-magenta); }
+
+/* Effects of a threat rule on the whole page: Rovescio and Negativo turn it over, Gelo
+   freezes its edges, Silenzio della tomba drains its colours, Specchio flashes. */
+.comic-page.fx-flip { animation: comic-flip calc(0.9s * var(--comic-pace, 1)) ease-in-out both; }
+.comic-page.fx-frost::after { content: ""; position: absolute; inset: 0; z-index: 35; pointer-events: none; background: radial-gradient(ellipse at center, transparent 52%, rgb(191 233 255 / 0.5) 82%, rgb(255 255 255 / 0.8)); animation: panel-fade 0.6s ease-out both; }
+.comic-page.fx-silence .comic-panel { filter: grayscale(0.8); transition: filter 0.6s; }
+.comic-page.fx-mirror::after { content: ""; position: absolute; inset: 0; z-index: 35; pointer-events: none; background: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / 0.85) 50%, transparent 65%); animation: comic-mirror calc(0.8s * var(--comic-pace, 1)) ease-out both; }
+
+@keyframes comic-chip-flip {
+  from { transform: rotateY(90deg); }
+  to { transform: rotateY(0); }
+}
+
+@keyframes comic-ribbon {
+  0% { opacity: 0; transform: translateY(-150px) rotate(-10deg); }
+  75% { opacity: 1; transform: translateY(8px) rotate(2deg); }
+  100% { opacity: 1; transform: translateY(0) rotate(0); }
+}
+
+@keyframes comic-cutin-left {
+  0% { opacity: 1; translate: -110% 0; }
+  18% { translate: 0 0; }
+  80% { opacity: 1; translate: 3% 0; }
+  100% { opacity: 0; translate: 110% 0; }
+}
+
+@keyframes comic-cutin-right {
+  0% { opacity: 1; translate: 110% 0; }
+  18% { translate: 0 0; }
+  80% { opacity: 1; translate: -3% 0; }
+  100% { opacity: 0; translate: -110% 0; }
+}
+
+@keyframes comic-flip {
+  0% { transform: perspective(1000px) rotateX(0); }
+  50% { transform: perspective(1000px) rotateX(180deg); }
+  100% { transform: perspective(1000px) rotateX(360deg); }
+}
+
+@keyframes comic-mirror {
+  from { translate: -100% 0; }
+  to { translate: 100% 0; }
+}
+
 .pack-shine { animation: pack-shine 4.5s ease-in-out infinite; }
 .animate-rays-spin { animation: rays-spin 60s linear infinite; }
 .animate-search-burst { animation: search-burst 1.6s ease-in-out infinite; }
@@ -708,8 +831,20 @@ html.screen-locked body {
   .comic-fade,
   .comic-hero,
   .comic-verdict:has(.comic-stamp),
-  .quad-fx {
+  .quad-fx,
+  .comic-chip-open,
+  .comic-ribbon,
+  .comic-eq,
+  .comic-page.fx-flip,
+  .comic-page.fx-frost::after,
+  .comic-page.fx-mirror::after {
     animation: none !important;
+  }
+
+  /* Without motion there is no cut-in (the balloon tells the power) and no mirror flash. */
+  .comic-cutin,
+  .comic-page.fx-mirror::after {
+    display: none;
   }
 
   .comic-twist {

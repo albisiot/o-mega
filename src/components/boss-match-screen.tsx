@@ -742,7 +742,7 @@ function TurnReveal({
   finished: boolean;
 }) {
   const detail = useCardDetail();
-  const entries = useMemo(() => bossTurnEntries(view, round), [view, round]);
+  const entries = useMemo(() => bossTurnEntries(view, round, true), [view, round]);
   if (!entries || !round.my_play || !round.opponent_play) return null;
   const statsOf = (entry: BossEntry) => {
     const abilities = view.fronts[entry.front]?.abilities ?? [];

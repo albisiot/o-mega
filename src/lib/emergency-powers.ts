@@ -33,6 +33,8 @@ export function emergencyPowerNotes(
   play: Pick<EmergencyPlay, "round" | "level" | "threat" | "bonus" | "passed">,
   /** The plays before this one, in order, each with its card. */
   before: { card: MatchCard; passed: boolean }[],
+  /** Adds each note's power code and source, for the page's visual families (round-powers.ts). */
+  annotate = false,
 ): EmergencyNote[] {
   const previous = before.at(-1);
   const carried = carriedInto(previous?.card, previous ? (previous.passed ? "won" : "lost") : "void");
@@ -43,6 +45,7 @@ export function emergencyPowerNotes(
     {
       carried: carried.points,
       carriedFrom: carried.from,
+      carriedCode: carried.code,
       lost: !play.passed,
       won: play.passed,
       wonTie: false,
@@ -52,18 +55,20 @@ export function emergencyPowerNotes(
       ),
       standing: { roundsWon: before.filter((b) => b.passed).length, opponentRoundsWon: before.filter((b) => !b.passed).length },
     },
+    annotate,
   );
   const power = card.power;
   if (!power) return notes;
   return notes.map((note, index) => {
     // The card's own power is always the first note.
     if (index > 0) return note;
+    const tag = annotate ? { code: power.code, source: "own" as const } : {};
     if (power.code === "sabotage") {
       const threshold = abilityMalusFrom(toCharacter(card, card.definition_id)) * play.threat.abilities.length;
-      return { name: power.name, effect: `soglia −${threshold}`, active: true, threshold };
+      return { name: power.name, effect: `soglia −${threshold}`, active: true, threshold, ...tag };
     }
-    if (power.code === "relentless") return { name: power.name, effect: "gli basta un punto in meno", active: true, threshold: 1 };
-    if (NEED_OPPONENT.has(power.code) && !note.points) return { name: power.name, effect: "senza avversario non agisce", active: false };
+    if (power.code === "relentless") return { name: power.name, effect: "gli basta un punto in meno", active: true, threshold: 1, ...tag };
+    if (NEED_OPPONENT.has(power.code) && !note.points) return { name: power.name, effect: "senza avversario non agisce", active: false, ...tag };
     return note;
   });
 }
