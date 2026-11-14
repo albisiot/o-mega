@@ -1217,6 +1217,7 @@ export type Database = {
         Row: {
           card_instance_ids: string[]
           created_at: string
+          definition_ids: string[] | null
           id: string
           name: string
           updated_at: string
@@ -1225,6 +1226,7 @@ export type Database = {
         Insert: {
           card_instance_ids: string[]
           created_at?: string
+          definition_ids?: string[] | null
           id?: string
           name: string
           updated_at?: string
@@ -1233,6 +1235,7 @@ export type Database = {
         Update: {
           card_instance_ids?: string[]
           created_at?: string
+          definition_ids?: string[] | null
           id?: string
           name?: string
           updated_at?: string
@@ -3566,6 +3569,7 @@ export type Database = {
         Returns: {
           card_instance_ids: string[]
           created_at: string
+          definition_ids: string[] | null
           id: string
           name: string
           updated_at: string
