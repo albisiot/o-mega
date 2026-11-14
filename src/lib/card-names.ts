@@ -1993,6 +1993,121 @@ const STYLES: Record<string, NameStyle> = {
     glow: "rgb(255 255 255 / 0.35)",
     split: ["rgb(255 255 255 / 0.3)", "rgb(255 255 255 / 0.3)"],
   },
+  // Upkeep: the last pump of the low quarters, zinc grey with rust stitches.
+  P218: {
+    font: "stencil",
+    fill: layers(stitches("rgb(170 80 40 / 0.6)"), grad("#eef6f4", "#8fb8b2 50%", "#3a4a48")),
+    rim: "#0a0e0e",
+    side: ["#4a3020", "#0a0e0e"],
+  },
+  // Reus: the last prisoner, hospital green behind thick glass.
+  P219: {
+    font: "anton",
+    fill: layers(scanlines("rgb(20 40 30 / 0.35)"), grad("#f0fff4", "#8ad0a8 50%", "#1e3a2a")),
+    rim: "#050a07",
+    side: ["#1e3a2a", "#050a07"],
+    split: ["rgb(140 220 170 / 0.35)", "rgb(140 220 170 / 0.35)"],
+  },
+  // Statera: the steelyard, tailor's tape on rusted iron.
+  P220: {
+    font: "slab",
+    fill: layers(stripes("rgb(60 40 20 / 0.45)", 90, 0.05), grad("#f6ecd8", "#b08a5a 50%", "#3a2a1a")),
+    rim: "#0c0804",
+    side: ["#4a3a2a", "#0c0804"],
+    tracking: 0.04,
+  },
+  // Normal: the passer-by, office grey and a chipped red nail.
+  P221: {
+    font: "elegant",
+    fill: grad("#ffffff", "#c8c8cc 50%", "#6a6a72"),
+    rim: "#101012",
+    side: ["#8a2a2a", "#101012"],
+    line: "#b03030",
+  },
+  // Billable: the welder for hire, fluorescent orange and rubber black.
+  P222: {
+    font: "block",
+    fill: layers(dots("rgb(40 40 40 / 0.45)", 0.12), grad("#fff4e0", "#ff9a2a 50%", "#a04a00")),
+    rim: "#080604",
+    side: ["#2a2a2a", "#080604"],
+    glow: "rgb(255 150 40 / 0.35)",
+  },
+  // Insula: the last tenant, lamplight in grey windows.
+  P223: {
+    font: "anton",
+    fill: layers(bricks("rgb(60 60 60 / 0.4)"), grad("#fff6c8", "#c8c0a0 50%", "#4a4a44")),
+    rim: "#0a0a08",
+    side: ["#4a4a44", "#0a0a08"],
+    glow: "rgb(255 220 120 / 0.3)",
+  },
+  // Recesso: the copper comb that answers back, under green oilcloth.
+  P224: {
+    font: "slab",
+    fill: layers(stripes("rgb(30 60 40 / 0.4)", 45, 0.07), metal("#fff0e0", "#e09060", "#8a4a2a", "#b06a40", "#f0c0a0")),
+    rim: "#0a0604",
+    side: ["#2e4a36", "#0a0604"],
+    depth: 10,
+  },
+  // Dittograph: two women in one, ritual purple against lab white.
+  P225: {
+    font: "myth",
+    fill: "linear-gradient(90deg, #d8b8ff 0 50%, #ffffff 50% 100%)",
+    rim: "#0a0610",
+    side: ["#3a1a5a", "#0a0610"],
+    split: ["rgb(190 140 255 / 0.4)", "rgb(255 255 255 / 0.4)"],
+  },
+  // Praesidium: the headless guardian, bone tiles on ash.
+  P226: {
+    font: "horror",
+    fill: layers(scales("rgb(80 70 60 / 0.45)"), grad("#f8f4ea", "#b8aea0 50%", "#4a4038")),
+    rim: "#080706",
+    side: ["#4a4038", "#080706"],
+    depth: 12,
+  },
+  // Residuo: the bank's guarantor, brass tags on grey wool.
+  P227: {
+    font: "stencil",
+    fill: layers(grain("rgb(40 40 40 / 0.35)"), metal("#fffbe8", "#d8c070", "#7a6a3a", "#a08a4a", "#e8d8a0")),
+    rim: "#0a0804",
+    side: ["#8a2a1a", "#0a0804"],
+    line: "#7a2a1a",
+  },
+  // Afterimage: the double, lacquer red twice over.
+  P228: {
+    font: "speed",
+    fill: grad("#fff4ee", "#ff6a5a 50%", "#8a1a1a"),
+    rim: "#120404",
+    side: ["#4a0a0a", "#120404"],
+    split: ["rgb(255 90 80 / 0.45)", "rgb(255 240 220 / 0.35)"],
+    slant: -8,
+  },
+  // Gymnasiarch: the coach, oxide green and stopwatch ticks.
+  P229: {
+    font: "block",
+    fill: layers(stripes("rgb(20 40 30 / 0.4)", 90, 0.04), grad("#f4fff8", "#6ab890 50%", "#1a4a32")),
+    rim: "#040a06",
+    side: ["#1a4a32", "#040a06"],
+    slant: -6,
+  },
+  // Matins: the morning voice, pearl grey and an orange dawn.
+  P230: {
+    font: "elegant",
+    fill: layers(waves("rgb(255 160 80 / 0.45)"), grad("#ffffff", "#e8e4e0 45%", "#ff9a4a")),
+    rim: "#140a04",
+    side: ["#6a3a1a", "#140a04"],
+    glow: "rgb(255 170 90 / 0.4)",
+    haze: true,
+  },
+  // Thicket: the wood that walks, moss and antler bone in the fog.
+  P231: {
+    font: "gothic",
+    fill: layers(veins("rgb(40 70 30 / 0.5)"), grad("#f4f6ea", "#7a9a5a 50%", "#2a3a1a")),
+    rim: "#060a04",
+    side: ["#3a2a1a", "#060a04"],
+    glow: "rgb(220 230 210 / 0.45)",
+    split: ["rgb(220 230 210 / 0.3)", "rgb(220 230 210 / 0.3)"],
+    haze: true,
+  },
 };
 
 const FACTION_LOOK: Record<string, Pick<NameStyle, "fill" | "side">> = {

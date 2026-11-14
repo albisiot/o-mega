@@ -412,6 +412,27 @@ Da P188 a P217: trenta schede del compendio, con lo stesso metodo dei gruppi pre
 | P216 | TF-385 | Omega, Neutrali | Sfavorito | **Prosody** (Sciolti): fronte di bassorilievi che riscrive la materia. | PSI 0, VEL 1, TEC 1 |
 | P217 | TF-381 | Omega, Cattivi | Riscossa | **Novenarium** (Figli dell'Ultima): i nove secondi dell'Ora Zero, che non sono mai finiti. | PSI 0 |
 
+### Per i poteri del backlog
+
+Da P218 a P231: un personaggio per ciascuno dei 14 poteri che il motore conosceva ma nessuna carta aveva (`docs/POWERS-BACKLOG.md`). Come per P115-P122 il potere sceglie la rarità (semplici su Gamma e Beta, distintivi su Alfa e Omega) e il personaggio nasce dal potere, ma ognuno viene da una scheda del compendio con un ruolo simile: la manutentrice che si arrangia con i pezzi che ha, l'ultimo detenuto che restituisce il rancore, la stadera che compensa lo scarto, l'ultimo abitante di un isolato vuoto, il bosco di nebbia dove non si sa chi si ha accanto. Valori in scala dalle statistiche della scheda, vero nome e frase dalla scheda, disegno nello stile base. Statera e Normal sono la Stadera e Normal del compendio; Recesso e Residuo tengono il nome italiano della scheda. Gli Omega usano effetti esistenti: le onde per Matins, l'aura per Thicket. Parametri consigliati del backlog. Niente varianti per ora. Si trovano tutti nei pacchetti.
+
+| Carta | Scheda | Rarità e fazione | Potere | Personaggio | Il difetto nei valori |
+|---|---|---|---|---|---|
+| P218 | TF-301 | Gamma, Eroi | Arte di arrangiarsi | **Upkeep** (Lanterne): l'unica manutentrice dell'impianto dell'acqua dei quartieri bassi. | MAG 0, PSI 0 |
+| P219 | TF-179 | Gamma, Cattivi | Vendetta | **Reus** (Compagnia Lete): l'ultimo detenuto, restituisce agli altri il rancore. | ENE 0, MAG 0, TEC 1 |
+| P220 | TF-498 | Gamma, Neutrali | Contrattacco | **Statera** (Banco): la stadera viva che pesa quanto vale una persona e compensa lo scarto. | ENE 0, PSI 0, VEL 1, TEC 1, FUR 1 |
+| P221 | TF-270 | Gamma, Eroi | Adattabile | **Normal** (Sciolti): una specie dello strappo che si è fatta impiegata del catasto. | MAG 0, PSI 0, COM 1 |
+| P222 | TF-200 | Gamma, Cattivi | Opportunista | **Billable** (Sciolti, schierato con i Cattivi): affitta a ore l'organismo saldatore che ha nel braccio. | MAG 0, PSI 0 |
+| P223 | TF-354 | Beta, Neutrali | Lupo solitario | **Insula** (Sciolti): l'ultimo abitante di un isolato vuoto, che resta vivo finché c'è lui. | ENE 0, MAG 0, COM 1 |
+| P224 | TF-476 | Beta, Eroi | Riflesso | **Recesso** (Custodi): il pettine di rame intestato d'ufficio, che rimanda i colpi. | ENE 0, PSI 0, PER 1, TEC 1 |
+| P225 | TF-110 | Beta, Cattivi | Eclettico | **Dittograph** (Figli dell'Ultima): una maga e una chimica nello stesso corpo. | ENE 0, PSI 0 |
+| P226 | TF-391 | Beta, Neutrali | Grande prova | **Praesidium** (Sciolti): il guardiano senza testa del colosso che dorme sotto il porto. | MAG 0, PSI 0, TEC 0 |
+| P227 | TF-535 | Alfa, Eroi | Sacrificio | **Residuo** (Banco): esattore di garanzia, muore al posto dei clienti in regola. | ENE 0, PSI 0, TEC 1 |
+| P228 | TF-108 | Alfa, Eroi | Riverbero | **Afterimage** (Lanterne): il doppione che rifà i gesti prima che finiscano. | ENE 0, MAG 0 |
+| P229 | TF-342 | Alfa, Neutrali | Catalizzatore | **Gymnasiarch** (Banco): l'allenatrice degli eredi delle casate. | ENE 0, MAG 0, PSI 1 |
+| P230 | TF-184 | Omega, Cattivi | Capobranco | **Matins** (Compagnia Lete): la voce del notiziario del mattino, un richiamo di branco. | VEL 0, TEC 1 |
+| P231 | TF-039 | Omega, Cattivi | Nebbia | **Thicket** (Figli dell'Ultima): il bosco di nebbia di Vall'Oscura. | ENE 0, PSI 0, TEC 0, VEL 1 |
+
 ## 6. Minacce
 
 Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richiede Forza e Tecnologia. Molti nomi attuali funzionano già e vanno solo ambientati a Nuova Megara. Il testo di colore può usare il tono di un bollettino del sismografo.

@@ -1,5 +1,5 @@
--- The backlog powers (docs/POWERS-BACKLOG.md): defined, with their texts, and on
--- no card yet. Runs inside a rolled-back transaction:
+-- The backlog powers (docs/POWERS-BACKLOG.md): defined, with their texts, each one on
+-- the one character made for it (P218-P231, backlog_power_characters.test.sql). Runs inside a rolled-back transaction:
 --   npm run test:db
 
 begin;
@@ -12,11 +12,11 @@ begin
   assert (select count(*) from public.power_definitions
     where code in ('sacrifice', 'pack_leader', 'echo', 'catalyst', 'fog') and tier = 'distinctive') = 5,
     'five distinctive backlog powers';
-  assert not exists (
-    select 1 from public.card_definitions
+  assert (
+    select count(*) from public.card_definitions
     where power_code in ('scrappy', 'counterpunch', 'eclectic', 'lone_wolf', 'opportunist', 'reflect', 'vendetta',
       'main_event', 'adaptable', 'sacrifice', 'pack_leader', 'echo', 'catalyst', 'fog')
-  ), 'no card has a backlog power yet';
+  ) = 14, 'each backlog power on one card';
   assert public.power_text('scrappy', '{"min_value": 3}')
     = 'Le abilità richieste che valgono meno di 3 contano 3', 'Arte di arrangiarsi text';
   assert public.power_text('counterpunch', '{"bonus": 1, "max": 3}')
