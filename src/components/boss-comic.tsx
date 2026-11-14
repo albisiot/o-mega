@@ -6,7 +6,9 @@ import {
   BEAT_MS,
   ComicArt,
   Crack,
+  isCompact,
   NextSlot,
+  NoteStack,
   paced,
   pageStyle,
   PowerBalloon,
@@ -271,14 +273,14 @@ function EntryPanel({
             facingLost ? "comic-lost" : ""
           }`}
         >
-          <p className="mb-0.5 -rotate-[3deg] border-2 border-black bg-white px-1 text-[9px] font-bold leading-[11px]">
-            <b className="uppercase">{entry.facing.card?.name ?? "?"}</b>
-            <br />
-            {entry.facing.together ? "arriva insieme" : `c'è dal turno ${entry.facing.since}`}
-          </p>
           <div data-fx={`${side}-facing`} className="relative h-[66px] border-[3px] border-black bg-black shadow-[3px_3px_0_#000]">
             {entry.facing.card && <ComicArt card={entry.facing.card} className="comic-dim absolute inset-0 h-full w-full" />}
-            <span className="comic-dim absolute -right-2 top-1 z-[2] grid h-8 w-8 place-items-center rounded-full border-2 border-foreground bg-black font-display text-[16px] text-foreground">
+            {/* On the art, not above it: above, on a short panel, it covered the front's abilities. */}
+            <p className="absolute inset-x-0 bottom-0 z-[1] border-t-2 border-black bg-white px-1 text-[9px] font-bold leading-[10px]">
+              <b className="block truncate uppercase">{entry.facing.card?.name ?? "?"}</b>
+              {entry.facing.together ? "arriva insieme" : `c'è dal turno ${entry.facing.since}`}
+            </p>
+            <span className="comic-dim absolute -right-2 -top-2 z-[2] grid h-8 w-8 place-items-center rounded-full border-2 border-foreground bg-black font-display text-[16px] text-foreground">
               {entry.facing.score}
             </span>
             <Crack />
@@ -286,18 +288,38 @@ function EntryPanel({
         </div>
       )}
 
-      <div className={`absolute top-[58px] z-[7] flex max-w-[58%] flex-col gap-1 ${mine ? "left-1 items-start" : "right-1 items-end"}`}>
-        {order.map((index) => (
-          <PowerBalloon
-            key={index}
-            note={entry.notes[index]}
-            side={side}
-            fxName={`${side}-note-${index}`}
-            decisive={settled && decisive === index}
-          />
-        ))}
-        {settled && after.map(({ note: n, index }) => <PowerBalloon key={`after-${index}`} note={n} side={side} fxName={`${side}-note-${index}`} />)}
-        {mark("idle") && <ThinkBalloon notes={entry.notes.filter((n) => !n.active && !n.cancelled)} />}
+      {/* The balloons keep clear of the card's name and of the sticker at the bottom. */}
+      <div className={`absolute bottom-10 top-[58px] flex w-[58%] flex-col ${mine ? "left-1" : "right-1"}`}>
+        <NoteStack side={side} className="z-[7]">
+          {(squeeze) => {
+            const count = order.length + (settled ? after.length : 0);
+            return (
+              <>
+                {order.map((index, position) => (
+                  <PowerBalloon
+                    key={index}
+                    note={entry.notes[index]}
+                    side={side}
+                    fxName={`${side}-note-${index}`}
+                    decisive={settled && decisive === index}
+                    compact={isCompact(squeeze, position, count)}
+                  />
+                ))}
+                {settled &&
+                  after.map(({ note: n, index }, position) => (
+                    <PowerBalloon
+                      key={`after-${index}`}
+                      note={n}
+                      side={side}
+                      fxName={`${side}-note-${index}`}
+                      compact={isCompact(squeeze, order.length + position, count)}
+                    />
+                  ))}
+                {mark("idle") && <ThinkBalloon notes={entry.notes.filter((n) => !n.active && !n.cancelled)} compact={squeeze > 0} />}
+              </>
+            );
+          }}
+        </NoteStack>
       </div>
       {settled && (
         <span
@@ -397,19 +419,20 @@ export function BossComic(props: BossComicProps) {
       onClick={() => (done ? props.onContinue() : complete())}
     >
       <section aria-label={props.bossName} className="comic-panel halftone relative shrink-0 bg-comic-orange px-2 pb-2 pt-1.5 text-black">
-        {slots.length > 0 && (
-          <div className="absolute right-1.5 top-[30px] z-[2] flex gap-1">
-            {slots.map(({ side, slot }) => (
-              <NextSlot key={side} side={side} number={props.turn} carried={slot.carried} passed={slot.passed} unit="T" />
-            ))}
-          </div>
-        )}
         <p className="inline-block border-2 border-black bg-comic-yellow px-2 text-[11px] font-extrabold uppercase leading-5">
           Turno {props.turn} di {props.turns} · ogni fronte occupato paga
         </p>
-        <p className={`mt-0.5 font-display text-[22px] uppercase leading-6 ${slots.length === 2 ? "pr-[124px]" : slots.length === 1 ? "pr-[64px]" : ""}`}>
-          {props.bossName}
-        </p>
+        {/* The slots beside the name, never over it: a padding guessed their width, and was short. */}
+        <div className="mt-0.5 flex items-start gap-1">
+          <p className="min-w-0 flex-1 font-display text-[22px] uppercase leading-6">{props.bossName}</p>
+          {slots.length > 0 && (
+            <div className="flex shrink-0 gap-1">
+              {slots.map(({ side, slot }) => (
+                <NextSlot key={side} side={side} number={props.turn} carried={slot.carried} passed={slot.passed} unit="T" />
+              ))}
+            </div>
+          )}
+        </div>
         <ol data-fx="fronts" className="mt-1 grid grid-cols-5 gap-1">
           {props.fronts.map((front, index) => {
             const hot = values[index] > lowest;
@@ -429,7 +452,7 @@ export function BossComic(props: BossComicProps) {
                   <span className="text-[8px] font-bold">Lv{front.level}</span>
                 </span>
                 {hot && has("hot") && (
-                  <i className="comic-stamp absolute -right-1.5 bottom-2 rotate-6 bg-black px-1 font-sfx text-[11px] not-italic leading-[14px] tracking-wide text-comic-yellow">
+                  <i className="comic-stamp absolute bottom-0 left-1/2 z-[1] -translate-x-1/2 translate-y-1/2 -rotate-3 bg-black px-1 font-sfx text-[11px] not-italic leading-[14px] tracking-wide text-comic-yellow">
                     Caldo!
                   </i>
                 )}

@@ -232,7 +232,7 @@ export function FamilyIcon({ family, className = "h-[15px] w-[15px]" }: { family
 }
 
 const LOCK = (
-  <svg viewBox="0 0 24 24" className="h-[30px] w-[30px] rounded-full border-2 border-foreground bg-black p-1.5 text-foreground" fill="none" stroke="currentColor" strokeWidth={2.6} aria-hidden>
+  <svg viewBox="0 0 24 24" className="h-6 w-6 rounded-full border-2 border-foreground bg-black p-1 text-foreground" fill="none" stroke="currentColor" strokeWidth={2.6} aria-hidden>
     <rect x="5" y="11" width="14" height="10" />
     <path d="M8 11V8a4 4 0 0 1 8 0v3" />
   </svg>
@@ -241,7 +241,8 @@ const LOCK = (
 /**
  * One power speaking, in its family's balloon. `harm`: its points hurt the card that gets
  * them (a bonus under Rovescio), so it takes the colours of a strike. A cancelled power
- * shows sealed (Silenzio della tomba) or stamped out (Annullatore).
+ * shows sealed (Silenzio della tomba) or stamped out (Annullatore). `compact`: one short line,
+ * name and amount, for a balloon that already spoke when the panel has no room for all of them.
  */
 export function PowerBalloon({
   note,
@@ -249,15 +250,41 @@ export function PowerBalloon({
   fxName,
   harm = false,
   decisive = false,
+  compact = false,
 }: {
   note: PowerNote;
   side: "me" | "opponent";
   fxName?: string;
   harm?: boolean;
   decisive?: boolean;
+  compact?: boolean;
 }) {
   const family = powerFamily(note.code);
   const tone = harm && family === "charge" ? "strike" : family;
+  if (compact) {
+    const amount = note.cancelled ? null : effectAmount(note.effect);
+    return (
+      <div
+        data-fx={fxName}
+        className={`comic-pop comic-balloon comic-balloon-${tone} ${side === "opponent" ? "comic-balloon-flip" : ""} ${
+          note.cancelled === "nullified" ? "comic-balloon-dead" : note.cancelled === "silenced" ? "comic-balloon-sealed" : ""
+        } relative max-w-full px-2 pb-1.5 pt-0.5 text-center`}
+      >
+        <svg viewBox="0 0 160 104" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden>
+          <path d={BALLOON_PATH[tone]} vectorEffect="non-scaling-stroke" />
+        </svg>
+        <p className="comic-balloon-text relative flex items-center gap-0.5 whitespace-nowrap font-sfx text-[12px] leading-4 tracking-wide">
+          <FamilyIcon family={family} className="h-3 w-3" />
+          {note.name}
+          {amount && <span className="ml-0.5 font-display text-[13px]">{amount}</span>}
+          {/* In the line, not over it: on a pill this small the tag covered the amount. */}
+          {decisive && (
+            <span className="comic-pop ml-1 rotate-6 border-2 border-black bg-white px-0.5 text-[10px] leading-3 text-black">Decisivo!</span>
+          )}
+        </p>
+      </div>
+    );
+  }
   return (
     <div
       data-fx={fxName}
@@ -273,14 +300,16 @@ export function PowerBalloon({
           <FamilyIcon family={family} />
           {note.name}!
         </span>
-        {note.effect && <span className="mt-0.5 block text-[11px] font-extrabold leading-3">{note.effect}</span>}
+        {note.effect && note.cancelled !== "nullified" && <span className="mt-0.5 block text-[11px] font-extrabold leading-3">{note.effect}</span>}
       </p>
+      {/* The stamp takes the place of the effect line: over the name, it hid whose power it was. */}
       {note.cancelled === "nullified" && (
-        <span className="comic-stamp absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2 -rotate-12 border-[3px] border-comic-magenta bg-black px-1.5 font-display text-[16px] leading-6 tracking-wide text-comic-magenta">
+        <span className="comic-stamp relative z-[3] mt-1 inline-block -rotate-6 border-[3px] border-comic-magenta bg-black px-1.5 font-display text-[14px] leading-5 tracking-wide text-comic-magenta">
           ANNULLATO
         </span>
       )}
-      {note.cancelled === "silenced" && <span className="comic-pop absolute inset-0 z-[3] grid place-items-center">{LOCK}</span>}
+      {/* The lock sits on the balloon's corner, so the silenced power can still be read. */}
+      {note.cancelled === "silenced" && <span className="comic-pop absolute -right-1 -top-3 z-[3]">{LOCK}</span>}
       {decisive && (
         <span className="comic-pop absolute -right-1 -top-2 z-[4] rotate-6 border-2 border-black bg-white px-1 font-sfx text-[13px] leading-4 tracking-wide text-black">
           Decisivo!
@@ -429,7 +458,12 @@ export function AbilityChips({
   hidden?: boolean;
 }) {
   return (
-    <p data-fx={`${side}-chips`} className={`flex flex-wrap gap-[3px] ${side === "opponent" ? "justify-end" : ""}`}>
+    // Room above the chips for the marks they will get, so nothing else is laid out there.
+    <p
+      data-fx={`${side}-chips`}
+      className={`flex flex-wrap gap-[3px] ${side === "opponent" ? "justify-end" : ""}`}
+      style={markRows(chips) ? { paddingTop: markRows(chips) * 17 + 4 } : undefined}
+    >
       {chips.map((chip, index) => {
         const marks = [
           ...(ruled && chip.mark ? [chip.mark] : []),
@@ -466,6 +500,9 @@ export function AbilityChips({
     </p>
   );
 }
+
+/** How many marks the most marked chip gets: the rule's and Sabotatore's. */
+const markRows = (chips: ComicChip[]) => Math.max(0, ...chips.map((chip) => (chip.mark ? 1 : 0) + (chip.malus > 0 ? 1 : 0)));
 
 /** A ribbon the threat drops on a card: its faction, its rarity, or being behind. */
 export function RuleRibbon({ side, text, help }: { side: "me" | "opponent"; text: string; help: boolean }) {
@@ -533,10 +570,70 @@ export function SoundToggle() {
 }
 
 /** The powers that did nothing, as a thought. */
-export function ThinkBalloon({ notes }: { notes: PowerNote[] }) {
+/**
+ * How much a side's balloons are squeezed: 0 all whole, 1 the ones that already spoke on one
+ * line, 2 all of them on one line.
+ */
+export type Squeeze = 0 | 1 | 2;
+
+/** Whether the balloon at `position` of `count` is drawn on one line. */
+export const isCompact = (squeeze: Squeeze, position: number, count: number) =>
+  squeeze === 2 || (squeeze === 1 && position < count - 1);
+
+/**
+ * Where a side's balloons stack, between what sits above them and what sits under them (it
+ * grows to fill the room it is given). While they fit, each balloon is whole; once they no
+ * longer do, on a short screen, they shrink to one line, side by side (the one speaking last
+ * stays whole if there is room), so they never cover the abilities and the name.
+ */
+export function NoteStack({
+  side,
+  className = "",
+  children,
+}: {
+  side: "me" | "opponent";
+  className?: string;
+  children: (squeeze: Squeeze) => ReactNode;
+}) {
+  const box = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const [squeeze, setSqueeze] = useState<Squeeze>(0);
+  const compact = squeeze > 0;
+  useEffect(() => {
+    const outer = box.current;
+    const inner = list.current;
+    if (!outer || !inner || typeof ResizeObserver === "undefined") return;
+    // Measured before the screen paints: the balloons never show over the chips first.
+    const observer = new ResizeObserver(() => {
+      if (inner.offsetHeight > outer.clientHeight + 1) setSqueeze((level) => (level < 2 ? ((level + 1) as Squeeze) : level));
+    });
+    observer.observe(outer);
+    observer.observe(inner);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <div ref={box} className={`relative min-h-0 flex-1 ${className}`}>
+      <div
+        ref={list}
+        className={`flex gap-1 ${
+          compact ? `flex-row flex-wrap content-start items-start ${side === "opponent" ? "justify-end" : ""}` : "flex-col"
+        } ${!compact && side === "opponent" ? "items-end" : "items-start"}`}
+      >
+        {children(squeeze)}
+      </div>
+    </div>
+  );
+}
+
+/** The powers that did nothing this time, as a thought; `compact`: on a short panel, a thin one. */
+export function ThinkBalloon({ notes, compact = false }: { notes: PowerNote[]; compact?: boolean }) {
   if (notes.length === 0) return null;
   return (
-    <div className="comic-pop max-w-[150px] rounded-[50%] border-[3px] border-black bg-white px-3 py-2 text-center text-[11px] font-bold italic leading-[13px] text-[#444]">
+    <div
+      className={`comic-pop max-w-[150px] border-black bg-white text-center font-bold italic text-[#444] ${
+        compact ? "rounded-full border-2 px-2 py-0.5 text-[10px] leading-3" : "rounded-[50%] border-[3px] px-3 py-2 text-[11px] leading-[13px]"
+      }`}
+    >
       {notes.map((note, index) => (
         <span key={index} className="block">
           {note.name}… {note.effect ?? "non stavolta"}

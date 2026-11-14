@@ -18,10 +18,10 @@ export type ComicFx = {
   token: (from: Anchor, to: Anchor, text: string, tone: FxTone, options?: { arc?: number; duration?: number; breakAt?: number }) => void;
   /** A jagged bolt between two anchors. */
   bolt: (from: Anchor, to: Anchor, tone?: FxTone) => void;
-  /** A sound effect word stamped on an anchor, that fades after a moment. */
   /**
-   * `above`: the word sits over the anchor's top edge instead of its centre, so a balloon's
-   * text stays readable under it.
+   * A sound effect word stamped on an anchor, that fades after a moment. `above`: the word
+   * sits over the anchor's top edge instead of its centre. Either way it moves to the nearest
+   * spot that covers no text of the page.
    */
   word: (at: Anchor, text: string, tone: FxTone, options?: { dx?: number; dy?: number; size?: number; above?: boolean }) => void;
   /** A ring of sparks around an anchor. */
@@ -41,6 +41,93 @@ export function useComicFx() {
 /** The layer itself: over the whole page, never in the way of a tap. */
 export function FxLayer({ layerRef }: { layerRef: RefObject<HTMLDivElement | null> }) {
   return <div ref={layerRef} aria-hidden className="comic-fx-layer" />;
+}
+
+type Box = { left: number; top: number; right: number; bottom: number };
+
+/**
+ * The boxes of the page's words that an effect word must leave readable, on the layer's
+ * coordinates: every element with text of its own, the other effect words included. An
+ * element still popping in is scaled down, so it counts at its full size.
+ */
+function textBoxes(layer: HTMLDivElement, except: Element): Box[] {
+  const page = layer.parentElement;
+  if (!page) return [];
+  // What is popping in now is read a moment later: measure the page as it will be once its
+  // entrances end, then put every animation back where it was. Nothing is painted meanwhile.
+  const moving = document.getAnimations().flatMap((animation) => {
+    const target = animation.effect instanceof KeyframeEffect ? animation.effect.target : null;
+    const end = animation.effect?.getComputedTiming().endTime;
+    if (!target || !page.contains(target) || layer.contains(target) || animation.currentTime === null) return [];
+    if (typeof end !== "number" || !Number.isFinite(end) || animation.playState === "finished") return [];
+    return [{ animation, time: animation.currentTime, end }];
+  });
+  for (const { animation, end } of moving) animation.currentTime = end - 1;
+  const origin = layer.getBoundingClientRect();
+  const boxes: Box[] = [];
+  for (const element of page.querySelectorAll("*")) {
+    if (element === except || element.closest(".fx-token, .fx-spark")) continue;
+    if (!Array.from(element.childNodes).some((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim())) continue;
+    if (element.checkVisibility && !element.checkVisibility({ visibilityProperty: true })) continue;
+    if (element instanceof HTMLElement && element.classList.contains("fx-word")) {
+      // Another word, stamped from three times its size: it counts at the size it lands.
+      const x = parseFloat(element.style.left);
+      const y = parseFloat(element.style.top);
+      const [w, h] = [element.offsetWidth / 2, element.offsetHeight / 2];
+      boxes.push({ left: x - w, top: y - h, right: x + w, bottom: y + h });
+      continue;
+    }
+    const rect = element.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) continue;
+    boxes.push({ left: rect.left - origin.left, top: rect.top - origin.top, right: rect.right - origin.left, bottom: rect.bottom - origin.top });
+  }
+  for (const { animation, time } of moving) animation.currentTime = time;
+  return boxes;
+}
+
+/**
+ * Where an effect word goes: the wanted spot if it covers no text, or the nearest spot around
+ * it (up to about three lines away) that covers none, or the least, inside the page.
+ */
+function freeSpot(layer: HTMLDivElement, word: HTMLElement, x: number, y: number) {
+  // The word leans by 8°: its box on the page is wider and taller, plus its shadow.
+  const width = word.offsetWidth + word.offsetHeight * 0.14 + 6;
+  const height = word.offsetHeight + word.offsetWidth * 0.14 + 6;
+  const bounds = { width: layer.clientWidth, height: layer.clientHeight };
+  const boxes = textBoxes(layer, word);
+  const cover = (cx: number, cy: number) => {
+    const box = { left: cx - width / 2, top: cy - height / 2, right: cx + width / 2, bottom: cy + height / 2 };
+    let area = 0;
+    for (const other of boxes) {
+      const w = Math.min(box.right, other.right) - Math.max(box.left, other.left);
+      const h = Math.min(box.bottom, other.bottom) - Math.max(box.top, other.top);
+      if (w > 0 && h > 0) area += w * h;
+    }
+    // Out of the page is as bad as over text: the word would be cut.
+    const outX = Math.max(0, -box.left) + Math.max(0, box.right - bounds.width);
+    const outY = Math.max(0, -box.top) + Math.max(0, box.bottom - bounds.height);
+    return area + outX * height + outY * width;
+  };
+  const spots: { x: number; y: number; distance: number }[] = [];
+  for (let row = -6; row <= 6; row++) {
+    for (let column = -2; column <= 2; column++) {
+      const dx = column * width * 0.25;
+      const dy = row * height * 0.5;
+      spots.push({ x: x + dx, y: y + dy, distance: Math.hypot(dx, dy) });
+    }
+  }
+  spots.sort((a, b) => a.distance - b.distance);
+  let best = spots[0];
+  let bestCover = Infinity;
+  for (const spot of spots) {
+    const covered = cover(spot.x, spot.y);
+    if (covered === 0) return spot;
+    if (covered < bestCover) {
+      best = spot;
+      bestCover = covered;
+    }
+  }
+  return best;
 }
 
 /** The functions that draw on a layer. */
@@ -140,9 +227,10 @@ export function comicFx(layerElement: HTMLDivElement | null): ComicFx {
         point.y = point.y - height / 2 - (options.size ?? 40) / 2;
       }
       const word = add("span", `fx-word fx-${tone}`, text);
-      word.style.left = `${point.x + (options.dx ?? 0)}px`;
-      word.style.top = `${point.y + (options.dy ?? 0)}px`;
       if (options.size) word.style.fontSize = `${options.size}px`;
+      const spot = freeSpot(getLayer()!, word, point.x + (options.dx ?? 0), point.y + (options.dy ?? 0));
+      word.style.left = `${spot.x}px`;
+      word.style.top = `${spot.y}px`;
       const still = prefersReducedMotion();
       word
         .animate(

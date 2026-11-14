@@ -11,6 +11,8 @@ import {
   CutIn,
   paced,
   pageStyle,
+  isCompact,
+  NoteStack,
   PowerBalloon,
   prefersReducedMotion,
   Rolling,
@@ -302,32 +304,51 @@ export function EmergencyComic(props: EmergencyComicProps) {
           {scoreShown === null ? "–" : <Rolling value={scoreShown} instant={skipped} />}
         </div>
 
-        <div className="absolute left-1.5 top-[70px] z-[7] flex max-w-[64%] flex-col items-start gap-1">
-          {order.map((index) => (
-            <PowerBalloon
-              key={index}
-              note={notes[index]}
-              side="me"
-              fxName={`note-${index}`}
-              harm={Boolean(notes[index].points) && !pointsHelp(notes[index].points!, props.rule)}
-              decisive={verdict && props.decisive?.index === index}
-            />
-          ))}
-          {has("after") &&
-            after.map(({ note, index }) => <PowerBalloon key={`after-${index}`} note={note} side="me" fxName={`note-${index}`} />)}
-          {has("idle") && <ThinkBalloon notes={idle} />}
-        </div>
+        {/* The balloons fill the room above the chips, and never go under them. */}
+        <div className="absolute bottom-1.5 left-1.5 top-[70px] flex w-[calc(68%-12px)] flex-col gap-1">
+          <NoteStack side="me" className="z-[7]">
+            {(squeeze) => {
+              const count = order.length + (has("after") ? after.length : 0);
+              return (
+                <>
+                  {order.map((index, position) => (
+                    <PowerBalloon
+                      key={index}
+                      note={notes[index]}
+                      side="me"
+                      fxName={`note-${index}`}
+                      harm={Boolean(notes[index].points) && !pointsHelp(notes[index].points!, props.rule)}
+                      decisive={verdict && props.decisive?.index === index}
+                      compact={isCompact(squeeze, position, count)}
+                    />
+                  ))}
+                  {has("after") &&
+                    after.map(({ note, index }, position) => (
+                      <PowerBalloon
+                        key={`after-${index}`}
+                        note={note}
+                        side="me"
+                        fxName={`note-${index}`}
+                        compact={isCompact(squeeze, order.length + position, count)}
+                      />
+                    ))}
+                  {has("idle") && <ThinkBalloon notes={idle} compact={squeeze > 0} />}
+                </>
+              );
+            }}
+          </NoteStack>
 
-        <div className="absolute bottom-1.5 left-1.5 z-[3] flex w-[calc(68%-12px)] flex-col gap-1">
-          {props.chips && (
-            <div className="comic-dim">
-              <AbilityChips side="me" chips={props.chips} ruled={has("target")} struck={false} />
+          <div className="relative z-[3] flex shrink-0 flex-col gap-1">
+            {props.chips && (
+              <div className="comic-dim">
+                <AbilityChips side="me" chips={props.chips} ruled={has("target")} struck={false} />
+              </div>
+            )}
+            <div data-fx="name" className="comic-dim border-2 border-black bg-comic-yellow px-2 py-0.5">
+              <p className="text-[10px] font-extrabold uppercase leading-3">Tu</p>
+              <p className="truncate font-display text-[20px] uppercase leading-[22px]">{props.card?.name ?? "?"}</p>
+              {!props.chips && <p className="text-[11px] font-extrabold leading-[13px]">{props.stats}</p>}
             </div>
-          )}
-          <div data-fx="name" className="comic-dim border-2 border-black bg-comic-yellow px-2 py-0.5">
-            <p className="text-[10px] font-extrabold uppercase leading-3">Tu</p>
-            <p className="truncate font-display text-[20px] uppercase leading-[22px]">{props.card?.name ?? "?"}</p>
-            {!props.chips && <p className="text-[11px] font-extrabold leading-[13px]">{props.stats}</p>}
           </div>
         </div>
         <Crack />

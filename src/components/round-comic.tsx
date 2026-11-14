@@ -9,7 +9,9 @@ import {
   ComicArt,
   Crack,
   CutIn,
+  isCompact,
   NextSlot,
+  NoteStack,
   paced,
   pageStyle,
   PowerBalloon,
@@ -396,34 +398,42 @@ function CardPanel({
       )}
       {showFlag && data.flag && <RuleRibbon side={side} text={data.flag.text} help={!harmful({ name: "", effect: null, active: true, points: data.flag.points })} />}
 
-      <div className={`absolute inset-x-1 top-[66px] z-[7] flex flex-col gap-1 ${isMe ? "items-start" : "items-end"}`}>
-        {shown.map((index) => {
-          const note = data.notes[index];
-          return (
-            <PowerBalloon
-              key={index}
-              note={note}
-              side={side}
-              fxName={`${side}-note-${index}`}
-              harm={harmful(note)}
-              decisive={verdict && decisiveIndex === index}
-            />
-          );
-        })}
-        {showIdle && idle.length > 0 && <ThinkBalloon notes={idle} />}
-      </div>
+      {/* The balloons fill the room between the score and the chips, and never go under them. */}
+      <div className="absolute inset-x-1 bottom-1.5 top-[66px] flex flex-col gap-1">
+        <NoteStack side={side} className="z-[7]">
+          {(squeeze) => (
+            <>
+              {shown.map((index, position) => {
+                const note = data.notes[index];
+                return (
+                  <PowerBalloon
+                    key={index}
+                    note={note}
+                    side={side}
+                    fxName={`${side}-note-${index}`}
+                    harm={harmful(note)}
+                    decisive={verdict && decisiveIndex === index}
+                    compact={isCompact(squeeze, position, shown.length)}
+                  />
+                );
+              })}
+              {showIdle && idle.length > 0 && <ThinkBalloon notes={idle} compact={squeeze > 0} />}
+            </>
+          )}
+        </NoteStack>
 
-      <div className="absolute inset-x-1.5 bottom-1.5 z-[3] flex flex-col gap-1">
-        {/* The chips sit above the name, so the rule's marks rise over the art, never over the name. */}
-        {data.chips && (
-          <div className="comic-dim">
-            <AbilityChips side={side} chips={data.chips} ruled={ruled} struck={struck} hidden={hidden} />
+        <div className="relative z-[3] mx-0.5 flex shrink-0 flex-col gap-1">
+          {/* The chips sit above the name, so the rule's marks rise over the art, never over the name. */}
+          {data.chips && (
+            <div className="comic-dim">
+              <AbilityChips side={side} chips={data.chips} ruled={ruled} struck={struck} hidden={hidden} />
+            </div>
+          )}
+          <div data-fx={`${side}-name`} className={`comic-dim border-2 border-black bg-comic-yellow px-2 py-0.5 ${isMe ? "" : "text-right"}`}>
+            <p className="truncate text-[10px] font-extrabold uppercase leading-3">{data.label}</p>
+            <p className="truncate font-display text-[20px] uppercase leading-[22px]">{data.card?.name ?? "?"}</p>
+            {!data.chips && <p className="text-[11px] font-extrabold leading-[13px]">{data.stats}</p>}
           </div>
-        )}
-        <div data-fx={`${side}-name`} className={`comic-dim border-2 border-black bg-comic-yellow px-2 py-0.5 ${isMe ? "" : "text-right"}`}>
-          <p className="truncate text-[10px] font-extrabold uppercase leading-3">{data.label}</p>
-          <p className="truncate font-display text-[20px] uppercase leading-[22px]">{data.card?.name ?? "?"}</p>
-          {!data.chips && <p className="text-[11px] font-extrabold leading-[13px]">{data.stats}</p>}
         </div>
       </div>
       {shielded && <ShieldPlate side={side} />}
@@ -533,7 +543,8 @@ export function RoundComic(props: RoundComicProps) {
           Round {props.round} · Livello {props.level}
         </p>
         {slots.length > 0 && (
-          <div className="absolute right-2 top-2 z-[2] flex flex-col items-end gap-1">
+          // In a row on the round's line: stacked, the second one covered the threat's name.
+          <div className="absolute right-2 top-1.5 z-[2] flex items-center gap-1">
             {slots.map(({ side, slot }) => (
               <NextSlot key={side} side={side} number={props.round} carried={slot!.carried} passed={slot!.passed} />
             ))}

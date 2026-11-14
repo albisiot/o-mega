@@ -469,7 +469,7 @@ html.screen-locked body {
 .comic-balloon-text { color: #000; }
 .comic-balloon-dead { filter: grayscale(1); }
 .comic-balloon-dead .comic-balloon-text { opacity: 0.6; text-decoration: line-through; }
-.comic-balloon-sealed .comic-balloon-text { filter: blur(2px); opacity: 0.45; }
+.comic-balloon-sealed .comic-balloon-text { opacity: 0.6; }
 
 .comic-chip-open { animation: comic-chip-flip calc(0.3s * var(--comic-pace, 1)) ease-out both; }
 .comic-chip-ice { background: #bfe9ff; color: #003a57; outline: 2px solid #003a57; }
