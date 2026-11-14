@@ -50,6 +50,8 @@ import {
   playedBefore,
   roundPowerNotes,
   roundThreat,
+  tieBreakReason,
+  tieWonByRelentless,
   wasNullified,
   wasSilenced,
   type PowerNote,
@@ -892,11 +894,7 @@ function RoundReveal({
   const isTie = round.my_play && theirs && round.my_play.score === theirs.score;
   // With Implacabile on both sides, or against an Annullatore, the tie is settled as usual, by the highest value.
   const loserCard = winnerCard === mine ? theirs : mine;
-  const tieWonBy =
-    isTie && winnerCard?.power?.code === "relentless" && loserCard?.power?.code !== "relentless" && !wasNullified(winnerCard, loserCard, round.modifier) &&
-    !wasSilenced(winnerCard, round.modifier)
-      ? winnerCard.name
-      : null;
+  const tieWonBy = isTie && winnerCard && tieWonByRelentless(winnerCard, loserCard, round.modifier) ? winnerCard.name : null;
 
   // Each card's power is told next to that card, in its own half of the screen.
   const threat = { level: round.level, abilities: round.threat.abilities, modifier: round.modifier };
@@ -962,16 +960,17 @@ function RoundReveal({
     winner === "none" || !winnerPlay || !loserPlay || !winnerCard || !loserCard
       ? null
       : decisiveNote(winner, winner === "me" ? myNotes : theirNotes, winnerPlay, loserPlay, loserCard.name);
+  // On equal totals the line says what settled it (SPEC §5.6), to both players.
   const resultLine =
     winner === "none"
-      ? `Pari ${myScore} a ${theirScore}, e stesso valore più alto.`
+      ? round.my_play
+        ? `Pari ${myScore} a ${theirScore} e ${tieBreakReason(null, round.my_play, round.modifier)}.`
+        : ""
       : !winnerCard || !loserCard || !winnerPlay || !loserPlay
         ? ""
-        : tieWonBy
-          ? `${winnerCard.name} vince la parità con Implacabile · ${winnerPlay.score} a ${loserPlay.score}.`
-          : isTie
-            ? `Pari ${winnerPlay.score} a ${loserPlay.score}: vince il valore più alto, ${winnerPlay.highest} contro ${loserPlay.highest}.`
-            : `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}.`;
+        : isTie
+          ? `Pari ${winnerPlay.score} a ${loserPlay.score}: ${tieBreakReason(winnerPlay, loserPlay, round.modifier, tieWonBy)}.`
+          : `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}.`;
   const notices = [
     ...(round.my_play?.auto_played ? ["Tempo scaduto: il server ha scelto per te."] : []),
     ...(theirs?.auto_played ? [`${opponentName} non ha scelto in tempo.`] : []),
@@ -1253,6 +1252,23 @@ function MatchResult({
               );
             })}
         </ol>
+        {/* Rounds with equal totals: what settled them, as the tiles alone cannot say. */}
+        {view.rounds
+          .filter((r) => r.resolved && r.my_play && r.opponent_play && r.my_play.score === r.opponent_play.score)
+          .map((r) => {
+            const mine = cardOf(r.my_play?.instance_id);
+            const theirs = r.opponent_play!;
+            const myPlay = r.my_play!;
+            const won = r.winner === "me" ? myPlay : r.winner === "opponent" ? theirs : null;
+            const lost = r.winner === "me" ? theirs : myPlay;
+            const [wonCard, lostCard] = r.winner === "me" ? [mine, theirs] : [theirs, mine];
+            const relentless = won && tieWonByRelentless(wonCard, lostCard, r.modifier) ? (wonCard?.name ?? null) : null;
+            return (
+              <p key={r.round} className="text-xs font-semibold text-muted">
+                Round {r.round}, pari {myPlay.score} a {theirs.score}: {tieBreakReason(won, lost, r.modifier, relentless)}.
+              </p>
+            );
+          })}
       </section>
 
       {/* Side by side: the room above goes to the result. */}

@@ -178,6 +178,39 @@ export function wasNullified(
 }
 
 /**
+ * Whether a tie went to `winner` through Implacabile: the engine checks it before the
+ * highest value. Not when both have it, nor when it was taken away (Annullatore, Silenzio).
+ */
+export function tieWonByRelentless(
+  winner: MatchCard | null | undefined,
+  loser: MatchCard | null | undefined,
+  modifier: ThreatModifier | null | undefined,
+): boolean {
+  if (winner?.power?.code !== "relentless" || wasNullified(winner, loser, modifier) || wasSilenced(winner, modifier)) return false;
+  const loserHasIt = loser?.power?.code === "relentless" && !wasNullified(loser, winner, modifier) && !wasSilenced(loser, modifier);
+  return !loserHasIt;
+}
+
+/**
+ * Why a round with equal totals went one way, or to nobody (SPEC §5.6), in a few words
+ * to put after "Pari 7 a 7". `winner` is null for a void round; `relentless` is the
+ * winner's name when Implacabile settled it.
+ */
+export function tieBreakReason(
+  winner: { highest: number } | null,
+  other: { highest: number },
+  modifier: ThreatModifier | null | undefined,
+  relentless: string | null = null,
+): string {
+  if (!winner) return `stesso valore più alto (${other.highest}): round nullo`;
+  if (relentless) return `vince ${relentless} con Implacabile`;
+  const values = `${winner.highest} contro ${other.highest}`;
+  if (modifier?.code === "reverse") return `con Rovescio vince il valore più alto più basso, ${values}`;
+  if (modifier?.code === "negative") return `vince il valore più alto, contato al rovescio come vuole Negativo: ${values}`;
+  return `vince il valore più alto, ${values}`;
+}
+
+/**
  * The bonus a side's card receives from the card that side played in the previous
  * round (Riscossa after a loss, Slancio after a win), and the power that gave it.
  * Nothing when an opposing Annullatore, or Silenzio della tomba, stopped that power.

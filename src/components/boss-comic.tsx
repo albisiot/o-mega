@@ -14,6 +14,7 @@ import {
   useVerdictBuzz,
 } from "@/components/comic-page";
 import type { BossEntry, BossSide } from "@/lib/boss-powers";
+import { tieBreakReason } from "@/lib/round-powers";
 import { LONG_PRESS_CLASS, type LongPressHandlers } from "@/lib/use-long-press";
 
 // A Grande Minaccia turn told as a comic page (direction D): the boss with its five
@@ -112,6 +113,11 @@ function sticker(entry: BossEntry): { text: string; good: boolean } {
   const mine = entry.side === "me";
   if (entry.holder === null) return { text: "Pari: nessuno", good: false };
   if (!entry.facing) return mine ? { text: "Da solo: è tuo", good: true } : { text: "Da solo: è suo", good: false };
+  // Equal scores: the front went to the highest single value (or to Implacabile, whose balloon says so).
+  if (entry.facing.score === entry.score) {
+    if (entry.holder === entry.side) return mine ? { text: "Spareggio vinto!", good: true } : { text: "Spareggio perso", good: false };
+    return mine ? { text: "Spareggio perso", good: false } : { text: "Spareggio vinto!", good: true };
+  }
   if (entry.holder === entry.side) return mine ? { text: "Fronte preso!", good: true } : { text: "Fronte perso", good: false };
   return mine ? { text: "Non basta", good: false } : { text: "Il tuo tiene!", good: true };
 }
@@ -227,6 +233,22 @@ function EntryPanel({
   );
 }
 
+/** The entry's front as [front, line] when two equal scores met there; none otherwise. */
+function tieLine(entry: BossEntry, frontName: string): [number, string][] {
+  const facing = entry.facing;
+  if (!facing || facing.score !== entry.score) return [];
+  const prefix = `${frontName}, pari ${entry.score} a ${facing.score}`;
+  if (entry.holder === null) return [[entry.front, `${prefix} e ${tieBreakReason(null, entry, null)}.`]];
+  const won = entry.holder === entry.side;
+  const [winner, loser] = won ? [entry, facing] : [facing, entry];
+  // Implacabile comes before the highest value: the entry's own note tells it, or a highest value that could not have won.
+  const relentless =
+    (won && entry.notes.some((note) => note.active && note.timing === "tie")) || winner.highest <= loser.highest
+      ? (winner.card?.name ?? "?")
+      : null;
+  return [[entry.front, `${prefix}: ${tieBreakReason(winner, loser, null, relentless)}.`]];
+}
+
 /** A Grande Minaccia turn as a comic page. */
 export function BossComic(props: BossComicProps) {
   const { entries, values, points } = props;
@@ -247,6 +269,8 @@ export function BossComic(props: BossComicProps) {
     }
     return has("payout") ? props.holdersAfter[front] : props.holdersBefore[front];
   };
+  // Fronts settled on equal scores: what settled them (SPEC §5.6), once per front.
+  const tieLines = [...new Map(SIDES.flatMap((side) => tieLine(entries[side], props.fronts[entries[side].front]?.name ?? ""))).values()];
   const behind = props.totals.opponent - props.totals.me;
   const left = props.turns - props.turn;
   const standing =
@@ -342,7 +366,7 @@ export function BossComic(props: BossComicProps) {
               <p className="text-[11px] font-bold leading-[13px]">
                 Totale {props.totals.me} – {props.totals.opponent}. {standing}
               </p>
-              {props.notices.map((notice) => (
+              {[...tieLines, ...props.notices].map((notice) => (
                 <p key={notice} className="text-[10px] font-semibold leading-3 text-[#444]">
                   {notice}
                 </p>

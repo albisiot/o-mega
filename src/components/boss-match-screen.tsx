@@ -847,7 +847,8 @@ function BossTutorial({ onClose }: { onClose: () => void }) {
           <li>Il personaggio resta lì fino alla fine, con il punteggio che ha fatto entrando, e quel fronte non è più libero per te.</li>
           <li>
             A ogni turno ogni fronte occupato paga il suo valore: a chi è da solo, o a chi ha il punteggio più alto se ci
-            siete tutti e due. Chi entra presto incassa più turni.
+            siete tutti e due. A punteggio pari vince il valore più alto tra le abilità richieste; se è pari anche quello, il
+            fronte non paga nessuno. Chi entra presto incassa più turni.
           </li>
           <li>Dopo 5 turni vince chi ha più punti.</li>
         </ul>

@@ -24,6 +24,7 @@ import {
 } from "@/lib/match";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
+import { tieBreakReason, tieWonByRelentless } from "@/lib/round-powers";
 import { oddsText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
 import { describeThreatModifier } from "@/lib/threat-modifiers";
 import {
@@ -781,6 +782,21 @@ function ContestPanel({
   const theirs = contest.opponent_play;
   const won = contest.winner === "me";
   const lost = contest.winner === "opponent";
+  // Equal totals: what settled the threat (SPEC §5.6), for both players.
+  const myPlay = contest.my_play;
+  const tie =
+    myPlay && theirs && myPlay.score === theirs.score
+      ? tieBreakReason(
+          won ? myPlay : lost ? theirs : null,
+          won ? theirs : myPlay,
+          threat?.modifier,
+          won && tieWonByRelentless(mine, theirs, threat?.modifier)
+            ? (mine?.name ?? null)
+            : lost && tieWonByRelentless(theirs, mine, threat?.modifier)
+              ? theirs.name
+              : null,
+        )
+      : null;
   const side = (card: MatchCard | null, score: number, tone: "me" | "opponent", winner: boolean) => (
     <span
       {...(card ? detail.press(card) : {})}
@@ -803,6 +819,7 @@ function ContestPanel({
         <span className="flex items-center font-display text-lg">vs</span>
         {side(theirs, theirs?.score ?? 0, "opponent", lost)}
       </div>
+      {tie && <p className="text-center text-[11px] font-bold leading-[14px]">Pari: {tie}.</p>}
       <span
         className={`absolute -right-2 -top-3 -rotate-6 px-1.5 font-display text-lg uppercase leading-6 ${
           won ? "bg-comic-cyan" : lost ? "bg-comic-orange" : "bg-black text-comic-yellow"
@@ -874,7 +891,7 @@ function ThreatList({ view, abilities }: { view: TripleView; abilities: AbilityI
     <div className="flex flex-col gap-2">
       <p className="text-sm font-medium text-muted">
         Le stesse tre Minacce per tutta la partita. Ogni round ci metti una carta su ognuna: chi fa più punti su una Minaccia
-        prende un punto.
+        prende un punto. A punti pari vince il valore più alto tra le abilità richieste; se è pari anche quello, nessuno.
       </p>
       <ul className="flex flex-col gap-1.5">
         {view.threats.map((threat) => {
@@ -1012,7 +1029,10 @@ function TripleResult({ view, rival }: { view: TripleView; rival: string }) {
               </li>
             ))}
         </ol>
-        <p className="text-xs font-semibold text-muted">A sinistra tu, a destra {rival}: in colore chi ha vinto la Minaccia.</p>
+        <p className="text-xs font-semibold text-muted">
+          A sinistra tu, a destra {rival}: in colore chi ha vinto la Minaccia. A punti pari vince il valore più alto tra le abilità
+          richieste.
+        </p>
       </section>
 
       <div className="flex shrink-0 gap-2">

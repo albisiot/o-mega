@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MatchCard } from "./match";
-import { carriedInto, playedBefore, roundPowerNotes } from "./round-powers";
+import { carriedInto, playedBefore, roundPowerNotes, tieBreakReason, tieWonByRelentless } from "./round-powers";
 
 const card = (power: MatchCard["power"], faction = "heroes", rank = 2): MatchCard => ({
   definition_id: "d1",
@@ -165,5 +165,41 @@ describe("roundPowerNotes for the backlog powers", () => {
     const stopped = [round(1, "i1", nullifier)];
     expect(playedBefore(stopped, [leader, second], 2, "me")[0].power).toBeNull();
     expect(playedBefore(stopped, [leader, second], 2, "opponent")[0].power?.code).toBe("nullifier");
+  });
+});
+
+describe("tieBreakReason", () => {
+  it("names the highest values that settled the tie", () => {
+    expect(tieBreakReason({ highest: 9 }, { highest: 7 }, null)).toBe("vince il valore più alto, 9 contro 7");
+  });
+
+  it("says when nobody won", () => {
+    expect(tieBreakReason(null, { highest: 8 }, null)).toBe("stesso valore più alto (8): round nullo");
+  });
+
+  it("names Implacabile when it settled the tie", () => {
+    expect(tieBreakReason({ highest: 5 }, { highest: 8 }, null, "Gantry")).toBe("vince Gantry con Implacabile");
+  });
+
+  it("explains Rovescio and Negativo", () => {
+    expect(tieBreakReason({ highest: 3 }, { highest: 6 }, { code: "reverse" })).toContain("più basso, 3 contro 6");
+    expect(tieBreakReason({ highest: 7 }, { highest: 5 }, { code: "negative", max: 10 })).toContain("Negativo: 7 contro 5");
+  });
+});
+
+describe("tieWonByRelentless", () => {
+  const relentless = card({ code: "relentless", name: "Implacabile", text: "", params: {} });
+  const plain = card(null);
+
+  it("is true only when the winner alone has Implacabile", () => {
+    expect(tieWonByRelentless(relentless, plain, null)).toBe(true);
+    expect(tieWonByRelentless(plain, relentless, null)).toBe(false);
+    expect(tieWonByRelentless(relentless, relentless, null)).toBe(false);
+  });
+
+  it("is false when Implacabile was taken away", () => {
+    const nullifier = card({ code: "nullifier", name: "Annullatore", text: "", params: {} });
+    expect(tieWonByRelentless(relentless, nullifier, null)).toBe(false);
+    expect(tieWonByRelentless(relentless, plain, { code: "tomb_silence" })).toBe(false);
   });
 });

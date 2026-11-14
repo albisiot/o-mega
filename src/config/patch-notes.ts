@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "14 novembre 2026",
+    changes: [
+      "Quando un round finisce a punti pari ora vedi sempre chi l'ha vinto e perché: vince chi ha il valore più alto tra le abilità richieste (o chi ha Implacabile), e se è pari anche quello il round è nullo. La spiegazione compare a tutti e due i giocatori nel round, nel riepilogo di fine partita (sotto le tessere dei round), su ogni Minaccia di Allarme Triplo e sui fronti della Grande Minaccia. Le regole non cambiano: era già così, solo che a volte non si vedeva.",
+    ],
+  },
+  {
     date: "13 novembre 2026",
     changes: [
       "Il tutorial Come si gioca ha un nuovo look da albo a fumetti: lo racconta Omi, una piccola Ω che parla nei fumetti, le pagine entrano di slancio, la barra in alto è una striscia di vignette, nei momenti chiave compaiono WOW!, ZIP! e POW! e alla fine piovono i coriandoli. Se sul telefono hai ridotto le animazioni, resta fermo. I testi sono aggiornati all'app di oggi: obiettivi del giorno, acquisti tenendo premuto, modificatori e Minacce rare con il Bestiario, scheda del personaggio con i tratti, ordinamento delle carte e il menu Gioca nei suoi tre gruppi.",
