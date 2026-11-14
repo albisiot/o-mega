@@ -6,6 +6,7 @@ import {
   BEAT_MS,
   ComicArt,
   Crack,
+  NextSlot,
   paced,
   pageStyle,
   PowerBalloon,
@@ -107,6 +108,15 @@ function planBeats(entries: Record<BossSide, BossEntry>): Beat[] {
  * already on the front, or the one arriving with it; its charges fly into its score.
  */
 function playBeat(beat: Beat, entries: Record<BossSide, BossEntry>, fx: ComicFx) {
+  // Once an entry is settled, what it passes to the next turn (Riscossa, Slancio) flies to its slot.
+  if (beat.kind === "result") {
+    const passed = entries[beat.side].notes.find((n) => n.active && n.timing === "after");
+    if (passed) {
+      fx.token(`${beat.side}-panel`, `${beat.side}-slot`, passed.effect?.split(" ")[0] ?? "", "forward", { arc: 60, duration: 700 });
+      playSound("whoosh");
+    }
+    return;
+  }
   if (beat.kind !== "note") return;
   const entry = entries[beat.side];
   const note = entry.notes[beat.index];
@@ -120,7 +130,7 @@ function playBeat(beat: Beat, entries: Record<BossSide, BossEntry>, fx: ComicFx)
     return;
   }
   if (note.source === "carried" || note.source === "pack") {
-    fx.token(`${side}-label`, score, points, "forward", { arc: 20 });
+    fx.token(`${side}-slot`, score, points, "forward", { arc: -10 });
     playSound("whoosh");
     return;
   }
@@ -346,6 +356,21 @@ export function BossComic(props: BossComicProps) {
   }, [fired.length, skipped]);
   const settledOn = (side: BossSide) => fired.some((beat) => beat.kind === "result" && beat.side === side);
   const lowest = Math.min(...values);
+  // Slots on the boss panel: a bonus waiting from the turn before, or passed on to the next.
+  const slots = SIDES.flatMap((side) => {
+    const notes = entries[side].notes;
+    const spoke = new Set(fired.flatMap((beat) => (beat.kind === "note" && beat.side === side ? [beat.index] : [])));
+    const carriedIndex = notes.findIndex((n) => n.source === "carried" || n.source === "pack");
+    const passed = notes.find((n) => n.active && n.timing === "after");
+    if (carriedIndex < 0 && !passed) return [];
+    const slot = {
+      carried: carriedIndex >= 0 && !spoke.has(carriedIndex) ? `+${notes[carriedIndex].points ?? 0}` : null,
+      passed: passed && settledOn(side) ? (passed.effect?.split(" ")[0] ?? "") : null,
+    };
+    // On the last turn there is no next one: once the bonus is in, the empty slot goes.
+    if (props.turn === props.turns && !slot.carried && !slot.passed) return [];
+    return [{ side, slot }];
+  });
   const turnWinner: BossSide | null = points.me > points.opponent ? "me" : points.opponent > points.me ? "opponent" : null;
   useVerdictBuzz(has("total"), turnWinner === "me" ? "win" : turnWinner === "opponent" ? "lose" : "void", props.onVerdict);
 
@@ -372,10 +397,19 @@ export function BossComic(props: BossComicProps) {
       onClick={() => (done ? props.onContinue() : complete())}
     >
       <section aria-label={props.bossName} className="comic-panel halftone relative shrink-0 bg-comic-orange px-2 pb-2 pt-1.5 text-black">
+        {slots.length > 0 && (
+          <div className="absolute right-1.5 top-[30px] z-[2] flex gap-1">
+            {slots.map(({ side, slot }) => (
+              <NextSlot key={side} side={side} number={props.turn} carried={slot.carried} passed={slot.passed} unit="T" />
+            ))}
+          </div>
+        )}
         <p className="inline-block border-2 border-black bg-comic-yellow px-2 text-[11px] font-extrabold uppercase leading-5">
           Turno {props.turn} di {props.turns} · ogni fronte occupato paga
         </p>
-        <p className="mt-0.5 font-display text-[22px] uppercase leading-6">{props.bossName}</p>
+        <p className={`mt-0.5 font-display text-[22px] uppercase leading-6 ${slots.length === 2 ? "pr-[124px]" : slots.length === 1 ? "pr-[64px]" : ""}`}>
+          {props.bossName}
+        </p>
         <ol data-fx="fronts" className="mt-1 grid grid-cols-5 gap-1">
           {props.fronts.map((front, index) => {
             const hot = values[index] > lowest;

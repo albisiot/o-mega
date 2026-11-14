@@ -9,10 +9,12 @@ import {
   ComicArt,
   Crack,
   CutIn,
+  NextSlot,
   paced,
   pageStyle,
   PowerBalloon,
   prefersReducedMotion,
+  RevealStrip,
   Rolling,
   RuleRibbon,
   ShieldPlate,
@@ -83,6 +85,11 @@ export type RoundComicProps = {
   winner: ComicKey | "none";
   /** The power note that changed the result, if any. */
   decisive: { side: ComicKey; index: number; text: string } | null;
+  /**
+   * What the viewer's Veggente or Spia showed in this round: the next threats, the opposing
+   * characters still to come. Shown when that power speaks, after the verdict.
+   */
+  revealed?: { foreseen: { round: number; level: number; name: string }[]; spied: MatchCard[] } | null;
   /** One line under the verdict: who beat whom, or why nobody did. */
   resultLine: string;
   /** Short notices (time up, a tie nobody could settle). */
@@ -217,6 +224,11 @@ function playBeat(beat: Beat, props: RoundComicProps, fx: ComicFx) {
           .slice(0, 4)
           .forEach(({ chip, index }) => fx.token("rule", `${side}-chip-${index}`, chip.mark!.text, MARK_TONE[chip.mark!.tone], { arc: 10 }));
       }
+      // Specchio: each card's values cross to the other side.
+      if (props.rule?.code === "mirror") {
+        fx.token("me-chips", "opponent-chips", "⇄", "info", { arc: 40, duration: 700 });
+        fx.token("opponent-chips", "me-chips", "⇄", "info", { arc: -30, duration: 700 });
+      }
       return;
     }
     case "flags": {
@@ -309,34 +321,10 @@ function playNote(side: ComicKey, index: number, props: RoundComicProps, fx: Com
       return;
     case "reveal":
       fx.word(self, powerSfx(note.code), "info", { above: true, size: 30, dx: side === "me" ? 50 : -50 });
+      if (side === "me") window.setTimeout(() => fx.token(self, "reveal", "?", "info", { arc: 30 }), paced(150));
       playSound("reveal");
       return;
   }
-}
-
-/** A slot on the threat panel: what a side carries in from the round before or passes on. */
-function Slot({ side, round, carried, passed }: { side: ComicKey; round: number; carried: string | null; passed: string | null }) {
-  const full = carried ?? passed;
-  return (
-    <span
-      data-fx={`${side}-slot`}
-      className={`comic-slot ${full ? "comic-slot-full comic-pop" : ""} flex h-[26px] items-center justify-center gap-1 px-1 text-[10px] font-extrabold uppercase leading-none text-black ${
-        side === "me" ? "border-l-[5px] !border-l-comic-cyan" : "border-l-[5px] !border-l-comic-magenta"
-      }`}
-    >
-      {carried ? (
-        <>
-          <span className="font-display text-[15px]">{carried}</span> dal R{round - 1}
-        </>
-      ) : passed ? (
-        <>
-          <span className="font-display text-[15px]">{passed}</span> al R{round + 1}
-        </>
-      ) : (
-        <>R{round + 1}</>
-      )}
-    </span>
-  );
 }
 
 function CardPanel({
@@ -355,9 +343,12 @@ function CardPanel({
   outcome,
   decisiveIndex,
   verdict,
+  lowerWins,
 }: {
   side: ComicKey;
   data: ComicSide;
+  /** Rovescio: the lower score wins, and the score says so. */
+  lowerWins: boolean;
   /** The notes whose balloon has appeared, in the order they spoke. */
   shown: number[];
   scoreShown: number | null;
@@ -394,6 +385,15 @@ function CardPanel({
       >
         {scoreShown === null ? "–" : <Rolling value={scoreShown} instant={instant} />}
       </div>
+      {lowerWins && (
+        <span
+          className={`comic-pop absolute top-[22px] z-[5] -rotate-3 border-2 border-black bg-[var(--rule-color,var(--comic-orange))] px-1 font-display text-[13px] uppercase leading-4 text-black ${
+            isMe ? "left-[64px]" : "right-[64px]"
+          }`}
+        >
+          ▼ meno
+        </span>
+      )}
       {showFlag && data.flag && <RuleRibbon side={side} text={data.flag.text} help={!harmful({ name: "", effect: null, active: true, points: data.flag.points })} />}
 
       <div className={`absolute inset-x-1 top-[66px] z-[7] flex flex-col gap-1 ${isMe ? "items-start" : "items-end"}`}>
@@ -511,11 +511,21 @@ export function RoundComic(props: RoundComicProps) {
   const title = winner === "me" ? "Round vinto!" : winner === "opponent" ? "Round perso" : "Round nullo";
   const sfx = winner === "me" ? "SBAM!" : winner === "opponent" ? "KRAK!" : "PARI!";
   const slots = SIDES.map((side) => ({ side, slot: slotOf(side) })).filter((s) => s.slot);
+  // Veggente and Spia: once the viewer's card has spoken, what it saw stays pinned between the panels.
+  const revealSpoke = (code: string) => props.me.notes.some((note, index) => note.code === code && note.active && shown("me").has(index));
+  const foreseen = revealSpoke("foresight") ? (props.revealed?.foreseen ?? []) : [];
+  const spied = revealSpoke("spy") ? (props.revealed?.spied ?? []) : [];
+  const revealStrip =
+    foreseen.length > 0 ? (
+      <RevealStrip title="Prossime Minacce" lines={foreseen.map((t) => `R${t.round} · Lv ${t.level} · ${t.name}`)} />
+    ) : spied.length > 0 ? (
+      <RevealStrip title={`${props.opponent.label} ha ancora`} lines={[]} cards={spied} />
+    ) : null;
 
   return (
     <main
       className={`comic-page relative mt-1 flex min-h-0 flex-1 cursor-pointer flex-col gap-1.5 overflow-hidden px-1.5 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1.5 ${pageClass}`}
-      style={pageStyle}
+      style={props.tierColor ? ({ ...pageStyle, "--rule-color": props.tierColor } as CSSProperties) : pageStyle}
       onClick={() => (done ? props.onContinue() : complete())}
     >
       <section aria-label={`Round ${props.round}: ${props.threatName}`} className="comic-panel halftone relative shrink-0 bg-comic-orange px-3 pb-2.5 pt-2 text-black">
@@ -525,7 +535,7 @@ export function RoundComic(props: RoundComicProps) {
         {slots.length > 0 && (
           <div className="absolute right-2 top-2 z-[2] flex flex-col items-end gap-1">
             {slots.map(({ side, slot }) => (
-              <Slot key={side} side={side} round={props.round} carried={slot!.carried} passed={slot!.passed} />
+              <NextSlot key={side} side={side} number={props.round} carried={slot!.carried} passed={slot!.passed} />
             ))}
           </div>
         )}
@@ -571,9 +581,11 @@ export function RoundComic(props: RoundComicProps) {
               outcome={outcomeOf(side)}
               decisiveIndex={props.decisive?.side === side ? props.decisive.index : null}
               verdict={verdict}
+              lowerWins={rule?.code === "reverse" && has("twist")}
             />
           );
         })}
+        {revealStrip}
         {has("level") && (
           <span
             data-fx="eq"

@@ -331,6 +331,82 @@ export function PowerPill({ note, delay }: { note: PowerNote; delay?: number }) 
   );
 }
 
+/**
+ * A slot for what a side carries from the round (or turn) before, or passes on to the next:
+ * Riscossa, Slancio and the like wait here. `unit` is R for rounds, T for the Grande Minaccia's turns.
+ */
+export function NextSlot({
+  side,
+  number,
+  carried,
+  passed,
+  unit = "R",
+}: {
+  side: "me" | "opponent";
+  number: number;
+  carried: string | null;
+  passed: string | null;
+  unit?: "R" | "T";
+}) {
+  const full = carried ?? passed;
+  return (
+    <span
+      data-fx={`${side}-slot`}
+      className={`comic-slot ${full ? "comic-slot-full comic-pop" : ""} flex h-[26px] items-center justify-center gap-1 px-1 text-[10px] font-extrabold uppercase leading-none text-black ${
+        side === "me" ? "border-l-[5px] !border-l-comic-cyan" : "border-l-[5px] !border-l-comic-magenta"
+      }`}
+    >
+      {carried ? (
+        <>
+          <span className="font-display text-[15px]">{carried}</span> dal {unit}
+          {number - 1}
+        </>
+      ) : passed ? (
+        <>
+          <span className="font-display text-[15px]">{passed}</span> al {unit}
+          {number + 1}
+        </>
+      ) : (
+        <>
+          {unit}
+          {number + 1}
+        </>
+      )}
+    </span>
+  );
+}
+
+/**
+ * What Veggente or Spia showed, pinned between the threat and the cards like a caption:
+ * the next threats, or the opposing character still to come.
+ */
+export function RevealStrip({ title, lines, cards = [] }: { title: string; lines: string[]; cards?: MatchCard[] }) {
+  return (
+    <div
+      data-fx="reveal"
+      className="comic-pop absolute left-1/2 top-0 z-[9] w-max max-w-[66%] -translate-x-1/2 -translate-y-1/2 border-[3px] border-dashed border-black bg-white px-2 py-1 text-black shadow-[3px_3px_0_#000]"
+    >
+      <p className="flex items-center gap-1 font-display text-[13px] uppercase leading-4">
+        <FamilyIcon family="reveal" className="h-3.5 w-3.5" />
+        {title}
+      </p>
+      {cards.map((card) => (
+        <p key={card.definition_id} className="mt-0.5 flex items-center gap-1.5">
+          <span className="relative h-8 w-6 shrink-0 overflow-hidden border-2 border-black bg-black">
+            <ComicArt card={card} className="absolute inset-0 h-full w-full" />
+          </span>
+          <span className="truncate font-display text-[15px] uppercase leading-4">{card.name}</span>
+        </p>
+      ))}
+      {lines.map((line) => (
+        <p key={line} className="truncate text-[11px] font-extrabold leading-[14px]">
+          {line}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 /** What a chip shows: the ability, the value, the rule's mark and Sabotatore's. */
 export type ComicChip = AbilityChip & { ghost?: boolean };
 

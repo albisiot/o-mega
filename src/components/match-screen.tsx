@@ -392,6 +392,10 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
           team={view.my_team}
           abilities={abilities}
           opponentName={opponentName}
+          revealed={{
+            foreseen: (view.foreseen_threats ?? []).filter((t) => t.round > shownRound.round),
+            spied: (view.spied_cards ?? []).filter((c) => c.round === shownRound.round),
+          }}
           onVerdict={() => settle(shownRound.round)}
           onContinue={() => {
             settle(shownRound.round);
@@ -902,7 +906,10 @@ function RoundReveal({
   finished,
   pickDeadline,
   offset,
+  revealed,
 }: {
+  /** What the player's Veggente or Spia showed (match view: foreseen_threats, spied_cards). */
+  revealed: { foreseen: { round: number; level: number; name: string }[]; spied: MatchCard[] };
   round: MatchRound;
   /** The round before, for the Riscossa a card received from it. */
   previous: MatchRound | null;
@@ -1077,6 +1084,7 @@ function RoundReveal({
       }}
       winner={winner}
       decisive={decisive}
+      revealed={revealed}
       resultLine={resultLine}
       notices={notices}
       onContinue={onContinue}
