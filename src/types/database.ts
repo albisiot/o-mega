@@ -1936,6 +1936,7 @@ export type Database = {
           front_slot: number | null
           highest_value: number
           match_id: string
+          parts: Json | null
           points: number | null
           required: number | null
           rotation: number | null
@@ -1955,6 +1956,7 @@ export type Database = {
           front_slot?: number | null
           highest_value: number
           match_id: string
+          parts?: Json | null
           points?: number | null
           required?: number | null
           rotation?: number | null
@@ -1974,6 +1976,7 @@ export type Database = {
           front_slot?: number | null
           highest_value?: number
           match_id?: string
+          parts?: Json | null
           points?: number | null
           required?: number | null
           rotation?: number | null
@@ -3409,6 +3412,10 @@ export type Database = {
         Args: { p_code: string; p_params: Json }
         Returns: Json
       }
+      play_parts_valid: {
+        Args: { p_bonus: number; p_parts: Json }
+        Returns: boolean
+      }
       power_text: {
         Args: { p_params: Json; p_power_code: string }
         Returns: string
@@ -3577,6 +3584,15 @@ export type Database = {
         Args: { p_pack: Database["public"]["Tables"]["special_packs"]["Row"] }
         Returns: Json
       }
+      store_play_parts: {
+        Args: {
+          p_match_id: string
+          p_play: Json
+          p_round: number
+          p_side: string
+        }
+        Returns: undefined
+      }
       story_create_match: {
         Args: {
           p_card_instance_ids: string[]
@@ -3631,6 +3647,10 @@ export type Database = {
             }
             Returns: Json
           }
+      with_play_parts: {
+        Args: { p_match_id: string; p_payload: Json; p_side: string }
+        Returns: Json
+      }
       with_rare_rules: {
         Args: { p_match_id: string; p_payload: Json; p_side: string }
         Returns: Json

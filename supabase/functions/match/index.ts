@@ -760,6 +760,8 @@ function recordRound(
       score: play.total,
       highest: play.highest,
       auto_played: play.autoPlayed,
+      // Where the bonus comes from, for the result page: the database checks they add up.
+      ...(play.parts ? { parts: play.parts } : {}),
     };
   };
   return admin.rpc("match_record_round_state", {

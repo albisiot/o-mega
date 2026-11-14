@@ -232,3 +232,18 @@ describe("roundPowerNotes with annotate, against a shield", () => {
     expect(annotated[0]).toMatchObject({ effect: "fermato dallo scudo", cancelled: "blocked", active: false });
   });
 });
+
+describe("roundPowerNotes with the server's parts", () => {
+  it("takes the power's points from the parts, not from the bonus", () => {
+    // Doubled by a Catalizzatore played before: the bonus alone would not say so.
+    const allRounder = card({ code: "all_rounder", params: { bonus: 3, min_value: 5 }, name: "Tuttofare", text: "" });
+    const parts = { power: 6, carried: 0, pack: 0, modifier: -2, floor: 0 };
+    const hostile = {
+      ...threat,
+      modifier: { code: "hostile_ground" as const, favored: "villains", hindered: "heroes", bonus: 3, malus: 2 },
+    };
+    expect(roundPowerNotes(allRounder, { bonus: 4 }, hostile, { ...calm, parts })).toEqual([
+      { name: "Tuttofare", effect: "+6", active: true, points: 6 },
+    ]);
+  });
+});

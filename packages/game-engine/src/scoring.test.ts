@@ -70,7 +70,26 @@ describe("scorePlay", () => {
       bonus: 0,
       total: 12,
       highest: 9,
+      parts: { power: 0, carried: 0, pack: 0, modifier: 0, floor: 0 },
     });
+  });
+
+  it("splits the bonus into its parts, which always add up to it", () => {
+    const hero = character("h", { FOR: 9, TEC: 3 }, { code: "ability_bonus", params: { ability: "FOR", bonus: 2 } });
+    const hostile = { ...threat("t", ["FOR", "TEC"]), modifier: { code: "hostile_ground" as const, favored: "heroes", hindered: "villains", bonus: 3, malus: 2 } };
+    const play = scorePlay({ ...hero, faction: "heroes" }, hostile, { ...context, carriedBonus: 2 });
+    expect(play.parts).toEqual({ power: 2, carried: 2, pack: 0, modifier: 3, floor: 0 });
+    const parts = play.parts!;
+    expect(parts.power + parts.carried + parts.pack + parts.modifier + parts.floor).toBe(play.bonus);
+  });
+
+  it("counts what the floor at 0 gave back", () => {
+    const weak = character("w", { FOR: 1 });
+    const priced = { ...threat("t", ["FOR"]), modifier: { code: "price" as const, maxValue: 1, malus: 3 } };
+    const play = scorePlay(weak, priced, context);
+    expect(play.total).toBe(0);
+    expect(play.parts).toEqual({ power: 0, carried: 0, pack: 0, modifier: 0, floor: 3 });
+    expect(play.bonus).toBe(3);
   });
 
   it("applies Specialità only when the threat requires its ability", () => {

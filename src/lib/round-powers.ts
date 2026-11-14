@@ -4,6 +4,7 @@ import {
   modifierPoints,
   type Character,
   type PlayOutcome,
+  type ScoreParts,
   type Standing,
   type Threat,
   type ThreatModifier,
@@ -56,6 +57,11 @@ export type RoundOutcome = {
   opponentSabotage?: number;
   /** Bonus this card received from Capobranco cards its side played before. */
   pack?: number;
+  /**
+   * Where the server says the bonus comes from: when given, the power's points are taken
+   * from it instead of being worked out from the bonus.
+   */
+  parts?: ScoreParts | null;
 };
 
 /**
@@ -130,11 +136,9 @@ export function roundPowerNotes(
         notes.push({ name: power.name, effect: "nasconde chi l'ha giocato", active: true });
         break;
       default: {
-        const points =
-          play.bonus -
-          outcome.carried -
-          (outcome.pack ?? 0) -
-          modifierPoints(character, { id: "round", ...threat }, outcome.standing);
+        const points = outcome.parts
+          ? outcome.parts.power
+          : play.bonus - outcome.carried - (outcome.pack ?? 0) - modifierPoints(character, { id: "round", ...threat }, outcome.standing);
         notes.push(
           points
             ? { name: power.name, effect: `${points > 0 ? "+" : "−"}${Math.abs(points)}`, active: true, points }

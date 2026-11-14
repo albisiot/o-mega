@@ -956,7 +956,8 @@ function RoundReveal({
   const myNotes =
     mine && round.my_play
       ? roundPowerNotes(mine, round.my_play, threat, {
-          carried: myCarried.points,
+          // The server's parts, when it sent them, say exactly what came from where.
+          carried: round.my_play.parts?.carried ?? myCarried.points,
           carriedFrom: myCarried.from,
           carriedCode: myCarried.code,
           lost: round.winner === "opponent",
@@ -964,7 +965,8 @@ function RoundReveal({
           wonTie: Boolean(tieWonBy) && round.winner === "me",
           opponentShielded: theirActing !== null && immuneToSabotage(theirActing),
           opponentSabotage: theirActing ? abilityMalusFrom(theirActing) : 0,
-          pack: myPack,
+          pack: round.my_play.parts?.pack ?? myPack,
+          parts: round.my_play.parts,
           nullified: wasNullified(mine, theirs, round.modifier),
           silenced: wasSilenced(mine, round.modifier),
           standing: myStanding,
@@ -973,7 +975,7 @@ function RoundReveal({
       : [];
   const theirNotes = theirs
     ? roundPowerNotes(theirs, theirs, threat, {
-        carried: theirCarried.points,
+        carried: theirs.parts?.carried ?? theirCarried.points,
         carriedFrom: theirCarried.from,
         carriedCode: theirCarried.code,
         lost: round.winner === "me",
@@ -981,7 +983,8 @@ function RoundReveal({
         wonTie: Boolean(tieWonBy) && round.winner === "opponent",
         opponentShielded: myActing !== null && immuneToSabotage(myActing),
         opponentSabotage: myActing ? abilityMalusFrom(myActing) : 0,
-        pack: theirPack,
+        pack: theirs.parts?.pack ?? theirPack,
+        parts: theirs.parts,
         nullified: wasNullified(theirs, mine, round.modifier),
         silenced: wasSilenced(theirs, round.modifier),
         standing: theirStanding,
@@ -1014,7 +1017,8 @@ function RoundReveal({
   // The ribbon a rule drops on a card: its faction, its rarity, or being behind.
   const flagOf = (card: MatchCard | null | undefined, character: ReturnType<typeof toCharacter> | null, standing: typeof myStanding) => {
     if (!card || !character || !round.modifier) return null;
-    const points = modifierPoints(character, ruleThreat, standing);
+    const parts = card === mine ? round.my_play?.parts : card === theirs ? theirs?.parts : null;
+    const points = parts ? parts.modifier : modifierPoints(character, ruleThreat, standing);
     if (!points) return null;
     const code = round.modifier.code;
     const who = code === "hostile_ground" ? (FACTION_LABELS[card.faction] ?? card.faction) : code === "long_count" ? "Chi è sotto" : card.rarity.name;

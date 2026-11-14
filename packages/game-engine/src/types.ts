@@ -103,6 +103,14 @@ export type MatchRules = {
 /** Ability code → family code; family-based powers need it. */
 export type AbilityFamilies = Record<AbilityCode, string>;
 
+/**
+ * Where a play's bonus comes from (SPEC §11, the result page): its own power (times
+ * Catalizzatore; Sacrificio's give-up included), the bonus carried from the side's previous
+ * character (Riscossa, Slancio, Sacrificio), Capobranco, the threat's rule points, and what
+ * the floor at 0 gave back. The parts always add up to the play's bonus.
+ */
+export type ScoreParts = { power: number; carried: number; pack: number; modifier: number; floor: number };
+
 export type PlayScore = {
   characterId: string;
   /** Sum of the character's values in the required abilities, counted as the modifier says. */
@@ -114,6 +122,8 @@ export type PlayScore = {
   highest: number;
   /** Implacabile: wins when the totals are equal. */
   relentless?: boolean;
+  /** Where the bonus comes from; the rules engine always fills it, stored plays may not have it. */
+  parts?: ScoreParts;
 };
 
 export type PlayRecord = PlayScore & { autoPlayed: boolean };

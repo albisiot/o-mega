@@ -1,6 +1,6 @@
 import type { ThreatRarity } from "@/lib/threat-rarity";
 import { FunctionsHttpError } from "@supabase/supabase-js";
-import type { BotDifficulty, Character, Power, ThreatModifier } from "@o-mega/game-engine";
+import type { BotDifficulty, Character, Power, ScoreParts, ThreatModifier } from "@o-mega/game-engine";
 import { getSupabase } from "@/lib/supabase/client";
 
 export const DIFFICULTY_LABELS: Record<BotDifficulty, string> = {
@@ -42,6 +42,8 @@ export type MatchPlay = {
   score: number;
   highest: number;
   auto_played: boolean;
+  /** Where the bonus comes from, as the server counted it; missing for plays stored before it did. */
+  parts?: ScoreParts | null;
 };
 
 export type MatchRound = {

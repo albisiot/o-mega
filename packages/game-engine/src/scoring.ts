@@ -1,4 +1,4 @@
-import type { AbilityCode, AbilityFamilies, Character, PlayScore, Side, Threat } from "./types.ts";
+import type { AbilityCode, AbilityFamilies, Character, PlayScore, ScoreParts, Side, Threat } from "./types.ts";
 
 export type ScoreContext = {
   families: AbilityFamilies;
@@ -376,11 +376,17 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
   const values = scoresWithOpponentValues(threat) && context.opponent ? { ...character, stats: context.opponent.stats } : character;
   const base = baseScore(values, threat, malus);
   // Sacrificio: the character gives up the round, whatever it would have scored.
-  if (code === "sacrifice") return { characterId: character.id, base, bonus: -base, total: 0, highest: 0 };
+  if (code === "sacrifice") {
+    const parts: ScoreParts = { power: -base, carried: 0, pack: 0, modifier: 0, floor: 0 };
+    return { characterId: character.id, base, bonus: -base, total: 0, highest: 0, parts };
+  }
   const power = powerBonus(character, threat, context) * powerMultiplier(context);
   const modifier = modifierPoints(character, threat, context);
+  const pack = packBonus(character, context.played);
   // A malus cannot bring the score below 0: the bonus stays the difference from the base.
-  const total = Math.max(0, base + power + packBonus(character, context.played) + context.carriedBonus + modifier);
+  const raw = base + power + pack + context.carriedBonus + modifier;
+  const total = Math.max(0, raw);
+  const parts: ScoreParts = { power, carried: context.carriedBonus, pack, modifier, floor: total - raw };
   return {
     characterId: character.id,
     base,
@@ -388,6 +394,7 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
     total,
     highest: highestRequired(values, threat, malus),
     ...(code === "relentless" ? { relentless: true } : {}),
+    parts,
   };
 }
 
