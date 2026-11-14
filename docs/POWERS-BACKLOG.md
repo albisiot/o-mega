@@ -2,7 +2,9 @@
 
 Poteri pronti per i prossimi aggiornamenti. Quelli già sulle carte sono in `SPEC.md` §4.4 (19 poteri, ottobre-novembre 2026).
 
-**Stato (9 novembre 2026):** 14 poteri sono **pronti nel motore di regole, nei bot, nelle note del round e nel database** (`power_definitions`), ma **nessuna carta li ha**. Per farli entrare in gioco basta creare i personaggi che li portano. Inafferrabile resta solo un'idea, perché cambia la Conquista.
+**Stato (14 novembre 2026):** i 14 poteri sono **in gioco**, uno per personaggio nuovo (P218-P231, docs/WORLD.md «Per i poteri del backlog»), con i parametri consigliati qui sotto. Nebbia ora è coperta dal server (`with_fog`, migrazione `20261114231000_fog_hides_cards.sql`). Sacrificio è entrato senza essere riprogettato: il problema di bilanciamento qui sotto resta aperto. Inafferrabile resta solo un'idea, perché cambia la Conquista.
+
+**Stato (9 novembre 2026):** 14 poteri sono pronti nel motore di regole, nei bot, nelle note del round e nel database (`power_definitions`), ma nessuna carta li ha.
 
 Ogni potere va su **personaggi nuovi** (due per potere, come P115-P122), senza toglierlo alle carte esistenti.
 
@@ -43,7 +45,7 @@ Parametri consigliati tra parentesi: vanno in `card_definitions.power_params` de
 
 Riverbero si chiama così, e non Eco, perché nel mondo "Eco" è il nome delle carte stesse (WORLD.md §3). Copia solo i poteri a punti perché così la copia vive tutta nel calcolo del punteggio: il server, le rivelazioni e lo schermo non devono saperne nulla.
 
-**Nebbia non è ancora finita.** Il motore e i bot la conoscono già, ma il server mostra ancora la carta all'avversario. Prima di darla a un personaggio servono:
+**Nebbia era incompleta (risolto il 14 novembre 2026).** Il motore e i bot la conoscevano già, ma il server mostrava ancora la carta all'avversario. Servivano, e ora ci sono:
 1. `match_state_payload` che nasconde la carta avversaria giocata sotto Nebbia finché la partita non è finita (a meno che l'avversario non abbia giocato un Annullatore in quel round);
 2. la schermata del round con la carta coperta e il solo punteggio.
 

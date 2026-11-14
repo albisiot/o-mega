@@ -134,12 +134,26 @@ Poteri implementati:
 | Davide | Semplice | +3 se il personaggio avversario lo supera di almeno 2 gradi di rarità (un Gamma contro Alfa e Omega) |
 | Crescendo | Semplice | +3 se la Minaccia ha un livello più alto di quella del round prima. Mai nel round 1 |
 | Slancio | Distintivo | Se vince il round, il personaggio successivo ottiene +2. È lo specchio di Riscossa; un round nullo non conta |
+| Arte di arrangiarsi | Semplice | Le abilità richieste che valgono meno di 3 contano 3, dopo Sabotatore |
+| Contrattacco | Semplice | +1 per ogni abilità richiesta in cui il personaggio avversario lo supera, a valori pieni, fino a +3 |
+| Eclettico | Semplice | +3 se le abilità richieste sono di almeno 3 famiglie diverse |
+| Lupo solitario | Semplice | +5 se nessun altro personaggio della squadra è della sua fazione |
+| Opportunista | Semplice | +3 se il personaggio avversario non ha un potere |
+| Riflesso | Semplice | Immune a Sabotatore, e il malus torna indietro: il Sabotatore avversario perde lui 1 a ogni abilità |
+| Vendetta | Semplice | +3 se il proprio lato ha perso il round precedente, con qualunque personaggio |
+| Grande prova | Semplice | +3 contro la Minaccia di livello più alto della partita (se sono più d'una, tutte) |
+| Adattabile | Semplice | +4 contro una Minaccia con una regola (modificatore, luogo o Minaccia rara), e i malus di quella regola non lo toccano |
+| Sacrificio | Distintivo | Il suo punteggio conta 0 (anche il bonus ricevuto), e il personaggio successivo ottiene +5 qualunque sia l'esito |
+| Capobranco | Distintivo | Dopo di lui, ogni personaggio successivo della sua fazione ha +1 fino a fine partita |
+| Riverbero | Distintivo | Copia il potere del personaggio giocato nel round prima, se è un potere che dà solo punti al suo personaggio |
+| Catalizzatore | Distintivo | Il personaggio successivo moltiplica per 2 il bonus del proprio potere (non il bonus portato né Capobranco) |
+| Nebbia | Distintivo | L'avversario vede il punteggio ma non chi è stato giocato, fino a fine partita. Il server copre la carta (`with_fog` in `match_state_payload`): niente nome, disegno, valori né rarità, solo il punteggio e il valore più alto. Un Annullatore avversario sullo stesso fronte o Silenzio della tomba la scoprono |
 
 In Emergenza non c'è un personaggio avversario: Schermato, Nemesi, Spia, Annullatore e Davide non hanno effetto, Tuttofare e Crescendo sì.
 
 Annullatore, Davide, Crescendo e Slancio sono nati per personaggi nuovi (P115-P122, due per potere), senza togliere poteri alle carte esistenti. Da simulazione sul catalogo a 122 personaggi (20.000 partite Difficile contro Difficile, squadre casuali, con i modificatori), una squadra che ha la carta vince: Slancio 53%, Davide 50%, Annullatore 49%, Crescendo 49%; nelle stesse condizioni Sabotatore 59% e una squadra senza poteri 49%. Con due sole carte, l'Annullatore incontra di rado Sabotatore: da solo non ne riduce la forza media. In seguito questi poteri sono andati anche a personaggi nuovi: oggi Annullatore è su 4 carte (anche Gauger, P130, e Injunction, P179), Crescendo su 4 (anche Miliarium, P161, e Holloway, P177), Slancio su 3 (anche Quarantine, P182), Davide su 3 (anche Penates, P206); Sabotatore è su 5 (anche Mischance, P131, Principal, P181, e Clementia, P214).
 
-I poteri dei prossimi aggiornamenti sono in `docs/POWERS-BACKLOG.md`: 14 sono già pronti nel motore di regole e nel database, ma nessuna carta li ha ancora.
+Gli ultimi 14 poteri della tabella vengono da `docs/POWERS-BACKLOG.md` e sono su un personaggio nuovo ciascuno (P218-P231, migrazione `20261114230000_backlog_power_characters.sql`, docs/WORLD.md), con i parametri consigliati del backlog. Sacrificio è entrato così com'era, nonostante il backlog lo desse da riprogettare (vedi lì il bilanciamento).
 
 ### 4.5 Doppioni
 
@@ -155,7 +169,7 @@ Le carte base restano nello stile attuale. Una **variante** è la stessa carta c
 - **In Conquista** una variante schierata è in palio come ogni altra carta non starter e passa al vincitore con il suo disegno. Contro un bot, se presa, esce dal gioco.
 - **Non si converte** in monete e non rende doppione l'unica copia base.
 - **Varianti animate:** alcune varianti hanno anche un breve video muto in loop (`public/cards/motion/`), che si vede solo dove una carta occupa lo schermo: pagina della carta, disegno a schermo intero e apertura del pacchetto. Altrove, e quando il telefono chiede meno movimento, resta il disegno fermo. Probabilità e regole non cambiano.
-- **Stili:** Neon (24 personaggi), Tarocco (13), Epica e Pastello (12 ciascuno), 3D e Incisione (10 ciascuno), Acquerello, Cinema, Circuito, Classico, Cremisi, Fantasy, Grafite, Inchiostro, Marmo, Retrò e Vetrata (9 ciascuno), Animato, Fenice, Gotico, Inferno, Manga, Olio, Ombra, Oro, Poster, Prisma, Regale, Ritratto, Spettro e Tempera (8 ciascuno), Cometa e Fiamma (7 ciascuno), Zombie (6). I dieci personaggi da P123 a P132 hanno una variante ciascuno, nello stile più vicino all'immagine da cui sono nati; quelli da P133 a P217 una ciascuno in uno stile esistente, disegnata come lo stile ma con colori propri, perché le serie non abbiano tutte la stessa intonazione. Ogni personaggio dei pacchetti ha almeno una variante; le carte sbloccate a livello restano senza. Se un personaggio ha più varianti, il server ne sceglie una a caso.
+- **Stili:** Neon (24 personaggi), Tarocco (13), Epica e Pastello (12 ciascuno), 3D e Incisione (10 ciascuno), Acquerello, Cinema, Circuito, Classico, Cremisi, Fantasy, Grafite, Inchiostro, Marmo, Retrò e Vetrata (9 ciascuno), Animato, Fenice, Gotico, Inferno, Manga, Olio, Ombra, Oro, Poster, Prisma, Regale, Ritratto, Spettro e Tempera (8 ciascuno), Cometa e Fiamma (7 ciascuno), Zombie (6). I dieci personaggi da P123 a P132 hanno una variante ciascuno, nello stile più vicino all'immagine da cui sono nati; quelli da P133 a P217 una ciascuno in uno stile esistente, disegnata come lo stile ma con colori propri, perché le serie non abbiano tutte la stessa intonazione. Ogni personaggio dei pacchetti ha almeno una variante, tranne per ora P218-P231; le carte sbloccate a livello restano senza. Se un personaggio ha più varianti, il server ne sceglie una a caso.
 
 ### 4.7 Scheda del personaggio
 

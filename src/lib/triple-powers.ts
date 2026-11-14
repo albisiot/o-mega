@@ -1,4 +1,4 @@
-import { abilityMalusFrom, immuneToSabotage, type Threat } from "@o-mega/game-engine";
+import { abilityMalusFrom, asPlayedAgainst, immuneToSabotage, packBonus, type Character, type Threat } from "@o-mega/game-engine";
 import { toCharacter, type MatchCard } from "@/lib/match";
 import {
   carriedInto,
@@ -22,7 +22,7 @@ function cardOf(view: TripleView, contest: TripleContest | undefined, side: Side
  * What a card's power did on one threat of an Allarme Triplo round (SPEC §5.13), as on a
  * match page: each threat is a lane, so Riscossa and Slancio come from the side's card on
  * the same threat in the round before. Annotated with the power's family for the page.
- * Capobranco is left out: no card has it yet.
+ * Capobranco counts the side's cards of the rounds before, on every threat (SPEC §5.13).
  */
 export function contestNotes(view: TripleView, round: TripleRound, contest: TripleContest, side: Side): PowerNote[] {
   const other: Side = side === "me" ? "opponent" : "me";
@@ -64,10 +64,39 @@ export function contestNotes(view: TripleView, round: TripleRound, contest: Trip
       opponentShielded: rivalActing !== null && immuneToSabotage(rivalActing),
       opponentSabotage: rivalActing ? abilityMalusFrom(rivalActing) : 0,
       opponentHasPower: Boolean(rival?.power),
-      pack: play.parts?.pack,
+      // The server's parts say it; for plays stored before them, count the Capobranco cards.
+      pack: play.parts?.pack ?? packBonus(toCharacter(card, card.definition_id), playedInEarlierRounds(view, round.round, side)),
       parts: play.parts,
       spyRevealed,
     },
     true,
   );
+}
+
+/**
+ * The cards a side played in the rounds before `round`, on every threat, as they played:
+ * without the power an opposing Annullatore or Silenzio della tomba took away (Capobranco).
+ */
+function playedInEarlierRounds(view: TripleView, round: number, side: Side): Character[] {
+  const other: Side = side === "me" ? "opponent" : "me";
+  return [...view.rounds]
+    .filter((r) => r.resolved && r.round < round)
+    .sort((x, y) => x.round - y.round)
+    .flatMap((r) =>
+      [...r.contests]
+        .sort((x, y) => x.slot - y.slot)
+        .flatMap((c) => {
+          const own = cardOf(view, c, side);
+          if (!own) return [];
+          const rival = cardOf(view, c, other);
+          const threat = view.threats[c.slot];
+          return [
+            asPlayedAgainst(
+              toCharacter(own, own.definition_id),
+              rival ? toCharacter(rival, "opponent") : null,
+              threat ? { id: "lane", level: threat.level, abilities: threat.abilities, modifier: threat.modifier } : null,
+            ),
+          ];
+        }),
+    );
 }
