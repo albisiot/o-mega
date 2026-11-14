@@ -46,7 +46,7 @@ export function HandCard({ card, score, bonus, tone, note, short = false, artSiz
       {note && (
         <span
           aria-hidden
-          className="absolute -top-2.5 left-1/2 z-[2] -translate-x-1/2 -skew-x-8 whitespace-nowrap bg-comic-yellow px-1 text-[9.5px] font-extrabold leading-[13px] text-black"
+          className="absolute -top-2.5 left-1/2 z-[2] max-w-[calc(100%-4px)] -translate-x-1/2 -skew-x-8 truncate bg-comic-yellow px-1 text-[9.5px] font-extrabold leading-[13px] text-black"
         >
           {note}
         </span>

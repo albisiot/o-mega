@@ -26,7 +26,8 @@ import {
 } from "@/lib/match";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
-import { tripleBeforeRound, useRevealHold } from "@/lib/reveal-hold";
+import { tripleBeforeRound, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
+import { TripleRoundComics } from "@/components/triple-comic";
 import { tieBreakReason, tieWonByRelentless } from "@/lib/round-powers";
 import { oddsText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
 import { describeThreatModifier } from "@/lib/threat-modifiers";
@@ -224,15 +225,17 @@ function TripleSteps({ initial }: { initial: TripleView }) {
     return () => clearTimeout(timer);
   }, [round, deadline, offset, submit]);
 
-  // A round result stays on screen for the reveal pause; the last one waits for a tap.
-  useEffect(() => {
-    if (revealing === null || view.status !== "active") return;
-    const timer = setTimeout(() => {
-      settle(revealing);
+  // A round result (a comic page per threat, then the recap) stays until the recap has landed
+  // and there was time to read it; the last one waits for a tap.
+  const onRevealDone = useRevealPause(
+    revealing,
+    view.status === "active",
+    (round) => {
+      settle(round);
       setRevealing(null);
-    }, balance.match.revealMinSeconds * 1000);
-    return () => clearTimeout(timer);
-  }, [revealing, view.status, settle]);
+    },
+    balance.triple.revealPauseSeconds,
+  );
 
   async function forfeit() {
     setBusy(true);
@@ -367,16 +370,26 @@ function TripleSteps({ initial }: { initial: TripleView }) {
       {error && <p className="mx-3 mt-1 text-sm font-semibold text-comic-magenta">{error}</p>}
 
       {shownRound ? (
-        <RoundReveal
+        <TripleRoundComics
+          key={shownRound.round}
           view={view}
           round={shownRound}
           rival={rival}
-          finished={view.status === "finished"}
-          onVerdict={() => settle(shownRound.round)}
-          onContinue={() => {
-            settle(shownRound.round);
-            setRevealing(null);
-          }}
+          abilities={abilities}
+          summary={
+            <RoundReveal
+              view={view}
+              round={shownRound}
+              rival={rival}
+              finished={view.status === "finished"}
+              onVerdict={() => settle(shownRound.round)}
+              onDone={onRevealDone}
+              onContinue={() => {
+                settle(shownRound.round);
+                setRevealing(null);
+              }}
+            />
+          }
         />
       ) : view.status === "finished" ? (
         <TripleResult view={view} rival={rival} />
@@ -869,6 +882,7 @@ function RoundReveal({
   finished,
   onContinue,
   onVerdict,
+  onDone,
 }: {
   view: TripleView;
   round: TripleRound;
@@ -877,6 +891,8 @@ function RoundReveal({
   onContinue: () => void;
   /** The round's totals are on the page: the strip at the top may show them. */
   onVerdict: () => void;
+  /** The recap has landed: the time to read it starts. */
+  onDone: () => void;
 }) {
   const contests = [...round.contests].sort((a, b) => a.slot - b.slot);
   const points = roundPoints(round);
@@ -886,7 +902,10 @@ function RoundReveal({
   const theirAuto = contests.some((c) => c.opponent_play?.auto_played);
   const last = contests.length * 0.6;
   // The totals line lands last (at once with reduced motion): then the strip catches up.
-  const announce = useEffectEvent(onVerdict);
+  const announce = useEffectEvent(() => {
+    onVerdict();
+    onDone();
+  });
   useEffect(() => {
     const timer = setTimeout(announce, prefersReducedMotion() ? 0 : (last + 0.3) * 1000);
     return () => clearTimeout(timer);

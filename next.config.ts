@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
   basePath,
   trailingSlash: true,
   images: { unoptimized: true },
+  // Pages named page.dev.tsx (layout checks, scripts/test-layout.mjs) exist in `next dev` only.
+  pageExtensions: process.env.NODE_ENV === "development" ? ["dev.tsx", "tsx", "ts", "jsx", "js"] : ["tsx", "ts", "jsx", "js"],
   turbopack: {
     rules: {
       "*.css": {

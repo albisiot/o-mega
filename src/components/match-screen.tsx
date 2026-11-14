@@ -49,6 +49,7 @@ import { RewardChips, hasReward, useMatchReward } from "@/components/match-rewar
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import {
   carriedInto,
+  decisiveNote,
   outcomeOf,
   playedBefore,
   roundPowerNotes,
@@ -57,7 +58,6 @@ import {
   tieWonByRelentless,
   wasNullified,
   wasSilenced,
-  type PowerNote,
 } from "@/lib/round-powers";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
 import { matchBeforeRound, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
@@ -1133,40 +1133,6 @@ function RoundReveal({
       )}
     />
   );
-}
-
-/**
- * The power that changed the result: without its points the winner would not have won
- * (Implacabile: without it the tie went to the highest value, or to nobody).
- */
-function decisiveNote(
-  side: "me" | "opponent",
-  notes: PowerNote[],
-  winner: { score: number; highest: number },
-  loser: { score: number; highest: number },
-  loserName: string,
-): { side: "me" | "opponent"; index: number; text: string } | null {
-  const tie = notes.findIndex((note) => note.active && note.timing === "tie");
-  if (tie >= 0 && winner.score === loser.score) {
-    if (winner.highest > loser.highest) return null;
-    return {
-      side,
-      index: tie,
-      text:
-        winner.highest === loser.highest
-          ? `Senza ${notes[tie].name} il round era nullo.`
-          : `Senza ${notes[tie].name} vinceva ${loserName}, col valore più alto.`,
-    };
-  }
-  for (const [index, note] of notes.entries()) {
-    if (!note.active || note.timing || !note.points || note.points <= 0) continue;
-    const without = winner.score - note.points;
-    if (without < loser.score) return { side, index, text: `Senza ${note.name} finiva ${without} a ${loser.score}.` };
-    if (without === loser.score && winner.highest <= loser.highest) {
-      return { side, index, text: `Senza ${note.name} finiva pari, ${without} a ${loser.score}.` };
-    }
-  }
-  return null;
 }
 
 function MatchResult({

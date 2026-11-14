@@ -29,7 +29,7 @@ export const balance = {
     revealPauseSeconds: 11,
     /** ...once its animation is over, plus this time to read it again... */
     revealReadSeconds: 3.5,
-    /** ...but never before this (Allarme Triplo, whose page has no animation, always waits this). */
+    /** ...but never before this. */
     revealMinSeconds: 6,
     /** Network tolerance after a deadline before the server auto-plays. */
     timeoutGraceSeconds: 3,
@@ -111,6 +111,13 @@ export const balance = {
     threats: 3,
     /** Time to place the three cards of a round. */
     roundTimerSeconds: 45,
+    /**
+     * Time a round's result (a comic page per threat, then the recap) may stay before the next
+     * timer starts, from the second round on; the pages leave earlier once they are over.
+     */
+    revealPauseSeconds: 40,
+    /** On each threat's page: once its animation is over, this time to read it (client only). */
+    contestReadSeconds: 2.5,
   },
 
   /**

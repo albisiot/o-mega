@@ -95,6 +95,10 @@ export type RoundComicProps = {
   revealed?: { foreseen: { round: number; level: number; name: string }[]; spied: MatchCard[] } | null;
   /** One line under the verdict: who beat whom, or why nobody did. */
   resultLine: string;
+  /** The caption over the threat, instead of "Round n · Livello l" (Allarme Triplo). */
+  caption?: string;
+  /** The verdict's words, instead of "Round vinto!", "Round perso", "Round nullo". */
+  titles?: { win: string; lose: string; void: string };
   /** Short notices (time up, a tie nobody could settle). */
   notices: string[];
   /** The hint at the bottom; it changes once the page is complete. */
@@ -399,13 +403,15 @@ function CardPanel({
           ▼ meno
         </span>
       )}
-      {showFlag && data.flag && <RuleRibbon side={side} text={data.flag.text} help={!harmful({ name: "", effect: null, active: true, points: data.flag.points })} />}
 
       {/* The balloons fill the room between the score and the chips, and never go under them. */}
       <div className="absolute inset-x-1 bottom-1.5 top-[66px] flex flex-col gap-1">
         <NoteStack side={side} className="z-[7]">
           {(squeeze) => (
             <>
+              {showFlag && data.flag && (
+                <RuleRibbon side={side} text={data.flag.text} help={!harmful({ name: "", effect: null, active: true, points: data.flag.points })} />
+              )}
               {shown.map((index, position) => {
                 const note = data.notes[index];
                 return (
@@ -416,6 +422,8 @@ function CardPanel({
                     fxName={`${side}-note-${index}`}
                     harm={harmful(note)}
                     decisive={verdict && decisiveIndex === index}
+                    // Implacabile's TONK! is still on the page at the verdict: the tag waits for it.
+                    decisiveDelay={phase(note) === "tie" && !instant ? paced(1000) : 0}
                     compact={isCompact(squeeze, position, shown.length)}
                   />
                 );
@@ -522,7 +530,8 @@ export function RoundComic(props: RoundComicProps) {
   useWhenDone(done, props.onDone);
 
   const winnerSide = winner === "none" ? null : props[winner];
-  const title = winner === "me" ? "Round vinto!" : winner === "opponent" ? "Round perso" : "Round nullo";
+  const titles = props.titles ?? { win: "Round vinto!", lose: "Round perso", void: "Round nullo" };
+  const title = winner === "me" ? titles.win : winner === "opponent" ? titles.lose : titles.void;
   const sfx = winner === "me" ? "SBAM!" : winner === "opponent" ? "KRAK!" : "PARI!";
   const slots = SIDES.map((side) => ({ side, slot: slotOf(side) })).filter((s) => s.slot);
   // Veggente and Spia: once the viewer's card has spoken, what it saw stays pinned between the panels.
@@ -544,7 +553,7 @@ export function RoundComic(props: RoundComicProps) {
     >
       <section aria-label={`Round ${props.round}: ${props.threatName}`} className="comic-panel halftone relative shrink-0 bg-comic-orange px-3 pb-2.5 pt-2 text-black">
         <p data-fx="round-cap" className="inline-block border-2 border-black bg-comic-yellow px-2 text-[11px] font-extrabold uppercase leading-5">
-          Round {props.round} · Livello {props.level}
+          {props.caption ?? `Round ${props.round} · Livello ${props.level}`}
         </p>
         {slots.length > 0 && (
           // In a row on the round's line: stacked, the second one covered the threat's name.

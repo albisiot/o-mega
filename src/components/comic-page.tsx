@@ -258,6 +258,7 @@ export function PowerBalloon({
   fxName,
   harm = false,
   decisive = false,
+  decisiveDelay = 0,
   compact = false,
 }: {
   note: PowerNote;
@@ -265,8 +266,11 @@ export function PowerBalloon({
   fxName?: string;
   harm?: boolean;
   decisive?: boolean;
+  /** How long the "Decisivo!" tag waits before it pops (ms). */
+  decisiveDelay?: number;
   compact?: boolean;
 }) {
+  const tagDelay = decisiveDelay ? { animationDelay: `${decisiveDelay}ms` } : undefined;
   const family = powerFamily(note.code);
   const tone = harm && family === "charge" ? "strike" : family;
   if (compact) {
@@ -287,7 +291,9 @@ export function PowerBalloon({
           {amount && <span className="ml-0.5 font-display text-[13px]">{amount}</span>}
           {/* In the line, not over it: on a pill this small the tag covered the amount. */}
           {decisive && (
-            <span className="comic-pop ml-1 rotate-6 border-2 border-black bg-white px-0.5 text-[10px] leading-3 text-black">Decisivo!</span>
+            <span className="comic-pop ml-1 rotate-6 border-2 border-black bg-white px-0.5 text-[10px] leading-3 text-black" style={tagDelay}>
+              Decisivo!
+            </span>
           )}
         </p>
       </div>
@@ -319,7 +325,10 @@ export function PowerBalloon({
       {/* The lock sits on the balloon's corner, so the silenced power can still be read. */}
       {note.cancelled === "silenced" && <span className="comic-pop absolute -right-1 -top-3 z-[3]">{LOCK}</span>}
       {decisive && (
-        <span className="comic-pop absolute -right-1 -top-2 z-[4] rotate-6 border-2 border-black bg-white px-1 font-sfx text-[13px] leading-4 tracking-wide text-black">
+        <span
+          className="comic-pop absolute -right-1 -top-2 z-[4] rotate-6 border-2 border-black bg-white px-1 font-sfx text-[13px] leading-4 tracking-wide text-black"
+          style={tagDelay}
+        >
           Decisivo!
         </span>
       )}
@@ -513,11 +522,12 @@ export function AbilityChips({
 const markRows = (chips: ComicChip[]) => Math.max(0, ...chips.map((chip) => (chip.mark ? 1 : 0) + (chip.malus > 0 ? 1 : 0)));
 
 /** A ribbon the threat drops on a card: its faction, its rarity, or being behind. */
+/** It goes first among the card's balloons (NoteStack), on the side away from them, so it never covers one. */
 export function RuleRibbon({ side, text, help }: { side: "me" | "opponent"; text: string; help: boolean }) {
   return (
     <span
-      className={`comic-ribbon absolute top-[70px] z-[7] border-[3px] border-black px-3 py-1 font-display text-[16px] uppercase leading-5 text-black shadow-[3px_3px_0_#000] ${
-        side === "me" ? "right-1.5" : "left-1.5"
+      className={`comic-ribbon relative shrink-0 border-[3px] border-black px-3 py-1 font-display text-[16px] uppercase leading-5 text-black shadow-[3px_3px_0_#000] ${
+        side === "me" ? "self-end" : "self-start"
       } ${help ? "bg-comic-yellow" : "bg-comic-magenta"}`}
     >
       {text}
