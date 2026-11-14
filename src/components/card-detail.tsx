@@ -14,6 +14,11 @@ type CardDetail = {
 
 const CardDetailContext = createContext<CardDetail | null>(null);
 
+/** An opposing card played with Nebbia, which the server sends covered (MatchCard.hidden). */
+function isHidden(card: CardData): boolean {
+  return "hidden" in card && card.hidden === true;
+}
+
 /**
  * Lets every card on a game screen open its detail with a long press. The overlay lives
  * here, above the screen's steps, so it stays open when the step under it changes (a round
@@ -22,7 +27,11 @@ const CardDetailContext = createContext<CardDetail | null>(null);
 export function CardDetailProvider({ children }: { children: ReactNode }) {
   const [card, setCard] = useState<CardData | null>(null);
   const bind = useLongPress();
-  const value = useMemo<CardDetail>(() => ({ press: (shown) => bind(() => setCard(shown)), open: setCard }), [bind]);
+  // A card covered by Nebbia has nothing to show: the long press does nothing on it.
+  const show = useCallback((shown: CardData) => {
+    if (!isHidden(shown)) setCard(shown);
+  }, []);
+  const value = useMemo<CardDetail>(() => ({ press: (shown) => bind(() => show(shown)), open: show }), [bind, show]);
 
   return (
     <CardDetailContext value={value}>

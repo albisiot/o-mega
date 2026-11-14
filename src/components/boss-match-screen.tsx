@@ -751,7 +751,7 @@ function TurnReveal({
   if (!entries || !round.my_play || !round.opponent_play) return null;
   const statsOf = (entry: BossEntry) => {
     const abilities = view.fronts[entry.front]?.abilities ?? [];
-    return entry.card ? abilities.map((code) => `${code} ${entry.card!.stats[code] ?? 0}`).join(" · ") : "";
+    return entry.card ? abilities.map((code) => `${code} ${entry.card!.hidden ? "?" : (entry.card!.stats[code] ?? 0)}`).join(" · ") : "";
   };
   // The totals as they stood after this turn.
   const upTo = view.rounds.filter((r) => r.resolved && r.round <= round.round);

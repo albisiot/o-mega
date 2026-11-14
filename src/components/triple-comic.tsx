@@ -68,7 +68,8 @@ function ContestComic({
   // Each card's abilities as chips: the rule's marks and what Sabotatore took.
   const mirror = modifier?.code === "mirror";
   const chipsOf = (card: MatchCard | null, other: MatchCard | null, malus: number) =>
-    card && threat && !threat.hidden
+    // A card covered by Nebbia has no values to show, and under Specchio neither has the card facing it.
+    card && threat && !threat.hidden && !card.hidden && !(mirror && other?.hidden)
       ? abilityChips(mirror && other ? other.stats : card.stats, ruleThreat, malus).map((chip) =>
           mirror ? { ...chip, mark: { text: "⇄", tone: "ok" as const } } : chip,
         )
@@ -79,7 +80,7 @@ function ContestComic({
     chips && card ? chipsTotal(chipsOf(card, other, 0) ?? []) - chipsTotal(chips) : 0;
   // The ribbon a rule drops on a card: its faction or its rarity.
   const flagOf = (card: MatchCard | null, character: ReturnType<typeof asPlayed>, parts: { modifier: number } | null | undefined) => {
-    if (!card || !character || !modifier) return null;
+    if (!card || card.hidden || !character || !modifier) return null;
     const points = parts ? parts.modifier : modifierPoints(character, ruleThreat);
     if (!points) return null;
     const who = modifier.code === "hostile_ground" ? (FACTION_LABELS[card.faction] ?? card.faction) : modifier.code === "long_count" ? "Chi è sotto" : card.rarity.name;
@@ -119,7 +120,7 @@ function ContestComic({
 
   const nameOf = (code: string) => abilities.find((a) => a.code === code)?.name ?? code;
   const twist = modifier && threat ? describeThreatModifier(modifier, nameOf(threat.abilities[0]), nameOf) : null;
-  const statsOf = (card: MatchCard | null) => (card && threat ? threat.abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ") : "");
+  const statsOf = (card: MatchCard | null) => (card && threat ? threat.abilities.map((code) => `${code} ${card.hidden ? "?" : (card.stats[code] ?? 0)}`).join(" · ") : "");
   const spied = (view.spied_cards ?? []).filter((card) => card.round === round.round);
   const last = position === count - 1;
 

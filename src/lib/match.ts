@@ -22,6 +22,12 @@ export type MatchCard = {
   stats: Record<string, number>;
   rarity: { code: string; name: string; rank: number; color: string };
   power: (Power & { name: string; text: string }) | null;
+  /**
+   * Nebbia: an opposing card the server covers until the match is over. It comes named
+   * "Ignoto", with no definition, values or rarity, and Nebbia as its power; only the
+   * score of the play is real.
+   */
+  hidden?: boolean;
 };
 
 /** A card as the rules engine reads it, for score previews. */

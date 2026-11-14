@@ -46,6 +46,24 @@ const plinth = card("Plinth", "P112", { FOR: 10, RES: 10, ENE: 3 });
 const malleus = card("Malleus", "P029", { FOR: 10, RES: 8, ENE: 3, FUR: 5 }, "villains", 4);
 const mongi = card("Mongibello", "P060", { FOR: 10, RES: 6, ENE: 10, TEC: 3 }, "heroes", 5);
 const tifeo = card("Re Tifeo", "P080", { FOR: 10, RES: 10, ENE: 6, TEC: 5 }, "villains", 4);
+// The backlog powers (P218-P231) and an opposing card covered by Nebbia, as the server sends it.
+const afterimage = card("Afterimage", "P228", { FOR: 4, RES: 5, ENE: 0, VEL: 8, COM: 8, FUR: 9 }, "heroes", 4);
+const recesso = card("Recesso", "P224", { FOR: 5, RES: 6, ENE: 0, MAG: 10, COM: 10 }, "heroes", 3);
+const upkeep = card("Upkeep", "P218", { FOR: 3, RES: 5, ENE: 6, VEL: 2, TEC: 9 }, "heroes", 2);
+const statera = card("Statera", "P220", { FOR: 5, RES: 8, ENE: 0, MAG: 9, PER: 10 }, "neutrals", 2);
+const clementia = card("Clementia", "P214", { FOR: 3, RES: 4, ENE: 1, MAG: 10, COM: 3 }, "villains", 4);
+const fogged: MatchCard = {
+  definition_id: "",
+  code: "",
+  name: "Ignoto",
+  faction: "",
+  flavor: "",
+  art_url: "/cards/nebbia.webp",
+  stats: {},
+  rarity: { code: "", name: "", rank: 0, color: "#7c8794" },
+  power: { code: "fog", params: {}, name: "Nebbia", text: "L'avversario non vede chi hai giocato fino a fine partita" },
+  hidden: true,
+};
 
 type Play = [MatchCard, number, PowerNote[], { text: string; points: number }?];
 type RoundScene = {
@@ -176,6 +194,32 @@ const SCENES: Record<string, Scene> = {
     op: [malleus, 26, [n("Sabotatore", "sabotage", "−1 a ogni abilità rivale"), n("Riscossa", "comeback", "+2", { points: 2, source: "carried" })]],
     winner: "me",
   },
+  "nebbia": {
+    kind: "round",
+    threat: "Titano di metallo",
+    abilities: GOLEM,
+    me: [afterimage, 14, [n("Riverbero", "echo", "+2", { points: 2 }), n("Capobranco", "pack_leader", "+1", { points: 1, source: "pack" })]],
+    op: [fogged, 22, [n("Nebbia", "fog", "nasconde chi l'ha giocato")]],
+    winner: "opponent",
+  },
+  "poteri-nuovi": {
+    kind: "round",
+    threat: "Rivolta in fonderia",
+    abilities: ["RES", "MAG", "COM"],
+    me: [recesso, 26, [n("Riflesso", "reflect", "rimanda −1 a ogni abilità"), n("Sacrificio", "sacrifice", "+5", { points: 5, source: "carried" })]],
+    op: [clementia, 16, [n("Sabotatore", "sabotage", "fermato dallo scudo", { cancelled: "blocked" })]],
+    winner: "me",
+    decisive: { side: "me", index: 1, text: "Senza Sacrificio finiva 21 a 16." },
+  },
+  "arrangiarsi": {
+    kind: "round",
+    threat: "Allagamento in galleria",
+    abilities: ["VEL", "MAG", "TEC", "PER"],
+    me: [upkeep, 22, [n("Arte di arrangiarsi", "scrappy", "+4", { points: 4 }), n("Catalizzatore", "catalyst", "×2 al potere del prossimo", { timing: "after" })]],
+    op: [statera, 23, [n("Contrattacco", "counterpunch", "+2", { points: 2 })]],
+    winner: "opponent",
+    decisive: { side: "opponent", index: 0, text: "Senza Contrattacco finiva 21 a 22." },
+  },
   "grande-minaccia": { kind: "boss" },
   "triplo-mappa": { kind: "triple-map" },
   "emergenza": { kind: "emergency" },
@@ -186,8 +230,9 @@ function sideOf(label: string, [c, score, notes, flag]: Play, abilities: string[
   return {
     label,
     card: c,
-    stats: "",
-    chips: abilityChips(c.stats, threat, malus),
+    // A card covered by Nebbia shows no values.
+    stats: c.hidden ? abilities.map((code) => `${code} ?`).join(" · ") : "",
+    chips: c.hidden ? undefined : abilityChips(c.stats, threat, malus),
     score,
     notes,
     flag: flag ?? null,
@@ -320,8 +365,11 @@ function SceneView({ id }: { id: string }) {
       />
     );
   }
-  const meMalus = scene.op[2].some((x) => x.code === "sabotage" && x.active) ? 1 : 0;
-  const opMalus = scene.me[2].some((x) => x.code === "sabotage" && x.active) ? 1 : 0;
+  // Sabotatore hits unless a shield stopped it; Riflesso sends it back to the other card.
+  const hits = (notes: PowerNote[]) => notes.some((x) => x.code === "sabotage" && x.active && !x.cancelled);
+  const reflects = (notes: PowerNote[]) => notes.some((x) => x.code === "reflect" && x.active);
+  const meMalus = hits(scene.op[2]) || reflects(scene.op[2]) ? 1 : 0;
+  const opMalus = hits(scene.me[2]) || reflects(scene.me[2]) ? 1 : 0;
   return (
     <RoundComic
       round={3}

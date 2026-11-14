@@ -3040,6 +3040,16 @@ export type Database = {
         Args: { p_match_id: string; p_reason: string; p_result: string }
         Returns: undefined
       }
+      fog_card: { Args: { p_play: Json }; Returns: Json }
+      fog_hides: {
+        Args: {
+          p_match_id: string
+          p_round: number
+          p_rule_index: number
+          p_side: string
+        }
+        Returns: boolean
+      }
       forfeit_match: { Args: { p_match_id: string }; Returns: Json }
       game_day: { Args: { p_at?: string }; Returns: string }
       get_active_match: { Args: never; Returns: Json }
@@ -3716,6 +3726,10 @@ export type Database = {
       }
       visible_modifier: {
         Args: { p_hide: boolean; p_modifier: Json }
+        Returns: Json
+      }
+      with_fog: {
+        Args: { p_match_id: string; p_payload: Json; p_side: string }
         Returns: Json
       }
       with_place_modifiers:

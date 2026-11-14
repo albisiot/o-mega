@@ -1017,8 +1017,9 @@ function RoundReveal({
   const myCharacter = mine ? asPlayed(mine, theirs) : null;
   const theirCharacter = theirs ? asPlayed(theirs, mine) : null;
   const mirror = round.modifier?.code === "mirror";
+  // A card covered by Nebbia has no values to show, and under Specchio neither has the card facing it.
   const chipsOf = (card: MatchCard | null | undefined, otherCard: MatchCard | null | undefined, malus: number) =>
-    card && !round.threat.hidden
+    card && !round.threat.hidden && !card.hidden && !(mirror && otherCard?.hidden)
       ? abilityChips(mirror && otherCard ? otherCard.stats : card.stats, ruleThreat, malus).map((chip) =>
           mirror ? { ...chip, mark: { text: "⇄", tone: "ok" as const } } : chip,
         )
@@ -1032,7 +1033,8 @@ function RoundReveal({
     chips && card ? chipsTotal(chipsOf(card, otherCard, 0) ?? []) - chipsTotal(chips) : 0;
   // The ribbon a rule drops on a card: its faction, its rarity, or being behind.
   const flagOf = (card: MatchCard | null | undefined, character: ReturnType<typeof toCharacter> | null, standing: typeof myStanding) => {
-    if (!card || !character || !round.modifier) return null;
+    // A card covered by Nebbia shows no faction nor rarity, so no ribbon either.
+    if (!card || card.hidden || !character || !round.modifier) return null;
     const parts = card === mine ? round.my_play?.parts : card === theirs ? theirs?.parts : null;
     const points = parts ? parts.modifier : modifierPoints(character, ruleThreat, standing);
     if (!points) return null;
@@ -1044,7 +1046,7 @@ function RoundReveal({
   const nameOf = (code: string) => abilities.find((a) => a.code === code)?.name ?? code;
   const twist = round.modifier ? describeThreatModifier(round.modifier, nameOf(round.threat.abilities[0]), nameOf) : null;
   const statsOf = (card: MatchCard | null | undefined) =>
-    card ? round.threat.abilities.map((code) => `${code} ${card.stats[code] ?? 0}`).join(" · ") : "";
+    card ? round.threat.abilities.map((code) => `${code} ${card.hidden ? "?" : (card.stats[code] ?? 0)}`).join(" · ") : "";
   const winner = round.winner ?? "none";
   const myScore = round.my_play?.score ?? 0;
   const theirScore = theirs?.score ?? 0;
