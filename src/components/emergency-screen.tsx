@@ -38,6 +38,7 @@ import { emergencyPowerNotes, type EmergencyNote } from "@/lib/emergency-powers"
 import { describeServerError } from "@/lib/errors";
 import { fetchInstanceDefinitions, fetchOwnedInstances, toCharacter, type VariantCopy } from "@/lib/match";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
+import { emergencyBeforePlay, useRevealHold } from "@/lib/reveal-hold";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
 
@@ -54,6 +55,8 @@ export function EmergencyScreen({ initial }: { initial: EmergencyView }) {
 function EmergencySteps({ initial }: { initial: EmergencyView }) {
   const [view, setView] = useState(initial);
   const [revealing, setRevealing] = useState<EmergencyPlay | null>(null);
+  // The levels strip keeps the play's outcome until the result page tells it.
+  const { held, settled, settle } = useRevealHold(revealing?.round ?? null);
   const [abilities, setAbilities] = useState<AbilityInfo[]>([]);
   const [picking, setPicking] = useState(false);
 
@@ -72,6 +75,8 @@ function EmergencySteps({ initial }: { initial: EmergencyView }) {
   // Every step fits the screen: nothing scrolls. Before and after the attempt the page
   // has its title; while playing, one strip with the levels replaces it.
   const titled = run ? !revealing && run.status === "finished" : !picking;
+  // What the levels strip shows: the run before the play on screen, until its verdict is out.
+  const strip = held && revealing ? emergencyBeforePlay(view, revealing.round) : view;
   useLockedScreen(true);
 
   return (
@@ -90,13 +95,22 @@ function EmergencySteps({ initial }: { initial: EmergencyView }) {
       ) : (
         <header className="relative flex items-center gap-1.5 px-3 py-1">
           <BackLink href="/gioca" label="Torna a Gioca" />
-          <LevelTrack view={view} abilities={abilities} inline />
+          <LevelTrack view={strip} abilities={abilities} settled={settled} inline />
         </header>
       )}
       {!run ? (
         <Briefing view={view} picking={picking} onPick={() => setPicking(true)} onStarted={setView} />
       ) : revealing ? (
-        <PlayReveal play={revealing} run={run} rules={view.rules} onContinue={() => setRevealing(null)} />
+        <PlayReveal
+          play={revealing}
+          run={run}
+          rules={view.rules}
+          onVerdict={() => settle(revealing.round)}
+          onContinue={() => {
+            settle(revealing.round);
+            setRevealing(null);
+          }}
+        />
       ) : run.status === "finished" ? (
         <RunResult run={run} rules={view.rules} />
       ) : (
@@ -110,7 +124,18 @@ function EmergencySteps({ initial }: { initial: EmergencyView }) {
  * The day's levels. `inline` puts them in the choice strip; a threat foreseen with a
  * power gets an eye on its cell, and a tap shows it.
  */
-function LevelTrack({ view, abilities, inline = false }: { view: EmergencyView; abilities: AbilityInfo[]; inline?: boolean }) {
+function LevelTrack({
+  view,
+  abilities,
+  settled = null,
+  inline = false,
+}: {
+  view: EmergencyView;
+  abilities: AbilityInfo[];
+  /** The threat whose outcome the strip has just caught up with: its cell bumps. */
+  settled?: number | null;
+  inline?: boolean;
+}) {
   const run = view.run;
   // An open cell closes by itself when the run moves on.
   const phase = `${run?.status}:${run?.current_round}`;
@@ -142,7 +167,7 @@ function LevelTrack({ view, abilities, inline = false }: { view: EmergencyView; 
             inline ? "h-11 text-lg" : "h-10 text-[20px]"
           } ${style}`;
           return (
-            <li key={i} className="min-w-0 flex-1">
+            <li key={i} className={`min-w-0 flex-1 ${settled === i + 1 ? "strip-bump" : ""}`}>
               {foreseen ? (
                 <button
                   type="button"
@@ -545,11 +570,14 @@ function PlayReveal({
   run,
   rules,
   onContinue,
+  onVerdict,
 }: {
   play: EmergencyPlay;
   run: EmergencyRun;
   rules: EmergencyView["rules"];
   onContinue: () => void;
+  /** The verdict is out: the levels strip may show it. */
+  onVerdict: () => void;
 }) {
   const card = run.squad.find((c) => c.instance_id === play.instance_id);
   const detail = useCardDetail();
@@ -583,6 +611,7 @@ function PlayReveal({
       ended={isLast && run.status === "finished"}
       press={card ? detail.press(card) : undefined}
       onContinue={onContinue}
+      onVerdict={onVerdict}
       action={(complete, skip) => (
         <button type="button" onClick={complete ? onContinue : skip} className="btn btn-primary w-full">
           {!complete ? "Salta" : run.status === "finished" && isLast ? "Vedi il risultato" : "Prossima Minaccia"}

@@ -53,6 +53,8 @@ export type BossComicProps = {
   notices: string[];
   hint: (complete: boolean) => ReactNode;
   onContinue: () => void;
+  /** The turn's totals are out, played or skipped to. */
+  onVerdict?: () => void;
 };
 
 type Beat =
@@ -260,7 +262,7 @@ export function BossComic(props: BossComicProps) {
   const settledOn = (side: BossSide) => fired.some((beat) => beat.kind === "result" && beat.side === side);
   const lowest = Math.min(...values);
   const turnWinner: BossSide | null = points.me > points.opponent ? "me" : points.opponent > points.me ? "opponent" : null;
-  useVerdictBuzz(has("total"), turnWinner === "me" ? "win" : turnWinner === "opponent" ? "lose" : "void");
+  useVerdictBuzz(has("total"), turnWinner === "me" ? "win" : turnWinner === "opponent" ? "lose" : "void", props.onVerdict);
 
   // A front's stripe takes the new holder's colour once its entry is settled.
   const holderNow = (front: number) => {

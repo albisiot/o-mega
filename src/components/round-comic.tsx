@@ -55,6 +55,8 @@ export type RoundComicProps = {
   /** The hint at the bottom; it changes once the page is complete. */
   hint: (complete: boolean) => ReactNode;
   onContinue: () => void;
+  /** The verdict is out (SBAM!), played or skipped to. */
+  onVerdict?: () => void;
 };
 
 type Beat =
@@ -198,7 +200,7 @@ export function RoundComic(props: RoundComicProps) {
   const outcomeOf = (side: ComicKey) =>
     !verdict ? null : winner === "none" ? ("void" as const) : winner === side ? ("won" as const) : ("lost" as const);
 
-  useVerdictBuzz(verdict, winner === "me" ? "win" : winner === "opponent" ? "lose" : "void");
+  useVerdictBuzz(verdict, winner === "me" ? "win" : winner === "opponent" ? "lose" : "void", props.onVerdict);
 
   const winnerSide = winner === "none" ? null : props[winner];
   const title = winner === "me" ? "Round vinto!" : winner === "opponent" ? "Round perso" : "Round nullo";

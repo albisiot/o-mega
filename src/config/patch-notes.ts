@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "14 novembre 2026",
     changes: [
+      "Niente più spoiler in alto durante la partita: la striscia con le Minacce, i round vinti e il punteggio ora resta com'era prima del round finché lo scontro non mostra chi ha vinto (SBAM!), poi si aggiorna con un piccolo scatto. Se tocchi per saltare l'animazione si aggiorna subito. Vale per le partite contro i bot, le amichevoli, la Conquista, la Storia, Allarme Triplo, la Grande Minaccia ed Emergenza.",
       "Quando un round finisce a punti pari ora vedi sempre chi l'ha vinto e perché: vince chi ha il valore più alto tra le abilità richieste (o chi ha Implacabile), e se è pari anche quello il round è nullo. La spiegazione compare a tutti e due i giocatori nel round, nel riepilogo di fine partita (sotto le tessere dei round), su ogni Minaccia di Allarme Triplo e sui fronti della Grande Minaccia. Le regole non cambiano: era già così, solo che a volte non si vedeva.",
     ],
   },

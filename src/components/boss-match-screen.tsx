@@ -36,6 +36,7 @@ import {
 } from "@/lib/match";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
+import { bossBeforeTurn, useRevealHold } from "@/lib/reveal-hold";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow, useSecondsLeft } from "@/lib/use-now";
 
@@ -83,6 +84,8 @@ function BossSteps({ initial }: { initial: BossView }) {
   // Server time minus device time: countdowns follow the server clock.
   const [offset, setOffset] = useState(() => Date.parse(initial.server_now) - Date.now());
   const [revealing, setRevealing] = useState<number | null>(null);
+  // The strip at the top keeps the turn's points until the result page tells them.
+  const { held, settled, settle } = useRevealHold(revealing);
   const [selected, setSelected] = useState<string | null>(null);
   // The front the player tapped this turn; until then, the one already submitted or the hottest.
   const [front, setFront] = useState<number | null>(null);
@@ -223,9 +226,12 @@ function BossSteps({ initial }: { initial: BossView }) {
   // A turn result stays on screen for the reveal pause; the last one waits for a tap.
   useEffect(() => {
     if (revealing === null || view.status !== "active") return;
-    const timer = setTimeout(() => setRevealing(null), balance.match.revealPauseSeconds * 1000);
+    const timer = setTimeout(() => {
+      settle(revealing);
+      setRevealing(null);
+    }, balance.match.revealPauseSeconds * 1000);
     return () => clearTimeout(timer);
-  }, [revealing, view.status]);
+  }, [revealing, view.status, settle]);
 
   async function forfeit() {
     setBusy(true);
@@ -257,6 +263,8 @@ function BossSteps({ initial }: { initial: BossView }) {
   );
   const shownRound = revealing === null ? null : (view.rounds.find((r) => r.round === revealing) ?? null);
   const rival = rivalLabel(view);
+  // What the strip (and the points table) shows: the match before the turn on screen, until its totals are out.
+  const strip = held && revealing !== null ? bossBeforeTurn(view, revealing) : view;
   useLockedScreen(true);
 
   return (
@@ -268,13 +276,16 @@ function BossSteps({ initial }: { initial: BossView }) {
           </p>
           <p className="mt-0.5 flex items-baseline gap-1 text-[11px] font-extrabold uppercase">
             Tu
-            <span className="shrink-0 font-display text-2xl leading-6 text-comic-yellow">
-              {view.points.me}–{view.points.opponent}
+            <span
+              key={settled ?? 0}
+              className={`shrink-0 font-display text-2xl leading-6 text-comic-yellow ${settled !== null ? "strip-bump" : ""}`}
+            >
+              {strip.points.me}–{strip.points.opponent}
             </span>
             <span className="truncate">{isBot ? "Bot" : rival}</span>
           </p>
         </div>
-        <TurnTrack view={view} />
+        <TurnTrack view={strip} settled={settled} />
         <button
           type="button"
           onClick={() => tableRef.current?.showModal()}
@@ -285,10 +296,11 @@ function BossSteps({ initial }: { initial: BossView }) {
             <path d="M2 3h16v14H2zM2 8h16M2 12.5h16M7.5 3v14M13 3v14" />
           </svg>
         </button>
-        {view.status === "active" ? (
+        {strip.status === "active" ? (
           <button
             type="button"
-            onClick={() => setConfirmForfeit(true)}
+            // While the last result plays the match is already over: nothing left to abandon.
+            onClick={() => isActive && setConfirmForfeit(true)}
             aria-label="Abbandona"
             className="btn btn-ghost h-11 w-11 shrink-0 px-0"
           >
@@ -310,7 +322,7 @@ function BossSteps({ initial }: { initial: BossView }) {
       </header>
 
       <Sheet sheetRef={tableRef} title="Tabella dei punti">
-        <BossTable view={view} />
+        <BossTable view={strip} />
         <button type="button" onClick={() => setTutorial(true)} className="row-link w-full text-left">
           <span className="font-display text-xl uppercase">Come si gioca</span>
           <span className="font-display text-2xl text-comic-yellow" aria-hidden>
@@ -357,7 +369,11 @@ function BossSteps({ initial }: { initial: BossView }) {
           view={view}
           round={shownRound}
           rival={rival}
-          onContinue={() => setRevealing(null)}
+          onVerdict={() => settle(shownRound.round)}
+          onContinue={() => {
+            settle(shownRound.round);
+            setRevealing(null);
+          }}
           finished={view.status === "finished"}
         />
       ) : view.status === "finished" ? (
@@ -384,7 +400,7 @@ function BossSteps({ initial }: { initial: BossView }) {
 }
 
 /** The five turns: what each side took in each, the current one highlighted. */
-function TurnTrack({ view }: { view: BossView }) {
+function TurnTrack({ view, settled }: { view: BossView; settled: number | null }) {
   return (
     <ol className="flex min-w-0 flex-1 gap-1" aria-label="Turni">
       {Array.from({ length: view.turns }, (_, i) => {
@@ -405,7 +421,9 @@ function TurnTrack({ view }: { view: BossView }) {
           <li
             key={i}
             aria-label={round ? `Turno ${i + 1}: tu ${mine}, avversario ${theirs}` : `Turno ${i + 1}`}
-            className={`flex h-11 min-w-0 flex-1 -skew-x-8 flex-col items-center justify-center leading-none ${style}`}
+            className={`flex h-11 min-w-0 flex-1 -skew-x-8 flex-col items-center justify-center leading-none ${style} ${
+              settled === i + 1 ? "strip-bump" : ""
+            }`}
           >
             {round ? (
               <>
@@ -712,12 +730,15 @@ function TurnReveal({
   round,
   rival,
   onContinue,
+  onVerdict,
   finished,
 }: {
   view: BossView;
   round: BossRound;
   rival: string;
   onContinue: () => void;
+  /** The turn's totals are out: the strip at the top may show them. */
+  onVerdict: () => void;
   finished: boolean;
 }) {
   const detail = useCardDetail();
@@ -759,6 +780,7 @@ function TurnReveal({
       totals={totals}
       notices={notices}
       onContinue={onContinue}
+      onVerdict={onVerdict}
       hint={(complete) => (
         <p className="py-1 text-center text-xs font-extrabold uppercase tracking-wide text-black">
           {!complete ? "Tocca per saltare" : finished ? "Tocca per il risultato" : "Tocca per continuare"}

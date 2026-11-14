@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Silhouette } from "@/components/card-view";
 import { WinnerName } from "@/components/winner-name";
 import { artSrcSet } from "@/lib/art";
@@ -59,8 +59,15 @@ export function useBeats<T extends { at: number }>(beats: T[]) {
   return { fired: beats.slice(0, fired), done: fired >= beats.length, skipped, complete };
 }
 
-/** The phone buzzes with the verdict where it can (not Safari on iPhone). */
-export function useVerdictBuzz(verdict: boolean, tone: "win" | "lose" | "void") {
+/**
+ * The phone buzzes with the verdict where it can (not Safari on iPhone). `onVerdict` hears it
+ * too, played or skipped to: the match strip waits for it to show the outcome.
+ */
+export function useVerdictBuzz(verdict: boolean, tone: "win" | "lose" | "void", onVerdict?: () => void) {
+  const announce = useEffectEvent(() => onVerdict?.());
+  useEffect(() => {
+    if (verdict) announce();
+  }, [verdict]);
   const buzzed = useRef(false);
   useEffect(() => {
     if (!verdict || buzzed.current) return;

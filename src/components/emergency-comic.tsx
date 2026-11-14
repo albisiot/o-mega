@@ -50,6 +50,8 @@ export type EmergencyComicProps = {
   /** The button under the page; it changes once the page is complete. */
   action: (complete: boolean, skip: () => void) => ReactNode;
   onContinue: () => void;
+  /** The verdict is out, played or skipped to. */
+  onVerdict?: () => void;
 };
 
 type Beat = { at: number; kind: "target" | "base" | "idle" | "verdict" | "after" } | { at: number; kind: "note"; index: number };
@@ -84,7 +86,7 @@ export function EmergencyComic(props: EmergencyComicProps) {
   const { fired, done, skipped, complete } = useBeats(beats);
   const has = (kind: Beat["kind"]) => fired.some((beat) => beat.kind === kind);
   const verdict = has("verdict");
-  useVerdictBuzz(verdict, passed ? "win" : "lose");
+  useVerdictBuzz(verdict, passed ? "win" : "lose", props.onVerdict);
 
   const shown = new Set(fired.flatMap((beat) => (beat.kind === "note" ? [beat.index] : [])));
   // The score climbs from the abilities, then each power adds its points as it speaks;

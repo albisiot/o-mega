@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { AbilityFamilies } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { useEventPointsFor } from "@/components/event-banner";
 import { Silhouette } from "@/components/card-view";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
+import { prefersReducedMotion } from "@/components/comic-page";
 import { Sheet } from "@/components/sheet";
 import { balance } from "@/config/balance";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
@@ -24,6 +25,7 @@ import {
 } from "@/lib/match";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
+import { tripleBeforeRound, useRevealHold } from "@/lib/reveal-hold";
 import { tieBreakReason, tieWonByRelentless } from "@/lib/round-powers";
 import { oddsText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
 import { describeThreatModifier } from "@/lib/threat-modifiers";
@@ -80,6 +82,8 @@ function TripleSteps({ initial }: { initial: TripleView }) {
   // Server time minus device time: countdowns follow the server clock.
   const [offset, setOffset] = useState(() => Date.parse(initial.server_now) - Date.now());
   const [revealing, setRevealing] = useState<number | null>(null);
+  // The strip at the top keeps the round's points until the result page tells them.
+  const { held, settled, settle } = useRevealHold(revealing);
   // The card on each threat this round (instance ids); null until the player places one there.
   const [placement, setPlacement] = useState<(string | null)[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -222,9 +226,12 @@ function TripleSteps({ initial }: { initial: TripleView }) {
   // A round result stays on screen for the reveal pause; the last one waits for a tap.
   useEffect(() => {
     if (revealing === null || view.status !== "active") return;
-    const timer = setTimeout(() => setRevealing(null), balance.match.revealPauseSeconds * 1000);
+    const timer = setTimeout(() => {
+      settle(revealing);
+      setRevealing(null);
+    }, balance.match.revealPauseSeconds * 1000);
     return () => clearTimeout(timer);
-  }, [revealing, view.status]);
+  }, [revealing, view.status, settle]);
 
   async function forfeit() {
     setBusy(true);
@@ -256,6 +263,8 @@ function TripleSteps({ initial }: { initial: TripleView }) {
   );
   const shownRound = revealing === null ? null : (view.rounds.find((r) => r.round === revealing) ?? null);
   const rival = rivalLabel(view);
+  // What the strip (and the threats sheet) shows: the match before the round on screen, until its totals are out.
+  const strip = held && revealing !== null ? tripleBeforeRound(view, revealing) : view;
   useLockedScreen(true);
 
   // Until the player touches anything: the placement already submitted, or nothing.
@@ -270,13 +279,16 @@ function TripleSteps({ initial }: { initial: TripleView }) {
           </p>
           <p className="mt-0.5 flex items-baseline gap-1 text-[11px] font-extrabold uppercase">
             Tu
-            <span className="shrink-0 font-display text-2xl leading-6 text-comic-yellow">
-              {view.points.me}–{view.points.opponent}
+            <span
+              key={settled ?? 0}
+              className={`shrink-0 font-display text-2xl leading-6 text-comic-yellow ${settled !== null ? "strip-bump" : ""}`}
+            >
+              {strip.points.me}–{strip.points.opponent}
             </span>
             <span className="truncate">{isBot ? "Bot" : rival}</span>
           </p>
         </div>
-        <RoundTrack view={view} />
+        <RoundTrack view={strip} settled={settled} />
         <button
           type="button"
           onClick={() => rulesRef.current?.showModal()}
@@ -285,10 +297,11 @@ function TripleSteps({ initial }: { initial: TripleView }) {
         >
           ?
         </button>
-        {isActive ? (
+        {strip.status === "active" ? (
           <button
             type="button"
-            onClick={() => setConfirmForfeit(true)}
+            // While the last result plays the match is already over: nothing left to abandon.
+            onClick={() => isActive && setConfirmForfeit(true)}
             aria-label="Abbandona"
             className="btn btn-ghost h-11 w-11 shrink-0 px-0"
           >
@@ -310,7 +323,7 @@ function TripleSteps({ initial }: { initial: TripleView }) {
       </header>
 
       <Sheet sheetRef={rulesRef} title="Allarme Triplo">
-        <ThreatList view={view} abilities={abilities} />
+        <ThreatList view={strip} abilities={abilities} />
         <button type="button" onClick={() => setTutorial(true)} className="row-link w-full text-left">
           <span className="font-display text-xl uppercase">Come si gioca</span>
           <span className="font-display text-2xl text-comic-yellow" aria-hidden>
@@ -358,7 +371,11 @@ function TripleSteps({ initial }: { initial: TripleView }) {
           round={shownRound}
           rival={rival}
           finished={view.status === "finished"}
-          onContinue={() => setRevealing(null)}
+          onVerdict={() => settle(shownRound.round)}
+          onContinue={() => {
+            settle(shownRound.round);
+            setRevealing(null);
+          }}
         />
       ) : view.status === "finished" ? (
         <TripleResult view={view} rival={rival} />
@@ -384,7 +401,7 @@ function TripleSteps({ initial }: { initial: TripleView }) {
 }
 
 /** The rounds: the points each side took in each, the current one highlighted. */
-function RoundTrack({ view }: { view: TripleView }) {
+function RoundTrack({ view, settled }: { view: TripleView; settled: number | null }) {
   return (
     <ol className="flex min-w-0 flex-1 gap-1" aria-label="Round">
       {Array.from({ length: view.rounds_count }, (_, i) => {
@@ -404,7 +421,9 @@ function RoundTrack({ view }: { view: TripleView }) {
           <li
             key={i}
             aria-label={points ? `Round ${i + 1}: tu ${points.me}, avversario ${points.opponent}` : `Round ${i + 1}`}
-            className={`flex h-11 min-w-0 flex-1 -skew-x-8 items-center justify-center leading-none ${style}`}
+            className={`flex h-11 min-w-0 flex-1 -skew-x-8 items-center justify-center leading-none ${style} ${
+              settled === i + 1 ? "strip-bump" : ""
+            }`}
           >
             {points ? (
               <span className="font-display text-[17px]">
@@ -838,12 +857,15 @@ function RoundReveal({
   rival,
   finished,
   onContinue,
+  onVerdict,
 }: {
   view: TripleView;
   round: TripleRound;
   rival: string;
   finished: boolean;
   onContinue: () => void;
+  /** The round's totals are on the page: the strip at the top may show them. */
+  onVerdict: () => void;
 }) {
   const contests = [...round.contests].sort((a, b) => a.slot - b.slot);
   const points = roundPoints(round);
@@ -852,6 +874,12 @@ function RoundReveal({
   const auto = contests.some((c) => c.my_play?.auto_played);
   const theirAuto = contests.some((c) => c.opponent_play?.auto_played);
   const last = contests.length * 0.6;
+  // The totals line lands last (at once with reduced motion): then the strip catches up.
+  const announce = useEffectEvent(onVerdict);
+  useEffect(() => {
+    const timer = setTimeout(announce, prefersReducedMotion() ? 0 : (last + 0.3) * 1000);
+    return () => clearTimeout(timer);
+  }, [round.round, last]);
 
   return (
     <div

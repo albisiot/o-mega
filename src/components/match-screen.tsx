@@ -57,6 +57,7 @@ import {
   type PowerNote,
 } from "@/lib/round-powers";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
+import { matchBeforeRound, useRevealHold } from "@/lib/reveal-hold";
 import { knownLevels, levelText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -104,6 +105,8 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
   // Server time minus device time: countdowns follow the server clock.
   const [offset, setOffset] = useState(() => Date.parse(initial.server_now) - Date.now());
   const [revealing, setRevealing] = useState<number | null>(null);
+  // The strip at the top keeps the round's outcome until the result page tells it.
+  const { held, settled, settle } = useRevealHold(revealing);
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -254,9 +257,12 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
   // waits for a tap, unless the conquest pick follows: its timer is already running.
   useEffect(() => {
     if (revealing === null || (view.status !== "active" && !pickOpen)) return;
-    const timer = setTimeout(() => setRevealing(null), balance.match.revealPauseSeconds * 1000);
+    const timer = setTimeout(() => {
+      settle(revealing);
+      setRevealing(null);
+    }, balance.match.revealPauseSeconds * 1000);
     return () => clearTimeout(timer);
-  }, [revealing, view.status, pickOpen]);
+  }, [revealing, view.status, pickOpen, settle]);
 
   async function forfeit() {
     setBusy(true);
@@ -277,6 +283,8 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
   );
   const shownRound = revealing === null ? null : view.rounds.find((r) => r.round === revealing) ?? null;
   const opponentName = view.opponent?.username ?? "Bot";
+  // What the strip shows: the match before the round on screen, until its verdict is out.
+  const strip = held && revealing !== null ? matchBeforeRound(view, revealing) : view;
   // Every step fits the screen and nothing scrolls: the choice, the round result, the conquest
   // pick and the final result, with or without a conquered card or a story reward.
   const choosing = !shownRound && view.status !== "finished" && Boolean(current);
@@ -300,17 +308,21 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
           </p>
           <p className="mt-0.5 flex items-baseline gap-1 text-[11px] font-extrabold uppercase">
             Tu
-            <span className="shrink-0 font-display text-2xl leading-6 text-comic-yellow">
-              {view.rounds_won.me}–{view.rounds_won.opponent}
+            <span
+              key={settled ?? 0}
+              className={`shrink-0 font-display text-2xl leading-6 text-comic-yellow ${settled !== null ? "strip-bump" : ""}`}
+            >
+              {strip.rounds_won.me}–{strip.rounds_won.opponent}
             </span>
             <span className="truncate">{isBot ? "Bot" : opponentName}</span>
           </p>
         </div>
-        <LevelTrack view={view} opponentName={opponentName} abilities={abilities} />
-        {view.status === "active" ? (
+        <LevelTrack view={strip} opponentName={opponentName} abilities={abilities} settled={settled} />
+        {strip.status === "active" ? (
           <button
             type="button"
-            onClick={() => setConfirmForfeit(true)}
+            // While the last result plays the match is already over: nothing left to abandon.
+            onClick={() => isActive && setConfirmForfeit(true)}
             aria-label="Abbandona"
             className="btn btn-ghost h-11 w-11 shrink-0 px-0"
           >
@@ -377,7 +389,11 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
           team={view.my_team}
           abilities={abilities}
           opponentName={opponentName}
-          onContinue={() => setRevealing(null)}
+          onVerdict={() => settle(shownRound.round)}
+          onContinue={() => {
+            settle(shownRound.round);
+            setRevealing(null);
+          }}
           finished={view.status === "finished"}
           pickDeadline={pickDeadline}
           offset={offset}
@@ -423,7 +439,18 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
  * The five levels. A cell also carries what its round revealed: the card the opponent
  * played (a thumbnail) or the threat a power lets the player foresee (an eye). A tap shows it.
  */
-function LevelTrack({ view, opponentName, abilities }: { view: MatchView; opponentName: string; abilities: AbilityInfo[] }) {
+function LevelTrack({
+  view,
+  opponentName,
+  abilities,
+  settled,
+}: {
+  view: MatchView;
+  opponentName: string;
+  abilities: AbilityInfo[];
+  /** The round whose outcome the strip has just caught up with: its cell bumps. */
+  settled: number | null;
+}) {
   // An open cell closes by itself when the match moves on (a round resolves, the match ends).
   const phase = `${view.status}:${view.current_round}`;
   const [opened, setOpened] = useState<{ cell: number; phase: string } | null>(null);
@@ -475,7 +502,7 @@ function LevelTrack({ view, opponentName, abilities }: { view: MatchView; oppone
             </>
           );
           return (
-            <li key={i} className="min-w-0 flex-1">
+            <li key={i} className={`min-w-0 flex-1 ${settled === i + 1 ? "strip-bump" : ""}`}>
               {played || foreseen ? (
                 <button
                   type="button"
@@ -868,6 +895,7 @@ function RoundReveal({
   abilities,
   opponentName,
   onContinue,
+  onVerdict,
   finished,
   pickDeadline,
   offset,
@@ -881,6 +909,8 @@ function RoundReveal({
   team: TeamCard[];
   opponentName: string;
   onContinue: () => void;
+  /** The verdict is out: the strip at the top may show it. */
+  onVerdict: () => void;
   finished: boolean;
   /** After the last round of a won Conquest: when the time to pick a card is up (server time, ms). */
   pickDeadline: number | null;
@@ -998,6 +1028,7 @@ function RoundReveal({
       resultLine={resultLine}
       notices={notices}
       onContinue={onContinue}
+      onVerdict={onVerdict}
       hint={(complete) => (
         // The whole screen continues; this stays as the hint and the keyboard's way on.
         <button
