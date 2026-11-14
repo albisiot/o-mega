@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { Silhouette } from "@/components/card-view";
 import { useEventPointsFor } from "@/components/event-banner";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { Sheet } from "@/components/sheet";
 import { balance } from "@/config/balance";
 import { artSrcSet } from "@/lib/art";
@@ -310,6 +311,9 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
             <span className="shrink-0 font-display text-2xl leading-6 text-comic-yellow">
               {view.seals.me}–{view.seals.opponent}
             </span>
+            {!isBot && view.opponent && (
+              <PlayerAvatar username={view.opponent.username} avatarUrl={view.opponent.avatar_url} size="2xs" className="self-center" />
+            )}
             <span className="truncate text-comic-orange">{isBot ? "Bot" : rival}</span>
             <span className="ml-1 shrink-0 text-[10px] font-bold normal-case text-muted">Sigilli</span>
           </p>

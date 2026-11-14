@@ -16,6 +16,19 @@ export async function updateUsername(username: string): Promise<Profile> {
   return data;
 }
 
+/**
+ * Wears a character the player owns as avatar: its base drawing, or the variant `variantId`.
+ * With no character, back to the account picture. The server checks the ownership.
+ */
+export async function setAvatar(definitionId: string | null, variantId: string | null = null): Promise<Profile> {
+  const { data, error } = await getSupabase().rpc("set_avatar", {
+    p_definition_id: definitionId as string,
+    p_variant_id: variantId as string,
+  });
+  if (error) throw error;
+  return data;
+}
+
 /** Cards currently owned (RLS only counts the player's own; converted cards have no owner). */
 export async function countOwnedCards(): Promise<number> {
   const { count, error } = await getSupabase()

@@ -4,6 +4,8 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   profile_not_found: "Profilo non trovato: esci e accedi di nuovo.",
   username_invalid: "Il nome utente deve avere da 3 a 20 caratteri: lettere, numeri o _.",
   username_taken: "Questo nome utente è già in uso.",
+  avatar_not_owned: "Puoi scegliere solo personaggi della tua collezione.",
+  avatar_not_found: "Questo disegno non esiste più.",
   daily_pack_already_claimed: "Hai già aperto il pacchetto di oggi.",
   insufficient_coins: "Non hai abbastanza monete.",
   pack_not_found: "Pacchetto non trovato.",

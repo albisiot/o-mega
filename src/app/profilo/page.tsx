@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAuth, useRequireSignedIn } from "@/components/auth-provider";
+import { AvatarPicker } from "@/components/avatar-picker";
 import { TabBar } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayerAvatar } from "@/components/player-avatar";
@@ -58,6 +59,9 @@ function ProfileView({ profile }: { profile: Profile }) {
   // Back from the history, the album or the privacy page, the same tab is open.
   const [tab, setTab] = useRememberedState<ProfileTab>("tab", "stats");
   const nameSheet = useRef<HTMLDialogElement>(null);
+  const avatarSheet = useRef<HTMLDialogElement>(null);
+  // The picker loads the collection: only while its sheet is open.
+  const [avatarOpen, setAvatarOpen] = useState(false);
   const worldSheet = useRef<HTMLDialogElement>(null);
   const notesSheet = useRef<HTMLDialogElement>(null);
   const isAdmin = useIsAdmin();
@@ -100,7 +104,26 @@ function ProfileView({ profile }: { profile: Profile }) {
     <div className="home-shell">
       <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-3 pt-2">
         <section className="cut-bottom flex shrink-0 items-center gap-4 bg-comic-yellow px-4 pb-5 pt-2 text-black">
-          <PlayerAvatar username={profile.username} avatarUrl={profile.avatar_url} size="md" />
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            aria-label="Cambia avatar"
+            onClick={() => {
+              setAvatarOpen(true);
+              avatarSheet.current?.showModal();
+            }}
+            className="relative shrink-0"
+          >
+            <PlayerAvatar username={profile.username} avatarUrl={profile.avatar_url} size="md" />
+            <span
+              aria-hidden
+              className="absolute -bottom-1.5 -right-1.5 flex h-6 w-6 -rotate-6 items-center justify-center border-2 border-black bg-comic-magenta text-black"
+            >
+              <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.6}>
+                <path d="M13 3l4 4-10 10H3v-4zM11 5l4 4" strokeLinejoin="round" />
+              </svg>
+            </span>
+          </button>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1">
               <h1 className="min-w-0 truncate py-0.5 font-display text-[28px] uppercase leading-8">{profile.username}</h1>
@@ -210,6 +233,10 @@ function ProfileView({ profile }: { profile: Profile }) {
 
       <Sheet sheetRef={nameSheet} title="Nome utente">
         <UsernameForm profile={profile} />
+      </Sheet>
+
+      <Sheet sheetRef={avatarSheet} title="Avatar" onClose={() => setAvatarOpen(false)}>
+        {avatarOpen && <AvatarPicker profile={profile} onDone={() => avatarSheet.current?.close()} />}
       </Sheet>
 
       <Sheet sheetRef={worldSheet} title="Il mondo">

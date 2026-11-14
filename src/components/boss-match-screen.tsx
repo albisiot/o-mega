@@ -9,6 +9,7 @@ import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { useEventPointsFor } from "@/components/event-banner";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { Sheet } from "@/components/sheet";
 import { balance } from "@/config/balance";
 import {
@@ -279,6 +280,9 @@ function BossSteps({ initial }: { initial: BossView }) {
             >
               {strip.points.me}–{strip.points.opponent}
             </span>
+            {!isBot && view.opponent && (
+              <PlayerAvatar username={view.opponent.username} avatarUrl={view.opponent.avatar_url} size="2xs" className="self-center" />
+            )}
             <span className="truncate">{isBot ? "Bot" : rival}</span>
           </p>
         </div>

@@ -13,7 +13,7 @@ export type CatalogCard = CardData & {
   variantCount: number;
 };
 
-export type OwnedVariant = { instance_id: string; style: string; name: string; art_url: string };
+export type OwnedVariant = { instance_id: string; variant_id: string; style: string; name: string; art_url: string };
 
 export type OwnedSummary = {
   definition_id: string;
@@ -90,18 +90,18 @@ export async function fetchCollection(): Promise<Map<string, OwnedSummary>> {
     supabase.rpc("get_collection"),
     supabase
       .from("card_instances")
-      .select("id, definition_id, card_variants(style, style_name, art_url)")
+      .select("id, definition_id, variant_id, card_variants(style, style_name, art_url)")
       .not("variant_id", "is", null),
   ]);
   if (summary.error) throw summary.error;
   if (variants.error) throw variants.error;
   const byDefinition = new Map<string, OwnedVariant[]>();
   for (const row of variants.data) {
-    if (!row.card_variants) continue;
+    if (!row.card_variants || !row.variant_id) continue;
     const { style, style_name: name, art_url } = row.card_variants;
     byDefinition.set(row.definition_id, [
       ...(byDefinition.get(row.definition_id) ?? []),
-      { instance_id: row.id, style, name, art_url },
+      { instance_id: row.id, variant_id: row.variant_id, style, name, art_url },
     ]);
   }
   return keepSeen(

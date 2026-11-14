@@ -18,6 +18,7 @@ import { ConquestPanel, ConquestPick, SecondsLeft } from "@/components/conquest-
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
 import { useEventPointsFor } from "@/components/event-banner";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { StoryRewardPanel, useStoryReward } from "@/components/story-reward";
 import { ThreatDiorama } from "@/components/threat-diorama";
 import { RoundComic } from "@/components/round-comic";
@@ -319,6 +320,9 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
             >
               {strip.rounds_won.me}–{strip.rounds_won.opponent}
             </span>
+            {!isBot && view.opponent && (
+              <PlayerAvatar username={view.opponent.username} avatarUrl={view.opponent.avatar_url} size="2xs" className="self-center" />
+            )}
             <span className="truncate">{isBot ? "Bot" : opponentName}</span>
           </p>
         </div>
