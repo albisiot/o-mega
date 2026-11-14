@@ -414,10 +414,18 @@ export function readPendingTeam(): string[] | null {
 // Teams and formations
 // ---------------------------------------------------------------------------
 
-export type Formation = { id: string; name: string; card_instance_ids: string[] };
+/**
+ * A saved team: the copies, and the character of each one (null when unknown),
+ * so a copy the player no longer has falls back to another copy of its character.
+ */
+export type Formation = { id: string; name: string; card_instance_ids: string[]; definition_ids: (string | null)[] | null };
 
 /** A copy with an artwork variant, which a player fields only by choosing it. */
-export type VariantCopy = { id: string; name: string };
+export type VariantCopy = { id: string; name: string; art_url: string };
+
+function variantCopyOf(id: string, variant: { style_name: string; art_url: string }): VariantCopy {
+  return { id, name: variant.style_name, art_url: variant.art_url };
+}
 
 function collectVariantCopy(copies: Map<string, VariantCopy[]>, definitionId: string, copy: VariantCopy) {
   copies.set(definitionId, [...(copies.get(definitionId) ?? []), copy]);
@@ -447,13 +455,13 @@ export async function fetchOwnedInstances(): Promise<{
 }> {
   const { data, error } = await getSupabase()
     .from("card_instances")
-    .select("id, definition_id, acquired_at, card_variants(style_name)")
+    .select("id, definition_id, acquired_at, card_variants(style_name, art_url)")
     .order("acquired_at");
   if (error) throw error;
   const owned = new Map<string, string>();
   const variantCopies = new Map<string, VariantCopy[]>();
   for (const row of data) {
-    if (row.card_variants) collectVariantCopy(variantCopies, row.definition_id, { id: row.id, name: row.card_variants.style_name });
+    if (row.card_variants) collectVariantCopy(variantCopies, row.definition_id, variantCopyOf(row.id, row.card_variants));
     else if (!owned.has(row.definition_id)) owned.set(row.definition_id, row.id);
   }
   for (const [definitionId, copies] of variantCopies) if (!owned.has(definitionId)) owned.set(definitionId, copies[0].id);
@@ -476,7 +484,7 @@ export async function fetchConquestInstances(): Promise<{
 }> {
   const { data, error } = await getSupabase()
     .from("card_instances")
-    .select("id, definition_id, is_starter, locked_until, acquired_at, card_variants(style_name)")
+    .select("id, definition_id, is_starter, locked_until, acquired_at, card_variants(style_name, art_url)")
     .order("acquired_at");
   if (error) throw error;
   const owned = new Map<string, string>();
@@ -490,7 +498,7 @@ export async function fetchConquestInstances(): Promise<{
     if (row.is_starter) {
       starters.set(row.definition_id, row.id);
     } else if (row.card_variants) {
-      if (!locked) collectVariantCopy(variantCopies, row.definition_id, { id: row.id, name: row.card_variants.style_name });
+      if (!locked) collectVariantCopy(variantCopies, row.definition_id, variantCopyOf(row.id, row.card_variants));
     } else if (!oldestFree.has(row.definition_id) && !locked) {
       oldestFree.set(row.definition_id, row.id);
     }
@@ -521,10 +529,56 @@ export async function fetchInstanceDefinitions(): Promise<Map<string, string>> {
   return new Map(data.map((row) => [row.id, row.definition_id]));
 }
 
+/** The copies a player can field now, as the team pickers load them. */
+export type FieldableCopies = {
+  /** Definition id → the copy fielded unless the player chooses another. */
+  owned: Map<string, string>;
+  variantCopies: Map<string, VariantCopy[]>;
+  /** Conquest only: the pack copy that can be put at stake instead of the starter one. */
+  atRiskCopies?: Map<string, string> | null;
+  /** Instance id → definition id, for the copies the player still has. */
+  instanceDefinitions: Map<string, string>;
+};
+
+export type FormationTeam = {
+  /** Definition ids, in the formation's order. */
+  selected: string[];
+  staked: Set<string>;
+  /** Definition id → the variant copy to field. */
+  variantChoice: Map<string, string>;
+  /** Characters of the formation the player no longer owns at all. */
+  missing: number;
+  /** Characters whose saved copy is gone or cannot be fielded: their default copy takes its place. */
+  replaced: number;
+};
+
+/**
+ * The squad a saved formation gives with the copies the player has now. A saved
+ * copy that is gone (lost, converted) or cannot be fielded (locked) gives way to
+ * the character's default copy; a character no longer owned is left out.
+ */
+export function teamFromFormation(formation: Formation, copies: FieldableCopies, size: number): FormationTeam {
+  const team: FormationTeam = { selected: [], staked: new Set(), variantChoice: new Map(), missing: 0, replaced: 0 };
+  formation.card_instance_ids.forEach((id, i) => {
+    const definitionId = copies.instanceDefinitions.get(id) ?? formation.definition_ids?.[i] ?? null;
+    if (!definitionId || !copies.owned.has(definitionId)) {
+      team.missing += 1;
+      return;
+    }
+    if (team.selected.includes(definitionId) || team.selected.length >= size) return;
+    team.selected.push(definitionId);
+    if (id === copies.owned.get(definitionId)) return;
+    if (copies.variantCopies.get(definitionId)?.some((copy) => copy.id === id)) team.variantChoice.set(definitionId, id);
+    else if (copies.atRiskCopies?.get(definitionId) === id) team.staked.add(definitionId);
+    else team.replaced += 1;
+  });
+  return team;
+}
+
 export async function fetchFormations(): Promise<Formation[]> {
   const { data, error } = await getSupabase()
     .from("formations")
-    .select("id, name, card_instance_ids")
+    .select("id, name, card_instance_ids, definition_ids")
     .order("created_at");
   if (error) throw error;
   return data;

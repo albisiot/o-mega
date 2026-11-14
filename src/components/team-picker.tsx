@@ -11,7 +11,14 @@ import { withBasePath } from "@/lib/base-path";
 import { applyCardListView, DEFAULT_CARD_LIST_VIEW, groupCardList, sortAbilityOf } from "@/lib/card-list";
 import type { CatalogCard } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
-import { deleteFormation, saveFormation, switchableVariants, type Formation, type VariantCopy } from "@/lib/match";
+import {
+  deleteFormation,
+  saveFormation,
+  switchableVariants,
+  teamFromFormation,
+  type Formation,
+  type VariantCopy,
+} from "@/lib/match";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
 
@@ -26,6 +33,22 @@ function loadLastTeam(key: string, owned: Map<string, string>): string[] {
     return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === "string" && owned.has(id)) : [];
   } catch {
     return [];
+  }
+}
+
+/** The variants fielded last time (definition id → instance id), those the player can still field. */
+function loadLastVariants(key: string, variantCopies: Map<string, VariantCopy[]>): Map<string, string> {
+  try {
+    const saved: unknown = JSON.parse(localStorage.getItem(key) ?? "{}");
+    if (!saved || typeof saved !== "object") return new Map();
+    return new Map(
+      Object.entries(saved).filter(
+        (entry): entry is [string, string] =>
+          typeof entry[1] === "string" && Boolean(variantCopies.get(entry[0])?.some((copy) => copy.id === entry[1])),
+      ),
+    );
+  } catch {
+    return new Map();
   }
 }
 
@@ -60,6 +83,8 @@ export function TeamPicker(props: TeamPickerProps) {
   const { catalog, owned, conquerable, atRiskCopies, variantCopies, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart, squadSize, intro } = props;
   const size = squadSize ?? balance.match.teamSize;
   const lastTeamKey = squadSize ? `${LAST_TEAM_KEY}.${squadSize}` : LAST_TEAM_KEY;
+  // Conquest never brings back a variant on its own: a fielded variant is at stake, so the player chooses it each time.
+  const lastVariantsKey = conquerable ? null : `${lastTeamKey}.variants`;
   const [selected, setSelected] = useState<string[]>(() => loadLastTeam(lastTeamKey, owned).slice(0, size));
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState("");
@@ -87,7 +112,9 @@ export function TeamPicker(props: TeamPickerProps) {
   // Characters for which the player fields the pack copy instead of the protected starter one.
   const [staked, setStaked] = useState<Set<string>>(new Set());
   // Characters for which the player fields a copy with an artwork variant: definition id → instance id.
-  const [variantChoice, setVariantChoice] = useState<Map<string, string>>(new Map());
+  const [variantChoice, setVariantChoice] = useState<Map<string, string>>(() =>
+    lastVariantsKey ? loadLastVariants(lastVariantsKey, variantCopies) : new Map(),
+  );
   const instanceIds = selected.map(
     (definitionId) =>
       variantChoice.get(definitionId) ??
@@ -102,6 +129,15 @@ export function TeamPicker(props: TeamPickerProps) {
     const id = variantChoice.get(definitionId);
     return id ? variantCopies.get(definitionId)?.find((copy) => copy.id === id)?.name : undefined;
   };
+  // The drawing of the copy fielded for a character: a variant's, or the card's own.
+  const fieldedVariant = (definitionId: string): VariantCopy | undefined => {
+    const id = variantChoice.get(definitionId) ?? owned.get(definitionId);
+    return variantCopies.get(definitionId)?.find((copy) => copy.id === id);
+  };
+  const fieldedCard = (card: CatalogCard): CatalogCard & { variant?: { name: string } | null } => {
+    const variant = fieldedVariant(card.id);
+    return variant ? { ...card, art_url: variant.art_url, variant: { name: variant.name } } : card;
+  };
 
   // Conquest: field the pack copy of a character also owned as starter, or back.
   const canStake = (definitionId: string) => Boolean(atRiskCopies?.has(definitionId)) && !variantChoice.has(definitionId);
@@ -114,20 +150,22 @@ export function TeamPicker(props: TeamPickerProps) {
     });
   }
 
-  // Field this variant instead of the default copy or of another variant, or go back to the default copy.
-  function toggleVariant(definitionId: string, copy: VariantCopy) {
-    const fielded = chosenStyle(definitionId) === copy.name;
+  // Field this variant instead of the default copy or of another variant; null goes back to the default copy.
+  function chooseCopy(definitionId: string, copy: VariantCopy | null) {
     setVariantChoice((current) => {
       const next = new Map(current);
-      if (fielded) next.delete(definitionId);
-      else next.set(definitionId, copy.id);
+      if (copy) next.set(definitionId, copy.id);
+      else next.delete(definitionId);
       return next;
     });
-    setStaked((current) => {
-      const next = new Set(current);
-      next.delete(definitionId);
-      return next;
-    });
+    // A variant replaces the staked pack copy too; the base drawing keeps the stake as it is.
+    if (copy) {
+      setStaked((current) => {
+        const next = new Set(current);
+        next.delete(definitionId);
+        return next;
+      });
+    }
   }
 
   // Conquest: what is at risk, and how rare a card this team can take.
@@ -153,31 +191,16 @@ export function TeamPicker(props: TeamPickerProps) {
   }
 
   function loadFormation(formation: Formation) {
-    const definitions = formation.card_instance_ids
-      .map((id) => instanceDefinitions.get(id))
-      .filter((id): id is string => Boolean(id && owned.has(id)));
-    setSelected([...new Set(definitions)].slice(0, size));
-    setStaked(
-      new Set(
-        formation.card_instance_ids
-          .map((id) => instanceDefinitions.get(id))
-          .filter((id): id is string => Boolean(id && atRiskCopies?.get(id) && formation.card_instance_ids.includes(atRiskCopies.get(id)!))),
-      ),
-    );
-    setVariantChoice(
-      new Map(
-        formation.card_instance_ids.flatMap((id) => {
-          const definitionId = instanceDefinitions.get(id);
-          const isChosenVariant =
-            definitionId && id !== owned.get(definitionId) && variantCopies.get(definitionId)?.some((copy) => copy.id === id);
-          return isChosenVariant ? [[definitionId, id] as const] : [];
-        }),
-      ),
-    );
+    const team = teamFromFormation(formation, { owned, variantCopies, atRiskCopies, instanceDefinitions }, size);
+    setSelected(team.selected);
+    setStaked(team.staked);
+    setVariantChoice(team.variantChoice);
     setMessage(
-      definitions.length < size
+      team.missing > 0
         ? { text: "Alcune carte di questa formazione non sono più nella collezione.", isError: true }
-        : null,
+        : team.replaced > 0
+          ? { text: "Alcune copie scelte non ci sono più: al loro posto c'è un'altra copia dello stesso personaggio.", isError: false }
+          : null,
     );
   }
 
@@ -205,6 +228,10 @@ export function TeamPicker(props: TeamPickerProps) {
   function start() {
     try {
       localStorage.setItem(lastTeamKey, JSON.stringify(selected));
+      if (lastVariantsKey) {
+        const fielded = selected.flatMap((id) => (variantChoice.has(id) ? [[id, variantChoice.get(id)!]] : []));
+        localStorage.setItem(lastVariantsKey, JSON.stringify(Object.fromEntries(fielded)));
+      }
     } catch {
       // Remembering the team is a convenience only.
     }
@@ -213,6 +240,10 @@ export function TeamPicker(props: TeamPickerProps) {
 
   const optionsCard = optionsOf ? byId.get(optionsOf) : null;
   const optionsVariants = optionsOf ? variantOptions(optionsOf) : [];
+  // The default copy of the open slot, as the first drawing to choose from.
+  const optionsDefault = optionsOf ? variantCopies.get(optionsOf)?.find((copy) => copy.id === owned.get(optionsOf)) : undefined;
+  // Some character in the squad can be fielded with another drawing.
+  const squadHasVariants = selected.some((id) => variantOptions(id).length > 0);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -232,23 +263,25 @@ export function TeamPicker(props: TeamPickerProps) {
               </div>
             );
           }
-          const hasOptions = canStake(card.id) || variantOptions(card.id).length > 0;
-          const mark = variantChoice.has(card.id) ? "★" : staked.has(card.id) ? "Palio" : hasOptions ? "⋯" : null;
+          const hasVariants = variantOptions(card.id).length > 0;
+          const hasOptions = canStake(card.id) || hasVariants;
+          const mark = variantChoice.has(card.id) ? "★" : staked.has(card.id) ? "Palio" : hasVariants ? "★" : hasOptions ? "⋯" : null;
+          const shown = fieldedCard(card);
           return (
             <button
               key={i}
               type="button"
-              {...detail.press(card)}
+              {...detail.press(shown)}
               onClick={() => (hasOptions ? setOptionsOf(card.id) : toggle(card.id))}
               aria-label={hasOptions ? `${card.name}: scelte` : `Togli ${card.name}`}
               className={`relative ${height} min-w-0 -skew-x-8 overflow-hidden border-2 bg-panel-raised ${LONG_PRESS_CLASS}`}
               style={{ borderColor: card.rarity.color }}
             >
-              {card.art_url && (
+              {shown.art_url && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={withBasePath(card.art_url)}
-                  srcSet={artSrcSet(card.art_url)}
+                  src={withBasePath(shown.art_url)}
+                  srcSet={artSrcSet(shown.art_url)}
                   sizes={squadSize && squadSize % 4 === 0 ? "calc((100vw - 58px) / 4)" : "calc((100vw - 68px) / 5)"}
                   alt=""
                   decoding="async"
@@ -259,7 +292,7 @@ export function TeamPicker(props: TeamPickerProps) {
               {mark && (
                 <span
                   className={`absolute right-1 top-0.5 px-1 text-[9px] font-extrabold uppercase leading-[13px] ${
-                    mark === "⋯" ? "bg-black text-foreground" : "bg-comic-magenta text-black"
+                    variantChoice.has(card.id) || staked.has(card.id) ? "bg-comic-magenta text-black" : "bg-black text-comic-yellow"
                   }`}
                 >
                   {mark}
@@ -272,12 +305,17 @@ export function TeamPicker(props: TeamPickerProps) {
           );
         })}
       </section>
+      {squadHasVariants && (
+        <p className="mt-1 truncate text-[11px] font-semibold leading-4 text-muted">
+          <span className="text-comic-yellow">★</span> Tocca un personaggio con la stella per cambiare disegno.
+        </p>
+      )}
 
       {conquerable && (
         <section className="mt-2 flex flex-col gap-0.5 bg-comic-magenta px-3 py-1.5 text-xs font-semibold text-black">
           <p>
             Carte in palio: <span className="font-extrabold">{atRisk}</span> (minimo {minConquerable}). Se perdi, il
-            vincitore può prendertene una. Le starter sono protette.
+            vincitore può prendertene una. Le starter sono protette; le varianti schierate sono in palio.
           </p>
           {limit && (
             <p>
@@ -399,6 +437,9 @@ export function TeamPicker(props: TeamPickerProps) {
               : []),
             ...group.cards.map((card) => {
               const position = selected.indexOf(card.id);
+              const shown = fieldedCard(card);
+              // How many drawings the player can field this character with.
+              const drawings = variantOptions(card.id).length + 1;
               // The ability the list is sorted by comes first, then the card's best ones.
               const top = Object.entries(card.stats)
                 .sort((a, b) => Number(b[0] === sortAbility) - Number(a[0] === sortAbility) || b[1] - a[1])
@@ -407,7 +448,7 @@ export function TeamPicker(props: TeamPickerProps) {
                 <li key={card.id} className="min-w-0">
                   <button
                     type="button"
-                    {...detail.press(card)}
+                    {...detail.press(shown)}
                     onClick={() => toggle(card.id)}
                     aria-pressed={position >= 0}
                     className={`relative flex w-full flex-col border-[3px] bg-panel text-left ${LONG_PRESS_CLASS} ${
@@ -416,11 +457,11 @@ export function TeamPicker(props: TeamPickerProps) {
                     style={{ borderColor: position >= 0 ? "var(--comic-yellow)" : card.rarity.color }}
                   >
                     <span className="relative block aspect-square bg-panel-raised">
-                      {card.art_url ? (
+                      {shown.art_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={withBasePath(card.art_url)}
-                          srcSet={artSrcSet(card.art_url)}
+                          src={withBasePath(shown.art_url)}
+                          srcSet={artSrcSet(shown.art_url)}
                           // Three tiles per row inside the page padding and the gaps, minus each tile's 3px frame.
                           sizes="calc((100vw - 58px) / 3)"
                           alt=""
@@ -445,6 +486,16 @@ export function TeamPicker(props: TeamPickerProps) {
                       {position >= 0 && (
                         <span className="absolute right-0.5 top-0.5 flex h-6 w-6 -skew-x-8 items-center justify-center bg-comic-yellow font-display text-sm text-black">
                           {position + 1}
+                        </span>
+                      )}
+                      {drawings > 1 && (
+                        <span
+                          aria-label={`${drawings} disegni`}
+                          className={`absolute bottom-0.5 right-0.5 px-1 text-[10px] font-extrabold leading-[14px] ${
+                            variantChoice.has(card.id) ? "bg-comic-magenta text-black" : "bg-black text-comic-yellow"
+                          }`}
+                        >
+                          ★ {drawings}
                         </span>
                       )}
                     </span>
@@ -512,24 +563,65 @@ export function TeamPicker(props: TeamPickerProps) {
                 {staked.has(optionsCard.id) ? "Doppione in palio: usa la copia starter" : "Metti in palio il doppione"}
               </button>
             )}
-            {optionsVariants.map((copy) => {
-              const fielded = chosenStyle(optionsCard.id) === copy.name;
-              return (
-                <button
-                  key={copy.id}
-                  type="button"
-                  onClick={() => toggleVariant(optionsCard.id, copy)}
-                  aria-pressed={fielded}
-                  className={`min-h-11 border-2 px-3 text-left text-sm font-bold ${
-                    fielded ? "border-comic-magenta bg-comic-magenta text-black" : "border-line bg-panel-raised"
-                  }`}
-                >
-                  {fielded
-                    ? `★ Variante ${copy.name} schierata${conquerable ? ": puoi perderla" : ""}`
-                    : `★ Schiera la variante ${copy.name}`}
-                </button>
-              );
-            })}
+            {optionsVariants.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <p className="text-xs font-bold uppercase text-muted">Disegno da schierare</p>
+                <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+                  {[{ copy: null, name: optionsDefault?.name ?? "Base", art: optionsDefault?.art_url ?? optionsCard.art_url }, ...optionsVariants.map((copy) => ({ copy, name: copy.name, art: copy.art_url }))].map(
+                    ({ copy, name, art }) => {
+                      const fielded = copy ? chosenStyle(optionsCard.id) === copy.name : !variantChoice.has(optionsCard.id);
+                      return (
+                        <button
+                          key={copy?.id ?? "default"}
+                          type="button"
+                          onClick={() => chooseCopy(optionsCard.id, copy)}
+                          aria-pressed={fielded}
+                          aria-label={`Schiera ${copy ? `la variante ${name}` : `il disegno ${name}`}`}
+                          className={`relative w-[80px] shrink-0 border-[3px] bg-panel-raised ${
+                            fielded ? "border-comic-yellow shadow-[3px_3px_0_var(--comic-magenta)]" : "border-line"
+                          }`}
+                        >
+                          <span className="relative block aspect-[3/4] overflow-hidden">
+                            {art ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={withBasePath(art)}
+                                srcSet={artSrcSet(art)}
+                                sizes="74px"
+                                alt=""
+                                decoding="async"
+                                className="absolute inset-0 h-full w-full object-cover object-top"
+                              />
+                            ) : (
+                              <Silhouette
+                                faction={optionsCard.faction}
+                                accent={optionsCard.rarity.color}
+                                className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2"
+                              />
+                            )}
+                            {fielded && (
+                              <span className="absolute right-0.5 top-0.5 bg-comic-yellow px-1 text-[11px] font-black leading-4 text-black">✓</span>
+                            )}
+                          </span>
+                          <span
+                            className={`block truncate px-0.5 py-0.5 text-center text-[10.5px] font-extrabold uppercase leading-4 ${
+                              fielded ? "bg-comic-yellow text-black" : ""
+                            }`}
+                          >
+                            {name}
+                          </span>
+                        </button>
+                      );
+                    },
+                  )}
+                </div>
+                {conquerable && variantChoice.has(optionsCard.id) && (
+                  <p className="bg-comic-magenta px-2 py-1 text-xs font-bold text-black">
+                    La variante {chosenStyle(optionsCard.id)} è in palio: se perdi, il vincitore può prenderla.
+                  </p>
+                )}
+              </div>
+            )}
             <div className="flex gap-2">
               <button
                 type="button"
