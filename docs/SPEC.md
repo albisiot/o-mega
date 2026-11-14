@@ -32,6 +32,7 @@ Le carte personaggio appartengono a una **fazione** (es. Eroi / Cattivi / Neutra
 
 - Login con **Google** tramite Supabase Auth.
 - Profilo: nome utente (unico), avatar, livello, esperienza.
+- **Avatar:** il volto di un personaggio che il giocatore possiede, preso dal disegno della carta (il disegno base, se ne ha almeno una copia, o una variante che ha trovato). Senza scelta resta la foto dell'account Google (o l'iniziale, se l'account non ne ha). Si sceglie nel profilo e si imposta solo con una funzione server che verifica il possesso al momento della scelta. È solo estetica: se poi il giocatore perde l'ultima copia di quel personaggio (per esempio in Conquista), l'avatar resta finché non ne sceglie un altro. Gli altri giocatori (avversario in partita, classifiche di Emergenza) vedono solo l'immagine dell'avatar.
 - Statistiche: vittorie, sconfitte, serie consecutive, carte conquistate, carte perse.
 - Saldo monete (derivato dal ledger).
 - Storico delle carte conquistate e perse.

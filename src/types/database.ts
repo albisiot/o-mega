@@ -1829,7 +1829,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_definition_id: string | null
           avatar_url: string | null
+          avatar_variant_id: string | null
           best_streak: number
           bot_draws: number
           bot_losses: number
@@ -1851,7 +1853,9 @@ export type Database = {
           xp: number
         }
         Insert: {
+          avatar_definition_id?: string | null
           avatar_url?: string | null
+          avatar_variant_id?: string | null
           best_streak?: number
           bot_draws?: number
           bot_losses?: number
@@ -1873,7 +1877,9 @@ export type Database = {
           xp?: number
         }
         Update: {
+          avatar_definition_id?: string | null
           avatar_url?: string | null
+          avatar_variant_id?: string | null
           best_streak?: number
           bot_draws?: number
           bot_losses?: number
@@ -2744,7 +2750,9 @@ export type Database = {
       bootstrap_player: {
         Args: never
         Returns: {
+          avatar_definition_id: string | null
           avatar_url: string | null
+          avatar_variant_id: string | null
           best_streak: number
           bot_draws: number
           bot_losses: number
@@ -3548,10 +3556,45 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_avatar: {
+        Args: { p_definition_id: string; p_variant_id?: string }
+        Returns: {
+          avatar_definition_id: string | null
+          avatar_url: string | null
+          avatar_variant_id: string | null
+          best_streak: number
+          bot_draws: number
+          bot_losses: number
+          bot_wins: number
+          cards_conquered: number
+          cards_lost: number
+          conquest_unlocked: boolean
+          created_at: string
+          current_streak: number
+          draws: number
+          id: string
+          level: number
+          losses: number
+          matches_played: number
+          starter_granted_at: string | null
+          updated_at: string
+          username: string
+          wins: number
+          xp: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_username: {
         Args: { p_username: string }
         Returns: {
+          avatar_definition_id: string | null
           avatar_url: string | null
+          avatar_variant_id: string | null
           best_streak: number
           bot_draws: number
           bot_losses: number
