@@ -294,13 +294,21 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 | Riscossa | Se fallisce la Minaccia, il personaggio successivo ottiene il bonus |
 | Sfavorito | Bonus se le Minacce fallite sono più di quelle superate |
 | Legame | +1 per ogni altro personaggio della stessa fazione tra gli 8 |
-| Sabotatore | Abbassa la soglia della Minaccia di 1 per ogni abilità richiesta |
+| Sabotatore | Abbassa la soglia della Minaccia del suo malus per ogni abilità richiesta |
 | Implacabile | Gli basta un punto in meno della soglia |
 | Veggente | Dopo averlo giocato, il giocatore vede tutte le Minacce successive |
 | Slancio | Se supera la Minaccia, il personaggio successivo ottiene il bonus |
 | Crescendo | Bonus se la Minaccia ha un livello più alto della precedente |
-| Annullatore, Davide, Schermato, Nemesi, Spia | Nessun effetto: non c'è un avversario |
-| Gli altri | Come in partita, contando la Minaccia come round: Ultimo baluardo vale dalla 4ª o 5ª all'ultima |
+| Vendetta | Bonus se la Minaccia precedente è stata fallita |
+| Lupo solitario | Bonus se tra gli 8 non c'è nessun altro della sua fazione |
+| Grande prova | Bonus se la Minaccia ha il livello più alto della giornata |
+| Apripista, Ultimo baluardo | La Minaccia conta come round (1ª, 2ª, …): Ultimo baluardo vale dalla 4ª o 5ª all'ultima |
+| Sacrificio | Segna 0 e il personaggio successivo ottiene il bonus. Sotto Rovescio lo 0 resta sotto la soglia massima |
+| Catalizzatore | Moltiplica il bonus del potere del personaggio successivo |
+| Capobranco | +bonus ai personaggi successivi della stessa fazione |
+| Riverbero | Copia il potere del personaggio precedente, se è uno di quelli copiabili (come in partita) |
+| Specialità, Affinità, Terreno favorevole, Tuttofare, Eclettico, Arte di arrangiarsi, Adattabile | Come in partita: dipendono solo dal personaggio e dalla Minaccia (Adattabile scatta solo sulle Minacce rare con una regola) |
+| Annullatore, Davide, Schermato, Nemesi, Spia, Nebbia, Riflesso, Contrattacco, Opportunista | Nessun effetto: non c'è un avversario. Il risultato dice "senza avversario non agisce" |
 
 **Soglie:** simulate sul catalogo reale. Con tutta la collezione a disposizione, invece di 8 personaggi, chi ha molte carte supera quasi sempre tutte le Minacce; con la squadra limitata contano di più le scelte. In simulazione lo starter set supera in media 4,3 Minacce e una squadra ben costruita 5,8, con 8 su 8 raro (circa 5%). Misure fatte prima dei budget per rarità (§4.3): lo starter set (tutto Delta) non cambia, le squadre con carte rare ora superano qualche Minaccia in più.
 

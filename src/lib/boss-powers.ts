@@ -131,6 +131,11 @@ export function bossTurnEntries(
               pack: parts?.pack ?? packBonus(acting, context.played ?? []),
               parts,
               standing: { roundsWon: context.roundsWon ?? 0, opponentRoundsWon: context.opponentRoundsWon ?? 0 },
+              // Spia shows a card only while the other side still has one not played.
+              spyRevealed:
+                bossSide === "me"
+                  ? (view.spied_cards ?? []).some((spied) => spied.round === round.round)
+                  : view.my_team.some((teamCard) => teamCard.played_round === null || teamCard.played_round > round.round),
             },
             annotate,
           )

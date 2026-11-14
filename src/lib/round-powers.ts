@@ -58,6 +58,11 @@ export type RoundOutcome = {
   /** Bonus this card received from Capobranco cards its side played before. */
   pack?: number;
   /**
+   * Spia: whether it showed an opposing card. The server shows one only while the opponent
+   * has a card not played yet; when not given, it is taken as shown.
+   */
+  spyRevealed?: boolean;
+  /**
    * Where the server says the bonus comes from: when given, the power's points are taken
    * from it instead of being worked out from the bonus.
    */
@@ -94,7 +99,11 @@ export function roundPowerNotes(
         );
         break;
       case "spy":
-        notes.push({ name: power.name, effect: "svela un personaggio rivale", active: true });
+        notes.push(
+          outcome.spyRevealed === false
+            ? { name: power.name, effect: null, active: false }
+            : { name: power.name, effect: "svela un personaggio rivale", active: true },
+        );
         break;
       case "relentless":
         notes.push({ name: power.name, effect: outcome.wonTie ? "vince la parità" : null, active: outcome.wonTie, timing: "tie" });

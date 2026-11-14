@@ -103,6 +103,12 @@ describe("roundPowerNotes for Spia and Schermato", () => {
     expect(roundPowerNotes(sabotage, { bonus: 0 }, threat, { ...calm, opponentShielded: true })[0].active).toBe(false);
   });
 
+  it("dims Spia when the opponent had no card left to show", () => {
+    const spy = card({ code: "spy", params: {}, name: "Spia", text: "" });
+    expect(roundPowerNotes(spy, { bonus: 0 }, threat, { ...calm, spyRevealed: false })[0]).toMatchObject({ effect: null, active: false });
+    expect(roundPowerNotes(spy, { bonus: 0 }, threat, { ...calm, spyRevealed: true })[0]).toMatchObject({ active: true });
+  });
+
   it("counts Schermato's point like any other bonus", () => {
     const shielded = card({ code: "shielded", params: { bonus: 1 }, name: "Schermato", text: "" });
     expect(roundPowerNotes(shielded, { bonus: 1 }, threat, calm)[0]).toMatchObject({ effect: "+1", active: true });

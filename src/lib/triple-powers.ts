@@ -39,6 +39,15 @@ export function contestNotes(view: TripleView, round: TripleRound, contest: Trip
 
   const rivalActing = rival && !wasNullified(rival, card, threat.modifier) ? toCharacter(rival, "opponent") : null;
   const tie = contest.my_play && contest.opponent_play && contest.my_play.score === contest.opponent_play.score;
+  // Spia shows a card only while the other side still has one not played: the player's own
+  // reveals come with the view; the opponent's needs a card of the player's deck still unplayed.
+  const myPlayedIds = new Set(
+    view.rounds.filter((r) => r.round <= round.round).flatMap((r) => r.contests.map((c) => c.my_play?.instance_id)),
+  );
+  const spyRevealed =
+    side === "me"
+      ? (view.spied_cards ?? []).some((spied) => spied.round === round.round)
+      : view.my_deck.some((deckCard) => !myPlayedIds.has(deckCard.instance_id));
   return roundPowerNotes(
     card,
     play,
@@ -57,6 +66,7 @@ export function contestNotes(view: TripleView, round: TripleRound, contest: Trip
       opponentHasPower: Boolean(rival?.power),
       pack: play.parts?.pack,
       parts: play.parts,
+      spyRevealed,
     },
     true,
   );

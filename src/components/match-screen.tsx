@@ -959,6 +959,10 @@ function RoundReveal({
   const theirStanding = { roundsWon: myStanding.opponentRoundsWon, opponentRoundsWon: myStanding.roundsWon };
   const myPack = mine ? packBonus(toCharacter(mine, mine.definition_id), playedBefore(rounds, team, round.round, "me")) : 0;
   const theirPack = theirs ? packBonus(toCharacter(theirs, theirs.definition_id), playedBefore(rounds, team, round.round, "opponent")) : 0;
+  // Spia shows a card only while the other side still has one not played (spy_reveals).
+  const myPlayedIds = new Set(rounds.filter((r) => r.round <= round.round).map((r) => r.my_play?.instance_id));
+  const myPlayedDefinitions = new Set(team.filter((card) => myPlayedIds.has(card.instance_id)).map((card) => card.definition_id));
+  const theirSpyRevealed = team.some((card) => !myPlayedDefinitions.has(card.definition_id));
   const myNotes =
     mine && round.my_play
       ? roundPowerNotes(mine, round.my_play, threat, {
@@ -977,6 +981,7 @@ function RoundReveal({
           silenced: wasSilenced(mine, round.modifier),
           standing: myStanding,
           opponentHasPower: Boolean(theirs?.power),
+          spyRevealed: revealed.spied.length > 0,
         }, true)
       : [];
   const theirNotes = theirs
@@ -995,6 +1000,7 @@ function RoundReveal({
         silenced: wasSilenced(theirs, round.modifier),
         standing: theirStanding,
         opponentHasPower: Boolean(mine?.power),
+        spyRevealed: theirSpyRevealed,
       }, true)
     : [];
 
