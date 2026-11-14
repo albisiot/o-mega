@@ -1900,7 +1900,29 @@ export type Database = {
           wins?: number
           xp?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_avatar_definition_id_fkey"
+            columns: ["avatar_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_avatar_definition_id_fkey"
+            columns: ["avatar_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_avatar_variant_fkey"
+            columns: ["avatar_variant_id", "avatar_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_variants"
+            referencedColumns: ["id", "definition_id"]
+          },
+        ]
       }
       rarity_definitions: {
         Row: {
