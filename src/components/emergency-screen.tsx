@@ -620,7 +620,7 @@ function PlayReveal({
       required={play.required}
       passed={play.passed}
       notes={notes}
-      decisive={play.passed ? decisiveNote(notes, play.score, play.required) : null}
+      decisive={play.passed && modifier?.code !== "reverse" ? decisiveNote(notes, play.score, play.required) : null}
       ended={isLast && run.status === "finished"}
       press={card ? detail.press(card) : undefined}
       onContinue={onContinue}
@@ -634,7 +634,7 @@ function PlayReveal({
   );
 }
 
-/** The power without which a passed threat would have failed. */
+/** The power without which a passed threat would have failed (never under Rovescio, where a bonus only hurts). */
 function decisiveNote(notes: EmergencyNote[], score: number, required: number): { index: number; text: string } | null {
   for (const [index, note] of notes.entries()) {
     if (!note.active || note.timing) continue;

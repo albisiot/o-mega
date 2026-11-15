@@ -80,8 +80,10 @@ type RoundScene = {
   /** Allarme Triplo: the caption and the verdict of a threat's page. */
   triple?: boolean;
   slots?: boolean;
+  /** The line under the verdict; a win of 32 to 31 when not given. */
+  resultLine?: string;
 };
-type Scene = RoundScene | { kind: "boss" } | { kind: "emergency" } | { kind: "triple-map" };
+type Scene = RoundScene | { kind: "boss" } | { kind: "emergency"; reverse?: boolean } | { kind: "triple-map" };
 
 const SCENES: Record<string, Scene> = {
   "tutto-insieme": {
@@ -240,9 +242,32 @@ const SCENES: Record<string, Scene> = {
     op: [talos, 31, [n("Sabotatore", "sabotage", "−1 a ogni abilità rivale")]],
     winner: "opponent",
   },
+  // Sabotatore brings the totals level and lowers the tie-break value too: a void round.
+  "sabotatore-parita": {
+    kind: "round",
+    threat: "Assalto alla torre",
+    abilities: ["FOR", "VEL"],
+    me: [talos, 11, []],
+    op: [malleus, 11, [n("Sabotatore", "sabotage", "−1 a ogni abilità rivale")]],
+    winner: "none",
+    resultLine: "Pari 11 a 11 e stesso valore più alto (7): round nullo.",
+  },
+  // The tie Sabotatore made goes to Implacabile, before the highest value.
+  "sabotatore-implacabile": {
+    kind: "round",
+    threat: "Assalto alla torre",
+    abilities: ["FOR", "VEL"],
+    me: [plinth, 11, [n("Implacabile", "relentless", "vince la parità", { timing: "tie" })]],
+    op: [malleus, 11, [n("Sabotatore", "sabotage", "−1 a ogni abilità rivale")]],
+    winner: "me",
+    decisive: { side: "me", index: 0, text: "Senza Implacabile vinceva Malleus, col valore più alto." },
+    resultLine: "Pari 11 a 11: vince Plinth con Implacabile.",
+  },
   "grande-minaccia": { kind: "boss" },
   "triplo-mappa": { kind: "triple-map" },
   "emergenza": { kind: "emergency" },
+  // Under Rovescio the target is a maximum: Sabotatore does not move it.
+  "emergenza-rovescio": { kind: "emergency", reverse: true },
 };
 
 function sideOf(label: string, [c, score, notes, flag]: Play, abilities: string[], rule: ThreatModifier | undefined, malus: number): ComicSide {
@@ -355,6 +380,36 @@ function SceneView({ id }: { id: string }) {
       />
     );
   }
+  if (scene.kind === "emergency" && scene.reverse) {
+    return (
+      <EmergencyComic
+        number={4}
+        of={8}
+        passedBefore={2}
+        failedBefore={1}
+        lastChance={false}
+        threatName="Il mondo capovolto"
+        level={5}
+        abilities={["FOR", "VEL", "INT", "MAG", "FUR"]}
+        card={malleus}
+        stats=""
+        chips={abilityChips(malleus.stats, { abilities: ["FOR", "VEL", "INT", "MAG", "FUR"], modifier: { code: "reverse" } })}
+        twist={{ name: "Rovescio", text: "Vince il punteggio più basso: al massimo 20." }}
+        rule={{ code: "reverse" }}
+        tierColor="#b26bff"
+        score={19}
+        target={20}
+        required={20}
+        passed
+        notes={[{ name: "Sabotatore", code: "sabotage", source: "own", effect: "sotto Rovescio non agisce", active: false }]}
+        decisive={null}
+        ended={false}
+        onContinue={() => {}}
+        onVerdict={() => window.setTimeout(markDone, 2500)}
+        action={() => <button className="btn btn-primary w-full">Avanti</button>}
+      />
+    );
+  }
   if (scene.kind === "emergency") {
     return (
       <EmergencyComic
@@ -406,7 +461,7 @@ function SceneView({ id }: { id: string }) {
       winner={scene.winner}
       decisive={scene.decisive ?? null}
       revealed={{ foreseen: [{ round: 4, level: 5, name: "Titano di metallo" }], spied: [plinth] }}
-      resultLine="Dredge batte Talos · 32 a 31."
+      resultLine={scene.resultLine ?? "Dredge batte Talos · 32 a 31."}
       notices={[]}
       hint={hint}
       onContinue={() => {}}

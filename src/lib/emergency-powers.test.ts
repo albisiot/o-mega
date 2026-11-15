@@ -44,6 +44,17 @@ describe("emergencyPowerNotes", () => {
     expect(emergencyPowerNotes(power("relentless", "Implacabile"), play(0, true), [])[0]).toMatchObject({ active: true, threshold: 1 });
   });
 
+  it("under Rovescio Sabotatore and Implacabile do not move the target, as in the engine", () => {
+    const reversed = { ...play(0, true), modifier: { code: "reverse" } as const };
+    expect(emergencyPowerNotes(power("sabotage", "Sabotatore", { malus: 1 }), reversed, [])[0]).toEqual({
+      name: "Sabotatore",
+      effect: "sotto Rovescio non agisce",
+      active: false,
+    });
+    expect(emergencyPowerNotes(power("relentless", "Implacabile"), reversed, [])[0]).toMatchObject({ active: false });
+    expect(emergencyPowerNotes(power("relentless", "Implacabile"), reversed, [])[0].threshold).toBeUndefined();
+  });
+
   it("dims the powers that need an opponent", () => {
     expect(emergencyPowerNotes(power("spy", "Spia"), play(0, false), [])[0]).toEqual({
       name: "Spia",

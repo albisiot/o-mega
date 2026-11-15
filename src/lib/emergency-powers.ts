@@ -30,7 +30,7 @@ const NEED_OPPONENT = new Set([
  */
 export function emergencyPowerNotes(
   card: MatchCard,
-  play: Pick<EmergencyPlay, "round" | "level" | "threat" | "bonus" | "passed" | "parts">,
+  play: Pick<EmergencyPlay, "round" | "level" | "threat" | "bonus" | "passed" | "parts" | "modifier">,
   /** The plays before this one, in order, each with its card. */
   before: { card: MatchCard; passed: boolean }[],
   /** Adds each note's power code and source, for the page's visual families (round-powers.ts). */
@@ -65,6 +65,11 @@ export function emergencyPowerNotes(
     // The card's own power is always the first note.
     if (index > 0) return note;
     const tag = annotate ? { code: power.code, source: "own" as const } : {};
+    // Under Rovescio the target is the most a play may score: the engine moves it for
+    // no power (requiredScore), so Sabotatore and Implacabile do nothing there.
+    if ((play.modifier ?? play.threat.modifier)?.code === "reverse" && (power.code === "sabotage" || power.code === "relentless")) {
+      return { name: power.name, effect: "sotto Rovescio non agisce", active: false, ...tag };
+    }
     if (power.code === "sabotage") {
       const threshold = abilityMalusFrom(toCharacter(card, card.definition_id)) * play.threat.abilities.length;
       return { name: power.name, effect: `soglia −${threshold}`, active: true, threshold, ...tag };

@@ -1055,7 +1055,7 @@ function RoundReveal({
   const decisive =
     winner === "none" || !winnerPlay || !loserPlay || !winnerCard || !loserCard
       ? null
-      : decisiveNote(winner, winner === "me" ? myNotes : theirNotes, winnerPlay, loserPlay, loserCard.name);
+      : decisiveNote(winner, winner === "me" ? myNotes : theirNotes, winnerPlay, loserPlay, loserCard.name, round.modifier);
   // On equal totals the line says what settled it (SPEC §5.6), to both players.
   const resultLine =
     winner === "none"

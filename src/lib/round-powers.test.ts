@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MatchCard } from "./match";
-import { carriedInto, playedBefore, roundPowerNotes, tieBreakReason, tieWonByRelentless } from "./round-powers";
+import { carriedInto, decisiveNote, playedBefore, roundPowerNotes, tieBreakReason, tieWonByRelentless } from "./round-powers";
 
 const card = (power: MatchCard["power"], faction = "heroes", rank = 2): MatchCard => ({
   definition_id: "d1",
@@ -251,5 +251,38 @@ describe("roundPowerNotes with the server's parts", () => {
     expect(roundPowerNotes(allRounder, { bonus: 4 }, hostile, { ...calm, parts })).toEqual([
       { name: "Tuttofare", effect: "+6", active: true, points: 6 },
     ]);
+  });
+});
+
+describe("decisiveNote after Sabotatore, and under Rovescio", () => {
+  const relentless = { name: "Implacabile", effect: "vince la parità", active: true, timing: "tie" as const };
+  const bonus = { name: "Specialità", effect: "+2", active: true, points: 2 };
+
+  it("Implacabile decided a tie the malus made when the highest value would not have won it", () => {
+    // 11 to 11 after Sabotatore: 6 against 9, without Implacabile the saboteur won.
+    expect(decisiveNote("me", [relentless], { score: 11, highest: 6 }, { score: 11, highest: 9 }, "Sabotatrice")).toMatchObject({
+      text: "Senza Implacabile vinceva Sabotatrice, col valore più alto.",
+    });
+    expect(decisiveNote("me", [relentless], { score: 11, highest: 9 }, { score: 11, highest: 6 }, "Sabotatrice")).toBeNull();
+  });
+
+  it("under Rovescio the lower highest value wins the tie: Implacabile is decisive the other way", () => {
+    const reverse = { code: "reverse" } as const;
+    expect(decisiveNote("me", [relentless], { score: 10, highest: 8 }, { score: 10, highest: 6 }, "Rivale", reverse)).toMatchObject({
+      text: "Senza Implacabile vinceva Rivale, col valore più alto più basso.",
+    });
+    expect(decisiveNote("me", [relentless], { score: 10, highest: 5 }, { score: 10, highest: 6 }, "Rivale", reverse)).toBeNull();
+  });
+
+  it("under Rovescio a bonus only hurt the winner: it never decided the round", () => {
+    expect(decisiveNote("me", [bonus], { score: 9, highest: 5 }, { score: 10, highest: 5 }, "Rivale", { code: "reverse" })).toBeNull();
+    expect(decisiveNote("me", [bonus], { score: 11, highest: 5 }, { score: 10, highest: 5 }, "Rivale")).toMatchObject({
+      text: "Senza Specialità finiva 9 a 10.",
+    });
+  });
+
+  it("the tie-break line uses the values after Sabotatore, as the server sends them", () => {
+    expect(tieBreakReason({ highest: 7 }, { highest: 6 }, null)).toBe("vince il valore più alto, 7 contro 6");
+    expect(tieBreakReason(null, { highest: 7 }, null)).toBe("stesso valore più alto (7): round nullo");
   });
 });

@@ -101,7 +101,7 @@ function ContestComic({
   const decisive =
     winner === "none" || !winnerPlay || !loserPlay || !loserCard
       ? null
-      : decisiveNote(winner, winner === "me" ? myNotes : theirNotes, winnerPlay, loserPlay, loserCard.name);
+      : decisiveNote(winner, winner === "me" ? myNotes : theirNotes, winnerPlay, loserPlay, loserCard.name, modifier);
   // On equal totals the line says what settled it (SPEC §5.6), to both players.
   const resultLine =
     winner === "none"
