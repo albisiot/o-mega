@@ -20,6 +20,7 @@ import {
   useWhenDone,
 } from "@/components/comic-page";
 import type { BossEntry, BossSide } from "@/lib/boss-powers";
+import { useBannerHold } from "@/lib/banner-hold";
 import { playSound } from "@/lib/comic-sound";
 import { chargeSource, powerFamily, powerSfx } from "@/lib/effect-families";
 import { tieBreakReason } from "@/lib/round-powers";
@@ -359,6 +360,8 @@ function tieLine(entry: BossEntry, frontName: string): [number, string][] {
 
 /** A Grande Minaccia turn as a comic page. */
 export function BossComic(props: BossComicProps) {
+  // No in-app banner over the result (SPEC §11.1).
+  useBannerHold();
   const { entries, values, points } = props;
   // A new turn is a new page.
   // eslint-disable-next-line react-hooks/exhaustive-deps

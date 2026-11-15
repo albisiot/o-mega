@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { CardView } from "@/components/card-view";
 import { PackArt } from "@/components/comic-parts";
 import { balance } from "@/config/balance";
+import { useBannerHold } from "@/lib/banner-hold";
 import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { packColor } from "@/lib/pack-colors";
@@ -40,6 +41,8 @@ export function PackReveal({ opening, nextIds = [] }: { opening: PackOpening; ne
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cards = opening.cards;
   useLockedScreen(stage.kind === "summary");
+  // No in-app banner while the cards come out (SPEC §11.1).
+  useBannerHold(stage.kind !== "summary");
 
   useEffect(() => {
     fetchAbilities()

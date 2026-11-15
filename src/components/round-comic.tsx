@@ -30,6 +30,7 @@ import {
 } from "@/components/comic-page";
 import type { MarkTone } from "@/lib/ability-marks";
 import { playSound } from "@/lib/comic-sound";
+import { useBannerHold } from "@/lib/banner-hold";
 import {
   chargeSource,
   familyOrder,
@@ -455,6 +456,8 @@ function CardPanel({
 
 /** The round result as a comic page. */
 export function RoundComic(props: RoundComicProps) {
+  // No in-app banner over the result (SPEC §11.1).
+  useBannerHold();
   const { me, opponent, winner, twist, rule } = props;
   // The beats depend only on the round: a new round is a new page.
   // eslint-disable-next-line react-hooks/exhaustive-deps

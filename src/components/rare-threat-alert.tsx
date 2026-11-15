@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useBannerHold } from "@/lib/banner-hold";
 import { oddsText, rarityTitle, type ThreatRarity } from "@/lib/threat-rarity";
 
 const SHOW_MS = 2600;
@@ -37,6 +38,8 @@ function markShown(key: string) {
  */
 export function RareThreatAlert({ alertKey, rarity, name }: { alertKey: string; rarity: ThreatRarity | null | undefined; name: string }) {
   const [open, setOpen] = useState<string | null>(null);
+  // No in-app banner over the alert (SPEC §11.1).
+  useBannerHold(Boolean(rarity) && open === alertKey);
 
   useEffect(() => {
     if (!rarity || alreadyShown(alertKey)) return;

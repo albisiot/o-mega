@@ -24,6 +24,7 @@ import {
   type ComicChip,
 } from "@/components/comic-page";
 import { playSound } from "@/lib/comic-sound";
+import { useBannerHold } from "@/lib/banner-hold";
 import { chargeSource, pointsHelp, powerFamily, powerSfx, ruleSfx } from "@/lib/effect-families";
 import type { EmergencyNote } from "@/lib/emergency-powers";
 import type { MatchCard } from "@/lib/match";
@@ -170,6 +171,8 @@ function playBeat(beat: Beat, props: EmergencyComicProps, fx: ComicFx) {
 
 /** The result of an Emergenza play as a comic page. */
 export function EmergencyComic(props: EmergencyComicProps) {
+  // No in-app banner over the result (SPEC §11.1).
+  useBannerHold();
   const { notes, score, target, required, passed } = props;
   // A new play is a new page.
   // eslint-disable-next-line react-hooks/exhaustive-deps

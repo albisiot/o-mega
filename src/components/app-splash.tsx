@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { preloadWorldIntro } from "@/components/world-intro";
 import { WORLD_INTRO, WORLD_LOADING_LINES } from "@/config/world";
+import { useBannerHold } from "@/lib/banner-hold";
 import { withBasePath } from "@/lib/base-path";
 
 // The splash leaves as soon as the home is ready: this only spares a flash when everything is
@@ -35,6 +36,8 @@ export function AppSplash() {
 }
 
 function Splash({ onGone }: { onGone: () => void }) {
+  // In-app banners wait for the app to open (SPEC §11.1).
+  useBannerHold();
   const pathname = usePathname();
   const { status, session, profile } = useAuth();
   const imageRef = useRef<HTMLImageElement>(null);

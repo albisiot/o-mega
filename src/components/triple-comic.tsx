@@ -7,6 +7,7 @@ import { prefersReducedMotion } from "@/components/comic-page";
 import { RoundComic } from "@/components/round-comic";
 import { balance } from "@/config/balance";
 import { abilityChips, chipsTotal } from "@/lib/ability-marks";
+import { useBannerHold } from "@/lib/banner-hold";
 import { withBasePath } from "@/lib/base-path";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import { DISTRICTS, MAP_HEIGHT, MAP_WIDTH, placeThreats } from "@/lib/city-districts";
@@ -222,6 +223,8 @@ export function TripleMapReveal({
   onDone: () => void;
   onContinue: () => void;
 }) {
+  // No in-app banner over the result (SPEC §11.1).
+  useBannerHold();
   const contests = [...round.contests].sort((a, b) => a.slot - b.slot).filter((c) => c.my_play || c.opponent_play);
   const threats = contests.map((c) => view.threats[c.slot]);
   const placed = placeThreats(threats.map((t) => ({ name: t?.name ?? "", district: t?.district })));
