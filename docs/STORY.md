@@ -284,7 +284,7 @@ Ganci già aperti, da non chiudere prima del tempo. Una minaccia alla volta.
 
 ## 6. Stagione 2: *La marea*
 
-*Scritta, in costruzione: nel database ci sono i Capitoli 1, 2 e 3. I capitoli entrano nel database uno alla volta, come quelli della Stagione 1: quando un capitolo è costruito, la sua scheda diventa definitiva e le carte principali diventano le squadre avversarie tarate con la simulazione (SPEC §5.11). Fino ad allora tutto è una proposta.*
+*Scritta, in costruzione: nel database ci sono i Capitoli 1, 2, 3 e 4. I capitoli entrano nel database uno alla volta, come quelli della Stagione 1: quando un capitolo è costruito, la sua scheda diventa definitiva e le carte principali diventano le squadre avversarie tarate con la simulazione (SPEC §5.11). Fino ad allora tutto è una proposta.*
 
 ### 6.1 Premessa
 
@@ -410,7 +410,7 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 
 #### Capitolo 4 — Absentia
 
-*Atto II, metà stagione. Da costruire. Albo* Absentia.
+*Atto II, metà stagione. Testi nel database (migrazione `20261116100000_season_two_chapter_four_story.sql`, capitolo 10 nell'ordine di tutta la storia, missioni C10M1-C10M5); squadre e Minacce tarate con la simulazione (SPEC §5.11). Albo* Absentia.
 
 - **In una riga:** ogni notte un'armatura vuota ferma l'acqua alle Fosse, e ha nel petto la eta vera.
 - **La cosa strana:** Absentia, l'armatura che si muove senza nessuno dentro.
@@ -423,13 +423,13 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 - **Rivelazione:** Absentia era l'armatura del capoturno della trivella, progettata da Auctor per lavorare vicino all'energia. Il capoturno è sparito quella notte e la eta vera le si è piantata nel petto: da allora la muove la lettera, e l'armatura continua a fare l'ultima cosa che faceva, reggere quello che cade addosso a chi le sta sotto. La sua scatola nera ha registrato gli ultimi nove secondi: un ragazzo che grida di fermarsi, ed è Nicola, e una voce calma che risponde *"Sappiamo cosa c'è sotto. Trivellate."* È quella di Eudaemon. Ottavia sente suo fratello e passa dalla tua parte.
 - **Gancio:** la eta non può ancora tornare al suo posto: prima ci vuole la zeta, nel petto di Xenolith, e le Fosse hanno bisogno di Absentia ancora qualche notte. La Compagnia sa che hai la registrazione.
 
-| # | Missione | Situazione | Carte principali |
+| # | Missione | Situazione | Squadra avversaria (definitiva) |
 |---|---|---|---|
-| 1 | Coprifuoco | Dopo l'onda della mezzanotte alle Fosse c'è il coprifuoco, e gli sciacalli entrano nelle case allagate. Anche nella tua | Tariffario, Latchkey, Foundling |
-| 2 | Chi l'ha vista | Le Lanterne sanno dove dorme l'armatura e non te lo dicono: è l'unica che di notte ferma l'acqua | Leeward, Vulnerary, Sanctuary |
-| 3 | La taglia | La Compagnia ha messo una taglia sull'armatura, e i cacciatori di colossi sono già per strada | Hollowbone, Zeta Rax, Warrant |
-| 4 | Il pozzo | Auctor, che l'ha progettata, sa dove torna l'armatura all'alba: al pozzo della trivella, dove la Compagnia la aspetta | Swarf, Typo, Pyrrhic |
-| 5 | Scatola nera | Ottavia schiera Eudaemon per la Compagnia: lei vuole sentire la scatola nera, lui vuole vederla bruciare | Eudaemon, Lamprey, Semaphore |
+| 1 | Coprifuoco | Dopo l'onda della mezzanotte alle Fosse c'è il coprifuoco, e gli sciacalli entrano nelle case allagate. Anche nella tua | Tariffario, Latchkey, Foundling, Procura, Higgler |
+| 2 | Chi l'ha vista | Le Lanterne sanno dove dorme l'armatura e non te lo dicono: è l'unica che di notte ferma l'acqua | Leeward, Vulnerary, Sanctuary, Upkeep, Vigil |
+| 3 | La taglia | La Compagnia ha messo una taglia sull'armatura, e i cacciatori di colossi sono già per strada | Hollowbone, Zeta Rax, Warrant, Praesidium, Insula |
+| 4 | Il pozzo | Auctor, che l'ha progettata, sa dove torna l'armatura all'alba: al pozzo della trivella, dove la Compagnia la aspetta | Swarf, Typo, Pyrrhic, Mekana, Reus |
+| 5 | Scatola nera | Ottavia schiera Eudaemon per la Compagnia: lei vuole sentire la scatola nera, lui vuole vederla bruciare | Eudaemon, Lamprey, Semaphore, Matins, Vetrix |
 
 #### Capitolo 5 — Le Fosse
 
@@ -490,7 +490,7 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 
 ### 6.7 Il registro delle lettere
 
-Il piano della stagione. Come in §2, si aggiorna capitolo per capitolo quando i capitoli entrano nel database. **Stato attuale** (Capitoli 1, 2 e 3 nel database): Α Β Γ Δ sono nel sigillo, portate dal Comune al tempio e rimesse nell'anello da Renata; la Ε è nel sigillo anche lei, dopo che la vendita del Banco è stata dichiarata nulla perché la Η venduta insieme era la falsa della fornace (il Banco non ha più lo stampo); la Η vera non l'ha trovata nessuno, ma di notte cammina per le Fosse; la Θ è stata comprata dal Comune e rubata dai Figli, e ce l'ha Nicola, che ha cominciato a tirare fuori le lettere dall'altra parte, dalla iota in avanti; tutte le altre lettere sono dove erano a fine Stagione 1.
+Il piano della stagione. Come in §2, si aggiorna capitolo per capitolo quando i capitoli entrano nel database. **Stato attuale** (Capitoli 1, 2, 3 e 4 nel database): Α Β Γ Δ sono nel sigillo, portate dal Comune al tempio e rimesse nell'anello da Renata; la Ε è nel sigillo anche lei, dopo che la vendita del Banco è stata dichiarata nulla perché la Η venduta insieme era la falsa della fornace (il Banco non ha più lo stampo); la Η vera è nel petto di Absentia, l'armatura vuota del capoturno della trivella: è la lettera a muoverla, e di notte l'armatura ferma l'acqua alle Fosse; non può tornare nel sigillo prima della Ζ, che è ancora nel petto di Xenolith; la Θ è stata comprata dal Comune e rubata dai Figli, e ce l'ha Nicola, che ha cominciato a tirare fuori le lettere dall'altra parte, dalla iota in avanti; tutte le altre lettere sono dove erano a fine Stagione 1.
 
 | Lettere | A fine Stagione 1 | Nella Stagione 2 | A fine Stagione 2 (previsto) |
 |---|---|---|---|
