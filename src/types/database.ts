@@ -1013,6 +1013,89 @@ export type Database = {
           },
         ]
       }
+      emergency_prize_days: {
+        Row: {
+          closed_at: string
+          day: string
+        }
+        Insert: {
+          closed_at?: string
+          day: string
+        }
+        Update: {
+          closed_at?: string
+          day?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_prize_days_day_fkey"
+            columns: ["day"]
+            isOneToOne: true
+            referencedRelation: "emergency_days"
+            referencedColumns: ["day"]
+          },
+        ]
+      }
+      emergency_prizes: {
+        Row: {
+          claimed_at: string | null
+          coins: number
+          created_at: string
+          day: string
+          id: string
+          opening_ids: string[]
+          packs: number
+          passed: number
+          players: number
+          rank: number
+          total_score: number
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          coins: number
+          created_at?: string
+          day: string
+          id?: string
+          opening_ids?: string[]
+          packs: number
+          passed: number
+          players: number
+          rank: number
+          total_score: number
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string | null
+          coins?: number
+          created_at?: string
+          day?: string
+          id?: string
+          opening_ids?: string[]
+          packs?: number
+          passed?: number
+          players?: number
+          rank?: number
+          total_score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_prizes_day_fkey"
+            columns: ["day"]
+            isOneToOne: false
+            referencedRelation: "emergency_prize_days"
+            referencedColumns: ["day"]
+          },
+          {
+            foreignKeyName: "emergency_prizes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emergency_runs: {
         Row: {
           card_instance_ids: string[]
@@ -3238,13 +3321,13 @@ export type Database = {
         Returns: string[]
       }
       claim_achievement: { Args: { p_achievement_id: string }; Returns: Json }
-      claim_emergency_prize: { Args: { p_prize_id: string }; Returns: Json }
       claim_conquest_card: {
         Args: { p_card_instance_id: string; p_match_id: string }
         Returns: Json
       }
       claim_daily_objective: { Args: { p_objective_id: string }; Returns: Json }
       claim_daily_pack: { Args: never; Returns: Json }
+      claim_emergency_prize: { Args: { p_prize_id: string }; Returns: Json }
       claim_victory: { Args: { p_match_id: string }; Returns: Json }
       classic_match_state_payload: {
         Args: { p_match_id: string; p_side: string }
@@ -3382,11 +3465,20 @@ export type Database = {
           rank: number
         }[]
       }
+      emergency_close_days: { Args: never; Returns: undefined }
       emergency_ensure_day: {
         Args: { p_threat_ids: string[] }
         Returns: undefined
       }
       emergency_play_context: { Args: { p_user: string }; Returns: Json }
+      emergency_prize_for: {
+        Args: { p_rank: number }
+        Returns: {
+          coins: number
+          packs: number
+        }[]
+      }
+      emergency_prize_table: { Args: never; Returns: Json }
       emergency_record_play: {
         Args: {
           p_base: number
