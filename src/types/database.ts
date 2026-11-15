@@ -1891,6 +1891,7 @@ export type Database = {
           losses: number
           matches_played: number
           starter_granted_at: string | null
+          title: string | null
           updated_at: string
           username: string
           wins: number
@@ -1915,6 +1916,7 @@ export type Database = {
           losses?: number
           matches_played?: number
           starter_granted_at?: string | null
+          title?: string | null
           updated_at?: string
           username: string
           wins?: number
@@ -1939,6 +1941,7 @@ export type Database = {
           losses?: number
           matches_played?: number
           starter_granted_at?: string | null
+          title?: string | null
           updated_at?: string
           username?: string
           wins?: number
@@ -2844,6 +2847,7 @@ export type Database = {
           losses: number
           matches_played: number
           starter_granted_at: string | null
+          title: string | null
           updated_at: string
           username: string
           wins: number
@@ -3129,6 +3133,25 @@ export type Database = {
       get_pack_odds: { Args: never; Returns: Json }
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
       get_pack_status: { Args: never; Returns: Json }
+      admin_delete_achievement: { Args: { p_id: string }; Returns: Json }
+      admin_grant_achievement: {
+        Args: { p_id: string; p_username: string }
+        Returns: Json
+      }
+      admin_list_achievements: { Args: never; Returns: Json }
+      admin_preview_achievement: { Args: { p_draft: Json }; Returns: Json }
+      admin_reorder_achievements: { Args: { p_ids: string[] }; Returns: Json }
+      admin_save_achievement: {
+        Args: { p_draft: Json; p_id: string }
+        Returns: Json
+      }
+      admin_set_achievement_active: {
+        Args: { p_id: string; p_is_active: boolean }
+        Returns: Json
+      }
+      claim_achievement: { Args: { p_achievement_id: string }; Returns: Json }
+      get_achievements: { Args: never; Returns: Json }
+      get_match_opponent_title: { Args: { p_match_id: string }; Returns: string }
       get_player_notifications: { Args: never; Returns: Json }
       get_special_packs: { Args: never; Returns: Json }
       get_story: { Args: never; Returns: Json }
@@ -3237,6 +3260,7 @@ export type Database = {
         Args: { p_event_id: string }
         Returns: undefined
       }
+      set_player_title: { Args: { p_achievement_id: string }; Returns: string }
       mark_player_notifications_seen: {
         Args: { p_ids: string[] }
         Returns: number
@@ -3669,6 +3693,7 @@ export type Database = {
           losses: number
           matches_played: number
           starter_granted_at: string | null
+          title: string | null
           updated_at: string
           username: string
           wins: number
@@ -3702,6 +3727,7 @@ export type Database = {
           losses: number
           matches_played: number
           starter_granted_at: string | null
+          title: string | null
           updated_at: string
           username: string
           wins: number

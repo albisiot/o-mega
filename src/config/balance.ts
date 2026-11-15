@@ -310,6 +310,19 @@ export const balance = {
     /** At most this many banners wait in line; older ones are dropped (client only). */
     maxQueued: 5,
   },
+
+  /**
+   * Imprese (SPEC §8.5): the reward the editor suggests for a new impresa of each tier
+   * (client only; every impresa keeps its own reward in the database).
+   */
+  achievements: {
+    suggestedReward: {
+      bronze: { coins: 50, packs: 0 },
+      silver: { coins: 150, packs: 0 },
+      gold: { coins: 0, packs: 2 },
+      legend: { coins: 0, packs: 3 },
+    },
+  },
 } as const;
 
 export type Balance = typeof balance;

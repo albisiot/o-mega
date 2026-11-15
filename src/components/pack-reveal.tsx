@@ -32,6 +32,8 @@ const PACK_TITLES: Record<PackOpening["pack_type"], string> = {
   event: "Premio evento",
   special: "Pacchetto speciale",
   match: "Premio partita",
+  objective: "Premio obiettivo",
+  achievement: "Premio impresa",
 };
 
 /** Sealed pack → cards revealed one at a time → summary, then the next pack if any. */

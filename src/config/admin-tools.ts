@@ -73,4 +73,11 @@ export const ADMIN_TOOLS: AdminTool[] = [
     group: "events",
     icon: "M12 3a9 9 0 100 18 9 9 0 000-18zM12 7a5 5 0 100 10 5 5 0 000-10zM12 11v2",
   },
+  {
+    href: "/gestione-imprese",
+    name: "Imprese",
+    description: "Obiettivi segreti a lungo termine",
+    group: "events",
+    icon: "M12 14a5 5 0 100-10 5 5 0 000 10zM9 13l-2 8 5-3 5 3-2-8",
+  },
 ];

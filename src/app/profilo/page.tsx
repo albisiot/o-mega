@@ -139,6 +139,9 @@ function ProfileView({ profile }: { profile: Profile }) {
                 </svg>
               </button>
             </div>
+            {profile.title && (
+              <p className="-mt-0.5 truncate text-[13px] font-extrabold uppercase leading-4">«{profile.title}»</p>
+            )}
             <p className="text-sm font-bold">
               Livello {profile.level} · {profile.xp} XP
             </p>
@@ -197,6 +200,9 @@ function ProfileView({ profile }: { profile: Profile }) {
 
           {tab === "more" && (
             <>
+              <Link href="/imprese" className={ROW}>
+                <RowLabel>Imprese</RowLabel>
+              </Link>
               <Link href="/storico" className={ROW}>
                 <RowLabel>Storico partite</RowLabel>
               </Link>

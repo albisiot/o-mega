@@ -156,7 +156,10 @@ export function DailyObjectivesView() {
 
       <p className="shrink-0 text-xs font-medium leading-4 text-muted">
         Il progresso avanza da solo giocando; le partite abbandonate non contano. Obiettivi e premi non riscattati scadono a
-        mezzanotte. Puoi cambiare solo gli obiettivi non ancora completati.
+        mezzanotte. Puoi cambiare solo gli obiettivi non ancora completati.{" "}
+        <Link href="/imprese/" className="font-bold text-comic-cyan underline">
+          Imprese segrete
+        </Link>
       </p>
     </>
   );

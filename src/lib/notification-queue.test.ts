@@ -77,6 +77,9 @@ describe("banner content", () => {
   it("links each kind to its page", () => {
     expect(bannerHref(note("a", 1))).toBe("/obiettivi/");
     expect(bannerHref(note("a", 1, "event_reward"))).toBe("/evento/");
+    expect(bannerHref(note("a", 1, "achievement"))).toBe("/imprese/");
+    expect(bannerHint(note("a", 1, "achievement", { count: 1 }))).toBe("Tocca per vederla");
+    expect(bannerHint(note("a", 1, "achievement", { count: 3 }))).toBe("Tocca per vederle");
     expect(bannerHref(note("a", 1, "something_new"))).toBeNull();
     expect(bannerHint(note("a", 1, "something_new"))).toBe("Tocca per chiudere");
   });

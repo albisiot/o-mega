@@ -47,6 +47,7 @@ import {
   type MatchView,
 } from "@/lib/match";
 import { RewardChips, hasReward, useMatchReward } from "@/components/match-reward";
+import { useOpponentTitle } from "@/lib/achievements";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import {
   carriedInto,
@@ -290,6 +291,8 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
   );
   const shownRound = revealing === null ? null : view.rounds.find((r) => r.round === revealing) ?? null;
   const opponentName = view.opponent?.username ?? "Bot";
+  // The opponent's title (Imprese, SPEC §8.5): the name is already on the line below.
+  const opponentTitle = useOpponentTitle(view.id, Boolean(view.opponent));
   // What the strip shows: the match before the round on screen, until its verdict is out.
   const strip = held && revealing !== null ? matchBeforeRound(view, revealing) : view;
   // Every step fits the screen and nothing scrolls: the choice, the round result, the conquest
@@ -310,7 +313,11 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
             {view.mode === "bot"
               ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}`
               : `${view.mode === "conquest" ? "Conquista" : "Amichevole"} · ${
-                  isBot ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}` : opponentName
+                  isBot
+                    ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}`
+                    : opponentTitle
+                      ? `«${opponentTitle}»`
+                      : opponentName
                 }`}
           </p>
           <p className="mt-0.5 flex items-baseline gap-1 text-[11px] font-extrabold uppercase">

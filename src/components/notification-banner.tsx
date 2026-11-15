@@ -233,7 +233,7 @@ function Banner({
         aria-hidden
         className="flex h-12 w-12 shrink-0 -rotate-6 items-center justify-center border-[3px] border-black bg-comic-magenta font-sfx text-2xl leading-none text-white shadow-[2px_2px_0_#000]"
       >
-        {notification.kind === "event_reward" ? "★" : "✔"}
+        {notification.kind === "event_reward" ? "★" : notification.kind === "achievement" ? "✪" : "✔"}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block -skew-x-6 font-display text-[19px] uppercase leading-6">{notification.title}</span>
