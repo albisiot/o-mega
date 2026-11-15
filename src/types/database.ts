@@ -1338,6 +1338,127 @@ export type Database = {
         }
         Relationships: []
       }
+      leaderboard_awards: {
+        Row: {
+          board: string
+          created_at: string
+          expires_at: string
+          id: string
+          title: string
+          user_id: string
+          value: number
+          week: string
+        }
+        Insert: {
+          board: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          title: string
+          user_id: string
+          value: number
+          week: string
+        }
+        Update: {
+          board?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          title?: string
+          user_id?: string
+          value?: number
+          week?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_awards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaderboard_awards_week_fkey"
+            columns: ["week"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_weeks"
+            referencedColumns: ["week"]
+          },
+        ]
+      }
+      leaderboard_points: {
+        Row: {
+          board: string
+          bot_difficulty: string | null
+          day: string
+          earned_at: string
+          match_id: string
+          opponent_id: string | null
+          outcome: string
+          points: number
+          user_id: string
+        }
+        Insert: {
+          board: string
+          bot_difficulty?: string | null
+          day: string
+          earned_at: string
+          match_id: string
+          opponent_id?: string | null
+          outcome: string
+          points: number
+          user_id: string
+        }
+        Update: {
+          board?: string
+          bot_difficulty?: string | null
+          day?: string
+          earned_at?: string
+          match_id?: string
+          opponent_id?: string | null
+          outcome?: string
+          points?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_points_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaderboard_points_opponent_id_fkey"
+            columns: ["opponent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaderboard_points_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leaderboard_weeks: {
+        Row: {
+          closed_at: string
+          week: string
+        }
+        Insert: {
+          closed_at?: string
+          week: string
+        }
+        Update: {
+          closed_at?: string
+          week?: string
+        }
+        Relationships: []
+      }
       level_rewards: {
         Row: {
           coins: number
@@ -3330,6 +3451,7 @@ export type Database = {
       }
       forfeit_match: { Args: { p_match_id: string }; Returns: Json }
       game_day: { Args: { p_at?: string }; Returns: string }
+      game_week: { Args: { p_day: string }; Returns: string }
       get_achievements: { Args: never; Returns: Json }
       get_active_match: { Args: never; Returns: Json }
       get_bestiary: { Args: never; Returns: Json }
@@ -3469,6 +3591,27 @@ export type Database = {
         Returns: boolean
       }
       is_quadrant: { Args: { p_format: string }; Returns: boolean }
+      leaderboard_board_name: { Args: { p_board: string }; Returns: string }
+      leaderboard_board_title: { Args: { p_board: string }; Returns: string }
+      leaderboard_close_week: { Args: never; Returns: undefined }
+      leaderboard_range: {
+        Args: { p_board: string; p_period: string }
+        Returns: Record<string, unknown>
+      }
+      leaderboard_record_match: {
+        Args: { p_match: Database["public"]["Tables"]["matches"]["Row"] }
+        Returns: undefined
+      }
+      leaderboard_rows: {
+        Args: { p_board: string; p_from: string; p_to: string }
+        Returns: {
+          detail: Json
+          reached_at: string
+          user_id: string
+          value: number
+          value2: number
+        }[]
+      }
       leave_queue: { Args: never; Returns: undefined }
       level_for_xp: { Args: { p_xp: number }; Returns: number }
       mark_event_rewards_seen: {
