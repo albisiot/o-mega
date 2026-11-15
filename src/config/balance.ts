@@ -85,6 +85,30 @@ export const balance = {
   },
 
   /**
+   * Classifiche (SPEC §8.6): leaderboard points per match, written by the server when a
+   * match ends (game_config `leaderboards.*`). A draw gives half, a loss and an abandoned
+   * match nothing.
+   */
+  leaderboards: {
+    /** Players shown in a leaderboard; the player's own place is shown below when lower. */
+    size: 10,
+    /** Points for a win against a person, or against a bot by difficulty. */
+    points: {
+      person: 10,
+      superPro: 6,
+      hard: 4,
+      medium: 2,
+      easy: 1,
+    },
+    /** Points a player can earn from bots in a game day, all modes together (0 = no cap). */
+    botDailyCap: 40,
+    /** Matches against the same person that give points in a game day (0 = no limit). */
+    sameOpponentDaily: 3,
+    /** Matches on a board before the win rate shows. */
+    minMatchesForRate: 10,
+  },
+
+  /**
    * Grande Minaccia (SPEC §5.12): a boss with five fronts and a points table visible
    * from the start; a character placed on a front stays there and scores every turn.
    * Simulated on the real catalog. The turn timer is the match's round timer.
