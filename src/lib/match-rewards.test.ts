@@ -49,6 +49,15 @@ const SETTINGS = {
   "emergency.rewards.tier1_coins": 10,
   "emergency.rewards.tier2_coins": 15,
   "emergency.rewards.tier3_coins": 25,
+  "emergency.prizes.min_passed": 1,
+  "emergency.prizes.rank1_coins": 50,
+  "emergency.prizes.rank1_packs": 1,
+  "emergency.prizes.rank2_coins": 100,
+  "emergency.prizes.rank2_packs": 0,
+  "emergency.prizes.rank3_coins": 75,
+  "emergency.prizes.rank3_packs": 0,
+  "emergency.prizes.others_coins": 25,
+  "emergency.prizes.others_packs": 0,
 };
 
 describe("match rewards", () => {
@@ -88,6 +97,8 @@ describe("match rewards", () => {
     expect(rewardsProblem(RULES, { ...SETTINGS, "emergency.rewards.tier1_coins": 0 }, 8)).toMatch(/tra 1 e/);
     expect(rewardsProblem(RULES, { ...SETTINGS, "emergency.rewards.tier2_passed": 3 }, 8)).toMatch(/soglie/);
     expect(rewardsProblem(RULES, SETTINGS, 7)).toMatch(/soglie/);
+    expect(rewardsProblem(RULES, { ...SETTINGS, "emergency.prizes.rank2_packs": 4 }, 8)).toMatch(/tra 0 e 3/);
+    expect(rewardsProblem(RULES, { ...SETTINGS, "emergency.prizes.min_passed": 9 }, 8)).toMatch(/classifica/);
   });
 
   it("sends only what changed", () => {

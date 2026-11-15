@@ -30,7 +30,16 @@ export type RewardSettingKey =
   | "emergency.rewards.tier3_passed"
   | "emergency.rewards.tier1_coins"
   | "emergency.rewards.tier2_coins"
-  | "emergency.rewards.tier3_coins";
+  | "emergency.rewards.tier3_coins"
+  | "emergency.prizes.min_passed"
+  | "emergency.prizes.rank1_coins"
+  | "emergency.prizes.rank1_packs"
+  | "emergency.prizes.rank2_coins"
+  | "emergency.prizes.rank2_packs"
+  | "emergency.prizes.rank3_coins"
+  | "emergency.prizes.rank3_packs"
+  | "emergency.prizes.others_coins"
+  | "emergency.prizes.others_packs";
 
 export type MatchRewards = {
   rules: MatchRewardRule[];
@@ -134,6 +143,15 @@ export const SETTING_LIMITS: Record<RewardSettingKey, { min: number; max: number
   "emergency.rewards.tier1_coins": { min: 1, max: 10000 },
   "emergency.rewards.tier2_coins": { min: 1, max: 10000 },
   "emergency.rewards.tier3_coins": { min: 1, max: 10000 },
+  "emergency.prizes.min_passed": { min: 0, max: 100 },
+  "emergency.prizes.rank1_coins": { min: 0, max: 10000 },
+  "emergency.prizes.rank1_packs": { min: 0, max: 3 },
+  "emergency.prizes.rank2_coins": { min: 0, max: 10000 },
+  "emergency.prizes.rank2_packs": { min: 0, max: 3 },
+  "emergency.prizes.rank3_coins": { min: 0, max: 10000 },
+  "emergency.prizes.rank3_packs": { min: 0, max: 3 },
+  "emergency.prizes.others_coins": { min: 0, max: 10000 },
+  "emergency.prizes.others_packs": { min: 0, max: 3 },
 };
 
 /** The modes to show: the known ones present on the server, then any other key it sends. */
@@ -226,6 +244,9 @@ export function rewardsProblem(
   const tiers = [1, 2, 3].map((tier) => settings[`emergency.rewards.tier${tier}_passed` as RewardSettingKey]);
   if (!(tiers[0] < tiers[1] && tiers[1] < tiers[2] && tiers[2] <= threatsPerRun)) {
     return `Le soglie dell'Emergenza devono crescere e arrivare al massimo a ${threatsPerRun} Minacce.`;
+  }
+  if (settings["emergency.prizes.min_passed"] > threatsPerRun) {
+    return `Per i premi della classifica bastano al massimo ${threatsPerRun} Minacce superate.`;
   }
   return null;
 }

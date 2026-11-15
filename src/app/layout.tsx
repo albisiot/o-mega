@@ -20,6 +20,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import { BottomNav } from "@/components/bottom-nav";
 import { NoZoom } from "@/components/no-zoom";
 import { NotificationBanner } from "@/components/notification-banner";
+import { EmergencyPrizePopup } from "@/components/emergency-prize-popup";
 import { PlaceMemory } from "@/components/place-memory";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { Suspense } from "react";
@@ -93,6 +94,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {children}
           <BottomNav />
           <NotificationBanner />
+          <EmergencyPrizePopup />
           <AppSplash />
         </AuthProvider>
         <ServiceWorkerRegistration />

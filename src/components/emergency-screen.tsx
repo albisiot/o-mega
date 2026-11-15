@@ -19,6 +19,7 @@ import { knownLevels, levelText, rarityGlow, rarityTitle } from "@/lib/threat-ra
 import { abilityChips } from "@/lib/ability-marks";
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { balance } from "@/config/balance";
+import { prizeTableText } from "@/lib/emergency-prizes";
 import { describeEventPoints } from "@/lib/events";
 import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
@@ -870,6 +871,7 @@ function Leaderboard() {
           <RankList board={board} />
         </div>
       )}
+      {board && <PrizeLine board={board} />}
     </section>
   );
 }
@@ -888,6 +890,20 @@ function Podium({ board, failed }: { board: EmergencyLeaderboard | null; failed:
       <p className="mt-1 text-center text-xs font-semibold text-muted">
         {board.players === 1 ? "1 giocatore oggi" : `${board.players} giocatori oggi`}
       </p>
+      <PrizeLine board={board} />
     </div>
+  );
+}
+
+/** What the places win at midnight, when the day's leaderboard is final. */
+function PrizeLine({ board }: { board: EmergencyLeaderboard }) {
+  if (!board.prizes || board.prizes.length === 0) return null;
+  const minPassed = board.prize_min_passed ?? 0;
+  return (
+    <p className="shrink-0 text-center text-[11px] font-semibold leading-4 text-muted">
+      <span className="font-extrabold text-comic-yellow">Premi a mezzanotte: </span>
+      {prizeTableText(board.prizes)}
+      {minPassed > 0 && ` (con almeno ${minPassed === 1 ? "1 Minaccia superata" : `${minPassed} Minacce superate`})`}
+    </p>
   );
 }

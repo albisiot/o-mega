@@ -1,6 +1,7 @@
 import type { ScoreParts, ThreatModifier } from "@o-mega/game-engine";
 import { invokeFunction, type MatchCard } from "@/lib/match";
 import type { ThreatRarity } from "@/lib/threat-rarity";
+import type { EmergencyPrizeTier } from "@/lib/emergency-prizes";
 import { getSupabase } from "@/lib/supabase/client";
 
 export type EmergencyThreat = {
@@ -95,7 +96,15 @@ export type EmergencyRank = {
   is_me: boolean;
 };
 
-export type EmergencyLeaderboard = { players: number; top: EmergencyRank[]; me: EmergencyRank | null };
+export type EmergencyLeaderboard = {
+  players: number;
+  top: EmergencyRank[];
+  me: EmergencyRank | null;
+  /** What each place wins when the day ends; missing from a server before the prizes. */
+  prizes?: EmergencyPrizeTier[];
+  /** Threats passed needed to win a prize. */
+  prize_min_passed?: number;
+};
 
 export async function fetchEmergencyLeaderboard(): Promise<EmergencyLeaderboard> {
   const { data, error } = await getSupabase().rpc("get_emergency_leaderboard");

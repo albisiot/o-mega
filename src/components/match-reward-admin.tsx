@@ -210,6 +210,55 @@ export function MatchRewardAdmin({ initial }: { initial: MatchRewards }) {
                   })}
                 </div>
               </section>
+              <section aria-label="Premi della classifica Emergenza" className="flex flex-col gap-2 bg-panel px-3 py-2">
+                <h2 className="font-display text-xl uppercase leading-6">Premi della classifica</h2>
+                <p className="text-[11px] font-medium leading-4 text-muted">
+                  A mezzanotte la classifica di giornata dell&apos;Emergenza è definitiva: i primi della classifica
+                  ricevono questi premi e li riscuotono da un popup. «Dal 4°» vale fino all&apos;ultimo posto mostrato.
+                  Un posto con 0 monete e 0 pacchetti non vince niente.
+                </p>
+                <SettingRow
+                  label="Minacce superate minime"
+                  hint={`Per vincere un premio · 0 = basta finire (al massimo ${saved.emergency_threats_per_run})`}
+                  value={settings["emergency.prizes.min_passed"]}
+                  onChange={(value) => setSetting("emergency.prizes.min_passed", value)}
+                />
+                <div className="grid grid-cols-[4.5rem_repeat(2,minmax(0,1fr))] items-center gap-x-1.5 gap-y-1">
+                  <span aria-hidden />
+                  <span className="text-center text-[11px] font-extrabold uppercase text-faint">Monete</span>
+                  <span className="text-center text-[11px] font-extrabold uppercase text-faint">Pacchetti</span>
+                  {(
+                    [
+                      ["rank1", "1° posto"],
+                      ["rank2", "2° posto"],
+                      ["rank3", "3° posto"],
+                      ["others", "Dal 4°"],
+                    ] as const
+                  ).map(([tier, label]) => {
+                    const coins = `emergency.prizes.${tier}_coins` as RewardSettingKey;
+                    const packs = `emergency.prizes.${tier}_packs` as RewardSettingKey;
+                    return (
+                      <div key={tier} className="contents">
+                        <span className="text-[13px] font-bold leading-4">{label}</span>
+                        <input
+                          inputMode="numeric"
+                          value={settings[coins]}
+                          onChange={(event) => setSetting(coins, event.target.value)}
+                          aria-label={`${label}: monete`}
+                          className={NUMBER}
+                        />
+                        <input
+                          inputMode="numeric"
+                          value={settings[packs]}
+                          onChange={(event) => setSetting(packs, event.target.value)}
+                          aria-label={`${label}: pacchetti`}
+                          className={NUMBER}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
             </>
           )}
         </div>

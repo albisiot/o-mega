@@ -94,6 +94,8 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   achievement_not_completed: "Non hai ancora compiuto questa impresa.",
   achievement_already_claimed: "Hai già riscattato il premio di questa impresa.",
   achievement_not_found: "Impresa non trovata: ricarica la pagina.",
+  emergency_prize_already_claimed: "Hai già riscosso questo premio della classifica.",
+  emergency_prize_not_found: "Premio non trovato: riapri l'app.",
   achievement_in_use: "Qualcuno ha già compiuto questa impresa: disattivala invece di eliminarla.",
   achievement_already_completed: "Questo giocatore ha già questa impresa.",
   invalid_achievement:

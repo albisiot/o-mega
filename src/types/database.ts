@@ -3238,6 +3238,7 @@ export type Database = {
         Returns: string[]
       }
       claim_achievement: { Args: { p_achievement_id: string }; Returns: Json }
+      claim_emergency_prize: { Args: { p_prize_id: string }; Returns: Json }
       claim_conquest_card: {
         Args: { p_card_instance_id: string; p_match_id: string }
         Returns: Json
@@ -3469,6 +3470,7 @@ export type Database = {
       get_conquest_status: { Args: never; Returns: Json }
       get_daily_objectives: { Args: never; Returns: Json }
       get_emergency_leaderboard: { Args: never; Returns: Json }
+      get_emergency_prizes: { Args: never; Returns: Json }
       get_event: { Args: never; Returns: Json }
       get_event_points_for: { Args: { p_ref_id: string }; Returns: Json }
       get_leaderboard: {
