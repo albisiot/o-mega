@@ -12,6 +12,7 @@ import { PlayerAvatar } from "@/components/player-avatar";
 import { Sheet } from "@/components/sheet";
 import { balance } from "@/config/balance";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
+import { useOpponentTitle } from "@/lib/achievements";
 import { describeServerError } from "@/lib/errors";
 import { describeEventPoints } from "@/lib/events";
 import {
@@ -264,6 +265,8 @@ function TripleSteps({ initial }: { initial: TripleView }) {
   );
   const shownRound = revealing === null ? null : (view.rounds.find((r) => r.round === revealing) ?? null);
   const rival = rivalLabel(view);
+  // The opponent's title (Imprese, SPEC §8.5): the name is already on the line below.
+  const rivalTitle = useOpponentTitle(view.id, !isBot && Boolean(view.opponent));
   // What the strip (and the threats sheet) shows: the match before the round on screen, until its totals are out.
   const strip = held && revealing !== null ? tripleBeforeRound(view, revealing) : view;
   useLockedScreen(true);
@@ -276,7 +279,7 @@ function TripleSteps({ initial }: { initial: TripleView }) {
       <header className="relative flex items-center gap-1.5 px-3 py-1">
         <div className="min-w-0 max-w-[8rem] shrink-0 leading-none">
           <p className="truncate text-[10px] font-bold text-muted">
-            {view.mode === "bot" ? `Allarme Triplo · ${rival}` : `Amichevole · ${rival}`}
+            {view.mode === "bot" ? `Allarme Triplo · ${rival}` : `Amichevole · ${rivalTitle ? `«${rivalTitle}»` : rival}`}
           </p>
           <p className="mt-0.5 flex items-baseline gap-1 text-[11px] font-extrabold uppercase">
             Tu

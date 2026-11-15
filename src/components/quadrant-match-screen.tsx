@@ -10,6 +10,7 @@ import { Sheet } from "@/components/sheet";
 import { balance } from "@/config/balance";
 import { artSrcSet } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
+import { useOpponentTitle } from "@/lib/achievements";
 import { describeServerError } from "@/lib/errors";
 import { describeEventPoints } from "@/lib/events";
 import { claimVictory, DIFFICULTY_LABELS, fetchMatchState, forfeitMatch, pingMatch, subscribeToUpdates, type MatchCard } from "@/lib/match";
@@ -298,13 +299,15 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
   }
 
   const rival = rivalLabel(view);
+  // The opponent's title (Imprese, SPEC §8.5): the name is already on the line below.
+  const rivalTitle = useOpponentTitle(view.id, !isBot && Boolean(view.opponent));
 
   return (
     <div className="game-shell">
       <header className="relative flex items-center gap-1.5 px-3 py-1">
         <div className="min-w-0 flex-1 leading-none">
           <p className="truncate text-[10px] font-bold text-muted">
-            Quadrante · {QUADRANT_GRID_LABELS[view.format]} · {view.mode === "bot" ? rival : `Amichevole · ${rival}`}
+            Quadrante · {QUADRANT_GRID_LABELS[view.format]} · {view.mode === "bot" ? rival : `Amichevole · ${rivalTitle ? `«${rivalTitle}»` : rival}`}
           </p>
           <p className="mt-0.5 flex items-baseline gap-1 text-[11px] font-extrabold uppercase">
             <span className="text-comic-cyan">Tu</span>
