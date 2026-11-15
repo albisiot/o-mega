@@ -91,6 +91,11 @@ begin
 end;
 $$;
 
+-- Both rows were written in this one transaction, so they share now(): in real play they
+-- come from different transactions. Spread them in time, so the order checked below is set.
+update public.player_notifications set created_at = created_at - interval '1 minute'
+where user_id = '00000000-0000-4000-8000-0000000000e1' and kind = 'objective_completed';
+
 -- B sees none of A's notifications and cannot mark them.
 select set_config('test.a_notification_ids', array_agg(id)::text, true) from public.player_notifications
 where user_id = '00000000-0000-4000-8000-0000000000e1';
