@@ -55,6 +55,21 @@ describe("easy and medium bots", () => {
 });
 
 describe("hard bot", () => {
+  it("plays Sacrificio early, so the characters after it get its bonus", () => {
+    // Both rounds look the same for both characters: only Sacrificio's lasting bonus tells them apart.
+    const sacrifice = character("sac", {}, { code: "sacrifice", params: { bonus: 2 } });
+    const other = character("other");
+    const pool: Threat[] = [threat("f1", ["FOR"])];
+    for (let seed = 1; seed <= 20; seed++) {
+      const choice = chooseBotPlay(
+        "hard",
+        view({ available: [other, sacrifice], futureLevels: [1], threatPool: pool, threatLevels: [1, 1] }),
+        mulberry32(seed),
+      );
+      expect(choice).toBe("sac");
+    }
+  });
+
   it("keeps the specialist for a low level and plays the generalist on a high level", () => {
     // Current threat: level 6 where the generalist scores 30 and the specialist 12-34.
     // Future: a level-1 threat, where a specialist's 10 shines.

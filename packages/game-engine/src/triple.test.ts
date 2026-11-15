@@ -211,6 +211,19 @@ describe("powers", () => {
     expect(state.rounds[0].winners).toEqual([null, "a", "b"]);
   });
 
+  it("gives Sacrificio's bonus to the side's cards on every threat, from the next round on", () => {
+    const a = deck("a");
+    a[0] = character("a0", { FOR: 9 }, power("sacrifice", { bonus: 2 }));
+    let state = play(tripleState(a, deck("b")));
+    expect(state.rounds[0].plays.a.map((p) => p.total)).toEqual([0, 8, 12]);
+    expect(state.rounds[0].winners[0]).toBe("b");
+    state = play(state);
+    expect(state.rounds[1].plays.a.map((p) => p.parts?.sacrifice)).toEqual([2, 2, 2]);
+    state = play(state);
+    expect(state.rounds[2].plays.a.map((p) => p.bonus)).toEqual([2, 2, 2]);
+    expect(state.rounds[2].plays.b.map((p) => p.bonus)).toEqual([0, 0, 0]);
+  });
+
   it("counts threats won as rounds won (Sfavorito) and the whole deck as the team (Legame)", () => {
     const b = deck("b", 5);
     const a = deck("a");

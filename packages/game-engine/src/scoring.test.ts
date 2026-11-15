@@ -8,6 +8,7 @@ import {
   hidesIdentity,
   revealsFutureThreats,
   revealsOpponentCharacter,
+  sacrificeBonus,
   scorePlay,
   type ScoreContext,
 } from "./scoring.ts";
@@ -70,7 +71,7 @@ describe("scorePlay", () => {
       bonus: 0,
       total: 12,
       highest: 9,
-      parts: { power: 0, carried: 0, pack: 0, modifier: 0, floor: 0 },
+      parts: { power: 0, carried: 0, pack: 0, sacrifice: 0, modifier: 0, floor: 0 },
     });
   });
 
@@ -78,9 +79,9 @@ describe("scorePlay", () => {
     const hero = character("h", { FOR: 9, TEC: 3 }, { code: "ability_bonus", params: { ability: "FOR", bonus: 2 } });
     const hostile = { ...threat("t", ["FOR", "TEC"]), modifier: { code: "hostile_ground" as const, favored: "heroes", hindered: "villains", bonus: 3, malus: 2 } };
     const play = scorePlay({ ...hero, faction: "heroes" }, hostile, { ...context, carriedBonus: 2 });
-    expect(play.parts).toEqual({ power: 2, carried: 2, pack: 0, modifier: 3, floor: 0 });
+    expect(play.parts).toEqual({ power: 2, carried: 2, pack: 0, sacrifice: 0, modifier: 3, floor: 0 });
     const parts = play.parts!;
-    expect(parts.power + parts.carried + parts.pack + parts.modifier + parts.floor).toBe(play.bonus);
+    expect(parts.power + parts.carried + parts.pack + parts.sacrifice! + parts.modifier + parts.floor).toBe(play.bonus);
   });
 
   it("counts what the floor at 0 gave back", () => {
@@ -88,7 +89,7 @@ describe("scorePlay", () => {
     const priced = { ...threat("t", ["FOR"]), modifier: { code: "price" as const, maxValue: 1, malus: 3 } };
     const play = scorePlay(weak, priced, context);
     expect(play.total).toBe(0);
-    expect(play.parts).toEqual({ power: 0, carried: 0, pack: 0, modifier: 0, floor: 3 });
+    expect(play.parts).toEqual({ power: 0, carried: 0, pack: 0, sacrifice: 0, modifier: 0, floor: 3 });
     expect(play.bonus).toBe(3);
   });
 
@@ -366,10 +367,60 @@ describe("backlog powers (docs/POWERS-BACKLOG.md)", () => {
     expect(scorePlay({ ...adaptable, faction: "heroes" }, hostile, context).total).toBe(15);
   });
 
-  it("Sacrificio scores 0 and passes its bonus whatever the outcome", () => {
-    const sacrifice = character("s", { FOR: 9 }, power("sacrifice", { bonus: 5 }));
-    expect(scorePlay(sacrifice, two, { ...context, carriedBonus: 2 })).toMatchObject({ base: 13, bonus: -13, total: 0, highest: 0 });
-    for (const outcome of ["won", "lost", "void"] as const) expect(carriedBonusAfter(sacrifice, outcome)).toBe(5);
+  it("Sacrificio scores 0, the bonuses it received included, and passes nothing to the next round only", () => {
+    const sacrifice = character("s", { FOR: 9 }, power("sacrifice", { bonus: 2 }));
+    const leader = { ...character("l", {}, power("pack_leader", { bonus: 1 })), faction: sacrifice.faction };
+    expect(scorePlay(sacrifice, two, { ...context, carriedBonus: 2, played: [leader, { ...sacrifice, id: "s0" }] })).toMatchObject({
+      base: 13,
+      bonus: -13,
+      total: 0,
+      highest: 0,
+    });
+    // Its bonus lasts: it is not a bonus carried into the next round.
+    for (const outcome of ["won", "lost", "void"] as const) expect(carriedBonusAfter(sacrifice, outcome)).toBe(0);
+  });
+
+  it("Sacrificio gives every later character of the side its bonus, whatever the faction", () => {
+    const sacrifice = { ...character("s", {}, power("sacrifice", { bonus: 2 })), faction: "heroes" };
+    const hero = { ...character("h"), faction: "heroes" };
+    const villain = { ...character("v"), faction: "villains" };
+    expect(sacrificeBonus([sacrifice])).toBe(2);
+    expect(scorePlay(hero, two, { ...context, played: [sacrifice] }).parts).toMatchObject({ sacrifice: 2, pack: 0, carried: 0 });
+    expect(scorePlay(villain, two, { ...context, played: [sacrifice] }).bonus).toBe(2);
+    // To the end of the match, not only in the next round.
+    expect(scorePlay(hero, two, { ...context, played: [sacrifice, character("x"), character("y")] }).bonus).toBe(2);
+    // Two of them add up.
+    expect(scorePlay(hero, two, { ...context, played: [sacrifice, { ...sacrifice, id: "s2" }] }).bonus).toBe(4);
+    // Stopped by an Annullatore in its round: played without its power, it gives nothing.
+    expect(scorePlay(hero, two, { ...context, played: [{ ...sacrifice, power: null }] }).bonus).toBe(0);
+  });
+
+  it("Sacrificio's bonus still counts when the later character loses its own power", () => {
+    const sacrifice = character("s", {}, power("sacrifice", { bonus: 2 }));
+    const opener = character("o", {}, power("opener", { bonus: 3, max_round: 5 }));
+    // An opposing Annullatore takes the opener's power away, not the bonus it receives.
+    const nullified = asPlayedAgainst(opener, character("n", {}, power("nullifier")));
+    expect(scorePlay(nullified, two, { ...context, played: [sacrifice] }).bonus).toBe(2);
+    // Silenzio della tomba: no power acts in the round, the lasting bonus still does.
+    const tomb = { ...two, modifier: { code: "tomb_silence" as const } };
+    expect(scorePlay(opener, tomb, { ...context, played: [sacrifice] }).bonus).toBe(2);
+  });
+
+  it("Catalizzatore does not double Sacrificio's bonus", () => {
+    const sacrifice = character("s", {}, power("sacrifice", { bonus: 2 }));
+    const catalyst = character("c", {}, power("catalyst", { multiplier: 2 }));
+    const opener = character("o", {}, power("opener", { bonus: 3, max_round: 5 }));
+    expect(scorePlay(opener, two, { ...context, played: [sacrifice, catalyst] }).parts).toMatchObject({ power: 6, sacrifice: 2 });
+    expect(scorePlay(character("x"), two, { ...context, played: [sacrifice, catalyst] }).bonus).toBe(2);
+  });
+
+  it("under Rovescio Sacrificio still scores 0, and its bonus raises the later scores", () => {
+    const reverse = { ...two, modifier: { code: "reverse" as const } };
+    const sacrifice = character("s", { FOR: 9 }, power("sacrifice", { bonus: 2 }));
+    const zero = scorePlay(sacrifice, reverse, context);
+    expect(zero.total).toBe(0);
+    expect(compareScores(zero, scorePlay(character("x", { FOR: 1, VEL: 0 }), reverse, context), reverse)).toBe("a");
+    expect(scorePlay(character("x"), reverse, { ...context, played: [sacrifice] }).total).toBe(10);
   });
 
   it("Capobranco gives every later character of its faction its bonus", () => {

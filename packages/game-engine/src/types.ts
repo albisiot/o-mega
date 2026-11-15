@@ -109,7 +109,12 @@ export type AbilityFamilies = Record<AbilityCode, string>;
  * character (Riscossa, Slancio, Sacrificio), Capobranco, the threat's rule points, and what
  * the floor at 0 gave back. The parts always add up to the play's bonus.
  */
-export type ScoreParts = { power: number; carried: number; pack: number; modifier: number; floor: number };
+/**
+ * Where a play's bonus comes from: its own power, the bonus carried from the side's
+ * previous character (Riscossa, Slancio), Capobranco, Sacrificio, the threat's rule and
+ * what the floor at 0 gave back. Plays stored before Sacrificio lasted have no `sacrifice`.
+ */
+export type ScoreParts = { power: number; carried: number; pack: number; sacrifice?: number; modifier: number; floor: number };
 
 export type PlayScore = {
   characterId: string;

@@ -157,11 +157,14 @@ describe("backlog powers in Emergenza", () => {
     expect(play([1, 4]).score.bonus).toBe(0);
   });
 
-  it("Sacrificio fails its threat and passes its bonus", () => {
-    const sacrifice = withPower({ code: "sacrifice", params: { bonus: 5 } }, { FOR: 10 });
+  it("Sacrificio fails its threat, then every later play gets its bonus", () => {
+    const sacrifice = withPower({ code: "sacrifice", params: { bonus: 2 } }, { FOR: 10 });
     expect(resolve(sacrifice).passed).toBe(false);
-    const after = resolve(character("next", { FOR: 2 }), FOR_THREAT, [{ character: sacrifice, passed: false, level: 1 }]);
-    expect(after.score.total).toBe(7);
-    expect(after.passed).toBe(true);
+    const attempts = [{ character: sacrifice, passed: false, level: 1 }];
+    const after = resolve(character("next", { FOR: 2 }), FOR_THREAT, attempts);
+    expect(after.score).toMatchObject({ total: 4, parts: { sacrifice: 2 } });
+    // Still there three plays later.
+    const later = [...attempts, ...["x", "y", "z"].map((id) => ({ character: character(id), passed: true, level: 1 }))];
+    expect(resolve(character("last", { FOR: 2 }), FOR_THREAT, later).score.total).toBe(4);
   });
 });

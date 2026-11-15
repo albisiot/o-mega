@@ -43,7 +43,7 @@ const insula = card("P223", "neutrals", "beta", [3, 2, 8, 10, 10, 7, 0, 0, 9, 1,
 const recesso = card("P224", "heroes", "beta", [5, 7, 6, 6, 4, 1, 0, 10, 0, 10, 1, 7], p("reflect"));
 const dittograph = card("P225", "villains", "beta", [3, 4, 5, 10, 2, 3, 0, 10, 0, 4, 10, 6], p("eclectic", { bonus: 3, min_families: 3 }));
 const praesidium = card("P226", "neutrals", "beta", [8, 5, 8, 2, 8, 6, 7, 0, 0, 8, 0, 5], p("main_event", { bonus: 3 }));
-const residuo = card("P227", "heroes", "alfa", [7, 5, 10, 5, 3, 4, 0, 7, 0, 10, 1, 6], p("sacrifice", { bonus: 5 }));
+const residuo = card("P227", "heroes", "alfa", [7, 5, 10, 5, 3, 4, 0, 7, 0, 10, 1, 6], p("sacrifice", { bonus: 3 }));
 const afterimage = card("P228", "heroes", "alfa", [4, 8, 5, 6, 3, 7, 0, 0, 5, 8, 3, 9], p("echo"));
 const gymnasiarch = card("P229", "neutrals", "alfa", [5, 3, 6, 8, 10, 8, 0, 0, 1, 7, 4, 6], p("catalyst", { multiplier: 2 }));
 const matins = card("P230", "villains", "omega", [3, 0, 10, 6, 9, 10, 2, 3, 10, 2, 1, 5], p("pack_leader", { bonus: 1 }));
@@ -193,24 +193,39 @@ describe("Grande prova: Praesidium", () => {
 });
 
 describe("Sacrificio: Residuo", () => {
-  it("scores 0 and gives the next card 5, whatever happened", () => {
-    const threats = [t("x1", ["RES", "COM"]), t("x2", ["FOR"]), ...FILLER.slice(1)];
+  it("scores 0, then every later card of its side gets 3 until the end of the match", () => {
+    const threats = [t("x1", ["RES", "COM"]), t("x2", ["FOR"]), t("x3", ["COM"]), ...FILLER.slice(2)];
     let state = match([residuo, gantry, strata, portineria, scion], [sottovento, onorario, gantry, strata, portineria], threats);
     const first = play(state, residuo, sottovento);
     expect(first.round.plays.a.total).toBe(0);
     expect(first.round.winner).toBe("b");
     state = first.state;
     const second = play(state, gantry, onorario);
-    expect(second.round.plays.a.parts?.carried).toBe(5);
-    expect(second.round.plays.a.total).toBe(15);
+    expect(second.round.plays.a.parts).toMatchObject({ carried: 0, sacrifice: 3 });
+    expect(second.round.plays.a.total).toBe(13);
+    const third = play(second.state, strata, gantry);
+    expect(third.round.plays.a).toMatchObject({ total: 5, parts: { sacrifice: 3 } });
+    expect(third.round.plays.b.parts?.sacrifice).toBe(0);
   });
 
-  it("wins under Rovescio: its 0 is the lowest score", () => {
-    const state = match([residuo, gantry, strata, portineria, scion], [sottovento, onorario, gantry, strata, portineria], [
+  it("against an Annullatore scores as usual and gives nothing", () => {
+    const threats = [t("x1", ["RES", "COM"]), t("x2", ["FOR"]), ...FILLER.slice(1)];
+    let state = match([residuo, gantry, strata, portineria, scion], [codicil, onorario, gantry, strata, portineria], threats);
+    const first = play(state, residuo, codicil);
+    expect(first.round.plays.a.total).toBe(20);
+    state = first.state;
+    expect(play(state, gantry, onorario).round.plays.a).toMatchObject({ total: 10, parts: { sacrifice: 0 } });
+  });
+
+  it("wins under Rovescio: its 0 is the lowest score, and its bonus starts all the same", () => {
+    let state = match([residuo, gantry, strata, portineria, scion], [sottovento, onorario, gantry, strata, portineria], [
       t("x", ["RES", "COM"], { code: "reverse" }),
       ...FILLER,
     ]);
-    expect(play(state, residuo, sottovento).round.winner).toBe("a");
+    const first = play(state, residuo, sottovento);
+    expect(first.round.winner).toBe("a");
+    state = first.state;
+    expect(play(state, gantry, onorario).round.plays.a.parts?.sacrifice).toBe(3);
   });
 });
 
@@ -288,6 +303,14 @@ describe("in Emergenza", () => {
     expect(resolveEmergencyPlay({ character: insula, threat, squad, attempts: [], rules, families: FAMILIES }).score.parts?.power).toBe(5);
     expect(resolveEmergencyPlay({ character: statera, threat, squad: [statera], attempts: [], rules, families: FAMILIES }).score.parts?.power).toBe(0);
     expect(resolveEmergencyPlay({ character: billable, threat, squad: [billable], attempts: [], rules, families: FAMILIES }).score.parts?.power).toBe(0);
+  });
+
+  it("Sacrificio fails its threat, then every later play gets 3", () => {
+    const threat = t("e", ["RES", "COM"]);
+    const failed = resolveEmergencyPlay({ character: residuo, threat, squad, attempts: [], rules, families: FAMILIES });
+    expect(failed).toMatchObject({ passed: false, score: { total: 0 } });
+    const attempts = [{ character: residuo, passed: false, level: 2 }, { character: gantry, passed: true, level: 2 }];
+    expect(resolveEmergencyPlay({ character: strata, threat, squad, attempts, rules, families: FAMILIES }).score.parts?.sacrifice).toBe(3);
   });
 
   it("Adattabile does nothing on the threats of Nuova Megara, which have no rule", () => {
