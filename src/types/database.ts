@@ -1806,6 +1806,47 @@ export type Database = {
           },
         ]
       }
+      player_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          data: Json
+          id: string
+          kind: string
+          seen_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          data?: Json
+          id?: string
+          kind: string
+          seen_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          data?: Json
+          id?: string
+          kind?: string
+          seen_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       power_definitions: {
         Row: {
           code: string
@@ -2622,6 +2663,16 @@ export type Database = {
       add_daily_objective_progress: {
         Args: { p_amount: number; p_objective_id: string }
         Returns: undefined
+      }
+      add_player_notification: {
+        Args: {
+          p_body: string
+          p_data: Json
+          p_kind: string
+          p_title: string
+          p_user: string
+        }
+        Returns: string
       }
       admin_bonus_codes_payload: { Args: never; Returns: Json }
       admin_boss_table_payload: { Args: never; Returns: Json }
