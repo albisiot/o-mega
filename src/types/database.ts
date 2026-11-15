@@ -67,6 +67,72 @@ export type Database = {
         }
         Relationships: []
       }
+      achievements: {
+        Row: {
+          available_until: string | null
+          card_definition_ids: string[]
+          card_variant_ids: string[]
+          coins: number
+          counts_from: string | null
+          created_at: string
+          description: string
+          hint: string | null
+          id: string
+          is_active: boolean
+          metric: string
+          name: string
+          packs: number
+          params: Json
+          position: number
+          target: number
+          tier: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          available_until?: string | null
+          card_definition_ids?: string[]
+          card_variant_ids?: string[]
+          coins?: number
+          counts_from?: string | null
+          created_at?: string
+          description: string
+          hint?: string | null
+          id?: string
+          is_active?: boolean
+          metric: string
+          name: string
+          packs?: number
+          params?: Json
+          position: number
+          target: number
+          tier: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          available_until?: string | null
+          card_definition_ids?: string[]
+          card_variant_ids?: string[]
+          coins?: number
+          counts_from?: string | null
+          created_at?: string
+          description?: string
+          hint?: string | null
+          id?: string
+          is_active?: boolean
+          metric?: string
+          name?: string
+          packs?: number
+          params?: Json
+          position?: number
+          target?: number
+          tier?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string
@@ -1806,6 +1872,75 @@ export type Database = {
           },
         ]
       }
+      player_achievements: {
+        Row: {
+          achievement_id: string
+          card_definition_ids: string[]
+          card_variant_ids: string[]
+          claimed_at: string | null
+          coins: number
+          completed_at: string
+          description: string
+          granted: boolean
+          name: string
+          opening_ids: string[]
+          packs: number
+          seen_at: string | null
+          tier: string
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          card_definition_ids?: string[]
+          card_variant_ids?: string[]
+          claimed_at?: string | null
+          coins: number
+          completed_at?: string
+          description: string
+          granted?: boolean
+          name: string
+          opening_ids?: string[]
+          packs: number
+          seen_at?: string | null
+          tier: string
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          card_definition_ids?: string[]
+          card_variant_ids?: string[]
+          claimed_at?: string | null
+          coins?: number
+          completed_at?: string
+          description?: string
+          granted?: boolean
+          name?: string
+          opening_ids?: string[]
+          packs?: number
+          seen_at?: string | null
+          tier?: string
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_notifications: {
         Row: {
           body: string
@@ -2663,6 +2798,64 @@ export type Database = {
       }
     }
     Functions: {
+      achievement_available: {
+        Args: {
+          p_achievement: Database["public"]["Tables"]["achievements"]["Row"]
+        }
+        Returns: boolean
+      }
+      achievement_from_draft: {
+        Args: { p_draft: Json }
+        Returns: {
+          available_until: string | null
+          card_definition_ids: string[]
+          card_variant_ids: string[]
+          coins: number
+          counts_from: string | null
+          created_at: string
+          description: string
+          hint: string | null
+          id: string
+          is_active: boolean
+          metric: string
+          name: string
+          packs: number
+          params: Json
+          position: number
+          target: number
+          tier: string
+          title: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "achievements"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      achievement_match_fits: {
+        Args: {
+          p_match: Database["public"]["Tables"]["matches"]["Row"]
+          p_params: Json
+          p_side: string
+        }
+        Returns: boolean
+      }
+      achievement_params_valid: {
+        Args: { p_metric: string; p_params: Json }
+        Returns: boolean
+      }
+      achievement_progress: {
+        Args: {
+          p_metric: string
+          p_params: Json
+          p_since: string
+          p_user: string
+        }
+        Returns: number
+      }
+      achievements_payload: { Args: { p_user: string }; Returns: Json }
       add_daily_objective_progress: {
         Args: { p_amount: number; p_objective_id: string }
         Returns: undefined
@@ -2677,6 +2870,7 @@ export type Database = {
         }
         Returns: string
       }
+      admin_achievements_payload: { Args: never; Returns: Json }
       admin_bonus_codes_payload: { Args: never; Returns: Json }
       admin_boss_table_payload: { Args: never; Returns: Json }
       admin_create_bonus_code: {
@@ -2692,11 +2886,17 @@ export type Database = {
         Returns: Json
       }
       admin_daily_objectives_payload: { Args: never; Returns: Json }
+      admin_delete_achievement: { Args: { p_id: string }; Returns: Json }
       admin_delete_daily_objective: { Args: { p_code: string }; Returns: Json }
       admin_delete_event: { Args: { p_id: string }; Returns: Json }
       admin_delete_special_pack: { Args: { p_id: string }; Returns: Json }
       admin_events_payload: { Args: never; Returns: Json }
       admin_get_boss_table: { Args: never; Returns: Json }
+      admin_grant_achievement: {
+        Args: { p_id: string; p_username: string }
+        Returns: Json
+      }
+      admin_list_achievements: { Args: never; Returns: Json }
       admin_list_bonus_codes: { Args: never; Returns: Json }
       admin_list_daily_objectives: { Args: never; Returns: Json }
       admin_list_events: { Args: never; Returns: Json }
@@ -2704,6 +2904,12 @@ export type Database = {
       admin_list_special_packs: { Args: never; Returns: Json }
       admin_list_threats: { Args: never; Returns: Json }
       admin_pack_cards_payload: { Args: never; Returns: Json }
+      admin_preview_achievement: { Args: { p_draft: Json }; Returns: Json }
+      admin_reorder_achievements: { Args: { p_ids: string[] }; Returns: Json }
+      admin_save_achievement: {
+        Args: { p_draft: Json; p_id: string }
+        Returns: Json
+      }
       admin_save_boss_table: {
         Args: {
           p_base_value: number
@@ -2760,6 +2966,10 @@ export type Database = {
           p_starts_at?: string
           p_variant_chance_percent: number
         }
+        Returns: Json
+      }
+      admin_set_achievement_active: {
+        Args: { p_id: string; p_is_active: boolean }
         Returns: Json
       }
       admin_set_bonus_code_active: {
@@ -2889,6 +3099,10 @@ export type Database = {
           }
       card_trait_codes: { Args: { p_definition_id: string }; Returns: Json }
       cards_lost_today: { Args: { p_user: string }; Returns: number }
+      check_achievements: {
+        Args: { p_metrics?: string[]; p_notify?: boolean; p_user: string }
+        Returns: number
+      }
       check_conquest_team: {
         Args: { p_instance_ids: string[]; p_user: string }
         Returns: string[]
@@ -2902,6 +3116,7 @@ export type Database = {
         Args: { p_instance_ids: string[]; p_size: number; p_user: string }
         Returns: string[]
       }
+      claim_achievement: { Args: { p_achievement_id: string }; Returns: Json }
       claim_conquest_card: {
         Args: { p_card_instance_id: string; p_match_id: string }
         Returns: Json
@@ -2924,6 +3139,14 @@ export type Database = {
           locked_copies: number
           starter_copies: number
         }[]
+      }
+      complete_achievement: {
+        Args: {
+          p_achievement: Database["public"]["Tables"]["achievements"]["Row"]
+          p_granted: boolean
+          p_user: string
+        }
+        Returns: boolean
       }
       config_int: { Args: { p_key: string }; Returns: number }
       config_text: { Args: { p_key: string }; Returns: string }
@@ -3107,6 +3330,7 @@ export type Database = {
       }
       forfeit_match: { Args: { p_match_id: string }; Returns: Json }
       game_day: { Args: { p_at?: string }; Returns: string }
+      get_achievements: { Args: never; Returns: Json }
       get_active_match: { Args: never; Returns: Json }
       get_bestiary: { Args: never; Returns: Json }
       get_collection: {
@@ -3127,31 +3351,16 @@ export type Database = {
       get_event_points_for: { Args: { p_ref_id: string }; Returns: Json }
       get_lobby_format: { Args: { p_code: string }; Returns: string }
       get_match_history: { Args: { p_limit?: number }; Returns: Json }
+      get_match_opponent_title: {
+        Args: { p_match_id: string }
+        Returns: string
+      }
       get_match_reward: { Args: { p_match_id: string }; Returns: Json }
       get_match_rewards: { Args: never; Returns: Json }
       get_match_state: { Args: { p_match_id: string }; Returns: Json }
       get_pack_odds: { Args: never; Returns: Json }
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
       get_pack_status: { Args: never; Returns: Json }
-      admin_delete_achievement: { Args: { p_id: string }; Returns: Json }
-      admin_grant_achievement: {
-        Args: { p_id: string; p_username: string }
-        Returns: Json
-      }
-      admin_list_achievements: { Args: never; Returns: Json }
-      admin_preview_achievement: { Args: { p_draft: Json }; Returns: Json }
-      admin_reorder_achievements: { Args: { p_ids: string[] }; Returns: Json }
-      admin_save_achievement: {
-        Args: { p_draft: Json; p_id: string }
-        Returns: Json
-      }
-      admin_set_achievement_active: {
-        Args: { p_id: string; p_is_active: boolean }
-        Returns: Json
-      }
-      claim_achievement: { Args: { p_achievement_id: string }; Returns: Json }
-      get_achievements: { Args: never; Returns: Json }
-      get_match_opponent_title: { Args: { p_match_id: string }; Returns: string }
       get_player_notifications: { Args: never; Returns: Json }
       get_special_packs: { Args: never; Returns: Json }
       get_story: { Args: never; Returns: Json }
@@ -3260,7 +3469,6 @@ export type Database = {
         Args: { p_event_id: string }
         Returns: undefined
       }
-      set_player_title: { Args: { p_achievement_id: string }; Returns: string }
       mark_player_notifications_seen: {
         Args: { p_ids: string[] }
         Returns: number
@@ -3510,6 +3718,10 @@ export type Database = {
         Returns: string
       }
       next_reset_at: { Args: { p_at?: string }; Returns: string }
+      notify_achievements: {
+        Args: { p_ids: string[]; p_user: string }
+        Returns: undefined
+      }
       notify_match: {
         Args: { p_kind: string; p_match_id: string }
         Returns: undefined
@@ -3706,6 +3918,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_player_title: { Args: { p_achievement_id: string }; Returns: string }
       set_username: {
         Args: { p_username: string }
         Returns: {
