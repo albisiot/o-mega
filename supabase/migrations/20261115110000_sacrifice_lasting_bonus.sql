@@ -19,7 +19,7 @@ where code = 'P227' and power_code = 'sacrifice';
 
 comment on column public.round_plays.parts is
   'Where the bonus comes from: {power, carried, pack, sacrifice, modifier, floor}, integers adding up to bonus '
-  '(no sacrifice before 20261115100000). Null for older plays.';
+  '(no sacrifice before 20261115110000). Null for older plays.';
 
 -- Whether some parts are well formed and add up to the play's bonus.
 create or replace function public.play_parts_valid(p_parts jsonb, p_bonus integer)

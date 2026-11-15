@@ -1,4 +1,4 @@
--- Test for 20261115100000_sacrifice_lasting_bonus.sql: Sacrificio's lasting bonus on
+-- Test for 20261115110000_sacrifice_lasting_bonus.sql: Sacrificio's lasting bonus on
 -- Residuo, its text, and the play parts with and without the `sacrifice` part. Runs inside
 -- a rolled-back transaction:
 --   npm run test:db

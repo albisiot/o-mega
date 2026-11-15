@@ -103,7 +103,7 @@ Simulatore: `scripts/simulate-powers.mts` (ricostruito: quello del 9 novembre no
 | +4 | 60,5% | 50,8% | +9,7 |
 | +5 | 68,3% | 50,8% | +17,6 |
 
-Solo +3 sta nella fascia 48-54%: è la cifra scelta (`bonus` 3, migrazione `20261115100000_sacrifice_lasting_bonus.sql`).
+Solo +3 sta nella fascia 48-54%: è la cifra scelta (`bonus` 3, migrazione `20261115110000_sacrifice_lasting_bonus.sql`).
 
 **Quando giocarlo** (2.000 partite per casella: la squadra gioca Residuo proprio in quel round, se la partita ci arriva; tra parentesi la differenza con lo stesso personaggio senza potere giocato nello stesso round):
 
