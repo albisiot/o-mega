@@ -20,6 +20,7 @@ import {
   type AchievementBoard,
   type CompletedAchievement,
 } from "@/lib/achievements";
+import { fetchLeaderboardTitles, type LeaderboardTitle } from "@/lib/leaderboards";
 import { packRevealHref } from "@/lib/packs";
 
 const dateFormat = new Intl.DateTimeFormat("it-IT", { dateStyle: "medium", timeZone: "Europe/Rome" });
@@ -29,9 +30,23 @@ export function AchievementsView() {
   const router = useRouter();
   const { profile, setProfile } = useAuth();
   const [board, setBoard] = useState<AchievementBoard | null>(null);
+  const [weeklyTitles, setWeeklyTitles] = useState<LeaderboardTitle[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ id: string; text: string; failed: boolean } | null>(null);
+
+  // The weekly titles of the Classifiche join the choice; without them the Imprese still show.
+  useEffect(() => {
+    let cancelled = false;
+    fetchLeaderboardTitles()
+      .then((next) => {
+        if (!cancelled) setWeeklyTitles(next);
+      })
+      .catch((cause: unknown) => console.error("Weekly titles failed", cause));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +65,7 @@ export function AchievementsView() {
   if (!board) return <p className="text-sm font-semibold text-muted">{error ?? "Caricamento delle imprese…"}</p>;
 
   const counts = tierCounts(board);
-  const titles = availableTitles(board);
+  const titles = availableTitles(board, weeklyTitles);
 
   const claim = (achievement: CompletedAchievement) => {
     setBusy(achievement.id);
@@ -118,7 +133,7 @@ export function AchievementsView() {
               <option value="">Nessun titolo</option>
               {titles.map((entry) => (
                 <option key={entry.id} value={entry.id}>
-                  {entry.title}
+                  {entry.weekly ? `${entry.title} (questa settimana)` : entry.title}
                 </option>
               ))}
             </select>

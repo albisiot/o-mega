@@ -149,14 +149,25 @@ export function describeAchievementReward(achievement: Pick<CompletedAchievement
   return parts.length > 0 ? parts.join(" · ") : "Solo la medaglia";
 }
 
-/** The titles the player can choose from, in board order, once each. */
-export function availableTitles(board: AchievementBoard): { id: string; title: string }[] {
+/**
+ * The titles the player can choose from, once each: the Imprese in board order, then the
+ * weekly titles of the Classifiche still held (`weekly: true`, they run out).
+ */
+export function availableTitles(
+  board: AchievementBoard,
+  weeklyTitles: { id: string; title: string }[] = [],
+): { id: string; title: string; weekly: boolean }[] {
   const seen = new Set<string>();
-  const titles: { id: string; title: string }[] = [];
+  const titles: { id: string; title: string; weekly: boolean }[] = [];
   for (const achievement of board.achievements) {
     if (!achievement.done || !achievement.title || seen.has(achievement.title)) continue;
     seen.add(achievement.title);
-    titles.push({ id: achievement.id, title: achievement.title });
+    titles.push({ id: achievement.id, title: achievement.title, weekly: false });
+  }
+  for (const entry of weeklyTitles) {
+    if (seen.has(entry.title)) continue;
+    seen.add(entry.title);
+    titles.push({ id: entry.id, title: entry.title, weekly: true });
   }
   return titles;
 }

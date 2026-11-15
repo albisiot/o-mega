@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth, useRequireSignedIn } from "@/components/auth-provider";
 import { AvatarPicker } from "@/components/avatar-picker";
 import { TabBar } from "@/components/comic-parts";
+import { MyLeaderboardPlaces } from "@/components/leaderboard-places";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { Sheet } from "@/components/sheet";
@@ -159,14 +160,18 @@ function ProfileView({ profile }: { profile: Profile }) {
 
         <div role="tabpanel" data-keep-scroll="panel" className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden overscroll-contain">
           {tab === "stats" && (
-            <section className="grid grid-cols-2 gap-1.5">
-              {stats.map((stat) => (
-                <div key={stat.label} className="bg-panel px-3.5 py-1.5">
-                  <p className="font-display text-2xl leading-7">{stat.value}</p>
-                  <p className="text-xs font-semibold text-muted">{stat.label}</p>
-                </div>
-              ))}
-            </section>
+            <>
+              <section className="grid grid-cols-2 gap-1.5">
+                {stats.map((stat) => (
+                  <div key={stat.label} className="bg-panel px-3.5 py-1.5">
+                    <p className="font-display text-2xl leading-7">{stat.value}</p>
+                    <p className="text-xs font-semibold text-muted">{stat.label}</p>
+                  </div>
+                ))}
+              </section>
+              <h2 className="section-title mt-2">Le tue posizioni</h2>
+              <MyLeaderboardPlaces />
+            </>
           )}
 
           {tab === "conquests" &&
@@ -202,6 +207,9 @@ function ProfileView({ profile }: { profile: Profile }) {
             <>
               <Link href="/imprese" className={ROW}>
                 <RowLabel>Imprese</RowLabel>
+              </Link>
+              <Link href="/classifiche/" className={ROW}>
+                <RowLabel>Classifiche</RowLabel>
               </Link>
               <Link href="/storico" className={ROW}>
                 <RowLabel>Storico partite</RowLabel>

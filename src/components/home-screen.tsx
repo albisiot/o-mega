@@ -6,6 +6,7 @@ import { markHomeReady } from "@/components/app-splash";
 import { CoinBadge } from "@/components/coin-badge";
 import { HomeObjectivesBar } from "@/components/daily-objectives";
 import { EventBanner } from "@/components/event-banner";
+import { HomeLeaderboardButton } from "@/components/leaderboard-places";
 import { PackPanel } from "@/components/pack-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { WorldIntro } from "@/components/world-intro";
@@ -99,8 +100,9 @@ export function HomeScreen({ profile }: { profile: Profile }) {
         <span className="-skew-x-8 font-display text-[30px] leading-9 tracking-wide text-comic-yellow [text-shadow:3px_3px_0_var(--comic-magenta)]">
           O-MEGA
         </span>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <CoinBadge balance={packs.status?.coin_balance ?? null} />
+          <HomeLeaderboardButton />
           <Link href="/profilo" aria-label={`Profilo di ${profile.username}`} className="flex min-h-11 min-w-11 items-center justify-center">
             <PlayerAvatar username={profile.username} avatarUrl={profile.avatar_url} />
           </Link>

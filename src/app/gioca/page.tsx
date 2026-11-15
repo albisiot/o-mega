@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { EventBanner } from "@/components/event-banner";
+import { TrophyIcon } from "@/components/leaderboard-places";
 import { useMatchRewards } from "@/components/match-reward";
 import { LoadingScreen } from "@/components/loading-screen";
 import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
 import { describeServerError } from "@/lib/errors";
+import { leaderboardHref, type LeaderboardBoard } from "@/lib/leaderboards";
 import { rewardRule } from "@/lib/match-rewards";
 import {
   DIFFICULTY_LABELS,
@@ -304,7 +306,12 @@ function ConquestGroup({ status, disabled }: { status: ConquestStatus | null; di
 
   return (
     <div className="flex flex-col gap-2">
-      <GroupTitle>Conquista · con le carte in palio</GroupTitle>
+      <div className="flex items-end justify-between gap-2">
+        <GroupTitle>Conquista · con le carte in palio</GroupTitle>
+        <Link href={leaderboardHref("conquest")} className="shrink-0 text-[13px] font-extrabold text-comic-yellow underline">
+          Classifica
+        </Link>
+      </div>
       <p className="text-[13px] font-medium leading-4 text-muted">
         Chi vince prende una carta dell&apos;avversario
         {loserCoins > 0 ? `, chi perde guadagna ${loserCoins} monete` : ""}. Si rischia solo ciò
@@ -361,6 +368,28 @@ function EmergencySection() {
       </p>
       <OptionRow href="/emergenza" title="Apri l'Emergenza di oggi" detail="Guarda i livelli, poi scegli la squadra." />
     </div>
+  );
+}
+
+/** Where an open mode shows its board in the Classifiche (SPEC §8.6). */
+const MODE_BOARDS: Record<ModeKey, { board: LeaderboardBoard; title: string }> = {
+  classic: { board: "classic", title: "Classifica della Classica" },
+  story: { board: "story", title: "Classifica della Storia" },
+  emergency: { board: "emergency", title: "Classifica dell'Emergenza" },
+  boss: { board: "boss", title: "Classifica di Grande Minaccia" },
+  triple: { board: "triple", title: "Classifica di Allarme Triplo" },
+  quadrant: { board: "quadrant", title: "Classifica di Quadrante" },
+};
+
+/** The way from an open mode to its leaderboard: always there, also with a match in progress. */
+function LeaderboardRow({ mode }: { mode: ModeKey }) {
+  const { board, title } = MODE_BOARDS[mode];
+  return (
+    <OptionRow
+      href={leaderboardHref(board)}
+      title={title}
+      detail={board === "story" ? "Chi ha completato più missioni" : "I primi della settimana e di sempre"}
+    />
   );
 }
 
@@ -549,7 +578,12 @@ export default function PlayPage() {
     <div className="home-shell">
       <header className="flex shrink-0 items-center justify-between gap-3 px-4 pb-1 pt-2">
         <h1 className="font-display text-4xl uppercase text-comic-yellow">Gioca</h1>
-        <TutorialButton compact />
+        <div className="flex shrink-0 items-center gap-2">
+          <Link href="/classifiche/" aria-label="Classifiche" className="btn btn-outline h-11 w-11 shrink-0 px-0">
+            <TrophyIcon />
+          </Link>
+          <TutorialButton compact />
+        </div>
       </header>
 
       {/* What a short window cannot fit scrolls inside, rather than being cut. */}
@@ -567,6 +601,7 @@ export default function PlayPage() {
             {opened.key === "boss" && <BossSection disabled={blocked} />}
             {opened.key === "triple" && <TripleSection disabled={blocked} />}
             {opened.key === "quadrant" && <QuadrantSection disabled={blocked} />}
+            <LeaderboardRow mode={opened.key} />
           </section>
         ) : (
           GROUPS.map((group) => (

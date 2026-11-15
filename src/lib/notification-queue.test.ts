@@ -80,6 +80,8 @@ describe("banner content", () => {
     expect(bannerHref(note("a", 1, "achievement"))).toBe("/imprese/");
     expect(bannerHint(note("a", 1, "achievement", { count: 1 }))).toBe("Tocca per vederla");
     expect(bannerHint(note("a", 1, "achievement", { count: 3 }))).toBe("Tocca per vederle");
+    expect(bannerHref(note("a", 1, "leaderboard", { board: "triple" }))).toBe("/classifiche/?scheda=triple&periodo=week");
+    expect(bannerHref(note("a", 1, "leaderboard"))).toBe("/classifiche/");
     expect(bannerHref(note("a", 1, "something_new"))).toBeNull();
     expect(bannerHint(note("a", 1, "something_new"))).toBe("Tocca per chiudere");
   });

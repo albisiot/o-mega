@@ -76,6 +76,18 @@ describe("describeAchievementReward", () => {
 
 describe("availableTitles", () => {
   it("lists each title once, from completed imprese only", () => {
-    expect(availableTitles(board)).toEqual([{ id: "b", title: "Il Conquistatore" }]);
+    expect(availableTitles(board)).toEqual([{ id: "b", title: "Il Conquistatore", weekly: false }]);
+  });
+
+  it("adds the weekly titles after the imprese, without repeating a title", () => {
+    expect(
+      availableTitles(board, [
+        { id: "w1", title: "Campione di Quadrante" },
+        { id: "w2", title: "Il Conquistatore" },
+      ]),
+    ).toEqual([
+      { id: "b", title: "Il Conquistatore", weekly: false },
+      { id: "w1", title: "Campione di Quadrante", weekly: true },
+    ]);
   });
 });

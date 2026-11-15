@@ -3349,6 +3349,11 @@ export type Database = {
       get_emergency_leaderboard: { Args: never; Returns: Json }
       get_event: { Args: never; Returns: Json }
       get_event_points_for: { Args: { p_ref_id: string }; Returns: Json }
+      get_leaderboard: {
+        Args: { p_board: string; p_period: string }
+        Returns: Json
+      }
+      get_leaderboard_titles: { Args: never; Returns: Json }
       get_lobby_format: { Args: { p_code: string }; Returns: string }
       get_match_history: { Args: { p_limit?: number }; Returns: Json }
       get_match_opponent_title: {
@@ -3358,6 +3363,7 @@ export type Database = {
       get_match_reward: { Args: { p_match_id: string }; Returns: Json }
       get_match_rewards: { Args: never; Returns: Json }
       get_match_state: { Args: { p_match_id: string }; Returns: Json }
+      get_my_leaderboard_places: { Args: never; Returns: Json }
       get_pack_odds: { Args: never; Returns: Json }
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
       get_pack_status: { Args: never; Returns: Json }
