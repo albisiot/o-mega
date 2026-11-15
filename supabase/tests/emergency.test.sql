@@ -18,6 +18,8 @@ reset role;
 -- Other runs of the day would change the leaderboard counts below.
 delete from public.emergency_plays;
 delete from public.emergency_runs;
+delete from public.emergency_prizes;
+delete from public.emergency_prize_days;
 delete from public.emergency_days;
 
 do $$

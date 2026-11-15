@@ -82,6 +82,22 @@ export const balance = {
     },
     /** Players shown in the day's leaderboard; the player's own place is shown below when lower. */
     leaderboardSize: 10,
+    /**
+     * Prizes of the day's leaderboard, given when the day ends (midnight Europe/Rome) to the
+     * first leaderboardSize players with at least minPassed threats passed; claimed from a popup.
+     * "others" is every place from the 4th on. Defaults: admins change them from /gestione-ricompense.
+     */
+    prizes: {
+      minPassed: 1,
+      rank1Coins: 50,
+      rank1Packs: 1,
+      rank2Coins: 100,
+      rank2Packs: 0,
+      rank3Coins: 75,
+      rank3Packs: 0,
+      othersCoins: 25,
+      othersPacks: 0,
+    },
   },
 
   /**

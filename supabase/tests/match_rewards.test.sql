@@ -221,6 +221,8 @@ reset role;
 -- Emergenza: the XP of the end of the run, once.
 delete from public.emergency_plays;
 delete from public.emergency_runs;
+delete from public.emergency_prizes;
+delete from public.emergency_prize_days;
 delete from public.emergency_days;
 
 do $$
