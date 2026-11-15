@@ -1,7 +1,7 @@
 import { abilityMalusFrom, packBonus } from "@o-mega/game-engine";
 import type { EmergencyPlay } from "@/lib/emergency";
 import { toCharacter, type MatchCard } from "@/lib/match";
-import { carriedInto, roundPowerNotes, type PowerNote } from "@/lib/round-powers";
+import { carriedInto, lastingSacrifice, roundPowerNotes, type PowerNote } from "@/lib/round-powers";
 
 /**
  * A power on an Emergenza result. `threshold` is how much it lowered the score the
@@ -26,7 +26,7 @@ const NEED_OPPONENT = new Set([
 /**
  * What the powers did in an Emergenza play: as in a match, with passed threats as rounds
  * won and failed ones as rounds lost. The bonus a card received from the previous one
- * (Riscossa, Slancio) and from Capobranco are told apart, as in a match.
+ * (Riscossa, Slancio), from Capobranco and from Sacrificio are told apart, as in a match.
  */
 export function emergencyPowerNotes(
   card: MatchCard,
@@ -38,6 +38,9 @@ export function emergencyPowerNotes(
 ): EmergencyNote[] {
   const previous = before.at(-1);
   const carried = carriedInto(previous?.card, previous ? (previous.passed ? "won" : "lost") : "void");
+  // No opponent, so no Annullatore: every card before played with its power.
+  const played = before.map((b) => toCharacter(b.card, b.card.definition_id));
+  const sacrifice = lastingSacrifice(played, before.map((b) => b.card));
   const notes: EmergencyNote[] = roundPowerNotes(
     card,
     { bonus: play.bonus },
@@ -51,10 +54,9 @@ export function emergencyPowerNotes(
       won: play.passed,
       wonTie: false,
       parts: play.parts,
-      pack: play.parts?.pack ?? packBonus(
-        toCharacter(card, card.definition_id),
-        before.map((b) => toCharacter(b.card, b.card.definition_id)),
-      ),
+      pack: play.parts?.pack ?? packBonus(toCharacter(card, card.definition_id), played),
+      sacrifice: play.parts ? (play.parts.sacrifice ?? 0) : sacrifice.points,
+      sacrificeFrom: sacrifice.from,
       standing: { roundsWon: before.filter((b) => b.passed).length, opponentRoundsWon: before.filter((b) => !b.passed).length },
     },
     annotate,

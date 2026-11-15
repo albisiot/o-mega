@@ -23,7 +23,7 @@ export type ScoreContext = {
   threatLevels?: readonly number[];
   /**
    * The side's characters already played, in order, as they played: without the
-   * power an Annullatore took away (Capobranco, Catalizzatore, Riverbero).
+   * power an Annullatore took away (Capobranco, Sacrificio, Catalizzatore, Riverbero).
    */
   played?: readonly Character[];
 };
@@ -231,6 +231,15 @@ export function packBonus(character: Character, played: readonly Character[] = [
   );
 }
 
+/**
+ * Sacrificio: +bonus from every Sacrificio the side already played, to every later
+ * character of any faction, until the end of the match. Pass the characters as they
+ * played: a Sacrificio an Annullatore stopped gives nothing.
+ */
+export function sacrificeBonus(played: readonly Character[] = []): number {
+  return played.reduce((sum, earlier) => (earlier.power?.code === "sacrifice" ? sum + numberParam(earlier, "bonus") : sum), 0);
+}
+
 /** Spia: once played, its side sees one character the opponent has not played yet. */
 export function revealsOpponentCharacter(character: Character): boolean {
   return character.power?.code === "spy";
@@ -343,7 +352,7 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
       return copied ? powerBonus({ ...character, power: copied }, threat, context) : 0;
     }
     case "reflect": // acts on Sabotatore: see abilityMalusOn
-    case "sacrifice": // zeroes its score and passes a bonus: see scorePlay and carriedBonusAfter
+    case "sacrifice": // zeroes its score, then acts on the later characters: see scorePlay and sacrificeBonus
     case "pack_leader": // acts on the later characters: see packBonus
     case "catalyst": // acts on the next character: see powerMultiplier
     case "fog": // hides the character: see hidesIdentity
@@ -363,7 +372,7 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
 
 export function scorePlay(character: Character, threat: Threat, context: ScoreContext): PlayScore {
   // Silenzio della tomba: no power of either side, so no Sabotatore either. A bonus
-  // received from an earlier round (Riscossa, Slancio, Capobranco) still counts.
+  // received from an earlier round (Riscossa, Slancio, Capobranco, Sacrificio) still counts.
   if (powersSilenced(threat)) {
     if (character.power) character = { ...character, power: null };
     context = { ...context, abilityMalus: 0 };
@@ -375,18 +384,20 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
   // Specchio: the values are the opposing character's; without one (Emergenza, a preview) its own.
   const values = scoresWithOpponentValues(threat) && context.opponent ? { ...character, stats: context.opponent.stats } : character;
   const base = baseScore(values, threat, malus);
-  // Sacrificio: the character gives up the round, whatever it would have scored.
+  // Sacrificio: the character gives up the round, whatever it would have scored, the
+  // bonuses it received included.
   if (code === "sacrifice") {
-    const parts: ScoreParts = { power: -base, carried: 0, pack: 0, modifier: 0, floor: 0 };
+    const parts: ScoreParts = { power: -base, carried: 0, pack: 0, sacrifice: 0, modifier: 0, floor: 0 };
     return { characterId: character.id, base, bonus: -base, total: 0, highest: 0, parts };
   }
   const power = powerBonus(character, threat, context) * powerMultiplier(context);
   const modifier = modifierPoints(character, threat, context);
   const pack = packBonus(character, context.played);
+  const sacrifice = sacrificeBonus(context.played);
   // A malus cannot bring the score below 0: the bonus stays the difference from the base.
-  const raw = base + power + pack + context.carriedBonus + modifier;
+  const raw = base + power + pack + sacrifice + context.carriedBonus + modifier;
   const total = Math.max(0, raw);
-  const parts: ScoreParts = { power, carried: context.carriedBonus, pack, modifier, floor: total - raw };
+  const parts: ScoreParts = { power, carried: context.carriedBonus, pack, sacrifice, modifier, floor: total - raw };
   return {
     characterId: character.id,
     base,
@@ -400,15 +411,13 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
 
 /**
  * Bonus the next character of the same side gets: Riscossa after a lost round,
- * Slancio after a won one, Sacrificio whatever happened. A void round is neither
- * won nor lost. Pass the character as it played (asPlayedAgainst): an Annullatore
+ * Slancio after a won one. A void round is neither won nor lost. Pass the character as it played (asPlayedAgainst): an Annullatore
  * stops the bonus too.
  */
 export function carriedBonusAfter(character: Character, outcome: PlayOutcome): number {
   const code = character.power?.code;
   if (code === "comeback" && outcome === "lost") return numberParam(character, "bonus");
   if (code === "momentum" && outcome === "won") return numberParam(character, "bonus");
-  if (code === "sacrifice") return numberParam(character, "bonus");
   return 0;
 }
 

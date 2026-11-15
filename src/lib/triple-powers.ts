@@ -2,6 +2,7 @@ import { abilityMalusFrom, asPlayedAgainst, immuneToSabotage, packBonus, type Ch
 import { toCharacter, type MatchCard } from "@/lib/match";
 import {
   carriedInto,
+  lastingSacrifice,
   outcomeOf,
   roundPowerNotes,
   tieWonByRelentless,
@@ -22,7 +23,7 @@ function cardOf(view: TripleView, contest: TripleContest | undefined, side: Side
  * What a card's power did on one threat of an Allarme Triplo round (SPEC §5.13), as on a
  * match page: each threat is a lane, so Riscossa and Slancio come from the side's card on
  * the same threat in the round before. Annotated with the power's family for the page.
- * Capobranco counts the side's cards of the rounds before, on every threat (SPEC §5.13).
+ * Capobranco and Sacrificio count the side's cards of the rounds before, on every threat (SPEC §5.13).
  */
 export function contestNotes(view: TripleView, round: TripleRound, contest: TripleContest, side: Side): PowerNote[] {
   const other: Side = side === "me" ? "opponent" : "me";
@@ -37,6 +38,8 @@ export function contestNotes(view: TripleView, round: TripleRound, contest: Trip
   const previousThreat: Threat = { id: "lane", level: threat.level, abilities: threat.abilities, modifier: threat.modifier };
   const carried = carriedInto(cardOf(view, previous, side), outcomeOf(previous?.winner, side), cardOf(view, previous, other), previousThreat);
 
+  const earlier = playedInEarlierRounds(view, round.round, side);
+  const sacrifice = lastingSacrifice(earlier.map((e) => e.character), earlier.map((e) => e.card));
   const rivalActing = rival && !wasNullified(rival, card, threat.modifier) ? toCharacter(rival, "opponent") : null;
   const tie = contest.my_play && contest.opponent_play && contest.my_play.score === contest.opponent_play.score;
   // Spia shows a card only while the other side still has one not played: the player's own
@@ -65,7 +68,9 @@ export function contestNotes(view: TripleView, round: TripleRound, contest: Trip
       opponentSabotage: rivalActing ? abilityMalusFrom(rivalActing) : 0,
       opponentHasPower: Boolean(rival?.power),
       // The server's parts say it; for plays stored before them, count the Capobranco cards.
-      pack: play.parts?.pack ?? packBonus(toCharacter(card, card.definition_id), playedInEarlierRounds(view, round.round, side)),
+      pack: play.parts?.pack ?? packBonus(toCharacter(card, card.definition_id), earlier.map((e) => e.character)),
+      sacrifice: play.parts ? (play.parts.sacrifice ?? 0) : sacrifice.points,
+      sacrificeFrom: sacrifice.from,
       parts: play.parts,
       spyRevealed,
     },
@@ -75,9 +80,10 @@ export function contestNotes(view: TripleView, round: TripleRound, contest: Trip
 
 /**
  * The cards a side played in the rounds before `round`, on every threat, as they played:
- * without the power an opposing Annullatore or Silenzio della tomba took away (Capobranco).
+ * without the power an opposing Annullatore or Silenzio della tomba took away (Capobranco,
+ * Sacrificio). Each with its card, for the names on the notes.
  */
-function playedInEarlierRounds(view: TripleView, round: number, side: Side): Character[] {
+function playedInEarlierRounds(view: TripleView, round: number, side: Side): { card: MatchCard; character: Character }[] {
   const other: Side = side === "me" ? "opponent" : "me";
   return [...view.rounds]
     .filter((r) => r.resolved && r.round < round)
@@ -90,13 +96,12 @@ function playedInEarlierRounds(view: TripleView, round: number, side: Side): Cha
           if (!own) return [];
           const rival = cardOf(view, c, other);
           const threat = view.threats[c.slot];
-          return [
-            asPlayedAgainst(
-              toCharacter(own, own.definition_id),
-              rival ? toCharacter(rival, "opponent") : null,
-              threat ? { id: "lane", level: threat.level, abilities: threat.abilities, modifier: threat.modifier } : null,
-            ),
-          ];
+          const character = asPlayedAgainst(
+            toCharacter(own, own.definition_id),
+            rival ? toCharacter(rival, "opponent") : null,
+            threat ? { id: "lane", level: threat.level, abilities: threat.abilities, modifier: threat.modifier } : null,
+          );
+          return [{ card: own, character }];
         }),
     );
 }

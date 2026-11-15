@@ -210,14 +210,41 @@ describe("backlog powers in a match", () => {
     expect(stopped.rounds[1].plays.a.bonus).toBe(0);
   });
 
-  it("Sacrificio gives up its round and passes its bonus", () => {
-    const sacrifice = character("a1", {}, { code: "sacrifice", params: { bonus: 5 } }, 9);
-    let state = newState([sacrifice, character("a2")], team("b", [1, 4]), threats);
+  it("Sacrificio gives up its round, then every later character of its side gets its bonus", () => {
+    const sacrifice = character("a1", {}, { code: "sacrifice", params: { bonus: 2 } }, 9);
+    let state = newState([sacrifice, character("a2"), character("a3")], team("b", [1, 4, 4]), threats);
     state = play(state, "a1", "b1");
+    expect(state.rounds[0].plays.a.total).toBe(0);
     expect(state.rounds[0].winner).toBe("b");
-    expect(carriedBonus(state, "a")).toBe(5);
+    expect(carriedBonus(state, "a")).toBe(0);
     state = play(state, "a2", "b2");
-    expect(state.rounds[1].plays.a.total).toBe(13);
+    expect(state.rounds[1].plays.a).toMatchObject({ total: 10, parts: { sacrifice: 2 } });
+    state = play(state, "a3", "b3");
+    expect(state.rounds[2].plays.a).toMatchObject({ total: 14, parts: { sacrifice: 2 } });
+    // Only its own side.
+    expect(state.rounds[2].plays.b.parts?.sacrifice).toBe(0);
+  });
+
+  it("Sacrificio stopped by an Annullatore scores as usual and gives no bonus", () => {
+    const sacrifice = character("a1", {}, { code: "sacrifice", params: { bonus: 2 } }, 9);
+    const nullifier = character("b1", {}, { code: "nullifier", params: {} }, 1);
+    let state = newState([sacrifice, character("a2")], [nullifier, character("b2")], threats);
+    state = play(state, "a1", "b1");
+    expect(state.rounds[0].plays.a.total).toBe(9);
+    expect(state.rounds[0].winner).toBe("a");
+    state = play(state, "a2", "b2");
+    expect(state.rounds[1].plays.a.parts?.sacrifice).toBe(0);
+  });
+
+  it("Sacrificio's bonus survives an Annullatore that meets a later character", () => {
+    const sacrifice = character("a1", {}, { code: "sacrifice", params: { bonus: 2 } }, 9);
+    const opener = character("a2", {}, { code: "opener", params: { bonus: 3, max_round: 5 } }, 4);
+    const nullifier = character("b2", {}, { code: "nullifier", params: {} }, 4);
+    let state = newState([sacrifice, opener], [character("b1"), nullifier], threats);
+    state = play(state, "a1", "b1");
+    state = play(state, "a2", "b2");
+    // The opener loses its own +3, keeps Sacrificio's +2: as Capobranco does.
+    expect(state.rounds[1].plays.a.parts).toMatchObject({ power: 0, sacrifice: 2 });
   });
 
   it("Catalizzatore and Riverbero work on the next character", () => {

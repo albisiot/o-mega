@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "15 novembre 2026",
+    changes: [
+      "Sacrificio cambia, e conviene giocarlo presto. Residuo continua a contare 0 nel round in cui lo giochi, ma il suo bonus ora dura: da quel momento ogni tuo personaggio, di qualunque fazione, ha +3 fino a fine partita (prima era +5 al solo personaggio successivo). Giocato al primo round ripaga il round che cedi; giocato all'ultimo non ti dà niente. Se l'avversario gioca un Annullatore contro Residuo, Residuo segna come una carta normale e il bonus non parte; un Annullatore contro uno dei personaggi dopo gli toglie il suo potere, non il +3. In Allarme Triplo il bonus vale su tutte e tre le Minacce dai round successivi, in Emergenza e nella Grande Minaccia sui personaggi che giochi dopo. Nelle tavole lo vedi accanto a ogni carta come «Sacrificio di Residuo +3».",
+    ],
+  },
+  {
     date: "14 novembre 2026",
     changes: [
       "Anche i 14 personaggi nuovi possono uscire dai pacchetti con un disegno speciale, uno ciascuno, in uno stile già noto ma con colori suoi: Upkeep in Fiamma, Reus in Ritratto, Statera in Oro, Normal in Ombra, Billable in Animato, Insula in Spettro, Recesso in Fenice, Dittograph in Prisma, Praesidium in Gotico, Residuo in Zombie, Afterimage in Cometa, Gymnasiarch in Poster, Matins in Olio e Thicket in Tempera. Ora ogni personaggio dei pacchetti ha almeno una variante.",

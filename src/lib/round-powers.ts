@@ -2,6 +2,7 @@ import {
   asPlayedAgainst,
   carriedBonusAfter,
   modifierPoints,
+  sacrificeBonus,
   type Character,
   type PlayOutcome,
   type ScoreParts,
@@ -24,8 +25,9 @@ export type PowerNote = {
   timing?: "tie" | "after";
   /**
    * The power's code, for its family on the page (effect-families.ts); `source` says whose
-   * power it is: this card's own, the one that passed a bonus from the card before, or
-   * Capobranco. `cancelled`: why the card's own power did nothing. Only with `annotate`.
+   * power it is: this card's own, the one that passed a bonus from the card before, or a
+   * bonus that lasts to the end of the match (Capobranco, Sacrificio). `cancelled`: why the
+   * card's own power did nothing. Only with `annotate`.
    */
   code?: string;
   source?: "own" | "carried" | "pack";
@@ -57,6 +59,9 @@ export type RoundOutcome = {
   opponentSabotage?: number;
   /** Bonus this card received from Capobranco cards its side played before. */
   pack?: number;
+  /** Bonus this card received from Sacrificio cards its side played before, and their names. */
+  sacrifice?: number;
+  sacrificeFrom?: string;
   /**
    * Spia: whether it showed an opposing card. The server shows one only while the opponent
    * has a card not played yet; when not given, it is taken as shown.
@@ -133,7 +138,7 @@ export function roundPowerNotes(
         );
         break;
       case "sacrifice":
-        notes.push({ name: power.name, effect: `+${power.params.bonus} al prossimo`, active: true, timing: "after" });
+        notes.push({ name: power.name, effect: `+${power.params.bonus} ai prossimi`, active: true, timing: "after" });
         break;
       case "catalyst":
         notes.push({ name: power.name, effect: `×${power.params.multiplier} al potere del prossimo`, active: true, timing: "after" });
@@ -147,7 +152,7 @@ export function roundPowerNotes(
       default: {
         const points = outcome.parts
           ? outcome.parts.power
-          : play.bonus - outcome.carried - (outcome.pack ?? 0) - modifierPoints(character, { id: "round", ...threat }, outcome.standing);
+          : play.bonus - outcome.carried - (outcome.pack ?? 0) - (outcome.sacrifice ?? 0) - modifierPoints(character, { id: "round", ...threat }, outcome.standing);
         notes.push(
           points
             ? { name: power.name, effect: `${points > 0 ? "+" : "−"}${Math.abs(points)}`, active: true, points }
@@ -182,7 +187,30 @@ export function roundPowerNotes(
       ...(annotate ? { code: "pack_leader", source: "pack" as const } : {}),
     });
   }
+  if (outcome.sacrifice) {
+    notes.push({
+      name: outcome.sacrificeFrom ? `Sacrificio di ${outcome.sacrificeFrom}` : "Sacrificio",
+      effect: `+${outcome.sacrifice}`,
+      active: true,
+      points: outcome.sacrifice,
+      ...(annotate ? { code: "sacrifice", source: "pack" as const } : {}),
+    });
+  }
   return notes;
+}
+
+/**
+ * Sacrificio: the bonus a card gets from the Sacrificio cards its side played before
+ * (sacrificeBonus in the engine, `played` as they played), and their names for the note.
+ */
+export function lastingSacrifice(
+  played: readonly Character[],
+  cards: readonly (MatchCard | null | undefined)[],
+): { points: number; from: string | undefined } {
+  const points = sacrificeBonus(played);
+  if (points <= 0) return { points: 0, from: undefined };
+  const names = cards.filter((card) => card?.power?.code === "sacrifice").map((card) => card!.name);
+  return { points, from: names.length ? [...new Set(names)].join(" e ") : undefined };
 }
 
 /**

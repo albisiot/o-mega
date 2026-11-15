@@ -17,7 +17,10 @@ export type PowerFamily =
   | "stop"
   /** Settles a tie (Implacabile). */
   | "tiebreak"
-  /** Passes something to a later card (Riscossa, Slancio…). */
+  /**
+   * Passes something to a later card (Riscossa, Slancio, Catalizzatore), or to every later
+   * card until the end of the match (Capobranco, Sacrificio): received, it shows as `pack`.
+   */
   | "forward"
   /** Copies the power of the card before (Riverbero). */
   | "copy"

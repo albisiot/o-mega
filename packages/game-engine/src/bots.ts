@@ -409,14 +409,15 @@ function winChance(
  * expected number of won rounds is maximal, then plays the one assigned to
  * the current round. Future rounds are estimated with the catalog threats of
  * their level. Keeps specialists for low levels and generalists for high
- * ones, and sends the weakest character when the round looks lost.
+ * ones, and sends the weakest character when the round looks lost. With
+ * Sacrificio, the characters it plans after it count its bonus.
  */
 function planHardPlay(view: BotView, rng: Rng): string {
   const characters = shuffle(rng, view.available); // random tie-breaking
   const context = currentContext(view);
   const futureContext: ScoreContext = { ...context, carriedBonus: 0 };
 
-  const expectedWins = (character: Character, roundIndex: number): number => {
+  const expectedWins = (character: Character, roundIndex: number, played = view.played): number => {
     if (roundIndex === 0) {
       const score = effectiveScore(character, view.currentThreat, context, view.opponentPool);
       // Il conto lungo pays the opponent when the bot is ahead.
@@ -428,7 +429,7 @@ function planHardPlay(view: BotView, rng: Rng): string {
     const threats = known ? [known] : futureOptions(view, roundIndex - 1);
     if (threats.length === 0) return 0.5;
     const before = roundIndex === 1 ? view.currentThreat.level : view.futureLevels[roundIndex - 2];
-    const atRound = { ...futureContext, round: view.round + roundIndex, previousLevel: before };
+    const atRound = { ...futureContext, round: view.round + roundIndex, previousLevel: before, played };
     const total = threats.reduce(
       (sum, threat) => sum + winChance(effectiveScore(character, threat, atRound, view.opponentPool), threat, view.abilityMeans),
       0,
@@ -438,12 +439,19 @@ function planHardPlay(view: BotView, rng: Rng): string {
 
   const rounds = Math.min(characters.length, 1 + view.futureLevels.length);
   const value = characters.map((character) => Array.from({ length: rounds }, (_, r) => expectedWins(character, r)));
+  // Sacrificio: the characters planned after it play with its bonus.
+  const sacrifices = characters.filter((character) => character.power?.code === "sacrifice");
+  const boosted = sacrifices.length
+    ? characters.map((character, c) =>
+        Array.from({ length: rounds }, (_, r) => (r === 0 ? value[c][0] : expectedWins(character, r, [...view.played, ...sacrifices]))),
+      )
+    : value;
 
   // At most 5 characters: trying every assignment (5! = 120) is cheap.
   let bestScore = -Infinity;
   let bestForCurrent = 0;
   const used = new Array<boolean>(characters.length).fill(false);
-  const assign = (round: number, sum: number, first: number) => {
+  const assign = (round: number, sum: number, first: number, afterSacrifice: boolean) => {
     if (round === rounds) {
       if (sum > bestScore) {
         bestScore = sum;
@@ -454,11 +462,13 @@ function planHardPlay(view: BotView, rng: Rng): string {
     for (let c = 0; c < characters.length; c++) {
       if (used[c]) continue;
       used[c] = true;
-      assign(round + 1, sum + value[c][round], round === 0 ? c : first);
+      const gain = (afterSacrifice ? boosted : value)[c][round];
+      const sacrifice = afterSacrifice || characters[c].power?.code === "sacrifice";
+      assign(round + 1, sum + gain, round === 0 ? c : first, sacrifice);
       used[c] = false;
     }
   };
-  assign(0, 0, 0);
+  assign(0, 0, 0, false);
   return characters[bestForCurrent].id;
 }
 

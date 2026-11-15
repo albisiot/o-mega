@@ -175,6 +175,20 @@ describe("powers across turns", () => {
     expect(play(state, [next, 1], [theirs[1], 3]).turn.plays.a.total).toBe(7);
   });
 
+  it("Sacrificio gives up its front, then the side's later arrivals get its bonus", () => {
+    const sacrifice = character("s", { FOR: 9 }, power("sacrifice", { bonus: 2 }));
+    const second = character("n", { VEL: 2, RES: 2 });
+    const third = character("t", { INT: 1, VOL: 1, PER: 1 });
+    const theirs = zeros(3, "z");
+    let state = bossState([sacrifice, second, third], theirs);
+    const first = play(state, [sacrifice, 0], [theirs[0], 4]);
+    expect(first.turn.plays.a.total).toBe(0);
+    state = first.state;
+    const next = play(state, [second, 1], [theirs[1], 3]);
+    expect(next.turn.plays.a).toMatchObject({ total: 6, parts: { sacrifice: 2 } });
+    expect(play(next.state, [third, 2], [theirs[2], 0]).turn.plays.a.total).toBe(5);
+  });
+
   it("Crescendo reads the level of the front the side used in the turn before", () => {
     const first = zeros(1, "f")[0];
     const crescendo = character("c", {}, power("crescendo", { bonus: 3 }), 0);
