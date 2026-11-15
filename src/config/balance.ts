@@ -80,6 +80,8 @@ export const balance = {
       tier3Passed: 8,
       tier3Coins: 25,
     },
+    /** Players shown in the day's leaderboard; the player's own place is shown below when lower. */
+    leaderboardSize: 10,
   },
 
   /**

@@ -166,7 +166,7 @@ begin
   assert (v_board -> 'top' -> 0 ->> 'passed')::integer = 8, 'best run first';
   assert (v_board -> 'top' -> 0 ->> 'is_me')::boolean = false, 'someone else first';
   assert (v_board -> 'me' ->> 'rank')::integer = 2, 'my rank';
-  assert (public.get_emergency_leaderboard(1) -> 'top') ->> 1 is null, 'limit';
+  assert jsonb_array_length(v_board -> 'top') = 2, 'both players in the top';
 
   -- Clients reach nothing else.
   begin
@@ -189,6 +189,49 @@ begin
     raise exception 'ASSERT: a client recorded a play';
   exception when insufficient_privilege then null;
   end;
+end $$;
+
+reset role;
+
+-- Eleven more players finish ahead of A: the board stops at
+-- emergency.leaderboard_size (10) and A sees their own place below it.
+insert into auth.users (id, aud, role, email, created_at, updated_at)
+select format('00000000-0000-4000-8000-0000000001%s', lpad(n::text, 2, '0'))::uuid,
+  'authenticated', 'authenticated', format('em-top-%s@example.test', n), now(), now()
+from generate_series(1, 11) n;
+insert into public.profiles (id, username, title)
+select format('00000000-0000-4000-8000-0000000001%s', lpad(n::text, 2, '0'))::uuid,
+  format('em_top_%s', lpad(n::text, 2, '0')), case when n = 1 then 'Salvatore della città' end
+from generate_series(1, 11) n;
+insert into public.emergency_runs (user_id, day, card_instance_ids, definition_ids, status, passed, failed, total_score, finished_at)
+select format('00000000-0000-4000-8000-0000000001%s', lpad(n::text, 2, '0'))::uuid,
+  public.game_day(), '{}', '{}', 'finished', 5, 3, 100 - n, now()
+from generate_series(1, 11) n;
+
+do $$
+begin
+  assert public.config_int('emergency.leaderboard_size') = 10, 'leaderboard size';
+end $$;
+
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000e1", "role": "authenticated"}', true);
+
+do $$
+declare
+  v_board jsonb := public.get_emergency_leaderboard();
+begin
+  assert (v_board ->> 'players')::integer = 13, format('players %s', v_board ->> 'players');
+  assert jsonb_array_length(v_board -> 'top') = 10, format('top %s', jsonb_array_length(v_board -> 'top'));
+  assert (v_board -> 'top' -> 0 ->> 'passed')::integer = 8, 'full run still first';
+  assert (v_board -> 'top' -> 1 ->> 'username') = 'em_top_01', 'score breaks the tie';
+  assert (v_board -> 'top' -> 1 ->> 'title') = 'Salvatore della città', 'title shown';
+  assert v_board -> 'top' -> 2 -> 'title' = 'null'::jsonb, 'no title';
+  assert (v_board -> 'top' -> 9 ->> 'rank')::integer = 10, 'tenth place';
+  assert not exists (select 1 from jsonb_array_elements(v_board -> 'top') e where (e ->> 'is_me')::boolean), 'me not in the top';
+  assert (v_board -> 'me' ->> 'rank')::integer = 13, format('my rank %s', v_board -> 'me' ->> 'rank');
+  assert (v_board -> 'me' ->> 'passed')::integer = 3, 'my threats';
+  -- Never the characters played: they would give away the day's threats.
+  assert v_board::text not like '%instance%' and v_board::text not like '%definition%', 'no characters';
 end $$;
 
 reset role;
