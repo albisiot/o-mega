@@ -300,7 +300,7 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 - **Livelli:** stesse regole di §5.4, con somma tra 24 e 32.
 - **Solo Nuova Megara:** l'Emergenza estrae solo le 60 Minacce normali di Nuova Megara, più le Minacce rare quando escono (§5.15, ognuna con la sua soglia), mai quelle dei luoghi (§5.4): con Gelo o Duello alcune soglie sarebbero irraggiungibili (livello 2 al massimo 12 contro 13, livello 5 al massimo 20 contro 28). Così soglie e difficoltà restano quelle tarate.
 - **Premi:** 10 monete a 3 Minacce superate, altre 15 a 5, altre 25 a 8 (massimo 50 al giorno). Si ricevono subito, quindi restano anche se il tentativo non viene finito. Esperienza solo a tentativo finito, se l'amministratore la imposta (default 0, §8.4); nessun effetto sulle statistiche di partita. Soglie, monete ed esperienza si cambiano da *Ricompense partite* (§8.4).
-- **Classifica di giornata:** solo i tentativi finiti, per Minacce superate, poi punteggio totale, poi chi ha finito prima. Non mostra i personaggi giocati, che rivelerebbero le Minacce.
+- **Classifica di giornata:** solo i tentativi finiti, per Minacce superate, poi punteggio totale, poi chi ha finito prima. Mostra i **primi 10** (`emergency.leaderboard_size`) con avatar e titolo (§8.5); chi è più in basso vede la sua posizione sotto l'elenco. Non mostra i personaggi giocati, che rivelerebbero le Minacce.
 
 **I poteri in Emergenza:** le Minacce superate contano come round vinti e quelle fallite come round persi. La squadra è quella di 8.
 
