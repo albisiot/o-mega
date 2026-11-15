@@ -298,6 +298,18 @@ export const balance = {
   holdToConfirm: {
     durationMs: 1000,
   },
+
+  /** In-app banners for good news (SPEC §11.1). */
+  notifications: {
+    /** Unseen news older than this is not shown any more (game_config). */
+    showWithinHours: 24,
+    /** Older news is deleted when a new one arrives (game_config). */
+    keepDays: 30,
+    /** How long a banner stays on screen (client only). */
+    showMs: 4000,
+    /** At most this many banners wait in line; older ones are dropped (client only). */
+    maxQueued: 5,
+  },
 } as const;
 
 export type Balance = typeof balance;

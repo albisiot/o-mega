@@ -3078,6 +3078,7 @@ export type Database = {
       get_pack_odds: { Args: never; Returns: Json }
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
       get_pack_status: { Args: never; Returns: Json }
+      get_player_notifications: { Args: never; Returns: Json }
       get_special_packs: { Args: never; Returns: Json }
       get_story: { Args: never; Returns: Json }
       get_story_reward: { Args: { p_match_id: string }; Returns: Json }
@@ -3184,6 +3185,10 @@ export type Database = {
       mark_event_rewards_seen: {
         Args: { p_event_id: string }
         Returns: undefined
+      }
+      mark_player_notifications_seen: {
+        Args: { p_ids: string[] }
+        Returns: number
       }
       match_create_boss_bot: {
         Args: {
