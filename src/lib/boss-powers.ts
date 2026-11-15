@@ -13,7 +13,7 @@ import {
 } from "@o-mega/game-engine";
 import { knownBossState, type BossRound, type BossView } from "@/lib/boss";
 import type { MatchCard } from "@/lib/match";
-import { roundPowerNotes, type PowerNote } from "@/lib/round-powers";
+import { lastingSacrifice, roundPowerNotes, type PowerNote } from "@/lib/round-powers";
 
 export type BossSide = "me" | "opponent";
 
@@ -101,6 +101,10 @@ export function bossTurnEntries(
     const context = bossContext(before, side, {});
     const last = before.turns.at(-1);
     const lastCard = last ? cardOf(view, side, last.plays[side].characterId) : null;
+    const sacrifice = lastingSacrifice(
+      context.played ?? [],
+      before.turns.map((turn) => cardOf(view, side, turn.plays[side].characterId)),
+    );
     const holder = fromSide(record.holders[play.front]);
     const nullified = Boolean(card?.power) && acting !== undefined && acting.power === null;
     // The server's parts, when it sent them, say exactly what came from where.
@@ -129,6 +133,8 @@ export function bossTurnEntries(
               opponentShielded: opposing !== undefined && immuneToSabotage(opposing),
               opponentSabotage: opposing ? abilityMalusFrom(opposing) : 0,
               pack: parts?.pack ?? packBonus(acting, context.played ?? []),
+              sacrifice: parts ? (parts.sacrifice ?? 0) : sacrifice.points,
+              sacrificeFrom: sacrifice.from,
               parts,
               standing: { roundsWon: context.roundsWon ?? 0, opponentRoundsWon: context.opponentRoundsWon ?? 0 },
               // Spia shows a card only while the other side still has one not played.

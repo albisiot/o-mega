@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { MatchCard } from "./match";
-import { carriedInto, playedBefore, roundPowerNotes, tieBreakReason, tieWonByRelentless } from "./round-powers";
+import { toCharacter, type MatchCard } from "./match";
+import { carriedInto, lastingSacrifice, playedBefore, roundPowerNotes, tieBreakReason, tieWonByRelentless } from "./round-powers";
 
 const card = (power: MatchCard["power"], faction = "heroes", rank = 2): MatchCard => ({
   definition_id: "d1",
@@ -128,7 +128,7 @@ describe("roundPowerNotes for the backlog powers", () => {
   });
 
   it("tells Sacrificio, Catalizzatore, Capobranco and Nebbia", () => {
-    expect(roundPowerNotes(power("sacrifice", "Sacrificio", { bonus: 5 }), { bonus: -10 }, threat, calm)[0].effect).toBe("+5 al prossimo");
+    expect(roundPowerNotes(power("sacrifice", "Sacrificio", { bonus: 2 }), { bonus: -10 }, threat, calm)[0].effect).toBe("+2 ai prossimi");
     expect(roundPowerNotes(power("catalyst", "Catalizzatore", { multiplier: 2 }), { bonus: 0 }, threat, calm)[0].effect).toBe(
       "×2 al potere del prossimo",
     );
@@ -145,6 +145,23 @@ describe("roundPowerNotes for the backlog powers", () => {
     expect(roundPowerNotes(card(null), { bonus: 1 }, threat, { ...calm, pack: 1 })).toEqual([
       { name: "Capobranco", effect: "+1", active: true, points: 1 },
     ]);
+  });
+
+  it("shows Sacrificio's lasting bonus with the name of the card that gave it", () => {
+    const opener = power("opener", "Apripista", { bonus: 3, max_round: 2 });
+    expect(roundPowerNotes(opener, { bonus: 5 }, threat, { ...calm, sacrifice: 2, sacrificeFrom: "Residuo" }, true)).toMatchObject([
+      { name: "Apripista", effect: "+3", points: 3, source: "own" },
+      { name: "Sacrificio di Residuo", effect: "+2", active: true, points: 2, code: "sacrifice", source: "pack" },
+    ]);
+  });
+
+  it("finds the lasting Sacrificio among the cards played before, unless an Annullatore stopped it", () => {
+    const residuo = { ...power("sacrifice", "Sacrificio", { bonus: 2 }), name: "Residuo" };
+    const other = card(null);
+    const played = (c: typeof residuo) => toCharacter(c, c.definition_id);
+    expect(lastingSacrifice([played(other), played(residuo)], [other, residuo])).toEqual({ points: 2, from: "Residuo" });
+    expect(lastingSacrifice([played(other), { ...played(residuo), power: null }], [other, residuo])).toEqual({ points: 0, from: undefined });
+    expect(lastingSacrifice([], [])).toEqual({ points: 0, from: undefined });
   });
 
   it("lists a side's played cards in order, without powers an Annullatore took", () => {

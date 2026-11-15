@@ -51,6 +51,7 @@ import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import {
   carriedInto,
   decisiveNote,
+  lastingSacrifice,
   outcomeOf,
   playedBefore,
   roundPowerNotes,
@@ -961,8 +962,15 @@ function RoundReveal({
   const wonBefore = (side: "me" | "opponent") => rounds.filter((r) => r.round < round.round && r.winner === side).length;
   const myStanding = { roundsWon: wonBefore("me"), opponentRoundsWon: wonBefore("opponent") };
   const theirStanding = { roundsWon: myStanding.opponentRoundsWon, opponentRoundsWon: myStanding.roundsWon };
-  const myPack = mine ? packBonus(toCharacter(mine, mine.definition_id), playedBefore(rounds, team, round.round, "me")) : 0;
-  const theirPack = theirs ? packBonus(toCharacter(theirs, theirs.definition_id), playedBefore(rounds, team, round.round, "opponent")) : 0;
+  const myBefore = playedBefore(rounds, team, round.round, "me");
+  const theirBefore = playedBefore(rounds, team, round.round, "opponent");
+  const myPack = mine ? packBonus(toCharacter(mine, mine.definition_id), myBefore) : 0;
+  const theirPack = theirs ? packBonus(toCharacter(theirs, theirs.definition_id), theirBefore) : 0;
+  // Sacrificio: its bonus lasts to the end of the match. The server's parts say it; plays
+  // stored before it lasted have parts without it, and got nothing from it.
+  const earlier = rounds.filter((r) => r.resolved && r.round < round.round);
+  const mySacrifice = lastingSacrifice(myBefore, earlier.map((r) => team.find((card) => card.instance_id === r.my_play?.instance_id)));
+  const theirSacrifice = lastingSacrifice(theirBefore, earlier.map((r) => r.opponent_play));
   // Spia shows a card only while the other side still has one not played (spy_reveals).
   const myPlayedIds = new Set(rounds.filter((r) => r.round <= round.round).map((r) => r.my_play?.instance_id));
   const myPlayedDefinitions = new Set(team.filter((card) => myPlayedIds.has(card.instance_id)).map((card) => card.definition_id));
@@ -980,6 +988,8 @@ function RoundReveal({
           opponentShielded: theirActing !== null && immuneToSabotage(theirActing),
           opponentSabotage: theirActing ? abilityMalusFrom(theirActing) : 0,
           pack: round.my_play.parts?.pack ?? myPack,
+          sacrifice: round.my_play.parts ? (round.my_play.parts.sacrifice ?? 0) : mySacrifice.points,
+          sacrificeFrom: mySacrifice.from,
           parts: round.my_play.parts,
           nullified: wasNullified(mine, theirs, round.modifier),
           silenced: wasSilenced(mine, round.modifier),
@@ -999,6 +1009,8 @@ function RoundReveal({
         opponentShielded: myActing !== null && immuneToSabotage(myActing),
         opponentSabotage: myActing ? abilityMalusFrom(myActing) : 0,
         pack: theirs.parts?.pack ?? theirPack,
+        sacrifice: theirs.parts ? (theirs.parts.sacrifice ?? 0) : theirSacrifice.points,
+        sacrificeFrom: theirSacrifice.from,
         parts: theirs.parts,
         nullified: wasNullified(theirs, mine, round.modifier),
         silenced: wasSilenced(theirs, round.modifier),

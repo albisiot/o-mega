@@ -52,6 +52,10 @@ const recesso = card("Recesso", "P224", { FOR: 5, RES: 6, ENE: 0, MAG: 10, COM: 
 const upkeep = card("Upkeep", "P218", { FOR: 3, RES: 5, ENE: 6, VEL: 2, TEC: 9 }, "heroes", 2);
 const statera = card("Statera", "P220", { FOR: 5, RES: 8, ENE: 0, MAG: 9, PER: 10 }, "neutrals", 2);
 const clementia = card("Clementia", "P214", { FOR: 3, RES: 4, ENE: 1, MAG: 10, COM: 3 }, "villains", 4);
+const residuo = card("Residuo", "P227", { FOR: 7, RES: 10, ENE: 0, VEL: 5, MAG: 7, COM: 10, FUR: 6 }, "heroes", 4);
+// Sacrificio: Residuo scores 0, then every later card of its side gets this until the end of the match.
+const SACRIFICE = 3;
+const lasting = n("Sacrificio di Residuo", "sacrifice", `+${SACRIFICE}`, { points: SACRIFICE, source: "pack" });
 const fogged: MatchCard = {
   definition_id: "",
   code: "",
@@ -206,10 +210,49 @@ const SCENES: Record<string, Scene> = {
     kind: "round",
     threat: "Rivolta in fonderia",
     abilities: ["RES", "MAG", "COM"],
-    me: [recesso, 26, [n("Riflesso", "reflect", "rimanda −1 a ogni abilità"), n("Sacrificio", "sacrifice", "+5", { points: 5, source: "carried" })]],
+    me: [recesso, 24, [n("Riflesso", "reflect", "rimanda −1 a ogni abilità"), lasting]],
     op: [clementia, 16, [n("Sabotatore", "sabotage", "fermato dallo scudo", { cancelled: "blocked" })]],
     winner: "me",
-    decisive: { side: "me", index: 1, text: "Senza Sacrificio finiva 21 a 16." },
+  },
+  // Residuo gives up its round: its score is 0, the bonus goes to every later card.
+  "sacrificio": {
+    kind: "round",
+    threat: "Rivolta in fonderia",
+    abilities: ["RES", "MAG", "COM"],
+    me: [residuo, 0, [n("Sacrificio", "sacrifice", `+${SACRIFICE} ai prossimi`, { timing: "after" })]],
+    op: [statera, 18, [n("Contrattacco", "counterpunch", "+1", { points: 1 })]],
+    winner: "opponent",
+  },
+  // A later card with three bonuses: its own power, Capobranco and Sacrificio, the longest name.
+  "sacrificio-duraturo": {
+    kind: "round",
+    threat: "Titano di metallo",
+    abilities: GOLEM,
+    me: [afterimage, 15, [n("Riverbero", "echo", "+2", { points: 2 }), n("Capobranco", "pack_leader", "+1", { points: 1, source: "pack" }), lasting]],
+    op: [malleus, 21, [n("Riscossa", "comeback", "+2", { points: 2, source: "carried" }), n("Sacrificio di Residuo", "sacrifice", `+${SACRIFICE}`, { points: SACRIFICE, source: "pack" })]],
+    winner: "opponent",
+  },
+  // Allarme Triplo: the bonus reaches the cards on every threat in the later rounds.
+  "sacrificio-triplo": {
+    kind: "round",
+    triple: true,
+    threat: "Gigante risvegliato",
+    abilities: GOLEM,
+    me: [dredge, 26, [lasting]],
+    op: [tifeo, 26, [n("Slancio", "momentum", "+2 al prossimo", { timing: "after" })]],
+    winner: "none",
+  },
+  // Rovescio: Residuo's 0 is the lowest score, so it wins its round.
+  "sacrificio-rovescio": {
+    kind: "round",
+    threat: "Il mondo capovolto",
+    abilities: ["FOR", "VEL", "MAG", "COM", "FUR"],
+    rule: { code: "reverse" },
+    twist: { name: "Rovescio", text: "Vince il punteggio più basso." },
+    tier: "#b15cff",
+    me: [residuo, 0, [n("Sacrificio", "sacrifice", `+${SACRIFICE} ai prossimi`, { timing: "after" })]],
+    op: [plinth, 24, []],
+    winner: "me",
   },
   "arrangiarsi": {
     kind: "round",
