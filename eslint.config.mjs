@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Deno code (Edge Functions), checked by the Supabase bundler on deploy.
     "supabase/functions/**",
+    // Claude Code's local files, such as the worktrees of other sessions.
+    ".claude/**",
   ]),
 ]);
 
