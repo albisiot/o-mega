@@ -83,11 +83,11 @@ export function AchievementsView() {
   return (
     <>
       <section className="flex shrink-0 flex-col gap-1.5">
-        <div className="flex items-end justify-between gap-3">
-          <p className="font-display text-[26px] uppercase leading-7 text-comic-yellow">
+        <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
+          <p className="min-w-0 font-display text-[26px] uppercase leading-7 text-comic-yellow">
             {board.discovered} / {board.total} <span className="text-lg">scoperte</span>
           </p>
-          <div className="flex gap-1" aria-label="Scoperte per grado">
+          <div className="flex min-w-0 flex-wrap justify-end gap-1" aria-label="Scoperte per grado">
             {TIERS.map((tier) => (
               <span
                 key={tier}
@@ -127,7 +127,7 @@ export function AchievementsView() {
         {message?.id === "title" && <p className="text-[13px] font-bold text-comic-magenta">{message.text}</p>}
       </section>
 
-      <ol className="grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-2 overflow-y-auto overscroll-contain pb-1">
+      <ol className="grid min-h-0 flex-1 auto-rows-min grid-cols-[repeat(2,minmax(0,1fr))] gap-2 overflow-y-auto overscroll-contain pb-1">
         {board.achievements.map((achievement) => (
           <Medal
             key={achievement.id}
@@ -172,7 +172,7 @@ function Medal({
 
   if (!achievement.done) {
     return (
-      <li className="flex flex-col items-center gap-1 bg-panel px-2 py-2.5 text-center">
+      <li className="flex min-w-0 flex-col items-center gap-1 bg-panel px-2 py-2.5 text-center">
         <span
           aria-hidden
           className="flex size-14 items-center justify-center rounded-full border-[3px] border-dashed bg-black font-display text-2xl text-muted"
@@ -180,13 +180,13 @@ function Medal({
         >
           ?
         </span>
-        <p className="font-display text-lg uppercase leading-5 text-muted">
+        <p className="max-w-full font-display text-lg uppercase leading-5 text-muted">
           ???<span className="sr-only"> Impresa segreta, grado {tierLabel}</span>
         </p>
         <p className="text-[11px] font-extrabold uppercase leading-3" style={{ color }} aria-hidden>
           {tierLabel}
         </p>
-        {achievement.hint && <p className="text-xs font-semibold italic leading-4 text-muted">«{achievement.hint}»</p>}
+        {achievement.hint && <p className="max-w-full text-xs font-semibold italic leading-4 text-muted [overflow-wrap:anywhere]">«{achievement.hint}»</p>}
       </li>
     );
   }
@@ -194,28 +194,31 @@ function Medal({
   const claimable = !achievement.claimed && hasReward(achievement);
   return (
     <li
-      className={`relative flex flex-col items-center gap-1 px-2 py-2.5 text-center ${
+      className={`relative flex min-w-0 flex-col items-center gap-1 px-2 py-2.5 text-center ${
         claimable ? "bg-comic-yellow text-black" : "bg-panel-raised"
-      } ${achievement.new ? "animate-card-reveal" : ""}`}
+      }`}
     >
+      {/* Inside the tile, and only the medal turns: nothing may stick out of the list sideways. */}
       {achievement.new && (
-        <span className="absolute -right-1 -top-1 -rotate-6 bg-comic-magenta px-1.5 text-[11px] font-extrabold uppercase leading-5 text-black">
+        <span className="absolute right-1 top-1 -rotate-6 bg-comic-magenta px-1.5 text-[11px] font-extrabold uppercase leading-5 text-black">
           Nuova!
         </span>
       )}
       <span
         aria-hidden
-        className="flex size-14 items-center justify-center rounded-full border-[3px] border-black font-sfx text-2xl text-black shadow-[2px_2px_0_#000]"
+        className={`flex size-14 items-center justify-center rounded-full border-[3px] border-black font-sfx text-2xl text-black shadow-[2px_2px_0_#000] ${
+          achievement.new ? "animate-card-reveal" : ""
+        }`}
         style={{ backgroundColor: color }}
       >
         ★
       </span>
-      <p className="font-display text-lg uppercase leading-5">{achievement.name}</p>
+      <p className="max-w-full font-display text-lg uppercase leading-5 [overflow-wrap:anywhere]">{achievement.name}</p>
       <p className="text-[11px] font-extrabold uppercase leading-3" style={claimable ? undefined : { color }}>
         {tierLabel} · {dateFormat.format(new Date(achievement.completed_at))}
       </p>
-      <p className={`text-xs font-semibold leading-4 ${claimable ? "" : "text-muted"}`}>{achievement.description}</p>
-      <p className={`text-xs font-extrabold leading-4 ${claimable ? "" : "text-comic-yellow"}`}>
+      <p className={`max-w-full text-xs font-semibold leading-4 [overflow-wrap:anywhere] ${claimable ? "" : "text-muted"}`}>{achievement.description}</p>
+      <p className={`max-w-full text-xs font-extrabold leading-4 [overflow-wrap:anywhere] ${claimable ? "" : "text-comic-yellow"}`}>
         {describeAchievementReward(achievement)}
       </p>
       {achievement.retired && <p className="text-[11px] font-bold uppercase leading-4 text-comic-cyan">Non più ottenibile</p>}

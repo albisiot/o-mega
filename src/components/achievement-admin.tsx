@@ -452,7 +452,8 @@ function AchievementForm({
 
         <fieldset className="flex flex-col gap-1">
           <legend className="text-sm font-bold">Grado</legend>
-          <div className="mt-1 grid grid-cols-4 gap-1.5">
+          {/* Inset: the slanted buttons would stick out of the form and let it slide sideways. */}
+          <div className="mt-1 grid grid-cols-[repeat(4,minmax(0,1fr))] gap-1.5 px-1">
             {TIERS.map((entry) => (
               <button
                 key={entry}
