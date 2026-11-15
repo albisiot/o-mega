@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "15 novembre 2026",
     changes: [
+      "Ora l'app ti avvisa delle belle notizie, in qualsiasi schermata tu sia. Quando completi un obiettivo del giorno (per esempio vincendo l'ultima partita che serviva) o raggiungi un traguardo di un evento, in alto scende per qualche secondo un banner giallo a fumetti con l'obiettivo e il premio. Toccalo per andare a riscattarlo, oppure fallo scorrere verso l'alto per chiuderlo. Se arrivano più notizie insieme si mettono in fila, e il banner aspetta sempre che finisca la tavola del round, l'allarme di una Minaccia rara o l'apertura di un pacchetto, così non copre niente e non anticipa niente. Le notizie che non hai visto perché l'app era chiusa compaiono quando la riapri.",
       "Sacrificio cambia, e conviene giocarlo presto. Residuo continua a contare 0 nel round in cui lo giochi, ma il suo bonus ora dura: da quel momento ogni tuo personaggio, di qualunque fazione, ha +3 fino a fine partita (prima era +5 al solo personaggio successivo). Giocato al primo round ripaga il round che cedi; giocato all'ultimo non ti dà niente. Se l'avversario gioca un Annullatore contro Residuo, Residuo segna come una carta normale e il bonus non parte; un Annullatore contro uno dei personaggi dopo gli toglie il suo potere, non il +3. In Allarme Triplo il bonus vale su tutte e tre le Minacce dai round successivi, in Emergenza e nella Grande Minaccia sui personaggi che giochi dopo. Nelle tavole lo vedi accanto a ogni carta come «Sacrificio di Residuo +3».",
     ],
   },
