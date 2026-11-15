@@ -791,7 +791,7 @@ function useLeaderboard() {
   return { board, failed };
 }
 
-/** A place in the ranking, low enough for the lists that fit the screen. */
+/** A place in the ranking, low enough for the lists that fit the screen; the title, when shown, goes under the name. */
 function RankRow({ entry }: { entry: EmergencyRank }) {
   return (
     <li
@@ -802,7 +802,18 @@ function RankRow({ entry }: { entry: EmergencyRank }) {
       <span className="flex min-w-0 items-center gap-2">
         <span className="w-6 shrink-0 font-display text-lg">{entry.rank}</span>
         <PlayerAvatar username={entry.username} avatarUrl={entry.avatar_url} size="xs" />
-        <span className="truncate">{entry.username}</span>
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate leading-4">{entry.username}</span>
+          {entry.title && (
+            <span
+              className={`truncate text-[10px] font-extrabold uppercase leading-3 ${
+                entry.is_me ? "text-black/70" : "text-muted"
+              }`}
+            >
+              «{entry.title}»
+            </span>
+          )}
+        </span>
       </span>
       <span className="shrink-0 font-display text-lg">
         {entry.passed} <span className="font-sans text-xs font-semibold">· {entry.total_score} pt</span>
@@ -811,57 +822,69 @@ function RankRow({ entry }: { entry: EmergencyRank }) {
   );
 }
 
-/** Before the attempt: today's ranking as it stands, scrolling in the room it gets. */
-function Leaderboard() {
-  const { board, failed } = useLeaderboard();
-
-  if (failed) return null;
-  const meOutsideTop = board?.me && !board.top.some((entry) => entry.is_me) ? board.me : null;
-  const rows = board ? [...board.top, ...(meOutsideTop ? [meOutsideTop] : [])] : [];
-
-  return (
-    <section className="flex min-h-0 flex-1 flex-col gap-1">
-      <h2 className="section-title">Classifica di oggi</h2>
-      {board && rows.length === 0 && (
-        <p className="text-sm font-medium text-muted">Nessuno ha ancora finito: puoi essere il primo.</p>
-      )}
-      <ol className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain">
-        {rows.map((entry) => (
-          <RankRow key={entry.rank} entry={entry} />
-        ))}
-      </ol>
-    </section>
-  );
-}
-
-/** After the attempt: the day's podium and, when lower down, the player's own place. */
-function Podium({ board, failed }: { board: EmergencyLeaderboard | null; failed: boolean }) {
-  if (failed) return <p className="text-sm font-medium text-muted">La classifica non è disponibile ora.</p>;
-  if (!board) return null;
-  const podium = board.top.slice(0, 3);
+/**
+ * The day's first players (balance.emergency.leaderboardSize, cut by the server) and,
+ * when lower down, the player's own place under them.
+ */
+function RankList({ board }: { board: EmergencyLeaderboard }) {
   const me = board.me ?? board.top.find((entry) => entry.is_me) ?? null;
-  const meBelow = me && !podium.some((entry) => entry.is_me) ? me : null;
-  if (podium.length === 0) return <p className="text-sm font-medium text-muted">Nessuno ha ancora finito: puoi essere il primo.</p>;
+  const meBelow = me && !board.top.some((entry) => entry.is_me) ? me : null;
 
   return (
-    <div className="flex flex-col gap-0.5">
+    <>
       <ol className="flex flex-col gap-0.5">
-        {podium.map((entry) => (
+        {board.top.map((entry) => (
           <RankRow key={entry.rank} entry={entry} />
         ))}
       </ol>
       {meBelow && (
         <>
-          {meBelow.rank > podium.length + 1 && (
+          {meBelow.rank > board.top.length + 1 && (
             <p aria-hidden className="text-center font-display leading-4 tracking-[0.4em] text-faint">
               ···
             </p>
           )}
-          <ol start={meBelow.rank}>
+          <ol start={meBelow.rank} aria-label="La tua posizione">
             <RankRow entry={meBelow} />
           </ol>
         </>
       )}
+    </>
+  );
+}
+
+/** Before the attempt: today's ranking as it stands, scrolling in the room it gets. */
+function Leaderboard() {
+  const { board, failed } = useLeaderboard();
+
+  if (failed) return null;
+
+  return (
+    <section className="flex min-h-0 flex-1 flex-col gap-1">
+      <h2 className="section-title">Classifica di oggi</h2>
+      {board && board.top.length === 0 && (
+        <p className="text-sm font-medium text-muted">Nessuno ha ancora finito: puoi essere il primo.</p>
+      )}
+      {board && board.top.length > 0 && (
+        <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain">
+          <RankList board={board} />
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** After the attempt: the day's first players and, when lower down, the player's own place. */
+function Podium({ board, failed }: { board: EmergencyLeaderboard | null; failed: boolean }) {
+  if (failed) return <p className="text-sm font-medium text-muted">La classifica non è disponibile ora.</p>;
+  if (!board) return null;
+  if (board.top.length === 0) {
+    return <p className="text-sm font-medium text-muted">Nessuno ha ancora finito: puoi essere il primo.</p>;
+  }
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <RankList board={board} />
       <p className="mt-1 text-center text-xs font-semibold text-muted">
         {board.players === 1 ? "1 giocatore oggi" : `${board.players} giocatori oggi`}
       </p>

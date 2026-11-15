@@ -88,6 +88,8 @@ export type EmergencyRank = {
   rank: number;
   username: string;
   avatar_url: string | null;
+  /** The title the player shows (Imprese), or null. */
+  title: string | null;
   passed: number;
   total_score: number;
   is_me: boolean;
