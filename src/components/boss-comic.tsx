@@ -24,6 +24,7 @@ import { useBannerHold } from "@/lib/banner-hold";
 import { playSound } from "@/lib/comic-sound";
 import { chargeSource, powerFamily, powerSfx } from "@/lib/effect-families";
 import { tieBreakReason } from "@/lib/round-powers";
+import { TieInfo } from "@/components/tie-info";
 import { LONG_PRESS_CLASS, type LongPressHandlers } from "@/lib/use-long-press";
 
 // A Grande Minaccia turn told as a comic page (direction D): the boss with its five
@@ -235,6 +236,8 @@ function EntryPanel({
   const voided = settled && entry.holder === null;
   const decisive = decisiveIndex(entry);
   const note = sticker(entry);
+  // Equal scores on the front: once settled, an «i» on the card met there tells what settled it.
+  const tie = settled ? tieLine(entry, frontName) : null;
   const after = entry.notes.map((n, index) => ({ note: n, index })).filter(({ note: n }) => n.active && n.timing === "after");
   const order = fired.flatMap((beat) => (beat.kind === "note" && beat.side === side ? [beat.index] : []));
 
@@ -277,6 +280,7 @@ function EntryPanel({
             facingLost ? "comic-lost" : ""
           }`}
         >
+          {tie && <TieInfo text={tie} className="absolute -left-4 -top-4 z-[3]" />}
           <div data-fx={`${side}-facing`} className="relative h-[66px] border-[3px] border-black bg-black shadow-[3px_3px_0_#000]">
             {entry.facing.card && <ComicArt card={entry.facing.card} className="comic-dim absolute inset-0 h-full w-full" />}
             {/* On the art, not above it: above, on a short panel, it covered the front's abilities. */}
@@ -342,12 +346,12 @@ function EntryPanel({
   );
 }
 
-/** The entry's front as [front, line] when two equal scores met there; none otherwise. */
-function tieLine(entry: BossEntry, frontName: string): [number, string][] {
+/** What settled the entry's front when two equal scores met there (for the «i»); null otherwise. */
+function tieLine(entry: BossEntry, frontName: string): string | null {
   const facing = entry.facing;
-  if (!facing || facing.score !== entry.score) return [];
+  if (!facing || facing.score !== entry.score) return null;
   const prefix = `${frontName}, pari ${entry.score} a ${facing.score}`;
-  if (entry.holder === null) return [[entry.front, `${prefix} e ${tieBreakReason(null, entry, null)}.`]];
+  if (entry.holder === null) return `${prefix} e ${tieBreakReason(null, entry, null)}.`;
   const won = entry.holder === entry.side;
   const [winner, loser] = won ? [entry, facing] : [facing, entry];
   // Implacabile comes before the highest value: the entry's own note tells it, or a highest value that could not have won.
@@ -355,7 +359,7 @@ function tieLine(entry: BossEntry, frontName: string): [number, string][] {
     (won && entry.notes.some((note) => note.active && note.timing === "tie")) || winner.highest <= loser.highest
       ? (winner.card?.name ?? "?")
       : null;
-  return [[entry.front, `${prefix}: ${tieBreakReason(winner, loser, null, relentless)}.`]];
+  return `${prefix}: ${tieBreakReason(winner, loser, null, relentless)}.`;
 }
 
 /** A Grande Minaccia turn as a comic page. */
@@ -410,8 +414,6 @@ export function BossComic(props: BossComicProps) {
     }
     return has("payout") ? props.holdersAfter[front] : props.holdersBefore[front];
   };
-  // Fronts settled on equal scores: what settled them (SPEC §5.6), once per front.
-  const tieLines = [...new Map(SIDES.flatMap((side) => tieLine(entries[side], props.fronts[entries[side].front]?.name ?? ""))).values()];
   const behind = props.totals.opponent - props.totals.me;
   const left = props.turns - props.turn;
   const standing =
@@ -517,7 +519,7 @@ export function BossComic(props: BossComicProps) {
               <p className="text-[11px] font-bold leading-[13px]">
                 Totale {props.totals.me} – {props.totals.opponent}. {standing}
               </p>
-              {[...tieLines, ...props.notices].map((notice) => (
+              {props.notices.map((notice) => (
                 <p key={notice} className="text-[10px] font-semibold leading-3 text-[#444]">
                   {notice}
                 </p>

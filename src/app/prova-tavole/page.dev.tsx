@@ -87,7 +87,7 @@ type RoundScene = {
   /** The line under the verdict; a win of 32 to 31 when not given. */
   resultLine?: string;
 };
-type Scene = RoundScene | { kind: "boss" } | { kind: "emergency"; reverse?: boolean } | { kind: "triple-map" };
+type Scene = RoundScene | { kind: "boss"; tie?: boolean } | { kind: "emergency"; reverse?: boolean } | { kind: "triple-map" };
 
 const SCENES: Record<string, Scene> = {
   "tutto-insieme": {
@@ -307,6 +307,8 @@ const SCENES: Record<string, Scene> = {
     resultLine: "Pari 11 a 11: vince Plinth con Implacabile.",
   },
   "grande-minaccia": { kind: "boss" },
+  // Equal scores on a front: the «i» on the card met there.
+  "grande-minaccia-pari": { kind: "boss", tie: true },
   "triplo-mappa": { kind: "triple-map" },
   "emergenza": { kind: "emergency" },
   // Under Rovescio the target is a maximum: Sabotatore does not move it.
@@ -341,7 +343,7 @@ function bossEntry(side: "me" | "opponent", c: MatchCard, front: number, score: 
     score,
     highest: 10,
     notes,
-    facing: facing ? { card: facing, score: 23, highest: 10, since: 1, together: false } : null,
+    facing: facing ? { card: facing, score: 23, highest: 9, since: 1, together: false } : null,
     holder: side,
   };
 }
@@ -409,7 +411,7 @@ function SceneView({ id }: { id: string }) {
         holdersAfter={["me", "opponent", "me", "me", "opponent"]}
         rivalName="Bot Difficile"
         entries={{
-          me: bossEntry("me", dredge, 2, 27, [n("Tuttofare", "all_rounder", "+3", { points: 3 }), n("Riscossa", "comeback", "+2", { points: 2, source: "carried" }), n("Slancio", "momentum", "+2 al prossimo", { timing: "after" })], talos),
+          me: bossEntry("me", dredge, 2, scene.tie ? 23 : 27, [n("Tuttofare", "all_rounder", "+3", { points: 3 }), n("Riscossa", "comeback", "+2", { points: 2, source: "carried" }), n("Slancio", "momentum", "+2 al prossimo", { timing: "after" })], talos),
           opponent: bossEntry("opponent", malleus, 4, 25, [n("Sabotatore", "sabotage", "−1 a ogni abilità rivale"), { name: "Legame", code: "bond", effect: null, active: false, source: "own" }], plinth),
         }}
         stats={{ me: "FOR 8 · RES 8 · ENE 7 · TEC 3", opponent: "FOR 10 · RES 8 · VOL 5 · COM 4" }}

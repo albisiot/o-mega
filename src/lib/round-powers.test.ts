@@ -7,6 +7,7 @@ import {
   playedBefore,
   roundPowerNotes,
   tieBreakReason,
+  tieExplanation,
   tieWonByRelentless,
 } from "./round-powers";
 
@@ -309,5 +310,29 @@ describe("decisiveNote after Sabotatore, and under Rovescio", () => {
   it("the tie-break line uses the values after Sabotatore, as the server sends them", () => {
     expect(tieBreakReason({ highest: 7 }, { highest: 6 }, null)).toBe("vince il valore più alto, 7 contro 6");
     expect(tieBreakReason(null, { highest: 7 }, null)).toBe("stesso valore più alto (7): round nullo");
+  });
+});
+
+describe("tieExplanation", () => {
+  const relentless = card({ code: "relentless", name: "Implacabile", text: "", params: {} });
+
+  it("is null when the totals differ or nothing is resolved", () => {
+    expect(tieExplanation({ score: 8, highest: 5 }, { score: 7, highest: 9 }, "me", null, null, null)).toBeNull();
+    expect(tieExplanation({ score: 7, highest: 5 }, { score: 7, highest: 9 }, null, null, null, null)).toBeNull();
+  });
+
+  it("tells the winner's highest value first, whoever won", () => {
+    expect(tieExplanation({ score: 7, highest: 5 }, { score: 7, highest: 9 }, "opponent", null, null, null)).toBe(
+      "Pari 7 a 7: vince il valore più alto, 9 contro 5.",
+    );
+  });
+
+  it("tells a void round and Implacabile", () => {
+    expect(tieExplanation({ score: 7, highest: 9 }, { score: 7, highest: 9 }, "none", null, null, null)).toBe(
+      "Pari 7 a 7 e stesso valore più alto (9): round nullo.",
+    );
+    expect(tieExplanation({ score: 7, highest: 5 }, { score: 7, highest: 9 }, "me", relentless, card(null), null)).toBe(
+      "Pari 7 a 7: vince Prova con Implacabile.",
+    );
   });
 });

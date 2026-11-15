@@ -17,6 +17,7 @@ import { Silhouette } from "@/components/card-view";
 import { ConquestPanel, ConquestPick, SecondsLeft } from "@/components/conquest-panel";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
+import { TieInfo } from "@/components/tie-info";
 import { useEventPointsFor } from "@/components/event-banner";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { StoryRewardPanel, useStoryReward } from "@/components/story-reward";
@@ -58,6 +59,7 @@ import {
   roundPowerNotes,
   roundThreat,
   tieBreakReason,
+  tieExplanation,
   tieWonByRelentless,
   wasNullified,
   wasSilenced,
@@ -483,6 +485,20 @@ function LevelTrack({
   const openPlay = openRound === null ? null : view.rounds.find((r) => r.round === openRound)?.opponent_play ?? null;
   const openThreat = openRound === null ? null : view.foreseen_threats?.find((t) => t.round === openRound) ?? null;
   const detail = useCardDetail();
+  // A round that ended on equal totals: the cell shows an «i» and its balloon says what settled it.
+  // The strip only has the rounds already revealed, so this never tells the outcome early.
+  const tieOf = (round: MatchView["rounds"][number] | undefined) =>
+    round?.resolved
+      ? tieExplanation(
+          round.my_play,
+          round.opponent_play,
+          round.winner,
+          view.my_team.find((card) => card.instance_id === round.my_play?.instance_id),
+          round.opponent_play,
+          round.modifier,
+        )
+      : null;
+  const openTie = openRound === null ? null : tieOf(view.rounds.find((r) => r.round === openRound));
 
   return (
     <>
@@ -491,6 +507,7 @@ function LevelTrack({
           const round = view.rounds.find((r) => r.round === i + 1);
           const played = round?.opponent_play ?? null;
           const foreseen = view.foreseen_threats?.find((t) => t.round === i + 1) ?? null;
+          const tie = tieOf(round);
           const isCurrent = view.status === "active" && view.current_round === i + 1;
           // A rare threat glows in its tier's colour from the start (SPEC §5.15).
           const rarity = view.threat_rarities?.[i] ?? null;
@@ -501,7 +518,7 @@ function LevelTrack({
               : "border-2 border-line text-foreground";
           const label = `Livello ${levelText(level)}${rarity ? `, ${rarityTitle(rarity)}` : ""}${
             played ? `, ${opponentName} ha giocato ${played.name}` : ""
-          }${foreseen ? `, Minaccia prevista: ${foreseen.name}` : ""}`;
+          }${foreseen ? `, Minaccia prevista: ${foreseen.name}` : ""}${tie ? ", finito a punti pari: tocca per sapere perché" : ""}`;
           const cell = `relative flex h-11 w-full -skew-x-8 items-center justify-center font-display text-[21px] ${style}`;
           const marks = (
             <>
@@ -514,6 +531,14 @@ function LevelTrack({
                   decoding="async"
                   className="absolute -bottom-[3px] -right-[3px] h-[22px] w-[17px] border-2 border-black object-cover object-top"
                 />
+              )}
+              {tie && (
+                <span
+                  aria-hidden
+                  className="absolute -left-1 -top-1.5 grid h-4 w-4 skew-x-8 place-items-center rounded-full border-2 border-black bg-comic-yellow font-display text-[10px] leading-none text-black"
+                >
+                  i
+                </span>
               )}
               {foreseen && (
                 <svg viewBox="0 0 16 10" className="absolute right-0.5 top-0.5 h-2.5 w-4" aria-hidden>
@@ -563,6 +588,7 @@ function LevelTrack({
                 <span className="font-display text-base uppercase">{openPlay.name}</span>
               </p>
             )}
+            {openTie && <p className="mt-2 border-l-4 border-black pl-2">{openTie}</p>}
             {openThreat && (
               <p className={openPlay ? "mt-2" : ""}>
                 <span className="block text-[11px] font-extrabold text-black/60">
@@ -1296,14 +1322,17 @@ function MatchResult({
                 r.winner === "me" ? "text-comic-cyan" : r.winner === "opponent" ? "text-comic-magenta" : "text-muted";
               const frame =
                 r.winner === "me" ? "border-comic-cyan" : r.winner === "opponent" ? "border-comic-magenta" : "border-line";
+              // Equal totals: an «i» on the tile tells what settled the round.
+              const tie = tieExplanation(r.my_play, r.opponent_play, r.winner, mine, r.opponent_play, r.modifier);
               return (
                 <li
                   key={r.round}
                   aria-label={`Round ${r.round}: ${mine?.name ?? "—"} contro ${r.opponent_play?.name ?? "—"}, ${
                     r.my_play?.score ?? "—"
                   } a ${r.opponent_play?.score ?? "—"}`}
-                  className={`flex min-w-0 flex-col text-center ${LONG_PRESS_CLASS}`}
+                  className={`relative flex min-w-0 flex-col text-center ${LONG_PRESS_CLASS}`}
                 >
+                  {tie && <TieInfo text={tie} className="absolute -right-2 -top-2 z-[1]" />}
                   {/* A long press on the tile shows your card whole; on "vs", the opponent's. */}
                   <span
                     aria-hidden
@@ -1351,23 +1380,6 @@ function MatchResult({
               );
             })}
         </ol>
-        {/* Rounds with equal totals: what settled them, as the tiles alone cannot say. */}
-        {view.rounds
-          .filter((r) => r.resolved && r.my_play && r.opponent_play && r.my_play.score === r.opponent_play.score)
-          .map((r) => {
-            const mine = cardOf(r.my_play?.instance_id);
-            const theirs = r.opponent_play!;
-            const myPlay = r.my_play!;
-            const won = r.winner === "me" ? myPlay : r.winner === "opponent" ? theirs : null;
-            const lost = r.winner === "me" ? theirs : myPlay;
-            const [wonCard, lostCard] = r.winner === "me" ? [mine, theirs] : [theirs, mine];
-            const relentless = won && tieWonByRelentless(wonCard, lostCard, r.modifier) ? (wonCard?.name ?? null) : null;
-            return (
-              <p key={r.round} className="text-xs font-semibold text-muted">
-                Round {r.round}, pari {myPlay.score} a {theirs.score}: {tieBreakReason(won, lost, r.modifier, relentless)}.
-              </p>
-            );
-          })}
       </section>
 
       {/* Side by side: the room above goes to the result. */}

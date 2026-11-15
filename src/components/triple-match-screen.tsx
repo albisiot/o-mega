@@ -28,6 +28,8 @@ import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
 import { tripleBeforeRound, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
 import { TripleMapReveal } from "@/components/triple-comic";
+import { TieInfo } from "@/components/tie-info";
+import { tieExplanation } from "@/lib/round-powers";
 import { oddsText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
 import { describeThreatModifier } from "@/lib/threat-modifiers";
 import {
@@ -873,6 +875,8 @@ function TripleResult({ view, rival }: { view: TripleView; rival: string }) {
   const reward = useMatchReward(view.id);
   const eventPoints = useEventPointsFor(view.id);
   const chip = "relative -skew-x-8 px-3 py-1 text-sm font-extrabold";
+  // Some threat ended on equal totals: the rows keep room for the «i», so their scores line up.
+  const anyTie = view.rounds.some((r) => r.resolved && r.contests.some((c) => c.my_play && c.opponent_play && c.my_play.score === c.opponent_play.score));
 
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
@@ -919,6 +923,8 @@ function TripleResult({ view, rival }: { view: TripleView; rival: string }) {
                   .sort((a, b) => a.slot - b.slot)
                   .map((c) => {
                     const mine = view.my_deck.find((card) => card.instance_id === c.my_play?.instance_id);
+                    // Equal totals: an «i» at the end of the row tells what settled the threat.
+                    const tie = tieExplanation(c.my_play, c.opponent_play, c.winner, mine, c.opponent_play, view.threats[c.slot]?.modifier);
                     return (
                       <p key={c.slot} className="flex items-center gap-2 text-xs font-semibold">
                         <span className="w-20 shrink-0 truncate text-muted">{view.threats[c.slot]?.name}</span>
@@ -928,6 +934,7 @@ function TripleResult({ view, rival }: { view: TripleView; rival: string }) {
                         <span className={`min-w-0 flex-1 truncate text-right ${c.winner === "opponent" ? "text-comic-orange" : "text-muted"}`}>
                           {c.opponent_play?.score ?? 0} {c.opponent_play?.name ?? "—"}
                         </span>
+                        {tie ? <TieInfo text={tie} className="-my-2 -mr-2 shrink-0" /> : anyTie && <span aria-hidden className="w-7 shrink-0" />}
                       </p>
                     );
                   })}
@@ -935,8 +942,7 @@ function TripleResult({ view, rival }: { view: TripleView; rival: string }) {
             ))}
         </ol>
         <p className="text-xs font-semibold text-muted">
-          A sinistra tu, a destra {rival}: in colore chi ha vinto la Minaccia. A punti pari vince il valore più alto tra le abilità
-          richieste.
+          A sinistra tu, a destra {rival}: in colore chi ha vinto la Minaccia.
         </p>
       </section>
 

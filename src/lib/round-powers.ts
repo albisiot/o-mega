@@ -292,6 +292,27 @@ export function tieBreakReason(
 }
 
 /**
+ * What settled a resolved round, or threat, that ended on equal totals, as one sentence
+ * for both players; null when the totals differ or the round is not resolved yet.
+ */
+export function tieExplanation(
+  myPlay: { score: number; highest: number } | null | undefined,
+  theirPlay: { score: number; highest: number } | null | undefined,
+  winner: "me" | "opponent" | "none" | null | undefined,
+  myCard: MatchCard | null | undefined,
+  theirCard: MatchCard | null | undefined,
+  modifier: ThreatModifier | null | undefined,
+): string | null {
+  if (!myPlay || !theirPlay || !winner || myPlay.score !== theirPlay.score) return null;
+  if (winner === "none") return `Pari ${myPlay.score} a ${theirPlay.score} e ${tieBreakReason(null, myPlay, modifier)}.`;
+  const won = winner === "me";
+  const [winnerPlay, loserPlay] = won ? [myPlay, theirPlay] : [theirPlay, myPlay];
+  const [winnerCard, loserCard] = won ? [myCard, theirCard] : [theirCard, myCard];
+  const relentless = tieWonByRelentless(winnerCard, loserCard, modifier) ? (winnerCard?.name ?? null) : null;
+  return `Pari ${winnerPlay.score} a ${loserPlay.score}: ${tieBreakReason(winnerPlay, loserPlay, modifier, relentless)}.`;
+}
+
+/**
  * The bonus a side's card receives from the card that side played in the previous
  * round (Riscossa after a loss, Slancio after a win), and the power that gave it.
  * Nothing when an opposing Annullatore, or Silenzio della tomba, stopped that power.
