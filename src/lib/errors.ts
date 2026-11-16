@@ -80,6 +80,7 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   event_overlap: "In quel periodo c'è già un altro evento.",
   event_invalid_traits: "Controlla i personaggi ammessi: rarità, fazioni e tratti devono esistere e lasciare almeno 8 personaggi (una squadra di Emergenza).",
   event_invalid_points: "Controlla i punti: numeri interi da 0 a 1000, tetto giornaliero da 1 in su.",
+  event_invalid_seal_target: "Il traguardo di Sigilli del Quadrante va da 5 a 60, oppure lascialo vuoto.",
   event_invalid_tiers: "Controlla i traguardi: da 1 a 5, ognuno con più punti del precedente, fino a 10 pacchetti e 10 carte.",
   event_tier_no_reward: "Ogni traguardo deve dare almeno un premio: monete, pacchetti o carte.",
   event_invalid_card: "Una delle carte scelte non si può dare come premio.",

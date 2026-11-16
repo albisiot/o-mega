@@ -177,8 +177,6 @@ export const balance = {
     handSize: 3,
     /** Cards each side plays: size² / 2. */
     cardsPerSide: 8,
-    /** Seals each side has. */
-    seals: 15,
     /** Free seals on the opening card of the side that plays first. */
     firstPlayerSeals: 3,
     /** Time for one move. */
@@ -197,8 +195,16 @@ export const balance = {
       valueOffset: 2,
       /** Seals fewer on the card for every border threat higher than its side. */
       bite: 1,
-      /** Seals each side has on the fixed grid, instead of `seals`. */
-      seals: 20,
+    },
+    /**
+     * Seals have no limit. An event may set a seal target (events.quadrant_seal_target):
+     * the first side with that many seals on the grid wins. The target an admin may choose.
+     */
+    sealTarget: {
+      min: 5,
+      max: 60,
+      /** What the event editor suggests. */
+      suggested: 12,
     },
   },
 

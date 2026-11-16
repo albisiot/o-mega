@@ -558,6 +558,7 @@ function PlayArea({
           <div className="min-w-0">
             <p className="text-xs font-extrabold">
               Mossa {Math.min(view.move, view.moves_count)} di {view.moves_count}
+              {view.seal_target && ` · vince chi arriva a ${view.seal_target}`}
               {view.variant === "shifting" && ` · ${frozen.columns ? "colonne bloccate" : "colonne libere"}, ${frozen.rows ? "righe bloccate" : "righe libere"}`}
             </p>
             <p className="font-display text-[20px] uppercase leading-6">{status}</p>
@@ -1211,10 +1212,16 @@ function RulesText({ view }: { view: QuadrantView }) {
         {view.variant === "fixed"
           ? "Griglia fissa: i bordi del 4×4 ci sono dall'inizio."
           : "Griglia mobile: la griglia si sposta finché le carte non occupano 4 colonne (si bloccano destra e sinistra) o 4 righe (si bloccano alto e basso)."}{" "}
-        Ognuno ha {view.seals_per_side} Sigilli; chi apre ne riceve {view.first_player_seals} sulla prima carta. Dopo{" "}
+        I Sigilli non finiscono mai; chi apre ne riceve {view.first_player_seals} sulla prima carta. Dopo{" "}
         {view.cards_per_side} carte a testa vince chi ha più Sigilli sulla griglia, poi chi controlla più carte, poi chi ha giocato
         per secondo.
       </p>
+      {view.seal_target && (
+        <p>
+          Regola dell&apos;evento: vince subito chi arriva per primo a {view.seal_target} Sigilli sulla griglia, anche prima della
+          fine.
+        </p>
+      )}
       {view.border_threats?.length === 4 && (
         <p>
           Su ogni bordo c&apos;è una Minaccia:{" "}
@@ -1254,6 +1261,9 @@ function QuadrantTutorial({ view, onClose }: { view: QuadrantView; onClose: () =
           <li>
             Onda d&apos;urto: se la carta che batti a sua volta batte una sua vicina, a quella vicina togli un Sigillo avversario.
           </li>
+          {view.seal_target && (
+            <li>Regola dell&apos;evento: chi arriva per primo a {view.seal_target} Sigilli sulla griglia vince subito.</li>
+          )}
           {view.border_threats?.length === 4 && (
             <li>
               Sui 4 bordi ci sono 4 Minacce, ognuna col suo numero. Un lato rivolto verso un bordo che supera la Minaccia vale un
@@ -1282,6 +1292,13 @@ function QuadrantResult({ view, rival }: { view: QuadrantView; rival: string }) 
   const eventPoints = useEventPointsFor(view.id);
   const chip = "relative -skew-x-8 px-3 py-1 text-sm font-extrabold";
   const tied = view.seals.me === view.seals.opponent;
+  // An event's seal target, reached before the last move.
+  const reachedTarget =
+    view.end_reason === "completed" && view.seal_target && Math.max(view.seals.me, view.seals.opponent) >= view.seal_target
+      ? view.seals.me >= view.seal_target
+        ? `Hai raggiunto il traguardo dell'evento: ${view.seal_target} Sigilli.`
+        : `${rival} ha raggiunto il traguardo dell'evento: ${view.seal_target} Sigilli.`
+      : null;
   const tieBreak = !tied
     ? null
     : view.controlled.me !== view.controlled.opponent
@@ -1305,7 +1322,10 @@ function QuadrantResult({ view, rival }: { view: QuadrantView; rival: string }) 
         <p className={`${chip} bg-black text-comic-yellow`}>
           Sigilli {view.seals.me} – {view.seals.opponent}
         </p>
-        {tieBreak && view.end_reason === "completed" && <p className={`${chip} max-w-xs bg-white text-xs text-black`}>{tieBreak}</p>}
+        {reachedTarget && <p className={`${chip} max-w-xs bg-white text-xs text-black`}>{reachedTarget}</p>}
+        {tieBreak && !reachedTarget && view.end_reason === "completed" && (
+          <p className={`${chip} max-w-xs bg-white text-xs text-black`}>{tieBreak}</p>
+        )}
         <div className="relative flex flex-wrap justify-center gap-2">
           <RewardChips reward={reward} chip={chip} />
           {eventPoints && <p className={`${chip} bg-comic-yellow text-black`}>{describeEventPoints(eventPoints)}</p>}

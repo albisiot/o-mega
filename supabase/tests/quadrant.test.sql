@@ -56,7 +56,7 @@ do $$
 begin
   assert public.config_int('quadrant.size') = 4 and public.config_int('quadrant.deck_size') = 10, 'size and deck';
   assert public.config_int('quadrant.hand_size') = 3 and public.config_int('quadrant.cards_per_side') = 8, 'hand and cards';
-  assert public.config_int('quadrant.seals') = 15 and public.config_int('quadrant.first_player_seals') = 3, 'seals';
+  assert public.config_int('quadrant.first_player_seals') = 3, 'free seals';
   assert public.team_size_for('quadrant') = 10 and public.team_size_for('quadrant_shifting') = 10, 'a deck of ten';
   assert public.team_size_for('classic') = 5 and public.team_size_for('triple') = 9, 'other formats unchanged';
   assert public.quadrant_side_of_move('b', 1) = 'b' and public.quadrant_side_of_move('b', 2) = 'a', 'turns';

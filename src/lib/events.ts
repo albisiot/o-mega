@@ -50,6 +50,8 @@ export type GameEvent = {
   ends_at: string;
   points: EventPoints;
   daily_cap: number | null;
+  /** Quadrante: the first side with this many seals on the grid wins; null (or missing) without a target. */
+  quadrant_seal_target?: number | null;
   /** Only teams of these characters earn points, one part per category; empty (or missing): everyone. */
   admitted?: { category: string; traits: string[] }[];
   /** How many characters the rule admits; null without a rule. */

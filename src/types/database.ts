@@ -1323,6 +1323,7 @@ export type Database = {
           id: string
           is_active: boolean
           points: Json
+          quadrant_seal_target: number | null
           rarities: string[]
           starts_at: string
           title: string
@@ -1338,6 +1339,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           points: Json
+          quadrant_seal_target?: number | null
           rarities?: string[]
           starts_at: string
           title: string
@@ -1353,6 +1355,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           points?: Json
+          quadrant_seal_target?: number | null
           rarities?: string[]
           starts_at?: string
           title?: string
@@ -1825,6 +1828,7 @@ export type Database = {
           quadrant_board: Json | null
           quadrant_first: string | null
           quadrant_threats: Json | null
+          quadrant_seal_target: number | null
           result: string | null
           reward_coins_a: number | null
           reward_coins_b: number | null
@@ -1861,6 +1865,7 @@ export type Database = {
           quadrant_board?: Json | null
           quadrant_first?: string | null
           quadrant_threats?: Json | null
+          quadrant_seal_target?: number | null
           result?: string | null
           reward_coins_a?: number | null
           reward_coins_b?: number | null
@@ -1897,6 +1902,7 @@ export type Database = {
           quadrant_board?: Json | null
           quadrant_first?: string | null
           quadrant_threats?: Json | null
+          quadrant_seal_target?: number | null
           result?: string | null
           reward_coins_a?: number | null
           reward_coins_b?: number | null
@@ -3153,6 +3159,7 @@ export type Database = {
           p_factions?: string[]
           p_id?: string
           p_points: Json
+          p_quadrant_seal_target?: number
           p_rarities?: string[]
           p_starts_at: string
           p_tiers: Json
@@ -4091,7 +4098,6 @@ export type Database = {
         Args: { p_board: Json; p_side: string }
         Returns: number
       }
-      quadrant_seals_per_side: { Args: { p_threats: Json }; Returns: number }
       quadrant_side_of_move: {
         Args: { p_first: string; p_move: number }
         Returns: string

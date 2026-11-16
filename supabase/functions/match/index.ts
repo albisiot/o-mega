@@ -141,8 +141,8 @@ type Loaded = {
   boss: BossRules;
   triple: TripleRules;
   quadrant: QuadrantRules;
-  /** Fixed grid with border threats: the seals per side and the bite (SPEC §5.14). */
-  quadrantBorders: { seals: number; bite: number };
+  /** Fixed grid with border threats: the seals a card loses to a higher threat (SPEC §5.14). */
+  quadrantBorders: { bite: number };
   graceSeconds: number;
   catalog: BotMatchCatalog;
   /** Usual threats of Nuova Megara only: Emergenza never draws the places beyond it. */
@@ -284,11 +284,9 @@ async function load(): Promise<Loaded> {
       deckSize: value("quadrant.deck_size"),
       handSize: value("quadrant.hand_size"),
       cardsPerSide: value("quadrant.cards_per_side"),
-      seals: value("quadrant.seals"),
       firstPlayerSeals: value("quadrant.first_player_seals"),
     },
     quadrantBorders: {
-      seals: value("quadrant.fixed_grid_threats.seals"),
       bite: value("quadrant.fixed_grid_threats.bite"),
     },
     graceSeconds: value("match.timeout_grace_seconds"),
@@ -361,6 +359,8 @@ type MatchContext = {
     quadrant_first?: Side | null;
     /** Fixed grid: the border threats in side order (top, right, bottom, left); null without them. */
     quadrant_threats?: { threat_id: string; value: number }[] | null;
+    /** Events: the first side with this many seals on the grid wins; null without a target. */
+    quadrant_seal_target?: number | null;
   };
   teams: { side: Side; card_instance_ids: string[] | null; definition_ids: string[] }[];
   rounds: {
@@ -492,14 +492,11 @@ function quadrantState(
   // Border threats only on the fixed grid, and only on the matches that drew them.
   const borders = match.format === "quadrant" && match.quadrant_threats?.length === 4 ? match.quadrant_threats : null;
   return {
-    rules: borders
-      ? {
-          ...loaded.quadrant,
-          seals: loaded.quadrantBorders.seals,
-          borderThreats: borders.map((t) => t.value),
-          borderBite: loaded.quadrantBorders.bite,
-        }
-      : loaded.quadrant,
+    rules: {
+      ...loaded.quadrant,
+      ...(borders ? { borderThreats: borders.map((t) => t.value), borderBite: loaded.quadrantBorders.bite } : {}),
+      sealTarget: match.quadrant_seal_target ?? null,
+    },
     variant: match.format === "quadrant_shifting" ? "shifting" : "fixed",
     abilities,
     first,

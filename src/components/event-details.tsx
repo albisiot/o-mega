@@ -80,6 +80,11 @@ export function EventDetails({ event, now, abilities }: { event: GameEvent; now:
             Solo personaggi {describeAdmitted(event.admitted ?? [])}: fai punti solo se tutta la squadra lo è.
           </p>
         )}
+        {event.quadrant_seal_target ? (
+          <p className="mt-1 border-l-4 border-comic-magenta bg-panel px-2.5 py-1 text-[13px] font-bold leading-4">
+            Quadrante: vince subito chi arriva per primo a {event.quadrant_seal_target} Sigilli sulla griglia.
+          </p>
+        ) : null}
       </section>
 
       {toOpen && (

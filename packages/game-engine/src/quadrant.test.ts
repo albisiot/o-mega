@@ -28,7 +28,7 @@ import type { BotDifficulty } from "./bots.ts";
 import type { Character, Side } from "./types.ts";
 
 const ABILITIES = ["FOR", "VEL", "RES", "INT"];
-const RULES: QuadrantRules = { size: 4, deckSize: 10, handSize: 3, cardsPerSide: 8, seals: 15, firstPlayerSeals: 3 };
+const RULES: QuadrantRules = { size: 4, deckSize: 10, handSize: 3, cardsPerSide: 8, firstPlayerSeals: 3 };
 
 /** A card with these numbers on top, right, bottom and left (unrotated). */
 function card(id: string, sides: [number, number, number, number]): Character {
@@ -180,18 +180,16 @@ describe("seals", () => {
     expect(outcome.board.cells.get("2,0")!.seals).toEqual({ a: 2, b: 0 });
   });
 
-  it("places what is left of the reserve, beaten cards first", () => {
+  it("has no limit of seals", () => {
     const board = emptyQuadrantBoard();
-    put(board, 1, 1, "b", [0, 0, 0, 0], { a: 13, b: 0 }); // not a neighbour of (0,0): a has 2 seals left
+    put(board, 1, 1, "b", [0, 0, 0, 0], { a: 40, b: 0 }); // not a neighbour of (0,0)
     put(board, 1, 0, "b", [0, 0, 0, 0]);
     put(board, 0, 1, "b", [0, 0, 0, 0]);
     // The new card at (0,0) beats (1,0) with its right side and (0,1) with its bottom.
     const outcome = applyQuadrantMove(board, NO_OPENING, "a", play([0, 3, 3, 0]), 0, 0, false);
     expect(outcome.beaten).toBe(2);
-    expect(outcome.placed).toBe(2);
-    expect(outcome.board.cells.get("1,0")!.seals.a).toBe(1);
-    expect(outcome.board.cells.get("0,1")!.seals.a).toBe(1);
-    expect(outcome.board.cells.get("0,0")!.seals.a).toBe(0);
+    expect(outcome.placed).toBe(4);
+    expect(quadrantSealsOnBoard(outcome.board).a).toBe(44);
   });
 });
 
@@ -253,10 +251,42 @@ describe("border threats (fixed grid)", () => {
       const placement = chooseQuadrantBotPlacement(quadrantBotView(state, side, { characters: [...state.decks.a, ...state.decks.b] }), "medium", rng);
       state = playQuadrantMove({ state, placement, rng }).state;
     }
-    const seals = quadrantSealsOnBoard(quadrantBoard(state));
-    expect(seals.a).toBeLessThanOrEqual(15);
-    expect(seals.b).toBeLessThanOrEqual(15);
     expect(quadrantResult(state)).not.toBeNull();
+  });
+});
+
+describe("seal target (events)", () => {
+  it("ends the match as soon as a side has that many seals, and that side wins", () => {
+    // Side a opens with 3 free seals: a target of 3 is reached on the first move.
+    const state: QuadrantState = { ...newState("fixed"), rules: { ...RULES, sealTarget: 3 } };
+    const played = playQuadrantMove({ state, placement: { characterId: "a0", x: 1, y: 1, rotation: 0 }, rng: mulberry32(1) });
+    expect(played.finished).toBe(true);
+    expect(played.result).toBe("a");
+    expect(isQuadrantFinished(played.state)).toBe(true);
+    expect(quadrantSideToMove(played.state)).toBeNull();
+  });
+
+  it("goes on below the target, and ends normally if nobody reaches it", () => {
+    const rng = mulberry32(5);
+    let state: QuadrantState = { ...newState("fixed"), rules: { ...RULES, sealTarget: 99 } };
+    state = playQuadrantMove({ state, placement: { characterId: "a0", x: 1, y: 1, rotation: 0 }, rng }).state;
+    expect(isQuadrantFinished(state)).toBe(false);
+    while (!isQuadrantFinished(state)) state = playQuadrantMove({ state, placement: null, rng }).state;
+    expect(state.moves).toHaveLength(16);
+    expect(quadrantResult(state)).toBe(quadrantResultOf(quadrantBoard(state), state.first));
+  });
+
+  it("is what the bots play for", () => {
+    // Side b to move with a target of 2: beating the card on the grid (5 > 1) gives it 2 seals.
+    const a = deck("a", [1, 1, 1, 1]);
+    const b = deck("b", [5, 5, 5, 5]);
+    let state: QuadrantState = { ...newState("fixed", { a, b }), rules: { ...RULES, firstPlayerSeals: 0, sealTarget: 2 } };
+    state = playQuadrantMove({ state, placement: { characterId: "a0", x: 1, y: 1, rotation: 0 }, rng: mulberry32(2) }).state;
+    for (const difficulty of ["medium", "hard"] as const) {
+      const placement = chooseQuadrantBotPlacement(quadrantBotView(state, "b", { characters: [...a, ...b] }), difficulty, mulberry32(3));
+      const played = playQuadrantMove({ state, placement, rng: mulberry32(4) });
+      expect(played.result).toBe("b");
+    }
   });
 });
 

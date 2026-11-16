@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "17 novembre 2026",
+    changes: [
+      "Quadrante: i Sigilli non hanno più un tetto. Prima ognuno ne aveva 15 (20 sulla griglia fissa) e, finiti quelli, le carte battute non ne ricevevano più; ora ogni lato che vince conta sempre. In più gli eventi possono avere una regola per il Quadrante: un traguardo di Sigilli. Durante quegli eventi vince subito chi arriva per primo, per esempio, a 12 Sigilli sulla griglia, anche prima dell'ultima carta. Il traguardo lo vedi nella pagina dell'evento e, in partita, accanto al numero della mossa.",
+    ],
+  },
+  {
     date: "16 novembre 2026",
     changes: [
       "Nella classifica dell'Emergenza ora vedi le formazioni dei primi 3: le otto carte di ognuno, con il disegno che hanno schierato, nell'ordine in cui le hanno giocate, contro quale Minaccia e con che punteggio. Visto che le Minacce sono uguali per tutti, quelle di oggi le vedi solo dopo aver finito il tuo tentativo: nel risultato tocca una delle prime tre righe della classifica. Prima di giocare puoi guardare il podio di ieri, con il tasto «Podio di ieri» sopra la classifica. Tieni premuta una carta per i dettagli.",

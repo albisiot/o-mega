@@ -22,6 +22,8 @@ export type AdminEvent = {
   ends_at: string;
   points: EventPoints;
   daily_cap: number | null;
+  /** Quadrante: the first side with this many seals on the grid wins; null without a target. */
+  quadrant_seal_target?: number | null;
   /** Admitted traits; empty: every character. */
   traits?: string[];
   /** Admitted rarity codes and factions; empty: every one. Absent from older servers. */
@@ -40,6 +42,8 @@ export type AdminEvents = {
   rarities?: { code: string; name: string; rank: number; color: string }[];
   /** Fewest characters a rule may admit (an Emergenza squad). */
   min_admitted_characters?: number;
+  /** The seal targets an event may set for Quadrante, and the one the form suggests. */
+  quadrant_seal_target?: { min: number; max: number; suggested: number };
   events: AdminEvent[];
   /** The cards a target can give, each with the artwork variants it can come with, its traits, rarity and faction. */
   cards: {
@@ -64,6 +68,8 @@ export type EventDraft = {
   points: EventPoints;
   /** Null: no daily limit. */
   dailyCap: number | null;
+  /** Quadrante: the first side with this many seals wins. Null: no target. */
+  sealTarget: number | null;
   /** Admitted traits, rarity codes and factions; each empty: every character. All must hold. */
   traits: string[];
   rarities: string[];
@@ -91,6 +97,7 @@ export async function saveEvent(draft: EventDraft): Promise<AdminEvents> {
     // Sent only when used, so the page keeps working against a server without them.
     ...(draft.rarities.length > 0 ? { p_rarities: draft.rarities } : {}),
     ...(draft.factions.length > 0 ? { p_factions: draft.factions } : {}),
+    ...(draft.sealTarget !== null ? { p_quadrant_seal_target: draft.sealTarget } : {}),
   });
   if (error) throw error;
   return data as unknown as AdminEvents;

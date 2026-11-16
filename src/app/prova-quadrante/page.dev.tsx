@@ -7,6 +7,7 @@
 //   /prova-quadrante/?s=vuota   the empty grid, the player's turn
 //   /prova-quadrante/?s=mossa   the bot's move into a corner: two border threats, one won and one lost
 //   /prova-quadrante/?s=mobile  the shifting grid, which has no border threats
+//   /prova-quadrante/?s=traguardo  an event with a seal target of 12
 
 import { useEffect, useState } from "react";
 import { QuadrantMatchScreen } from "@/components/quadrant-match-screen";
@@ -55,7 +56,6 @@ function baseView(): QuadrantView {
     i_open: true,
     size: 4,
     cards_per_side: 8,
-    seals_per_side: 20,
     first_player_seals: 3,
     abilities: [
       { code: "FOR", name: "Forza", family: "body" },
@@ -95,8 +95,9 @@ function baseView(): QuadrantView {
 function scene(name: string): QuadrantView {
   const view = baseView();
   if (name === "mobile") {
-    return { ...view, format: "quadrant_shifting", variant: "shifting", seals_per_side: 15, border_threats: null, border_bite: null };
+    return { ...view, format: "quadrant_shifting", variant: "shifting", border_threats: null, border_bite: null };
   }
+  if (name === "traguardo") return { ...view, seal_target: 12 };
   if (name !== "mossa") return view;
   // The player opened at (1, 0) with Talos; the bot answers in the corner (0, 0) with Malleus.
   const before: QuadrantView = {

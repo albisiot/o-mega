@@ -36,6 +36,8 @@ export const QUADRANT_SUPER_PRO = { candidates: 10, hands: 32 };
 
 /** Weight of an exposed side in Medio's choice: a seal now is worth more than a maybe later. */
 const EXPOSURE_WEIGHT = 0.6;
+/** Events with a seal target: reaching it wins the match, worth more than any number of seals. */
+const TARGET_WIN = 100;
 
 export type QuadrantBotView = {
   side: Side;
@@ -114,7 +116,8 @@ function candidates(view: Pick<QuadrantBotView, "abilities" | "variant" | "rules
           opening,
         );
         const after = quadrantSealsOnBoard(outcome.board);
-        const gain = after[side] - before[side] - (after[opponent] - before[opponent]);
+        const reachesTarget = Boolean(view.rules.sealTarget) && after[side] >= view.rules.sealTarget!;
+        const gain = after[side] - before[side] - (after[opponent] - before[opponent]) + (reachesTarget ? TARGET_WIN : 0);
         list.push({
           placement: { characterId: card.id, x, y, rotation },
           gain,
@@ -196,7 +199,8 @@ export function chooseQuadrantBotPlacement(view: QuadrantBotView, difficulty: Bo
   const hands = Array.from({ length: plan.hands }, () => shuffle(rng, view.opponentPool).slice(0, view.rules.handSize));
   return best(
     ranked,
-    (c) => c.gain - hands.reduce((sum, hand) => sum + bestReplyGain(view, c.board, hand), 0) / hands.length,
+    // A move that reaches the seal target ends the match: no answer to fear.
+    (c) => (c.gain >= TARGET_WIN ? c.gain : c.gain - hands.reduce((sum, hand) => sum + bestReplyGain(view, c.board, hand), 0) / hands.length),
     rng,
   ).placement;
 }

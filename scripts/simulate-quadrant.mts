@@ -2,7 +2,7 @@
 // balance of the mode (SPEC §5.14) after a change to the catalog or the rules.
 // The dump is a JSON file { cards, abilities } with the rows of card_definitions
 // (stats, rank, active) and ability_definitions (code).
-// Usage: node scripts/simulate-quadrant.mts <catalog.json> [matches=400]
+// Usage: node scripts/simulate-quadrant.mts <catalog.json> [matches=400] [seal target of an event]
 
 import { readFileSync } from "node:fs";
 import {
@@ -16,12 +16,12 @@ import {
   quadrantSealsOnBoard,
   quadrantBotView,
   quadrantHand,
+  quadrantResult,
   quadrantLegalCells,
   quadrantSideToMove,
   shuffle,
   type BotDifficulty,
   type Character,
-  type MatchResult,
   type QuadrantRules,
   type QuadrantState,
   type QuadrantVariant,
@@ -31,7 +31,7 @@ import {
 import { balance } from "../src/config/balance.ts";
 
 type Row = Record<string, unknown>;
-const [file, count] = process.argv.slice(2);
+const [file, count, target] = process.argv.slice(2);
 if (!file) throw new Error("Usage: node scripts/simulate-quadrant.mts <catalog.json> [matches]");
 const data = JSON.parse(readFileSync(file, "utf8")) as { cards: Row[]; abilities: Row[] };
 const N = Number(count ?? 400);
@@ -50,8 +50,15 @@ const characters: Character[] = data.cards
   }));
 const abilityCodes = data.abilities.map((a) => String(a.code));
 const knowledge = { characters };
-const { fixedGridThreats: BORDERS, ...quadrantNumbers } = balance.quadrant;
-const BASE: QuadrantRules = { ...quadrantNumbers };
+const BORDERS = balance.quadrant.fixedGridThreats;
+const quadrantNumbers = {
+  size: balance.quadrant.size,
+  deckSize: balance.quadrant.deckSize,
+  handSize: balance.quadrant.handSize,
+  cardsPerSide: balance.quadrant.cardsPerSide,
+  firstPlayerSeals: balance.quadrant.firstPlayerSeals,
+};
+const BASE: QuadrantRules = { ...quadrantNumbers, sealTarget: target ? Number(target) : null };
 
 /** The fixed grid with border threats: four values drawn per match, as the database draws them. */
 function withBorders(rng: Rng, rules: QuadrantRules): QuadrantRules {
@@ -85,7 +92,6 @@ function play(
     decks: { a: shuffle(rng, decks.a), b: shuffle(rng, decks.b) },
     moves: [],
   };
-  let shortOfSeals = false;
   while (!isQuadrantFinished(state)) {
     const side = quadrantSideToMove(state)!;
     const player = players[side];
@@ -98,30 +104,20 @@ function play(
     } else {
       placement = chooseQuadrantBotPlacement(quadrantBotView(state, side, knowledge), player, rng);
     }
-    const played = playQuadrantMove({ state, placement, rng });
-    // A side that reached its last seal (with border threats a move can place fewer on purpose).
-    if (quadrantSealsOnBoard(played.board)[side] >= rules.seals) shortOfSeals = true;
-    state = played.state;
+    state = playQuadrantMove({ state, placement, rng }).state;
   }
   const board = quadrantBoard(state);
   const seals = quadrantSealsOnBoard(board);
   const controlled = quadrantControlled(board);
-  const result = played(state, board);
+  const result = quadrantResult(state, board)!;
   return {
     result,
     seals,
     tie: seals.a === seals.b,
     tieByControl: seals.a === seals.b && controlled.a !== controlled.b,
-    shortOfSeals,
+    // A side reached the seal target before the last move.
+    endedEarly: state.moves.length < rules.cardsPerSide * 2,
   };
-}
-
-function played(state: QuadrantState, board: ReturnType<typeof quadrantBoard>): MatchResult {
-  const seals = quadrantSealsOnBoard(board);
-  if (seals.a !== seals.b) return seals.a > seals.b ? "a" : "b";
-  const controlled = quadrantControlled(board);
-  if (controlled.a !== controlled.b) return controlled.a > controlled.b ? "a" : "b";
-  return state.first === "a" ? "b" : "a";
 }
 
 function run(
@@ -142,7 +138,7 @@ function run(
 ) {
   const rng = mulberry32(label.length * 7919 + 17);
   const matches = options.matches ?? N;
-  const rules = { ...BASE, ...(options.borders ? { seals: BORDERS.seals } : {}), ...options.rules };
+  const rules = { ...BASE, ...options.rules };
   let winsA = 0;
   let firstWins = 0;
   let ties = 0;
@@ -160,13 +156,13 @@ function run(
     if (outcome.result === first) firstWins++;
     if (outcome.tie) ties++;
     if (outcome.tieByControl) tiesControl++;
-    if (outcome.shortOfSeals) short++;
+    if (outcome.endedEarly) short++;
     sealsA += outcome.seals.a;
     sealsB += outcome.seals.b;
   }
   const pct = (n: number) => `${((100 * n) / matches).toFixed(1)}%`;
   console.log(
-    `${label.padEnd(58)} A ${pct(winsA).padStart(6)}  chi apre ${pct(firstWins).padStart(6)}  parità ${pct(ties).padStart(5)} (controllo ${pct(tiesControl)})  sigilli finiti ${pct(short).padStart(5)}  sigilli medi ${(sealsA / matches).toFixed(1)}-${(sealsB / matches).toFixed(1)}`,
+    `${label.padEnd(58)} A ${pct(winsA).padStart(6)}  chi apre ${pct(firstWins).padStart(6)}  parità ${pct(ties).padStart(5)} (controllo ${pct(tiesControl)})  finite al traguardo ${pct(short).padStart(5)}  sigilli medi ${(sealsA / matches).toFixed(1)}-${(sealsB / matches).toFixed(1)}`,
   );
 }
 

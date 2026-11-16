@@ -75,7 +75,8 @@ export type QuadrantView = {
   i_open: boolean;
   size: number;
   cards_per_side: number;
-  seals_per_side: number;
+  /** Events: the first side with this many seals on the grid wins; null without a target. */
+  seal_target?: number | null;
   first_player_seals: number;
   /** The four abilities of the match, side by side: top, right, bottom, left. */
   abilities: { code: string; name: string; family: string }[];
@@ -166,10 +167,10 @@ export function quadrantRulesOf(view: QuadrantView): QuadrantRules {
     deckSize: balance.quadrant.deckSize,
     handSize: balance.quadrant.handSize,
     cardsPerSide: view.cards_per_side,
-    seals: view.seals_per_side,
     firstPlayerSeals: view.first_player_seals,
     borderThreats: borderValues(view),
     borderBite: view.border_bite ?? 0,
+    sealTarget: view.seal_target ?? null,
   };
 }
 
