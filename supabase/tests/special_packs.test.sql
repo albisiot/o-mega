@@ -113,7 +113,7 @@ begin
   for v_case in
     select * from (values
       ('ab', 'cyan', 100, 3, 5, 'rarity', v_cards, v_rarities, null::integer, null::timestamp, null::timestamp, 'special_pack_invalid_text'),
-      ('Pacchetto', 'blu', 100, 3, 5, 'rarity', v_cards, v_rarities, null, null, null, 'special_pack_invalid_numbers'),
+      ('Pacchetto', 'blu', 100, 3, 5, 'rarity', v_cards, v_rarities, null, null, null, 'special_pack_invalid_color'),
       ('Pacchetto', 'cyan', 0, 3, 5, 'rarity', v_cards, v_rarities, null, null, null, 'special_pack_invalid_numbers'),
       ('Pacchetto', 'cyan', 100, 11, 5, 'rarity', v_cards, v_rarities, null, null, null, 'special_pack_invalid_numbers'),
       ('Pacchetto', 'cyan', 100, 3, 101, 'rarity', v_cards, v_rarities, null, null, null, 'special_pack_invalid_numbers'),

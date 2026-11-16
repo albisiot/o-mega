@@ -3421,6 +3421,10 @@ export type Database = {
         Args: { p_day: string; p_user: string }
         Returns: Json
       }
+      delayed_nullified: {
+        Args: { p_match_id: string; p_round: number; p_side: string }
+        Returns: boolean
+      }
       delete_formation: { Args: { p_formation_id: string }; Returns: undefined }
       draw_daily_objective: {
         Args: {
@@ -3684,6 +3688,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_pack_color: { Args: { p_color: string }; Returns: boolean }
       is_quadrant: { Args: { p_format: string }; Returns: boolean }
       leaderboard_board_name: { Args: { p_board: string }; Returns: string }
       leaderboard_board_title: { Args: { p_board: string }; Returns: string }
@@ -4197,6 +4202,10 @@ export type Database = {
         }
       }
       settle_expired_claims: { Args: { p_user: string }; Returns: undefined }
+      short_foresight_until: {
+        Args: { p_match_id: string; p_side: string }
+        Returns: number
+      }
       special_pack_card_odds: {
         Args: { p_pack_id: string }
         Returns: {
@@ -4291,6 +4300,10 @@ export type Database = {
       with_rare_threats: { Args: { p_threat_ids: string[] }; Returns: string[] }
       with_rare_triple_rules: {
         Args: { p_match_id: string; p_payload: Json }
+        Returns: Json
+      }
+      with_short_foresight: {
+        Args: { p_match_id: string; p_payload: Json; p_side: string }
         Returns: Json
       }
       with_triple_districts: {
