@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
+import { ColorSwatches } from "@/components/color-swatches";
 import { PageHeader } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { FACTION_LABELS, fetchAbilities, type AbilityInfo } from "@/lib/catalog";
@@ -136,6 +137,18 @@ function RaritiesEditor({ data, onSaved }: { data: AdminThreats; onSaved: () => 
                 />
               </label>
             </div>
+            <ColorSwatches
+              value={draft.color}
+              onPick={(color) => setDrafts({ ...drafts, [rarity.code]: { ...draft, color } })}
+              label={`Colori rapidi per ${draft.name || rarity.name}`}
+            />
+            <p className="flex items-center gap-2 bg-black px-2 py-1 text-xs font-bold text-muted">
+              Anteprima
+              <span className="font-display text-base uppercase" style={{ color: draft.color }}>
+                {draft.name || rarity.name}
+              </span>
+              <span className="uppercase">{draft.color}</span>
+            </p>
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-bold text-muted">
                 {rarity.threats} Minacce · {oddsText(draft.one_in)} ciascuna

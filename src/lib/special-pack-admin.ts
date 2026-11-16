@@ -1,6 +1,6 @@
 import { balance } from "@/config/balance";
 import { toRomeInput } from "@/lib/events";
-import type { PackColor } from "@/lib/pack-colors";
+import { isPackColor, type PackColor } from "@/lib/pack-colors";
 import { getSupabase } from "@/lib/supabase/client";
 import type { TraitCategory } from "@/lib/traits";
 
@@ -222,6 +222,7 @@ export function draftProblem(draft: SpecialPackDraft, data: AdminSpecialPacks, n
   const name = draft.name.trim();
   if (name.length < 3 || name.length > 40) return "Il nome deve avere da 3 a 40 caratteri.";
   if (draft.description.trim().length > 200) return "La descrizione può avere al massimo 200 caratteri.";
+  if (!isPackColor(draft.color)) return "Scegli un colore valido.";
   const price = toInteger(draft.price);
   if (price === null || price < 1 || price > 100_000) return "Il prezzo va da 1 a 100000 monete.";
   const size = toInteger(draft.cardsPerPack);

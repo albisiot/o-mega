@@ -2,14 +2,15 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import { AdminCardFilterBar, useAdminCardReference } from "@/components/admin-card-filter";
-import { BackLink, PackArt, TabBar } from "@/components/comic-parts";
+import { BackLink, TabBar } from "@/components/comic-parts";
+import { PackColorPicker } from "@/components/pack-color-picker";
 import { EMPTY_ADMIN_CARD_FILTER, filterAdminCards, withCardFacts, type AdminCardFilter } from "@/lib/admin-card-filter";
 import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { sortCards, type CardOrder } from "@/lib/card-sort";
 import { describeServerError } from "@/lib/errors";
 import { formatRomeDateTime } from "@/lib/events";
-import { PACK_COLOR_KEYS, PACK_COLORS, packColor } from "@/lib/pack-colors";
+import { packColor } from "@/lib/pack-colors";
 import {
   FULL,
   chosenCards,
@@ -344,23 +345,19 @@ type StepProps = {
 };
 
 function DetailsStep({ data, draft, update }: StepProps) {
-  const colors = packColor(draft.color);
   return (
     // What a short window cannot fit scrolls inside, rather than being cut.
     <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain">
-      <div className="flex items-end gap-2">
-        <label className={`${LABEL} flex-1`}>
-          Nome
-          <input
-            value={draft.name}
-            onChange={(event) => update({ name: event.target.value })}
-            placeholder="Notte di Megara"
-            maxLength={40}
-            className={`${INPUT} placeholder:text-faint`}
-          />
-        </label>
-        <PackArt body={colors.body} omega={colors.omega} className="h-16 shrink-0" cards={1} />
-      </div>
+      <label className={LABEL}>
+        Nome
+        <input
+          value={draft.name}
+          onChange={(event) => update({ name: event.target.value })}
+          placeholder="Notte di Megara"
+          maxLength={40}
+          className={`${INPUT} placeholder:text-faint`}
+        />
+      </label>
       <label className={LABEL}>
         Descrizione
         <input
@@ -371,22 +368,13 @@ function DetailsStep({ data, draft, update }: StepProps) {
           className={`${INPUT} placeholder:text-faint`}
         />
       </label>
-      <div className={LABEL}>
-        <span id="pack-color-label">Colore</span>
-        <div role="group" aria-labelledby="pack-color-label" className="grid grid-cols-6 gap-1.5">
-          {PACK_COLOR_KEYS.map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => update({ color: key })}
-              aria-pressed={draft.color === key}
-              aria-label={PACK_COLORS[key].name}
-              className={`h-11 border-[3px] ${draft.color === key ? "border-white" : "border-transparent"}`}
-              style={{ background: PACK_COLORS[key].background }}
-            />
-          ))}
-        </div>
-      </div>
+      <PackColorPicker
+        value={draft.color}
+        onChange={(color) => update({ color })}
+        name={draft.name}
+        price={draft.price}
+        cards={draft.cardsPerPack}
+      />
       <div className="grid grid-cols-3 gap-2">
         <label className={LABEL}>
           Prezzo

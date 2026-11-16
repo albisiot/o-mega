@@ -67,6 +67,7 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   special_pack_not_found: "Pacchetto non trovato.",
   special_pack_invalid_text: "Il nome deve avere da 3 a 40 caratteri, la descrizione al massimo 200.",
   special_pack_invalid_numbers: "Controlla i numeri: prezzo da 1 a 100000, da 1 a 10 carte, varianti da 0 a 100%.",
+  special_pack_invalid_color: "Il colore non è valido: scegli una tavolozza o dei colori #rrggbb.",
   special_pack_invalid_period: "Controlla le date: la fine deve venire dopo l'inizio e non essere già passata.",
   special_pack_invalid_cards: "Una delle carte scelte non può stare in un pacchetto.",
   special_pack_invalid_odds: "Le percentuali devono essere maggiori di 0, con al massimo due decimali, e fare 100%.",

@@ -9,7 +9,7 @@ import { PackRevealLink, useOpenPackReveal } from "@/components/pack-reveal-link
 import { describeServerError } from "@/lib/errors";
 import { formatRomeDateTime } from "@/lib/events";
 import { coinSources } from "@/lib/match-rewards";
-import { packColor } from "@/lib/pack-colors";
+import { packColor, type PackPalette } from "@/lib/pack-colors";
 import {
   buyPack,
   buySpecialPack,
@@ -289,9 +289,17 @@ function BonusCodeSection({ onRedeemed }: { onRedeemed: () => void }) {
   );
 }
 
-type BuyColors = { background: string; body: string; omega: string; shadow: string };
+/** See PackPalette: the background may be a gradient, the accent is always a solid colour. */
+type BuyColors = Omit<PackPalette, "name">;
 
-const STANDARD_COLORS: BuyColors = { background: "#ffd60a", body: "#ff2e6c", omega: "#ffd60a", shadow: "#ff2e6c" };
+const STANDARD_COLORS: BuyColors = {
+  background: "#ffd60a",
+  accent: "#ffd60a",
+  ink: "#000000",
+  body: "#ff2e6c",
+  omega: "#ffd60a",
+  shadow: "#ff2e6c",
+};
 
 /** "5 carte, almeno una Beta o superiore", or "3 carte" with no guarantee. */
 function describeSpecialPack(pack: SpecialPack): string {
@@ -382,8 +390,8 @@ function BuySection({
 
   return (
     <section
-      className="cut-bottom relative flex w-full shrink-0 snap-center flex-col gap-2.5 overflow-hidden px-4 pb-6 pt-3 text-black"
-      style={{ background: colors.background }}
+      className="cut-bottom relative flex w-full shrink-0 snap-center flex-col gap-2.5 overflow-hidden px-4 pb-6 pt-3"
+      style={{ background: colors.background, color: colors.ink }}
       aria-label={title}
     >
       <PackArt
@@ -402,9 +410,9 @@ function BuySection({
         onConfirm={buy}
         disabled={missing > 0 || buying}
         hint={missing > 0 || buying ? "" : `Tieni premuto per comprare · ${price} monete`}
-        fillColor={colors.background}
+        fillColor={colors.accent}
         className="btn min-h-13 bg-black font-display text-[22px] uppercase tracking-wide disabled:opacity-70"
-        style={{ color: colors.background, boxShadow: missing > 0 || buying ? "none" : `4px 4px 0 ${colors.shadow}` }}
+        style={{ color: colors.accent, boxShadow: missing > 0 || buying ? "none" : `4px 4px 0 ${colors.shadow}` }}
       >
         {buying ? "Acquisto…" : missing > 0 ? `Ti mancano ${missing} monete` : "Acquista e apri"}
       </HoldToConfirmButton>
