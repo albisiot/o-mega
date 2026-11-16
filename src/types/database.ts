@@ -1827,8 +1827,8 @@ export type Database = {
           quadrant_abilities: string[] | null
           quadrant_board: Json | null
           quadrant_first: string | null
-          quadrant_threats: Json | null
           quadrant_seal_target: number | null
+          quadrant_threats: Json | null
           result: string | null
           reward_coins_a: number | null
           reward_coins_b: number | null
@@ -1864,8 +1864,8 @@ export type Database = {
           quadrant_abilities?: string[] | null
           quadrant_board?: Json | null
           quadrant_first?: string | null
-          quadrant_threats?: Json | null
           quadrant_seal_target?: number | null
+          quadrant_threats?: Json | null
           result?: string | null
           reward_coins_a?: number | null
           reward_coins_b?: number | null
@@ -1901,8 +1901,8 @@ export type Database = {
           quadrant_abilities?: string[] | null
           quadrant_board?: Json | null
           quadrant_first?: string | null
-          quadrant_threats?: Json | null
           quadrant_seal_target?: number | null
+          quadrant_threats?: Json | null
           result?: string | null
           reward_coins_a?: number | null
           reward_coins_b?: number | null
