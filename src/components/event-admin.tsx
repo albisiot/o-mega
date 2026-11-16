@@ -3,8 +3,20 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { BackLink, TabBar } from "@/components/comic-parts";
 import { AdminCardPicker, useAdminCardReference } from "@/components/admin-card-filter";
+import { Chip } from "@/components/card-list-controls";
 import { TraitFilter } from "@/components/trait-filter";
 import { balance } from "@/config/balance";
+import {
+  activeAdminFilterCount,
+  describeAdminCardFilter,
+  FACTION_CODES,
+  filterAdminCards,
+  toggleValue,
+  withCardFacts,
+  type AdminCardFilter,
+  type FilterRarity,
+} from "@/lib/admin-card-filter";
+import { FACTION_LABELS } from "@/lib/catalog";
 import {
   DEFAULT_EVENT_POINTS,
   adminEventState,
@@ -16,7 +28,7 @@ import {
 } from "@/lib/event-admin";
 import { describeServerError } from "@/lib/errors";
 import { EVENT_KINDS, addHoursToInput, describeTierReward, formatRomeDateTime, toRomeInput, type EventPoints } from "@/lib/events";
-import { describeTraits, matchesTraits, type TraitCategory } from "@/lib/traits";
+import type { TraitCategory } from "@/lib/traits";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const INPUT = "min-h-12 w-full min-w-0 max-w-full border-2 border-comic-yellow bg-black px-3 text-base font-semibold";
@@ -48,8 +60,10 @@ type FormState = {
   endsAt: string;
   points: PointsForm;
   dailyCap: string;
-  /** Admitted traits; empty: every character. */
+  /** Admitted traits, rarity codes and factions; each empty: every character. */
   traits: string[];
+  rarities: string[];
+  factions: string[];
   tiers: TierForm[];
 };
 
@@ -81,6 +95,8 @@ function emptyForm(now: number): FormState {
     points: pointsForm(DEFAULT_EVENT_POINTS),
     dailyCap: "",
     traits: [],
+    rarities: [],
+    factions: [],
     tiers: [{ points: "300", coins: "100", packs: "1", cards: [] }],
   };
 }
@@ -99,6 +115,8 @@ function formFrom(event: AdminEvent, now: number, copy: boolean): FormState {
     points: pointsForm(event.points),
     dailyCap: event.daily_cap === null ? "" : String(event.daily_cap),
     traits: event.traits ?? [],
+    rarities: event.rarities ?? [],
+    factions: event.factions ?? [],
     tiers: event.tiers.map((tier) => ({
       points: String(tier.points),
       coins: tier.coins > 0 ? String(tier.coins) : "",
@@ -172,6 +190,7 @@ export function EventAdmin({ data, onChange }: EventAdminProps) {
             initial={form}
             cards={data.cards}
             catalog={data.trait_catalog ?? []}
+            rarities={data.rarities}
             minAdmitted={data.min_admitted_characters ?? balance.events.minAdmittedCharacters}
             onSaved={(next, title) => {
               onChange(next);
@@ -238,6 +257,7 @@ function EventForm({
   initial,
   cards,
   catalog,
+  rarities: payloadRarities,
   minAdmitted,
   onSaved,
   onCancel,
@@ -245,6 +265,8 @@ function EventForm({
   initial: FormState;
   cards: AdminEvents["cards"];
   catalog: TraitCategory[];
+  /** Absent from older servers: then they come from the public catalog. */
+  rarities?: FilterRarity[];
   minAdmitted: number;
   onSaved: (next: AdminEvents, title: string) => void;
   onCancel: () => void;
@@ -267,8 +289,12 @@ function EventForm({
       points: { ...current.points, [kind]: { ...current.points[kind], [outcome]: value } },
     }));
   const shownTier = Math.min(tierIndex, form.tiers.length - 1);
-  // Same set as the server's count: active cards that are not level cards.
-  const admitted = cards.filter((card) => matchesTraits(card.traits ?? [], form.traits, catalog)).length;
+  const reference = useAdminCardReference();
+  const rarities = payloadRarities ?? reference?.rarities ?? [];
+  const rule: AdminCardFilter = { query: "", rarities: form.rarities, factions: form.factions, traits: form.traits };
+  const ruleOn = activeAdminFilterCount(rule) > 0;
+  // Same set and rule as the server's count: active cards that are not level cards.
+  const admitted = filterAdminCards(withCardFacts(cards, reference?.facts ?? null), rule, catalog).length;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -290,6 +316,8 @@ function EventForm({
         points,
         dailyCap: form.dailyCap.trim() === "" ? null : Number(form.dailyCap),
         traits: form.traits,
+        rarities: form.rarities,
+        factions: form.factions,
         tiers: form.tiers.map((tier) => ({
           points: number(tier.points),
           coins: number(tier.coins),
@@ -386,38 +414,67 @@ function EventForm({
                 </button>
               ))}
             </div>
-            {catalog.length > 0 && (
-              <div className={LABEL}>
-                <span>Personaggi ammessi</span>
+            <fieldset disabled={locked} className="flex min-w-0 flex-col gap-1.5 disabled:opacity-50">
+              <legend className="mb-1 text-sm font-bold">Personaggi ammessi</legend>
+              {rarities.length > 0 && (
+                <>
+                  <span className="text-[11px] font-extrabold uppercase text-muted">Rarità</span>
+                  <div className="flex flex-wrap gap-1.5" role="group" aria-label="Rarità ammesse">
+                    {rarities.map((rarity) => (
+                      <Chip
+                        key={rarity.code}
+                        active={form.rarities.includes(rarity.code)}
+                        color={rarity.color}
+                        onClick={() => update({ rarities: toggleValue(form.rarities, rarity.code) })}
+                      >
+                        {rarity.name}
+                      </Chip>
+                    ))}
+                  </div>
+                </>
+              )}
+              <span className="text-[11px] font-extrabold uppercase text-muted">Fazione</span>
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Fazioni ammesse">
+                {FACTION_CODES.map((code) => (
+                  <Chip
+                    key={code}
+                    active={form.factions.includes(code)}
+                    onClick={() => update({ factions: toggleValue(form.factions, code) })}
+                  >
+                    {FACTION_LABELS[code]}
+                  </Chip>
+                ))}
+              </div>
+              {catalog.length > 0 && (
                 <TraitFilter
                   catalog={catalog}
                   chosen={form.traits}
                   onChange={(traits) => update({ traits })}
                   layout="wrap"
-                  label="Personaggi ammessi"
+                  label="Tratti ammessi"
                   disabled={locked}
                 />
-                <span
-                  className={`text-xs font-semibold leading-4 ${
-                    form.traits.length > 0 && admitted < minAdmitted
-                      ? "text-comic-magenta"
-                      : form.traits.length > 0 && admitted < 15
-                        ? "text-comic-yellow"
-                        : "text-muted"
-                  }`}
-                >
-                  {form.traits.length === 0
-                    ? "Nessun tratto scelto: tutti i personaggi danno punti."
-                    : `Solo ${describeTraits(form.traits, catalog)}: ${admitted} personaggi. Una partita dà punti solo se tutta la squadra è di questi personaggi (in Emergenza tutti e 8).${
-                        admitted < minAdmitted
-                          ? ` Ne servono almeno ${minAdmitted}.`
-                          : admitted < 15
-                            ? " Con meno di 15 pochi giocatori riescono a formare la squadra."
-                            : ""
-                      }`}
-                </span>
-              </div>
-            )}
+              )}
+              <span
+                className={`text-xs font-semibold leading-4 ${
+                  ruleOn && admitted < minAdmitted
+                    ? "text-comic-magenta"
+                    : ruleOn && admitted < 15
+                      ? "text-comic-yellow"
+                      : "text-muted"
+                }`}
+              >
+                {!ruleOn
+                  ? "Nessuna regola: tutti i personaggi danno punti."
+                  : `Solo ${describeAdminCardFilter(rule, rarities, catalog)}: ${admitted} personaggi. Una partita dà punti solo se tutta la squadra è di questi personaggi (in Emergenza tutti e 8). Nello stesso gruppo basta una scelta, tra gruppi diversi servono tutte.${
+                      admitted < minAdmitted
+                        ? ` Ne servono almeno ${minAdmitted}.`
+                        : admitted < 15
+                          ? " Con meno di 15 pochi giocatori riescono a formare la squadra."
+                          : ""
+                    }`}
+              </span>
+            </fieldset>
           </>
         )}
 

@@ -3145,6 +3145,8 @@ export type Database = {
           p_points: Json
           p_starts_at: string
           p_tiers: Json
+          p_factions?: string[]
+          p_rarities?: string[]
           p_title: string
           p_traits?: string[]
         }

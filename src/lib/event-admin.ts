@@ -24,6 +24,9 @@ export type AdminEvent = {
   daily_cap: number | null;
   /** Admitted traits; empty: every character. */
   traits?: string[];
+  /** Admitted rarity codes and factions; empty: every one. Absent from older servers. */
+  rarities?: string[];
+  factions?: string[];
   is_active: boolean;
   /** Players with at least one point. */
   players: number;
@@ -33,11 +36,21 @@ export type AdminEvent = {
 export type AdminEvents = {
   now: string;
   trait_catalog?: TraitCategory[];
+  /** Every rarity, lowest first (absent from older servers). */
+  rarities?: { code: string; name: string; rank: number; color: string }[];
   /** Fewest characters a rule may admit (an Emergenza squad). */
   min_admitted_characters?: number;
   events: AdminEvent[];
-  /** The cards a target can give, each with the artwork variants it can come with, and its traits. */
-  cards: { code: string; name: string; rarity: string; traits?: string[]; variants: { style: string; name: string }[] }[];
+  /** The cards a target can give, each with the artwork variants it can come with, its traits, rarity and faction. */
+  cards: {
+    code: string;
+    name: string;
+    rarity: string;
+    rarity_code?: string;
+    faction?: string;
+    traits?: string[];
+    variants: { style: string; name: string }[];
+  }[];
 };
 
 export type EventDraft = {
@@ -51,8 +64,10 @@ export type EventDraft = {
   points: EventPoints;
   /** Null: no daily limit. */
   dailyCap: number | null;
-  /** Admitted traits; empty: every character. */
+  /** Admitted traits, rarity codes and factions; each empty: every character. All must hold. */
   traits: string[];
+  rarities: string[];
+  factions: string[];
   tiers: { points: number; coins: number; packs: number; cards: string[] }[];
 };
 
@@ -73,6 +88,9 @@ export async function saveEvent(draft: EventDraft): Promise<AdminEvents> {
     p_daily_cap: draft.dailyCap ?? undefined,
     p_tiers: draft.tiers,
     p_traits: draft.traits,
+    // Sent only when used, so the page keeps working against a server without them.
+    ...(draft.rarities.length > 0 ? { p_rarities: draft.rarities } : {}),
+    ...(draft.factions.length > 0 ? { p_factions: draft.factions } : {}),
   });
   if (error) throw error;
   return data as unknown as AdminEvents;
