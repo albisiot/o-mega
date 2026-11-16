@@ -2,11 +2,14 @@ import { abilityMalusFrom, asPlayedAgainst, immuneToSabotage, packBonus, type Ch
 import { toCharacter, type MatchCard } from "@/lib/match";
 import {
   carriedInto,
+  flipBefore,
   lastingSacrifice,
   outcomeOf,
+  playsBefore,
   roundPowerNotes,
   tieWonByRelentless,
   wasNullified,
+  wonBehindByRelentless,
   type PowerNote,
 } from "@/lib/round-powers";
 import type { TripleContest, TripleRound, TripleView } from "@/lib/triple";
@@ -33,15 +36,36 @@ export function contestNotes(view: TripleView, round: TripleRound, contest: Trip
   const threat = view.threats[contest.slot];
   if (!card || !play || !threat) return [];
 
-  const previousRound = view.rounds.find((r) => r.round === round.round - 1 && r.resolved);
-  const previous = previousRound?.contests.find((c) => c.slot === contest.slot);
+  // The same threat in the rounds before: Riscossa, Slancio and Annullatore ritardato read its lane.
+  const laneIn = (n: number) => view.rounds.find((r) => r.round === n && r.resolved)?.contests.find((c) => c.slot === contest.slot);
+  const previous = laneIn(round.round - 1);
+  const twoBack = laneIn(round.round - 2);
   const previousThreat: Threat = { id: "lane", level: threat.level, abilities: threat.abilities, modifier: threat.modifier };
-  const carried = carriedInto(cardOf(view, previous, side), outcomeOf(previous?.winner, side), cardOf(view, previous, other), previousThreat);
+  const scoreOf = (c: TripleContest | undefined, s: Side) => (s === "me" ? c?.my_play?.score : c?.opponent_play?.score);
+  const marginOf = (c: TripleContest | undefined) => {
+    const own = scoreOf(c, side);
+    const theirs = scoreOf(c, other);
+    return own !== undefined && theirs !== undefined ? own - theirs : undefined;
+  };
+  const carried = carriedInto(
+    cardOf(view, previous, side),
+    outcomeOf(previous?.winner, side),
+    cardOf(view, previous, other),
+    previousThreat,
+    marginOf(previous),
+    twoBack
+      ? { card: cardOf(view, twoBack, side), outcome: outcomeOf(twoBack.winner, side), opponent: cardOf(view, twoBack, other), threat: previousThreat }
+      : undefined,
+  );
+  const before = playsBefore(cardOf(view, previous, side), cardOf(view, previous, other), previousThreat);
 
   const earlier = playedInEarlierRounds(view, round.round, side);
   const sacrifice = lastingSacrifice(earlier.map((e) => e.character), earlier.map((e) => e.card));
-  const rivalActing = rival && !wasNullified(rival, card, threat.modifier) ? toCharacter(rival, "opponent") : null;
+  const rivalActing = rival && !wasNullified(rival, card, threat.modifier, flipBefore(before)) ? toCharacter(rival, "opponent") : null;
   const tie = contest.my_play && contest.opponent_play && contest.my_play.score === contest.opponent_play.score;
+  const rivalPlay = side === "me" ? contest.opponent_play : contest.my_play;
+  const wonBehind =
+    contest.winner === side ? wonBehindByRelentless(play, rivalPlay, card, rival, threat.modifier, before) : 0;
   // Spia shows a card only while the other side still has one not played: the player's own
   // reveals come with the view; the opponent's needs a card of the player's deck still unplayed.
   const myPlayedIds = new Set(
@@ -62,10 +86,12 @@ export function contestNotes(view: TripleView, round: TripleRound, contest: Trip
       carriedCode: carried.code,
       lost: contest.winner === other,
       won: contest.winner === side,
-      wonTie: Boolean(tie) && contest.winner === side && tieWonByRelentless(card, rival, threat.modifier),
-      nullified: wasNullified(card, rival, threat.modifier),
+      wonTie: Boolean(tie) && contest.winner === side && tieWonByRelentless(card, rival, threat.modifier, before),
+      wonBehind,
+      margin: marginOf(contest),
+      nullified: wasNullified(card, rival, threat.modifier, before),
       opponentShielded: rivalActing !== null && immuneToSabotage(rivalActing),
-      opponentSabotage: rivalActing ? abilityMalusFrom(rivalActing) : 0,
+      opponentSabotage: rivalActing ? abilityMalusFrom(rivalActing, previousThreat) : 0,
       opponentHasPower: Boolean(rival?.power),
       // The server's parts say it; for plays stored before them, count the Capobranco cards.
       pack: play.parts?.pack ?? packBonus(toCharacter(card, card.definition_id), earlier.map((e) => e.character)),

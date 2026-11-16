@@ -1,4 +1,12 @@
-import { abilityMalusOn, asPlayedAgainst, carriedBonusAfter, compareScores, scorePlay, type PlayOutcome } from "./scoring.ts";
+import {
+  abilityMalusOn,
+  asPlayedAgainst,
+  carriedBonusFrom,
+  compareScores,
+  scorePlay,
+  type PlayOutcome,
+  type PlayedBefore,
+} from "./scoring.ts";
 import type {
   AbilityFamilies,
   Character,
@@ -57,16 +65,31 @@ export function outcomeFor(winner: Side | null, side: Side): PlayOutcome {
 export function playedIn(state: MatchState, round: RoundRecord, side: Side): Character | undefined {
   const find = (s: Side) => state.teams[s].find((c) => c.id === round.plays[s].characterId);
   const character = find(side);
-  return character && asPlayedAgainst(character, find(otherSide(side)), state.threats[round.round - 1]);
+  return (
+    character &&
+    asPlayedAgainst(character, find(otherSide(side)), state.threats[round.round - 1], playedBefore(state, round.round, side))
+  );
 }
 
-/** Bonus a side carries into the next round (Riscossa after a lost round, Slancio after a won one). */
+/** What the two sides played in the round before `round`, as they played (Annullatore ritardato). */
+export function playedBefore(state: MatchState, round: number, side: Side): PlayedBefore {
+  const previous = state.rounds.find((r) => r.round === round - 1);
+  if (!previous) return {};
+  return { own: playedIn(state, previous, side), opponent: playedIn(state, previous, otherSide(side)) };
+}
+
+/**
+ * Bonus a side carries into the next round: Riscossa after a lost round, Slancio after a
+ * won one, Riscossa lunga from either of the last two rounds.
+ */
 export function carriedBonus(state: MatchState, side: Side): number {
-  const last = state.rounds.at(-1);
-  if (!last) return 0;
-  const character = playedIn(state, last, side);
-  if (!character) return 0;
-  return carriedBonusAfter(character, outcomeFor(last.winner, side));
+  return carriedBonusFrom(
+    state.rounds.slice(-2).map((round) => ({
+      character: playedIn(state, round, side),
+      outcome: outcomeFor(round.winner, side),
+      margin: round.plays[side].total - round.plays[otherSide(side)].total,
+    })),
+  );
 }
 
 /** The characters a side has played so far, in order, as they played (Capobranco, Catalizzatore, Riverbero). */
@@ -128,8 +151,13 @@ export function resolveRound(
     chosen[side] = character;
   }
 
-  // Annullatore, Silenzio della tomba: the character plays without its power.
-  const acting = { a: asPlayedAgainst(chosen.a, chosen.b, threat), b: asPlayedAgainst(chosen.b, chosen.a, threat) };
+  // Annullatore (also one played in the round before), Silenzio della tomba: the character plays without its power.
+  const number = currentRoundNumber(state);
+  const acting = {
+    a: asPlayedAgainst(chosen.a, chosen.b, threat, playedBefore(state, number, "a")),
+    b: asPlayedAgainst(chosen.b, chosen.a, threat, playedBefore(state, number, "b")),
+  };
+  const totals = totalScores(state);
 
   const plays = {} as Record<Side, PlayRecord>;
   for (const side of SIDES) {
@@ -140,12 +168,13 @@ export function resolveRound(
       carriedBonus: carriedBonus(state, side),
       round: currentRoundNumber(state),
       team: state.teams[side],
-      abilityMalus: abilityMalusOn(acting[side], acting[otherSide(side)]),
+      abilityMalus: abilityMalusOn(acting[side], acting[otherSide(side)], threat),
       opponent: acting[otherSide(side)],
       previousLevel: previousLevel(state),
       previousOutcome: previousOutcome(state, side),
       threatLevels: threatLevels(state),
       played: playedBy(state, side),
+      scoreLead: totals[side] - totals[otherSide(side)],
     });
     plays[side] = { ...score, autoPlayed: choices[side].autoPlayed };
   }

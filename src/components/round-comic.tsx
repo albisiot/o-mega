@@ -501,7 +501,9 @@ export function RoundComic(props: RoundComicProps) {
   const struckOn = (side: ComicKey) => {
     const rival = props[other(side)];
     const seen = shown(other(side));
-    return rival.notes.some((note, index) => (note.code === "sabotage" || note.code === "reflect") && note.active && seen.has(index));
+    return rival.notes.some(
+      (note, index) => (powerFamily(note.code) === "strike" || note.code === "reflect") && note.active && seen.has(index),
+    );
   };
   const shieldedOn = (side: ComicKey) => {
     const seen = shown(side);

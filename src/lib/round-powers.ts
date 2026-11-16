@@ -1,9 +1,16 @@
 import {
+  abilityMalusFrom,
   asPlayedAgainst,
   carriedBonusAfter,
+  foresightRounds,
+  isRelentless,
   modifierPoints,
+  nullifiesNextPower,
+  sabotageActs,
   sacrificeBonus,
+  scoreMalusFrom,
   type Character,
+  type PlayedBefore,
   type PlayOutcome,
   type ScoreParts,
   type Standing,
@@ -53,6 +60,10 @@ export type RoundOutcome = {
   opponentHasPower?: boolean;
   /** Implacabile settled a tie in this card's favor. */
   wonTie: boolean;
+  /** A variant of Implacabile won the round although this many points behind. */
+  wonBehind?: number;
+  /** This card's score minus the other's (Riscossa sullo scarto). */
+  margin?: number;
   /** The opposing card had Schermato or Riflesso, which Sabotatore cannot touch. */
   opponentShielded?: boolean;
   /** What the opposing card's Sabotatore takes from each ability (what Riflesso sends back). */
@@ -97,27 +108,58 @@ export function roundPowerNotes(
     const character = toCharacter(card, card.definition_id);
     switch (power.code) {
       case "sabotage":
+      case "sabotage_big": {
+        const malus = abilityMalusFrom(character, { id: "round", ...threat });
+        notes.push(
+          outcome.opponentShielded || malus === 0
+            ? { name: power.name, effect: null, active: false }
+            : { name: power.name, effect: `−${malus} a ogni abilità rivale`, active: true },
+        );
+        break;
+      }
+      case "sabotage_flat":
         notes.push(
           outcome.opponentShielded
             ? { name: power.name, effect: null, active: false }
-            : { name: power.name, effect: `−${power.params.malus} a ogni abilità rivale`, active: true },
+            : { name: power.name, effect: `−${scoreMalusFrom(character)} al punteggio rivale`, active: true },
         );
         break;
       case "spy":
+      case "spy_many":
+      case "spy_rarest":
         notes.push(
           outcome.spyRevealed === false
             ? { name: power.name, effect: null, active: false }
-            : { name: power.name, effect: "svela un personaggio rivale", active: true },
+            : {
+                name: power.name,
+                effect:
+                  power.code === "spy_many"
+                    ? `svela ${power.params.count} personaggi rivali`
+                    : power.code === "spy_rarest"
+                      ? "svela il personaggio rivale più raro"
+                      : "svela un personaggio rivale",
+                active: true,
+              },
         );
         break;
       case "relentless":
-        notes.push({ name: power.name, effect: outcome.wonTie ? "vince la parità" : null, active: outcome.wonTie, timing: "tie" });
+      case "relentless_small":
+      case "relentless_big":
+      case "relentless_behind":
+        notes.push(
+          outcome.wonBehind
+            ? { name: power.name, effect: `vince anche sotto di ${outcome.wonBehind}`, active: true, timing: "tie" }
+            : { name: power.name, effect: outcome.wonTie ? "vince la parità" : null, active: outcome.wonTie, timing: "tie" },
+        );
         break;
       case "comeback":
+      case "comeback_long":
+      case "comeback_margin":
       case "momentum": {
         const result: PlayOutcome = outcome.lost ? "lost" : outcome.won ? "won" : "void";
-        const passed = carriedBonusAfter(character, result);
-        notes.push({ name: power.name, effect: passed ? `+${passed} al prossimo` : null, active: passed > 0, timing: "after" });
+        const passed = carriedBonusAfter(character, result, outcome.margin);
+        const to = power.code === "comeback_long" ? "ai prossimi due" : "al prossimo";
+        notes.push({ name: power.name, effect: passed ? `+${passed} ${to}` : null, active: passed > 0, timing: "after" });
         break;
       }
       case "nullifier":
@@ -127,8 +169,14 @@ export function roundPowerNotes(
           active: Boolean(outcome.opponentHasPower),
         });
         break;
+      case "delayed_nullifier":
+        notes.push({ name: power.name, effect: "annulla il potere del prossimo rivale", active: true, timing: "after" });
+        break;
       case "foresight":
         notes.push({ name: power.name, effect: "svela le prossime Minacce", active: true });
+        break;
+      case "foresight_short":
+        notes.push({ name: power.name, effect: `svela le Minacce dei prossimi ${foresightRounds(character)} round`, active: true });
         break;
       case "reflect":
         notes.push(
@@ -165,7 +213,7 @@ export function roundPowerNotes(
     const cancelled = outcome.silenced ? "silenced" : outcome.nullified ? "nullified" : undefined;
     notes[0] = { ...notes[0], code: power.code, source: "own", ...(cancelled ? { cancelled } : {}) };
     // Sabotatore against Schermato or Riflesso: it struck, the shield stopped it.
-    if (!cancelled && power.code === "sabotage" && outcome.opponentShielded) {
+    if (!cancelled && outcome.opponentShielded && sabotageActs(toCharacter(card, card.definition_id), { id: "round", ...threat })) {
       notes[0] = { ...notes[0], effect: "fermato dallo scudo", cancelled: "blocked" };
     }
   }
@@ -247,29 +295,77 @@ export function wasSilenced(card: MatchCard | null | undefined, modifier: Threat
 }
 
 /**
- * Whether an opposing Annullatore took `card`'s power away in a round. On a threat
- * that silences every power the Annullatore has none to use: see wasSilenced.
+ * The cards a side and its opponent played in the round before, as they played (the
+ * engine's PlayedBefore): what an Annullatore ritardato needs. `previousThreat` is that
+ * round's threat, for an Annullatore or a Silenzio della tomba that stopped them then.
+ */
+export function playsBefore(
+  previousOwn: MatchCard | null | undefined,
+  previousOpponent: MatchCard | null | undefined,
+  previousThreat?: Threat | null,
+): PlayedBefore {
+  const own = previousOwn ? toCharacter(previousOwn, previousOwn.definition_id) : null;
+  const opponent = previousOpponent ? toCharacter(previousOpponent, "opponent") : null;
+  return {
+    own: own && asPlayedAgainst(own, opponent, previousThreat),
+    opponent: opponent && own ? asPlayedAgainst(opponent, own, previousThreat) : opponent,
+  };
+}
+
+/**
+ * Whether an opposing Annullatore took `card`'s power away in a round: one played in the
+ * same round, unless the card's side stopped it with an Annullatore ritardato the round
+ * before, or the opponent's Annullatore ritardato of the round before (`before`, the
+ * side's view). On a threat that silences every power the Annullatore has none to use: see wasSilenced.
  */
 export function wasNullified(
   card: MatchCard | null | undefined,
   opponent: MatchCard | null | undefined,
   modifier?: ThreatModifier | null,
+  before?: PlayedBefore,
 ): boolean {
-  return Boolean(card?.power && opponent?.power?.code === "nullifier" && modifier?.code !== "tomb_silence");
+  if (!card?.power || modifier?.code === "tomb_silence") return false;
+  if (nullifiesNextPower(before?.opponent)) return true;
+  return opponent?.power?.code === "nullifier" && !nullifiesNextPower(before?.own);
+}
+
+/** The opposite view of `before`: what the other side played the round before, and against whom. */
+export function flipBefore(before: PlayedBefore | undefined): PlayedBefore | undefined {
+  return before && { own: before.opponent, opponent: before.own };
 }
 
 /**
  * Whether a tie went to `winner` through Implacabile: the engine checks it before the
  * highest value. Not when both have it, nor when it was taken away (Annullatore, Silenzio).
+ * `before` is the winner's view of the round before (Annullatore ritardato).
  */
 export function tieWonByRelentless(
   winner: MatchCard | null | undefined,
   loser: MatchCard | null | undefined,
   modifier: ThreatModifier | null | undefined,
+  before?: PlayedBefore,
 ): boolean {
-  if (winner?.power?.code !== "relentless" || wasNullified(winner, loser, modifier) || wasSilenced(winner, modifier)) return false;
-  const loserHasIt = loser?.power?.code === "relentless" && !wasNullified(loser, winner, modifier) && !wasSilenced(loser, modifier);
+  const relentless = (card: MatchCard | null | undefined) => Boolean(card && isRelentless(toCharacter(card, card.definition_id)));
+  if (!relentless(winner) || wasNullified(winner, loser, modifier, before) || wasSilenced(winner, modifier)) return false;
+  const loserHasIt = relentless(loser) && !wasNullified(loser, winner, modifier, flipBefore(before)) && !wasSilenced(loser, modifier);
   return !loserHasIt;
+}
+
+/**
+ * How many points behind a variant of Implacabile won a round, or 0: the only way the
+ * lower total wins (the higher one under Rovescio). `before` as in tieWonByRelentless.
+ */
+export function wonBehindByRelentless(
+  winnerPlay: { score: number } | null | undefined,
+  loserPlay: { score: number } | null | undefined,
+  winner: MatchCard | null | undefined,
+  loser: MatchCard | null | undefined,
+  modifier: ThreatModifier | null | undefined,
+  before?: PlayedBefore,
+): number {
+  if (!winnerPlay || !loserPlay || winnerPlay.score === loserPlay.score) return 0;
+  const behind = modifier?.code === "reverse" ? winnerPlay.score - loserPlay.score : loserPlay.score - winnerPlay.score;
+  return behind > 0 && tieWonByRelentless(winner, loser, modifier, before) ? behind : 0;
 }
 
 /**
@@ -302,13 +398,24 @@ export function tieExplanation(
   myCard: MatchCard | null | undefined,
   theirCard: MatchCard | null | undefined,
   modifier: ThreatModifier | null | undefined,
+  /** The viewer's side's view of the round before (Annullatore ritardato). */
+  before?: PlayedBefore,
 ): string | null {
-  if (!myPlay || !theirPlay || !winner || myPlay.score !== theirPlay.score) return null;
-  if (winner === "none") return `Pari ${myPlay.score} a ${theirPlay.score} e ${tieBreakReason(null, myPlay, modifier)}.`;
+  if (!myPlay || !theirPlay || !winner) return null;
   const won = winner === "me";
   const [winnerPlay, loserPlay] = won ? [myPlay, theirPlay] : [theirPlay, myPlay];
   const [winnerCard, loserCard] = won ? [myCard, theirCard] : [theirCard, myCard];
-  const relentless = tieWonByRelentless(winnerCard, loserCard, modifier) ? (winnerCard?.name ?? null) : null;
+  const winnerBefore = won ? before : flipBefore(before);
+  if (myPlay.score !== theirPlay.score) {
+    // A variant of Implacabile: the lower total took the round.
+    if (winner === "none") return null;
+    const behind = wonBehindByRelentless(winnerPlay, loserPlay, winnerCard, loserCard, modifier, winnerBefore);
+    return behind && winnerCard
+      ? `${winnerPlay.score} a ${loserPlay.score}: vince ${winnerCard.name} con Implacabile, che vince anche sotto di ${behind}.`
+      : null;
+  }
+  if (winner === "none") return `Pari ${myPlay.score} a ${theirPlay.score} e ${tieBreakReason(null, myPlay, modifier)}.`;
+  const relentless = tieWonByRelentless(winnerCard, loserCard, modifier, winnerBefore) ? (winnerCard?.name ?? null) : null;
   return `Pari ${winnerPlay.score} a ${loserPlay.score}: ${tieBreakReason(winnerPlay, loserPlay, modifier, relentless)}.`;
 }
 
@@ -322,12 +429,76 @@ export function carriedInto(
   previousOutcome: PlayOutcome,
   previousOpponent?: MatchCard | null,
   previousThreat?: Threat | null,
+  /** The previous card's score minus its opponent's (Riscossa sullo scarto). */
+  previousMargin?: number,
+  /** The card of the round before that, when it had Riscossa lunga, and how its round ended. */
+  earlier?: { card: MatchCard | null | undefined; outcome: PlayOutcome; opponent?: MatchCard | null; threat?: Threat | null },
 ): { points: number; from: string | undefined; code?: string } {
-  if (!previousCard) return { points: 0, from: undefined };
-  const opponent = previousOpponent ? toCharacter(previousOpponent, "opponent") : null;
-  const character = asPlayedAgainst(toCharacter(previousCard, previousCard.definition_id), opponent, previousThreat);
-  const points = carriedBonusAfter(character, previousOutcome);
-  return points > 0 ? { points, from: previousCard.power?.name, code: previousCard.power?.code } : { points, from: undefined };
+  const sources = [
+    { card: previousCard, outcome: previousOutcome, opponent: previousOpponent, threat: previousThreat, margin: previousMargin, distance: 1 },
+    ...(earlier ? [{ ...earlier, margin: undefined, distance: 2 }] : []),
+  ];
+  let points = 0;
+  let giver: MatchCard | undefined;
+  for (const source of sources) {
+    if (!source.card) continue;
+    const opponent = source.opponent ? toCharacter(source.opponent, "opponent") : null;
+    const character = asPlayedAgainst(toCharacter(source.card, source.card.definition_id), opponent, source.threat);
+    const given = carriedBonusAfter(character, source.outcome, source.margin, source.distance);
+    if (given > 0) {
+      points += given;
+      giver ??= source.card;
+    }
+  }
+  return giver ? { points, from: giver.power?.name, code: giver.power?.code } : { points, from: undefined };
+}
+
+/**
+ * The bonus a side's card of `round` receives from the side's cards of the rounds before:
+ * Riscossa and Slancio from the round before (Riscossa sullo scarto with the points it
+ * lost by), Riscossa lunga also from the round before that.
+ */
+export function carriedIntoRound(
+  rounds: readonly MatchRound[],
+  team: readonly (MatchCard & { instance_id: string })[],
+  round: number,
+  side: "me" | "opponent",
+): { points: number; from: string | undefined; code?: string } {
+  const at = (n: number) => rounds.find((r) => r.round === n);
+  const plays = (r: MatchRound | undefined) => {
+    const mine = r && team.find((card) => card.instance_id === r.my_play?.instance_id);
+    const theirs = r?.opponent_play;
+    const [own, other] = side === "me" ? [mine, theirs] : [theirs, mine];
+    const [ownScore, otherScore] = side === "me" ? [r?.my_play?.score, theirs?.score] : [theirs?.score, r?.my_play?.score];
+    const margin = ownScore !== undefined && otherScore !== undefined ? ownScore - otherScore : undefined;
+    return { own, other, margin, outcome: outcomeOf(r?.winner, side), threat: r && roundThreat(r) };
+  };
+  const previous = plays(at(round - 1));
+  const earlier = at(round - 2);
+  const before = plays(earlier);
+  return carriedInto(
+    previous.own,
+    previous.outcome,
+    previous.other,
+    previous.threat,
+    previous.margin,
+    earlier ? { card: before.own, outcome: before.outcome, opponent: before.other, threat: before.threat } : undefined,
+  );
+}
+
+/**
+ * What the viewer's side and the opponent played in the round before `round`, as they
+ * played: the viewer's view of an Annullatore ritardato (flipBefore for the opponent's).
+ */
+export function roundPlaysBefore(
+  rounds: readonly MatchRound[],
+  team: readonly (MatchCard & { instance_id: string })[],
+  round: number,
+): PlayedBefore {
+  const previous = rounds.find((r) => r.round === round - 1);
+  if (!previous) return {};
+  const mine = team.find((card) => card.instance_id === previous.my_play?.instance_id);
+  return playsBefore(mine, previous.opponent_play, roundThreat(previous));
 }
 
 /** How a round ended for the viewer's side, from the winner the server reports. */
@@ -352,6 +523,10 @@ export function decisiveNote(
 ): { side: "me" | "opponent"; index: number; text: string } | null {
   const lower = modifier?.code === "reverse";
   const tie = notes.findIndex((note) => note.active && note.timing === "tie");
+  // A variant of Implacabile that won from behind: without it the other total won.
+  if (tie >= 0 && (lower ? winner.score > loser.score : winner.score < loser.score)) {
+    return { side, index: tie, text: `Senza ${notes[tie].name} vinceva ${loserName}, ${loser.score} a ${winner.score}.` };
+  }
   if (tie >= 0 && winner.score === loser.score) {
     if (lower ? winner.highest < loser.highest : winner.highest > loser.highest) return null;
     return {

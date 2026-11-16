@@ -138,7 +138,7 @@ Testo di colore (una frase):
 
 ### Gamma: professionisti di quartiere
 
-Hanno il potere Specialità (+2 contro le Minacce che richiedono la prima abilità indicata), tranne: Milewright e Rubicon (Apripista), Bulwark (Ultimo baluardo), Aerie (Nemesi), Sordina (Spia), Ambit e Swarf (Legame), Malleus e Collateral (Implacabile). Tra le carte aggiunte dopo, Truss ha Implacabile, Novissima ed Effigy hanno Veggente. Dopo il secondo gruppo di poteri: Errata ha Nemesi, Dredge, Heirloom e Cursor hanno Tuttofare, Carillon ha Schermato.
+Hanno il potere Specialità (+2 contro le Minacce che richiedono la prima abilità indicata), tranne: Milewright e Rubicon (Apripista), Bulwark (Ultimo baluardo), Aerie (Nemesi), Sordina (Spia), Ambit e Swarf (Legame), Malleus e Collateral (Implacabile). Tra le carte aggiunte dopo, Truss ha Implacabile, Novissima ed Effigy hanno Veggente. Dopo il secondo gruppo di poteri: Errata ha Nemesi, Dredge, Heirloom e Cursor hanno Tuttofare, Carillon ha Schermato. Dal 16 novembre 2026 ogni potere preciso è al massimo su un personaggio per fazione: molte di queste carte hanno lo stesso potere con altri numeri o condizioni (elenco in docs/POWERS-BACKLOG.md, «Poteri tutti diversi»).
 
 | Carta | Valori chiave | Personaggio |
 |---|---|---|

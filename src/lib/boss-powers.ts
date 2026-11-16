@@ -5,6 +5,7 @@ import {
   bossContext,
   bossPlayedIn,
   immuneToSabotage,
+  isRelentless,
   otherSide,
   packBonus,
   type BossState,
@@ -126,12 +127,12 @@ export function bossTurnEntries(
                 holder === bossSide &&
                 facing !== null &&
                 facing.score === play.total &&
-                acting.power?.code === "relentless" &&
-                opposing?.power?.code !== "relentless",
+                isRelentless(acting) &&
+                !isRelentless(opposing),
               nullified,
               opponentHasPower: Boolean(opposing?.power ?? facingCharacter?.power),
               opponentShielded: opposing !== undefined && immuneToSabotage(opposing),
-              opponentSabotage: opposing ? abilityMalusFrom(opposing) : 0,
+              opponentSabotage: opposing ? abilityMalusFrom(opposing, threat) : 0,
               pack: parts?.pack ?? packBonus(acting, context.played ?? []),
               sacrifice: parts ? (parts.sacrifice ?? 0) : sacrifice.points,
               sacrificeFrom: sacrifice.from,

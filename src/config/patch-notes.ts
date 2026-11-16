@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "16 novembre 2026",
     changes: [
+      "I poteri speciali ora sono tutti diversi. Prima tante carte avevano lo stesso identico potere (dieci con Legame +1, dieci con Ultimo baluardo +3…); ora ogni potere preciso ce l'hanno al massimo un Eroe, un Cattivo e un Neutrale. 73 carte cambiano potere: quasi sempre tengono il nome, ma con numeri o condizioni diversi. Per esempio Bulwark ora ha Ultimo baluardo +3 solo nel round 5, Fathom Terreno favorevole +3 contro le Minacce di livello 1, Cathode Specialità +3 in Energia. Arrivano anche versioni nuove: Legame che conta i compagni già giocati o quelli ancora da giocare, Riscossa che passa il bonus ai due personaggi dopo o i punti con cui hai perso, Implacabile che vince anche perdendo di poco, Nemesi contro la propria fazione, Sfavorito per ogni round di svantaggio, Sabotatore solo sulle Minacce grandi o sul punteggio, Spia che vede due carte o la più rara, Veggente per i due round dopo e Annullatore che spegne il potere della carta che l'avversario gioca nel round dopo. Il testo di ogni carta dice esattamente cosa fa.",
       "Nella Storia la classifica ora sta in alto, nel pulsante con la coppa sopra i capitoli. In fondo all'elenco sembrava un capitolo in più.",
     ],
   },

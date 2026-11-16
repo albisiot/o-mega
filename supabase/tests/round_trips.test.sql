@@ -135,7 +135,10 @@ begin
   assert (v_state - 'server_now') = (public.emergency_state_payload(v_a) - 'server_now'), 'state differs from the payload';
 
   v_context := public.emergency_play_context(v_a);
-  assert v_context -> 'plays' = jsonb_build_array(jsonb_build_object('card_instance_id', v_squad[1], 'passed', false)),
+  -- With its score and the score it needed (Riscossa sullo scarto).
+  assert v_context -> 'plays' = jsonb_build_array(jsonb_build_object(
+      'card_instance_id', v_squad[1], 'passed', false, 'score', 1, 'required', 99
+    )),
     format('plays %s', v_context -> 'plays');
 end $$;
 

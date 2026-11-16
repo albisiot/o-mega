@@ -1226,7 +1226,8 @@ type EmergencyContext = {
   threat_ids: string[] | null;
   /** The fixed rules of the day's threats, as drawn (rare threats; the others have none). */
   threat_modifiers: (ThreatModifier | null)[] | null;
-  plays: { card_instance_id: string; passed: boolean }[];
+  /** `score` and `required`: how far each play was from its target (Riscossa sullo scarto). */
+  plays: { card_instance_id: string; passed: boolean; score?: number; required?: number }[];
 };
 
 async function openEmergency(userId: string) {
@@ -1274,6 +1275,7 @@ async function playEmergency(userId: string, body: Record<string, unknown>) {
     character: squad.find((c) => c.id === p.card_instance_id)!,
     passed: p.passed,
     level: dayThreat(i).level,
+    ...(typeof p.score === "number" && typeof p.required === "number" ? { margin: p.score - p.required } : {}),
   }));
   const outcome = resolveEmergencyPlay({
     character,

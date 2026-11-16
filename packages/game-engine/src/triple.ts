@@ -11,9 +11,10 @@ import { shuffle, type Rng } from "./rng.ts";
 import {
   abilityMalusOn,
   asPlayedAgainst,
-  carriedBonusAfter,
+  carriedBonusFrom,
   compareScores,
   scorePlay,
+  type PlayedBefore,
   type PlayOutcome,
   type ScoreContext,
 } from "./scoring.ts";
@@ -159,7 +160,14 @@ function characterOf(state: TripleState, side: Side, id: string): Character | un
 export function triplePlayedIn(state: TripleState, round: TripleRoundRecord, side: Side, slot: number): Character | undefined {
   const own = characterOf(state, side, round.plays[side][slot].characterId);
   const theirs = characterOf(state, otherSide(side), round.plays[otherSide(side)][slot].characterId);
-  return own && asPlayedAgainst(own, theirs, state.threats[slot]);
+  return own && asPlayedAgainst(own, theirs, state.threats[slot], triplePlayedBefore(state, round.round, side, slot));
+}
+
+/** What the two sides placed on threat `slot` in the round before `round`, as they played (Annullatore ritardato). */
+function triplePlayedBefore(state: TripleState, round: number, side: Side, slot: number): PlayedBefore {
+  const previous = state.rounds.find((r) => r.round === round - 1);
+  if (!previous) return {};
+  return { own: triplePlayedIn(state, previous, side, slot), opponent: triplePlayedIn(state, previous, otherSide(side), slot) };
 }
 
 /**
@@ -184,11 +192,20 @@ export function tripleContext(state: TripleState, side: Side, slot: number, fami
     });
   });
   if (lastHere) played.push(lastHere);
+  const totals = tripleTotalScores(state);
   return {
     families,
     roundsWon: points[side],
     opponentRoundsWon: points[otherSide(side)],
-    carriedBonus: last && lastHere ? carriedBonusAfter(lastHere, last.plays[side][slot].outcome) : 0,
+    // Riscossa, Slancio: the characters on this threat in the last two rounds.
+    carriedBonus: carriedBonusFrom(
+      state.rounds.slice(-2).map((round) => ({
+        character: triplePlayedIn(state, round, side, slot),
+        outcome: round.plays[side][slot].outcome,
+        margin: round.plays[side][slot].total - round.plays[otherSide(side)][slot].total,
+      })),
+    ),
+    scoreLead: totals[side] - totals[otherSide(side)],
     round: triplePowerRound(state.rules, tripleRoundNumber(state)),
     team: state.decks[side],
     previousLevel: last ? state.threats[slot]?.level : undefined,
@@ -248,14 +265,18 @@ export function resolveTripleRound(
       a: characterOf(state, "a", placements.a.characterIds[slot])!,
       b: characterOf(state, "b", placements.b.characterIds[slot])!,
     };
-    // Annullatore, Silenzio della tomba: the character plays without its power.
-    const acting = { a: asPlayedAgainst(chosen.a, chosen.b, threat), b: asPlayedAgainst(chosen.b, chosen.a, threat) };
+    // Annullatore (also one placed here in the round before), Silenzio della tomba: the character plays without its power.
+    const number = tripleRoundNumber(state);
+    const acting = {
+      a: asPlayedAgainst(chosen.a, chosen.b, threat, triplePlayedBefore(state, number, "a", slot)),
+      b: asPlayedAgainst(chosen.b, chosen.a, threat, triplePlayedBefore(state, number, "b", slot)),
+    };
     const scores = {} as Record<Side, PlayScore>;
     for (const side of SIDES) {
       const opponent = acting[otherSide(side)];
       scores[side] = scorePlay(acting[side], threat, {
         ...tripleContext(state, side, slot, families),
-        abilityMalus: abilityMalusOn(acting[side], opponent),
+        abilityMalus: abilityMalusOn(acting[side], opponent, threat),
         opponent,
       });
     }

@@ -4,7 +4,17 @@
 // or at the failure limit. Pure: the Edge Function loads and stores.
 
 import type { Rng } from "./rng.ts";
-import { abilityMalusFrom, carriedBonusAfter, lowerWins, powersSilenced, scorePlay } from "./scoring.ts";
+import {
+  abilityMalusFrom,
+  carriedBonusFrom,
+  isRelentless,
+  lowerWins,
+  powersSilenced,
+  relentlessMargin,
+  scoreMalusFrom,
+  scorePlay,
+  type Standing,
+} from "./scoring.ts";
 import { drawMatchThreats } from "./threats.ts";
 import type { AbilityFamilies, Character, MatchRules, PlayScore, RareThreat, Threat, ThreatLevelRules } from "./types.ts";
 
@@ -18,7 +28,14 @@ export type EmergencyRules = {
 };
 
 /** A threat already answered: what later plays need to know about it. */
-export type EmergencyAttempt = { character: Character; passed: boolean; /** Level of its threat (Crescendo). */ level: number };
+export type EmergencyAttempt = {
+  character: Character;
+  passed: boolean;
+  /** Level of its threat (Crescendo). */
+  level: number;
+  /** Score minus the score it needed (Riscossa sullo scarto); none for plays stored without it. */
+  margin?: number;
+};
 
 export type EmergencyOutcome = {
   score: PlayScore;
@@ -39,22 +56,29 @@ export function drawEmergencyThreats(
 }
 
 /**
- * The score a character needs. There is no opposing character, so the two
- * powers that act on one act on the threat: Sabotatore takes its malus off
- * every required ability, and Implacabile is satisfied one point short (the
- * tie it would win against an opponent). Annullatore, Davide, Contrattacco,
- * Opportunista, Riflesso and Nebbia need an opposing character: they do nothing.
+ * The score a character needs. There is no opposing character, so the powers
+ * that act on one act on the threat: Sabotatore takes its malus off every required
+ * ability (the variant for the big threats only from its level; the one on the score
+ * once off the target), and Implacabile is satisfied one point short (the tie it would
+ * win against an opponent), its variants also by their margin when it applies (failed
+ * threats count as rounds lost). Annullatore, Davide, Contrattacco, Opportunista,
+ * Riflesso and Nebbia need an opposing character: they do nothing.
  */
-export function requiredScore(character: Character, threat: Threat, rules: Pick<EmergencyRules, "targets">): number {
+export function requiredScore(
+  character: Character,
+  threat: Threat,
+  rules: Pick<EmergencyRules, "targets">,
+  standing: Standing = { roundsWon: 0, opponentRoundsWon: 0 },
+): number {
   // A rare threat has its own target; under Rovescio it is the most a play may score.
   const target = threat.target ?? rules.targets[threat.level];
   if (target === undefined) throw new Error(`No target for threat level ${threat.level}`);
   if (lowerWins(threat)) return target;
   // Silenzio della tomba: no power, so no discount. Emergenza draws only threats of
   // Nuova Megara, which have no such effect; this keeps the rule right anyway.
-  const silenced = powersSilenced(threat);
-  const sabotage = silenced ? 0 : abilityMalusFrom(character) * threat.abilities.length;
-  const relentless = !silenced && character.power?.code === "relentless" ? 1 : 0;
+  if (powersSilenced(threat)) return target;
+  const sabotage = abilityMalusFrom(character, threat) * threat.abilities.length + scoreMalusFrom(character);
+  const relentless = isRelentless(character) ? 1 + relentlessMargin(character, threat, standing) : 0;
   return Math.max(0, target - sabotage - relentless);
 }
 
@@ -71,11 +95,13 @@ export function resolveEmergencyPlay(params: {
 }): EmergencyOutcome {
   const { character, threat, squad, attempts, rules, families, threatLevels } = params;
   const last = attempts.at(-1);
+  const standing = { roundsWon: attempts.filter((a) => a.passed).length, opponentRoundsWon: attempts.filter((a) => !a.passed).length };
   const score = scorePlay(character, threat, {
     families,
-    roundsWon: attempts.filter((a) => a.passed).length,
-    opponentRoundsWon: attempts.filter((a) => !a.passed).length,
-    carriedBonus: last ? carriedBonusAfter(last.character, last.passed ? "won" : "lost") : 0,
+    ...standing,
+    carriedBonus: carriedBonusFrom(
+      attempts.map((a) => ({ character: a.character, outcome: a.passed ? "won" : "lost", margin: a.margin })),
+    ),
     round: attempts.length + 1,
     team: squad,
     previousLevel: last?.level,
@@ -84,7 +110,7 @@ export function resolveEmergencyPlay(params: {
     // No opponent, so no Annullatore: every character played with its power.
     played: attempts.map((a) => a.character),
   });
-  const required = requiredScore(character, threat, rules);
+  const required = requiredScore(character, threat, rules, standing);
   return { score, required, passed: lowerWins(threat) ? score.total <= required : score.total >= required };
 }
 

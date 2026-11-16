@@ -57,7 +57,7 @@ export const SAMPLE_CARD: CardData = {
   flavor: "",
   stats: { FOR: 3, VEL: 4, RES: 10, INT: 2, VOL: 7, PER: 3, ENE: 2, MAG: 4, PSI: 6, COM: 8, TEC: 5, FUR: 1 },
   rarity: GAMMA,
-  power: { name: "Ultimo baluardo", text: "+3 se giocato nel round 4 o 5" },
+  power: { name: "Ultimo baluardo", text: "+3 se giocato dal round 5 in poi" },
   art_url: "/cards/P025.webp",
 };
 
@@ -93,11 +93,11 @@ export const PRACTICE = {
 };
 
 /**
- * How a power shows in a round result: Bulwark's Ultimo baluardo in round 4 turns a
+ * How a power shows in a round result: Bulwark's Ultimo baluardo in round 5 turns a
  * lost round into a won one (8 + 3 = 11 against Dogwatch's 10).
  */
 export const POWER_EXAMPLE = {
-  round: 4,
+  round: 5,
   threat: PRACTICE.threat,
   me: { ...SAMPLE_CARD, bonus: 3 },
   opponent: DOGWATCH,
@@ -105,11 +105,11 @@ export const POWER_EXAMPLE = {
 };
 
 export const TUTORIAL_POWERS = [
-  { name: "Specialità", text: "+2 contro le Minacce che richiedono una certa abilità." },
-  { name: "Ultimo baluardo", text: "+3 se giocato nel round 4 o 5." },
+  { name: "Specialità", text: "Un bonus contro le Minacce che richiedono una certa abilità." },
+  { name: "Ultimo baluardo", text: "Un bonus se giocato negli ultimi round." },
   { name: "Riscossa", text: "Se perde il round, il personaggio successivo prende un bonus." },
-  { name: "Sabotatore", text: "Toglie 1 a ogni abilità del personaggio avversario nel round." },
-  { name: "Veggente", text: "Dopo averlo giocato vedi tutte le Minacce dei round successivi." },
+  { name: "Sabotatore", text: "Indebolisce il personaggio avversario nel round, per esempio −1 a ogni abilità." },
+  { name: "Veggente", text: "Dopo averlo giocato vedi le Minacce dei round successivi." },
   { name: "Implacabile", text: "A parità di punteggio vince il round." },
 ];
 

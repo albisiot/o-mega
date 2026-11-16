@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
-import { abilityMalusOn, modifierPoints, type Threat } from "@o-mega/game-engine";
+import { abilityMalusOn, modifierPoints, scoreMalusOn, type Threat } from "@o-mega/game-engine";
 import { useCardDetail } from "@/components/card-detail";
 import { prefersReducedMotion } from "@/components/comic-page";
 import { RoundComic } from "@/components/round-comic";
@@ -12,7 +12,16 @@ import { withBasePath } from "@/lib/base-path";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import { DISTRICTS, MAP_HEIGHT, MAP_WIDTH, placeThreats } from "@/lib/city-districts";
 import { toCharacter, type MatchCard } from "@/lib/match";
-import { decisiveNote, tieBreakReason, tieWonByRelentless, wasNullified, wasSilenced } from "@/lib/round-powers";
+import {
+  decisiveNote,
+  flipBefore,
+  playsBefore,
+  tieBreakReason,
+  tieWonByRelentless,
+  wasNullified,
+  wasSilenced,
+  wonBehindByRelentless,
+} from "@/lib/round-powers";
 import { describeThreatModifier } from "@/lib/threat-modifiers";
 import { roundPoints, type TripleContest, type TripleRound, type TripleView } from "@/lib/triple";
 import { contestNotes } from "@/lib/triple-powers";
@@ -56,8 +65,17 @@ function ContestComic({
   const myPlay = contest.my_play;
   const ruleThreat: Threat = { id: `lane-${contest.slot}`, level: threat?.level ?? 0, abilities: threat?.abilities ?? [], modifier };
 
-  // As the cards played: an Annullatore, or Silenzio della tomba, takes the power away.
-  const powerless = (card: MatchCard, other: MatchCard | null) => wasNullified(card, other, modifier) || wasSilenced(card, modifier);
+  // What each side placed on this threat in the round before (Annullatore ritardato), the player's view.
+  const previousLane = view.rounds.find((r) => r.round === round.round - 1 && r.resolved)?.contests.find((c) => c.slot === contest.slot);
+  const before = playsBefore(
+    view.my_deck.find((card) => card.instance_id === previousLane?.my_play?.instance_id) ?? null,
+    previousLane?.opponent_play ?? null,
+    ruleThreat,
+  );
+  const beforeOf = (card: MatchCard | null | undefined) => (card === mine ? before : flipBefore(before));
+  // As the cards played: an Annullatore (also one of the round before), or Silenzio della tomba, takes the power away.
+  const powerless = (card: MatchCard, other: MatchCard | null) =>
+    wasNullified(card, other, modifier, beforeOf(card)) || wasSilenced(card, modifier);
   const asPlayed = (card: MatchCard | null, other: MatchCard | null) => {
     if (!card) return null;
     const character = toCharacter(card, card.definition_id);
@@ -75,8 +93,8 @@ function ContestComic({
           mirror ? { ...chip, mark: { text: "⇄", tone: "ok" as const } } : chip,
         )
       : undefined;
-  const myChips = chipsOf(mine, theirs, myCharacter && theirCharacter ? abilityMalusOn(myCharacter, theirCharacter) : 0);
-  const theirChips = chipsOf(theirs, mine, myCharacter && theirCharacter ? abilityMalusOn(theirCharacter, myCharacter) : 0);
+  const myChips = chipsOf(mine, theirs, myCharacter && theirCharacter ? abilityMalusOn(myCharacter, theirCharacter, ruleThreat) : 0);
+  const theirChips = chipsOf(theirs, mine, myCharacter && theirCharacter ? abilityMalusOn(theirCharacter, myCharacter, ruleThreat) : 0);
   const struckPoints = (chips: typeof myChips, card: MatchCard | null, other: MatchCard | null) =>
     chips && card ? chipsTotal(chipsOf(card, other, 0) ?? []) - chipsTotal(chips) : 0;
   // The ribbon a rule drops on a card: its faction or its rarity.
@@ -98,7 +116,8 @@ function ContestComic({
   const winnerPlay = winner === "me" ? myPlay : winner === "opponent" ? theirs : null;
   const loserPlay = winner === "me" ? theirs : winner === "opponent" ? myPlay : null;
   const isTie = Boolean(myPlay && theirs && myPlay.score === theirs.score);
-  const tieWonBy = isTie && winnerCard && tieWonByRelentless(winnerCard, loserCard, modifier) ? winnerCard.name : null;
+  const tieWonBy = isTie && winnerCard && tieWonByRelentless(winnerCard, loserCard, modifier, beforeOf(winnerCard)) ? winnerCard.name : null;
+  const wonBehind = winnerCard ? wonBehindByRelentless(winnerPlay, loserPlay, winnerCard, loserCard, modifier, beforeOf(winnerCard)) : 0;
   const decisive =
     winner === "none" || !winnerPlay || !loserPlay || !loserCard
       ? null
@@ -113,7 +132,9 @@ function ContestComic({
         ? ""
         : isTie
           ? `Pari ${winnerPlay.score} a ${loserPlay.score}: ${tieBreakReason(winnerPlay, loserPlay, modifier, tieWonBy)}.`
-          : `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}.`;
+          : wonBehind
+            ? `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}: con Implacabile vince anche sotto di ${wonBehind}.`
+            : `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}.`;
   const notices = [
     ...(myPlay?.auto_played ? ["Tempo scaduto: il server ha piazzato la tua carta."] : []),
     ...(theirs?.auto_played ? [`${rival} non ha piazzato in tempo.`] : []),
@@ -144,7 +165,7 @@ function ContestComic({
         score: myScore,
         notes: myNotes,
         flag: flagOf(mine, myCharacter, myPlay?.parts),
-        struckPoints: struckPoints(myChips, mine, theirs),
+        struckPoints: struckPoints(myChips, mine, theirs) + (myCharacter && theirCharacter ? scoreMalusOn(myCharacter, theirCharacter) : 0),
         press: mine ? detail.press(mine) : undefined,
       }}
       opponent={{
@@ -155,7 +176,7 @@ function ContestComic({
         score: theirScore,
         notes: theirNotes,
         flag: flagOf(theirs, theirCharacter, theirs?.parts),
-        struckPoints: struckPoints(theirChips, theirs, mine),
+        struckPoints: struckPoints(theirChips, theirs, mine) + (myCharacter && theirCharacter ? scoreMalusOn(theirCharacter, myCharacter) : 0),
         press: theirs ? detail.press(theirs) : undefined,
       }}
       winner={winner}

@@ -589,7 +589,7 @@ function PlayReveal({
   const earlier = run.plays.filter((p) => p.round < play.round).sort((a, b) => a.round - b.round);
   const before = earlier.flatMap((p) => {
     const played = run.squad.find((c) => c.instance_id === p.instance_id);
-    return played ? [{ card: played, passed: p.passed }] : [];
+    return played ? [{ card: played, passed: p.passed, margin: p.score - p.required }] : [];
   });
   const notes = card ? emergencyPowerNotes(card, play, before, true) : [];
   const failedBefore = earlier.filter((p) => !p.passed).length;

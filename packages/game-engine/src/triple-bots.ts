@@ -124,11 +124,11 @@ function model(view: TripleBotView): Model {
     const threat = view.threats[slot];
     const a = asPlayedAgainst(own, theirs, threat);
     const b = asPlayedAgainst(theirs, own, threat);
-    const mine = scorePlay(a, threat, { ...view.contexts[slot], abilityMalus: abilityMalusOn(a, b), opponent: b });
+    const mine = scorePlay(a, threat, { ...view.contexts[slot], abilityMalus: abilityMalusOn(a, b, threat), opponent: b });
     const other = scorePlay(b, threat, {
       ...view.opponentContexts[slot],
       team: [b],
-      abilityMalus: abilityMalusOn(b, a),
+      abilityMalus: abilityMalusOn(b, a, threat),
       opponent: a,
     });
     const winner = compareScores(mine, other, threat);

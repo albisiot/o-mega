@@ -127,7 +127,9 @@ begin
   perform public.emergency_record_play(v_a, 3, v_squad_a[3], 18, 0, 18, 18);
   assert (select sum(amount) = 10 from public.coin_ledger where user_id = v_a and reason = 'emergency_reward'), 'first reward';
 
-  -- A Veggente played shows the following threats, not the current one again.
+  -- A Veggente played shows the following threats, not the current one again. The real
+  -- Veggenti step aside first: one power per faction (card_definitions_one_power_per_faction).
+  update public.card_definitions set power_code = null, power_params = '{}' where power_code = 'foresight';
   update public.card_definitions set power_code = 'foresight', power_params = '{}'
   where id = (select definition_ids[3] from public.emergency_runs where user_id = v_a);
   v_state := public.emergency_state_payload(v_a);

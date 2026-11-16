@@ -127,6 +127,8 @@ export type PlayScore = {
   highest: number;
   /** Implacabile: wins when the totals are equal. */
   relentless?: boolean;
+  /** A variant of Implacabile: it also wins when this many points behind, or fewer. */
+  relentlessMargin?: number;
   /** Where the bonus comes from; the rules engine always fills it, stored plays may not have it. */
   parts?: ScoreParts;
 };

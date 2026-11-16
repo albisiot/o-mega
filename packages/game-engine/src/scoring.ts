@@ -26,6 +26,8 @@ export type ScoreContext = {
    * power an Annullatore took away (Capobranco, Sacrificio, Catalizzatore, Riverbero).
    */
   played?: readonly Character[];
+  /** Total score so far, own minus the opponent's (Sfavorito sui punti); none where there is no opponent. */
+  scoreLead?: number;
 };
 
 /** How a round ended for one side: a void round is neither won nor lost. */
@@ -156,9 +158,37 @@ export function highestRequired(character: Character, threat: Threat, malus = 0)
   return Math.max(0, ...values);
 }
 
-/** What a character with Sabotatore takes from each ability of the opposing character. */
-export function abilityMalusFrom(character: Character): number {
-  return character.power?.code === "sabotage" ? numberParam(character, "malus") : 0;
+/** Sabotatore and its variants: they take something from the opposing character. */
+const SABOTEURS = new Set(["sabotage", "sabotage_big", "sabotage_flat"]);
+
+export function isSaboteur(character: Character | null | undefined): boolean {
+  return SABOTEURS.has(character?.power?.code ?? "");
+}
+
+/**
+ * What a character with Sabotatore takes from each ability of the opposing character
+ * on `threat`. The variant for the big threats acts only from its level up; without a
+ * threat (a team's strength) it counts as acting.
+ */
+export function abilityMalusFrom(character: Character, threat?: Threat | null): number {
+  switch (character.power?.code) {
+    case "sabotage":
+      return numberParam(character, "malus");
+    case "sabotage_big":
+      return threat && threat.level < numberParam(character, "from_level") ? 0 : numberParam(character, "malus");
+    default:
+      return 0;
+  }
+}
+
+/** Sabotatore sul punteggio: what a character takes from the opposing score (never from the tie-break). */
+export function scoreMalusFrom(character: Character): number {
+  return character.power?.code === "sabotage_flat" ? numberParam(character, "malus") : 0;
+}
+
+/** Whether a Sabotatore takes anything on this threat (what Schermato's bonus answers). */
+export function sabotageActs(character: Character | null | undefined, threat?: Threat | null): boolean {
+  return Boolean(character && (abilityMalusFrom(character, threat) > 0 || scoreMalusFrom(character) > 0));
 }
 
 /** Schermato and Riflesso: Sabotatore cannot touch them. */
@@ -172,11 +202,47 @@ export function immuneToSabotage(character: Character): boolean {
  * the opponent's Sabotatore, unless `character` is immune, plus its own
  * Sabotatore sent back when the opponent has Riflesso. Pass both as they play.
  */
-export function abilityMalusOn(character: Character, opponent: Character | null | undefined): number {
+export function abilityMalusOn(character: Character, opponent: Character | null | undefined, threat?: Threat | null): number {
   if (!opponent) return 0;
-  const received = immuneToSabotage(character) ? 0 : abilityMalusFrom(opponent);
-  const reflected = opponent.power?.code === "reflect" ? abilityMalusFrom(character) : 0;
+  const received = immuneToSabotage(character) ? 0 : abilityMalusFrom(opponent, threat);
+  const reflected = opponent.power?.code === "reflect" ? abilityMalusFrom(character, threat) : 0;
   return received + reflected;
+}
+
+/** The same for Sabotatore sul punteggio: points taken from `character`'s score. */
+export function scoreMalusOn(character: Character, opponent: Character | null | undefined): number {
+  if (!opponent) return 0;
+  const received = immuneToSabotage(character) ? 0 : scoreMalusFrom(opponent);
+  const reflected = opponent.power?.code === "reflect" ? scoreMalusFrom(character) : 0;
+  return received + reflected;
+}
+
+/** Implacabile and its variants: they win the ties, some also a round lost by a little. */
+const RELENTLESS = new Set(["relentless", "relentless_small", "relentless_big", "relentless_behind"]);
+
+export function isRelentless(character: Character | null | undefined): boolean {
+  return RELENTLESS.has(character?.power?.code ?? "");
+}
+
+/**
+ * How many points behind an Implacabile still wins its round, besides the ties: on the
+ * small threats, on the big ones, or while its side is behind, by its variant.
+ */
+export function relentlessMargin(
+  character: Character,
+  threat: Pick<Threat, "level">,
+  standing: Pick<ScoreContext, "roundsWon" | "opponentRoundsWon">,
+): number {
+  switch (character.power?.code) {
+    case "relentless_small":
+      return threat.level <= numberParam(character, "max_level") ? numberParam(character, "margin") : 0;
+    case "relentless_big":
+      return threat.level >= numberParam(character, "from_level") ? numberParam(character, "margin") : 0;
+    case "relentless_behind":
+      return standing.opponentRoundsWon > standing.roundsWon ? numberParam(character, "margin") : 0;
+    default:
+      return 0;
+  }
 }
 
 /** Nebbia: the opponent does not see who played it until the match is over. */
@@ -194,10 +260,20 @@ const ECHOABLE = new Set([
   "family_bonus",
   "level_bonus",
   "underdog",
+  "underdog_per_round",
+  "underdog_wall",
+  "underdog_points",
   "opener",
   "last_stand",
+  "round_exact",
   "bond",
+  "bond_threshold",
+  "bond_relay",
+  "bond_played",
+  "bond_unplayed",
   "nemesis",
+  "nemesis_other",
+  "rival",
   "all_rounder",
   "giant_slayer",
   "crescendo",
@@ -240,9 +316,13 @@ export function sacrificeBonus(played: readonly Character[] = []): number {
   return played.reduce((sum, earlier) => (earlier.power?.code === "sacrifice" ? sum + numberParam(earlier, "bonus") : sum), 0);
 }
 
-/** Spia: once played, its side sees one character the opponent has not played yet. */
+/**
+ * Spia and its variants: once played, its side sees characters the opponent has not
+ * played yet (one at random, two at random, or the rarest). The server draws them.
+ */
 export function revealsOpponentCharacter(character: Character): boolean {
-  return character.power?.code === "spy";
+  const code = character.power?.code;
+  return code === "spy" || code === "spy_many" || code === "spy_rarest";
 }
 
 /** Nemesi acts between Heroes and Villains: Neutrals have no nemesis. */
@@ -258,24 +338,55 @@ export function nullifiesPower(character: Character): boolean {
   return character.power?.code === "nullifier";
 }
 
+/** Annullatore ritardato: the character the opponent plays in the round after acts without its power. */
+export function nullifiesNextPower(character: Character | null | undefined): boolean {
+  return character?.power?.code === "delayed_nullifier";
+}
+
+/**
+ * The characters the two sides played in the round before, as they played: what an
+ * Annullatore ritardato needs to know (in the Allarme Triplo, on the same threat).
+ */
+export type PlayedBefore = { own?: Character | null; opponent?: Character | null };
+
 /**
  * The character as it plays against `opponent` on `threat`: without its power when
- * the opponent is an Annullatore, or when the threat silences every power
- * (Silenzio della tomba). Two Annullatori cancel each other.
+ * the opponent is an Annullatore, when the threat silences every power (Silenzio della
+ * tomba), or when the opponent's character of the round before was an Annullatore
+ * ritardato. Two Annullatori cancel each other; an Annullatore that the opponent's
+ * Annullatore ritardato silenced cancels nothing.
  */
 export function asPlayedAgainst(
   character: Character,
   opponent: Character | null | undefined,
   threat?: Threat | null,
+  before?: PlayedBefore,
 ): Character {
   if (!character.power) return character;
-  const silenced = powersSilenced(threat) || Boolean(opponent && !powersSilenced(threat) && nullifiesPower(opponent));
+  const delayed = nullifiesNextPower(before?.opponent);
+  const opponentActs = Boolean(opponent && nullifiesPower(opponent) && !nullifiesNextPower(before?.own));
+  const silenced = delayed || powersSilenced(threat) || opponentActs;
   return silenced ? { ...character, power: null } : character;
 }
 
 /** Veggente: once played, its side sees every threat of the following rounds. */
 export function revealsFutureThreats(character: Character): boolean {
-  return character.power?.code === "foresight";
+  return foresightRounds(character) > 0;
+}
+
+/**
+ * How many of the following rounds a Veggente lets its side see: all of them, or the
+ * next `count` for the short one; 0 for any other power.
+ */
+export function foresightRounds(character: Character): number {
+  switch (character.power?.code) {
+    case "foresight":
+      return Number.POSITIVE_INFINITY;
+    case "foresight_short":
+      return numberParam(character, "count");
+    default:
+      return 0;
+  }
 }
 
 /** Bonus of the character's own power for this round (SPEC §4.4, M6 rules). */
@@ -295,18 +406,47 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
         : 0;
     case "underdog":
       return context.opponentRoundsWon > context.roundsWon ? numberParam(character, "bonus") : 0;
+    case "underdog_per_round":
+      return Math.max(0, context.opponentRoundsWon - context.roundsWon) * numberParam(character, "bonus");
+    case "underdog_wall":
+      return context.opponentRoundsWon >= numberParam(character, "min_wins") ? numberParam(character, "bonus") : 0;
+    case "underdog_points":
+      return (context.scoreLead ?? 0) < 0 ? numberParam(character, "bonus") : 0;
     case "opener":
       return context.round <= numberParam(character, "max_round") ? numberParam(character, "bonus") : 0;
     case "last_stand":
       return context.round >= numberParam(character, "min_round") ? numberParam(character, "bonus") : 0;
+    case "round_exact":
+      return context.round === numberParam(character, "round") ? numberParam(character, "bonus") : 0;
     case "bond": {
       const allies = context.team.filter((c) => c.id !== character.id && c.faction === character.faction).length;
       return allies * numberParam(character, "bonus");
     }
+    case "bond_threshold": {
+      const allies = context.team.filter((c) => c.id !== character.id && c.faction === character.faction).length;
+      return allies >= numberParam(character, "min_allies") ? numberParam(character, "bonus") : 0;
+    }
+    case "bond_relay": {
+      const previous = context.played?.at(-1);
+      return previous && previous.id !== character.id && previous.faction === character.faction ? numberParam(character, "bonus") : 0;
+    }
+    case "bond_played": {
+      const allies = (context.played ?? []).filter((c) => c.id !== character.id && c.faction === character.faction).length;
+      return allies * numberParam(character, "bonus");
+    }
+    case "bond_unplayed": {
+      const played = new Set((context.played ?? []).map((c) => c.id));
+      const allies = context.team.filter((c) => c.id !== character.id && !played.has(c.id) && c.faction === character.faction).length;
+      return allies * numberParam(character, "bonus");
+    }
     case "shielded":
-      return context.opponent && abilityMalusFrom(context.opponent) > 0 ? numberParam(character, "bonus") : 0;
+      return context.opponent && sabotageActs(context.opponent, threat) ? numberParam(character, "bonus") : 0;
     case "nemesis":
       return context.opponent && isNemesisOf(character, context.opponent.faction) ? numberParam(character, "bonus") : 0;
+    case "nemesis_other":
+      return context.opponent && context.opponent.faction !== character.faction ? numberParam(character, "bonus") : 0;
+    case "rival":
+      return context.opponent && context.opponent.faction === character.faction ? numberParam(character, "bonus") : 0;
     case "all_rounder": {
       const min = numberParam(character, "min_value");
       const malus = context.abilityMalus ?? 0;
@@ -357,12 +497,23 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
     case "catalyst": // acts on the next character: see powerMultiplier
     case "fog": // hides the character: see hidesIdentity
     case "comeback": // acts after the round: see carriedBonusAfter
-    case "momentum": // acts after the round: see carriedBonusAfter
+    case "comeback_long":
+    case "comeback_margin":
+    case "momentum":
     case "nullifier": // acts on the opposing character: see asPlayedAgainst
-    case "sabotage": // acts on the opposing character: see abilityMalusFrom
-    case "foresight": // gives information, not points: see revealsFutureThreats
-    case "relentless": // acts on ties: see compareScores
+    case "delayed_nullifier":
+    case "sabotage": // acts on the opposing character: see abilityMalusFrom and scoreMalusFrom
+    case "sabotage_big":
+    case "sabotage_flat":
+    case "foresight": // gives information, not points: see foresightRounds
+    case "foresight_short":
+    case "relentless": // acts on ties: see compareScores and relentlessMargin
+    case "relentless_small":
+    case "relentless_big":
+    case "relentless_behind":
     case "spy": // gives information, not points: see revealsOpponentCharacter
+    case "spy_many":
+    case "spy_rarest":
       return 0;
     default:
       // A power the engine does not implement must never be silently ignored.
@@ -383,7 +534,10 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
   const malus = context.abilityMalus ?? 0;
   // Specchio: the values are the opposing character's; without one (Emergenza, a preview) its own.
   const values = scoresWithOpponentValues(threat) && context.opponent ? { ...character, stats: context.opponent.stats } : character;
-  const base = baseScore(values, threat, malus);
+  // Sabotatore sul punteggio lowers the sum of the values, never below 0 and never the tie-break.
+  const scoreMalus = powersSilenced(threat) ? 0 : scoreMalusOn(character, context.opponent);
+  const unsabotaged = baseScore(values, threat, malus);
+  const base = unsabotaged - Math.min(scoreMalus, Math.max(0, unsabotaged));
   // Sacrificio: the character gives up the round, whatever it would have scored, the
   // bonuses it received included.
   if (code === "sacrifice") {
@@ -404,9 +558,16 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
     bonus: total - base,
     total,
     highest: highestRequired(values, threat, malus),
-    ...(code === "relentless" ? { relentless: true } : {}),
+    ...relentlessFields(character, threat, context),
     parts,
   };
+}
+
+/** Implacabile on a play: it wins the ties, and a variant also a round lost by `relentlessMargin` or less. */
+function relentlessFields(character: Character, threat: Threat, context: ScoreContext): Pick<PlayScore, "relentless" | "relentlessMargin"> {
+  if (!isRelentless(character)) return {};
+  const margin = relentlessMargin(character, threat, context);
+  return margin > 0 ? { relentless: true, relentlessMargin: margin } : { relentless: true };
 }
 
 /**
@@ -414,11 +575,32 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
  * Slancio after a won one. A void round is neither won nor lost. Pass the character as it played (asPlayedAgainst): an Annullatore
  * stops the bonus too.
  */
-export function carriedBonusAfter(character: Character, outcome: PlayOutcome): number {
+export function carriedBonusAfter(character: Character, outcome: PlayOutcome, margin?: number, distance = 1): number {
   const code = character.power?.code;
+  // Riscossa lunga: the two characters after it, so also the one two plays later.
+  if (code === "comeback_long") return outcome === "lost" && distance <= 2 ? numberParam(character, "bonus") : 0;
+  if (distance !== 1) return 0;
   if (code === "comeback" && outcome === "lost") return numberParam(character, "bonus");
+  // Riscossa sullo scarto: the points it lost by, up to `max`.
+  if (code === "comeback_margin" && outcome === "lost") return Math.min(Math.abs(margin ?? 0), numberParam(character, "max"));
   if (code === "momentum" && outcome === "won") return numberParam(character, "bonus");
   return 0;
+}
+
+/**
+ * A side's earlier plays, the latest last, as `carriedBonusFrom` reads them: the character
+ * as it played, how its round ended and by how many points (own total minus the other).
+ */
+export type CarrySource = { character: Character | null | undefined; outcome: PlayOutcome; margin?: number };
+
+/** The bonus a side's next character receives from the side's last two plays (Riscossa, Slancio). */
+export function carriedBonusFrom(history: readonly CarrySource[]): number {
+  let total = 0;
+  for (let distance = 1; distance <= 2; distance++) {
+    const source = history.at(-distance);
+    if (source?.character) total += carriedBonusAfter(source.character, source.outcome, source.margin, distance);
+  }
+  return total;
 }
 
 /**
@@ -428,7 +610,15 @@ export function carriedBonusAfter(character: Character, outcome: PlayOutcome): n
 export function compareScores(a: PlayScore, b: PlayScore, threat?: Threat | null): Side | null {
   const lower = lowerWins(threat);
   const better = (x: number, y: number): Side => ((x > y) !== lower ? "a" : "b");
-  if (a.total !== b.total) return better(a.total, b.total);
+  if (a.total !== b.total) {
+    const winner = better(a.total, b.total);
+    const [ahead, behind] = winner === "a" ? [a, b] : [b, a];
+    // An Implacabile that may win a round lost by a little, unless the other is Implacabile too.
+    if (behind.relentless && !ahead.relentless && Math.abs(a.total - b.total) <= (behind.relentlessMargin ?? 0)) {
+      return winner === "a" ? "b" : "a";
+    }
+    return winner;
+  }
   if (Boolean(a.relentless) !== Boolean(b.relentless)) return a.relentless ? "a" : "b";
   if (a.highest !== b.highest) return better(a.highest, b.highest);
   return null;

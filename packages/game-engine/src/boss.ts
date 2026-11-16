@@ -8,7 +8,16 @@
 
 import { otherSide, SIDES } from "./match.ts";
 import { pickOne, shuffle, type Rng } from "./rng.ts";
-import { abilityMalusOn, asPlayedAgainst, carriedBonusAfter, compareScores, scorePlay, type PlayOutcome, type ScoreContext } from "./scoring.ts";
+import {
+  abilityMalusOn,
+  asPlayedAgainst,
+  carriedBonusFrom,
+  compareScores,
+  scorePlay,
+  type PlayedBefore,
+  type PlayOutcome,
+  type ScoreContext,
+} from "./scoring.ts";
 import type { AbilityFamilies, Character, MatchResult, PlayScore, Side, Threat } from "./types.ts";
 
 /** The numbers of the mode (balance.ts `boss`, game_config `boss.*`). */
@@ -217,23 +226,47 @@ export function bossPlayedIn(state: BossState, turn: BossTurnRecord, side: Side)
   const front = turn.plays[side].front;
   const sameFront = turn.plays[otherSide(side)].front === front;
   const arriving = sameFront ? characterOf(state, otherSide(side), turn.plays[otherSide(side)].characterId) : undefined;
-  return asPlayedAgainst(own, opponentOnFront(before, side, front, arriving), state.fronts[front]);
+  return asPlayedAgainst(own, opponentOnFront(before, side, front, arriving), state.fronts[front], bossPlayedBefore(state, turn.turn, side));
+}
+
+/** What the two sides placed in the turn before `turn`, as they played (Annullatore ritardato). */
+function bossPlayedBefore(state: BossState, turn: number, side: Side): PlayedBefore {
+  const previous = state.turns.find((t) => t.turn === turn - 1);
+  if (!previous) return {};
+  return { own: bossPlayedIn(state, previous, side), opponent: bossPlayedIn(state, previous, otherSide(side)) };
+}
+
+/**
+ * How many points a side's character of `turn` beat, or lost to, the opposing character
+ * holding its front then (Riscossa sullo scarto); 0 when it was alone there.
+ */
+function bossMargin(state: BossState, turn: BossTurnRecord, side: Side): number {
+  const after: BossState = { ...state, turns: state.turns.filter((t) => t.turn <= turn.turn) };
+  const rival = bossBoard(after, otherSide(side))[turn.plays[side].front];
+  return rival ? turn.plays[side].total - rival.score.total : 0;
 }
 
 /**
  * What the powers of `side` know before the current turn (SPEC §5.12): the turn is
  * the round, fronts held are rounds won, Riscossa, Slancio and Vendetta read how the
- * side's last character did on its front, Crescendo the level of that front.
+ * side's last characters did on their fronts, Crescendo the level of that front.
  */
 export function bossContext(state: BossState, side: Side, families: AbilityFamilies): ScoreContext {
   const taken = frontsTaken(state);
+  const points = bossPoints(state);
   const last = state.turns.at(-1);
-  const lastActing = last ? bossPlayedIn(state, last, side) : undefined;
   return {
     families,
     roundsWon: taken[side],
     opponentRoundsWon: taken[otherSide(side)],
-    carriedBonus: last && lastActing ? carriedBonusAfter(lastActing, last.plays[side].outcome) : 0,
+    carriedBonus: carriedBonusFrom(
+      state.turns.slice(-2).map((turn) => ({
+        character: bossPlayedIn(state, turn, side),
+        outcome: turn.plays[side].outcome,
+        margin: bossMargin(state, turn, side),
+      })),
+    ),
+    scoreLead: points[side] - points[otherSide(side)],
     round: bossTurnNumber(state),
     team: state.teams[side],
     previousLevel: last ? state.fronts[last.plays[side].front]?.level : undefined,
@@ -253,11 +286,12 @@ function arrivalScore(
   families: AbilityFamilies,
 ): PlayScore {
   const threat = state.fronts[front];
-  const acting = asPlayedAgainst(character, opponent, threat);
-  const opposing = opponent && asPlayedAgainst(opponent, character, threat);
+  const turn = bossTurnNumber(state);
+  const acting = asPlayedAgainst(character, opponent, threat, bossPlayedBefore(state, turn, side));
+  const opposing = opponent && asPlayedAgainst(opponent, character, threat, bossPlayedBefore(state, turn, otherSide(side)));
   return scorePlay(acting, threat, {
     ...bossContext(state, side, families),
-    abilityMalus: abilityMalusOn(acting, opposing),
+    abilityMalus: abilityMalusOn(acting, opposing, threat),
     opponent: opposing,
   });
 }

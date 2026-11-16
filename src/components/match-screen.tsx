@@ -8,6 +8,7 @@ import {
   immuneToSabotage,
   modifierPoints,
   packBonus,
+  scoreMalusOn,
   scorePlay,
   type AbilityFamilies,
   type ThreatModifier,
@@ -51,11 +52,13 @@ import { RewardChips, hasReward, useMatchReward } from "@/components/match-rewar
 import { useOpponentTitle } from "@/lib/achievements";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import {
-  carriedInto,
+  carriedIntoRound,
   decisiveNote,
+  flipBefore,
   lastingSacrifice,
   outcomeOf,
   playedBefore,
+  roundPlaysBefore,
   roundPowerNotes,
   roundThreat,
   tieBreakReason,
@@ -63,6 +66,7 @@ import {
   tieWonByRelentless,
   wasNullified,
   wasSilenced,
+  wonBehindByRelentless,
 } from "@/lib/round-powers";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
 import { matchBeforeRound, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
@@ -403,7 +407,6 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
       {shownRound ? (
         <RoundReveal
           round={shownRound}
-          previous={view.rounds.find((r) => r.round === shownRound.round - 1) ?? null}
           rounds={view.rounds}
           team={view.my_team}
           abilities={abilities}
@@ -496,6 +499,7 @@ function LevelTrack({
           view.my_team.find((card) => card.instance_id === round.my_play?.instance_id),
           round.opponent_play,
           round.modifier,
+          roundPlaysBefore(view.rounds, view.my_team, round.round),
         )
       : null;
   const openTie = openRound === null ? null : tieOf(view.rounds.find((r) => r.round === openRound));
@@ -640,15 +644,9 @@ function ChoosePhase({
   const pending = round.my_pending_instance_id;
   const threat = { id: "current", level: round.level, abilities: round.threat.abilities, modifier: round.modifier };
 
-  // Riscossa or Slancio: bonus earned in the previous round, unless an Annullatore stopped it.
+  // Riscossa or Slancio: bonus earned in the previous rounds, unless an Annullatore stopped it.
   const previous = view.rounds.find((r) => r.round === round.round - 1);
-  const previousCard = previous?.my_play && view.my_team.find((c) => c.instance_id === previous.my_play?.instance_id);
-  const carried = carriedInto(
-    previousCard,
-    outcomeOf(previous?.winner, "me"),
-    previous?.opponent_play,
-    previous && roundThreat(previous),
-  ).points;
+  const carried = carriedIntoRound(view.rounds, view.my_team, round.round, "me").points;
 
   const available = view.my_team.filter((card) => card.played_round === null);
   const myPlayed = playedBefore(view.rounds, view.my_team, round.round, "me");
@@ -937,7 +935,6 @@ function ModifierBanner({
 
 function RoundReveal({
   round,
-  previous,
   rounds,
   team,
   abilities,
@@ -953,9 +950,7 @@ function RoundReveal({
   /** What the player's Veggente or Spia showed (match view: foreseen_threats, spied_cards). */
   revealed: { foreseen: { round: number; level: number; name: string }[]; spied: MatchCard[] };
   round: MatchRound;
-  /** The round before, for the Riscossa a card received from it. */
-  previous: MatchRound | null;
-  /** Every round of the match, for the Capobranco bonus a card received. */
+  /** Every round of the match, for the bonus a card received (Riscossa, Capobranco) and the Annullatore of the round before. */
   rounds: MatchRound[];
   abilities: AbilityInfo[];
   team: TeamCard[];
@@ -978,17 +973,30 @@ function RoundReveal({
   const isTie = round.my_play && theirs && round.my_play.score === theirs.score;
   // With Implacabile on both sides, or against an Annullatore, the tie is settled as usual, by the highest value.
   const loserCard = winnerCard === mine ? theirs : mine;
-  const tieWonBy = isTie && winnerCard && tieWonByRelentless(winnerCard, loserCard, round.modifier) ? winnerCard.name : null;
+  // Annullatore ritardato: what each side played the round before (the player's view).
+  const before = roundPlaysBefore(rounds, team, round.round);
+  const beforeOf = (card: MatchCard | null | undefined) => (card === mine ? before : flipBefore(before));
+  const tieWonBy =
+    isTie && winnerCard && tieWonByRelentless(winnerCard, loserCard, round.modifier, beforeOf(winnerCard)) ? winnerCard.name : null;
+  // A variant of Implacabile that won from behind.
+  const wonBehind = winnerCard
+    ? wonBehindByRelentless(
+        round.winner === "me" ? round.my_play : theirs,
+        round.winner === "me" ? theirs : round.my_play,
+        winnerCard,
+        loserCard,
+        round.modifier,
+        beforeOf(winnerCard),
+      )
+    : 0;
 
   // Each card's power is told next to that card, in its own half of the screen.
   const threat = { level: round.level, abilities: round.threat.abilities, modifier: round.modifier };
-  const previousMine = team.find((card) => card.instance_id === previous?.my_play?.instance_id);
-  const previousThreat = previous && roundThreat(previous);
-  const myCarried = carriedInto(previousMine, outcomeOf(previous?.winner, "me"), previous?.opponent_play, previousThreat);
-  const theirCarried = carriedInto(previous?.opponent_play, outcomeOf(previous?.winner, "opponent"), previousMine, previousThreat);
-  // As the cards played: an Annullatore, or Silenzio della tomba, takes the power away.
+  const myCarried = carriedIntoRound(rounds, team, round.round, "me");
+  const theirCarried = carriedIntoRound(rounds, team, round.round, "opponent");
+  // As the cards played: an Annullatore (also one of the round before), or Silenzio della tomba, takes the power away.
   const powerless = (card: MatchCard, other: MatchCard | null | undefined) =>
-    wasNullified(card, other, round.modifier) || wasSilenced(card, round.modifier);
+    wasNullified(card, other, round.modifier, beforeOf(card)) || wasSilenced(card, round.modifier);
   const myActing = mine && !powerless(mine, theirs) ? toCharacter(mine, mine.definition_id) : null;
   const theirActing = theirs && !powerless(theirs, mine) ? toCharacter(theirs, theirs.definition_id) : null;
   // Il conto lungo: the rounds each side had won before this one.
@@ -1018,13 +1026,15 @@ function RoundReveal({
           lost: round.winner === "opponent",
           won: round.winner === "me",
           wonTie: Boolean(tieWonBy) && round.winner === "me",
+          wonBehind: round.winner === "me" ? wonBehind : 0,
+          margin: theirs ? round.my_play.score - theirs.score : undefined,
           opponentShielded: theirActing !== null && immuneToSabotage(theirActing),
-          opponentSabotage: theirActing ? abilityMalusFrom(theirActing) : 0,
+          opponentSabotage: theirActing ? abilityMalusFrom(theirActing, { id: "round", ...threat }) : 0,
           pack: round.my_play.parts?.pack ?? myPack,
           sacrifice: round.my_play.parts ? (round.my_play.parts.sacrifice ?? 0) : mySacrifice.points,
           sacrificeFrom: mySacrifice.from,
           parts: round.my_play.parts,
-          nullified: wasNullified(mine, theirs, round.modifier),
+          nullified: wasNullified(mine, theirs, round.modifier, before),
           silenced: wasSilenced(mine, round.modifier),
           standing: myStanding,
           opponentHasPower: Boolean(theirs?.power),
@@ -1039,13 +1049,15 @@ function RoundReveal({
         lost: round.winner === "me",
         won: round.winner === "opponent",
         wonTie: Boolean(tieWonBy) && round.winner === "opponent",
+        wonBehind: round.winner === "opponent" ? wonBehind : 0,
+        margin: round.my_play ? theirs.score - round.my_play.score : undefined,
         opponentShielded: myActing !== null && immuneToSabotage(myActing),
-        opponentSabotage: myActing ? abilityMalusFrom(myActing) : 0,
+        opponentSabotage: myActing ? abilityMalusFrom(myActing, { id: "round", ...threat }) : 0,
         pack: theirs.parts?.pack ?? theirPack,
         sacrifice: theirs.parts ? (theirs.parts.sacrifice ?? 0) : theirSacrifice.points,
         sacrificeFrom: theirSacrifice.from,
         parts: theirs.parts,
-        nullified: wasNullified(theirs, mine, round.modifier),
+        nullified: wasNullified(theirs, mine, round.modifier, flipBefore(before)),
         silenced: wasSilenced(theirs, round.modifier),
         standing: theirStanding,
         opponentHasPower: Boolean(mine?.power),
@@ -1069,8 +1081,11 @@ function RoundReveal({
           mirror ? { ...chip, mark: { text: "⇄", tone: "ok" as const } } : chip,
         )
       : undefined;
-  const myMalus = myCharacter && theirCharacter ? abilityMalusOn(myCharacter, theirCharacter) : 0;
-  const theirMalus = myCharacter && theirCharacter ? abilityMalusOn(theirCharacter, myCharacter) : 0;
+  const myMalus = myCharacter && theirCharacter ? abilityMalusOn(myCharacter, theirCharacter, ruleThreat) : 0;
+  const theirMalus = myCharacter && theirCharacter ? abilityMalusOn(theirCharacter, myCharacter, ruleThreat) : 0;
+  // Sabotatore sul punteggio: points off the total, struck like the abilities.
+  const myScoreMalus = myCharacter && theirCharacter && !wasSilenced(mine, round.modifier) ? scoreMalusOn(myCharacter, theirCharacter) : 0;
+  const theirScoreMalus = myCharacter && theirCharacter && !wasSilenced(theirs, round.modifier) ? scoreMalusOn(theirCharacter, myCharacter) : 0;
   const myChips = chipsOf(mine, theirs, myMalus);
   const theirChips = chipsOf(theirs, mine, theirMalus);
   // What Sabotatore cost each card: the page counts it first, then takes it away with the strike.
@@ -1111,7 +1126,9 @@ function RoundReveal({
         ? ""
         : isTie
           ? `Pari ${winnerPlay.score} a ${loserPlay.score}: ${tieBreakReason(winnerPlay, loserPlay, round.modifier, tieWonBy)}.`
-          : `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}.`;
+          : wonBehind
+            ? `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}: con Implacabile vince anche sotto di ${wonBehind}.`
+            : `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}.`;
   const notices = [
     ...(round.my_play?.auto_played ? ["Tempo scaduto: il server ha scelto per te."] : []),
     ...(theirs?.auto_played ? [`${opponentName} non ha scelto in tempo.`] : []),
@@ -1135,7 +1152,7 @@ function RoundReveal({
         score: myScore,
         notes: myNotes,
         flag: flagOf(mine, myCharacter, myStanding),
-        struckPoints: struckPoints(myChips, mine, theirs),
+        struckPoints: struckPoints(myChips, mine, theirs) + myScoreMalus,
         press: mine ? detail.press(mine) : undefined,
       }}
       opponent={{
@@ -1146,7 +1163,7 @@ function RoundReveal({
         score: theirScore,
         notes: theirNotes,
         flag: flagOf(theirs, theirCharacter, theirStanding),
-        struckPoints: struckPoints(theirChips, theirs, mine),
+        struckPoints: struckPoints(theirChips, theirs, mine) + theirScoreMalus,
         press: theirs ? detail.press(theirs) : undefined,
       }}
       winner={winner}
@@ -1323,7 +1340,15 @@ function MatchResult({
               const frame =
                 r.winner === "me" ? "border-comic-cyan" : r.winner === "opponent" ? "border-comic-magenta" : "border-line";
               // Equal totals: an «i» on the tile tells what settled the round.
-              const tie = tieExplanation(r.my_play, r.opponent_play, r.winner, mine, r.opponent_play, r.modifier);
+              const tie = tieExplanation(
+                r.my_play,
+                r.opponent_play,
+                r.winner,
+                mine,
+                r.opponent_play,
+                r.modifier,
+                roundPlaysBefore(view.rounds, view.my_team, r.round),
+              );
               return (
                 <li
                   key={r.round}

@@ -155,6 +155,29 @@ Annullatore, Davide, Crescendo e Slancio sono nati per personaggi nuovi (P115-P1
 
 Gli ultimi 14 poteri della tabella vengono da `docs/POWERS-BACKLOG.md` e sono su un personaggio nuovo ciascuno (P218-P231, migrazione `20261114230000_backlog_power_characters.sql`, docs/WORLD.md), con i parametri consigliati del backlog. Sacrificio è entrato così com'era (+5 al solo personaggio successivo), nonostante il backlog lo desse da riprogettare; il 15 novembre 2026 l'utente l'ha trasformato in un bonus che dura fino a fine partita, con la cifra (+3) fissata per simulazione (migrazione `20261115110000_sacrifice_lasting_bonus.sql`, tabella in `docs/POWERS-BACKLOG.md`). Giocato presto ripaga il round ceduto su più round, giocato tardi conviene poco: è una scelta tattica.
 
+**Un potere preciso per fazione (16 novembre 2026).** Lo stesso potere con gli stessi numeri sta al massimo su un Eroe, un Cattivo e un Neutrale; con numeri diversi (per esempio Ultimo baluardo +4 invece di +3) è un potere diverso, che ha di nuovo un posto per fazione. Il database lo fa rispettare a ogni personaggio nuovo (indice `card_definitions_one_power_per_faction`). Per arrivarci 73 carte hanno cambiato potere (migrazione `20261116200000_power_variants.sql`): 39 tengono il loro con altri numeri, 34 prendono una variante con una condizione nuova, che porta il nome del potere da cui viene. In ogni gruppo ha tenuto il potere la carta con più copie possedute. Le varianti:
+
+| Variante (codice) | Nome | Livello | Effetto |
+|---|---|---|---|
+| `round_exact` | Ultimo baluardo | Semplice | +N se giocato proprio nel round indicato |
+| `bond_threshold` | Legame | Semplice | +N se in squadra ci sono almeno K altri personaggi della sua fazione |
+| `bond_relay` | Legame | Semplice | +N se il personaggio giocato dal suo lato nel round prima è della sua fazione |
+| `bond_played` | Legame | Semplice | +N per ogni personaggio della sua fazione già giocato |
+| `bond_unplayed` | Legame | Semplice | +N per ogni altro personaggio della sua fazione non ancora giocato |
+| `relentless_small`, `relentless_big`, `relentless_behind` | Implacabile | Semplice | Vince le parità e, sulle Minacce fino al livello indicato, dal livello indicato in su, o quando il suo lato è in svantaggio, anche un round perso di M punti o meno. Non contro un altro Implacabile |
+| `nemesis_other` | Nemesi | Semplice | +N se il personaggio avversario è di un'altra fazione, Neutrali compresi |
+| `rival` | Nemesi | Semplice | +N se il personaggio avversario è della sua stessa fazione (vale anche per i Neutrali) |
+| `delayed_nullifier` | Annullatore | Semplice | Annulla il potere del personaggio che l'avversario gioca nel round dopo (in Allarme Triplo sulla stessa Minaccia, nella Grande Minaccia nel turno dopo). Non agisce se un Annullatore o Silenzio della tomba l'ha fermato nel suo round; un Annullatore che spegne non annulla niente |
+| `spy_many`, `spy_rarest` | Spia | Semplice | Vede K personaggi a caso, o il più raro (a caso tra i più rari), tra quelli che l'avversario non ha ancora giocato |
+| `comeback_long` | Riscossa | Distintivo | Se perde il round, i due personaggi successivi ottengono +N |
+| `comeback_margin` | Riscossa | Distintivo | Se perde il round, il successivo ottiene i punti di scarto, fino a +M |
+| `underdog_per_round`, `underdog_wall`, `underdog_points` | Sfavorito | Distintivo | +N per ogni round di svantaggio; oppure se l'avversario ha già vinto almeno K round; oppure se finora l'avversario ha fatto più punti in totale (nella Grande Minaccia i punti dei fronti) |
+| `sabotage_big` | Sabotatore | Distintivo | −M a ogni abilità del personaggio avversario, solo sulle Minacce dal livello indicato in su |
+| `sabotage_flat` | Sabotatore | Distintivo | −M al punteggio del personaggio avversario, mai sotto 0 e non allo spareggio. Schermato e Riflesso lo fermano, Riflesso lo rimanda indietro |
+| `foresight_short` | Veggente | Distintivo | Dopo averlo giocato, vede le Minacce dei K round successivi |
+
+Schermato dà il suo bonus contro ogni Sabotatore che agisce nel round. Riverbero copia anche le varianti a punti (Ultimo baluardo, Legame, Nemesi, Sfavorito). Simulazioni, criteri e l'elenco carta per carta sono in `docs/POWERS-BACKLOG.md` («Poteri tutti diversi»).
+
 ### 4.5 Doppioni
 
 I doppioni restano istanze normali: si possono usare in partita e quindi rischiare in conquista. Il giocatore può anche **convertirli in monete** (valore per rarità in configurazione).
@@ -325,6 +348,7 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 | Riverbero | Copia il potere del personaggio precedente, se è uno di quelli copiabili (come in partita) |
 | Specialità, Affinità, Terreno favorevole, Tuttofare, Eclettico, Arte di arrangiarsi, Adattabile | Come in partita: dipendono solo dal personaggio e dalla Minaccia (Adattabile scatta solo sulle Minacce rare con una regola) |
 | Annullatore, Davide, Schermato, Nemesi, Spia, Nebbia, Riflesso, Contrattacco, Opportunista | Nessun effetto: non c'è un avversario. Il risultato dice "senza avversario non agisce" |
+| Le varianti del 16 novembre 2026 (§4.4) | Come il loro potere. Ultimo baluardo nel round indicato: la Minaccia di quel numero. Legame: contato sugli 8, «già giocati» quelli delle Minacce prima. Riscossa lunga: dopo una fallita, le due giocate successive. Riscossa sullo scarto: i punti che mancavano alla soglia, fino al massimo. Sfavorito per round: per ogni fallita in più delle superate; Sfavorito contro chi ha già vinto K round: dopo K fallite. Sabotatore sulle Minacce grandi: abbassa la soglia solo dal suo livello; Sabotatore sul punteggio: soglia −M una volta. Implacabile: un punto in meno della soglia, più lo scarto quando la sua condizione vale (in svantaggio = più fallite che superate). Veggente per i round successivi: le Minacce delle K giocate dopo. Nessun effetto, senza avversario: Nemesi delle altre fazioni e della stessa, Spia di 2 e del più raro, Annullatore ritardato, Sfavorito sui punti |
 
 **Soglie:** simulate sul catalogo reale. Con tutta la collezione a disposizione, invece di 8 personaggi, chi ha molte carte supera quasi sempre tutte le Minacce; con la squadra limitata contano di più le scelte. In simulazione lo starter set supera in media 4,3 Minacce e una squadra ben costruita 5,8, con 8 su 8 raro (circa 5%). Misure fatte prima dei budget per rarità (§4.3): lo starter set (tutto Delta) non cambia, le squadre con carte rare ora superano qualche Minaccia in più.
 
