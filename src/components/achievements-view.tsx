@@ -141,7 +141,7 @@ export function AchievementsView() {
         {message?.id === "title" && <p className="text-[13px] font-bold text-comic-magenta">{message.text}</p>}
       </section>
 
-      <ol className="grid min-h-0 flex-1 auto-rows-min grid-cols-[repeat(2,minmax(0,1fr))] gap-2 overflow-y-auto overscroll-contain pb-1">
+      <ol data-keep-scroll="imprese" className="grid min-h-0 flex-1 auto-rows-min grid-cols-[repeat(2,minmax(0,1fr))] gap-2 overflow-y-auto overscroll-contain pb-1">
         {board.achievements.map((achievement) => (
           <Medal
             key={achievement.id}

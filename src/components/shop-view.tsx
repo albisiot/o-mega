@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { PackArt, TabBar } from "@/components/comic-parts";
 import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { useMatchRewards } from "@/components/match-reward";
@@ -21,6 +21,7 @@ import {
   type PackStatus,
   type SpecialPack,
 } from "@/lib/packs";
+import { useRememberedState } from "@/lib/place-memory";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { COIN_REASON_LABELS, type CoinMovement } from "@/lib/wallet";
 
@@ -54,11 +55,20 @@ const TABS: { key: ShopTab; label: string }[] = [
  * sale, the purchase is a row of packs to swipe, and the odds are those of the pack in view.
  */
 export function ShopView({ status, odds, specials, history, onFailed, onRedeemed }: ShopViewProps) {
-  const [tab, setTab] = useState<ShopTab>("odds");
+  // Back from a pack opened here (one bought, a code's rewards), the shop is as it was left.
+  const [tab, setTab] = useRememberedState<ShopTab>("tab", "odds");
   const rewards = useMatchRewards();
   // 0 is the standard pack, then the special packs in order.
-  const [shown, setShown] = useState(0);
+  const [shown, setShown] = useRememberedState("pack", 0);
   const carousel = useRef<HTMLDivElement>(null);
+  // The row of packs opens on the one remembered (0, the standard pack, when opened afresh).
+  const placed = useRef(false);
+  useEffect(() => {
+    const element = carousel.current;
+    if (placed.current || !element) return;
+    placed.current = true;
+    if (shown > 0) element.scrollTo({ left: shown * element.clientWidth });
+  }, [shown]);
   useLockedScreen(true);
   const special = shown > 0 ? (specials[shown - 1] ?? null) : null;
 
@@ -132,7 +142,7 @@ export function ShopView({ status, odds, specials, history, onFailed, onRedeemed
 
         <TabBar tabs={TABS} current={tab} onPick={setTab} label="Negozio" />
 
-        <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain">
+        <div role="tabpanel" data-keep-scroll="negozio" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain">
           {tab === "odds" && special && <SpecialOdds pack={special} />}
 
           {tab === "odds" && !special && (

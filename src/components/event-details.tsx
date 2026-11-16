@@ -20,6 +20,7 @@ import {
   type EventRewardCard,
   type GameEvent,
 } from "@/lib/events";
+import { useRememberedState } from "@/lib/place-memory";
 import { rarityFrame } from "@/lib/rarity-theme";
 import { describeAdmitted } from "@/lib/traits";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -57,7 +58,8 @@ export function EventDetails({ event, now, abilities }: { event: GameEvent; now:
   const progress = tierProgress(event.my_points, event.tiers);
   const { open, opening } = useOpenEventRewards();
   const toOpen = unseenOpenings(event).length > 0;
-  const [tab, setTab] = useState<Tab>("rewards");
+  // Back from the rewards opened here, the same tab.
+  const [tab, setTab] = useRememberedState<Tab>("tab", "rewards");
   const [zoomed, setZoomed] = useState<EventRewardCard | null>(null);
 
   return (
@@ -107,7 +109,7 @@ export function EventDetails({ event, now, abilities }: { event: GameEvent; now:
 
       <TabBar tabs={[...TABS]} current={tab} onPick={setTab} label="Evento" />
 
-      <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain">
+      <div role="tabpanel" data-keep-scroll="evento" className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain">
         {tab === "rewards" ? (
           <>
             <ol className="flex flex-col gap-1">
