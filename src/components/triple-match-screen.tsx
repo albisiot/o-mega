@@ -743,19 +743,22 @@ function DragGhost({ ref, card }: { ref: (element: HTMLDivElement | null) => voi
   );
 }
 
-/** The round's seconds left. */
+/**
+ * The round's seconds left, all of them: the seconds the result pages left over (the server
+ * waits up to triple.revealPauseSeconds before the 45) count down too, so the number never
+ * sits still.
+ */
 function RoundTimer({ deadline, offset }: { deadline: number; offset: number }) {
   const seconds = useSecondsLeft(deadline, offset);
-  const shown = Math.min(seconds, balance.triple.roundTimerSeconds);
   return (
     <p
       role="timer"
-      aria-label={`${shown} secondi rimasti`}
+      aria-label={`${seconds} secondi rimasti`}
       className={`mb-0.5 flex h-11 w-11 shrink-0 rotate-3 items-center justify-center font-display text-[26px] ${
         seconds <= 10 ? "bg-comic-yellow text-black" : "bg-black text-comic-yellow"
       }`}
     >
-      {shown}
+      {seconds}
     </p>
   );
 }

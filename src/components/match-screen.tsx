@@ -836,36 +836,43 @@ function ChoosePhase({
   );
 }
 
-/** The round's seconds left, the only part of the choice that re-renders as they tick. */
+/**
+ * The round's seconds left, the only part of the choice that re-renders as they tick. All of
+ * them: the seconds of the result's pause left over (the server waits up to
+ * match.revealPauseSeconds before the 30) count down too, so the number never sits still.
+ */
 function RoundTimer({ deadline, offset }: { deadline: number; offset: number }) {
   const seconds = useSecondsLeft(deadline, offset);
-  const shown = Math.min(seconds, balance.match.roundTimerSeconds);
   return (
     <p
       role="timer"
-      aria-label={`${shown} secondi rimasti`}
+      aria-label={`${seconds} secondi rimasti`}
       className={`mb-0.5 flex h-12 w-12 shrink-0 rotate-3 items-center justify-center font-display text-[28px] ${
         seconds <= 10 ? "bg-comic-yellow text-black" : "bg-black text-comic-yellow"
       }`}
     >
-      {shown}
+      {seconds}
     </p>
   );
 }
 
 /**
- * The round's time as a bar that empties over its last roundTimerSeconds: one animation
- * of the time left, so the bar moves without re-rendering. Only its colour waits on the clock.
+ * The round's time as a bar that empties with the number: full when it first shows (or
+ * as full as roundTimerSeconds of time allow), empty at the deadline. One animation of the
+ * time left, so the bar moves without re-rendering. Only its colour waits on the clock.
  */
 function TimerBar({ deadline, offset }: { deadline: number; offset: number }) {
   const bar = useRef<HTMLDivElement>(null);
   const low = useSecondsLeft(deadline, offset) <= 10;
+  // The whole time is fixed when the bar first shows (keyed on the deadline): a later
+  // clock correction moves the bar a little, never back to full.
+  const total = useRef<number | null>(null);
   useLayoutEffect(() => {
-    const total = balance.match.roundTimerSeconds * 1000;
     const left = Math.max(0, deadline - (Date.now() + offset));
+    total.current ??= Math.max(balance.match.roundTimerSeconds * 1000, left);
     const animation = bar.current?.animate(
-      [{ transform: `scaleX(${Math.min(1, left / total)})` }, { transform: "scaleX(0)" }],
-      { duration: Math.min(left, total), delay: Math.max(0, left - total), easing: "linear", fill: "both" },
+      [{ transform: `scaleX(${Math.min(1, left / total.current)})` }, { transform: "scaleX(0)" }],
+      { duration: left, easing: "linear", fill: "both" },
     );
     return () => animation?.cancel();
   }, [deadline, offset]);

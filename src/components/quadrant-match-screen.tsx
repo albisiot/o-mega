@@ -1021,19 +1021,21 @@ function BoardCard({
   );
 }
 
-/** The move's seconds left. */
+/**
+ * The move's seconds left, all of them: the pause to see the move before (the server waits
+ * quadrant.movePauseSeconds before the 20) counts down too.
+ */
 function MoveTimer({ deadline, offset, mine }: { deadline: number; offset: number; mine: boolean }) {
   const seconds = useSecondsLeft(deadline, offset);
-  const shown = Math.min(seconds, balance.quadrant.moveTimerSeconds);
   return (
     <p
       role="timer"
-      aria-label={`${shown} secondi rimasti${mine ? "" : " all'avversario"}`}
+      aria-label={`${seconds} secondi rimasti${mine ? "" : " all'avversario"}`}
       className={`mb-0.5 flex h-11 w-11 shrink-0 rotate-3 items-center justify-center font-display text-[26px] ${
         mine && seconds <= 5 ? "bg-comic-yellow text-black" : "bg-black text-comic-yellow"
       } ${mine ? "" : "opacity-60"}`}
     >
-      {shown}
+      {seconds}
     </p>
   );
 }

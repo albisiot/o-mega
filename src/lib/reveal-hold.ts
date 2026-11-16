@@ -101,7 +101,8 @@ export function revealEnd(begun: number, finished: number | null, maxSeconds: nu
  * How long a round result stays before the next choice: until its animation is over (the page
  * calls the returned `onDone`), plus the time to read it again, never less than
  * revealMinSeconds, never more than `maxSeconds` (the server keeps the next timer waiting that
- * long; leaving earlier only adds to the time to choose). `advance` moves on, while `running`.
+ * long; leaving earlier only adds to the time to choose, and the timer shown counts those
+ * seconds too). `advance` moves on, while `running`.
  */
 export function useRevealPause(
   revealing: number | null,
