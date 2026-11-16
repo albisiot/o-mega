@@ -46,7 +46,7 @@ L'esplosione è ancora lì, nella camera del tempio: una palla di luce con i det
 
 ### Il registro delle lettere
 
-Da tenere aggiornato capitolo per capitolo. La Stagione 1 è completa (Capitolo 6 nel database): la colonna di destra è lo stato a fine stagione. Il piano della Stagione 2 e lo stato attuale sono in §6.7.
+Da tenere aggiornato capitolo per capitolo. La Stagione 1 è completa (Capitolo 6 nel database): la colonna di destra è lo stato a fine stagione. La Stagione 2 e lo stato a fine stagione sono in §6.7.
 
 | Lettere | A inizio serie | A fine Stagione 1 |
 |---|---|---|
@@ -284,7 +284,7 @@ Ganci già aperti, da non chiudere prima del tempo. Una minaccia alla volta.
 
 ## 6. Stagione 2: *La marea*
 
-*Scritta, in costruzione: nel database ci sono i Capitoli 1, 2, 3, 4 e 5. I capitoli entrano nel database uno alla volta, come quelli della Stagione 1: quando un capitolo è costruito, la sua scheda diventa definitiva e le carte principali diventano le squadre avversarie tarate con la simulazione (SPEC §5.11). Fino ad allora tutto è una proposta.*
+*Completa: i sei capitoli sono nel database e giocabili (capitoli 7-12 nell'ordine di tutta la storia). Le schede sono definitive e le carte principali sono diventate le squadre avversarie tarate con la simulazione (SPEC §5.11).*
 
 ### 6.1 Premessa
 
@@ -456,7 +456,7 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 
 #### Capitolo 6 — Cariddi
 
-*Atto III, finale di stagione. Da costruire. Albo* Cariddi.
+*Atto III, finale di stagione. Albo* Cariddi. *Testi nel database (migrazione `20261116140000_season_two_chapter_six_story.sql`, capitolo 12 nell'ordine di tutta la storia, missioni C12M1-C12M5); squadre e Minacce tarate con la simulazione (SPEC §5.11).*
 
 - **In una riga:** con la marea più alta dell'anno Nicola porta la Θ nell'occhio di Cariddi, dove nessuno potrà più riprenderla.
 - **La cosa strana:** l'occhio del gorgo: in mezzo al golfo il fondo del mare resta all'asciutto, e al centro brilla la spaccatura.
@@ -466,16 +466,16 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 - **Conflitto interno:** Clementia ha fondato i Figli per riportare a casa chi l'Ora Zero si è preso, non per allagare le Fosse; Tenant, che dice di essere tornato due volte dall'altra parte, giura che l'onda li riporterà tutti.
 - **Carte presentate:** Clementia, Tenant.
 - **Boss:** Clementia (P214, Alfa), schierata dal Reggente dei Figli sull'orlo dell'occhio. Premio: la carta Clementia.
-- **Rivelazione:** sull'orlo dell'occhio, con l'onda che sale, Nicola alza la Θ per gettarla. Ottavia lo chiama per nome, e lui gliela mette in mano. Renata la rimette nell'anello: otto lettere, la spaccatura sotto il mare si chiude, Cariddi torna un gorgo che le barche girano al largo e l'onda muore contro il molo. Nicola si lascia portare via dai Custodi. Nella camera, per la prima volta dall'Ora Zero, Holdout muove una mano e parla: *"Quando saranno tutte e ventiquattro, potrò lasciare."*
+- **Rivelazione:** sull'orlo dell'occhio, con l'onda che sale, Nicola alza la Θ per gettarla. Ottavia lo chiama per nome, e lui gliela mette in mano. Renata la rimette nell'anello: otto lettere, la spaccatura sotto il mare si chiude, Cariddi torna un gorgo che le barche girano al largo e l'onda muore contro il molo, lontano dalle Fosse. Nicola si lascia portare via dai Custodi. Nella camera, per la prima volta dall'Ora Zero, Holdout muove una mano e parla: *"Quando saranno tutte e ventiquattro, potrò lasciare."*
 - **Gancio di stagione:** Sibilla spiega cosa vuol dire: con il sigillo chiuso l'energia smette di passare per Holdout, e niente lo tiene più in vita. Lui lo sa, e lo vuole.
 
-| # | Missione | Situazione | Carte principali |
+| # | Missione | Situazione | Squadra avversaria (definitiva) |
 |---|---|---|---|
-| 1 | La traversata | Ferryman è l'unico che esce con il porto chiuso, e le barche dei Figli pattugliano il golfo | Dredge, Lagan, Hecatomb |
-| 2 | Il faro | I Figli hanno spento il faro all'imboccatura del golfo, e le barche dei soccorsi vanno sugli scogli | Belladonna, Tacet, Patina |
-| 3 | Chi torna | Tenant guida le barche dei Figli verso l'occhio: «il ritorno è compreso nel prezzo» | Tenant, Emendatio, Credo |
-| 4 | L'occhio | Nell'occhio del gorgo il fondo del golfo è all'asciutto, e Vera Kross aspetta chi scende | Vera Kross, Antiphon, Noophage |
-| 5 | Il brutto tempo | Sull'orlo dell'occhio il Reggente dei Figli schiera Clementia; dietro di lei Nicola aspetta l'onda | Clementia, Tenant, Wirepuller |
+| 1 | La traversata | Ferryman è l'unico che esce con il porto chiuso, a luci spente come quando porta fuori il contrabbando, e le barche dei Figli pattugliano il golfo | Dredge, Lagan, Hecatomb, Falx, Epigone |
+| 2 | Il faro | I Figli hanno spento il faro all'imboccatura del golfo, e le barche dei soccorsi vanno sugli scogli | Belladonna, Tacet, Patina, Lullaby, Cineris |
+| 3 | Chi torna | Tenant guida le barche dei Figli verso l'occhio: «il ritorno è compreso nel prezzo» | Tenant, Emendatio, Credo, Dittograph, Quicklime |
+| 4 | L'occhio | Nell'occhio del gorgo il fondo del golfo è all'asciutto, Vera Kross aspetta chi scende e il dottor Spanò, dalla lancia del Banco, accetta scommesse | Vera Kross, Antiphon, Noophage, Groma, Praesidium |
+| 5 | Il brutto tempo | Sull'orlo dell'occhio il Reggente dei Figli schiera Clementia; dietro di lei Nicola aspetta l'onda | Clementia, Tenant, Wirepuller, Effigy, Miliarium |
 
 ### 6.6 Mappa delle rivelazioni
 
@@ -490,9 +490,9 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 
 ### 6.7 Il registro delle lettere
 
-Il piano della stagione. Come in §2, si aggiorna capitolo per capitolo quando i capitoli entrano nel database. **Stato attuale** (Capitoli 1, 2, 3, 4 e 5 nel database): Α Β Γ Δ sono nel sigillo, portate dal Comune al tempio e rimesse nell'anello da Renata; la Ε è nel sigillo anche lei, dopo che la vendita del Banco è stata dichiarata nulla perché la Η venduta insieme era la falsa della fornace (il Banco non ha più lo stampo); la Ζ è nel sigillo: Xenolith se l'è fatta togliere dal petto, e gli è rimasta la forza di un cavatore qualunque; la Η vera è nel sigillo, dopo la zeta: Ottavia l'ha tolta dal petto di Absentia, che si è seduta in mezzo a una strada delle Fosse e non si è più rialzata; con sette lettere al loro posto l'onda delle tre si ferma sul primo gradino delle Fosse; la Θ è stata comprata dal Comune e rubata dai Figli, e ce l'ha Nicola, in mare in mezzo al golfo, che ha cominciato a tirare fuori le lettere dall'altra parte, dalla iota in avanti; tutte le altre lettere sono dove erano a fine Stagione 1.
+Come in §2, si è aggiornato capitolo per capitolo mentre i capitoli entravano nel database. **Stato finale** (Stagione 2 completa nel database): Α Β Γ Δ sono nel sigillo, portate dal Comune al tempio e rimesse nell'anello da Renata; la Ε è nel sigillo anche lei, dopo che la vendita del Banco è stata dichiarata nulla perché la Η venduta insieme era la falsa della fornace (il Banco non ha più lo stampo); la Ζ è nel sigillo: Xenolith se l'è fatta togliere dal petto, e gli è rimasta la forza di un cavatore qualunque; la Η vera è nel sigillo, dopo la zeta: Ottavia l'ha tolta dal petto di Absentia, che si è seduta in mezzo a una strada delle Fosse e non si è più rialzata; la Θ è nel sigillo, dopo la eta: sull'orlo dell'occhio di Cariddi Nicola l'ha messa in mano alla sorella e Renata l'ha rimessa nell'anello. Con otto lettere al loro posto la spaccatura sotto il mare si è chiusa, Cariddi è tornato un gorgo che le barche girano al largo e Holdout ha parlato; Nicola è in cella. La Ι e la Κ, che Nicola ha tirato fuori dall'altra parte, sono ai Figli; tutte le altre lettere sono dove erano a fine Stagione 1.
 
-| Lettere | A fine Stagione 1 | Nella Stagione 2 | A fine Stagione 2 (previsto) |
+| Lettere | A fine Stagione 1 | Nella Stagione 2 | A fine Stagione 2 |
 |---|---|---|---|
 | Α Β Γ Δ | Al Comune | Portate dal Comune al tempio, sottoterra (Capitolo 2) | Nel sigillo. Le classi delle lastre si chiamano ancora così: il nome resta, le pietre no |
 | Ε | Al Banco, usata come stampo | Il Banco la vende insieme alla eta falsa; la vendita è nulla e va al Comune (Capitolo 3) | Nel sigillo. Senza stampo il Banco non può più colare lettere false |
@@ -534,7 +534,7 @@ Valgono i default finché non si decide altrimenti.
 | Spanò | Perde per la prima volta nel Capitolo 3 |
 | Holdout | Parla una volta sola, nel finale |
 | Personaggi nuovi fuori dalle carte | Nessuno |
-| Nel database | Fatto con il Capitolo 1 (migrazione `20261113160000_season_two_chapter_one_story.sql`): i capitoli si leggono da 1 in ogni stagione (`story_chapters.number`), ma nell'ordine di tutta la storia sono 7-12 e le missioni hanno i codici C7M1-C12M5 (SPEC §5.11). La Stagione 2 è in `story_seasons`; il messaggio di fine della Stagione 1 ora dice «Hai finito la Stagione 1, Il Rintocco. Ti aspetta la Stagione 2, La marea.», e quello della Stagione 2, finché la stagione non è completa, «Il prossimo capitolo della Stagione 2, La marea, arriva presto.» |
+| Nel database | Fatto con il Capitolo 1 (migrazione `20261113160000_season_two_chapter_one_story.sql`): i capitoli si leggono da 1 in ogni stagione (`story_chapters.number`), ma nell'ordine di tutta la storia sono 7-12 e le missioni hanno i codici C7M1-C12M5 (SPEC §5.11). La Stagione 2 è in `story_seasons`; il messaggio di fine della Stagione 1 ora dice «Hai finito la Stagione 1, Il Rintocco. Ti aspetta la Stagione 2, La marea.», e quello della Stagione 2, finché la stagione non è stata completa, «Il prossimo capitolo della Stagione 2, La marea, arriva presto.». Il Capitolo 6 (migrazione `20261116140000_season_two_chapter_six_story.sql`) ha chiuso la stagione: ora il messaggio dice «Hai finito la Stagione 2, La marea. La prossima stagione arriva presto.» |
 | Albi | Uno per capitolo, come nella Stagione 1; *Absentia* (Capitolo 4) e *Cariddi* (Capitolo 6) sono i due principali. Da aggiungere a WORLD §7 quando si scrivono |
 
 ## 7. Regole di scrittura della storia
