@@ -379,7 +379,8 @@ export function PowerPill({ note, delay }: { note: PowerNote; delay?: number }) 
 
 /**
  * A slot for what a side carries from the round (or turn) before, or passes on to the next:
- * Riscossa, Slancio and the like wait here. `unit` is R for rounds, T for the Grande Minaccia's turns.
+ * Riscossa, Slancio and the like wait here. `unit` is R for rounds, T for the Grande Minaccia's turns;
+ * `reach` is how many later rounds get what is passed (2 for Riscossa lunga).
  */
 export function NextSlot({
   side,
@@ -387,12 +388,14 @@ export function NextSlot({
   carried,
   passed,
   unit = "R",
+  reach = 1,
 }: {
   side: "me" | "opponent";
   number: number;
   carried: string | null;
   passed: string | null;
   unit?: "R" | "T";
+  reach?: number;
 }) {
   const full = carried ?? passed;
   return (
@@ -411,6 +414,7 @@ export function NextSlot({
         <>
           <span className="font-display text-[15px]">{passed}</span> al {unit}
           {number + 1}
+          {reach > 1 && `-${number + reach}`}
         </>
       ) : (
         <>
@@ -428,9 +432,11 @@ export function NextSlot({
  */
 export function RevealStrip({ title, lines, cards = [] }: { title: string; lines: string[]; cards?: MatchCard[] }) {
   return (
+    // Only the title row rises over the threat panel: more cards or threats (Spia di 2,
+    // Veggente for the next rounds) grow down over the art, never over the threat's name.
     <div
       data-fx="reveal"
-      className="comic-pop absolute left-1/2 top-0 z-[9] w-max max-w-[66%] -translate-x-1/2 -translate-y-1/2 border-[3px] border-dashed border-black bg-white px-2 py-1 text-black shadow-[3px_3px_0_#000]"
+      className="comic-pop absolute left-1/2 top-0 z-[9] w-max max-w-[66%] -translate-x-1/2 -translate-y-[22px] border-[3px] border-dashed border-black bg-white px-2 py-1 text-black shadow-[3px_3px_0_#000]"
     >
       <p className="flex items-center gap-1 font-display text-[13px] uppercase leading-4">
         <FamilyIcon family="reveal" className="h-3.5 w-3.5" />

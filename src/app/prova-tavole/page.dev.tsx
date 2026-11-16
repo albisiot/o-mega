@@ -53,6 +53,12 @@ const upkeep = card("Upkeep", "P218", { FOR: 3, RES: 5, ENE: 6, VEL: 2, TEC: 9 }
 const statera = card("Statera", "P220", { FOR: 5, RES: 8, ENE: 0, MAG: 9, PER: 10 }, "neutrals", 2);
 const clementia = card("Clementia", "P214", { FOR: 3, RES: 4, ENE: 1, MAG: 10, COM: 3 }, "villains", 4);
 const residuo = card("Residuo", "P227", { FOR: 7, RES: 10, ENE: 0, VEL: 5, MAG: 7, COM: 10, FUR: 6 }, "heroes", 4);
+// The power variants of 16 November 2026.
+const collateral = card("Collateral", "P073", { COM: 8, FOR: 6, TEC: 6 }, "neutrals", 2);
+const zetaRax = card("Zeta Rax", "P099", { COM: 9, PER: 8, FUR: 7 }, "neutrals", 2);
+const injunction = card("Injunction", "P179", { FOR: 4, RES: 5, ENE: 9, PER: 10, VOL: 10 }, "neutrals", 3);
+const contromano = card("Contromano", "P215", { FOR: 5, RES: 7, ENE: 9, PSI: 10, INT: 9 }, "neutrals", 4);
+const actuary = card("Actuary", "P047", { FOR: 5, RES: 6, ENE: 6, INT: 8, TEC: 8 }, "neutrals", 3);
 // Sacrificio: Residuo scores 0, then every later card of its side gets this until the end of the match.
 const SACRIFICE = 3;
 const lasting = n("Sacrificio di Residuo", "sacrifice", `+${SACRIFICE}`, { points: SACRIFICE, source: "pack" });
@@ -86,6 +92,10 @@ type RoundScene = {
   slots?: boolean;
   /** The line under the verdict; a win of 32 to 31 when not given. */
   resultLine?: string;
+  /** What the player's Veggente or Spia showed; one threat and one card when not given. */
+  revealed?: { foreseen: { round: number; level: number; name: string }[]; spied: MatchCard[] };
+  /** Points Sabotatore sul punteggio took from each side's score. */
+  scoreStruck?: { me?: number; op?: number };
 };
 type Scene = RoundScene | { kind: "boss"; tie?: boolean } | { kind: "emergency"; reverse?: boolean } | { kind: "triple-map" };
 
@@ -306,6 +316,80 @@ const SCENES: Record<string, Scene> = {
     decisive: { side: "me", index: 0, text: "Senza Implacabile vinceva Malleus, col valore più alto." },
     resultLine: "Pari 11 a 11: vince Plinth con Implacabile.",
   },
+  // The power variants of 16 November 2026 (SPEC §4.4).
+  "varianti-sabotatore": {
+    kind: "round",
+    threat: "Assalto alla torre",
+    abilities: ["FOR", "VEL"],
+    me: [clementia, 14, [n("Sabotatore", "sabotage_flat", "−2 al punteggio rivale")]],
+    op: [talos, 15, [n("Specialità", "ability_bonus", "+2", { points: 2 })]],
+    winner: "opponent",
+    scoreStruck: { op: 2 },
+    resultLine: "Talos batte Clementia · 15 a 14.",
+  },
+  "varianti-implacabile": {
+    kind: "round",
+    threat: "Rissa al porto",
+    abilities: ["COM"],
+    me: [collateral, 8, [n("Implacabile", "relentless_small", "vince anche sotto di 1", { timing: "tie" })]],
+    op: [zetaRax, 9, []],
+    winner: "me",
+    decisive: { side: "me", index: 0, text: "Senza Implacabile vinceva Zeta Rax, 9 a 8." },
+    resultLine: "Collateral batte Zeta Rax · 8 a 9: con Implacabile vince anche sotto di 1.",
+  },
+  "varianti-annullatore": {
+    kind: "round",
+    threat: "Golem di cemento",
+    abilities: GOLEM,
+    me: [injunction, 18, [n("Annullatore", "delayed_nullifier", "annulla il potere del prossimo rivale", { timing: "after" })]],
+    op: [tifeo, 26, [n("Nemesi", "nemesis", "+4", { points: 4 })]],
+    winner: "opponent",
+    resultLine: "Re Tifeo batte Injunction · 26 a 18.",
+  },
+  "varianti-annullato-dopo": {
+    kind: "round",
+    threat: "Golem di cemento",
+    abilities: GOLEM,
+    me: [dredge, 23, [n("Tuttofare", "all_rounder", "+3", { points: 3 })]],
+    op: [mongi, 26, [{ name: "Sfavorito", code: "underdog", effect: "annullato", active: false, source: "own", cancelled: "nullified" }]],
+    winner: "opponent",
+    resultLine: "Mongibello batte Dredge · 26 a 23.",
+  },
+  "varianti-veggente": {
+    kind: "round",
+    threat: "Golem di cemento",
+    abilities: GOLEM,
+    me: [contromano, 21, [n("Veggente", "foresight_short", "svela le Minacce dei prossimi 2 round")]],
+    op: [talos, 23, []],
+    winner: "opponent",
+    revealed: {
+      foreseen: [
+        { round: 4, level: 5, name: "Titano di metallo" },
+        { round: 5, level: 2, name: "Robot impazzito" },
+      ],
+      spied: [],
+    },
+    resultLine: "Talos batte Contromano · 23 a 21.",
+  },
+  "varianti-spia": {
+    kind: "round",
+    threat: "Golem di cemento",
+    abilities: GOLEM,
+    me: [actuary, 17, [n("Spia", "spy_many", "svela 2 personaggi rivali")]],
+    op: [malleus, 21, [n("Ultimo baluardo", "round_exact", "+4", { points: 4 })]],
+    winner: "opponent",
+    revealed: { foreseen: [], spied: [plinth, mongi] },
+    resultLine: "Malleus batte Actuary · 21 a 17.",
+  },
+  "varianti-riscossa": {
+    kind: "round",
+    threat: "Golem di cemento",
+    abilities: GOLEM,
+    me: [talos, 19, [n("Riscossa", "comeback_long", "+2 ai prossimi due", { timing: "after" }), n("Legame", "bond_relay", "+3", { points: 3 })]],
+    op: [tifeo, 27, [n("Riscossa", "comeback_margin", "+3", { points: 3, source: "carried" }), n("Sfavorito", "underdog_wall", "+4", { points: 4 })]],
+    winner: "opponent",
+    resultLine: "Re Tifeo batte Talos · 27 a 19.",
+  },
   "grande-minaccia": { kind: "boss" },
   // Equal scores on a front: the «i» on the card met there.
   "grande-minaccia-pari": { kind: "boss", tie: true },
@@ -328,6 +412,11 @@ function sideOf(label: string, [c, score, notes, flag]: Play, abilities: string[
     flag: flag ?? null,
     struckPoints: chipsTotal(abilityChips(c.stats, threat)) - chipsTotal(abilityChips(c.stats, threat, malus)),
   };
+}
+
+/** Sabotatore sul punteggio: what it took is struck from the score, like the abilities. */
+function withStruck(side: ComicSide, points = 0): ComicSide {
+  return points ? { ...side, struckPoints: (side.struckPoints ?? 0) + points } : side;
 }
 
 const markDone = () => {
@@ -486,7 +575,7 @@ function SceneView({ id }: { id: string }) {
     );
   }
   // Sabotatore hits unless a shield stopped it; Riflesso sends it back to the other card.
-  const hits = (notes: PowerNote[]) => notes.some((x) => x.code === "sabotage" && x.active && !x.cancelled);
+  const hits = (notes: PowerNote[]) => notes.some((x) => (x.code === "sabotage" || x.code === "sabotage_big") && x.active && !x.cancelled);
   const reflects = (notes: PowerNote[]) => notes.some((x) => x.code === "reflect" && x.active);
   const meMalus = hits(scene.op[2]) || reflects(scene.op[2]) ? 1 : 0;
   const opMalus = hits(scene.me[2]) || reflects(scene.me[2]) ? 1 : 0;
@@ -501,11 +590,11 @@ function SceneView({ id }: { id: string }) {
       twist={scene.twist ?? null}
       rule={scene.rule ?? null}
       tierColor={scene.tier ?? null}
-      me={sideOf("Tu", scene.me, scene.abilities, scene.rule, meMalus)}
-      opponent={sideOf("Bot Difficile", scene.op, scene.abilities, scene.rule, opMalus)}
+      me={withStruck(sideOf("Tu", scene.me, scene.abilities, scene.rule, meMalus), scene.scoreStruck?.me)}
+      opponent={withStruck(sideOf("Bot Difficile", scene.op, scene.abilities, scene.rule, opMalus), scene.scoreStruck?.op)}
       winner={scene.winner}
       decisive={scene.decisive ?? null}
-      revealed={{ foreseen: [{ round: 4, level: 5, name: "Titano di metallo" }], spied: [plinth] }}
+      revealed={scene.revealed ?? { foreseen: [{ round: 4, level: 5, name: "Titano di metallo" }], spied: [plinth] }}
       resultLine={scene.resultLine ?? "Dredge batte Talos · 32 a 31."}
       notices={[]}
       hint={hint}

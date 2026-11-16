@@ -40,7 +40,9 @@ begin
   assert (select count(*) from public.card_definitions where code between 'P115' and 'P122' and is_active) = 8,
     'eight new characters';
   assert public.power_text('giant_slayer', '{"bonus": 3, "min_gap": 2}')
-    = '+3 se il personaggio avversario lo supera di almeno 2 gradi di rarità', 'Davide text';
+    = '+3 se il personaggio avversario lo supera di 2 o più gradi di rarità', 'Davide text';
+  assert public.power_text('giant_slayer', '{"bonus": 2, "min_gap": 1}')
+    = '+2 se il personaggio avversario lo supera di 1 o più gradi di rarità', 'Davide text, one step';
   assert public.power_text('momentum', '{"bonus": 2}')
     = 'Se vinci questo round, il tuo prossimo personaggio ottiene +2', 'Slancio text';
 

@@ -142,6 +142,13 @@ function playBeat(beat: Beat, entries: Record<BossSide, BossEntry>, fx: ComicFx)
     return;
   }
   const family = powerFamily(note.code);
+  // Annullatore ritardato: the stop waits in the slot for the opposing card of the next turn.
+  if (family === "stop" && note.timing === "after") {
+    fx.word(self, powerSfx(note.code), "stop", { above: true, size: 26, dx: side === "me" ? 40 : -40 });
+    fx.token(self, `${side}-slot`, "STOP", "stop", { arc: 60 });
+    playSound("stop");
+    return;
+  }
   switch (family) {
     case "strike":
     case "stop":
@@ -397,7 +404,10 @@ export function BossComic(props: BossComicProps) {
     if (carriedIndex < 0 && !passed) return [];
     const slot = {
       carried: carriedIndex >= 0 && !spoke.has(carriedIndex) ? `+${notes[carriedIndex].points ?? 0}` : null,
-      passed: passed && settledOn(side) ? (passed.effect?.split(" ")[0] ?? "") : null,
+      // A bonus shows its points; an Annullatore ritardato its STOP for the next opposing card.
+      passed: passed && settledOn(side) ? (powerFamily(passed.code) === "stop" ? "STOP" : (passed.effect?.split(" ")[0] ?? "")) : null,
+      // Riscossa lunga gives its bonus to the next two turns.
+      reach: passed?.code === "comeback_long" ? 2 : 1,
     };
     // On the last turn there is no next one: once the bonus is in, the empty slot goes.
     if (props.turn === props.turns && !slot.carried && !slot.passed) return [];
@@ -437,7 +447,7 @@ export function BossComic(props: BossComicProps) {
           {slots.length > 0 && (
             <div className="flex shrink-0 gap-1">
               {slots.map(({ side, slot }) => (
-                <NextSlot key={side} side={side} number={props.turn} carried={slot.carried} passed={slot.passed} unit="T" />
+                <NextSlot key={side} side={side} number={props.turn} carried={slot.carried} passed={slot.passed} unit="T" reach={slot.reach} />
               ))}
             </div>
           )}

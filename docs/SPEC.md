@@ -131,7 +131,7 @@ Poteri implementati:
 | Tuttofare | Semplice | +3 se tutte le abilità richieste valgono almeno 5, contate dopo Sabotatore |
 | Spia | Semplice | Dopo averlo giocato, il giocatore vede un personaggio a caso che l'avversario non ha ancora giocato. Il server lo estrae una volta sola. Non dà punti |
 | Annullatore | Semplice | Nel round annulla il potere del personaggio avversario: niente bonus, Sabotatore, Implacabile, Riscossa o Slancio per il round dopo, niente rivelazioni di Veggente e Spia. Il bonus già ricevuto dal round prima resta. Due Annullatori si annullano a vicenda |
-| Davide | Semplice | +3 se il personaggio avversario lo supera di almeno 2 gradi di rarità (un Gamma contro Alfa e Omega) |
+| Davide | Semplice | +3 se il personaggio avversario lo supera di 2 o più gradi di rarità (un Gamma contro Alfa e Omega) |
 | Crescendo | Semplice | +3 se la Minaccia ha un livello più alto di quella del round prima. Mai nel round 1 |
 | Slancio | Distintivo | Se vince il round, il personaggio successivo ottiene +2. È lo specchio di Riscossa; un round nullo non conta |
 | Arte di arrangiarsi | Semplice | Le abilità richieste che valgono meno di 3 contano 3, dopo Sabotatore |

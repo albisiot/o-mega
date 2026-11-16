@@ -194,7 +194,7 @@ function planBeats(props: Pick<RoundComicProps, "twist" | "rule" | "me" | "oppon
     beats.push({ at, kind: "idle" });
     at += BEAT_MS.power / 2;
   }
-  // Implacabile speaks once the scores stand level.
+  // Implacabile speaks once the scores stand level (≈ when a variant wins from a few points behind).
   const ties = SIDES.flatMap((side) => props[side].notes.flatMap((note, index) => (phase(note) === "tie" ? [{ side, index }] : [])));
   if (ties.length > 0) {
     at += BEAT_MS.verdict;
@@ -290,8 +290,15 @@ function playNote(side: ComicKey, index: number, props: RoundComicProps, fx: Com
       return;
     }
     case "strike":
-      fx.bolt(self, `${rival}-chips`);
-      fx.word(`${rival}-chips`, powerSfx(note.code), "harm", { above: true, size: 34, dy: -28 });
+      // Sabotatore sul punteggio hits the score, its word on the card away from the balloons;
+      // the others hit the abilities.
+      if (note.code === "sabotage_flat") {
+        fx.bolt(self, `${rival}-score`);
+        fx.word(`${rival}-panel`, powerSfx(note.code), "harm", { size: 34 });
+      } else {
+        fx.bolt(self, `${rival}-chips`);
+        fx.word(`${rival}-chips`, powerSfx(note.code), "harm", { above: true, size: 34, dy: -28 });
+      }
       fx.shake(`${rival}-panel`, 7);
       playSound("down");
       return;
@@ -309,7 +316,9 @@ function playNote(side: ComicKey, index: number, props: RoundComicProps, fx: Com
       return;
     case "stop":
       fx.word(self, powerSfx(note.code), "stop", { above: true, size: 30, dx: side === "me" ? 50 : -50 });
-      fx.token(self, `${rival}-panel`, "STOP", "stop", { arc: 30 });
+      // Annullatore ritardato: the stop waits in the slot for the opposing card of the next round.
+      if (note.timing === "after") fx.token(self, `${side}-slot`, "STOP", "stop", { arc: 80, duration: 700 });
+      else fx.token(self, `${rival}-panel`, "STOP", "stop", { arc: 30 });
       playSound("stop");
       return;
     case "tiebreak":
@@ -519,8 +528,12 @@ export function RoundComic(props: RoundComicProps) {
     const passedIndex = data.notes.findIndex((note) => note.active && note.timing === "after");
     if (carriedIndex < 0 && passedIndex < 0) return null;
     const carried = carriedIndex >= 0 && !visible.has(carriedIndex) ? `+${data.notes[carriedIndex].points ?? 0}` : null;
-    const passed = passedIndex >= 0 && visible.has(passedIndex) ? (data.notes[passedIndex].effect?.split(" ")[0] ?? "") : null;
-    return { carried, passed };
+    const passedNote = passedIndex >= 0 && visible.has(passedIndex) ? data.notes[passedIndex] : null;
+    // A bonus shows its points; an Annullatore ritardato its STOP for the next opposing card.
+    const passed = passedNote ? (powerFamily(passedNote.code) === "stop" ? "STOP" : (passedNote.effect?.split(" ")[0] ?? "")) : null;
+    // Riscossa lunga gives its bonus to the next two rounds.
+    const reach = passedNote?.code === "comeback_long" ? 2 : 1;
+    return { carried, passed, reach };
   };
 
   const page = rulePageEffect(rule);
@@ -540,9 +553,10 @@ export function RoundComic(props: RoundComicProps) {
   const sfx = winner === "me" ? "SBAM!" : winner === "opponent" ? "KRAK!" : "PARI!";
   const slots = SIDES.map((side) => ({ side, slot: slotOf(side) })).filter((s) => s.slot);
   // Veggente and Spia: once the viewer's card has spoken, what it saw stays pinned between the panels.
-  const revealSpoke = (code: string) => props.me.notes.some((note, index) => note.code === code && note.active && shown("me").has(index));
-  const foreseen = revealSpoke("foresight") ? (props.revealed?.foreseen ?? []) : [];
-  const spied = revealSpoke("spy") ? (props.revealed?.spied ?? []) : [];
+  const revealSpoke = (codes: readonly string[]) =>
+    props.me.notes.some((note, index) => codes.includes(note.code ?? "") && note.active && shown("me").has(index));
+  const foreseen = revealSpoke(["foresight", "foresight_short"]) ? (props.revealed?.foreseen ?? []) : [];
+  const spied = revealSpoke(["spy", "spy_many", "spy_rarest"]) ? (props.revealed?.spied ?? []) : [];
   const revealStrip =
     foreseen.length > 0 ? (
       <RevealStrip title="Prossime Minacce" lines={foreseen.map((t) => `R${t.round} · Lv ${t.level} · ${t.name}`)} />
@@ -564,7 +578,7 @@ export function RoundComic(props: RoundComicProps) {
           // In a row on the round's line: stacked, the second one covered the threat's name.
           <div className="absolute right-2 top-1.5 z-[2] flex items-center gap-1">
             {slots.map(({ side, slot }) => (
-              <NextSlot key={side} side={side} number={props.round} carried={slot!.carried} passed={slot!.passed} />
+              <NextSlot key={side} side={side} number={props.round} carried={slot!.carried} passed={slot!.passed} reach={slot!.reach} />
             ))}
           </div>
         )}
@@ -623,7 +637,7 @@ export function RoundComic(props: RoundComicProps) {
             }`}
             key={tieNote ?? "level"}
           >
-            {tieNote === "me" ? ">" : tieNote === "opponent" ? "<" : "="}
+            {tieNote === "me" ? ">" : tieNote === "opponent" ? "<" : props.me.score === props.opponent.score ? "=" : "≈"}
           </span>
         )}
       </div>
