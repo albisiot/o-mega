@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { CardSortToggle } from "@/components/card-sort-toggle";
+import { AdminCardPicker, useAdminCardReference } from "@/components/admin-card-filter";
 import { BackLink, TabBar } from "@/components/comic-parts";
-import { searchCards, sortCards, type CardOrder } from "@/lib/card-sort";
 import { describeBonusReward } from "@/lib/packs";
 import {
   bonusCodeState,
@@ -110,12 +109,7 @@ function NewCodeForm({
   const [coins, setCoins] = useState("");
   const [packs, setPacks] = useState("");
   const [cardCodes, setCardCodes] = useState<string[]>([]);
-  const [cardQuery, setCardQuery] = useState("");
-  const [cardOrder, setCardOrder] = useState<CardOrder>("name");
-  const shownCards = sortCards(searchCards(cards, cardQuery), cardOrder);
-  const [pendingCard, setPendingCard] = useState<string | null>(null);
-  const [pendingStyle, setPendingStyle] = useState("");
-  const pending = cards.find((card) => card.code === pendingCard) ?? null;
+  const reference = useAdminCardReference();
   const [maxUses, setMaxUses] = useState("");
   const [expiresOn, setExpiresOn] = useState("");
   const [note, setNote] = useState("");
@@ -208,84 +202,13 @@ function NewCodeForm({
                 />
               </label>
             </div>
-            <div className={LABEL}>
-              <span id="bonus-cards-label">Carte</span>
-              <div className="flex gap-2">
-                <input
-                  type="search"
-                  value={cardQuery}
-                  onChange={(event) => setCardQuery(event.target.value)}
-                  placeholder="Cerca nome o numero"
-                  aria-label="Cerca una carta da aggiungere"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  className={`${INPUT} flex-1 placeholder:text-faint`}
-                />
-                <CardSortToggle order={cardOrder} onChange={setCardOrder} />
-              </div>
-              <select
-                value=""
-                aria-labelledby="bonus-cards-label"
-                onChange={(event) => {
-                  const picked = cards.find((card) => card.code === event.target.value);
-                  if (!picked) return;
-                  // A card with variants waits for the choice of drawing.
-                  if (picked.variants.length > 0) setPendingCard(picked.code);
-                  else setCardCodes((current) => [...current, picked.code]);
-                }}
-                className={INPUT}
-              >
-                <option value="">
-                  {shownCards.length === 0 ? "Nessuna carta trovata" : `Aggiungi una carta… (${shownCards.length})`}
-                </option>
-                {shownCards.map((card) => (
-                  <option key={card.code} value={card.code}>
-                    {cardOrder === "number"
-                      ? `${card.code} · ${card.name} (${card.rarity})`
-                      : `${card.name} (${card.rarity}) · ${card.code}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {pending && (
-              <div className="flex flex-col gap-2 bg-panel p-3">
-                <label className={LABEL}>
-                  Disegno di {pending.name}
-                  <select value={pendingStyle} onChange={(event) => setPendingStyle(event.target.value)} className={INPUT}>
-                    <option value="">Base</option>
-                    {pending.variants.map((variant) => (
-                      <option key={variant.style} value={variant.style}>
-                        Variante {variant.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCardCodes((current) => [...current, pendingStyle ? `${pending.code}:${pendingStyle}` : pending.code]);
-                      setPendingCard(null);
-                      setPendingStyle("");
-                    }}
-                    className="btn btn-primary flex-1"
-                  >
-                    Aggiungi
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPendingCard(null);
-                      setPendingStyle("");
-                    }}
-                    className="btn btn-ghost"
-                  >
-                    Annulla
-                  </button>
-                </div>
-              </div>
-            )}
+            <AdminCardPicker
+              cards={cards}
+              chosen={cardCodes}
+              onChange={setCardCodes}
+              reference={reference}
+              label="Carte"
+            />
             {cardCodes.length > 0 && (
               <ul className="flex flex-wrap gap-1.5">
                 {cardCodes.map((cardCode, index) => {

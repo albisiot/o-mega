@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { AdminCardPicker, useAdminCardReference } from "@/components/admin-card-filter";
 import { BackLink, TabBar } from "@/components/comic-parts";
 import { balance } from "@/config/balance";
 import {
@@ -34,6 +35,9 @@ const INPUT = "min-h-12 w-full min-w-0 max-w-full border-2 border-comic-yellow b
 const LABEL = "flex min-w-0 flex-col gap-1 text-sm font-bold";
 const ACTION = "min-h-11 px-1 text-[13px] font-extrabold uppercase underline";
 const romeDate = new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeZone: "Europe/Rome" });
+
+/** The server's limit on the reward cards of an achievement (admin_save_achievement). */
+const MAX_REWARD_CARDS = 5;
 
 function namers(data: AdminAchievements) {
   return {
@@ -306,8 +310,7 @@ function AchievementForm({
   const [packs, setPacks] = useState(String(editing?.packs ?? balance.achievements.suggestedReward.bronze.packs));
   const [rewardTouched, setRewardTouched] = useState(editing !== null);
   const [cards, setCards] = useState<string[]>(editing?.card_codes ?? []);
-  const [pendingCard, setPendingCard] = useState<string | null>(null);
-  const [pendingStyle, setPendingStyle] = useState("");
+  const reference = useAdminCardReference();
   const [title, setTitle] = useState(editing?.title ?? "");
   const [countsPast, setCountsPast] = useState(editing?.counts_past ?? true);
   const [until, setUntil] = useState(editing?.available_until ? romeDay(editing.available_until) : "");
@@ -321,7 +324,6 @@ function AchievementForm({
   const targetNumber = fixed ? 1 : Number(target);
   const suggested = describeCondition(metric, params, targetNumber || 1, namers(data));
   const shownDescription = descriptionTouched ? description : suggested;
-  const pending = data.cards.find((card) => card.code === pendingCard) ?? null;
   const groups = [...new Set(METRICS.map((m) => m.group))];
 
   const draft = (): AchievementDraft => ({
@@ -527,66 +529,14 @@ function AchievementForm({
               />
             </label>
           </div>
-          {cards.length < 5 && (
-            <label className={LABEL}>
-              Carte (fino a 5)
-              <select
-                value=""
-                onChange={(event) => {
-                  const picked = data.cards.find((card) => card.code === event.target.value);
-                  if (!picked) return;
-                  if (picked.variants.length > 0) setPendingCard(picked.code);
-                  else setCards([...cards, picked.code]);
-                }}
-                className={INPUT}
-              >
-                <option value="">Aggiungi una carta…</option>
-                {data.cards.map((card) => (
-                  <option key={card.code} value={card.code}>
-                    {card.name} ({card.rarity})
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {pending && (
-            <div className="flex flex-col gap-2 bg-black/40 p-3">
-              <label className={LABEL}>
-                Disegno di {pending.name}
-                <select value={pendingStyle} onChange={(event) => setPendingStyle(event.target.value)} className={INPUT}>
-                  <option value="">Base</option>
-                  {pending.variants.map((variant) => (
-                    <option key={variant.style} value={variant.style}>
-                      Variante {variant.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCards([...cards, pendingStyle ? `${pending.code}:${pendingStyle}` : pending.code]);
-                    setPendingCard(null);
-                    setPendingStyle("");
-                  }}
-                  className="btn btn-primary flex-1"
-                >
-                  Aggiungi
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPendingCard(null);
-                    setPendingStyle("");
-                  }}
-                  className="btn btn-ghost"
-                >
-                  Annulla
-                </button>
-              </div>
-            </div>
-          )}
+          <AdminCardPicker
+            cards={data.cards}
+            chosen={cards}
+            onChange={setCards}
+            max={MAX_REWARD_CARDS}
+            reference={reference}
+            label="Carte"
+          />
           {cards.length > 0 && (
             <ul className="flex flex-wrap gap-1.5">
               {cards.map((code, index) => {

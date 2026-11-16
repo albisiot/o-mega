@@ -1,12 +1,18 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { CardSortToggle } from "@/components/card-sort-toggle";
+import { useMemo, useRef, useState } from "react";
+import { AdminCardFilterBar, useAdminCardReference } from "@/components/admin-card-filter";
 import { BackLink } from "@/components/comic-parts";
-import { TraitFilter } from "@/components/trait-filter";
+import {
+  activeAdminFilterCount,
+  EMPTY_ADMIN_CARD_FILTER,
+  filterAdminCards,
+  withCardFacts,
+  type AdminCardFilter,
+} from "@/lib/admin-card-filter";
 import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
-import { searchCards, sortCards, type CardOrder } from "@/lib/card-sort";
+import { sortCards, type CardOrder } from "@/lib/card-sort";
 import { describeServerError } from "@/lib/errors";
 import {
   fetchPackPool,
@@ -16,10 +22,7 @@ import {
   type PackPoolCard,
   type PackPoolRarity,
 } from "@/lib/pack-pool-admin";
-import { matchesTraits } from "@/lib/traits";
 import { useLockedScreen } from "@/lib/use-locked-screen";
-
-const CHIP = "flex min-h-11 shrink-0 items-center gap-1.5 border-2 px-3 text-sm font-bold";
 
 /**
  * Ticks the cards packs can give; every change is saved on the server at once. The page fits
@@ -29,10 +32,9 @@ const CHIP = "flex min-h-11 shrink-0 items-center gap-1.5 border-2 px-3 text-sm 
 export function PackPoolAdmin({ initial }: { initial: PackPool }) {
   useLockedScreen(true);
   const [pool, setPool] = useState(initial);
-  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<AdminCardFilter>(EMPTY_ADMIN_CARD_FILTER);
   const [order, setOrder] = useState<CardOrder>("name");
-  const [rarityFilter, setRarityFilter] = useState<string | null>(null);
-  const [traits, setTraits] = useState<string[]>([]);
+  const reference = useAdminCardReference();
   const [error, setError] = useState<string | null>(null);
   // Only the answer to the latest change is shown: an older one would undo newer ticks.
   const latest = useRef(0);
@@ -60,10 +62,11 @@ export function PackPoolAdmin({ initial }: { initial: PackPool }) {
     }
   }
 
-  const found = sortCards(searchCards(pool.cards, query), order).filter((card) =>
-    matchesTraits(card.traits ?? [], traits, pool.trait_catalog ?? []),
-  );
-  const shownRarities = pool.rarities.filter((rarity) => rarityFilter === null || rarity.code === rarityFilter);
+  const catalog = pool.trait_catalog ?? reference?.catalog ?? [];
+  // The payload has rarity and traits; the faction comes from the public catalog.
+  const cards = useMemo(() => withCardFacts(pool.cards, reference?.facts ?? null), [pool.cards, reference]);
+  const found = sortCards(filterAdminCards(cards, filter, catalog), order);
+  const searching = filter.query.trim() !== "" || activeAdminFilterCount(filter) > 0;
   const inPacks = pool.cards.filter((card) => card.in_packs).length;
 
   return (
@@ -78,58 +81,35 @@ export function PackPoolAdmin({ initial }: { initial: PackPool }) {
         </div>
       </header>
       <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
-        <div className="flex shrink-0 gap-2">
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Cerca nome o numero"
-            aria-label="Cerca una carta"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            className="input-comic min-w-0 flex-1 placeholder:text-faint"
-          />
-          <CardSortToggle order={order} onChange={setOrder} />
-        </div>
-        <div className="-mx-3 flex shrink-0 gap-1.5 overflow-x-auto px-3 pb-1" role="group" aria-label="Filtra per rarità">
-          <button
-            type="button"
-            onClick={() => setRarityFilter(null)}
-            aria-pressed={rarityFilter === null}
-            className={`${CHIP} ${rarityFilter === null ? "border-comic-yellow text-comic-yellow" : "border-line"}`}
-          >
-            Tutte
-          </button>
-          {pool.rarities.map((rarity) => {
-            const count = rarityCount(pool.cards, rarity.code);
-            const active = rarityFilter === rarity.code;
-            return (
-              <button
-                key={rarity.code}
-                type="button"
-                onClick={() => setRarityFilter(active ? null : rarity.code)}
-                aria-pressed={active}
-                className={CHIP}
-                style={{ borderColor: active ? rarity.color : "var(--line)", color: active ? rarity.color : undefined }}
-              >
-                {rarity.name}
-                <span className="text-xs font-semibold text-muted">
-                  {count.inPacks}/{count.total}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        {/* Older servers send no catalog: the filter simply does not show. */}
-        {(pool.trait_catalog ?? []).length > 0 && (
-          <TraitFilter
-            catalog={pool.trait_catalog ?? []}
-            chosen={traits}
-            onChange={setTraits}
-            layout="row"
-            label="Filtra per tratto"
-          />
+        <AdminCardFilterBar
+          cards={cards}
+          filter={filter}
+          onChange={setFilter}
+          rarities={pool.rarities}
+          catalog={catalog}
+          matching={found.length}
+          order={order}
+          onOrder={setOrder}
+        />
+        {searching && (
+          <div className="grid shrink-0 grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => apply(found.filter((card) => !card.in_packs).map((card) => card.code), true)}
+              disabled={found.every((card) => card.in_packs)}
+              className="btn btn-ghost disabled:opacity-50"
+            >
+              Metti le {found.length} trovate
+            </button>
+            <button
+              type="button"
+              onClick={() => apply(found.filter((card) => card.in_packs).map((card) => card.code), false)}
+              disabled={found.every((card) => !card.in_packs)}
+              className="btn btn-ghost disabled:opacity-50"
+            >
+              Togli le trovate
+            </button>
+          </div>
         )}
         <div aria-live="polite" className="shrink-0 empty:hidden">
           {error && <p className="text-sm font-bold text-comic-magenta">{error}</p>}
@@ -139,16 +119,15 @@ export function PackPoolAdmin({ initial }: { initial: PackPool }) {
           <p className="text-xs font-medium leading-4 text-muted">
             Togli la spunta per tenere una carta fuori dai pacchetti; puoi sempre darla con un codice bonus. Le carte
             dei livelli non escono mai e non sono in elenco. Le varianti seguono la loro carta. Con la ricerca o i
-            tratti, Seleziona e Deseleziona valgono solo per le carte trovate: in un tratto basta uno di quelli scelti,
-            tra tratti di tipo diverso servono tutti.
+            filtri (rarità, fazione, tratti) i pulsanti valgono solo per le carte trovate.
           </p>
-          {shownRarities.map((rarity) => (
+          {pool.rarities.map((rarity) => (
             <RaritySection
               key={rarity.code}
               rarity={rarity}
               allCards={pool.cards}
               shown={found.filter((card) => card.rarity_code === rarity.code)}
-              searching={query.trim() !== "" || traits.length > 0}
+              searching={searching}
               guaranteed={rarity.rank >= pool.guaranteed_min_rarity_rank}
               onApply={apply}
             />

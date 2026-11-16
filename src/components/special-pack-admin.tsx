@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { CardSortToggle } from "@/components/card-sort-toggle";
+import { useMemo, useState, type FormEvent } from "react";
+import { AdminCardFilterBar, useAdminCardReference } from "@/components/admin-card-filter";
 import { BackLink, PackArt, TabBar } from "@/components/comic-parts";
-import { TraitFilter } from "@/components/trait-filter";
+import { EMPTY_ADMIN_CARD_FILTER, filterAdminCards, withCardFacts, type AdminCardFilter } from "@/lib/admin-card-filter";
 import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
-import { searchCards, sortCards, type CardOrder } from "@/lib/card-sort";
+import { sortCards, type CardOrder } from "@/lib/card-sort";
 import { describeServerError } from "@/lib/errors";
 import { formatRomeDateTime } from "@/lib/events";
 import { PACK_COLOR_KEYS, PACK_COLORS, packColor } from "@/lib/pack-colors";
@@ -30,7 +30,6 @@ import {
   type AdminSpecialPacks,
   type SpecialPackDraft,
 } from "@/lib/special-pack-admin";
-import { matchesTraits } from "@/lib/traits";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow } from "@/lib/use-now";
 
@@ -38,7 +37,6 @@ const INPUT = "min-h-12 w-full min-w-0 max-w-full border-2 border-comic-yellow b
 const SMALL_INPUT = "min-h-11 w-full min-w-0 border-2 border-comic-yellow bg-black px-2 text-center text-base font-semibold";
 const DATE_INPUT = `${INPUT} appearance-none [&::-webkit-date-and-time-value]:text-left`;
 const LABEL = "flex min-w-0 flex-col gap-1 text-sm font-bold";
-const CHIP = "flex min-h-11 shrink-0 items-center gap-1.5 border-2 px-3 text-sm font-bold";
 
 const percent = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 2 });
 
@@ -468,16 +466,16 @@ function DetailsStep({ data, draft, update }: StepProps) {
 }
 
 function CardsStep({ data, draft, update }: StepProps) {
-  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<AdminCardFilter>(EMPTY_ADMIN_CARD_FILTER);
   const [order, setOrder] = useState<CardOrder>("name");
-  const [rarityFilter, setRarityFilter] = useState<string | null>(null);
-  const [traits, setTraits] = useState<string[]>([]);
-  const catalog = data.trait_catalog ?? [];
+  const reference = useAdminCardReference();
+  const catalog = data.trait_catalog ?? reference?.catalog ?? [];
+  // The payload has rarity and traits; the faction comes from the public catalog.
+  const cards = useMemo(() => withCardFacts(data.cards, reference?.facts ?? null), [data.cards, reference]);
   const chosen = new Set(draft.cardCodes);
-  const found = sortCards(searchCards(data.cards, query), order).filter(
-    (card) =>
-      (rarityFilter === null || card.rarity_code === rarityFilter) && matchesTraits(card.traits ?? [], traits, catalog),
-  );
+  const found = sortCards(filterAdminCards(cards, filter, catalog), order);
+  const fresh = found.filter((card) => !chosen.has(card.code)).length;
+  const taken = found.length - fresh;
   const rarityColor = new Map(data.rarities.map((rarity) => [rarity.code, rarity.color]));
   const rarityName = new Map(data.rarities.map((rarity) => [rarity.code, rarity.name]));
 
@@ -493,70 +491,32 @@ function CardsStep({ data, draft, update }: StepProps) {
 
   return (
     <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2">
-      <div className="flex shrink-0 gap-2">
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Cerca nome o numero"
-          aria-label="Cerca una carta"
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-          className="input-comic min-w-0 flex-1 placeholder:text-faint"
-        />
-        <CardSortToggle order={order} onChange={setOrder} />
-      </div>
-      <div className="-mx-3 flex shrink-0 gap-1.5 overflow-x-auto px-3 pb-1" role="group" aria-label="Filtra per rarità">
-        <button
-          type="button"
-          onClick={() => setRarityFilter(null)}
-          aria-pressed={rarityFilter === null}
-          className={`${CHIP} ${rarityFilter === null ? "border-comic-yellow text-comic-yellow" : "border-line"}`}
-        >
-          Tutte
-          <span className="text-xs font-semibold text-muted">{chosen.size}</span>
-        </button>
-        {data.rarities.map((rarity) => {
-          const ofRarity = data.cards.filter((card) => card.rarity_code === rarity.code);
-          if (ofRarity.length === 0) return null;
-          const active = rarityFilter === rarity.code;
-          return (
-            <button
-              key={rarity.code}
-              type="button"
-              onClick={() => setRarityFilter(active ? null : rarity.code)}
-              aria-pressed={active}
-              className={CHIP}
-              style={{ borderColor: active ? rarity.color : "var(--line)", color: active ? rarity.color : undefined }}
-            >
-              {rarity.name}
-              <span className="text-xs font-semibold text-muted">
-                {ofRarity.filter((card) => chosen.has(card.code)).length}/{ofRarity.length}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-      {catalog.length > 0 && (
-        <TraitFilter catalog={catalog} chosen={traits} onChange={setTraits} layout="row" label="Filtra per tratto" />
-      )}
+      <AdminCardFilterBar
+        cards={cards}
+        filter={filter}
+        onChange={setFilter}
+        rarities={data.rarities}
+        catalog={catalog}
+        matching={found.length}
+        order={order}
+        onOrder={setOrder}
+      />
       <div className="grid shrink-0 grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => set(found.map((card) => card.code), true)}
-          disabled={found.every((card) => chosen.has(card.code))}
+          disabled={fresh === 0}
           className="btn btn-ghost disabled:opacity-50"
         >
-          Aggiungi trovate
+          Aggiungi {fresh === found.length ? `tutte (${fresh})` : `le altre ${fresh}`}
         </button>
         <button
           type="button"
           onClick={() => set(found.map((card) => card.code), false)}
-          disabled={found.every((card) => !chosen.has(card.code))}
+          disabled={taken === 0}
           className="btn btn-ghost disabled:opacity-50"
         >
-          Togli trovate
+          Togli trovate ({taken})
         </button>
       </div>
       {/* The list is longer than any screen: it scrolls inside, the page stays still. */}

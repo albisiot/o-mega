@@ -89,3 +89,42 @@ export function fetchTraitIndex(): Promise<TraitIndex> {
   traitIndexPromise = pending;
   return pending;
 }
+
+/** Rarity, faction and traits of every card by code, with the rarities and the trait catalog, for the admin card pickers. */
+export type AdminCardReference = {
+  facts: Map<string, { rarity_code: string; faction: string; traits: string[] }>;
+  rarities: { code: string; name: string; rank: number; color: string }[];
+  catalog: TraitIndex["catalog"];
+};
+
+let adminReferencePromise: Promise<AdminCardReference> | null = null;
+
+async function loadAdminCardReference(): Promise<AdminCardReference> {
+  const supabase = getSupabase();
+  const [cards, rarities, traits] = await Promise.all([
+    supabase.from("card_definitions").select("id, code, faction, rarity_code").order("code").range(0, 4999),
+    supabase.from("rarity_definitions").select("code, name, rank, color").order("rank"),
+    fetchTraitIndex(),
+  ]);
+  if (cards.error) throw cards.error;
+  if (rarities.error) throw rarities.error;
+  const facts = new Map(
+    cards.data.map((card) => [
+      card.code,
+      { rarity_code: card.rarity_code, faction: card.faction, traits: traits.byCard.get(card.id) ?? [] },
+    ]),
+  );
+  return { facts, rarities: rarities.data, catalog: traits.catalog };
+}
+
+/** The public catalog the admin card pickers filter by; fetched once per session. */
+export function fetchAdminCardReference(): Promise<AdminCardReference> {
+  const pending =
+    adminReferencePromise ??
+    loadAdminCardReference().catch((error: unknown) => {
+      adminReferencePromise = null; // let the next call retry
+      throw error;
+    });
+  adminReferencePromise = pending;
+  return pending;
+}

@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 import { BackLink, TabBar } from "@/components/comic-parts";
+import { AdminCardPicker, useAdminCardReference } from "@/components/admin-card-filter";
 import { TraitFilter } from "@/components/trait-filter";
 import { balance } from "@/config/balance";
 import {
@@ -21,6 +22,8 @@ import { useLockedScreen } from "@/lib/use-locked-screen";
 const INPUT = "min-h-12 w-full min-w-0 max-w-full border-2 border-comic-yellow bg-black px-3 text-base font-semibold";
 const SMALL_INPUT = "min-h-11 w-full min-w-0 border-2 border-comic-yellow bg-black px-2 text-center text-base font-semibold";
 const LABEL = "flex min-w-0 flex-col gap-1 text-sm font-bold";
+/** The server's limit on the cards of one prize tier (admin_save_event). */
+const MAX_TIER_CARDS = 10;
 // Safari ignores the width of a date field that keeps its native appearance.
 const DATE_INPUT = `${INPUT} appearance-none [&::-webkit-date-and-time-value]:text-left`;
 
@@ -579,11 +582,7 @@ function TierEditor({
   onChange: (patch: Partial<TierForm>) => void;
   onRemove?: () => void;
 }) {
-  const [pendingCard, setPendingCard] = useState<string | null>(null);
-  const [pendingStyle, setPendingStyle] = useState("");
-  const pending = cards.find((card) => card.code === pendingCard) ?? null;
-  const [traits, setTraits] = useState<string[]>([]);
-  const shownCards = cards.filter((card) => matchesTraits(card.traits ?? [], traits, catalog));
+  const reference = useAdminCardReference();
 
   return (
     <div className="flex flex-col gap-2 bg-panel p-3">
@@ -633,70 +632,15 @@ function TierEditor({
           />
         </label>
       </div>
-      {catalog.length > 0 && (
-        <TraitFilter catalog={catalog} chosen={traits} onChange={setTraits} layout="row" label="Carte per tratto" />
-      )}
-      <label className={LABEL}>
-        Carte
-        <select
-          value=""
-          onChange={(event) => {
-            const picked = cards.find((card) => card.code === event.target.value);
-            if (!picked) return;
-            // A card with variants waits for the choice of drawing.
-            if (picked.variants.length > 0) setPendingCard(picked.code);
-            else onChange({ cards: [...tier.cards, picked.code] });
-          }}
-          className={INPUT}
-        >
-          <option value="">
-            {shownCards.length === cards.length ? "Aggiungi una carta…" : `Aggiungi una carta… (${shownCards.length})`}
-          </option>
-          {shownCards.map((card) => (
-            <option key={card.code} value={card.code}>
-              {card.name} ({card.rarity})
-            </option>
-          ))}
-        </select>
-      </label>
-      {pending && (
-        <div className="flex flex-col gap-2 bg-black/40 p-3">
-          <label className={LABEL}>
-            Disegno di {pending.name}
-            <select value={pendingStyle} onChange={(event) => setPendingStyle(event.target.value)} className={INPUT}>
-              <option value="">Base</option>
-              {pending.variants.map((variant) => (
-                <option key={variant.style} value={variant.style}>
-                  Variante {variant.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                onChange({ cards: [...tier.cards, pendingStyle ? `${pending.code}:${pendingStyle}` : pending.code] });
-                setPendingCard(null);
-                setPendingStyle("");
-              }}
-              className="btn btn-primary flex-1"
-            >
-              Aggiungi
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPendingCard(null);
-                setPendingStyle("");
-              }}
-              className="btn btn-ghost"
-            >
-              Annulla
-            </button>
-          </div>
-        </div>
-      )}
+      <AdminCardPicker
+        cards={cards}
+        chosen={tier.cards}
+        onChange={(next) => onChange({ cards: next })}
+        max={MAX_TIER_CARDS}
+        reference={reference}
+        fallbackCatalog={catalog}
+        label="Carte"
+      />
       {tier.cards.length > 0 && (
         <ul className="flex flex-wrap gap-1.5">
           {tier.cards.map((cardCode, cardIndex) => {
