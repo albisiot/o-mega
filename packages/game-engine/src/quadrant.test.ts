@@ -7,6 +7,7 @@ import {
   isQuadrantFinished,
   playQuadrantMove,
   quadrantBoard,
+  quadrantBorderClashes,
   quadrantBounds,
   quadrantControlled,
   quadrantHand,
@@ -191,6 +192,71 @@ describe("seals", () => {
     expect(outcome.board.cells.get("1,0")!.seals.a).toBe(1);
     expect(outcome.board.cells.get("0,1")!.seals.a).toBe(1);
     expect(outcome.board.cells.get("0,0")!.seals.a).toBe(0);
+  });
+});
+
+describe("border threats (fixed grid)", () => {
+  const play = (values: [number, number, number, number]) => ({ characterId: "new", definitionId: "def-new", values });
+  // Top 5, right 6, bottom 7, left 4.
+  const THREATS = { ...NO_OPENING, borderThreats: [5, 6, 7, 4], borderBite: 1 };
+
+  it("lists the borders a cell faces: two in a corner, one on an edge, none inside", () => {
+    expect(quadrantBorderClashes(THREATS, [6, 0, 0, 4], 0, 0)).toEqual([
+      { direction: 0, value: 6, against: 5, outcome: "win" },
+      { direction: 3, value: 4, against: 4, outcome: "tie" },
+    ]);
+    expect(quadrantBorderClashes(THREATS, [0, 0, 1, 0], 2, 3).map((c) => c.direction)).toEqual([2]);
+    expect(quadrantBorderClashes(THREATS, [9, 9, 9, 9], 1, 1)).toEqual([]);
+    expect(quadrantBorderClashes(NO_OPENING, [9, 9, 9, 9], 0, 0)).toEqual([]);
+  });
+
+  it("gives the new card a seal for every border threat it beats; a tie does nothing", () => {
+    const outcome = applyQuadrantMove(emptyQuadrantBoard(), THREATS, "a", play([6, 0, 0, 4]), 0, 0, false);
+    expect(outcome.threatsBeaten).toBe(1);
+    expect(outcome.threatsLost).toBe(0);
+    expect(outcome.placed).toBe(1);
+    expect(outcome.board.cells.get("0,0")!.seals).toEqual({ a: 1, b: 0 });
+  });
+
+  it("takes a seal off the new card for every border threat that beats it, never below zero", () => {
+    // Bottom-right corner: bottom 3 < 7 and right 2 < 6. It beats its neighbour on the left.
+    const board = emptyQuadrantBoard();
+    put(board, 2, 3, "b", [5, 1, 5, 5]);
+    const outcome = applyQuadrantMove(board, THREATS, "a", play([0, 2, 3, 4]), 3, 3, false);
+    expect(outcome.beaten).toBe(1);
+    expect(outcome.threatsLost).toBe(2);
+    // The beaten card keeps its seal; the new card would get 1 - 2: none.
+    expect(outcome.board.cells.get("2,3")!.seals).toEqual({ a: 1, b: 0 });
+    expect(outcome.board.cells.get("3,3")!.seals).toEqual({ a: 0, b: 0 });
+    expect(outcome.placed).toBe(1);
+  });
+
+  it("only rewards, without a bite", () => {
+    const rules = { ...THREATS, borderBite: 0 };
+    const outcome = applyQuadrantMove(emptyQuadrantBoard(), rules, "a", play([6, 0, 0, 1]), 0, 0, false);
+    expect(outcome.threatsLost).toBe(1);
+    expect(outcome.placed).toBe(1);
+  });
+
+  it("keeps the opening card's free seals whatever the borders do", () => {
+    const rules = { ...THREATS, firstPlayerSeals: 3 };
+    const outcome = applyQuadrantMove(emptyQuadrantBoard(), rules, "a", play([0, 0, 0, 0]), 0, 0, true);
+    expect(outcome.threatsLost).toBe(2);
+    expect(outcome.placed).toBe(3);
+  });
+
+  it("lets the bots play a whole match with them", () => {
+    const rng = mulberry32(11);
+    let state: QuadrantState = { ...newState("fixed", { a: deck("a", [7, 2, 6, 3]), b: deck("b", [4, 8, 1, 5]) }), rules: THREATS };
+    while (!isQuadrantFinished(state)) {
+      const side = quadrantSideToMove(state)!;
+      const placement = chooseQuadrantBotPlacement(quadrantBotView(state, side, { characters: [...state.decks.a, ...state.decks.b] }), "medium", rng);
+      state = playQuadrantMove({ state, placement, rng }).state;
+    }
+    const seals = quadrantSealsOnBoard(quadrantBoard(state));
+    expect(seals.a).toBeLessThanOrEqual(15);
+    expect(seals.b).toBeLessThanOrEqual(15);
+    expect(quadrantResult(state)).not.toBeNull();
   });
 });
 

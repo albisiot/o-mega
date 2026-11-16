@@ -5,6 +5,7 @@
 import {
   applyQuadrantMove,
   cellKey,
+  quadrantBorderClashes,
   quadrantBounds,
   quadrantFrozenAxes,
   quadrantLegalCells,
@@ -40,6 +41,16 @@ export type QuadrantCellView = {
   card: MatchCard;
 };
 
+/** A threat on a border of the fixed grid: a side facing it must beat its value. */
+export type QuadrantBorderThreatView = {
+  code: string;
+  name: string;
+  level: number;
+  value: number;
+  art_url: string | null;
+  flavor: string;
+};
+
 export type QuadrantMoveView = {
   move: number;
   mine: boolean;
@@ -68,6 +79,10 @@ export type QuadrantView = {
   first_player_seals: number;
   /** The four abilities of the match, side by side: top, right, bottom, left. */
   abilities: { code: string; name: string; family: string }[];
+  /** Fixed grid: the threats on the borders, top, right, bottom, left; null without them. */
+  border_threats?: QuadrantBorderThreatView[] | null;
+  /** Seals a card loses to each border threat higher than its side. */
+  border_bite?: number | null;
   /** The move being played, 1-based. */
   move: number;
   moves_count: number;
@@ -153,7 +168,19 @@ export function quadrantRulesOf(view: QuadrantView): QuadrantRules {
     cardsPerSide: view.cards_per_side,
     seals: view.seals_per_side,
     firstPlayerSeals: view.first_player_seals,
+    borderThreats: borderValues(view),
+    borderBite: view.border_bite ?? 0,
   };
+}
+
+/** The values of the border threats, top, right, bottom, left; null without them. */
+export function borderValues(view: Pick<QuadrantView, "border_threats">): number[] | null {
+  return view.border_threats?.length === 4 ? view.border_threats.map((t) => t.value) : null;
+}
+
+/** The border threats a card on (x, y) meets, with the outcome of each comparison. */
+export function borderClashesAt(view: QuadrantView, values: readonly number[], x: number, y: number) {
+  return quadrantBorderClashes({ size: view.size, borderThreats: borderValues(view) }, values, x, y);
 }
 
 /** The numbers a card of the hand shows once turned. */
@@ -182,7 +209,15 @@ export function sealDeltas(before: readonly SealCell[], after: readonly SealCell
   return deltas;
 }
 
-export type MovePreview = { gained: number; removed: number; beaten: number; deltas: SealDelta[] };
+export type MovePreview = {
+  gained: number;
+  removed: number;
+  beaten: number;
+  /** Border threats the card would beat, and those that would beat it. */
+  threatsBeaten: number;
+  threatsLost: number;
+  deltas: SealDelta[];
+};
 
 /** What a move would do now: seals the player places, seals the opponent loses, cards beaten, and where. */
 export function previewQuadrantMove(view: QuadrantView, card: MatchCard, x: number, y: number, rotation: number): MovePreview {
@@ -202,6 +237,8 @@ export function previewQuadrantMove(view: QuadrantView, card: MatchCard, x: numb
     gained: outcome.placed,
     removed: outcome.removed,
     beaten: outcome.beaten,
+    threatsBeaten: outcome.threatsBeaten,
+    threatsLost: outcome.threatsLost,
     deltas: sealDeltas(asCells(before), asCells(outcome.board)),
   };
 }
@@ -271,11 +308,16 @@ export type QuadrantRipple = {
   against: number;
 };
 
+/** A side of the card just played against the threat of the border it faces. */
+export type QuadrantBorderClash = { side: number; value: number; against: number; outcome: "win" | "tie" | "lose" };
+
 export type QuadrantMoveStory = {
   x: number;
   y: number;
   mine: boolean;
   clashes: QuadrantClash[];
+  /** Fixed grid: the border threats the card met, after its neighbours. */
+  borders: QuadrantBorderClash[];
   ripples: QuadrantRipple[];
   deltas: SealDelta[];
 };
@@ -289,6 +331,7 @@ export function quadrantMoveStory(
   before: readonly QuadrantCellView[],
   after: readonly QuadrantCellView[],
   move: { x: number; y: number; mine: boolean },
+  grid: { size: number; borderThreats?: readonly number[] | null } = { size: 4 },
 ): QuadrantMoveStory | null {
   const at = (x: number, y: number) => after.find((c) => c.x === x && c.y === y);
   const played = at(move.x, move.y);
@@ -320,7 +363,13 @@ export function quadrantMoveStory(
       }
     }
   }
-  return { x: move.x, y: move.y, mine: move.mine, clashes, ripples, deltas };
+  const borders = quadrantBorderClashes(grid, played.values, move.x, move.y).map((c) => ({
+    side: c.direction,
+    value: c.value,
+    against: c.against,
+    outcome: c.outcome,
+  }));
+  return { x: move.x, y: move.y, mine: move.mine, clashes, borders, ripples, deltas };
 }
 
 /** Seconds between two comparisons, and between two ripples, in the move's effects. */
@@ -330,5 +379,5 @@ export const RIPPLE_SECONDS = 0.6;
 /** How long the effects of a move last, in seconds. */
 export function storySeconds(story: QuadrantMoveStory | null): number {
   if (!story) return 0;
-  return 0.3 + story.clashes.length * CLASH_SECONDS + story.ripples.length * RIPPLE_SECONDS + 0.5;
+  return 0.3 + (story.clashes.length + story.borders.length) * CLASH_SECONDS + story.ripples.length * RIPPLE_SECONDS + 0.5;
 }

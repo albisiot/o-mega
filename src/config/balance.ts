@@ -185,6 +185,21 @@ export const balance = {
     moveTimerSeconds: 20,
     /** Pause to show a move before the next timer starts. */
     movePauseSeconds: 4,
+    /**
+     * Fixed grid: a threat of the catalog on each border (SPEC §5.14). A card's side facing
+     * out of the grid meets it: higher puts a seal on the card, lower takes one off.
+     */
+    fixedGridThreats: {
+      /** Levels of the threats drawn (Nuova Megara, not rare), one per border. */
+      minLevel: 2,
+      maxLevel: 5,
+      /** A threat's value on its border: its level plus this (4-7). */
+      valueOffset: 2,
+      /** Seals fewer on the card for every border threat higher than its side. */
+      bite: 1,
+      /** Seals each side has on the fixed grid, instead of `seals`. */
+      seals: 20,
+    },
   },
 
   /** Twists on the threats of a match; Emergenza has none. Tuned by simulation (SPEC §5.4). */

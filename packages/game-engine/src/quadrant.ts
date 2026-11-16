@@ -36,6 +36,14 @@ export type QuadrantRules = {
   seals: number;
   /** Free seals on the first card of the side that opens the match (it plays with fewer neighbours). */
   firstPlayerSeals: number;
+  /**
+   * Fixed grid: the values of the threats on the four borders, in direction order (top,
+   * right, bottom, left). A side facing out of the grid meets the threat of that border.
+   * None on a shifting grid.
+   */
+  borderThreats?: readonly number[] | null;
+  /** Seals fewer on the card for every border threat it does not beat (strictly lower side). */
+  borderBite?: number;
 };
 
 /** Directions of a card's sides, clockwise: 0 top, 1 right, 2 bottom, 3 left. */
@@ -287,13 +295,45 @@ export type QuadrantMoveOutcome = {
   beaten: number;
   placed: number;
   removed: number;
+  /** Border threats the card beat, and those that beat it. */
+  threatsBeaten: number;
+  threatsLost: number;
 };
+
+/**
+ * The border threats a card on (x, y) meets: one for every side facing out of a fixed
+ * grid, with the outcome of the comparison. Empty without border threats.
+ */
+export function quadrantBorderClashes(
+  rules: Pick<QuadrantRules, "size" | "borderThreats">,
+  values: readonly number[],
+  x: number,
+  y: number,
+): { direction: QuadrantDirection; value: number; against: number; outcome: "win" | "tie" | "lose" }[] {
+  const threats = rules.borderThreats;
+  if (!threats || threats.length !== 4) return [];
+  const clashes: { direction: QuadrantDirection; value: number; against: number; outcome: "win" | "tie" | "lose" }[] = [];
+  for (const d of QUADRANT_DIRECTIONS) {
+    const nx = x + STEP[d][0];
+    const ny = y + STEP[d][1];
+    if (nx >= 0 && ny >= 0 && nx < rules.size && ny < rules.size) continue;
+    const value = values[d];
+    const against = threats[d];
+    clashes.push({ direction: d, value, against, outcome: value > against ? "win" : value === against ? "tie" : "lose" });
+  }
+  return clashes;
+}
 
 /**
  * Plays a card on a copy of the board: free seals for the opening card, the comparisons
  * and the ripple. Seals come from the side's reserve: when it runs short, the beaten
  * cards get theirs first (in direction order), then the new card. The ripple always
  * removes, since an opposing seal off the grid is always worth it. Does not check legality.
+ *
+ * Border threats (fixed grid): every side facing out of the grid that beats the threat
+ * of its border puts one more seal on the new card; every side the threat beats takes
+ * `borderBite` seals off what the new card gets for this move, never below zero. The
+ * beaten neighbours keep theirs.
  */
 export function applyQuadrantMove(
   board: QuadrantBoard,
@@ -336,8 +376,12 @@ export function applyQuadrantMove(
       beaten.push({ cell: neighbour, from: oppositeDirection(d) });
     }
   }
+  const borders = quadrantBorderClashes(rules, card.values, x, y);
+  const threatsBeaten = borders.filter((c) => c.outcome === "win").length;
+  const threatsLost = borders.filter((c) => c.outcome === "lose").length;
   for (const { cell } of beaten) place(cell);
-  for (let i = 0; i < beaten.length; i++) place(played);
+  const own = Math.max(0, beaten.length + threatsBeaten - threatsLost * (rules.borderBite ?? 0));
+  for (let i = 0; i < own; i++) place(played);
 
   // The ripple: a beaten card that beats one of its other neighbours loses that one an opposing seal.
   let removed = 0;
@@ -352,7 +396,7 @@ export function applyQuadrantMove(
       }
     }
   }
-  return { board: next, values: card.values, beaten: beaten.length, placed, removed };
+  return { board: next, values: card.values, beaten: beaten.length, placed, removed, threatsBeaten, threatsLost };
 }
 
 /** The grid after every move of the match. */

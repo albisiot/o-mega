@@ -290,7 +290,7 @@ function QuadrantSection({ disabled }: { disabled: boolean }) {
 }
 
 const QUADRANT_GRID_DETAILS: Record<QuadrantFormat, string> = {
-  quadrant: "I bordi ci sono dall'inizio",
+  quadrant: "Bordi fissi, con 4 Minacce",
   quadrant_shifting: "Si sposta finché non arriva a 4",
 };
 

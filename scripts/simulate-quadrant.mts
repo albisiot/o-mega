@@ -36,8 +36,10 @@ if (!file) throw new Error("Usage: node scripts/simulate-quadrant.mts <catalog.j
 const data = JSON.parse(readFileSync(file, "utf8")) as { cards: Row[]; abilities: Row[] };
 const N = Number(count ?? 400);
 
+// A dump may list a card more than once (one row per artwork): one character each.
+const seenIds = new Set<string>();
 const characters: Character[] = data.cards
-  .filter((d) => d.active !== false)
+  .filter((d) => d.active !== false && !seenIds.has(String(d.id)) && Boolean(seenIds.add(String(d.id))))
   .map((d) => ({
     id: String(d.id),
     definitionId: String(d.id),
@@ -48,7 +50,18 @@ const characters: Character[] = data.cards
   }));
 const abilityCodes = data.abilities.map((a) => String(a.code));
 const knowledge = { characters };
-const BASE: QuadrantRules = { ...balance.quadrant };
+const { fixedGridThreats: BORDERS, ...quadrantNumbers } = balance.quadrant;
+const BASE: QuadrantRules = { ...quadrantNumbers };
+
+/** The fixed grid with border threats: four values drawn per match, as the database draws them. */
+function withBorders(rng: Rng, rules: QuadrantRules): QuadrantRules {
+  const level = () => BORDERS.minLevel + Math.floor(rng() * (BORDERS.maxLevel - BORDERS.minLevel + 1));
+  return {
+    ...rules,
+    borderThreats: Array.from({ length: 4 }, () => level() + BORDERS.valueOffset),
+    borderBite: BORDERS.bite,
+  };
+}
 
 type Player = BotDifficulty | "random";
 
@@ -86,7 +99,8 @@ function play(
       placement = chooseQuadrantBotPlacement(quadrantBotView(state, side, knowledge), player, rng);
     }
     const played = playQuadrantMove({ state, placement, rng });
-    if (played.move.placed < played.move.beaten * 2 + (played.move.move === 1 ? rules.firstPlayerSeals : 0)) shortOfSeals = true;
+    // A side that reached its last seal (with border threats a move can place fewer on purpose).
+    if (quadrantSealsOnBoard(played.board)[side] >= rules.seals) shortOfSeals = true;
     state = played.state;
   }
   const board = quadrantBoard(state);
@@ -119,6 +133,8 @@ function run(
     sameDeck?: boolean;
     variant?: QuadrantVariant;
     rules?: Partial<QuadrantRules>;
+    /** Fixed grid with border threats (SPEC §5.14). */
+    borders?: boolean;
     /** Who opens: "a", "b" or alternate. */
     first?: Side | "alternate";
     matches?: number;
@@ -126,7 +142,7 @@ function run(
 ) {
   const rng = mulberry32(label.length * 7919 + 17);
   const matches = options.matches ?? N;
-  const rules = { ...BASE, ...options.rules };
+  const rules = { ...BASE, ...(options.borders ? { seals: BORDERS.seals } : {}), ...options.rules };
   let winsA = 0;
   let firstWins = 0;
   let ties = 0;
@@ -138,7 +154,8 @@ function run(
     const deckA = deckOf(rng, options.poolA ?? characters);
     const deckB = options.sameDeck ? deckA : deckOf(rng, options.poolB ?? characters);
     const first: Side = options.first === "alternate" || options.first === undefined ? (i % 2 ? "b" : "a") : options.first;
-    const outcome = play(rng, { a: deckA, b: deckB }, options.players, options.variant ?? "fixed", rules, first);
+    const matchRules = options.borders ? withBorders(rng, rules) : rules;
+    const outcome = play(rng, { a: deckA, b: deckB }, options.players, options.variant ?? "fixed", matchRules, first);
     if (outcome.result === "a") winsA++;
     if (outcome.result === first) firstWins++;
     if (outcome.tie) ties++;
@@ -162,19 +179,19 @@ const mm = { a: "medium", b: "medium" } as const;
 
 console.log(`Catalogo: ${characters.length} personaggi (Delta ${delta.length}, Gamma ${gamma.length}, Beta ${beta.length}, Alfa+Omega ${elite.length}); ${N} partite per riga\n`);
 
-for (const variant of ["fixed", "shifting"] as const) {
-  console.log(`--- Griglia ${variant === "fixed" ? "fissa" : "mobile"} ---`);
+for (const [variant, borders] of [["fixed", true], ["fixed", false], ["shifting", false]] as const) {
+  console.log(`--- Griglia ${variant === "fixed" ? (borders ? "fissa, con le Minacce sui bordi" : "fissa senza Minacce (com'era)") : "mobile"} ---`);
   for (const bonus of [0, 2, 3, 4]) {
-    run(`Medio vs Medio, mazzi casuali, +${bonus} sigilli a chi apre`, { players: mm, variant, rules: { firstPlayerSeals: bonus } });
+    run(`Medio vs Medio, mazzi casuali, +${bonus} sigilli a chi apre`, { players: mm, variant, borders, rules: { firstPlayerSeals: bonus } });
   }
-  run("Medio vs Medio, stesso mazzo", { players: mm, variant, sameDeck: true });
-  run("Alfa+Omega (A) contro Delta, Medio vs Medio", { players: mm, variant, poolA: elite, poolB: delta });
-  run("Gamma (A) contro Delta", { players: mm, variant, poolA: gamma, poolB: delta });
-  run("Beta (A) contro Gamma", { players: mm, variant, poolA: beta, poolB: gamma });
-  run("Stesso mazzo: Medio (A) contro mosse a caso", { players: { a: "medium", b: "random" }, variant, sameDeck: true });
-  run("Medio (A) contro Facile", { players: { a: "medium", b: "easy" }, variant });
-  run("Difficile (A) contro Medio", { players: { a: "hard", b: "medium" }, variant, matches: Math.min(N, 300) });
-  run("Super Pro (A) contro Medio", { players: { a: "super_pro", b: "medium" }, variant, matches: Math.min(N, 200) });
-  run("Delta Difficile (A) contro Alfa+Omega Medio", { players: { a: "hard", b: "medium" }, variant, poolA: delta, poolB: elite, matches: Math.min(N, 300) });
+  run("Medio vs Medio, stesso mazzo", { players: mm, variant, borders, sameDeck: true });
+  run("Alfa+Omega (A) contro Delta, Medio vs Medio", { players: mm, variant, borders, poolA: elite, poolB: delta });
+  run("Gamma (A) contro Delta", { players: mm, variant, borders, poolA: gamma, poolB: delta });
+  run("Beta (A) contro Gamma", { players: mm, variant, borders, poolA: beta, poolB: gamma });
+  run("Stesso mazzo: Medio (A) contro mosse a caso", { players: { a: "medium", b: "random" }, variant, borders, sameDeck: true });
+  run("Medio (A) contro Facile", { players: { a: "medium", b: "easy" }, variant, borders });
+  run("Difficile (A) contro Medio", { players: { a: "hard", b: "medium" }, variant, borders, matches: Math.min(N, 300) });
+  run("Super Pro (A) contro Medio", { players: { a: "super_pro", b: "medium" }, variant, borders, matches: Math.min(N, 200) });
+  run("Delta Difficile (A) contro Alfa+Omega Medio", { players: { a: "hard", b: "medium" }, variant, borders, poolA: delta, poolB: elite, matches: Math.min(N, 300) });
   console.log();
 }

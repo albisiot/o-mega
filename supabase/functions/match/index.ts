@@ -141,6 +141,8 @@ type Loaded = {
   boss: BossRules;
   triple: TripleRules;
   quadrant: QuadrantRules;
+  /** Fixed grid with border threats: the seals per side and the bite (SPEC §5.14). */
+  quadrantBorders: { seals: number; bite: number };
   graceSeconds: number;
   catalog: BotMatchCatalog;
   /** Usual threats of Nuova Megara only: Emergenza never draws the places beyond it. */
@@ -285,6 +287,10 @@ async function load(): Promise<Loaded> {
       seals: value("quadrant.seals"),
       firstPlayerSeals: value("quadrant.first_player_seals"),
     },
+    quadrantBorders: {
+      seals: value("quadrant.fixed_grid_threats.seals"),
+      bite: value("quadrant.fixed_grid_threats.bite"),
+    },
     graceSeconds: value("match.timeout_grace_seconds"),
     catalog: {
       characters: activeCharacters,
@@ -353,6 +359,8 @@ type MatchContext = {
     boss_values: number[][] | null;
     quadrant_abilities?: string[] | null;
     quadrant_first?: Side | null;
+    /** Fixed grid: the border threats in side order (top, right, bottom, left); null without them. */
+    quadrant_threats?: { threat_id: string; value: number }[] | null;
   };
   teams: { side: Side; card_instance_ids: string[] | null; definition_ids: string[] }[];
   rounds: {
@@ -481,8 +489,17 @@ function quadrantState(
         removed: p.bonus,
       };
     });
+  // Border threats only on the fixed grid, and only on the matches that drew them.
+  const borders = match.format === "quadrant" && match.quadrant_threats?.length === 4 ? match.quadrant_threats : null;
   return {
-    rules: loaded.quadrant,
+    rules: borders
+      ? {
+          ...loaded.quadrant,
+          seals: loaded.quadrantBorders.seals,
+          borderThreats: borders.map((t) => t.value),
+          borderBite: loaded.quadrantBorders.bite,
+        }
+      : loaded.quadrant,
     variant: match.format === "quadrant_shifting" ? "shifting" : "fixed",
     abilities,
     first,

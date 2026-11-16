@@ -17,6 +17,8 @@ import { claimVictory, DIFFICULTY_LABELS, fetchMatchState, forfeitMatch, pingMat
 import { RewardChips, useMatchReward } from "@/components/match-reward";
 import {
   bestRotation,
+  borderClashesAt,
+  borderValues,
   cardValues,
   frozenAxes,
   legalCells,
@@ -31,6 +33,7 @@ import {
   sealDeltas,
   storySeconds,
   submitQuadrantMove,
+  type QuadrantBorderThreatView,
   type QuadrantCellView,
   type QuadrantMoveStory,
   type QuadrantPlacementInput,
@@ -48,6 +51,9 @@ const TUTORIAL_KEY = "o-mega.quadrant-tutorial-seen";
 /** Arrows for the four sides, in direction order: top, right, bottom, left. */
 const ARROWS = ["▲", "▶", "▼", "◀"] as const;
 const SIDE_NAMES = ["in alto", "a destra", "in basso", "a sinistra"] as const;
+/** Fixed grid: the thickness of the border threats' bands around the grid, and their gap. */
+const BAND = 22;
+const BAND_GAP = 3;
 /** Against a bot: how long the player's move stays alone on the grid before the bot's, at least. */
 const BOT_THINK_MS = 1_600;
 /** And at most, however long the move's effects: the timer's pause is 4 seconds. */
@@ -129,7 +135,9 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
       const last = next.moves.at(-1)!;
       // Seal by seal, with its effects, only when exactly one move is new; otherwise just who moved.
       const single = next.moves.length === before.moves.length + 1;
-      const story = single ? quadrantMoveStory(before.board, next.board, last) : null;
+      const story = single
+        ? quadrantMoveStory(before.board, next.board, last, { size: next.size, borderThreats: borderValues(next) })
+        : null;
       setChanges({ move: last.move, mine: last.mine, deltas: single ? sealDeltas(before.board, next.board) : [], story });
       seconds = storySeconds(story);
     }
@@ -503,6 +511,22 @@ function PlayArea({
   const effects = useMemo(() => (changes?.story ? effectsOf(changes.story) : new Map<string, CellEffects>()), [changes]);
   const last = view.moves.at(-1) ?? null;
   const frozen = frozenAxes(view);
+  // Fixed grid: the four border threats around it, and what the last move did against them.
+  const threats = view.border_threats?.length === 4 ? view.border_threats : null;
+  const frame = threats ? 2 * (BAND + BAND_GAP) : 0;
+  const borderEffects = borderEffectsOf(preview ? null : changes?.story);
+  const stampKey = preview ? "preview" : String(changes?.move ?? 0);
+  // The borders the card being placed would meet.
+  const edgeHighlight = new Set(
+    threats && card && (placed ?? hovered)
+      ? borderClashesAt(
+          view,
+          placed && draft ? cardValues(view, card, draft.rotation) : [0, 0, 0, 0],
+          placed ? placed.x : hovered![0],
+          placed ? placed.y : hovered![1],
+        ).map((c) => c.direction)
+      : [],
+  );
 
   function tapCell(x: number, y: number) {
     if (!canPlay || !draft) return;
@@ -549,90 +573,107 @@ function PlayArea({
         <AbilityLegend view={view} />
       </div>
 
-      {/* The grid. */}
+      {/* The grid, framed by the border threats on a fixed grid with them. */}
       <div className="flex min-h-0 flex-1 items-center justify-center px-3 py-1.5" style={{ containerType: "size" }}>
         <div
-          className="grid gap-1"
-          style={{
-            gridTemplateColumns: `repeat(${area.columns}, minmax(0, 1fr))`,
-            gridTemplateRows: `repeat(${area.rows}, minmax(0, 1fr))`,
-            aspectRatio: `${area.columns} / ${area.rows}`,
-            // As large as the room allows, keeping the cells square.
-            width: `min(100cqw, 420px, 100cqh * ${area.columns} / ${area.rows})`,
-          }}
-          role="grid"
-          aria-label="La griglia"
+          className="grid"
+          style={
+            threats
+              ? { gridTemplateColumns: `${BAND}px auto ${BAND}px`, gridTemplateRows: `${BAND}px auto ${BAND}px`, gap: BAND_GAP }
+              : undefined
+          }
         >
-          {Array.from({ length: area.rows }, (_, r) =>
-            Array.from({ length: area.columns }, (_, c) => {
-              const x = area.minX + c;
-              const y = area.minY + r;
-              const key = `${x},${y}`;
-              const delta = deltaAt(x, y);
-              const cell = cellsByKey.get(key);
-              if (cell) {
-                const isLast = !preview && last !== null && last.x === x && last.y === y;
-                return (
-                  <BoardCard
-                    key={key}
-                    cell={cell}
-                    highlight={isLast}
-                    effects={preview ? undefined : effects.get(key)}
-                    delta={delta}
-                    tentative={Boolean(preview)}
-                    stampKey={preview ? "preview" : String(changes?.move ?? 0)}
-                    press={detail.press(cell.card)}
-                  />
-                );
-              }
-              const here = placed && placed.x === x && placed.y === y;
-              if (here && card && draft) {
+          {threats && <span aria-hidden />}
+          {threats && <BorderThreat threat={threats[0]} direction={0} effect={borderEffects.get(0)} stampKey={stampKey} highlight={edgeHighlight.has(0)} />}
+          {threats && <span aria-hidden />}
+          {threats && <BorderThreat threat={threats[3]} direction={3} effect={borderEffects.get(3)} stampKey={stampKey} highlight={edgeHighlight.has(3)} />}
+          <div
+            className="grid gap-1"
+            style={{
+              gridTemplateColumns: `repeat(${area.columns}, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(${area.rows}, minmax(0, 1fr))`,
+              aspectRatio: `${area.columns} / ${area.rows}`,
+              // As large as the room allows, keeping the cells square.
+              width: `min(100cqw - ${frame}px, 420px, (100cqh - ${frame}px) * ${area.columns} / ${area.rows})`,
+            }}
+            role="grid"
+            aria-label="La griglia"
+          >
+            {Array.from({ length: area.rows }, (_, r) =>
+              Array.from({ length: area.columns }, (_, c) => {
+                const x = area.minX + c;
+                const y = area.minY + r;
+                const key = `${x},${y}`;
+                const delta = deltaAt(x, y);
+                const cell = cellsByKey.get(key);
+                if (cell) {
+                  const isLast = !preview && last !== null && last.x === x && last.y === y;
+                  return (
+                    <BoardCard
+                      key={key}
+                      cell={cell}
+                      highlight={isLast}
+                      effects={preview ? undefined : effects.get(key)}
+                      delta={delta}
+                      tentative={Boolean(preview)}
+                      stampKey={preview ? "preview" : String(changes?.move ?? 0)}
+                      press={detail.press(cell.card)}
+                    />
+                  );
+                }
+                const here = placed && placed.x === x && placed.y === y;
+                if (here && card && draft) {
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      data-drop={key}
+                      onClick={() => tapCell(x, y)}
+                      onPointerDown={start(draft.instanceId)}
+                      onDragStart={(event) => event.preventDefault()}
+                      aria-label={`${card.name} qui. Tocca per ruotarla, trascinala per spostarla`}
+                      className="relative min-h-0 min-w-0 touch-none select-none"
+                    >
+                      <QuadCard card={card} values={cardValues(view, card, draft.rotation)} tone="draft" />
+                      {delta && <DeltaBadges delta={delta} tentative stampKey="preview" />}
+                    </button>
+                  );
+                }
+                const legalHere = myTurn && isLegal(x, y);
+                const gain = legalHere && card ? bestRotation(view, card, x, y).gain : null;
+                const isHovered = hovered !== null && hovered[0] === x && hovered[1] === y;
                 return (
                   <button
                     key={key}
                     type="button"
-                    data-drop={key}
+                    data-drop={legalHere ? key : undefined}
                     onClick={() => tapCell(x, y)}
-                    onPointerDown={start(draft.instanceId)}
-                    onDragStart={(event) => event.preventDefault()}
-                    aria-label={`${card.name} qui. Tocca per ruotarla, trascinala per spostarla`}
-                    className="relative min-h-0 min-w-0 touch-none select-none"
+                    disabled={!legalHere || !card || busy}
+                    aria-label={legalHere ? `Casella libera${gain !== null ? `: fino a ${seals(gain)}` : ""}` : "Casella"}
+                    className={`relative flex min-h-0 min-w-0 items-center justify-center border-2 ${
+                      isHovered && legalHere
+                        ? "border-comic-yellow bg-panel-raised shadow-[3px_3px_0_var(--comic-cyan)]"
+                        : legalHere
+                          ? card
+                            ? "border-dashed border-comic-yellow bg-panel"
+                            : "border-dashed border-line bg-panel"
+                          : "border-transparent bg-panel/40"
+                    }`}
                   >
-                    <QuadCard card={card} values={cardValues(view, card, draft.rotation)} tone="draft" />
-                    {delta && <DeltaBadges delta={delta} tentative stampKey="preview" />}
+                    {isHovered && card && preview ? (
+                      <span className="font-display text-xl text-comic-cyan">+{preview.gained}</span>
+                    ) : (
+                      gain !== null && gain > 0 && <span className="font-display text-lg text-comic-yellow">+{gain}</span>
+                    )}
                   </button>
                 );
-              }
-              const legalHere = myTurn && isLegal(x, y);
-              const gain = legalHere && card ? bestRotation(view, card, x, y).gain : null;
-              const isHovered = hovered !== null && hovered[0] === x && hovered[1] === y;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  data-drop={legalHere ? key : undefined}
-                  onClick={() => tapCell(x, y)}
-                  disabled={!legalHere || !card || busy}
-                  aria-label={legalHere ? `Casella libera${gain !== null ? `: fino a ${seals(gain)}` : ""}` : "Casella"}
-                  className={`relative flex min-h-0 min-w-0 items-center justify-center border-2 ${
-                    isHovered && legalHere
-                      ? "border-comic-yellow bg-panel-raised shadow-[3px_3px_0_var(--comic-cyan)]"
-                      : legalHere
-                        ? card
-                          ? "border-dashed border-comic-yellow bg-panel"
-                          : "border-dashed border-line bg-panel"
-                        : "border-transparent bg-panel/40"
-                  }`}
-                >
-                  {isHovered && card && preview ? (
-                    <span className="font-display text-xl text-comic-cyan">+{preview.gained}</span>
-                  ) : (
-                    gain !== null && gain > 0 && <span className="font-display text-lg text-comic-yellow">+{gain}</span>
-                  )}
-                </button>
-              );
-            }),
-          )}
+              }),
+            )}
+          </div>
+          {threats && <BorderThreat threat={threats[1]} direction={1} effect={borderEffects.get(1)} stampKey={stampKey} highlight={edgeHighlight.has(1)} />}
+          {threats && <span aria-hidden />}
+          {threats && <BorderThreat threat={threats[2]} direction={2} effect={borderEffects.get(2)} stampKey={stampKey} highlight={edgeHighlight.has(2)} />}
+          {threats && <span aria-hidden />}
         </div>
       </div>
 
@@ -722,8 +763,11 @@ function LastMove({ view, rival }: { view: QuadrantView; rival: string }) {
   const last = view.moves.at(-1)!;
   const who = last.mine ? "Tu" : rival;
   const whose = last.mine ? rival : "tuoi";
+  const played = view.board.find((cell) => cell.x === last.x && cell.y === last.y);
+  const borders = played ? borderClashesAt(view, played.values, last.x, last.y) : [];
   const parts = [
     last.beaten > 0 ? `batte ${last.beaten} cart${last.beaten === 1 ? "a" : "e"}` : "non batte nessuna carta",
+    threatsText(borders.filter((b) => b.outcome === "win").length, borders.filter((b) => b.outcome === "lose").length),
     last.placed > 0 ? `+${seals(last.placed)} ${last.mine ? "tuoi" : "suoi"}` : null,
     last.removed > 0 ? `−${seals(last.removed)} ${last.mine ? `a ${whose}` : whose}` : null,
   ].filter(Boolean);
@@ -739,14 +783,31 @@ function LastMove({ view, rival }: { view: QuadrantView; rival: string }) {
 }
 
 /** What the move being prepared would do, before playing it. */
-function MovePreviewLine({ preview, rival }: { preview: { gained: number; removed: number; beaten: number }; rival: string }) {
+function MovePreviewLine({
+  preview,
+  rival,
+}: {
+  preview: { gained: number; removed: number; beaten: number; threatsBeaten: number; threatsLost: number };
+  rival: string;
+}) {
+  const parts = [
+    preview.beaten > 0 ? `batte ${preview.beaten} cart${preview.beaten === 1 ? "a" : "e"}` : null,
+    threatsText(preview.threatsBeaten, preview.threatsLost),
+    preview.gained > 0 ? `+${seals(preview.gained)}` : "nessun Sigillo",
+    preview.removed > 0 ? `−${seals(preview.removed)} a ${rival}` : null,
+  ].filter(Boolean);
   return (
     <p className="mx-3 mt-1 line-clamp-2 bg-comic-yellow/15 px-2 py-0.5 text-[12px] font-extrabold leading-4 text-comic-yellow">
-      Se la giochi qui:{" "}
-      {preview.beaten > 0 ? `batte ${preview.beaten} cart${preview.beaten === 1 ? "a" : "e"}, +${seals(preview.gained)}` : preview.gained > 0 ? `+${seals(preview.gained)}` : "nessun Sigillo"}
-      {preview.removed > 0 && `, −${seals(preview.removed)} a ${rival}`}
+      Se la giochi qui: {parts.join(", ")}
     </p>
   );
+}
+
+/** "batte 1 Minaccia, perde con 2 Minacce": the border threats a card met; null when none counted. */
+function threatsText(beaten: number, lost: number): string | null {
+  const threats = (n: number) => (n === 1 ? "1 Minaccia" : `${n} Minacce`);
+  const parts = [beaten > 0 ? `batte ${threats(beaten)}` : null, lost > 0 ? `perde con ${threats(lost)}` : null].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : null;
 }
 
 /** A number of a card in a comparison: who won it, and when (seconds after the move appears). */
@@ -793,7 +854,13 @@ function effectsOf(story: QuadrantMoveStory): Map<string, CellEffects> {
     other.numbers.set((clash.side + 2) % 4, { tone: theirs, delay });
     other.badgeDelay = delay + 0.35;
   });
-  const clashesEnd = 0.3 + story.clashes.length * CLASH_SECONDS;
+  story.borders.forEach((border, i) => {
+    const delay = 0.3 + (story.clashes.length + i) * CLASH_SECONDS;
+    const tone: NumberEffect["tone"] = border.outcome === "win" ? win : border.outcome === "tie" ? "tie" : "lose";
+    played.numbers.set(border.side, { tone, delay });
+    played.sparks.push({ side: border.side, tone, delay });
+  });
+  const clashesEnd = 0.3 + (story.clashes.length + story.borders.length) * CLASH_SECONDS;
   played.badgeDelay = clashesEnd;
   story.ripples.forEach((ripple, i) => {
     const delay = clashesEnd + 0.15 + i * RIPPLE_SECONDS;
@@ -806,6 +873,66 @@ function effectsOf(story: QuadrantMoveStory): Map<string, CellEffects> {
     to.badgeDelay = Math.max(to.badgeDelay, delay + 0.4);
   });
   return map;
+}
+
+/** When each border threat met the card just played, and how it went. */
+function borderEffectsOf(story: QuadrantMoveStory | null | undefined): Map<number, { outcome: "win" | "tie" | "lose"; delay: number }> {
+  const map = new Map<number, { outcome: "win" | "tie" | "lose"; delay: number }>();
+  story?.borders.forEach((border, i) => {
+    map.set(border.side, { outcome: border.outcome, delay: 0.3 + (story.clashes.length + i) * CLASH_SECONDS });
+  });
+  return map;
+}
+
+/**
+ * A threat on a border of the fixed grid: its name and its value, along the border. When
+ * the last move met it, its value swells in magenta if it won, shakes if it lost.
+ */
+function BorderThreat({
+  threat,
+  direction,
+  effect,
+  stampKey,
+  highlight,
+}: {
+  threat: QuadrantBorderThreatView;
+  direction: number;
+  effect?: { outcome: "win" | "tie" | "lose"; delay: number };
+  stampKey: string;
+  highlight: boolean;
+}) {
+  const vertical = direction === 1 || direction === 3;
+  // From the threat's side of the comparison: the card's "win" is the threat's loss.
+  const animation = effect
+    ? effect.outcome === "win"
+      ? NUMBER_ANIMATION.lose
+      : effect.outcome === "tie"
+        ? NUMBER_ANIMATION.tie
+        : "quad-num-win-threat 0.7s ease-out"
+    : null;
+  return (
+    <div
+      className={`quad-border flex min-h-0 min-w-0 items-center justify-center gap-1 overflow-hidden ${vertical ? "flex-col" : ""} ${
+        highlight ? "outline outline-2 -outline-offset-2 outline-comic-yellow" : ""
+      }`}
+      aria-label={`Minaccia ${SIDE_NAMES[direction]}: ${threat.name}, ${threat.value}`}
+      role="note"
+    >
+      <span
+        className="min-w-0 truncate text-[10px] font-extrabold uppercase leading-none tracking-wide text-comic-yellow"
+        style={vertical ? { writingMode: "vertical-rl", rotate: direction === 3 ? "180deg" : undefined } : undefined}
+      >
+        {threat.name}
+      </span>
+      <span
+        key={stampKey}
+        className={`flex h-[18px] min-w-[20px] shrink-0 items-center justify-center border-2 border-comic-magenta bg-black px-0.5 font-display text-[14px] leading-none text-comic-magenta ${effect ? "quad-fx" : ""}`}
+        style={effect && animation ? { animation: `${animation} ${effect.delay}s both` } : undefined}
+      >
+        {threat.value}
+      </span>
+    </div>
+  );
 }
 
 const SPARK_POSITION = [
@@ -1088,6 +1215,15 @@ function RulesText({ view }: { view: QuadrantView }) {
         {view.cards_per_side} carte a testa vince chi ha più Sigilli sulla griglia, poi chi controlla più carte, poi chi ha giocato
         per secondo.
       </p>
+      {view.border_threats?.length === 4 && (
+        <p>
+          Su ogni bordo c&apos;è una Minaccia:{" "}
+          {view.border_threats.map((t, d) => `${t.name} ${SIDE_NAMES[d]} (${t.value})`).join(", ")}. Ogni lato di una carta rivolto
+          verso un bordo si confronta con la sua Minaccia: se è più alto mette un Sigillo in più sulla carta; se è più basso la carta
+          riceve {view.border_bite === 1 ? "un Sigillo" : `${view.border_bite ?? 0} Sigilli`} in meno per quella mossa (mai sotto
+          zero); a parità niente.
+        </p>
+      )}
     </div>
   );
 }
@@ -1118,6 +1254,12 @@ function QuadrantTutorial({ view, onClose }: { view: QuadrantView; onClose: () =
           <li>
             Onda d&apos;urto: se la carta che batti a sua volta batte una sua vicina, a quella vicina togli un Sigillo avversario.
           </li>
+          {view.border_threats?.length === 4 && (
+            <li>
+              Sui 4 bordi ci sono 4 Minacce, ognuna col suo numero. Un lato rivolto verso un bordo che supera la Minaccia vale un
+              Sigillo in più sulla tua carta; se la Minaccia è più alta, la carta ne riceve uno in meno.
+            </li>
+          )}
           <li>
             Dopo {view.cards_per_side} carte a testa vince chi ha più Sigilli. Chi apre parte con {view.first_player_seals} Sigilli
             in regalo, perché la sua prima carta non ha vicine.
