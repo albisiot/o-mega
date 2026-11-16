@@ -83,6 +83,11 @@ export const balance = {
     /** Players shown in the day's leaderboard; the player's own place is shown below when lower. */
     leaderboardSize: 10,
     /**
+     * Places of the leaderboard whose lineups can be seen: today's only after one's own
+     * attempt is finished (the threats are the same for everyone), yesterday's otherwise.
+     */
+    lineupsShown: 3,
+    /**
      * Prizes of the day's leaderboard, given when the day ends (midnight Europe/Rome) to the
      * first leaderboardSize players with at least minPassed threats passed; claimed from a popup.
      * "others" is every place from the 4th on. Defaults: admins change them from /gestione-ricompense.
