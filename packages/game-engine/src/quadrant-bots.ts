@@ -19,6 +19,7 @@ import {
   quadrantLegalCells,
   quadrantMoveCount,
   quadrantMoveNumber,
+  quadrantResultOf,
   quadrantSealsOnBoard,
   quadrantSideToMove,
   quadrantValues,
@@ -36,7 +37,7 @@ export const QUADRANT_SUPER_PRO = { candidates: 10, hands: 32 };
 
 /** Weight of an exposed side in Medio's choice: a seal now is worth more than a maybe later. */
 const EXPOSURE_WEIGHT = 0.6;
-/** Events with a seal target: reaching it wins the match, worth more than any number of seals. */
+/** Events with a seal target: a move that ends the match there is won or lost, worth more than any seal. */
 const TARGET_WIN = 100;
 
 export type QuadrantBotView = {
@@ -93,7 +94,17 @@ function beatShares(characters: readonly Character[], abilities: readonly Abilit
 type Candidate = { placement: QuadrantPlacement; gain: number; exposure: number; board: QuadrantBoard };
 
 /** Every distinct move of a hand: a card, a legal cell, a quarter turn (turns that give the same sides count once). */
-function candidates(view: Pick<QuadrantBotView, "abilities" | "variant" | "rules">, board: QuadrantBoard, side: Side, hand: readonly Character[], opening: boolean, beatShare?: number[]): Candidate[] {
+function candidates(
+  view: Pick<QuadrantBotView, "abilities" | "variant" | "rules">,
+  board: QuadrantBoard,
+  side: Side,
+  hand: readonly Character[],
+  move: number,
+  beatShare?: number[],
+): Candidate[] {
+  const opening = move === 1;
+  // With a seal target the match can end after the second card of a round; the first side is then the other one.
+  const endsRound = Boolean(view.rules.sealTarget) && move % 2 === 0;
   const cells = quadrantLegalCells(board, view.variant, view.rules.size);
   const before = quadrantSealsOnBoard(board);
   const opponent = otherSide(side);
@@ -116,8 +127,10 @@ function candidates(view: Pick<QuadrantBotView, "abilities" | "variant" | "rules
           opening,
         );
         const after = quadrantSealsOnBoard(outcome.board);
-        const reachesTarget = Boolean(view.rules.sealTarget) && after[side] >= view.rules.sealTarget!;
-        const gain = after[side] - before[side] - (after[opponent] - before[opponent]) + (reachesTarget ? TARGET_WIN : 0);
+        let gain = after[side] - before[side] - (after[opponent] - before[opponent]);
+        if (endsRound && Math.max(after.a, after.b) >= view.rules.sealTarget!) {
+          gain += quadrantResultOf(outcome.board, opponent) === side ? TARGET_WIN : -TARGET_WIN;
+        }
         list.push({
           placement: { characterId: card.id, x, y, rotation },
           gain,
@@ -175,14 +188,13 @@ function best<T>(items: readonly T[], score: (item: T) => number, rng: Rng): T {
 function bestReplyGain(view: QuadrantBotView, board: QuadrantBoard, hand: readonly Character[]): number {
   const opponent = otherSide(view.side);
   let top = -Infinity;
-  for (const c of candidates(view, board, opponent, hand, false)) if (c.gain > top) top = c.gain;
+  for (const c of candidates(view, board, opponent, hand, view.move + 1)) if (c.gain > top) top = c.gain;
   return top === -Infinity ? 0 : top;
 }
 
 /** The bot's move. Pure apart from the injected rng. */
 export function chooseQuadrantBotPlacement(view: QuadrantBotView, difficulty: BotDifficulty, rng: Rng): QuadrantPlacement {
-  const opening = view.move === 1;
-  const options = candidates(view, view.board, view.side, view.hand, opening, view.beatShare);
+  const options = candidates(view, view.board, view.side, view.hand, view.move, view.beatShare);
   if (options.length === 0) throw new Error("No legal move");
 
   if (difficulty === "easy") {
@@ -199,8 +211,8 @@ export function chooseQuadrantBotPlacement(view: QuadrantBotView, difficulty: Bo
   const hands = Array.from({ length: plan.hands }, () => shuffle(rng, view.opponentPool).slice(0, view.rules.handSize));
   return best(
     ranked,
-    // A move that reaches the seal target ends the match: no answer to fear.
-    (c) => (c.gain >= TARGET_WIN ? c.gain : c.gain - hands.reduce((sum, hand) => sum + bestReplyGain(view, c.board, hand), 0) / hands.length),
+    // A move that ends the match at the seal target: no answer to fear.
+    (c) => (Math.abs(c.gain) >= TARGET_WIN / 2 ? c.gain : c.gain - hands.reduce((sum, hand) => sum + bestReplyGain(view, c.board, hand), 0) / hands.length),
     rng,
   ).placement;
 }

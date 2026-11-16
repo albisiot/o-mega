@@ -256,28 +256,41 @@ describe("border threats (fixed grid)", () => {
 });
 
 describe("seal target (events)", () => {
-  it("ends the match as soon as a side has that many seals, and that side wins", () => {
-    // Side a opens with 3 free seals: a target of 3 is reached on the first move.
-    const state: QuadrantState = { ...newState("fixed"), rules: { ...RULES, sealTarget: 3 } };
-    const played = playQuadrantMove({ state, placement: { characterId: "a0", x: 1, y: 1, rotation: 0 }, rng: mulberry32(1) });
+  it("is checked at the end of a round, and then more seals win", () => {
+    // Side a opens with 3 free seals: a target of 3, reached on move 1, ends the match after move 2.
+    let state: QuadrantState = { ...newState("fixed"), rules: { ...RULES, sealTarget: 3 } };
+    const first = playQuadrantMove({ state, placement: { characterId: "a0", x: 1, y: 1, rotation: 0 }, rng: mulberry32(1) });
+    expect(first.finished).toBe(false);
+    expect(quadrantSideToMove(first.state)).toBe("b");
+    state = first.state;
+    // Same cards: b's move beats nothing (5 against 5), so a keeps more seals and wins.
+    const second = playQuadrantMove({ state, placement: { characterId: "b0", x: 2, y: 1, rotation: 0 }, rng: mulberry32(1) });
+    expect(second.finished).toBe(true);
+    expect(second.result).toBe("a");
+    expect(isQuadrantFinished(second.state)).toBe(true);
+  });
+
+  it("lets the second side overtake in the same round", () => {
+    // a opens with 3 free seals on a weak card; b beats it on its first move: 2 seals to b, a keeps 3.
+    const a = deck("a", [1, 1, 1, 1]);
+    const b = deck("b", [5, 5, 5, 5]);
+    let state: QuadrantState = { ...newState("fixed", { a, b }), rules: { ...RULES, firstPlayerSeals: 1, sealTarget: 2 } };
+    state = playQuadrantMove({ state, placement: { characterId: "a0", x: 1, y: 1, rotation: 0 }, rng: mulberry32(2) }).state;
+    const played = playQuadrantMove({ state, placement: { characterId: "b0", x: 2, y: 1, rotation: 0 }, rng: mulberry32(2) });
     expect(played.finished).toBe(true);
-    expect(played.result).toBe("a");
-    expect(isQuadrantFinished(played.state)).toBe(true);
-    expect(quadrantSideToMove(played.state)).toBeNull();
+    expect(played.result).toBe("b");
   });
 
   it("goes on below the target, and ends normally if nobody reaches it", () => {
     const rng = mulberry32(5);
     let state: QuadrantState = { ...newState("fixed"), rules: { ...RULES, sealTarget: 99 } };
-    state = playQuadrantMove({ state, placement: { characterId: "a0", x: 1, y: 1, rotation: 0 }, rng }).state;
-    expect(isQuadrantFinished(state)).toBe(false);
     while (!isQuadrantFinished(state)) state = playQuadrantMove({ state, placement: null, rng }).state;
     expect(state.moves).toHaveLength(16);
     expect(quadrantResult(state)).toBe(quadrantResultOf(quadrantBoard(state), state.first));
   });
 
   it("is what the bots play for", () => {
-    // Side b to move with a target of 2: beating the card on the grid (5 > 1) gives it 2 seals.
+    // Side b to move, ending the round, with a target of 2: beating the card on the grid wins.
     const a = deck("a", [1, 1, 1, 1]);
     const b = deck("b", [5, 5, 5, 5]);
     let state: QuadrantState = { ...newState("fixed", { a, b }), rules: { ...RULES, firstPlayerSeals: 0, sealTarget: 2 } };

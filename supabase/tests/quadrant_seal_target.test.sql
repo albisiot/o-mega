@@ -1,7 +1,7 @@
 -- Integration test for the seal target of Quadrante (SPEC §5.14, §8.2): seals have no
 -- limit; an event may set a target, which only an admin can choose, within the limits;
--- a Quadrante created during the event takes it, and the first side to reach it wins
--- at once. Service-only functions are called as the database owner.
+-- a Quadrante created during the event takes it, and the match ends at the end of the
+-- first round in which a side has it. Service-only functions are called as the database owner.
 -- Runs inside a rolled-back transaction:
 --   npm run test:db
 
@@ -82,6 +82,8 @@ declare
   v_state jsonb;
   v_definition uuid;
   v_cell jsonb;
+  v_board jsonb;
+  v_instance uuid;
   v_failed boolean;
 begin
   -- Without an event: no target, and no limit of seals (21 on the first card, made up here).
@@ -111,6 +113,7 @@ begin
   assert (v_state ->> 'seal_target')::integer = 3, 'target in the payload';
   assert (public.match_round_context(v_a, v_match) -> 'match' ->> 'quadrant_seal_target')::integer = 3, 'target for the Edge Function';
 
+  -- Move 1: the bot opens with its 3 free seals (made up here). It has the target, but the round is not over.
   v_definition := (select h.definition_id from public.quadrant_hand(v_match, 'b') h order by h.ord limit 1);
   v_cell := jsonb_build_object(
     'x', 1, 'y', 1, 'side', 'b', 'definition_id', v_definition, 'instance_id', null,
@@ -119,15 +122,36 @@ begin
   begin perform public.match_record_quadrant_move(v_match, 1,
     jsonb_build_object('card_instance_id', null, 'definition_id', v_definition, 'x', 1, 'y', 1, 'rotation', 0,
       'beaten', 0, 'placed', 3, 'removed', 0, 'auto_played', false),
-    jsonb_build_array(v_cell), null);
+    jsonb_build_array(v_cell), 'b');
   exception when others then v_failed := sqlerrm = 'result_mismatch'; end;
-  assert v_failed, 'a match past its target went on';
+  assert v_failed, 'the match ended before the end of the round';
   perform public.match_record_quadrant_move(v_match, 1,
     jsonb_build_object('card_instance_id', null, 'definition_id', v_definition, 'x', 1, 'y', 1, 'rotation', 0,
       'beaten', 0, 'placed', 3, 'removed', 0, 'auto_played', false),
-    jsonb_build_array(v_cell), 'b');
+    jsonb_build_array(v_cell), null);
+  assert (select status from public.matches where id = v_match) = 'active', 'the round goes on';
+
+  -- Move 2: the player's card next to it, no seals. The round is over and the bot has more: it wins.
+  select h.definition_id, h.instance_id into v_definition, v_instance
+  from public.quadrant_hand(v_match, 'a') h order by h.ord limit 1;
+  v_board := jsonb_build_array(v_cell, jsonb_build_object(
+    'x', 2, 'y', 1, 'side', 'a', 'definition_id', v_definition, 'instance_id', v_instance,
+    'values', to_jsonb(public.quadrant_values(v_definition, v_row.quadrant_abilities, 0)), 'seals_a', 0, 'seals_b', 0));
+  -- The timer ran out: the server plays the player's move (auto_played).
+  update public.match_rounds set deadline_at = now() - interval '1 minute' where match_id = v_match and round = 2;
+  v_failed := false;
+  begin perform public.match_record_quadrant_move(v_match, 2,
+    jsonb_build_object('card_instance_id', v_instance, 'definition_id', v_definition, 'x', 2, 'y', 1, 'rotation', 0,
+      'beaten', 0, 'placed', 0, 'removed', 0, 'auto_played', true),
+    v_board, null);
+  exception when others then v_failed := sqlerrm = 'result_mismatch'; end;
+  assert v_failed, 'a match past its target went on';
+  perform public.match_record_quadrant_move(v_match, 2,
+    jsonb_build_object('card_instance_id', v_instance, 'definition_id', v_definition, 'x', 2, 'y', 1, 'rotation', 0,
+      'beaten', 0, 'placed', 0, 'removed', 0, 'auto_played', true),
+    v_board, 'b');
   select * into v_row from public.matches where id = v_match;
-  assert v_row.status = 'finished' and v_row.result = 'b' and v_row.end_reason = 'completed', 'the bot reached the target and won';
+  assert v_row.status = 'finished' and v_row.result = 'b' and v_row.end_reason = 'completed', 'the bot had more seals at the target';
   assert (public.match_state_payload(v_match, 'a') ->> 'result') = 'loss', 'final payload';
 end $$;
 

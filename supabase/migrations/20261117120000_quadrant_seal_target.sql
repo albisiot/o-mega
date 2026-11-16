@@ -1,6 +1,8 @@
 -- Quadrante (SPEC §5.14): seals have no limit any more, on either grid; and an event
--- (SPEC §8.2) may set a seal target: in every Quadrante created while it runs, the
--- first side with that many seals on the grid wins at once. The admin chooses the
+-- (SPEC §8.2) may set a seal target: in every Quadrante created while it runs, the match
+-- ends at the end of the first round (both sides played as many cards) in which a side
+-- has that many seals on the grid, and the usual order decides (more seals first). The
+-- check at the end of a round keeps the race fair for the side that plays second. The admin chooses the
 -- target in the event editor, between quadrant.seal_target.min and .max; like the other
 -- rules of an event it does not change once the event started.
 --
@@ -58,7 +60,7 @@ create trigger matches_quadrant_seal_target
 -- bot); that the old cells are untouched but for their seals and the new one carries
 -- the card's sides; that the mover's seals only grew, by `placed`, and the other
 -- side's only shrank, by `removed` (seals have no limit); and the result: after the
--- last move, or as soon as the mover reaches the seal target of the match.
+-- last move, or at the end of a round (an even move) in which a side has the seal target.
 create or replace function public.match_record_quadrant_move(
   p_match_id uuid,
   p_move integer,
@@ -221,12 +223,10 @@ begin
       points_b = public.quadrant_seals(p_board, 'b')
   where id = p_match_id;
 
-  -- Only the mover gains seals: only the mover can reach the target, and then wins.
-  v_finished := p_move >= v_moves or (v_target is not null and public.quadrant_seals(p_board, v_side) >= v_target);
-  v_result := case
-    when v_target is not null and public.quadrant_seals(p_board, v_side) >= v_target then v_side
-    when v_finished then public.quadrant_result_of(p_board, v_match.quadrant_first)
-  end;
+  v_finished := p_move >= v_moves
+    or (v_target is not null and p_move % 2 = 0
+        and greatest(public.quadrant_seals(p_board, 'a'), public.quadrant_seals(p_board, 'b')) >= v_target);
+  v_result := case when v_finished then public.quadrant_result_of(p_board, v_match.quadrant_first) end;
   if v_result is distinct from p_result then
     raise exception 'result_mismatch';
   end if;

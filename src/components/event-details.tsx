@@ -82,7 +82,8 @@ export function EventDetails({ event, now, abilities }: { event: GameEvent; now:
         )}
         {event.quadrant_seal_target ? (
           <p className="mt-1 border-l-4 border-comic-magenta bg-panel px-2.5 py-1 text-[13px] font-bold leading-4">
-            Quadrante: vince subito chi arriva per primo a {event.quadrant_seal_target} Sigilli sulla griglia.
+            Quadrante: traguardo {event.quadrant_seal_target} Sigilli. A fine giro, se qualcuno ce li ha sulla griglia, vince chi ne ha
+            di più, anche prima dell&apos;ultima carta.
           </p>
         ) : null}
       </section>

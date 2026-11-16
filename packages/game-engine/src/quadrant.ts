@@ -9,8 +9,9 @@
 // a beaten card in turn beats one of its other neighbours, one opposing seal is removed
 // from that neighbour (the ripple). Seals have no limit. After eight cards each, the side
 // with more seals on the grid wins; then the one that controls more cards; then the side
-// that played second. During an event with a seal target, the first side to have that
-// many seals on the grid wins at once.
+// that played second. During an event with a seal target, the match also ends at the end
+// of a round (both sides played the same number of cards) in which a side has that many
+// seals on the grid: then the same order decides, more seals first.
 //
 // Two grids: "fixed", whose borders are there from the start, and "shifting", which has
 // no borders until the cards span four columns (left and right freeze) or four rows (top
@@ -44,7 +45,10 @@ export type QuadrantRules = {
   borderThreats?: readonly number[] | null;
   /** Seals fewer on the card for every border threat it does not beat (strictly lower side). */
   borderBite?: number;
-  /** Events: the side that first has this many seals on the grid wins the match at once. */
+  /**
+   * Events: the match ends at the end of the first round (both sides played as many cards)
+   * in which a side has this many seals on the grid; more seals win, as at the end.
+   */
   sealTarget?: number | null;
 };
 
@@ -149,21 +153,21 @@ export function quadrantSideOfMove(state: Pick<QuadrantState, "first">, move: nu
   return move % 2 === 1 ? state.first : otherSide(state.first);
 }
 
-/** The side that reached the seal target on this grid; null without a target or before it. */
-export function quadrantTargetReached(board: QuadrantBoard, rules: Pick<QuadrantRules, "sealTarget">): Side | null {
-  if (!rules.sealTarget) return null;
+/** Whether a side has the seal target on this grid; false without a target. */
+export function quadrantTargetReached(board: QuadrantBoard, rules: Pick<QuadrantRules, "sealTarget">): boolean {
+  if (!rules.sealTarget) return false;
   const seals = quadrantSealsOnBoard(board);
-  // Only the side that moves gains seals, so two sides never reach it on the same move.
-  if (seals.a >= rules.sealTarget && seals.a >= seals.b) return "a";
-  if (seals.b >= rules.sealTarget) return "b";
-  return null;
+  return Math.max(seals.a, seals.b) >= rules.sealTarget;
 }
 
-/** After the last move, or as soon as a side reaches the seal target. */
+/**
+ * After the last move; with a seal target, also at the end of a round (an even number of
+ * moves, so both sides played as many cards) in which a side has the target.
+ */
 export function isQuadrantFinished(state: QuadrantState, board?: QuadrantBoard): boolean {
   if (state.moves.length >= quadrantMoveCount(state.rules)) return true;
-  if (!state.rules.sealTarget || state.moves.length === 0) return false;
-  return quadrantTargetReached(board ?? quadrantBoard(state), state.rules) !== null;
+  if (!state.rules.sealTarget || state.moves.length === 0 || state.moves.length % 2 !== 0) return false;
+  return quadrantTargetReached(board ?? quadrantBoard(state), state.rules);
 }
 
 /** The side whose turn it is; null once the match is over. */
@@ -489,12 +493,10 @@ export function autoQuadrantPlacement(state: QuadrantState, side: Side, rng: Rng
 // ---------------------------------------------------------------------------
 
 /**
- * The side that reached the seal target; otherwise more seals on the grid, then more
- * cards controlled, then the side that played second.
+ * More seals on the grid; then more cards controlled; then the side that played second.
+ * The same when the match ends at a seal target.
  */
-export function quadrantResultOf(board: QuadrantBoard, first: Side, sealTarget?: number | null): MatchResult {
-  const reached = quadrantTargetReached(board, { sealTarget });
-  if (reached) return reached;
+export function quadrantResultOf(board: QuadrantBoard, first: Side): MatchResult {
   const seals = quadrantSealsOnBoard(board);
   if (seals.a !== seals.b) return seals.a > seals.b ? "a" : "b";
   const controlled = quadrantControlled(board);
@@ -503,7 +505,7 @@ export function quadrantResultOf(board: QuadrantBoard, first: Side, sealTarget?:
 }
 
 export function quadrantResult(state: QuadrantState, board: QuadrantBoard = quadrantBoard(state)): MatchResult | null {
-  return isQuadrantFinished(state, board) ? quadrantResultOf(board, state.first, state.rules.sealTarget) : null;
+  return isQuadrantFinished(state, board) ? quadrantResultOf(board, state.first) : null;
 }
 
 /**

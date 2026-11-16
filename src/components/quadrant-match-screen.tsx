@@ -558,7 +558,7 @@ function PlayArea({
           <div className="min-w-0">
             <p className="text-xs font-extrabold">
               Mossa {Math.min(view.move, view.moves_count)} di {view.moves_count}
-              {view.seal_target && ` · vince chi arriva a ${view.seal_target}`}
+              {view.seal_target && ` · traguardo ${view.seal_target}`}
               {view.variant === "shifting" && ` · ${frozen.columns ? "colonne bloccate" : "colonne libere"}, ${frozen.rows ? "righe bloccate" : "righe libere"}`}
             </p>
             <p className="font-display text-[20px] uppercase leading-6">{status}</p>
@@ -1218,8 +1218,9 @@ function RulesText({ view }: { view: QuadrantView }) {
       </p>
       {view.seal_target && (
         <p>
-          Regola dell&apos;evento: vince subito chi arriva per primo a {view.seal_target} Sigilli sulla griglia, anche prima della
-          fine.
+          Regola dell&apos;evento: traguardo {view.seal_target} Sigilli. Alla fine di ogni giro, quando avete giocato lo stesso
+          numero di carte, se qualcuno ha almeno {view.seal_target} Sigilli sulla griglia la partita finisce e vince chi ne ha di
+          più, anche prima dell&apos;ultima carta.
         </p>
       )}
       {view.border_threats?.length === 4 && (
@@ -1262,7 +1263,10 @@ function QuadrantTutorial({ view, onClose }: { view: QuadrantView; onClose: () =
             Onda d&apos;urto: se la carta che batti a sua volta batte una sua vicina, a quella vicina togli un Sigillo avversario.
           </li>
           {view.seal_target && (
-            <li>Regola dell&apos;evento: chi arriva per primo a {view.seal_target} Sigilli sulla griglia vince subito.</li>
+            <li>
+              Regola dell&apos;evento: quando avete giocato lo stesso numero di carte, se qualcuno ha {view.seal_target} Sigilli o più
+              la partita finisce e vince chi ne ha di più.
+            </li>
           )}
           {view.border_threats?.length === 4 && (
             <li>
@@ -1292,12 +1296,10 @@ function QuadrantResult({ view, rival }: { view: QuadrantView; rival: string }) 
   const eventPoints = useEventPointsFor(view.id);
   const chip = "relative -skew-x-8 px-3 py-1 text-sm font-extrabold";
   const tied = view.seals.me === view.seals.opponent;
-  // An event's seal target, reached before the last move.
+  // An event's seal target, reached at the end of a round.
   const reachedTarget =
     view.end_reason === "completed" && view.seal_target && Math.max(view.seals.me, view.seals.opponent) >= view.seal_target
-      ? view.seals.me >= view.seal_target
-        ? `Hai raggiunto il traguardo dell'evento: ${view.seal_target} Sigilli.`
-        : `${rival} ha raggiunto il traguardo dell'evento: ${view.seal_target} Sigilli.`
+      ? `Traguardo dell'evento raggiunto (${view.seal_target} Sigilli): vince chi ne aveva di più a fine giro.`
       : null;
   const tieBreak = !tied
     ? null
@@ -1323,7 +1325,7 @@ function QuadrantResult({ view, rival }: { view: QuadrantView; rival: string }) 
           Sigilli {view.seals.me} – {view.seals.opponent}
         </p>
         {reachedTarget && <p className={`${chip} max-w-xs bg-white text-xs text-black`}>{reachedTarget}</p>}
-        {tieBreak && !reachedTarget && view.end_reason === "completed" && (
+        {tieBreak && view.end_reason === "completed" && (
           <p className={`${chip} max-w-xs bg-white text-xs text-black`}>{tieBreak}</p>
         )}
         <div className="relative flex flex-wrap justify-center gap-2">

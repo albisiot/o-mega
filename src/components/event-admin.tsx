@@ -547,7 +547,7 @@ function EventForm({
               {balance.events.sameOpponentWindowHours} ore.
             </p>
             <label className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)] items-center gap-1.5 text-sm font-bold">
-              Quadrante: vince chi arriva a
+              Quadrante: traguardo di Sigilli
               <input
                 type="number"
                 inputMode="numeric"
@@ -561,9 +561,10 @@ function EventForm({
               />
             </label>
             <p id="seal-target-help" className="text-xs font-medium leading-4 text-muted">
-              Sigilli sulla griglia, da {sealTarget.min} a {sealTarget.max}: in ogni Quadrante iniziato durante l&apos;evento, sulle
-              due griglie, chi li raggiunge per primo vince subito. Vuoto: si gioca fino all&apos;ultima carta. Di solito a fine partita
-              ognuno ne ha 10-14; con {sealTarget.suggested} la corsa si decide verso la fine.{" "}
+              Da {sealTarget.min} a {sealTarget.max}. In ogni Quadrante iniziato durante l&apos;evento, sulle due griglie, alla fine di
+              ogni giro (stesso numero di carte giocate) se qualcuno ha almeno quei Sigilli sulla griglia la partita finisce e vince chi
+              ne ha di più. Vuoto: si gioca fino all&apos;ultima carta. Con 12 finiscono prima circa 8 partite su 10 sulla griglia fissa
+              e 1 su 4 sulla mobile; con 15, 1 su 3 sulla fissa e quasi nessuna sulla mobile.{" "}
               {form.sealTarget.trim() === "" && (
                 <button type="button" onClick={() => update({ sealTarget: String(sealTarget.suggested) })} className="underline">
                   Usa {sealTarget.suggested}
@@ -797,7 +798,7 @@ function EventRow({
       <p className="text-xs font-medium text-muted">
         Dal {formatRomeDateTime(event.starts_at)} al {formatRomeDateTime(event.ends_at)}
         {event.daily_cap !== null && ` · max ${event.daily_cap} punti al giorno`}
-        {event.quadrant_seal_target ? ` · Quadrante: vince chi arriva a ${event.quadrant_seal_target} Sigilli` : ""}
+        {event.quadrant_seal_target ? ` · Quadrante: traguardo ${event.quadrant_seal_target} Sigilli` : ""}
       </p>
       <p className="text-xs font-semibold">{event.players === 1 ? "1 giocatore" : `${event.players} giocatori`} con punti</p>
       <ol className="flex flex-col gap-0.5 text-sm">

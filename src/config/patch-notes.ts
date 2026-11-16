@@ -3,7 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "17 novembre 2026",
     changes: [
-      "Quadrante: i Sigilli non hanno più un tetto. Prima ognuno ne aveva 15 (20 sulla griglia fissa) e, finiti quelli, le carte battute non ne ricevevano più; ora ogni lato che vince conta sempre. In più gli eventi possono avere una regola per il Quadrante: un traguardo di Sigilli. Durante quegli eventi vince subito chi arriva per primo, per esempio, a 12 Sigilli sulla griglia, anche prima dell'ultima carta. Il traguardo lo vedi nella pagina dell'evento e, in partita, accanto al numero della mossa.",
+      "Quadrante: i Sigilli non hanno più un tetto. Prima ognuno ne aveva 15 (20 sulla griglia fissa) e, finiti quelli, le carte battute non ne ricevevano più; ora ogni lato che vince conta sempre. In più gli eventi possono avere una regola per il Quadrante: un traguardo di Sigilli. Durante quegli eventi, alla fine di ogni giro (quando tu e l'avversario avete giocato lo stesso numero di carte), se qualcuno ha raggiunto il traguardo, per esempio 12 Sigilli sulla griglia, la partita finisce subito e vince chi ne ha di più. Si controlla a fine giro perché chi gioca per secondo abbia sempre la sua risposta. Il traguardo lo vedi nella pagina dell'evento e, in partita, accanto al numero della mossa.",
     ],
   },
   {
