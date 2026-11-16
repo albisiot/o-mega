@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { resolveEmergencyPlay, type AbilityFamilies, type EmergencyRules } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { EmergencyComic } from "@/components/emergency-comic";
@@ -12,6 +12,7 @@ import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { Sheet } from "@/components/sheet";
 import { TeamPicker } from "@/components/team-picker";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
 import { ThreatDiorama } from "@/components/threat-diorama";
@@ -19,7 +20,7 @@ import { knownLevels, levelText, rarityGlow, rarityTitle } from "@/lib/threat-ra
 import { abilityChips } from "@/lib/ability-marks";
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { balance } from "@/config/balance";
-import { prizeTableText } from "@/lib/emergency-prizes";
+import { prizeDayText, prizeTableText } from "@/lib/emergency-prizes";
 import { describeEventPoints } from "@/lib/events";
 import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
@@ -27,10 +28,13 @@ import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
 import {
   fetchEmergencyLeaderboard,
+  fetchEmergencyLineups,
   openEmergency,
   playEmergency,
   startEmergency,
   type EmergencyLeaderboard,
+  type EmergencyLineup,
+  type EmergencyLineups,
   type EmergencyPlay,
   type EmergencyRank,
   type EmergencyRun,
@@ -38,7 +42,7 @@ import {
 } from "@/lib/emergency";
 import { emergencyPowerNotes, type EmergencyNote } from "@/lib/emergency-powers";
 import { describeServerError } from "@/lib/errors";
-import { fetchInstanceDefinitions, fetchOwnedInstances, toCharacter, type VariantCopy } from "@/lib/match";
+import { fetchInstanceDefinitions, fetchOwnedInstances, toCharacter, type MatchCard, type VariantCopy } from "@/lib/match";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { emergencyBeforePlay, useRevealHold } from "@/lib/reveal-hold";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -657,6 +661,7 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
   const [tab, setTab] = useState<"day" | "board">("day");
   // Loaded once, whichever tab is open.
   const { board, failed } = useLeaderboard();
+  const lineups = useLineupSheet();
   const complete = run.passed === rules.threats_per_run;
   const cardOf = (instanceId: string) => run.squad.find((c) => c.instance_id === instanceId);
   const detail = useCardDetail();
@@ -721,26 +726,7 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
                     {...(card ? detail.press(card) : {})}
                     className={`flex h-9 items-center gap-2.5 bg-panel pr-3 text-[13px] font-semibold ${LONG_PRESS_CLASS}`}
                   >
-                    <span aria-hidden className="relative h-full w-8 shrink-0 overflow-hidden bg-panel-raised">
-                      {card?.art_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={withBasePath(thumbArtUrl(card.art_url))}
-                          alt=""
-                          loading="lazy"
-                          decoding="async"
-                          className="absolute inset-0 h-full w-full object-cover object-top"
-                        />
-                      ) : (
-                        card && (
-                          <Silhouette
-                            faction={card.faction}
-                            accent={card.rarity.color}
-                            className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2"
-                          />
-                        )
-                      )}
-                    </span>
+                    <CardThumb card={card} />
                     <span className="min-w-0 flex-1 truncate">
                       <span className="text-muted">{play.round}. </span>
                       {card?.name ?? "—"} <span className="text-muted">contro</span> {play.threat.name}
@@ -753,7 +739,7 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
               })}
             </ol>
           ) : (
-            <Podium board={board} failed={failed} />
+            <Podium board={board} failed={failed} lineups={lineups} />
           )}
         </div>
       </main>
@@ -796,13 +782,12 @@ function useLeaderboard() {
 }
 
 /** A place in the ranking, low enough for the lists that fit the screen; the title, when shown, goes under the name. */
-function RankRow({ entry }: { entry: EmergencyRank }) {
-  return (
-    <li
-      className={`flex h-9 shrink-0 items-center justify-between gap-2 px-3 text-sm font-semibold ${
-        entry.is_me ? "bg-comic-yellow text-black" : "bg-panel"
-      }`}
-    >
+function RankRow({ entry, onOpen }: { entry: EmergencyRank; onOpen?: () => void }) {
+  const look = `flex h-9 w-full shrink-0 items-center justify-between gap-2 px-3 text-left text-sm font-semibold ${
+    entry.is_me ? "bg-comic-yellow text-black" : "bg-panel"
+  }`;
+  const content = (
+    <>
       <span className="flex min-w-0 items-center gap-2">
         <span className="w-6 shrink-0 font-display text-lg">{entry.rank}</span>
         <PlayerAvatar username={entry.username} avatarUrl={entry.avatar_url} size="xs" />
@@ -819,18 +804,50 @@ function RankRow({ entry }: { entry: EmergencyRank }) {
           )}
         </span>
       </span>
-      <span className="shrink-0 font-display text-lg">
-        {entry.passed} <span className="font-sans text-xs font-semibold">· {entry.total_score} pt</span>
+      <span className="flex shrink-0 items-center gap-1.5">
+        <span className="font-display text-lg">
+          {entry.passed} <span className="font-sans text-xs font-semibold">· {entry.total_score} pt</span>
+        </span>
+        {onOpen && <SquadIcon />}
       </span>
+    </>
+  );
+
+  if (!onOpen) return <li className={look}>{content}</li>;
+  return (
+    <li className="shrink-0">
+      <button type="button" onClick={onOpen} aria-label={`Formazione di ${entry.username}, ${entry.rank}°`} className={look}>
+        {content}
+      </button>
     </li>
+  );
+}
+
+/** Three small cards: this row opens a lineup. */
+function SquadIcon() {
+  return (
+    <svg viewBox="0 0 20 16" className="h-4 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden>
+      <rect x="1" y="3" width="6" height="10" rx="1" transform="rotate(-10 4 8)" />
+      <rect x="7" y="2" width="6" height="10" rx="1" />
+      <rect x="13" y="3" width="6" height="10" rx="1" transform="rotate(10 16 8)" />
+    </svg>
   );
 }
 
 /**
  * The day's first players (balance.emergency.leaderboardSize, cut by the server) and,
- * when lower down, the player's own place under them.
+ * when lower down, the player's own place under them. The places with a lineup to see open it.
  */
-function RankList({ board }: { board: EmergencyLeaderboard }) {
+function RankList({
+  board,
+  openable = [],
+  onOpen,
+}: {
+  board: EmergencyLeaderboard;
+  /** The places whose lineup can be opened. */
+  openable?: number[];
+  onOpen?: (rank: number) => void;
+}) {
   const me = board.me ?? board.top.find((entry) => entry.is_me) ?? null;
   const meBelow = me && !board.top.some((entry) => entry.is_me) ? me : null;
 
@@ -838,7 +855,11 @@ function RankList({ board }: { board: EmergencyLeaderboard }) {
     <>
       <ol className="flex flex-col gap-0.5">
         {board.top.map((entry) => (
-          <RankRow key={entry.rank} entry={entry} />
+          <RankRow
+            key={entry.rank}
+            entry={entry}
+            onOpen={onOpen && openable.includes(entry.rank) ? () => onOpen(entry.rank) : undefined}
+          />
         ))}
       </ol>
       {meBelow && (
@@ -857,15 +878,30 @@ function RankList({ board }: { board: EmergencyLeaderboard }) {
   );
 }
 
-/** Before the attempt: today's ranking as it stands, scrolling in the room it gets. */
+/** Before the attempt: today's ranking as it stands, scrolling in the room it gets, and yesterday's podium lineups. */
 function Leaderboard() {
   const { board, failed } = useLeaderboard();
+  const lineups = useLineupSheet();
+  // Before one's own attempt only yesterday's lineups: today's would give the best team away.
+  const yesterday = lineups.data && !lineups.data.live && lineups.data.lineups.length > 0;
 
   if (failed) return null;
 
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-1">
-      <h2 className="section-title">Classifica di oggi</h2>
+      <div className="flex shrink-0 items-baseline justify-between gap-2">
+        <h2 className="section-title">Classifica di oggi</h2>
+        {yesterday && (
+          <button
+            type="button"
+            onClick={() => lineups.open(1)}
+            className="flex min-h-11 shrink-0 items-center gap-1.5 text-xs font-extrabold uppercase text-comic-yellow underline"
+          >
+            <SquadIcon />
+            Podio di ieri
+          </button>
+        )}
+      </div>
       {board && board.top.length === 0 && (
         <p className="text-sm font-medium text-muted">Nessuno ha ancora finito: puoi essere il primo.</p>
       )}
@@ -875,26 +911,161 @@ function Leaderboard() {
         </div>
       )}
       {board && <PrizeLine board={board} />}
+      {lineups.sheet}
     </section>
   );
 }
 
-/** After the attempt: the day's first players and, when lower down, the player's own place. */
-function Podium({ board, failed }: { board: EmergencyLeaderboard | null; failed: boolean }) {
+/** After the attempt: the day's first players and, when lower down, the player's own place; the podium opens its lineups. */
+function Podium({
+  board,
+  failed,
+  lineups,
+}: {
+  board: EmergencyLeaderboard | null;
+  failed: boolean;
+  lineups: LineupSheet;
+}) {
   if (failed) return <p className="text-sm font-medium text-muted">La classifica non è disponibile ora.</p>;
   if (!board) return null;
   if (board.top.length === 0) {
     return <p className="text-sm font-medium text-muted">Nessuno ha ancora finito: puoi essere il primo.</p>;
   }
+  const live = lineups.data?.live ? lineups.data.lineups.map((lineup) => lineup.rank) : [];
 
   return (
     <div className="flex flex-col gap-0.5">
-      <RankList board={board} />
+      {live.length > 0 && (
+        <p className="text-center text-[11px] font-semibold leading-4 text-muted">
+          Tocca {live.length === 1 ? "il primo" : `uno dei primi ${live.length}`} per vedere la formazione.
+        </p>
+      )}
+      <RankList board={board} openable={live} onOpen={lineups.open} />
       <p className="mt-1 text-center text-xs font-semibold text-muted">
         {board.players === 1 ? "1 giocatore oggi" : `${board.players} giocatori oggi`}
       </p>
       <PrizeLine board={board} />
+      {lineups.sheet}
     </div>
+  );
+}
+
+type LineupSheet = { data: EmergencyLineups | null; open: (rank: number) => void; sheet: ReactNode };
+
+/**
+ * The podium's lineups (SPEC §5.10), loaded once, in a sheet that opens on one of them:
+ * today's once the player's attempt is finished, yesterday's before.
+ */
+function useLineupSheet(): LineupSheet {
+  const [data, setData] = useState<EmergencyLineups | null>(null);
+  const [focus, setFocus] = useState<number | null>(null);
+  const sheetRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchEmergencyLineups()
+      .then((result) => {
+        if (!cancelled) setData(result);
+      })
+      .catch((cause: unknown) => console.error("Lineups failed", cause));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (focus !== null) document.getElementById(`emergency-lineup-${focus}`)?.scrollIntoView({ block: "start" });
+  }, [focus]);
+
+  const open = (rank: number) => {
+    sheetRef.current?.showModal();
+    setFocus(rank);
+  };
+
+  const sheet =
+    data && data.lineups.length > 0 ? (
+      <Sheet sheetRef={sheetRef} title={data.live ? "Formazioni di oggi" : "Il podio di ieri"} onClose={() => setFocus(null)}>
+        <p className="text-xs font-semibold leading-4 text-muted">
+          {data.live
+            ? "Le squadre dei primi di oggi, nell'ordine in cui hanno giocato."
+            : `Le squadre dei primi di ${prizeDayText(data.day)}. Quelle di oggi le vedi dopo il tuo tentativo.`}{" "}
+          Tieni premuta una carta per i dettagli.
+        </p>
+        {data.lineups.map((lineup) => (
+          <LineupSection key={lineup.rank} lineup={lineup} />
+        ))}
+      </Sheet>
+    ) : null;
+
+  return { data, open, sheet };
+}
+
+/** One podium place: who, how far, and the eight cards as they were played. */
+function LineupSection({ lineup }: { lineup: EmergencyLineup }) {
+  const detail = useCardDetail();
+  return (
+    <section id={`emergency-lineup-${lineup.rank}`} aria-label={`${lineup.rank}° ${lineup.username}`} className="flex scroll-mt-16 flex-col gap-0.5">
+      <ol start={lineup.rank}>
+        <RankRow entry={lineup} />
+      </ol>
+      <ol className="flex flex-col gap-0.5">
+        {lineup.cards.map((card) => (
+          <li
+            key={card.instance_id}
+            {...detail.press(card)}
+            className={`flex h-9 items-center gap-2.5 bg-panel-raised pr-3 text-[13px] font-semibold ${LONG_PRESS_CLASS}`}
+          >
+            <CardThumb card={card} />
+            <span className="min-w-0 flex-1 truncate">
+              {card.play ? (
+                <>
+                  <span className="text-muted">{card.play.round}. </span>
+                  {card.name} <span className="text-muted">contro</span> {card.play.threat}
+                </>
+              ) : (
+                <>
+                  {card.name} <span className="text-muted">· non giocato</span>
+                </>
+              )}
+            </span>
+            {card.variant && (
+              <span className="shrink-0 bg-black px-1 text-[10px] font-extrabold uppercase text-comic-yellow">{card.variant.name}</span>
+            )}
+            {card.play && (
+              <span className={`shrink-0 font-display text-lg ${card.play.passed ? "text-comic-cyan" : "text-comic-magenta"}`}>
+                {card.play.score}/{card.play.required}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+/** A card's art, cropped to its face, at the start of a list row. */
+function CardThumb({ card }: { card: Pick<MatchCard, "art_url" | "faction" | "rarity"> | undefined }) {
+  return (
+    <span aria-hidden className="relative h-full w-8 shrink-0 overflow-hidden bg-panel-raised">
+      {card?.art_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={withBasePath(thumbArtUrl(card.art_url))}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover object-top"
+        />
+      ) : (
+        card && (
+          <Silhouette
+            faction={card.faction}
+            accent={card.rarity.color}
+            className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2"
+          />
+        )
+      )}
+    </span>
   );
 }
 

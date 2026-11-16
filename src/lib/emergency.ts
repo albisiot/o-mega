@@ -106,6 +106,26 @@ export type EmergencyLeaderboard = {
   prize_min_passed?: number;
 };
 
+/** A card of a podium lineup, drawn as it was played; `play` is null for a card the run never reached. */
+export type EmergencyLineupCard = MatchCard & {
+  instance_id: string;
+  play: { round: number; threat: string; score: number; required: number; passed: boolean } | null;
+};
+
+export type EmergencyLineup = Omit<EmergencyRank, "rank"> & { rank: number; cards: EmergencyLineupCard[] };
+
+/**
+ * The lineups of a day's podium (SPEC §5.10): today's when the player's own attempt is
+ * finished (`live`), yesterday's otherwise, since the threats are the same for everyone.
+ */
+export type EmergencyLineups = { day: string; live: boolean; lineups: EmergencyLineup[] };
+
+export async function fetchEmergencyLineups(): Promise<EmergencyLineups> {
+  const { data, error } = await getSupabase().rpc("get_emergency_lineups");
+  if (error) throw error;
+  return data as unknown as EmergencyLineups;
+}
+
 export async function fetchEmergencyLeaderboard(): Promise<EmergencyLeaderboard> {
   const { data, error } = await getSupabase().rpc("get_emergency_leaderboard");
   if (error) throw error;
