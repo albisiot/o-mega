@@ -57,7 +57,7 @@ export const SAMPLE_CARD: CardData = {
   flavor: "",
   stats: { FOR: 3, VEL: 4, RES: 10, INT: 2, VOL: 7, PER: 3, ENE: 2, MAG: 4, PSI: 6, COM: 8, TEC: 5, FUR: 1 },
   rarity: GAMMA,
-  power: { name: "Ultimo baluardo", text: "+3 se giocato dal round 5 in poi" },
+  power: { name: "Ultimo baluardo", text: "+3 se giocato nel round 5" },
   art_url: "/cards/P025.webp",
 };
 
