@@ -74,7 +74,7 @@ import { knownLevels, levelText, rarityGlow, rarityTitle } from "@/lib/threat-ra
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
-import { useNow, useSecondsLeft } from "@/lib/use-now";
+import { useExpiry, useNow, useSecondsLeft } from "@/lib/use-now";
 
 type TeamCard = MatchView["my_team"][number];
 
@@ -179,7 +179,8 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
         // Someone (the timer, another tab) was faster: reload the state.
         if (cause instanceof Error && ["round_already_resolved", "match_not_active"].includes(cause.message)) {
           apply(await fetchMatchState(view.id));
-        } else {
+        } else if (!(choice === null && cause instanceof Error && cause.message === "round_not_expired")) {
+          // (Time not up yet by the server's clock: the timer asks again in a moment.)
           setError(describeServerError(cause));
         }
       } finally {
@@ -258,12 +259,7 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
 
   // When the time is up (plus the server's grace), let the server play for us.
   const round = current?.round;
-  useEffect(() => {
-    if (round === undefined || deadline === null) return;
-    const delay = deadline + (balance.match.timeoutGraceSeconds + 0.5) * 1000 - (Date.now() + offset);
-    const timer = setTimeout(() => submit(round, null), Math.max(0, delay));
-    return () => clearTimeout(timer);
-  }, [round, deadline, offset, submit]);
+  useExpiry(round, deadline, offset, () => (round === undefined ? undefined : submit(round, null)));
 
   // A round result stays on screen until its animation is over and there was time to read it,
   // then the next threat. The last one waits for a tap, unless the conquest pick follows: its

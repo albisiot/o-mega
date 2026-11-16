@@ -39,7 +39,7 @@ import {
 } from "@/lib/quadrant";
 import { useCardDrag } from "@/lib/use-card-drag";
 import { useLockedScreen } from "@/lib/use-locked-screen";
-import { useNow, useSecondsLeft } from "@/lib/use-now";
+import { useExpiry, useNow, useSecondsLeft } from "@/lib/use-now";
 
 // Against a player: the same pace as the other matches (see match-screen.tsx).
 const PING_MS = 6_000;
@@ -136,7 +136,6 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
     if (next.move !== before.move || next.status !== before.status) setDraft(null);
     shown.current = next;
     setView(next);
-    setOffset(Date.parse(next.server_now) - Date.now());
     return seconds;
   }, []);
 
@@ -146,6 +145,9 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
    */
   const apply = useCallback(
     async (next: QuadrantView, delayFirst = false) => {
+      // The server clock as the answer arrives: read after the bot's "thinking" pauses, it ran
+      // seconds late, and so did the countdown and the move at random.
+      setOffset(Date.parse(next.server_now) - Date.now());
       const steps = [...(next.previous ?? []), next];
       // The bot waits for the effects of the move before it, then "thinks" a moment.
       let wait = BOT_THINK_MS;
@@ -192,7 +194,8 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
           await apply(await fetchQuadrant(view.id));
         } else if (cause instanceof Error && cause.message === "invalid_placement") {
           setError("Mossa non valida: scegli una carta della mano e una casella libera accanto a una carta.");
-        } else {
+        } else if (!(placement === null && cause instanceof Error && cause.message === "round_not_expired")) {
+          // (Time not up yet by the server's clock: the timer asks again in a moment.)
           setError(describeServerError(cause));
         }
       } finally {
@@ -259,13 +262,7 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
   // When the time is up (plus the server's grace), let the server play the move: ours at
   // random, or the opponent's when it does not answer.
   const move = view.move;
-  useEffect(() => {
-    if (!isActive || deadline === null) return;
-    if (isBot && !myTurn) return;
-    const delay = deadline + (balance.match.timeoutGraceSeconds + 0.5) * 1000 - (Date.now() + offset);
-    const timer = setTimeout(() => send(move, null), Math.max(0, delay));
-    return () => clearTimeout(timer);
-  }, [isActive, isBot, myTurn, move, deadline, offset, send]);
+  useExpiry(isActive && (myTurn || !isBot) ? move : undefined, deadline, offset, () => send(move, null));
 
   // The result appears after a moment on the full grid, or at once with a tap.
   useEffect(() => {

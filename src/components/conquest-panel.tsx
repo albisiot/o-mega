@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useCardDetail } from "@/components/card-detail";
 import { CardView } from "@/components/card-view";
 import { CardZoom, MAGNIFIER, PrizeCard, ZoomHint } from "@/components/card-zoom";
@@ -10,7 +10,7 @@ import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
 import { claimConquestCard, type ConquestState, type MatchView } from "@/lib/match";
 import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
-import { useSecondsLeft } from "@/lib/use-now";
+import { useExpiry, useSecondsLeft } from "@/lib/use-now";
 
 type ConquestProps = {
   matchId: string;
@@ -30,17 +30,12 @@ function useConquestDeadline(
   onUpdate: (next: MatchView) => void,
 ): number {
   const deadline = Date.parse(conquest.deadline_at);
-  const resolved = conquest.resolved;
-  useEffect(() => {
-    if (resolved) return;
-    const delay = deadline + (balance.match.timeoutGraceSeconds + 0.5) * 1000 - (Date.now() + offset);
-    const timer = setTimeout(() => {
-      claimConquestCard(matchId, null)
-        .then(onUpdate)
-        .catch((cause: unknown) => console.error("Settling the pick failed", cause));
-    }, Math.max(0, delay));
-    return () => clearTimeout(timer);
-  }, [resolved, deadline, offset, matchId, onUpdate]);
+  // Asked again a moment later while the pick stays open (a failed request, clocks apart).
+  useExpiry(conquest.resolved ? undefined : matchId, deadline, offset, () =>
+    claimConquestCard(matchId, null)
+      .then(onUpdate)
+      .catch((cause: unknown) => console.error("Settling the pick failed", cause)),
+  );
   return deadline;
 }
 

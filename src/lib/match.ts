@@ -130,15 +130,24 @@ export type ConquestState = {
 
 // The latest state of each match seen in this session, so navigating to the
 // match page right after starting it needs no extra request.
-const views = new Map<string, MatchView>();
+const views = new Map<string, { view: MatchView; at: number }>();
 
+/**
+ * The state last seen, with its server clock moved on by the time since: the screens read
+ * their clock offset from `server_now`, and a state kept since minutes ago would otherwise
+ * set every countdown minutes late.
+ */
 export function cachedMatchView(id: string): MatchView | null {
-  return views.get(id) ?? null;
+  const kept = views.get(id);
+  if (!kept) return null;
+  const serverNow = Date.parse(kept.view.server_now);
+  if (Number.isNaN(serverNow)) return kept.view;
+  return { ...kept.view, server_now: new Date(serverNow + Date.now() - kept.at).toISOString() };
 }
 
 /** Keeps a match state, of either format, for the match page to open without a request. */
 export function remember<T extends { id: string }>(view: T): T {
-  views.set(view.id, view as unknown as MatchView);
+  views.set(view.id, { view: view as unknown as MatchView, at: Date.now() });
   return view;
 }
 

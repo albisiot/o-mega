@@ -416,8 +416,11 @@ function ChoosePhase({
     try {
       onPlayed(await playEmergency(threat.round, chosen.instance_id));
     } catch (cause) {
-      // Another tab or device was faster: reload the state.
-      if (cause instanceof Error && ["round_already_resolved", "emergency_already_played"].includes(cause.message)) {
+      // Another tab or device was faster, or midnight (Europe/Rome) started a new day: reload the state.
+      if (
+        cause instanceof Error &&
+        ["round_already_resolved", "emergency_already_played", "emergency_not_started"].includes(cause.message)
+      ) {
         onStale(await openEmergency());
       } else {
         setError(describeServerError(cause));

@@ -46,7 +46,7 @@ import { artSrcSet } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { useCardDrag } from "@/lib/use-card-drag";
 import { useLockedScreen } from "@/lib/use-locked-screen";
-import { useNow, useSecondsLeft } from "@/lib/use-now";
+import { useExpiry, useNow, useSecondsLeft } from "@/lib/use-now";
 
 // Against a player: the same pace as the other matches (see match-screen.tsx).
 const PING_MS = 6_000;
@@ -143,7 +143,8 @@ function TripleSteps({ initial }: { initial: TripleView }) {
         // Someone (the timer, another tab) was faster: reload the state.
         if (cause instanceof Error && ["round_already_resolved", "match_not_active"].includes(cause.message)) {
           apply(await fetchTriple(view.id));
-        } else {
+        } else if (!(cards === null && cause instanceof Error && cause.message === "round_not_expired")) {
+          // (Time not up yet by the server's clock: the timer asks again in a moment.)
           setError(describeServerError(cause));
         }
       } finally {
@@ -218,12 +219,7 @@ function TripleSteps({ initial }: { initial: TripleView }) {
 
   // When the time is up (plus the server's grace), let the server place for us.
   const round = current?.round;
-  useEffect(() => {
-    if (round === undefined || deadline === null) return;
-    const delay = deadline + (balance.match.timeoutGraceSeconds + 0.5) * 1000 - (Date.now() + offset);
-    const timer = setTimeout(() => submit(round, null), Math.max(0, delay));
-    return () => clearTimeout(timer);
-  }, [round, deadline, offset, submit]);
+  useExpiry(round, deadline, offset, () => (round === undefined ? undefined : submit(round, null)));
 
   // A round result (a comic page per threat, then the recap) stays until the recap has landed
   // and there was time to read it; the last one waits for a tap.
