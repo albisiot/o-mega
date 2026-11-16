@@ -38,6 +38,12 @@ begin
   perform set_config('test.narrow_faction', (
     select f from unnest(array['heroes', 'villains', 'neutrals']) f
     order by public.event_admitted_count('{}', array['omega'], array[f]), f limit 1), false);
+  perform set_config('test.description',
+    public.event_admitted_description('{}', array[v_rarity], array[v_faction])::text, false);
+  perform set_config('test.narrow_too_few', (
+    public.event_admitted_count('{}', array['omega'], array[current_setting('test.narrow_faction')])
+      < public.config_int('events.min_admitted_characters')
+  )::text, false);
 end $$;
 
 -- No other event in the way of the one this test runs.
@@ -123,8 +129,7 @@ begin
       (array['omega'], array[current_setting('test.narrow_faction')])
     ) as t(rarities, factions)
   loop
-    if v_case.rarities = array['omega']
-       and public.event_admitted_count('{}', v_case.rarities, v_case.factions) >= public.config_int('events.min_admitted_characters') then
+    if v_case.rarities = array['omega'] and not current_setting('test.narrow_too_few')::boolean then
       continue;
     end if;
     begin
@@ -182,7 +187,7 @@ declare
   v_event jsonb := public.get_event() -> 'event';
 begin
   assert v_event ->> 'title' = 'Solo rarità', 'running event';
-  assert v_event -> 'admitted' = public.event_admitted_description('{}', array[current_setting('test.rarity')], array[current_setting('test.faction')])
+  assert v_event -> 'admitted' = current_setting('test.description')::jsonb
     and jsonb_array_length(v_event -> 'admitted') = 2, format('admitted %s', v_event -> 'admitted');
   assert (v_event ->> 'admitted_characters')::integer = current_setting('test.count')::integer, 'admitted characters';
 end $$;

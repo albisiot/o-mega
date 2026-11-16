@@ -1319,9 +1319,11 @@ export type Database = {
           daily_cap: number | null
           description: string
           ends_at: string
+          factions: string[]
           id: string
           is_active: boolean
           points: Json
+          rarities: string[]
           starts_at: string
           title: string
           traits: string[]
@@ -1332,9 +1334,11 @@ export type Database = {
           daily_cap?: number | null
           description?: string
           ends_at: string
+          factions?: string[]
           id?: string
           is_active?: boolean
           points: Json
+          rarities?: string[]
           starts_at: string
           title: string
           traits?: string[]
@@ -1345,9 +1349,11 @@ export type Database = {
           daily_cap?: number | null
           description?: string
           ends_at?: string
+          factions?: string[]
           id?: string
           is_active?: boolean
           points?: Json
+          rarities?: string[]
           starts_at?: string
           title?: string
           traits?: string[]
@@ -3141,12 +3147,12 @@ export type Database = {
           p_daily_cap?: number
           p_description: string
           p_ends_at: string
+          p_factions?: string[]
           p_id?: string
           p_points: Json
+          p_rarities?: string[]
           p_starts_at: string
           p_tiers: Json
-          p_factions?: string[]
-          p_rarities?: string[]
           p_title: string
           p_traits?: string[]
         }
@@ -3293,6 +3299,15 @@ export type Database = {
         Returns: Json
       }
       cancel_lobby: { Args: never; Returns: undefined }
+      card_admitted_by_event: {
+        Args: {
+          p_definition_id: string
+          p_factions: string[]
+          p_rarities: string[]
+          p_traits: string[]
+        }
+        Returns: boolean
+      }
       card_matches_traits: {
         Args: { p_definition_id: string; p_traits: string[] }
         Returns: boolean
@@ -3517,6 +3532,18 @@ export type Database = {
       emergency_state_payload: { Args: { p_user: string }; Returns: Json }
       emergency_state_payload_base: { Args: { p_user: string }; Returns: Json }
       ensure_daily_objectives: { Args: { p_user: string }; Returns: string }
+      event_admits_everyone: {
+        Args: { p_factions: string[]; p_rarities: string[]; p_traits: string[] }
+        Returns: boolean
+      }
+      event_admitted_count: {
+        Args: { p_factions: string[]; p_rarities: string[]; p_traits: string[] }
+        Returns: number
+      }
+      event_admitted_description: {
+        Args: { p_factions: string[]; p_rarities: string[]; p_traits: string[] }
+        Returns: Json
+      }
       event_payload: {
         Args: { p_event_id: string; p_user: string }
         Returns: Json
@@ -3530,10 +3557,20 @@ export type Database = {
         Args: { p_card_codes: string[] }
         Returns: Record<string, unknown>
       }
-      event_team_admitted: {
-        Args: { p_definition_ids: string[]; p_traits: string[] }
-        Returns: boolean
-      }
+      event_team_admitted:
+        | {
+            Args: { p_definition_ids: string[]; p_traits: string[] }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_definition_ids: string[]
+              p_factions: string[]
+              p_rarities: string[]
+              p_traits: string[]
+            }
+            Returns: boolean
+          }
       finish_match: {
         Args: { p_match_id: string; p_reason: string; p_result: string }
         Returns: undefined
