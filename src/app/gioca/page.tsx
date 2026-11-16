@@ -102,6 +102,11 @@ function StorySection({ disabled }: { disabled: boolean }) {
 
   return (
     <div className="flex flex-col gap-2">
+      {/* On top and as a button: at the bottom, among the chapters, it read as one more chapter. */}
+      <Link href={leaderboardHref("story")} className="btn btn-outline w-full">
+        <TrophyIcon />
+        {MODE_BOARDS.story.title}
+      </Link>
       <p className="text-sm font-medium text-muted">
         Missioni contro gli avversari di Nuova Megara, con squadre e Minacce preparate. La prima vittoria di ogni
         missione dà monete, e il boss di fine capitolo una carta.
@@ -381,16 +386,13 @@ const MODE_BOARDS: Record<ModeKey, { board: LeaderboardBoard; title: string }> =
   quadrant: { board: "quadrant", title: "Classifica di Quadrante" },
 };
 
-/** The way from an open mode to its leaderboard: always there, also with a match in progress. */
+/**
+ * The way from an open mode to its leaderboard, below its choices: always there, also with a
+ * match in progress. The Story has its own on top (StorySection).
+ */
 function LeaderboardRow({ mode }: { mode: ModeKey }) {
   const { board, title } = MODE_BOARDS[mode];
-  return (
-    <OptionRow
-      href={leaderboardHref(board)}
-      title={title}
-      detail={board === "story" ? "Chi ha completato più missioni" : "I primi della settimana e di sempre"}
-    />
-  );
+  return <OptionRow href={leaderboardHref(board)} title={title} detail="I primi della settimana e di sempre" />;
 }
 
 /** A small heading inside an open mode. */
@@ -601,7 +603,7 @@ export default function PlayPage() {
             {opened.key === "boss" && <BossSection disabled={blocked} />}
             {opened.key === "triple" && <TripleSection disabled={blocked} />}
             {opened.key === "quadrant" && <QuadrantSection disabled={blocked} />}
-            <LeaderboardRow mode={opened.key} />
+            {opened.key !== "story" && <LeaderboardRow mode={opened.key} />}
           </section>
         ) : (
           GROUPS.map((group) => (

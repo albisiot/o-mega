@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "16 novembre 2026",
+    changes: [
+      "Nella Storia la classifica ora sta in alto, nel pulsante con la coppa sopra i capitoli. In fondo all'elenco sembrava un capitolo in più.",
+    ],
+  },
+  {
     date: "15 novembre 2026",
     changes: [
       "La spiegazione dei pareggi non sta più in fondo al riepilogo: dove un round è finito a punti pari ora c'è una piccola «i» gialla, e toccandola si apre un fumetto che dice chi ha vinto e perché (o perché il round è nullo). Si chiude con la X o toccando fuori. La trovi sulle caselle della striscia in alto durante la partita, sulle tessere del riepilogo a fine partita, sulle righe del riepilogo di Allarme Triplo e, nella Grande Minaccia, sulla carta che hai incontrato sul fronte. Compare solo dopo che il round si è visto, senza anticipare niente.",
