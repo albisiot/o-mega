@@ -3464,6 +3464,7 @@ export type Database = {
         Args: { p_count: number; p_guaranteed_min_rank: number }
         Returns: string[]
       }
+      draw_quadrant_border_threats: { Args: never; Returns: Json }
       draw_rarity_rank: { Args: { p_min_rank: number }; Returns: number }
       draw_special_pack_card: {
         Args: { p_min_rank: number; p_pack_id: string }
@@ -3969,6 +3970,10 @@ export type Database = {
         }[]
       }
       match_rewards_payload: { Args: never; Returns: Json }
+      match_round_base_context: {
+        Args: { p_match_id: string; p_user: string }
+        Returns: Json
+      }
       match_round_context: {
         Args: { p_match_id: string; p_user: string }
         Returns: Json
@@ -4086,9 +4091,14 @@ export type Database = {
         Args: { p_board: Json; p_side: string }
         Returns: number
       }
+      quadrant_seals_per_side: { Args: { p_threats: Json }; Returns: number }
       quadrant_side_of_move: {
         Args: { p_first: string; p_move: number }
         Returns: string
+      }
+      quadrant_state_base_payload: {
+        Args: { p_match_id: string; p_side: string }
+        Returns: Json
       }
       quadrant_state_payload: {
         Args: { p_match_id: string; p_side: string }
