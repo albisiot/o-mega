@@ -21,11 +21,12 @@ begin
   assert (select title from public.story_seasons where season = 1) = 'Il Rintocco', 'season 1';
   assert (select count(*) from public.story_chapters where season = 1) = 6, 'six chapters in season 1';
   assert (select title from public.story_seasons where season = 2) = 'La marea', 'season 2';
-  assert (select count(*) from public.story_chapters where season = 2) = 4, 'four chapters in season 2';
+  assert (select count(*) from public.story_chapters where season = 2) = 5, 'five chapters in season 2';
   assert (select season = 2 and number = 1 from public.story_chapters where chapter = 7), 'chapter 7 is chapter 1 of season 2';
   assert (select season = 2 and number = 2 from public.story_chapters where chapter = 8), 'chapter 8 is chapter 2 of season 2';
   assert (select season = 2 and number = 3 from public.story_chapters where chapter = 9), 'chapter 9 is chapter 3 of season 2';
   assert (select season = 2 and number = 4 from public.story_chapters where chapter = 10), 'chapter 10 is chapter 4 of season 2';
+  assert (select season = 2 and number = 5 from public.story_chapters where chapter = 11), 'chapter 11 is chapter 5 of season 2';
 end $$;
 
 insert into auth.users (id, aud, role, email, raw_user_meta_data, created_at, updated_at) values
@@ -50,23 +51,25 @@ declare
   v_eighth jsonb := v_story -> 7 -> 'missions';
   v_ninth jsonb := v_story -> 8 -> 'missions';
   v_tenth jsonb := v_story -> 9 -> 'missions';
+  v_eleventh jsonb := v_story -> 10 -> 'missions';
 begin
-  assert jsonb_array_length(v_story) = 10, 'ten chapters';
+  assert jsonb_array_length(v_story) = 11, 'eleven chapters';
   assert (v_story -> 0 ->> 'chapter')::integer = 1 and (v_story -> 1 ->> 'chapter')::integer = 2
      and (v_story -> 2 ->> 'chapter')::integer = 3 and (v_story -> 3 ->> 'chapter')::integer = 4
      and (v_story -> 4 ->> 'chapter')::integer = 5 and (v_story -> 5 ->> 'chapter')::integer = 6
      and (v_story -> 6 ->> 'chapter')::integer = 7 and (v_story -> 7 ->> 'chapter')::integer = 8
-     and (v_story -> 8 ->> 'chapter')::integer = 9 and (v_story -> 9 ->> 'chapter')::integer = 10, 'chapter order';
+     and (v_story -> 8 ->> 'chapter')::integer = 9 and (v_story -> 9 ->> 'chapter')::integer = 10
+     and (v_story -> 10 ->> 'chapter')::integer = 11, 'chapter order';
   assert jsonb_array_length(v_first) = 5 and jsonb_array_length(v_second) = 5 and jsonb_array_length(v_third) = 5
      and jsonb_array_length(v_fourth) = 5 and jsonb_array_length(v_fifth) = 5 and jsonb_array_length(v_sixth) = 5
      and jsonb_array_length(v_seventh) = 5 and jsonb_array_length(v_eighth) = 5 and jsonb_array_length(v_ninth) = 5
-     and jsonb_array_length(v_tenth) = 5,
+     and jsonb_array_length(v_tenth) = 5 and jsonb_array_length(v_eleventh) = 5,
     'five missions each';
   assert (v_first -> 0 ->> 'unlocked')::boolean and not (v_first -> 1 ->> 'unlocked')::boolean, 'only the first is open';
-  assert not exists (select 1 from jsonb_array_elements(v_second || v_third || v_fourth || v_fifth || v_sixth || v_seventh || v_eighth || v_ninth || v_tenth) m
+  assert not exists (select 1 from jsonb_array_elements(v_second || v_third || v_fourth || v_fifth || v_sixth || v_seventh || v_eighth || v_ninth || v_tenth || v_eleventh) m
                      where (m ->> 'unlocked')::boolean),
-    'chapter 2, 3, 4, 5, 6, 7, 8, 9 or 10 open before chapter 1';
-  assert not exists (select 1 from jsonb_array_elements(v_first || v_second || v_third || v_fourth || v_fifth || v_sixth || v_seventh || v_eighth || v_ninth || v_tenth) m
+    'chapter 2, 3, 4, 5, 6, 7, 8, 9, 10 or 11 open before chapter 1';
+  assert not exists (select 1 from jsonb_array_elements(v_first || v_second || v_third || v_fourth || v_fifth || v_sixth || v_seventh || v_eighth || v_ninth || v_tenth || v_eleventh) m
                      where jsonb_array_length(m -> 'threat_levels') <> 5), 'threat levels';
   assert v_first -> 4 -> 'reward_card' ->> 'code' = 'P051', 'chapter 1 boss card';
   assert v_second -> 4 -> 'reward_card' ->> 'code' = 'P054', 'chapter 2 boss card';
@@ -78,7 +81,8 @@ begin
   assert v_eighth -> 4 -> 'reward_card' ->> 'code' = 'P089', 'chapter 8 boss card';
   assert v_ninth -> 4 -> 'reward_card' ->> 'code' = 'P181', 'chapter 9 boss card';
   assert v_tenth -> 4 -> 'reward_card' ->> 'code' = 'P175', 'chapter 10 boss card';
-  assert not exists (select 1 from jsonb_array_elements(v_first || v_second || v_third || v_fourth || v_fifth || v_sixth || v_seventh || v_eighth || v_ninth || v_tenth) m
+  assert v_eleventh -> 4 -> 'reward_card' ->> 'code' = 'P122', 'chapter 11 boss card';
+  assert not exists (select 1 from jsonb_array_elements(v_first || v_second || v_third || v_fourth || v_fifth || v_sixth || v_seventh || v_eighth || v_ninth || v_tenth || v_eleventh) m
                      where m ? 'bot_definition_ids' or m ? 'threat_ids'), 'secrets reached the client';
   assert not exists (select 1 from jsonb_array_elements(v_story) c where c -> 'outro' is distinct from 'null'::jsonb),
     'ending of a chapter not completed';
@@ -94,6 +98,8 @@ begin
      and (v_story -> 8 ->> 'number')::integer = 3, 'season and number of chapter 9';
   assert (v_story -> 9 ->> 'season')::integer = 2 and v_story -> 9 ->> 'season_title' = 'La marea'
      and (v_story -> 9 ->> 'number')::integer = 4, 'season and number of chapter 10';
+  assert (v_story -> 10 ->> 'season')::integer = 2 and v_story -> 10 ->> 'season_title' = 'La marea'
+     and (v_story -> 10 ->> 'number')::integer = 5, 'season and number of chapter 11';
   assert not exists (select 1 from jsonb_array_elements(v_story) c where c -> 'season_ending' is distinct from 'null'::jsonb),
     'ending of a season not completed';
 
@@ -188,19 +194,20 @@ declare
   v_eighth jsonb := v_story -> 7 -> 'missions';
   v_ninth jsonb := v_story -> 8 -> 'missions';
   v_tenth jsonb := v_story -> 9 -> 'missions';
+  v_eleventh jsonb := v_story -> 10 -> 'missions';
 begin
   assert v_story -> 0 ->> 'outro' like 'Nel caveau%', 'ending of the completed chapter';
   assert v_story -> 1 -> 'outro' = 'null'::jsonb and v_story -> 2 -> 'outro' = 'null'::jsonb
      and v_story -> 3 -> 'outro' = 'null'::jsonb and v_story -> 4 -> 'outro' = 'null'::jsonb
      and v_story -> 5 -> 'outro' = 'null'::jsonb and v_story -> 6 -> 'outro' = 'null'::jsonb
      and v_story -> 7 -> 'outro' = 'null'::jsonb and v_story -> 8 -> 'outro' = 'null'::jsonb
-     and v_story -> 9 -> 'outro' = 'null'::jsonb,
-    'ending of chapter 2, 3, 4, 5, 6, 7, 8, 9 or 10 before playing it';
+     and v_story -> 9 -> 'outro' = 'null'::jsonb and v_story -> 10 -> 'outro' = 'null'::jsonb,
+    'ending of chapter 2, 3, 4, 5, 6, 7, 8, 9, 10 or 11 before playing it';
   assert (v_second -> 0 ->> 'unlocked')::boolean and not (v_second -> 1 ->> 'unlocked')::boolean, 'chapter 2 opens at its first mission';
   assert not (v_second -> 0 ->> 'completed')::boolean, 'chapter 2 already completed';
-  assert not exists (select 1 from jsonb_array_elements(v_third || v_fourth || v_fifth || v_sixth || v_seventh || v_eighth || v_ninth || v_tenth) m
+  assert not exists (select 1 from jsonb_array_elements(v_third || v_fourth || v_fifth || v_sixth || v_seventh || v_eighth || v_ninth || v_tenth || v_eleventh) m
                      where (m ->> 'unlocked')::boolean),
-    'chapter 3, 4, 5, 6, 7, 8, 9 or 10 open before chapter 2';
+    'chapter 3, 4, 5, 6, 7, 8, 9, 10 or 11 open before chapter 2';
 end $$;
 
 reset role;
@@ -295,6 +302,7 @@ declare
   v_eighth jsonb := v_story -> 7 -> 'missions';
   v_ninth jsonb := v_story -> 8 -> 'missions';
   v_tenth jsonb := v_story -> 9 -> 'missions';
+  v_eleventh jsonb := v_story -> 10 -> 'missions';
 begin
   assert v_story -> 4 ->> 'outro' like 'Oltre la porta%', 'ending of the completed chapter 5';
   assert v_story -> 5 -> 'outro' = 'null'::jsonb, 'ending of chapter 6 before playing it';
@@ -302,7 +310,7 @@ begin
     'ending of season 1 before its last chapter';
   assert (v_sixth -> 0 ->> 'unlocked')::boolean and not (v_sixth -> 1 ->> 'unlocked')::boolean, 'chapter 6 opens at its first mission';
   assert not exists (select 1 from jsonb_array_elements(v_sixth) m where (m ->> 'completed')::boolean), 'chapter 6 already completed';
-  assert not exists (select 1 from jsonb_array_elements(v_seventh || v_eighth || v_ninth || v_tenth) m where (m ->> 'unlocked')::boolean),
+  assert not exists (select 1 from jsonb_array_elements(v_seventh || v_eighth || v_ninth || v_tenth || v_eleventh) m where (m ->> 'unlocked')::boolean),
     'season 2 open before chapter 6';
 end $$;
 
@@ -407,21 +415,23 @@ declare
   v_eighth jsonb := v_story -> 7 -> 'missions';
   v_ninth jsonb := v_story -> 8 -> 'missions';
   v_tenth jsonb := v_story -> 9 -> 'missions';
+  v_eleventh jsonb := v_story -> 10 -> 'missions';
 begin
   assert v_story -> 5 ->> 'outro' like 'Mongibello%', 'ending of the completed chapter 6';
   assert v_story -> 5 ->> 'season_ending' = 'Hai finito la Stagione 1, Il Rintocco. Ti aspetta la Stagione 2, La marea.',
     'ending of season 1';
   assert v_story -> 6 -> 'outro' = 'null'::jsonb and v_story -> 7 -> 'outro' = 'null'::jsonb and v_story -> 8 -> 'outro' = 'null'::jsonb
-     and v_story -> 9 -> 'outro' = 'null'::jsonb,
-    'ending of chapter 7, 8, 9 or 10 before playing it';
+     and v_story -> 9 -> 'outro' = 'null'::jsonb and v_story -> 10 -> 'outro' = 'null'::jsonb,
+    'ending of chapter 7, 8, 9, 10 or 11 before playing it';
   assert v_story -> 6 -> 'season_ending' = 'null'::jsonb and v_story -> 7 -> 'season_ending' = 'null'::jsonb
-     and v_story -> 8 -> 'season_ending' = 'null'::jsonb and v_story -> 9 -> 'season_ending' = 'null'::jsonb,
+     and v_story -> 8 -> 'season_ending' = 'null'::jsonb and v_story -> 9 -> 'season_ending' = 'null'::jsonb
+     and v_story -> 10 -> 'season_ending' = 'null'::jsonb,
     'ending of season 2 before playing it';
   assert (v_seventh -> 0 ->> 'unlocked')::boolean and not (v_seventh -> 1 ->> 'unlocked')::boolean,
     'chapter 1 of season 2 opens at its first mission';
   assert not exists (select 1 from jsonb_array_elements(v_seventh) m where (m ->> 'completed')::boolean), 'chapter 7 already completed';
-  assert not exists (select 1 from jsonb_array_elements(v_eighth || v_ninth || v_tenth) m where (m ->> 'unlocked')::boolean),
-    'chapter 2, 3 or 4 of season 2 open before chapter 1';
+  assert not exists (select 1 from jsonb_array_elements(v_eighth || v_ninth || v_tenth || v_eleventh) m where (m ->> 'unlocked')::boolean),
+    'chapter 2, 3, 4 or 5 of season 2 open before chapter 1';
 end $$;
 
 reset role;
@@ -457,7 +467,7 @@ begin
     exception when raise_exception then
       assert sqlerrm = 'story_mission_locked', sqlerrm;
     end;
-    -- So do chapters 3 and 4 of season 2.
+    -- So do chapters 3, 4 and 5 of season 2.
     begin
       perform public.story_create_match(v_user, 'C9M1', v_team);
       raise exception 'ASSERT: chapter 9 started before chapter 7 was completed';
@@ -467,6 +477,12 @@ begin
     begin
       perform public.story_create_match(v_user, 'C10M1', v_team);
       raise exception 'ASSERT: chapter 10 started before chapter 7 was completed';
+    exception when raise_exception then
+      assert sqlerrm = 'story_mission_locked', sqlerrm;
+    end;
+    begin
+      perform public.story_create_match(v_user, 'C11M1', v_team);
+      raise exception 'ASSERT: chapter 11 started before chapter 7 was completed';
     exception when raise_exception then
       assert sqlerrm = 'story_mission_locked', sqlerrm;
     end;
@@ -506,19 +522,21 @@ declare
   v_eighth jsonb := v_story -> 7 -> 'missions';
   v_ninth jsonb := v_story -> 8 -> 'missions';
   v_tenth jsonb := v_story -> 9 -> 'missions';
+  v_eleventh jsonb := v_story -> 10 -> 'missions';
 begin
   assert v_story -> 6 ->> 'outro' like 'Vinci l''asta%', 'ending of the completed chapter 7';
   assert v_story -> 6 -> 'season_ending' = 'null'::jsonb, 'ending of season 2 on a chapter that is not the last';
-  assert v_story -> 7 -> 'outro' = 'null'::jsonb and v_story -> 8 -> 'outro' = 'null'::jsonb and v_story -> 9 -> 'outro' = 'null'::jsonb,
-    'ending of chapter 8, 9 or 10 before playing it';
+  assert v_story -> 7 -> 'outro' = 'null'::jsonb and v_story -> 8 -> 'outro' = 'null'::jsonb and v_story -> 9 -> 'outro' = 'null'::jsonb
+     and v_story -> 10 -> 'outro' = 'null'::jsonb,
+    'ending of chapter 8, 9, 10 or 11 before playing it';
   assert v_story -> 7 -> 'season_ending' = 'null'::jsonb and v_story -> 8 -> 'season_ending' = 'null'::jsonb
-     and v_story -> 9 -> 'season_ending' = 'null'::jsonb,
+     and v_story -> 9 -> 'season_ending' = 'null'::jsonb and v_story -> 10 -> 'season_ending' = 'null'::jsonb,
     'ending of season 2 before its last chapter is completed';
   assert (v_eighth -> 0 ->> 'unlocked')::boolean and not (v_eighth -> 1 ->> 'unlocked')::boolean,
     'chapter 2 of season 2 opens at its first mission';
   assert not exists (select 1 from jsonb_array_elements(v_eighth) m where (m ->> 'completed')::boolean), 'chapter 8 already completed';
-  assert not exists (select 1 from jsonb_array_elements(v_ninth || v_tenth) m where (m ->> 'unlocked')::boolean),
-    'chapter 3 or 4 of season 2 open before chapter 2';
+  assert not exists (select 1 from jsonb_array_elements(v_ninth || v_tenth || v_eleventh) m where (m ->> 'unlocked')::boolean),
+    'chapter 3, 4 or 5 of season 2 open before chapter 2';
 end $$;
 
 reset role;
@@ -554,10 +572,16 @@ begin
     exception when raise_exception then
       assert sqlerrm = 'story_mission_locked', sqlerrm;
     end;
-    -- So does chapter 4 of season 2.
+    -- So do chapters 4 and 5 of season 2.
     begin
       perform public.story_create_match(v_user, 'C10M1', v_team);
       raise exception 'ASSERT: chapter 10 started before chapter 8 was completed';
+    exception when raise_exception then
+      assert sqlerrm = 'story_mission_locked', sqlerrm;
+    end;
+    begin
+      perform public.story_create_match(v_user, 'C11M1', v_team);
+      raise exception 'ASSERT: chapter 11 started before chapter 8 was completed';
     exception when raise_exception then
       assert sqlerrm = 'story_mission_locked', sqlerrm;
     end;
@@ -596,18 +620,20 @@ declare
   v_story jsonb := public.get_story();
   v_ninth jsonb := v_story -> 8 -> 'missions';
   v_tenth jsonb := v_story -> 9 -> 'missions';
+  v_eleventh jsonb := v_story -> 10 -> 'missions';
 begin
   assert v_story -> 7 ->> 'outro' like 'Nella camera%', 'ending of the completed chapter 8';
   assert v_story -> 7 -> 'season_ending' = 'null'::jsonb, 'ending of season 2 on chapter 8, which is not the last';
-  assert v_story -> 8 -> 'outro' = 'null'::jsonb and v_story -> 9 -> 'outro' = 'null'::jsonb,
-    'ending of chapter 9 or 10 before playing it';
-  assert v_story -> 8 -> 'season_ending' = 'null'::jsonb and v_story -> 9 -> 'season_ending' = 'null'::jsonb,
+  assert v_story -> 8 -> 'outro' = 'null'::jsonb and v_story -> 9 -> 'outro' = 'null'::jsonb and v_story -> 10 -> 'outro' = 'null'::jsonb,
+    'ending of chapter 9, 10 or 11 before playing it';
+  assert v_story -> 8 -> 'season_ending' = 'null'::jsonb and v_story -> 9 -> 'season_ending' = 'null'::jsonb
+     and v_story -> 10 -> 'season_ending' = 'null'::jsonb,
     'ending of season 2 before its last chapter is completed';
   assert (v_ninth -> 0 ->> 'unlocked')::boolean and not (v_ninth -> 1 ->> 'unlocked')::boolean,
     'chapter 3 of season 2 opens at its first mission';
   assert not exists (select 1 from jsonb_array_elements(v_ninth) m where (m ->> 'completed')::boolean), 'chapter 9 already completed';
-  assert not exists (select 1 from jsonb_array_elements(v_tenth) m where (m ->> 'unlocked')::boolean),
-    'chapter 4 of season 2 open before chapter 3';
+  assert not exists (select 1 from jsonb_array_elements(v_tenth || v_eleventh) m where (m ->> 'unlocked')::boolean),
+    'chapter 4 or 5 of season 2 open before chapter 3';
 end $$;
 
 reset role;
@@ -640,6 +666,13 @@ begin
     begin
       perform public.story_create_match(v_user, 'C10M1', v_team);
       raise exception 'ASSERT: chapter 10 started before chapter 9 was completed';
+    exception when raise_exception then
+      assert sqlerrm = 'story_mission_locked', sqlerrm;
+    end;
+    -- So does chapter 5 of season 2.
+    begin
+      perform public.story_create_match(v_user, 'C11M1', v_team);
+      raise exception 'ASSERT: chapter 11 started before chapter 9 was completed';
     exception when raise_exception then
       assert sqlerrm = 'story_mission_locked', sqlerrm;
     end;
@@ -677,14 +710,19 @@ do $$
 declare
   v_story jsonb := public.get_story();
   v_tenth jsonb := v_story -> 9 -> 'missions';
+  v_eleventh jsonb := v_story -> 10 -> 'missions';
 begin
   assert v_story -> 8 ->> 'outro' like 'Al Monte dei Pegni%', 'ending of the completed chapter 9';
   assert v_story -> 8 -> 'season_ending' = 'null'::jsonb, 'ending of season 2 on chapter 9, which is not the last';
-  assert v_story -> 9 -> 'outro' = 'null'::jsonb, 'ending of chapter 10 before playing it';
-  assert v_story -> 9 -> 'season_ending' = 'null'::jsonb, 'ending of season 2 before its last chapter is completed';
+  assert v_story -> 9 -> 'outro' = 'null'::jsonb and v_story -> 10 -> 'outro' = 'null'::jsonb,
+    'ending of chapter 10 or 11 before playing it';
+  assert v_story -> 9 -> 'season_ending' = 'null'::jsonb and v_story -> 10 -> 'season_ending' = 'null'::jsonb,
+    'ending of season 2 before its last chapter is completed';
   assert (v_tenth -> 0 ->> 'unlocked')::boolean and not (v_tenth -> 1 ->> 'unlocked')::boolean,
     'chapter 4 of season 2 opens at its first mission';
   assert not exists (select 1 from jsonb_array_elements(v_tenth) m where (m ->> 'completed')::boolean), 'chapter 10 already completed';
+  assert not exists (select 1 from jsonb_array_elements(v_eleventh) m where (m ->> 'unlocked')::boolean),
+    'chapter 5 of season 2 open before chapter 4';
 end $$;
 
 reset role;
@@ -713,6 +751,13 @@ begin
         assert sqlerrm = 'story_mission_locked', sqlerrm;
       end;
     end if;
+    -- Chapter 5 of season 2 stays closed until the last mission of chapter 4 is won.
+    begin
+      perform public.story_create_match(v_user, 'C11M1', v_team);
+      raise exception 'ASSERT: chapter 11 started before chapter 10 was completed';
+    exception when raise_exception then
+      assert sqlerrm = 'story_mission_locked', sqlerrm;
+    end;
 
     v_match := public.story_create_match(v_user, v_mission.code, v_team);
     assert (select threat_ids = v_mission.threat_ids and threat_modifiers = v_mission.threat_modifiers
@@ -739,6 +784,76 @@ begin
     where m.code = 'C10M5' and p.user_id = v_user), true);
 end $$;
 
+-- Between chapters 10 and 11: the ending of chapter 10 shows, the ending of the
+-- season moves on to the last chapter, and chapter 11 opens at its first mission.
+set local role authenticated;
+
+do $$
+declare
+  v_story jsonb := public.get_story();
+  v_eleventh jsonb := v_story -> 10 -> 'missions';
+begin
+  assert v_story -> 9 ->> 'outro' like 'Absentia era%', 'ending of the completed chapter 10';
+  assert v_story -> 9 -> 'season_ending' = 'null'::jsonb, 'ending of season 2 on chapter 10, which is not the last';
+  assert v_story -> 10 -> 'outro' = 'null'::jsonb, 'ending of chapter 11 before playing it';
+  assert v_story -> 10 -> 'season_ending' = 'null'::jsonb, 'ending of season 2 before its last chapter is completed';
+  assert (v_eleventh -> 0 ->> 'unlocked')::boolean and not (v_eleventh -> 1 ->> 'unlocked')::boolean,
+    'chapter 5 of season 2 opens at its first mission';
+  assert not exists (select 1 from jsonb_array_elements(v_eleventh) m where (m ->> 'completed')::boolean), 'chapter 11 already completed';
+end $$;
+
+reset role;
+
+-- Playing chapter 5 of season 2 (chapter 11 of the whole story).
+do $$
+declare
+  v_user uuid := '00000000-0000-4000-8000-0000000000e1';
+  v_team uuid[];
+  v_match uuid;
+  v_mission public.story_missions;
+  v_balance integer;
+  v_coins integer := (select sum(reward_coins) from public.story_missions where chapter in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11));
+begin
+  select array_agg(id) into v_team from (
+    select id from public.card_instances where owner_id = v_user and acquired_via <> 'story' order by acquired_at, id limit 5
+  ) s;
+
+  for v_mission in select * from public.story_missions where chapter = 11 order by ord loop
+    -- The boss stays closed until the mission before it is won.
+    if v_mission.ord < 5 then
+      begin
+        perform public.story_create_match(v_user, 'C11M5', v_team);
+        raise exception 'ASSERT: the chapter 11 boss started before its turn';
+      exception when raise_exception then
+        assert sqlerrm = 'story_mission_locked', sqlerrm;
+      end;
+    end if;
+
+    v_match := public.story_create_match(v_user, v_mission.code, v_team);
+    assert (select threat_ids = v_mission.threat_ids and threat_modifiers = v_mission.threat_modifiers
+                   and bot_difficulty = v_mission.bot_difficulty and story_mission_id = v_mission.id
+            from public.matches where id = v_match), 'not the mission''s match';
+    assert (select definition_ids = v_mission.bot_definition_ids from public.match_teams
+            where match_id = v_match and side = 'b'), 'not the mission''s opponent';
+
+    v_balance := public.coin_balance(v_user);
+    perform public.finish_match(v_match, 'a', 'completed');
+    assert public.coin_balance(v_user) >= v_balance + v_mission.reward_coins, 'mission coins not paid';
+    assert exists (select 1 from public.story_progress where user_id = v_user and mission_id = v_mission.id and match_id = v_match),
+      'mission not completed';
+  end loop;
+
+  assert (select count(*) from public.card_instances i join public.card_definitions d on d.id = i.definition_id
+          where i.owner_id = v_user and i.acquired_via = 'story' and d.code = 'P122' and not i.is_starter) = 1, 'chapter 11 boss card';
+  assert (select count(*) from public.card_transfers where to_user = v_user and reason = 'story') = 11, 'card transfers';
+  assert v_coins = 5610, format('story coins in the catalog: %s', v_coins);
+  assert (select sum(amount) from public.coin_ledger where user_id = v_user and reason = 'story_reward') = v_coins, 'story coins';
+
+  perform set_config('story_test.boss11', (
+    select p.match_id::text from public.story_progress p join public.story_missions m on m.id = p.mission_id
+    where m.code = 'C11M5' and p.user_id = v_user), true);
+end $$;
+
 -- The result screen: what this match paid.
 set local role authenticated;
 
@@ -754,6 +869,7 @@ declare
   v_boss8 uuid := current_setting('story_test.boss8')::uuid;
   v_boss9 uuid := current_setting('story_test.boss9')::uuid;
   v_boss10 uuid := current_setting('story_test.boss10')::uuid;
+  v_boss11 uuid := current_setting('story_test.boss11')::uuid;
   v_replay uuid := current_setting('story_test.replay')::uuid;
   v_reward jsonb;
   v_story jsonb := public.get_story();
@@ -812,6 +928,12 @@ begin
   v_reward := public.get_story_reward(v_boss10);
   assert (v_reward ->> 'completed_now')::boolean and (v_reward ->> 'coins')::integer = 170, 'reward of the chapter 10 boss';
   assert v_reward -> 'card' ->> 'code' = 'P175' and (v_reward -> 'card' ->> 'instance_id') is not null, 'chapter 10 reward card';
+  assert not (v_reward ->> 'is_last')::boolean, 'chapter 11 follows chapter 10';
+  assert v_reward -> 'season_ending' = 'null'::jsonb, 'season 2 ended at chapter 10';
+
+  v_reward := public.get_story_reward(v_boss11);
+  assert (v_reward ->> 'completed_now')::boolean and (v_reward ->> 'coins')::integer = 180, 'reward of the chapter 11 boss';
+  assert v_reward -> 'card' ->> 'code' = 'P122' and (v_reward -> 'card' ->> 'instance_id') is not null, 'chapter 11 reward card';
   assert (v_reward ->> 'is_last')::boolean, 'last mission';
   assert v_reward ->> 'season_ending' = 'Il prossimo capitolo della Stagione 2, La marea, arriva presto.',
     'ending of season 2 on its last mission';
@@ -833,12 +955,13 @@ begin
   assert v_story -> 7 ->> 'outro' like 'Nella camera%', 'ending of chapter 8';
   assert v_story -> 8 ->> 'outro' like 'Al Monte dei Pegni%', 'ending of chapter 9';
   assert v_story -> 9 ->> 'outro' like 'Absentia era%', 'ending of chapter 10';
+  assert v_story -> 10 ->> 'outro' like 'Vinta la sfida%', 'ending of chapter 11';
   -- The ending of a season sits on its last chapter only.
   assert v_story -> 5 ->> 'season_ending' = 'Hai finito la Stagione 1, Il Rintocco. Ti aspetta la Stagione 2, La marea.',
     'ending of season 1';
-  assert v_story -> 9 ->> 'season_ending' = 'Il prossimo capitolo della Stagione 2, La marea, arriva presto.', 'ending of season 2';
+  assert v_story -> 10 ->> 'season_ending' = 'Il prossimo capitolo della Stagione 2, La marea, arriva presto.', 'ending of season 2';
   assert not exists (select 1 from jsonb_array_elements(v_story) with ordinality as c(chapter, ord)
-                     where c.ord not in (6, 10) and c.chapter -> 'season_ending' is distinct from 'null'::jsonb),
+                     where c.ord not in (6, 11) and c.chapter -> 'season_ending' is distinct from 'null'::jsonb),
     'ending of a season before its last chapter';
 end $$;
 

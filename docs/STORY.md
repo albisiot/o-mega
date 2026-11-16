@@ -284,7 +284,7 @@ Ganci già aperti, da non chiudere prima del tempo. Una minaccia alla volta.
 
 ## 6. Stagione 2: *La marea*
 
-*Scritta, in costruzione: nel database ci sono i Capitoli 1, 2, 3 e 4. I capitoli entrano nel database uno alla volta, come quelli della Stagione 1: quando un capitolo è costruito, la sua scheda diventa definitiva e le carte principali diventano le squadre avversarie tarate con la simulazione (SPEC §5.11). Fino ad allora tutto è una proposta.*
+*Scritta, in costruzione: nel database ci sono i Capitoli 1, 2, 3, 4 e 5. I capitoli entrano nel database uno alla volta, come quelli della Stagione 1: quando un capitolo è costruito, la sua scheda diventa definitiva e le carte principali diventano le squadre avversarie tarate con la simulazione (SPEC §5.11). Fino ad allora tutto è una proposta.*
 
 ### 6.1 Premessa
 
@@ -433,7 +433,7 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 
 #### Capitolo 5 — Le Fosse
 
-*Atto III. Da costruire.*
+*Atto III. Testi nel database (migrazione `20261116120000_season_two_chapter_five_story.sql`, capitolo 11 nell'ordine di tutta la storia, missioni C11M1-C11M5); squadre e Minacce tarate con la simulazione (SPEC §5.11).*
 
 - **In una riga:** l'onda arriva alle Fosse, e la Compagnia gliela manda con il vento.
 - **La cosa strana:** Katabatic, il vento che scende dal vulcano e che la Compagnia vende a ore.
@@ -443,16 +443,16 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 - **Conflitto interno:** Xenolith vuole dare la zeta; le Lanterne no, perché senza la pietra torna un cavatore qualunque, e un cavatore qualunque il Comune non l'ha mai protetto.
 - **Carte presentate:** Katabatic, Unbidden, Contumax.
 - **Boss:** Katabatic (P122, Alfa), schierato dal Reggente della Compagnia alla stazione del vento. Premio: la carta Katabatic.
-- **Rivelazione:** vinta la sfida, il vento gira. Xenolith si fa togliere la zeta (gli restano un buco nel petto, che si chiuderà in un mese, e la forza di un cavatore qualunque) e Renata la rimette nell'anello; subito dopo Ottavia toglie la eta dal petto di Absentia, e l'armatura si siede in mezzo alla strada e non si rialza. Sette lettere: l'onda delle tre si ferma sul primo gradino delle Fosse.
+- **Rivelazione:** vinta la sfida, il vento gira. Xenolith si fa togliere la zeta (gli restano un buco nel petto, che si chiuderà in un mese, e la forza di un cavatore qualunque) e Renata la rimette nell'anello, dopo la epsilon; subito dopo Ottavia toglie la eta dal petto di Absentia e Renata mette al suo posto anche quella, mentre l'armatura si siede in mezzo alla strada e non si rialza. Sette lettere: l'onda delle tre si ferma sul primo gradino delle Fosse.
 - **Gancio:** quando la eta lascia l'armatura la città trema dove c'è la lettera successiva, e non è in città: è in mezzo al golfo. Nicola è in mare con la Θ, e stanotte c'è la marea più alta dell'anno.
 
-| # | Missione | Situazione | Carte principali |
+| # | Missione | Situazione | Squadra avversaria (definitiva) |
 |---|---|---|---|
-| 1 | Sacchi di sabbia | Alle Fosse si riempiono sacchi di sabbia, e gli esattori della Compagnia vendono paratie a rate a chi non può pagarle | Gavel, Cullet, Indemnity |
-| 2 | Quaranta braccia | Unbidden, l'intelligenza di quartiere, alza paratie con quaranta braccia, e la Compagnia vuole spegnerla: regala quello che lei vende | Byline, Facsimile, Bisque |
-| 3 | Il battito | I Figli cercano Xenolith casa per casa: Nicola sente la zeta come un battito | Theriarch, Hospes, Kiln |
-| 4 | Il meteo | Contumax, il vecchio supercattivo che ora fa il meteo in TV, annuncia «vento favorevole» mentre l'onda punta le Fosse | Contumax, Erasure, Understudy |
-| 5 | Vento di terra | Alla stazione del vento il Reggente della Compagnia schiera Katabatic, e l'onda delle tre è già partita | Katabatic, Eudaemon, Errata |
+| 1 | Sacchi di sabbia | Alle Fosse si riempiono sacchi di sabbia, e gli esattori della Compagnia vendono paratie a rate a chi non può pagarle | Gavel, Cullet, Indemnity, Billable, Signatory |
+| 2 | Quaranta braccia | Unbidden, l'intelligenza di quartiere, alza paratie con quaranta braccia, e la Compagnia vuole spegnerla: regala quello che lei vende | Byline, Facsimile, Bisque, Blackbody, Almoner |
+| 3 | Il battito | I Figli cercano Xenolith casa per casa: Nicola sente la zeta come un battito | Theriarch, Hospes, Kiln, Dittograph, Falx |
+| 4 | Il meteo | Contumax, il vecchio supercattivo che ora fa il meteo in TV, annuncia «vento favorevole» mentre l'onda punta le Fosse | Contumax, Erasure, Understudy, Gazetteer, Insula |
+| 5 | Vento di terra | Alla stazione del vento il Reggente della Compagnia schiera Katabatic, e l'onda delle tre è già partita | Katabatic, Eudaemon, Errata, Mischance, Malleus |
 
 #### Capitolo 6 — Cariddi
 
@@ -490,7 +490,7 @@ Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, 
 
 ### 6.7 Il registro delle lettere
 
-Il piano della stagione. Come in §2, si aggiorna capitolo per capitolo quando i capitoli entrano nel database. **Stato attuale** (Capitoli 1, 2, 3 e 4 nel database): Α Β Γ Δ sono nel sigillo, portate dal Comune al tempio e rimesse nell'anello da Renata; la Ε è nel sigillo anche lei, dopo che la vendita del Banco è stata dichiarata nulla perché la Η venduta insieme era la falsa della fornace (il Banco non ha più lo stampo); la Η vera è nel petto di Absentia, l'armatura vuota del capoturno della trivella: è la lettera a muoverla, e di notte l'armatura ferma l'acqua alle Fosse; non può tornare nel sigillo prima della Ζ, che è ancora nel petto di Xenolith; la Θ è stata comprata dal Comune e rubata dai Figli, e ce l'ha Nicola, che ha cominciato a tirare fuori le lettere dall'altra parte, dalla iota in avanti; tutte le altre lettere sono dove erano a fine Stagione 1.
+Il piano della stagione. Come in §2, si aggiorna capitolo per capitolo quando i capitoli entrano nel database. **Stato attuale** (Capitoli 1, 2, 3, 4 e 5 nel database): Α Β Γ Δ sono nel sigillo, portate dal Comune al tempio e rimesse nell'anello da Renata; la Ε è nel sigillo anche lei, dopo che la vendita del Banco è stata dichiarata nulla perché la Η venduta insieme era la falsa della fornace (il Banco non ha più lo stampo); la Ζ è nel sigillo: Xenolith se l'è fatta togliere dal petto, e gli è rimasta la forza di un cavatore qualunque; la Η vera è nel sigillo, dopo la zeta: Ottavia l'ha tolta dal petto di Absentia, che si è seduta in mezzo a una strada delle Fosse e non si è più rialzata; con sette lettere al loro posto l'onda delle tre si ferma sul primo gradino delle Fosse; la Θ è stata comprata dal Comune e rubata dai Figli, e ce l'ha Nicola, in mare in mezzo al golfo, che ha cominciato a tirare fuori le lettere dall'altra parte, dalla iota in avanti; tutte le altre lettere sono dove erano a fine Stagione 1.
 
 | Lettere | A fine Stagione 1 | Nella Stagione 2 | A fine Stagione 2 (previsto) |
 |---|---|---|---|
