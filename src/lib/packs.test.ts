@@ -19,4 +19,15 @@ describe("packRevealHref", () => {
     expect(packRevealHref(["a"])).toBe("/pacchetto/?id=a");
     expect(packRevealHref(["a", "b", "c"])).toBe("/pacchetto/?id=a&next=b,c");
   });
+
+  it("carries the page to return to", () => {
+    expect(packRevealHref(["a"], "/obiettivi")).toBe("/pacchetto/?id=a&from=%2Fobiettivi");
+    expect(packRevealHref(["a", "b"], "/partita?id=7")).toBe("/pacchetto/?id=a&next=b&from=%2Fpartita%3Fid%3D7");
+  });
+
+  it("leaves out the home and any unsafe page", () => {
+    expect(packRevealHref(["a"], "/")).toBe("/pacchetto/?id=a");
+    expect(packRevealHref(["a"], "//evil.example")).toBe("/pacchetto/?id=a");
+    expect(packRevealHref(["a"], "/pacchetto?id=z")).toBe("/pacchetto/?id=a");
+  });
 });

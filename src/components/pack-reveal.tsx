@@ -1,15 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CardView } from "@/components/card-view";
 import { PackArt } from "@/components/comic-parts";
+import { ReturnLink } from "@/components/return-link";
 import { balance } from "@/config/balance";
 import { useBannerHold } from "@/lib/banner-hold";
 import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { packColor } from "@/lib/pack-colors";
+import { placeHref, returnLabel } from "@/lib/pack-return";
 import { packRevealHref, type PackCard, type PackOpening } from "@/lib/packs";
+import { forgetOpener, noteOpened, openedFrom, placeKey } from "@/lib/place-memory";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 type Stage =
@@ -37,8 +40,19 @@ const PACK_TITLES: Record<PackOpening["pack_type"], string> = {
   emergency: "Premio classifica Emergenza",
 };
 
-/** Sealed pack → cards revealed one at a time → summary, then the next pack if any. */
-export function PackReveal({ opening, nextIds = [] }: { opening: PackOpening; nextIds?: string[] }) {
+/**
+ * Sealed pack → cards revealed one at a time → summary, then the next pack if any, and at the
+ * end back to `returnTo`, the page the pack was opened from (a place key, "/" for the home).
+ */
+export function PackReveal({
+  opening,
+  nextIds = [],
+  returnTo = "/",
+}: {
+  opening: PackOpening;
+  nextIds?: string[];
+  returnTo?: string;
+}) {
   const [stage, setStage] = useState<Stage>({ kind: "sealed" });
   const [abilities, setAbilities] = useState<AbilityInfo[] | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -219,16 +233,38 @@ export function PackReveal({ opening, nextIds = [] }: { opening: PackOpening; ne
       </div>
       <div className="flex shrink-0 flex-col pb-[calc(env(safe-area-inset-bottom)+16px)]">
         {nextIds.length > 0 ? (
-          <Link href={packRevealHref(nextIds)} className="btn btn-primary">
+          <NextPackLink href={packRevealHref(nextIds, returnTo)}>
             {nextIds.length === 1 ? "Apri l'ultimo pacchetto" : `Apri il prossimo (ne restano ${nextIds.length})`}
-          </Link>
+          </NextPackLink>
         ) : (
-          <Link href="/" className="btn btn-primary">
-            Torna alla home
-          </Link>
+          <ReturnLink href={placeHref(returnTo)} className="btn btn-primary">
+            {returnLabel(returnTo)}
+          </ReturnLink>
         )}
       </div>
     </main>
+  );
+}
+
+/**
+ * The next pack of the series takes the place of this one in the history, and keeps its opener:
+ * at the end, the way out (and the browser's back) goes straight to the page it all started on.
+ */
+function NextPackLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      replace
+      data-return=""
+      className="btn btn-primary"
+      onClick={() => {
+        const opener = openedFrom();
+        if (opener) noteOpened(opener, placeKey(href));
+        else forgetOpener(placeKey(href));
+      }}
+    >
+      {children}
+    </Link>
   );
 }
 

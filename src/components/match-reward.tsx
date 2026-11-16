@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PackRevealLink } from "@/components/pack-reveal-link";
 import { fetchMatchReward, fetchMatchRewards, type MatchReward, type MatchRewards } from "@/lib/match-rewards";
-import { packRevealHref } from "@/lib/packs";
 
 /** What the server paid this player for a finished match (XP, coins, packs). */
 export function useMatchReward(matchId: string): MatchReward | null {
@@ -48,9 +47,9 @@ export function RewardChips({ reward, chip }: { reward: MatchReward | null; chip
       {reward.xp > 0 && <p className={`${chip} bg-black text-foreground`}>+{reward.xp} XP</p>}
       {reward.coins > 0 && <p className={`${chip} bg-black text-comic-yellow`}>+{reward.coins} monete</p>}
       {packs > 0 && (
-        <Link href={packRevealHref(reward.opening_ids)} className={`${chip} bg-comic-cyan text-black underline`}>
+        <PackRevealLink ids={reward.opening_ids} className={`${chip} bg-comic-cyan text-black underline`}>
           +{packs === 1 ? "1 pacchetto" : `${packs} pacchetti`} · apri
-        </Link>
+        </PackRevealLink>
       )}
     </>
   );

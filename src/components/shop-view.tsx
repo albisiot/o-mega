@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { PackArt, TabBar } from "@/components/comic-parts";
 import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { useMatchRewards } from "@/components/match-reward";
+import { PackRevealLink, useOpenPackReveal } from "@/components/pack-reveal-link";
 import { describeServerError } from "@/lib/errors";
 import { formatRomeDateTime } from "@/lib/events";
 import { coinSources } from "@/lib/match-rewards";
@@ -14,7 +14,6 @@ import {
   buyPack,
   buySpecialPack,
   describeBonusReward,
-  packRevealHref,
   redeemBonusCode,
   type BonusReward,
   type PackOdds,
@@ -269,9 +268,9 @@ function BonusCodeSection({ onRedeemed }: { onRedeemed: () => void }) {
               Codice riscattato! Hai ricevuto <span className="text-comic-cyan">{describeBonusReward(reward)}</span>.
             </p>
             {reward.openings.length > 0 && (
-              <Link href={packRevealHref(reward.openings.map((opening) => opening.id))} className="btn btn-primary">
+              <PackRevealLink ids={reward.openings.map((opening) => opening.id)} className="btn btn-primary">
                 {reward.packs > 0 ? "Apri i premi" : "Guarda le carte"}
-              </Link>
+              </PackRevealLink>
             )}
           </>
         )}
@@ -353,7 +352,7 @@ function BuySection({
   buy: () => Promise<PackOpening>;
   onFailed: () => void;
 }) {
-  const router = useRouter();
+  const openReveal = useOpenPackReveal();
   const [buying, setBuying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const missing = price - coins;
@@ -363,7 +362,7 @@ function BuySection({
     setError(null);
     try {
       const pack = await purchase();
-      router.push(`/pacchetto/?id=${pack.id}`);
+      openReveal([pack.id]);
     } catch (cause) {
       setError(describeServerError(cause));
       setBuying(false);

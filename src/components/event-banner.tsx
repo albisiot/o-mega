@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useOpenPackReveal } from "@/components/pack-reveal-link";
 import {
   eventPhase,
   fetchEventPointsFor,
@@ -16,7 +16,6 @@ import {
   type GameEvent,
   type MatchEventPoints,
 } from "@/lib/events";
-import { packRevealHref } from "@/lib/packs";
 import { describeAdmitted } from "@/lib/traits";
 import { useNow } from "@/lib/use-now";
 
@@ -66,7 +65,7 @@ export function useEventPointsFor(refId: string | null): MatchEventPoints | null
 
 /** The rewards not opened yet: marks them seen, then plays them like a pack. */
 export function useOpenEventRewards(): { open: (event: GameEvent) => void; opening: boolean } {
-  const router = useRouter();
+  const openReveal = useOpenPackReveal();
   const [opening, setOpening] = useState(false);
   return {
     opening,
@@ -76,7 +75,7 @@ export function useOpenEventRewards(): { open: (event: GameEvent) => void; openi
       markEventRewardsSeen(event.id)
         .catch((error: unknown) => console.error("Marking event rewards failed", error))
         .finally(() => {
-          if (ids.length > 0) router.push(packRevealHref(ids));
+          if (ids.length > 0) openReveal(ids);
           else setOpening(false);
         });
     },

@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ComicBurst, PackArt } from "@/components/comic-parts";
 import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
+import { useOpenPackReveal } from "@/components/pack-reveal-link";
 import { describeServerError } from "@/lib/errors";
 import { buyPack, claimDailyPack, type PackStatus } from "@/lib/packs";
 import { formatCountdown } from "@/lib/use-now";
@@ -24,7 +24,7 @@ type PackPanelProps = {
  * the button. Errors show inside it, so nothing below moves.
  */
 export function PackPanel({ status, now, resetsAt, loadError, onFailed }: PackPanelProps) {
-  const router = useRouter();
+  const openReveal = useOpenPackReveal();
   const [opening, setOpening] = useState<"daily" | "standard" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +33,7 @@ export function PackPanel({ status, now, resetsAt, loadError, onFailed }: PackPa
     setError(null);
     try {
       const pack = kind === "daily" ? await claimDailyPack() : await buyPack();
-      router.push(`/pacchetto/?id=${pack.id}`);
+      openReveal([pack.id]);
     } catch (cause) {
       setError(describeServerError(cause));
       setOpening(null);

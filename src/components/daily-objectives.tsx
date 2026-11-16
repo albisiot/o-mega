@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useOpenPackReveal } from "@/components/pack-reveal-link";
 import { describeServerError } from "@/lib/errors";
 import {
   DIFFICULTY_LABELS,
@@ -18,7 +18,6 @@ import {
   type DailyObjectives,
   type ObjectiveDifficulty,
 } from "@/lib/objectives";
-import { packRevealHref } from "@/lib/packs";
 import { formatCountdown, useNow } from "@/lib/use-now";
 
 const DIFFICULTY_COLORS: Record<ObjectiveDifficulty, string> = {
@@ -85,7 +84,7 @@ export function HomeObjectivesBar() {
 
 /** The objectives page: progress, rewards to claim and swaps left. */
 export function DailyObjectivesView() {
-  const router = useRouter();
+  const openReveal = useOpenPackReveal();
   const { objectives, setObjectives, error: loadError } = useDailyObjectives();
   const now = useNow(30_000);
   const [busy, setBusy] = useState<string | null>(null);
@@ -101,7 +100,7 @@ export function DailyObjectivesView() {
     claimDailyObjective(objective.id)
       .then((result) => {
         if (result.opening_ids.length > 0) {
-          router.push(packRevealHref(result.opening_ids));
+          openReveal(result.opening_ids);
           return;
         }
         setMessage({ id: objective.id, text: `+${result.coins} monete!`, failed: false });

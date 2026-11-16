@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { PackRevealLink, useOpenPackReveal } from "@/components/pack-reveal-link";
 import { describeServerError } from "@/lib/errors";
 import {
   TIERS,
@@ -21,13 +21,12 @@ import {
   type CompletedAchievement,
 } from "@/lib/achievements";
 import { fetchLeaderboardTitles, type LeaderboardTitle } from "@/lib/leaderboards";
-import { packRevealHref } from "@/lib/packs";
 
 const dateFormat = new Intl.DateTimeFormat("it-IT", { dateStyle: "medium", timeZone: "Europe/Rome" });
 
 /** The board of the Imprese: secret medals with their hint, the discovered ones in full. */
 export function AchievementsView() {
-  const router = useRouter();
+  const openReveal = useOpenPackReveal();
   const { profile, setProfile } = useAuth();
   const [board, setBoard] = useState<AchievementBoard | null>(null);
   const [weeklyTitles, setWeeklyTitles] = useState<LeaderboardTitle[]>([]);
@@ -73,7 +72,7 @@ export function AchievementsView() {
     claimAchievement(achievement.id)
       .then((result) => {
         if (result.opening_ids.length > 0) {
-          router.push(packRevealHref(result.opening_ids));
+          openReveal(result.opening_ids);
           return;
         }
         setMessage({ id: achievement.id, text: `+${result.coins} monete!`, failed: false });
@@ -252,9 +251,9 @@ function Medal({
           {busy ? "Riscatto…" : "Riscatta"}
         </button>
       ) : achievement.claimed && achievement.opening_ids.length > 0 ? (
-        <Link href={packRevealHref(achievement.opening_ids)} className="mt-auto min-h-11 py-3 text-xs font-extrabold uppercase underline">
+        <PackRevealLink ids={achievement.opening_ids} className="mt-auto min-h-11 py-3 text-xs font-extrabold uppercase underline">
           Rivedi le carte
-        </Link>
+        </PackRevealLink>
       ) : null}
     </li>
   );

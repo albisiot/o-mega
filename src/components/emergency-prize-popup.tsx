@@ -1,8 +1,9 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { useOpenPackReveal } from "@/components/pack-reveal-link";
 import { bannersHeld, subscribeBannerHolds, useBannerHold } from "@/lib/banner-hold";
 import {
   claimEmergencyPrize,
@@ -12,7 +13,6 @@ import {
   type EmergencyPrize,
 } from "@/lib/emergency-prizes";
 import { describeServerError } from "@/lib/errors";
-import { packRevealHref } from "@/lib/packs";
 
 /** Screens the popup never covers: a match or a run being played, a pack being opened, the editors. */
 const QUIET_PATHS = ["/partita", "/attesa", "/emergenza", "/pacchetto", "/editor", "/prova-tavole"];
@@ -33,7 +33,7 @@ export function EmergencyPrizePopup() {
 }
 
 function PrizePopup() {
-  const router = useRouter();
+  const openReveal = useOpenPackReveal();
   const pathname = usePathname();
   const [prizes, setPrizes] = useState<EmergencyPrize[]>([]);
   // Put off with "Più tardi" until the app is opened again or comes back.
@@ -92,7 +92,7 @@ function PrizePopup() {
       .then((result) => {
         setPrizes((items) => items.filter((item) => item.id !== target.id));
         if (result.opening_ids.length > 0) {
-          router.push(packRevealHref(result.opening_ids));
+          openReveal(result.opening_ids);
           return;
         }
         setClaimed({ coins: result.coins, balance: result.coin_balance });

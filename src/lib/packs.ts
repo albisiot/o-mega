@@ -1,4 +1,5 @@
 import { forget, keepSeen, lastSeen } from "@/lib/last-seen";
+import { safeReturnPath } from "@/lib/pack-return";
 import { getSupabase } from "@/lib/supabase/client";
 
 export type PackCard = {
@@ -139,9 +140,15 @@ export function describeBonusReward({ coins, cards, packs }: Pick<BonusReward, "
   return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} e ${parts.at(-1)}` : (parts[0] ?? "");
 }
 
-/** Reveal page of the first opening; the others follow it, in order. */
-export function packRevealHref([first, ...rest]: string[]): string {
-  return `/pacchetto/?id=${first}${rest.length > 0 ? `&next=${rest.join(",")}` : ""}`;
+/**
+ * Reveal page of the first opening; the others follow it, in order. `from` is the page the
+ * reveal returns to at the end (the home when missing).
+ */
+export function packRevealHref([first, ...rest]: string[], from?: string | null): string {
+  const back = safeReturnPath(from);
+  return `/pacchetto/?id=${first}${rest.length > 0 ? `&next=${rest.join(",")}` : ""}${
+    back && back !== "/" ? `&from=${encodeURIComponent(back)}` : ""
+  }`;
 }
 
 // The opening RPCs already return the cards: keep them so the reveal page
