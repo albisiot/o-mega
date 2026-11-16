@@ -3491,6 +3491,10 @@ export type Database = {
         Args: { p_threat_ids: string[] }
         Returns: undefined
       }
+      emergency_lineups_payload: {
+        Args: { p_day: string; p_viewer: string }
+        Returns: Json
+      }
       emergency_play_context: { Args: { p_user: string }; Returns: Json }
       emergency_prize_for: {
         Args: { p_rank: number }
