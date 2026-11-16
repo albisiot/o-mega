@@ -56,7 +56,7 @@ export function ObjectiveAdmin({ data, onChange }: { data: AdminObjectives; onCh
           {notice && <p className="bg-panel px-3 py-2 text-sm font-bold">{notice}</p>}
         </div>
         {tab === "list" ? (
-          <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain">
+          <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-3 -mx-1 overflow-y-auto overscroll-contain px-1">
             {DIFFICULTIES.map((difficulty) => {
               const list = data.objectives.filter((objective) => objective.difficulty === difficulty);
               const on = list.filter((objective) => objective.is_active).length;
@@ -247,7 +247,7 @@ function ObjectiveForm({
 
   return (
     <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col gap-2">
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 -mx-1 overflow-y-auto overscroll-contain px-1">
         <label className={LABEL}>
           Cosa conta
           {custom ? (

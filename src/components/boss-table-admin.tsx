@@ -123,7 +123,7 @@ export function BossTableAdmin({ initial }: { initial: BossTableSettings }) {
         </div>
 
         {/* The example takes the room left; on a very short screen it scrolls inside. */}
-        <section aria-label="Esempio di tabella" className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain">
+        <section aria-label="Esempio di tabella" className="flex min-h-0 flex-1 flex-col gap-1 -mx-1 overflow-y-auto overscroll-contain px-1">
           {example && (
             <>
               <h2 className="section-title text-base leading-5">Un esempio</h2>

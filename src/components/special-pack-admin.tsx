@@ -103,7 +103,7 @@ export function SpecialPackAdmin({ data, onChange }: SpecialPackAdminProps) {
             }}
           />
         ) : (
-          <div role="tabpanel" className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+          <div role="tabpanel" className="flex min-h-0 flex-1 flex-col -mx-1 overflow-y-auto overscroll-contain px-1">
             {data.packs.length === 0 ? (
               <p className="text-sm font-medium text-muted">Nessun pacchetto speciale ancora.</p>
             ) : (
@@ -347,7 +347,7 @@ type StepProps = {
 function DetailsStep({ data, draft, update }: StepProps) {
   return (
     // What a short window cannot fit scrolls inside, rather than being cut.
-    <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain">
+    <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2.5 -mx-1 overflow-y-auto overscroll-contain px-1">
       <label className={LABEL}>
         Nome
         <input
@@ -508,7 +508,7 @@ function CardsStep({ data, draft, update }: StepProps) {
         </button>
       </div>
       {/* The list is longer than any screen: it scrolls inside, the page stays still. */}
-      <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain">
+      <ul className="flex min-h-0 flex-1 flex-col gap-1 -mx-1 overflow-y-auto overscroll-contain px-1">
         {found.length === 0 && <li className="text-sm font-medium text-muted">Nessuna carta trovata.</li>}
         {found.map((card) => (
           <li key={card.code}>
@@ -619,7 +619,7 @@ function OddsStep({ data, draft, update }: StepProps) {
           ))}
         </ul>
       )}
-      <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain">
+      <ul className="flex min-h-0 flex-1 flex-col gap-1 -mx-1 overflow-y-auto overscroll-contain px-1">
         {draft.mode === "rarity"
           ? rarities.map((rarity) => {
               const count = chosen.filter((card) => card.rarity_code === rarity.code).length;

@@ -108,7 +108,7 @@ export function MatchRewardAdmin({ initial }: { initial: MatchRewards }) {
           label="Gestione ricompense"
         />
 
-        <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain">
+        <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-3 -mx-1 overflow-y-auto overscroll-contain px-1">
           {tab === "matches" ? (
             <>
               <p className="text-xs font-medium leading-4 text-muted">

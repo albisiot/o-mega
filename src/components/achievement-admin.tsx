@@ -86,7 +86,7 @@ export function AchievementAdmin({ data, onChange }: { data: AdminAchievements; 
           {notice && <p className="bg-panel px-3 py-2 text-sm font-bold">{notice}</p>}
         </div>
         {tab === "list" ? (
-          <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain">
+          <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-1 -mx-1 overflow-y-auto overscroll-contain px-1">
             <ol className="flex flex-col gap-1">
               {data.achievements.map((achievement, index) => (
                 <AchievementRow
@@ -382,7 +382,7 @@ function AchievementForm({
 
   return (
     <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col gap-2">
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 -mx-1 overflow-y-auto overscroll-contain px-1">
         <label className={LABEL}>
           Cosa conta
           <select

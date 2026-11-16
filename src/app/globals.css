@@ -66,6 +66,14 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/*
+ * A fieldset grows to its widest content by default (min-inline-size: min-content): a menu with
+ * long options would push a form wider than the phone and make its panel scroll sideways.
+ */
+fieldset {
+  min-inline-size: 0;
+}
+
 /* While a screen fits the phone (.game-shell), the page stays still: no scroll, no iOS bounce. */
 html.screen-locked,
 html.screen-locked body {

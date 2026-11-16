@@ -115,7 +115,7 @@ export function PackPoolAdmin({ initial }: { initial: PackPool }) {
           {error && <p className="text-sm font-bold text-comic-magenta">{error}</p>}
         </div>
         {/* The list is longer than any screen: it scrolls inside, the page stays still. */}
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 -mx-1 overflow-y-auto overscroll-contain px-1">
           <p className="text-xs font-medium leading-4 text-muted">
             Togli la spunta per tenere una carta fuori dai pacchetti; puoi sempre darla con un codice bonus. Le carte
             dei livelli non escono mai e non sono in elenco. Le varianti seguono la loro carta. Con la ricerca o i

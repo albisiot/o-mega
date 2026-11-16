@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { ColorSwatches } from "@/components/color-swatches";
-import { PageHeader } from "@/components/comic-parts";
+import { BackLink, TabBar } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { FACTION_LABELS, fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
@@ -22,6 +22,7 @@ import {
 } from "@/lib/threat-catalog";
 import { DISTRICTS } from "@/lib/city-districts";
 import { oddsText } from "@/lib/threat-rarity";
+import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const INPUT = "min-h-10 w-full border-2 border-line bg-black px-2 text-sm font-semibold text-foreground";
 const LABEL = "flex flex-col gap-1 text-xs font-extrabold uppercase text-muted";
@@ -34,6 +35,8 @@ export default function ThreatAdminPage() {
   const [abilities, setAbilities] = useState<AbilityInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [tab, setTab] = useState<"threats" | "rarities">("threats");
+  useLockedScreen(data !== null);
 
   useEffect(() => {
     if (!session) return;
@@ -64,12 +67,34 @@ export default function ThreatAdminPage() {
   }
   if (!data) return <LoadingScreen label="Caricamento delle Minacce…" />;
 
+  // Fits the phone and never scrolls (see .game-shell): two tabs, and only the tab's content
+  // scrolls, inside its panel.
   return (
-    <div className="flex flex-1 flex-col">
-      <PageHeader backHref="/editor" backLabel="Editor" title="Minacce" subtitle="Testi, regole e rarità" />
-      <main className="flex flex-1 flex-col gap-6 px-3 pb-10">
-        <RaritiesEditor data={data} onSaved={() => setReloadKey((k) => k + 1)} />
-        <ThreatsEditor data={data} abilities={abilities} onSaved={() => setReloadKey((k) => k + 1)} />
+    <div className="game-shell">
+      <header className="flex shrink-0 items-center gap-2.5 px-3 pb-1 pt-2">
+        <BackLink href="/editor" label="Torna all'Editor" />
+        <div className="min-w-0">
+          <h1 className="truncate font-display text-[32px] uppercase leading-9 text-comic-yellow">Minacce</h1>
+          <p className="text-xs font-semibold leading-4 text-muted">Testi, regole e rarità.</p>
+        </div>
+      </header>
+      <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
+        <TabBar
+          tabs={[
+            { key: "threats", label: `Minacce (${data.threats.length})` },
+            { key: "rarities", label: "Fasce di rarità" },
+          ]}
+          current={tab}
+          onPick={setTab}
+          label="Gestione Minacce"
+        />
+        <div role="tabpanel" className="-mx-1 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-1">
+          {tab === "threats" ? (
+            <ThreatsEditor data={data} abilities={abilities} onSaved={() => setReloadKey((k) => k + 1)} />
+          ) : (
+            <RaritiesEditor data={data} onSaved={() => setReloadKey((k) => k + 1)} />
+          )}
+        </div>
       </main>
     </div>
   );
@@ -97,7 +122,6 @@ function RaritiesEditor({ data, onSaved }: { data: AdminThreats; onSaved: () => 
 
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="font-display text-2xl uppercase">Fasce di rarità</h2>
       <p className="text-xs font-medium text-muted">
         Ogni Minaccia di una fascia esce da sola, circa una volta ogni N partite (0: mai), al posto di una Minaccia normale. I
         giocatori vedono queste probabilità nel Bestiario.
@@ -184,7 +208,6 @@ function ThreatsEditor({ data, abilities, onSaved }: { data: AdminThreats; abili
 
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="font-display text-2xl uppercase">Minacce</h2>
       <div className="grid grid-cols-2 gap-2">
         <select className={INPUT} value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Quali Minacce">
           <option value="rare">Solo rare</option>

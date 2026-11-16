@@ -65,7 +65,7 @@ export function BonusCodeAdmin({ data, onChange }: BonusCodeAdminProps) {
             }}
           />
         ) : (
-          <div role="tabpanel" className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+          <div role="tabpanel" className="flex min-h-0 flex-1 flex-col -mx-1 overflow-y-auto overscroll-contain px-1">
             {data.codes.length === 0 ? (
               <p className="text-sm font-medium text-muted">Nessun codice ancora.</p>
             ) : (
@@ -158,7 +158,7 @@ function NewCodeForm({
       </div>
 
       {/* What a short window cannot fit scrolls inside, rather than being cut. */}
-      <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain">
+      <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2.5 -mx-1 overflow-y-auto overscroll-contain px-1">
         {step === "reward" ? (
           <>
             <label className={LABEL}>

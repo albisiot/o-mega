@@ -201,7 +201,7 @@ export function EventAdmin({ data, onChange }: EventAdminProps) {
             onCancel={() => load(emptyForm(now))}
           />
         ) : (
-          <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain">
+          <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-3 -mx-1 overflow-y-auto overscroll-contain px-1">
             {groups.map((group) => (
               <section key={group.title} className="flex shrink-0 flex-col gap-1.5">
                 <h2 className="section-title">{group.title}</h2>
@@ -358,7 +358,7 @@ function EventForm({
       )}
 
       {/* What a short window cannot fit scrolls inside, rather than being cut. */}
-      <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain">
+      <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2.5 -mx-1 overflow-y-auto overscroll-contain px-1">
         {step === "info" && (
           <>
             <label className={LABEL}>
