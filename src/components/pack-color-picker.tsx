@@ -147,7 +147,8 @@ function PackPreview({ palette, name, price, cards }: { palette: ReturnType<type
   return (
     <div
       aria-label="Anteprima nel Negozio"
-      className="relative flex min-h-[92px] flex-col justify-between gap-1.5 overflow-hidden px-3 py-2"
+      // Stays in view while the swatches and the custom colours below it scroll.
+      className="sticky top-0 z-10 flex min-h-[92px] flex-col justify-between gap-1.5 overflow-hidden px-3 py-2"
       style={{ background: palette.background, color: palette.ink }}
     >
       <PackArt body={palette.body} omega={palette.omega} cards={Number(cards) || 1} className="absolute -top-1 right-1 h-20 rotate-[9deg]" />

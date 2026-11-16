@@ -88,7 +88,7 @@ export function AdminCardFilterBar<T extends FilterableCard>({
           type="search"
           value={filter.query}
           onChange={(event) => set({ query: event.target.value })}
-          placeholder="Cerca nome o numero"
+          placeholder="Nome o numero"
           aria-label={searchLabel}
           autoComplete="off"
           autoCorrect="off"
@@ -275,9 +275,11 @@ export function AdminCardPicker({ cards, chosen, onChange, max, reference, fallb
         disabled={full || fresh.length === 0}
         className="btn btn-ghost disabled:opacity-50"
       >
-        {fresh.length === found.length
-          ? `Aggiungi tutte le ${found.length} trovate`
-          : `Aggiungi le ${fresh.length} trovate non ancora scelte`}
+        {fresh.length === 0
+          ? "Tutte le trovate sono già scelte"
+          : fresh.length === found.length
+            ? `Aggiungi tutte le ${found.length} trovate`
+            : `Aggiungi le ${fresh.length} trovate non ancora scelte`}
       </button>
       {notice && <p className="text-xs font-bold text-comic-cyan">{notice}</p>}
       {pending && (

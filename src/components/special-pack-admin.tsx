@@ -496,7 +496,7 @@ function CardsStep({ data, draft, update }: StepProps) {
           disabled={fresh === 0}
           className="btn btn-ghost disabled:opacity-50"
         >
-          Aggiungi {fresh === found.length ? `tutte (${fresh})` : `le altre ${fresh}`}
+          {fresh === 0 ? "Tutte già scelte" : fresh === found.length ? `Aggiungi tutte (${fresh})` : `Aggiungi le altre ${fresh}`}
         </button>
         <button
           type="button"
