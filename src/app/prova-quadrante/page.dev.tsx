@@ -8,6 +8,8 @@
 //   /prova-quadrante/?s=mossa   the bot's move into a corner: two border threats, one won and one lost
 //   /prova-quadrante/?s=mobile  the shifting grid, which has no border threats
 //   /prova-quadrante/?s=traguardo  an event with a seal target of 12
+//   /prova-quadrante/?s=scontri  the player's card meets four, one family each: crushing, clearly, a little, a tie
+//   /prova-quadrante/?s=minacce  the bot's card in a corner: two border threats (one won, one lost) and two cards
 
 import { useEffect, useState } from "react";
 import { QuadrantMatchScreen } from "@/components/quadrant-match-screen";
@@ -92,8 +94,91 @@ function baseView(): QuadrantView {
   };
 }
 
+// Scenes with one ability per family, to see each family's effects at every gap.
+const FAMILY_ABILITIES: QuadrantView["abilities"] = [
+  { code: "FOR", name: "Forza", family: "body" },
+  { code: "INT", name: "Intelletto", family: "mind" },
+  { code: "ENE", name: "Energia", family: "power" },
+  { code: "COM", name: "Combattimento", family: "craft" },
+];
+const famCard = (name: string, art: string, [FOR, INT, ENE, COM]: number[], faction = "heroes") => card(name, art, { FOR, INT, ENE, COM }, faction);
+
+/** A card turned `rotation` quarter turns: side d shows ability d − rotation. */
+function turned(x: number, y: number, mine: boolean, c: MatchCard, me: number, opponent: number, rotation = 0): QuadrantCellView {
+  const base = FAMILY_ABILITIES.map((a) => c.stats[a.code]);
+  const values = [0, 1, 2, 3].map((d) => base[(d - rotation + 4) % 4]) as QuadrantCellView["values"];
+  return { x, y, mine, values, seals: { me, opponent }, card: c };
+}
+
+/** A family scene: the grid before the last move and after it, the bot "thinking" in between. */
+function familyScene(
+  view: QuadrantView,
+  before: QuadrantCellView[],
+  after: QuadrantCellView[],
+  last: QuadrantView["moves"][number],
+): QuadrantView {
+  const count = (cells: QuadrantCellView[], key: "me" | "opponent") => cells.reduce((sum, c) => sum + c.seals[key], 0);
+  const earlier: QuadrantView["moves"] = before.map((c, i) => ({
+    move: i + 1,
+    mine: c.mine,
+    x: c.x,
+    y: c.y,
+    rotation: 0,
+    name: c.card.name,
+    beaten: 0,
+    removed: 0,
+    placed: 1,
+    auto_played: false,
+  }));
+  const at = (cells: QuadrantCellView[], moves: QuadrantView["moves"]): QuadrantView => ({
+    ...view,
+    abilities: FAMILY_ABILITIES,
+    move: moves.length + 1,
+    to_move: moves.length % 2 === 0 ? "me" : "opponent",
+    board: cells,
+    seals: { me: count(cells, "me"), opponent: count(cells, "opponent") },
+    controlled: { me: 0, opponent: 0 },
+    moves,
+  });
+  return { ...at(after, [...earlier, last]), to_move: "me", previous: [at(before, earlier)] };
+}
+
 function scene(name: string): QuadrantView {
   const view = baseView();
+  if (name === "scontri") {
+    // The player's card in the middle meets four of the bot's: Corpo 10–1 (crushing), Mente 7–3
+    // (clearly), Potere 5–4 (a little), Mestiere 4–4 (a tie).
+    const played = famCard("Mongibello", "P060", [10, 7, 5, 4]);
+    const top = famCard("Malleus", "P029", [6, 3, 1, 5], "villains");
+    const right = famCard("Dredge", "P077", [2, 5, 6, 3], "villains");
+    const bottom = famCard("Plinth", "P112", [4, 2, 7, 6], "villains");
+    const left = famCard("Talos", "P091", [5, 4, 3, 2], "villains");
+    const before = [turned(1, 0, false, top, 0, 2), turned(2, 1, false, right, 0, 2), turned(1, 2, false, bottom, 0, 2), turned(0, 1, false, left, 0, 2)];
+    const after = [
+      turned(1, 0, false, top, 1, 2),
+      turned(2, 1, false, right, 1, 2),
+      turned(1, 2, false, bottom, 1, 2),
+      turned(0, 1, false, left, 0, 2),
+      turned(1, 1, true, played, 3, 0),
+    ];
+    return familyScene(view, before, after, {
+      move: 5, mine: true, x: 1, y: 1, rotation: 0, name: played.name, beaten: 3, removed: 0, placed: 3, auto_played: false,
+    });
+  }
+  if (name === "minacce") {
+    // The bot's card in the corner, turned once: Mestiere 10 beats the top threat 3 (crushing),
+    // the left threat 7 beats its Potere 2; the player's Mente 8 beats its Forza 4, its Mente 9
+    // crushes the player's Forza 1.
+    const threats = view.border_threats!.map((t, i) => (i === 0 ? { ...t, value: 3 } : t));
+    const corner = famCard("Malleus", "P029", [4, 9, 2, 10], "villains");
+    const right = famCard("Dredge", "P077", [3, 8, 5, 6]);
+    const below = famCard("Plinth", "P112", [1, 6, 7, 5]);
+    const before = [turned(1, 0, true, right, 2, 0, 2), turned(0, 1, true, below, 2, 0)];
+    const after = [turned(1, 0, true, right, 2, 0, 2), turned(0, 1, true, below, 2, 1), turned(0, 0, false, corner, 0, 3, 1)];
+    return familyScene({ ...view, border_threats: threats }, before, after, {
+      move: 3, mine: false, x: 0, y: 0, rotation: 1, name: corner.name, beaten: 1, removed: 0, placed: 3, auto_played: false,
+    });
+  }
   if (name === "mobile") {
     return { ...view, format: "quadrant_shifting", variant: "shifting", border_threats: null, border_bite: null };
   }
