@@ -96,6 +96,16 @@ export function describeObjectiveReward({ coins, packs, cards }: Pick<DailyObjec
 }
 
 /** The home's line: what is left to do, or what waits to be claimed. */
+/** The same in a few words, for the home's tile beside the event's. */
+export function summarizeObjectivesShort(objectives: DailyObjectives): string {
+  const list = objectives.objectives;
+  const toClaim = list.filter(isClaimable).length;
+  if (toClaim > 0) return toClaim === 1 ? "1 premio!" : `${toClaim} premi!`;
+  const done = list.filter((objective) => objective.completed).length;
+  if (list.length > 0 && done === list.length) return "Tutti fatti";
+  return `${done} su ${list.length} fatti`;
+}
+
 export function summarizeObjectives(objectives: DailyObjectives): string {
   const list = objectives.objectives;
   const toClaim = list.filter(isClaimable).length;

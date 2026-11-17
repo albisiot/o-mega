@@ -3,6 +3,7 @@ import {
   claimableCount,
   describeObjectiveReward,
   summarizeObjectives,
+  summarizeObjectivesShort,
   type DailyObjective,
   type DailyObjectives,
 } from "@/lib/objectives";
@@ -60,5 +61,14 @@ describe("summarizeObjectives", () => {
       "Tutti completati: a domani!",
     );
     expect(claimableCount(null)).toBe(0);
+  });
+
+  it("says the same in a few words for the home's tile", () => {
+    const claimed = objective({ completed: true, claimed: true, progress: 3 });
+    expect(summarizeObjectivesShort(day([objective({ id: "a", completed: true, progress: 3 }), objective({ id: "b" })]))).toBe(
+      "1 premio!",
+    );
+    expect(summarizeObjectivesShort(day([claimed, objective({ id: "b" })]))).toBe("1 su 2 fatti");
+    expect(summarizeObjectivesShort(day([claimed]))).toBe("Tutti fatti");
   });
 });

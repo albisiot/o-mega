@@ -14,6 +14,7 @@ import {
   refreshDailyObjective,
   seenDailyObjectives,
   summarizeObjectives,
+  summarizeObjectivesShort,
   type DailyObjective,
   type DailyObjectives,
   type ObjectiveDifficulty,
@@ -66,7 +67,7 @@ export function HomeObjectivesBar() {
       <span className="min-w-0">
         <span className="block font-display text-[17px] uppercase leading-5">Obiettivi</span>
         <span className={`block truncate text-[13px] font-bold leading-4 ${toClaim > 0 ? "" : "text-muted"}`}>
-          {objectives ? summarizeObjectives(objectives) : "…"}
+          {objectives ? summarizeObjectivesShort(objectives) : "…"}
         </span>
       </span>
       {toClaim > 0 ? (

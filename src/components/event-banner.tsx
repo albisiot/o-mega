@@ -109,9 +109,9 @@ export function EventBanner({ compact = false }: { compact?: boolean }) {
         onClick={() => open(withRewards)}
         disabled={opening}
         aria-label={`Premio evento ottenuto: ${withRewards.title}. Aprilo`}
-        className="flex min-h-12 min-w-0 flex-1 flex-col justify-center bg-comic-yellow px-3 py-1 text-left text-black short:min-h-11"
+        className="flex min-h-12 min-w-0 flex-[1.6_1_0] flex-col justify-center bg-comic-yellow px-3 py-1 text-left text-black short:min-h-11"
       >
-        <span className="block truncate font-display text-[17px] uppercase leading-5">Premio evento!</span>
+        <span className="block truncate font-display text-[15px] uppercase leading-5">Premio evento!</span>
         <span className="block truncate text-[12px] font-bold leading-4">{opening ? "…" : "Tocca per aprirlo"}</span>
       </button>
     );
@@ -146,9 +146,9 @@ export function EventBanner({ compact = false }: { compact?: boolean }) {
       <Link
         href="/evento"
         aria-label={`Evento in arrivo: ${event.title}, tra ${formatEventCountdown(Date.parse(event.starts_at) - now)}`}
-        className="flex min-h-12 min-w-0 flex-1 flex-col justify-center border-2 border-comic-yellow px-3 py-0.5 short:min-h-11"
+        className="flex min-h-12 min-w-0 flex-[1.6_1_0] flex-col justify-center border-2 border-comic-yellow px-3 py-0.5 short:min-h-11"
       >
-        <span className="block truncate font-display text-[17px] uppercase leading-5">{event.title}</span>
+        <span className="block truncate font-display text-[15px] uppercase leading-5">{event.title}</span>
         <span className="block truncate text-[12px] font-extrabold leading-4 text-comic-yellow">
           tra {formatEventCountdown(Date.parse(event.starts_at) - now)}
         </span>
@@ -179,9 +179,9 @@ export function EventBanner({ compact = false }: { compact?: boolean }) {
       <Link
         href="/evento"
         aria-label={`Evento ${event.title}: ${event.my_points} punti, finisce tra ${formatEventCountdown(Date.parse(event.ends_at) - now)}`}
-        className="flex min-h-12 min-w-0 flex-1 flex-col justify-center gap-0.5 bg-comic-yellow px-3 py-1 text-black short:min-h-11"
+        className="flex min-h-12 min-w-0 flex-[1.6_1_0] flex-col justify-center gap-0.5 bg-comic-yellow px-3 py-1 text-black short:min-h-11"
       >
-        <span className="block truncate font-display text-[17px] uppercase leading-5">{event.title}</span>
+        <span className="block truncate font-display text-[15px] uppercase leading-5">{event.title}</span>
         <span className="block truncate text-[12px] font-extrabold leading-4">
           {progress.next ? `${event.my_points}/${progress.next.points} punti` : "Completato"} ·{" "}
           {formatEventCountdown(Date.parse(event.ends_at) - now)}
