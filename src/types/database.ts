@@ -1955,6 +1955,7 @@ export type Database = {
         Row: {
           card_instance_ids: string[]
           enqueued_at: string
+          fama: number
           format: string
           level: number
           mode: string
@@ -1965,6 +1966,7 @@ export type Database = {
         Insert: {
           card_instance_ids: string[]
           enqueued_at?: string
+          fama?: number
           format?: string
           level?: number
           mode?: string
@@ -1975,6 +1977,7 @@ export type Database = {
         Update: {
           card_instance_ids?: string[]
           enqueued_at?: string
+          fama?: number
           format?: string
           level?: number
           mode?: string
@@ -2324,6 +2327,311 @@ export type Database = {
             referencedColumns: ["id", "definition_id"]
           },
         ]
+      }
+      ranked_ghost_turns: {
+        Row: {
+          match_id: string
+          ready_at: string
+          round: number
+        }
+        Insert: {
+          match_id: string
+          ready_at: string
+          round: number
+        }
+        Update: {
+          match_id?: string
+          ready_at?: string
+          round?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ranked_ghost_turns_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "ranked_matches"
+            referencedColumns: ["match_id"]
+          },
+        ]
+      }
+      ranked_ghosts: {
+        Row: {
+          avatar_definition_id: string | null
+          created_at: string
+          fama: number
+          id: string
+          level: number
+          matches: number
+          title: string | null
+          username: string
+        }
+        Insert: {
+          avatar_definition_id?: string | null
+          created_at?: string
+          fama?: number
+          id?: string
+          level: number
+          matches?: number
+          title?: string | null
+          username: string
+        }
+        Update: {
+          avatar_definition_id?: string | null
+          created_at?: string
+          fama?: number
+          id?: string
+          level?: number
+          matches?: number
+          title?: string | null
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ranked_ghosts_avatar_definition_id_fkey"
+            columns: ["avatar_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ranked_ghosts_avatar_definition_id_fkey"
+            columns: ["avatar_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ranked_ledger: {
+        Row: {
+          created_at: string
+          delta: number
+          fama_after: number
+          format: string | null
+          id: number
+          match_id: string | null
+          opponent_id: string | null
+          outcome: string | null
+          reason: string
+          season: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          fama_after: number
+          format?: string | null
+          id?: never
+          match_id?: string | null
+          opponent_id?: string | null
+          outcome?: string | null
+          reason: string
+          season: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          fama_after?: number
+          format?: string | null
+          id?: never
+          match_id?: string | null
+          opponent_id?: string | null
+          outcome?: string | null
+          reason?: string
+          season?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ranked_ledger_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ranked_ledger_opponent_id_fkey"
+            columns: ["opponent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ranked_ledger_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ranked_matches: {
+        Row: {
+          delta_a: number | null
+          delta_b: number | null
+          fama_a: number
+          fama_b: number
+          ghost_difficulty: string | null
+          ghost_id: string | null
+          match_id: string
+        }
+        Insert: {
+          delta_a?: number | null
+          delta_b?: number | null
+          fama_a: number
+          fama_b: number
+          ghost_difficulty?: string | null
+          ghost_id?: string | null
+          match_id: string
+        }
+        Update: {
+          delta_a?: number | null
+          delta_b?: number | null
+          fama_a?: number
+          fama_b?: number
+          ghost_difficulty?: string | null
+          ghost_id?: string | null
+          match_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ranked_matches_ghost_id_fkey"
+            columns: ["ghost_id"]
+            isOneToOne: false
+            referencedRelation: "ranked_ghosts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ranked_matches_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ranked_players: {
+        Row: {
+          best_fama: number
+          draws: number
+          fama: number
+          losses: number
+          season: string
+          streak: number
+          updated_at: string
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          best_fama?: number
+          draws?: number
+          fama?: number
+          losses?: number
+          season: string
+          streak?: number
+          updated_at?: string
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          best_fama?: number
+          draws?: number
+          fama?: number
+          losses?: number
+          season?: string
+          streak?: number
+          updated_at?: string
+          user_id?: string
+          wins?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ranked_players_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ranked_season_results: {
+        Row: {
+          claimed_at: string | null
+          coins: number
+          fama: number
+          id: string
+          league: string
+          matches: number
+          opening_ids: string[]
+          packs: number
+          place: number
+          season: string
+          title: string | null
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          claimed_at?: string | null
+          coins?: number
+          fama: number
+          id?: string
+          league: string
+          matches: number
+          opening_ids?: string[]
+          packs?: number
+          place: number
+          season: string
+          title?: string | null
+          user_id: string
+          wins: number
+        }
+        Update: {
+          claimed_at?: string | null
+          coins?: number
+          fama?: number
+          id?: string
+          league?: string
+          matches?: number
+          opening_ids?: string[]
+          packs?: number
+          place?: number
+          season?: string
+          title?: string | null
+          user_id?: string
+          wins?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ranked_season_results_season_fkey"
+            columns: ["season"]
+            isOneToOne: false
+            referencedRelation: "ranked_seasons"
+            referencedColumns: ["season"]
+          },
+          {
+            foreignKeyName: "ranked_season_results_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ranked_seasons: {
+        Row: {
+          closed_at: string
+          season: string
+        }
+        Insert: {
+          closed_at?: string
+          season: string
+        }
+        Update: {
+          closed_at?: string
+          season?: string
+        }
+        Relationships: []
       }
       rarity_definitions: {
         Row: {
@@ -3648,6 +3956,7 @@ export type Database = {
       get_match_reward: { Args: { p_match_id: string }; Returns: Json }
       get_match_rewards: { Args: never; Returns: Json }
       get_match_state: { Args: { p_match_id: string }; Returns: Json }
+      get_match_unranked_history: { Args: { p_limit?: number }; Returns: Json }
       get_my_leaderboard_places: { Args: never; Returns: Json }
       get_my_ranked: { Args: never; Returns: Json }
       get_pack_odds: { Args: never; Returns: Json }
@@ -3731,6 +4040,18 @@ export type Database = {
           p_player_b: string
           p_team_a: string[]
           p_team_b: string[]
+        }
+        Returns: string
+      }
+      insert_ranked_ghost_match: {
+        Args: {
+          p_boss_values: Json
+          p_bot_definition_ids: string[]
+          p_difficulty: string
+          p_format: string
+          p_team: string[]
+          p_threat_ids: string[]
+          p_user: string
         }
         Returns: string
       }
@@ -3856,6 +4177,34 @@ export type Database = {
         Returns: string
       }
       match_ping: { Args: { p_match_id: string }; Returns: Json }
+      match_queue_candidates: {
+        Args: {
+          p_fama: number
+          p_format: string
+          p_level: number
+          p_mode: string
+          p_since: string
+          p_user: string
+          p_value: number
+        }
+        Returns: {
+          card_instance_ids: string[]
+          enqueued_at: string
+          fama: number
+          format: string
+          level: number
+          mode: string
+          refreshed_at: string
+          team_value: number
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "matchmaking_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       match_queue_join: {
         Args: {
           p_boss_values?: Json
@@ -4001,11 +4350,19 @@ export type Database = {
         Args: { p_match_id: string; p_user: string }
         Returns: Json
       }
+      match_round_unranked_context: {
+        Args: { p_match_id: string; p_user: string }
+        Returns: Json
+      }
       match_state_for_user: {
         Args: { p_match_id: string; p_user: string }
         Returns: Json
       }
       match_state_payload: {
+        Args: { p_match_id: string; p_side: string }
+        Returns: Json
+      }
+      match_state_unranked_payload: {
         Args: { p_match_id: string; p_side: string }
         Returns: Json
       }
@@ -4145,6 +4502,7 @@ export type Database = {
         Returns: {
           card_instance_ids: string[]
           enqueued_at: string
+          fama: number
           format: string
           level: number
           mode: string
@@ -4159,6 +4517,136 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      ranked_board_entry: {
+        Args: {
+          p_fama: number
+          p_losses: number
+          p_matches: number
+          p_place: number
+          p_user: string
+          p_value: number
+          p_wins: number
+        }
+        Returns: Json
+      }
+      ranked_board_format: { Args: { p_format: string }; Returns: string }
+      ranked_board_rows: {
+        Args: { p_format: string; p_season: string }
+        Returns: {
+          fama: number
+          losses: number
+          matches: number
+          reached_at: string
+          user_id: string
+          value: number
+          wins: number
+        }[]
+      }
+      ranked_close_seasons: { Args: never; Returns: undefined }
+      ranked_current_fama: { Args: { p_user: string }; Returns: number }
+      ranked_current_season: { Args: never; Returns: string }
+      ranked_fama_change: {
+        Args: {
+          p_fama: number
+          p_opponent_fama: number
+          p_outcome: string
+          p_streak: number
+        }
+        Returns: number
+      }
+      ranked_ghost_ready: {
+        Args: { p_match_id: string; p_round: number }
+        Returns: boolean
+      }
+      ranked_ghost_wait: {
+        Args: { p_since: string; p_user: string }
+        Returns: string
+      }
+      ranked_league_name: { Args: { p_league: string }; Returns: string }
+      ranked_league_of: { Args: { p_fama: number }; Returns: string }
+      ranked_league_start: { Args: { p_fama: number }; Returns: number }
+      ranked_match_started: { Args: { p_match_id: string }; Returns: string }
+      ranked_next_league_at: { Args: { p_fama: number }; Returns: number }
+      ranked_pick_ghost: {
+        Args: { p_fama: number; p_level: number; p_user: string }
+        Returns: {
+          avatar_definition_id: string | null
+          created_at: string
+          fama: number
+          id: string
+          level: number
+          matches: number
+          title: string | null
+          username: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ranked_ghosts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      ranked_plan_ghost_turn: {
+        Args: { p_match_id: string; p_round: number }
+        Returns: undefined
+      }
+      ranked_player_state: {
+        Args: { p_user: string }
+        Returns: {
+          best_fama: number
+          draws: number
+          fama: number
+          losses: number
+          season: string
+          streak: number
+          updated_at: string
+          user_id: string
+          wins: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ranked_players"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      ranked_queue_candidates: {
+        Args: {
+          p_fama: number
+          p_format: string
+          p_since: string
+          p_user: string
+        }
+        Returns: {
+          card_instance_ids: string[]
+          enqueued_at: string
+          fama: number
+          format: string
+          level: number
+          mode: string
+          refreshed_at: string
+          team_value: number
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "matchmaking_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      ranked_queue_info: {
+        Args: { p_team: string[]; p_user: string }
+        Returns: Json
+      }
+      ranked_record_match: {
+        Args: { p_match: Database["public"]["Tables"]["matches"]["Row"] }
+        Returns: undefined
+      }
+      ranked_reset_fama: { Args: { p_fama: number }; Returns: number }
+      ranked_season_ends_at: { Args: { p_season: string }; Returns: string }
+      ranked_season_label: { Args: { p_season: string }; Returns: string }
+      ranked_season_of: { Args: { p_day: string }; Returns: string }
       record_threat_sighting: {
         Args: { p_at: string; p_threat_id: string; p_user: string }
         Returns: undefined
@@ -4369,6 +4857,10 @@ export type Database = {
             Returns: Json
           }
       with_play_parts: {
+        Args: { p_match_id: string; p_payload: Json; p_side: string }
+        Returns: Json
+      }
+      with_ranked: {
         Args: { p_match_id: string; p_payload: Json; p_side: string }
         Returns: Json
       }
