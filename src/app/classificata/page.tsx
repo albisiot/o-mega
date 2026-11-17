@@ -36,5 +36,12 @@ export default function RankedPage() {
   }, [session]);
 
   if (!session) return <LoadingScreen />;
-  return <RankedModesView ranked={ranked} active={active} error={error} />;
+  return (
+    <RankedModesView
+      ranked={ranked}
+      active={active}
+      error={error}
+      onPrizeClaimed={() => setRanked((current) => current && { ...current, prizes: current.prizes.slice(1) })}
+    />
+  );
 }

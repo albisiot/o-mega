@@ -1,14 +1,61 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useOpenPackReveal } from "@/components/pack-reveal-link";
+import { describeServerError } from "@/lib/errors";
 import {
+  claimRankedPrize,
   describeFamaChange,
   describeLeagueChange,
+  describePrize,
   leagueInfo,
   leagueProgress,
   type RankedLeague,
   type RankedMatchInfo,
+  type RankedPrize,
 } from "@/lib/ranked";
+
+/**
+ * A Mandato's prize still to claim, on one line: coins on the ledger, packs opened at once.
+ * After the claim the line says what came in.
+ */
+export function PrizeLine({ prize, onClaimed }: { prize: RankedPrize; onClaimed: () => void }) {
+  const openReveal = useOpenPackReveal();
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const claim = () => {
+    setBusy(true);
+    setMessage(null);
+    claimRankedPrize(prize.season)
+      .then((result) => {
+        if (result.opening_ids.length > 0) {
+          openReveal(result.opening_ids);
+          return;
+        }
+        setMessage(`+${result.coins} monete: ora ne hai ${result.coin_balance}`);
+        setTimeout(onClaimed, 2500);
+      })
+      .catch((cause: unknown) => setMessage(describeServerError(cause)))
+      .finally(() => setBusy(false));
+  };
+  return (
+    <div className="flex min-h-9 shrink-0 items-center justify-between gap-2 bg-comic-yellow py-1 pl-2.5 pr-1 text-black">
+      <p className="min-w-0 truncate text-[12px] font-bold leading-4">
+        {message ?? `Premio di ${prize.label} (${prize.place}°): ${describePrize(prize)}`}
+      </p>
+      {!message && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={claim}
+          className="h-7 shrink-0 -skew-x-8 bg-black px-3 font-display text-sm uppercase text-comic-yellow"
+        >
+          Ritira
+        </button>
+      )}
+    </div>
+  );
+}
 
 /**
  * A league as a small slanted badge in its colour; `dark`: black with the colour in the

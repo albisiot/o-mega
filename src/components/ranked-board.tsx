@@ -1,13 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useOpenPackReveal } from "@/components/pack-reveal-link";
 import { PlayerAvatar } from "@/components/player-avatar";
-import { FamaProgress, LeagueBadge } from "@/components/ranked-parts";
+import { LeagueBadge, PrizeLine } from "@/components/ranked-parts";
 import { describeServerError } from "@/lib/errors";
 import {
-  claimRankedPrize,
-  describePrize,
   fetchMyRanked,
   fetchRankedBoard,
   fetchRankedHall,
@@ -21,20 +18,29 @@ import {
 
 type View = "mandato" | "oro";
 
+/** Fixed data in place of the server's, for the development scenes (/prova-classificata). */
+export type RankedBoardPreview = { mine: MyRanked; board: RankedBoard; hall: RankedHallEntry[] };
+
 /**
  * The Albo dei Reggenti (SPEC §8.7), the tab of the Classifiche for the Classificata: the
- * player's Fama, the prizes of past Mandati to claim, the Mandato in course for all the
- * modes or one, and the podiums of the past ones (Albo d'oro).
+ * Mandato in course for all the modes or one, and the podium of each past one (Albo d'oro).
+ * Like the other boards it fits the screen with its first 10 and the player's own row, on
+ * a short phone too: compact rows, filters that fit one line, one past Mandato at a time.
  */
-export function RankedBoardPanel() {
+export function RankedBoardPanel({ preview }: { preview?: RankedBoardPreview }) {
   const [view, setView] = useState<View>("mandato");
   const [format, setFormat] = useState<RankedBoardFormat | null>(null);
-  const [mine, setMine] = useState<MyRanked | null>(null);
-  const [board, setBoard] = useState<{ key: string; data: RankedBoard | null; error: string | null } | null>(null);
-  const [hall, setHall] = useState<RankedHallEntry[] | null>(null);
-  const key = `${view}:${format ?? "all"}`;
+  const [mine, setMine] = useState<MyRanked | null>(preview?.mine ?? null);
+  const [board, setBoard] = useState<{ key: string; data: RankedBoard | null; error: string | null } | null>(
+    preview ? { key: "all", data: preview.board, error: null } : null,
+  );
+  const [hall, setHall] = useState<RankedHallEntry[] | null>(preview?.hall ?? null);
+  const [hallIndex, setHallIndex] = useState(0);
+  const [hallError, setHallError] = useState<string | null>(null);
+  const key = format ?? "all";
 
   useEffect(() => {
+    if (preview) return;
     let cancelled = false;
     fetchMyRanked()
       .then((next) => {
@@ -44,50 +50,44 @@ export function RankedBoardPanel() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [preview]);
 
   useEffect(() => {
+    if (view !== "mandato" || preview) return;
     let cancelled = false;
-    if (view === "oro") {
-      fetchRankedHall()
-        .then((next) => {
-          if (!cancelled) setHall(next);
-        })
-        .catch((cause: unknown) => {
-          if (!cancelled) setBoard({ key, data: null, error: describeServerError(cause) });
-        });
-    } else {
-      fetchRankedBoard(format)
-        .then((data) => {
-          if (!cancelled) setBoard({ key, data, error: null });
-        })
-        .catch((cause: unknown) => {
-          if (!cancelled) setBoard({ key, data: null, error: describeServerError(cause) });
-        });
-    }
+    fetchRankedBoard(format)
+      .then((data) => {
+        if (!cancelled) setBoard({ key: format ?? "all", data, error: null });
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) setBoard({ key: format ?? "all", data: null, error: describeServerError(cause) });
+      });
     return () => {
       cancelled = true;
     };
-  }, [view, format, key]);
+  }, [view, format, preview]);
+
+  useEffect(() => {
+    if (view !== "oro" || hall !== null) return;
+    let cancelled = false;
+    fetchRankedHall()
+      .then((next) => {
+        if (!cancelled) setHall(next);
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) setHallError(describeServerError(cause));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [view, hall]);
 
   const shown = board?.key === key ? board : null;
+  const prize = mine?.prizes[0] ?? null;
+  const past = hall?.[hallIndex] ?? null;
 
   return (
     <>
-      {mine && (
-        <section className="flex shrink-0 flex-col gap-1.5 bg-panel px-2.5 py-2">
-          <FamaProgress fama={mine.fama} league={mine.league} start={mine.league_start} next={mine.next_league_at} />
-          <p className="text-[11px] font-semibold leading-4 text-muted">
-            Mandato di {mine.season_label}
-            {mine.place ? ` · sei ${mine.place}°` : ""} · {mine.season_matches} classificate
-            {mine.season_matches < mine.min_matches ? ` (per il premio ne servono ${mine.min_matches})` : ""}
-          </p>
-          {mine.prizes.map((prize) => (
-            <PrizeRow key={prize.season} prize={prize} onClaimed={() => setMine({ ...mine, prizes: mine.prizes.filter((p) => p !== prize) })} />
-          ))}
-        </section>
-      )}
-
       <div role="tablist" aria-label="Periodo" className="flex shrink-0 gap-1.5">
         {(
           [
@@ -112,99 +112,81 @@ export function RankedBoardPanel() {
 
       {view === "mandato" ? (
         <>
-          <div role="tablist" aria-label="Modalità della Classificata" className="-mx-3 flex shrink-0 gap-1 overflow-x-auto px-3 [scrollbar-width:none]">
+          <div role="tablist" aria-label="Modalità della Classificata" className="flex shrink-0 gap-1">
             {RANKED_BOARD_FORMATS.map((entry) => (
               <button
                 key={entry.label}
                 type="button"
                 role="tab"
                 aria-selected={entry.key === format}
+                aria-label={entry.label}
                 onClick={() => setFormat(entry.key)}
-                className={`min-h-9 shrink-0 whitespace-nowrap px-2.5 text-[13px] font-extrabold uppercase ${
+                className={`min-h-8 min-w-0 flex-auto px-1 text-[12px] font-extrabold uppercase ${
                   entry.key === format ? "bg-foreground text-black" : "bg-panel text-muted"
                 }`}
               >
-                {entry.label}
+                {entry.short}
               </button>
             ))}
           </div>
-          <p className="shrink-0 text-xs font-medium leading-4 text-muted">
-            {format === null
-              ? "La Fama di ogni Reggente: la guadagnano le partite classificate di tutte le modalità."
-              : "La Fama guadagnata in questa modalità nel Mandato, vittorie meno sconfitte."}{" "}
-            A fine mese il Mandato si chiude con un premio per lega.
-          </p>
+          {prize && view === "mandato" ? (
+            <PrizeLine prize={prize} onClaimed={() => setMine(mine && { ...mine, prizes: mine.prizes.slice(1) })} />
+          ) : (
+            <p className="shrink-0 truncate text-xs font-medium leading-4 text-muted">
+              {format === null ? "La Fama" : `La Fama guadagnata in ${RANKED_BOARD_FORMATS.find((f) => f.key === format)?.label}`} nel Mandato di{" "}
+              {shown?.data?.label ?? mine?.season_label ?? "questo mese"}
+              {shown?.data ? ` · ${shown.data.players === 1 ? "1 Reggente" : `${shown.data.players} Reggenti`}` : ""}
+            </p>
+          )}
           <section aria-live="polite" className="flex min-h-0 flex-1 flex-col gap-1">
             {!shown && <p className="text-sm font-semibold text-muted">Caricamento dell&apos;Albo…</p>}
             {shown?.error && <p className="text-sm font-semibold text-comic-magenta">{shown.error}</p>}
             {shown?.data && shown.data.top.length === 0 && (
               <p className="text-sm font-medium text-muted">Ancora nessuno in questo Mandato: puoi essere il primo.</p>
             )}
-            {shown?.data && shown.data.top.length > 0 && (
-              <>
-                <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain">
-                  <Ranking board={shown.data} />
-                </div>
-                <p className="shrink-0 text-center text-xs font-semibold text-muted">
-                  {shown.data.players === 1 ? "1 Reggente" : `${shown.data.players} Reggenti`} in questo Mandato
-                </p>
-              </>
-            )}
+            {shown?.data && shown.data.top.length > 0 && <Ranking board={shown.data} />}
           </section>
         </>
       ) : (
-        <section aria-live="polite" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain">
-          {hall === null && !shown?.error && <p className="text-sm font-semibold text-muted">Caricamento dell&apos;Albo d&apos;oro…</p>}
-          {shown?.error && <p className="text-sm font-semibold text-comic-magenta">{shown.error}</p>}
+        <section aria-live="polite" className="flex min-h-0 flex-1 flex-col gap-1">
+          {hall === null && !hallError && <p className="text-sm font-semibold text-muted">Caricamento dell&apos;Albo d&apos;oro…</p>}
+          {hallError && <p className="text-sm font-semibold text-comic-magenta">{hallError}</p>}
           {hall?.length === 0 && (
             <p className="text-sm font-medium text-muted">Il primo Mandato si chiude a fine mese: qui resteranno i suoi primi tre.</p>
           )}
-          {hall?.map((entry) => (
-            <div key={entry.season} className="flex flex-col gap-0.5">
-              <h2 className="font-display text-lg uppercase leading-5 text-comic-yellow">Mandato di {entry.label}</h2>
-              <ol className="flex flex-col gap-0.5">
-                {entry.podium.map((row) => (
+          {past && hall && (
+            <>
+              <div className="flex shrink-0 items-center justify-between gap-2">
+                <button
+                  type="button"
+                  aria-label="Mandato più recente"
+                  disabled={hallIndex === 0}
+                  onClick={() => setHallIndex((i) => Math.max(0, i - 1))}
+                  className="btn btn-ghost h-9 w-9 shrink-0 px-0 disabled:opacity-30"
+                >
+                  ‹
+                </button>
+                <h2 className="min-w-0 truncate font-display text-lg uppercase leading-5 text-comic-yellow">Mandato di {past.label}</h2>
+                <button
+                  type="button"
+                  aria-label="Mandato precedente"
+                  disabled={hallIndex >= hall.length - 1}
+                  onClick={() => setHallIndex((i) => Math.min(hall.length - 1, i + 1))}
+                  className="btn btn-ghost h-9 w-9 shrink-0 px-0 disabled:opacity-30"
+                >
+                  ›
+                </button>
+              </div>
+              <ol className="flex flex-col gap-px">
+                {past.podium.map((row) => (
                   <Row key={row.place} entry={row} unit="Fama" />
                 ))}
               </ol>
-            </div>
-          ))}
+            </>
+          )}
         </section>
       )}
     </>
-  );
-}
-
-/** A Mandato's prize still to claim: coins on the ledger, packs opened at once. */
-function PrizeRow({ prize, onClaimed }: { prize: MyRanked["prizes"][number]; onClaimed: () => void }) {
-  const openReveal = useOpenPackReveal();
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const claim = () => {
-    setBusy(true);
-    setMessage(null);
-    claimRankedPrize(prize.season)
-      .then((result) => {
-        if (result.opening_ids.length > 0) {
-          openReveal(result.opening_ids);
-          return;
-        }
-        setMessage(`+${result.coins} monete · ora ne hai ${result.coin_balance}`);
-        onClaimed();
-      })
-      .catch((cause: unknown) => setMessage(describeServerError(cause)))
-      .finally(() => setBusy(false));
-  };
-  return (
-    <div className="flex items-center justify-between gap-2 bg-comic-yellow px-2.5 py-1.5 text-black">
-      <p className="min-w-0 text-[13px] font-bold leading-4">
-        Mandato di {prize.label}: {prize.place}° posto, <LeagueBadge league={prize.league} />. Premio: {describePrize(prize)}.
-        {message && <span className="block">{message}</span>}
-      </p>
-      <button type="button" disabled={busy} onClick={claim} className="btn shrink-0 bg-black px-3 font-display text-base uppercase text-comic-yellow">
-        Ritira
-      </button>
-    </div>
   );
 }
 
@@ -215,7 +197,7 @@ function Ranking({ board }: { board: RankedBoard }) {
   const unit = board.format === null ? "Fama" : "Fama qui";
   return (
     <>
-      <ol className="flex flex-col gap-0.5">
+      <ol className="flex flex-col gap-px">
         {board.top.map((entry) => (
           <Row key={entry.place} entry={entry} unit={unit} />
         ))}
@@ -223,7 +205,7 @@ function Ranking({ board }: { board: RankedBoard }) {
       {meBelow && (
         <>
           {meBelow.place > board.top.length + 1 && (
-            <p aria-hidden className="text-center font-display leading-4 tracking-[0.4em] text-faint">
+            <p aria-hidden className="text-center font-display text-xs leading-3 tracking-[0.4em] text-faint">
               ···
             </p>
           )}
@@ -238,18 +220,19 @@ function Ranking({ board }: { board: RankedBoard }) {
 
 const MEDALS = ["bg-comic-yellow", "bg-[#c9d1d9]", "bg-[#d08b4f]"];
 
-/** A place: rank, avatar, name, title and league, then the Fama and the wins. */
+/** A place on one compact line: rank, avatar, name with league and title, Fama and wins. */
 function Row({ entry, unit }: { entry: RankedBoardEntry; unit: string }) {
   const medal = entry.place <= 3 && !entry.is_me ? MEDALS[entry.place - 1] : null;
+  const faint = entry.is_me ? "text-black/70" : "text-muted";
   return (
     <li
-      className={`flex min-h-11 shrink-0 items-center justify-between gap-2 px-2.5 py-1 text-sm font-semibold ${
+      className={`flex h-[34px] shrink-0 items-center justify-between gap-2 px-2 text-sm font-semibold ${
         entry.is_me ? "bg-comic-yellow text-black" : "bg-panel"
       }`}
     >
-      <span className="flex min-w-0 items-center gap-2">
+      <span className="flex min-w-0 items-center gap-1.5">
         <span
-          className={`flex h-6 min-w-6 shrink-0 items-center justify-center px-0.5 font-display text-lg leading-none ${
+          className={`flex h-[22px] min-w-[22px] shrink-0 items-center justify-center px-0.5 font-display text-base leading-none ${
             medal ? `${medal} -skew-x-8 text-black` : ""
           }`}
         >
@@ -257,23 +240,19 @@ function Row({ entry, unit }: { entry: RankedBoardEntry; unit: string }) {
         </span>
         <PlayerAvatar username={entry.username} avatarUrl={entry.avatar_url} size="xs" />
         <span className="flex min-w-0 flex-col">
-          <span className="truncate leading-4">{entry.username}</span>
+          <span className="truncate text-[13px] leading-4">{entry.username}</span>
           <span className="flex min-w-0 items-center gap-1">
             <LeagueBadge league={entry.league} className="!px-1 !py-0 !text-[9px] !leading-3" />
-            {entry.title && (
-              <span className={`truncate text-[10px] font-extrabold uppercase leading-3 ${entry.is_me ? "text-black/70" : "text-muted"}`}>
-                «{entry.title}»
-              </span>
-            )}
+            {entry.title && <span className={`truncate text-[9px] font-extrabold uppercase leading-3 ${faint}`}>«{entry.title}»</span>}
           </span>
         </span>
       </span>
       <span className="flex shrink-0 flex-col items-end">
-        <span className="font-display text-lg leading-5">
+        <span className="font-display text-base leading-4">
           {entry.value}
-          <span className="ml-1 font-sans text-[11px] font-bold">{unit}</span>
+          <span className="ml-1 font-sans text-[10px] font-bold">{unit}</span>
         </span>
-        <span className={`text-[11px] font-semibold leading-3 ${entry.is_me ? "text-black/70" : "text-muted"}`}>
+        <span className={`text-[10px] font-semibold leading-3 ${faint}`}>
           {entry.wins} vinte su {entry.matches}
         </span>
       </span>

@@ -44,12 +44,13 @@ export function describeFamaChange(delta: number): string {
 /** The boards of the Albo: every format together, or one (both Quadrante grids are one). */
 export type RankedBoardFormat = "classic" | "boss" | "triple" | "quadrant";
 
-export const RANKED_BOARD_FORMATS: { key: RankedBoardFormat | null; label: string }[] = [
-  { key: null, label: "Tutte" },
-  { key: "classic", label: "Classica" },
-  { key: "boss", label: "Grande Minaccia" },
-  { key: "triple", label: "Allarme Triplo" },
-  { key: "quadrant", label: "Quadrante" },
+/** `short`: on the Albo's filters, which fit one line of a phone. */
+export const RANKED_BOARD_FORMATS: { key: RankedBoardFormat | null; label: string; short: string }[] = [
+  { key: null, label: "Tutte", short: "Tutte" },
+  { key: "classic", label: "Classica", short: "Classica" },
+  { key: "boss", label: "Grande Minaccia", short: "Minaccia" },
+  { key: "triple", label: "Allarme Triplo", short: "Triplo" },
+  { key: "quadrant", label: "Quadrante", short: "Quadrante" },
 ];
 
 export function boardFormatOf(format: MatchFormat): RankedBoardFormat {

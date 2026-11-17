@@ -1,18 +1,24 @@
 "use client";
 
-// Fixed scenes to look at the Classificata's way in without a server. A development-only page:
+// Fixed scenes to look at the Classificata without a server. A development-only page:
 // next.config.ts serves *.dev.tsx pages in `next dev` only, so it is never part of the
-// published site. Numbers are placeholders.
+// published site. Names and numbers are placeholders.
 //   /prova-classificata/?s=home       the home with the split Gioca / Classificata buttons
 //   /prova-classificata/?s=home-vuota the same before the Fama arrives
-//   /prova-classificata/?s=pagina     the Classificata page, 3rd in the Mandato, a prize to claim
-//   /prova-classificata/?s=bloccata   the page with a match in progress: the modes are off
+//   /prova-classificata/?s=pagina     the Classificata page, 3rd in the Mandato
+//   /prova-classificata/?s=bloccata   the page at its fullest: a prize to claim and a match in progress
+//   /prova-classificata/?s=albo       the Albo full: 10 Reggenti, the player 14th, a prize to claim
+//   /prova-classificata/?s=oro        the Albo d'oro, one past Mandato at a time
 
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { HomePlayButtons } from "@/components/home-play-buttons";
+import { LeaderboardView } from "@/components/leaderboard-view";
 import { RankedModesView } from "@/components/ranked-modes";
-import type { MyRanked } from "@/lib/ranked";
+import type { MyRanked, RankedBoard, RankedBoardEntry, RankedLeague } from "@/lib/ranked";
+import { leagueOf } from "@/lib/ranked";
+
+const PRIZE = { season: "2026-10", label: "ottobre 2026", place: 12, league: "veterano" as const, fama: 980, coins: 100, packs: 0, title: null };
 
 const RANKED: MyRanked = {
   season: "2026-11",
@@ -28,9 +34,45 @@ const RANKED: MyRanked = {
   draws: 1,
   season_matches: 3,
   min_matches: 5,
-  place: 3,
-  prizes: [{ season: "2026-10", label: "ottobre 2026", place: 12, league: "veterano", fama: 980, coins: 100, packs: 0, title: null }],
+  place: 14,
+  prizes: [],
 };
+
+const NAMES = ["Giacomo_Testa", "LaFenice", "gaia_b", "Massimo_Cattane_2632", "Riccardo_Sala", "TigreBlu", "IlariaFarina", "Dani_17", "Noemi_Galli", "PanteraOro", "Fabio_CA", "Vero85", "Alice_P", "Alb1s10t"];
+
+function entry(place: number, me = false): RankedBoardEntry {
+  const fama = 2900 - place * 130;
+  return {
+    place,
+    username: NAMES[(place - 1) % NAMES.length],
+    // Some with a card drawing, some with the initial.
+    avatar_url: place % 3 === 0 ? null : `/cards/P${String(((place * 7) % 120) + 1).padStart(3, "0")}.webp`,
+    title: place % 4 === 1 ? "Campione dell'Emergenza" : null,
+    value: fama,
+    fama,
+    league: leagueOf(fama) as RankedLeague,
+    matches: 40 - place,
+    wins: 25 - place,
+    losses: 15,
+    is_me: me,
+  };
+}
+
+const BOARD: RankedBoard = {
+  season: "2026-11",
+  label: "novembre 2026",
+  ends_at: "2026-11-30T23:00:00Z",
+  current: true,
+  format: null,
+  players: 87,
+  top: Array.from({ length: 10 }, (_, i) => entry(i + 1)),
+  me: entry(14, true),
+};
+
+const HALL = [
+  { season: "2026-10", label: "ottobre 2026", podium: [entry(1), entry(2), entry(3)] },
+  { season: "2026-09", label: "settembre 2026", podium: [entry(4), entry(5), entry(6)] },
+];
 
 /** The home as laid out by HomeScreen, with blocks in place of the parts that need a server. */
 function HomeScene({ ranked }: { ranked: MyRanked | null }) {
@@ -55,8 +97,19 @@ function HomeScene({ ranked }: { ranked: MyRanked | null }) {
           <div className="min-h-[70px] bg-foreground" />
         </div>
       </main>
-      <div className="h-16 shrink-0 border-t-[3px] border-foreground bg-black" />
     </div>
+  );
+}
+
+/** The Classificata page; .home-shell already leaves the bottom bar's room. */
+function PageScene({ prize, active }: { prize: boolean; active: boolean }) {
+  return (
+    <RankedModesView
+      ranked={{ ...RANKED, place: 3, prizes: prize ? [PRIZE] : [] }}
+      active={active ? { id: "prova", mode: "ranked", format: "classic", bot_difficulty: null, current_round: 2 } : null}
+      error={null}
+      onPrizeClaimed={() => {}}
+    />
   );
 }
 
@@ -64,16 +117,18 @@ function Scene() {
   const scene = useSearchParams().get("s") ?? "home";
   if (scene === "home") return <HomeScene ranked={RANKED} />;
   if (scene === "home-vuota") return <HomeScene ranked={null} />;
-  if (scene === "bloccata") {
+  if (scene === "bloccata") return <PageScene prize active />;
+  if (scene === "albo" || scene === "oro") {
     return (
-      <RankedModesView
-        ranked={RANKED}
-        active={{ id: "prova", mode: "ranked", format: "classic", bot_difficulty: null, current_round: 2 }}
-        error={null}
+      <LeaderboardView
+        initialBoard="general"
+        initialPeriod={null}
+        initialAlbo
+        rankedPreview={{ mine: { ...RANKED, prizes: [PRIZE] }, board: BOARD, hall: HALL }}
       />
     );
   }
-  return <RankedModesView ranked={RANKED} active={null} error={null} />;
+  return <PageScene prize={false} active={false} />;
 }
 
 export default function RankedTestPage() {

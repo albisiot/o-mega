@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BackLink } from "@/components/comic-parts";
 import { PlayerAvatar } from "@/components/player-avatar";
-import { RankedBoardPanel } from "@/components/ranked-board";
+import { RankedBoardPanel, type RankedBoardPreview } from "@/components/ranked-board";
 import { balance } from "@/config/balance";
 import { describeServerError } from "@/lib/errors";
 import {
@@ -46,10 +46,13 @@ export function LeaderboardView({
   initialBoard,
   initialPeriod,
   initialAlbo = false,
+  rankedPreview,
 }: {
   initialBoard: LeaderboardBoard;
   initialPeriod: LeaderboardPeriod | null;
   initialAlbo?: boolean;
+  /** Development scenes: the Albo with fixed data. */
+  rankedPreview?: RankedBoardPreview;
 }) {
   useLockedScreen(true);
   const [albo, setAlbo] = useState(initialAlbo);
@@ -139,7 +142,7 @@ export function LeaderboardView({
           ))}
         </div>
 
-        {albo && <RankedBoardPanel />}
+        {albo && <RankedBoardPanel preview={rankedPreview} />}
 
         {!albo && info.periods.length > 1 && (
           <div role="tablist" aria-label="Periodo" className="flex shrink-0 gap-1.5">
