@@ -3355,6 +3355,7 @@ export type Database = {
       claim_daily_objective: { Args: { p_objective_id: string }; Returns: Json }
       claim_daily_pack: { Args: never; Returns: Json }
       claim_emergency_prize: { Args: { p_prize_id: string }; Returns: Json }
+      claim_ranked_prize: { Args: { p_season: string }; Returns: Json }
       claim_victory: { Args: { p_match_id: string }; Returns: Json }
       classic_match_state_payload: {
         Args: { p_match_id: string; p_side: string }
@@ -3648,10 +3649,16 @@ export type Database = {
       get_match_rewards: { Args: never; Returns: Json }
       get_match_state: { Args: { p_match_id: string }; Returns: Json }
       get_my_leaderboard_places: { Args: never; Returns: Json }
+      get_my_ranked: { Args: never; Returns: Json }
       get_pack_odds: { Args: never; Returns: Json }
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
       get_pack_status: { Args: never; Returns: Json }
       get_player_notifications: { Args: never; Returns: Json }
+      get_ranked_board: {
+        Args: { p_format?: string; p_season?: string }
+        Returns: Json
+      }
+      get_ranked_hall: { Args: never; Returns: Json }
       get_special_packs: { Args: never; Returns: Json }
       get_story: { Args: never; Returns: Json }
       get_story_reward: { Args: { p_match_id: string }; Returns: Json }
