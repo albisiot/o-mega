@@ -26,6 +26,7 @@ import {
   playQuadrantMove,
   playTripleBotRound,
   playTriplePvpRound,
+  planRankedGhost,
   resolveEmergencyPlay,
   type BossRules,
   type BossState,
@@ -43,6 +44,7 @@ import {
   type QuadrantPlacement,
   type QuadrantRules,
   type QuadrantState,
+  type RankedLadderStep,
   type RareThreat,
   type Rng,
   type RoundRecord,
@@ -95,6 +97,7 @@ const CLIENT_ERRORS = new Set([
   "boss_not_found",
   "invalid_placement",
   "not_your_turn",
+  "no_ranked_opponent",
 ]);
 
 class GameError extends Error {}
@@ -144,6 +147,11 @@ type Loaded = {
   /** Fixed grid with border threats: the seals a card loses to a higher threat (SPEC §5.14). */
   quadrantBorders: { bite: number };
   graceSeconds: number;
+  /**
+   * Classificata (SPEC §8.7): how the server's opponent plays and builds its team,
+   * league by league. Empty until the database has the keys: ranked queues refuse then.
+   */
+  rankedLadder: RankedLadderStep[];
   catalog: BotMatchCatalog;
   /** Usual threats of Nuova Megara only: Emergenza never draws the places beyond it. */
   emergencyCatalog: Threat[];
@@ -154,6 +162,9 @@ type Loaded = {
 };
 
 let cache: { loaded: Loaded; at: number } | null = null;
+
+/** The leagues of the Classificata, in order (balance.ts `ranked.leagues`). */
+const RANKED_LEAGUES = ["recluta", "vigilante", "veterano", "asso", "leggenda", "omega"] as const;
 
 function toCharacter(definition: Definition, id = definition.id): Character {
   return {
@@ -202,6 +213,16 @@ async function load(): Promise<Loaded> {
   }[];
   const oneIn = new Map((check(threatRarities) as { code: string; one_in: number }[]).map((r) => [r.code, r.one_in]));
   const activeCharacters = definitionRows.filter((d) => d.is_active).map((d) => toCharacter(d));
+  const rankedLadder = RANKED_LEAGUES.every((league) => values.has(`ranked.ghosts.${league}.team_cap`))
+    ? RANKED_LEAGUES.map((league) => ({
+        from: value(`ranked.leagues.${league}`),
+        difficultyFrom: value(`ranked.ghosts.${league}.difficulty_from`),
+        difficultyTo: value(`ranked.ghosts.${league}.difficulty_to`),
+        shareFrom: value(`ranked.ghosts.${league}.share_from`),
+        shareTo: value(`ranked.ghosts.${league}.share_to`),
+        teamCap: value(`ranked.ghosts.${league}.team_cap`),
+      }))
+    : [];
   const places = {
     longCountBonus: value("places.long_count_bonus"),
     frostCap: value("places.frost_cap"),
@@ -290,6 +311,7 @@ async function load(): Promise<Loaded> {
       bite: value("quadrant.fixed_grid_threats.bite"),
     },
     graceSeconds: value("match.timeout_grace_seconds"),
+    rankedLadder,
     catalog: {
       characters: activeCharacters,
       threatCatalog: activeThreats.map(({ id, level, abilities, modifier }) => ({ id, level, abilities, modifier })),
@@ -361,6 +383,11 @@ type MatchContext = {
     quadrant_threats?: { threat_id: string; value: number }[] | null;
     /** Events: the first side with this many seals on the grid wins; null without a target. */
     quadrant_seal_target?: number | null;
+    /**
+     * Classificata against the server's opponent (side b): its difficulty, and whether it
+     * has chosen in the current round or move by now. Null in every other match.
+     */
+    ghost?: { difficulty: BotDifficulty; ready: boolean } | null;
   };
   teams: { side: Side; card_instance_ids: string[] | null; definition_ids: string[] }[];
   rounds: {
@@ -1083,9 +1110,24 @@ async function joinLobby(userId: string, body: Record<string, unknown>) {
   return stateFor(matchId, "b");
 }
 
+/** Characters of a team of a format: classic and Grande Minaccia 5, Allarme Triplo 9, Quadrante 10. */
+function teamSizeOf(loaded: Loaded, format: unknown): number {
+  if (format === "triple") return loaded.triple.rounds * loaded.triple.threats;
+  if (isQuadrantFormat(format)) return loaded.quadrant.deckSize;
+  return loaded.rules.teamSize;
+}
+
 async function joinQueue(userId: string, body: Record<string, unknown>) {
   const cards = cardIds(body.card_instance_ids);
-  const mode = body.mode === "conquest" ? "conquest" : "friendly";
+  const mode = body.mode === "conquest" ? "conquest" : body.mode === "ranked" ? "ranked" : "friendly";
+  // Classificata (SPEC §8.7): the player's Fama and team, to plan the server's opponent.
+  const ranked =
+    mode === "ranked"
+      ? (check(await admin.rpc("ranked_queue_info", { p_user: userId, p_team: cards })) as {
+          fama: number;
+          definition_ids: string[];
+        })
+      : null;
   // Conquest: the bot is described on every call, and the database starts it
   // only once the wait is over, so a refresh is a single request.
   const argsFor = (loaded: Loaded): Record<string, unknown> => {
@@ -1098,19 +1140,38 @@ async function joinQueue(userId: string, body: Record<string, unknown>) {
         p_bot_definition_ids: plan.botTeam.map((c) => c.definitionId),
       };
     }
+    // In the ranked queue the server's opponent is described on every call too, from
+    // the player's Fama and team; the database starts it only once the wait is over.
+    const ghost = (): Record<string, unknown> => {
+      if (!ranked) return {};
+      if (loaded.rankedLadder.length === 0) throw new GameError("invalid_request");
+      const playerTeam = ranked.definition_ids.flatMap((id) => {
+        const definition = loaded.definitions.get(id);
+        return definition ? [toCharacter(definition)] : [];
+      });
+      const plan = planRankedGhost({
+        fama: ranked.fama,
+        ladder: loaded.rankedLadder,
+        catalog: loaded.catalog.characters,
+        size: teamSizeOf(loaded, body.format),
+        playerTeam,
+        rng,
+      });
+      return { p_bot_difficulty: plan.difficulty, p_bot_definition_ids: plan.team.map((c) => c.definitionId) };
+    };
     // A Grande Minaccia between players: the database draws the boss when it pairs them.
     if (body.format === "boss") {
-      return { p_threat_ids: planThreats(loaded), p_format: "boss", p_boss_values: drawBossValues(rng, loaded.boss) };
+      return { p_threat_ids: planThreats(loaded), p_format: "boss", p_boss_values: drawBossValues(rng, loaded.boss), ...ghost() };
     }
     // An Allarme Triplo between players: the database draws the threats and shuffles the decks.
     if (body.format === "triple") {
-      return { p_threat_ids: planThreats(loaded), p_format: "triple" };
+      return { p_threat_ids: planThreats(loaded), p_format: "triple", ...ghost() };
     }
     // A Quadrante between players: the database draws abilities and first side, and shuffles the decks.
     if (isQuadrantFormat(body.format)) {
-      return { p_threat_ids: null, p_format: body.format };
+      return { p_threat_ids: null, p_format: body.format, ...ghost() };
     }
-    return { p_threat_ids: planThreats(loaded) };
+    return { p_threat_ids: planThreats(loaded), ...ghost() };
   };
   const { data, error } = await withBossTable((loaded) =>
     admin.rpc("match_queue_join", { p_user: userId, p_mode: mode, p_team: cards, ...argsFor(loaded) }),
@@ -1129,9 +1190,34 @@ async function resolvePvpRound(userId: string, matchId: string) {
 
   const pendingOf = (pendingSide: Side) => pending.find((p) => p.side === pendingSide) ?? null;
   const expired = Date.now() > deadline + loaded.graceSeconds * 1000;
+  // Classificata against the server's opponent (side b, the player is a): it plays with
+  // the bots of the mode, and only once its time to choose has come (SPEC §8.7).
+  const ghost = match.ghost ?? null;
 
   let saved;
-  if (quadrant) {
+  if (quadrant && ghost && quadrantSideToMove(quadrant) === "b") {
+    if (!ghost.ready && !expired) return stateFor(matchId, side);
+    const placement = chooseQuadrantBotPlacement(quadrantBotView(quadrant, "b", loaded.catalog), ghost.difficulty, rng);
+    saved = await recordQuadrantMove(matchId, quadrant, playQuadrantMove({ state: quadrant, placement, rng }), side);
+  } else if (triple && ghost) {
+    const first = triple.rounds.length * triple.threats.length + 1;
+    const ids = triple.threats.map((_, slot) => pending.find((p) => p.side === "a" && p.round === first + slot)?.card_instance_id);
+    const mine = ids.every((id): id is string => typeof id === "string") ? ids : null;
+    if ((mine === null || !ghost.ready) && !expired) return stateFor(matchId, side);
+    const played = playTripleBotRound({ state: triple, catalog: loaded.catalog, difficulty: ghost.difficulty, playerSide: "a", playerChoice: mine, rng });
+    saved = await recordTripleRound(matchId, triple, played, side);
+  } else if (boss && ghost) {
+    const p = pendingOf("a");
+    const mine = p && p.front_slot !== null ? { characterId: p.card_instance_id, front: p.front_slot - 1 } : null;
+    if ((mine === null || !ghost.ready) && !expired) return stateFor(matchId, side);
+    const played = playBossBotTurn({ state: boss, catalog: loaded.catalog, difficulty: ghost.difficulty, playerSide: "a", playerChoice: mine, rng });
+    saved = await recordBossTurn(matchId, boss, played, side);
+  } else if (state && ghost) {
+    const mine = pendingOf("a")?.card_instance_id ?? null;
+    if ((mine === null || !ghost.ready) && !expired) return stateFor(matchId, side);
+    const played = playBotRound({ state, catalog: loaded.catalog, difficulty: ghost.difficulty, playerSide: "a", playerChoice: mine, rng });
+    saved = await recordRound(matchId, state, played, side);
+  } else if (quadrant) {
     // Only the side whose turn it is plays: its choice, or a random move once the time is up.
     const mover = quadrantSideToMove(quadrant);
     if (mover === null) return stateFor(matchId, side);
@@ -1192,7 +1278,9 @@ async function submitTriple(userId: string, body: Record<string, unknown>) {
       p_card_instance_ids: placement,
     }),
   );
-  if (status === "ready") return resolvePvpRound(userId, body.match_id);
+  // In a Classificata the opponent may be the server's, whose choice only the server
+  // knows: resolving checks, and answers with the state when the round is not ready.
+  if (status === "ready" || body.ranked === true) return resolvePvpRound(userId, body.match_id);
   return check(await admin.rpc("match_state_for_user", { p_match_id: body.match_id, p_user: userId }));
 }
 
@@ -1211,7 +1299,9 @@ async function submitChoice(userId: string, body: Record<string, unknown>) {
       ...(front === null ? {} : { p_front_slot: front + 1 }),
     }),
   );
-  if (status === "ready") return resolvePvpRound(userId, body.match_id);
+  // In a Classificata the opponent may be the server's, whose choice only the server
+  // knows: resolving checks, and answers with the state when the round is not ready.
+  if (status === "ready" || body.ranked === true) return resolvePvpRound(userId, body.match_id);
   return check(await admin.rpc("match_state_for_user", { p_match_id: body.match_id, p_user: userId }));
 }
 
