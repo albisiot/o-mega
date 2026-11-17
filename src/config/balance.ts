@@ -130,6 +130,99 @@ export const balance = {
   },
 
   /**
+   * Classificata (SPEC §8.7): one Fama for every mode, moved by ranked matches and
+   * written by the server when a match ends (game_config `ranked.*`).
+   */
+  ranked: {
+    /** Fama against an opponent with the same Fama. */
+    winPoints: 25,
+    lossPoints: 20,
+    /** Every this much Fama the opponent has more: one point more on a win, one less on a loss. */
+    famaPerPoint: 20,
+    winMin: 10,
+    winMax: 40,
+    lossMin: 5,
+    lossMax: 35,
+    /** From this win in a row on, each win gives streakBonus more. */
+    streakFrom: 3,
+    streakBonus: 5,
+    /** Below this Fama a loss takes nothing (Recluta). */
+    noLossBelow: 300,
+    /** Below this Fama a loss never takes a player under the start of their league (Vigilante, Veterano). */
+    floorsBelow: 1200,
+    /** Ranked matches against the same person that move the Fama in a game day. */
+    sameOpponentDaily: 3,
+    /** Fama at which each league starts. */
+    leagues: {
+      recluta: 0,
+      vigilante: 300,
+      veterano: 700,
+      asso: 1200,
+      leggenda: 1800,
+      omega: 2500,
+    },
+    /** Players shown in the Albo; the player's own place is shown below when lower. */
+    boardSize: 10,
+    matchmaking: {
+      /** Pairing between people: Fama apart at most famaRange, then famaRangeWide, then anyone. */
+      famaRange: 150,
+      famaRangeWide: 400,
+      widenAfterSeconds: 10,
+      anyAfterSeconds: 20,
+      /** Without a person, the opponent comes at a random moment of this window. */
+      ghostMinSeconds: 20,
+      ghostMaxSeconds: 30,
+      /** The client asks again this often while waiting. */
+      refreshSeconds: 3,
+    },
+    /** The Mandato: one calendar month, Europe/Rome. */
+    season: {
+      /** A new Mandato keeps the Fama up to this, plus keepSharePercent of the rest. */
+      keepUpTo: 700,
+      keepSharePercent: 50,
+      /** Ranked matches in a Mandato before its prize. */
+      minMatches: 5,
+      /** Prizes by the league at the end of the Mandato. */
+      rewards: {
+        recluta: { coins: 25, packs: 0 },
+        vigilante: { coins: 50, packs: 0 },
+        veterano: { coins: 100, packs: 0 },
+        asso: { coins: 100, packs: 1 },
+        leggenda: { coins: 0, packs: 2 },
+        omega: { coins: 0, packs: 3 },
+      },
+    },
+    /**
+     * The opponent found when no person is free: at the start of each league, and
+     * towards the start of the next. Difficulty 1 Facile to 4 Super Pro; share: the
+     * strongest part of the catalog its team comes from (100 = all); teamCap: at most
+     * this percent as strong as the player's team (0 = no cap).
+     */
+    ghosts: {
+      recluta: { difficultyFrom: 1, difficultyTo: 2, shareFrom: 100, shareTo: 100, teamCap: 100 },
+      vigilante: { difficultyFrom: 2, difficultyTo: 2, shareFrom: 100, shareTo: 100, teamCap: 110 },
+      veterano: { difficultyFrom: 2, difficultyTo: 3, shareFrom: 100, shareTo: 50, teamCap: 125 },
+      asso: { difficultyFrom: 3, difficultyTo: 3, shareFrom: 50, shareTo: 35, teamCap: 0 },
+      leggenda: { difficultyFrom: 3, difficultyTo: 4, shareFrom: 35, shareTo: 20, teamCap: 0 },
+      omega: { difficultyFrom: 4, difficultyTo: 4, shareFrom: 20, shareTo: 15, teamCap: 0 },
+      /** Their Fama is the player's, give or take this much. */
+      famaSpread: 60,
+      /**
+       * Seconds from the opening of a round (or of their move) to their choice, drawn in
+       * each window; lateChancePercent of the choices come in the last seconds instead.
+       */
+      delays: {
+        classic: { min: 9, max: 26 },
+        boss: { min: 9, max: 26 },
+        tripleFirst: { min: 14, max: 40 },
+        triple: { min: 28, max: 62 },
+        quadrant: { min: 5, max: 20 },
+      },
+      lateChancePercent: 4,
+    },
+  },
+
+  /**
    * Grande Minaccia (SPEC §5.12): a boss with five fronts and a points table visible
    * from the start; a character placed on a front stays there and scores every turn.
    * Simulated on the real catalog. The turn timer is the match's round timer.
