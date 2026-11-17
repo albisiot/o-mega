@@ -3559,6 +3559,14 @@ export type Database = {
         Args: { p_factions: string[]; p_rarities: string[]; p_traits: string[] }
         Returns: Json
       }
+      event_leaderboard_allowed: {
+        Args: { p_event_id: string; p_user: string }
+        Returns: boolean
+      }
+      event_leaderboard_payload: {
+        Args: { p_event_id: string; p_user: string }
+        Returns: Json
+      }
       event_payload: {
         Args: { p_event_id: string; p_user: string }
         Returns: Json
