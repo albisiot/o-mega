@@ -28,26 +28,23 @@ export default function ProfilePage() {
   return <ProfileView profile={profile} />;
 }
 
-type ProfileTab = "stats" | "conquests" | "more";
+type ProfileTab = "stats" | "places" | "conquests" | "more";
 
 const TABS: { key: ProfileTab; label: string }[] = [
   { key: "stats", label: "Statistiche" },
+  { key: "places", label: "Posizioni" },
   { key: "conquests", label: "Conquiste" },
   { key: "more", label: "Altro" },
 ];
 
-/** One way out of the profile in the Altro tab. */
-const ROW = "row-link min-h-12 w-full text-left";
+/** One way out of the profile in the Altro tab: a tile of a two-column grid. */
+const ROW = "flex min-h-12 w-full items-center bg-panel px-3 py-1 text-left font-display text-[16px] uppercase leading-5";
+
+/** Conquests the tab lists, the newest first; the Storico has them all. */
+const CONQUESTS_SHOWN = 5;
 
 function RowLabel({ children }: { children: string }) {
-  return (
-    <>
-      <span className="font-display text-xl uppercase">{children}</span>
-      <span className="font-display text-2xl text-comic-yellow" aria-hidden>
-        →
-      </span>
-    </>
-  );
+  return <>{children}</>;
 }
 
 /**
@@ -169,22 +166,22 @@ function ProfileView({ profile }: { profile: Profile }) {
           </div>
         </section>
 
-        <TabBar tabs={TABS} current={tab} onPick={setTab} label="Profilo" />
+        <TabBar tabs={TABS} current={tab} onPick={setTab} label="Profilo" small />
 
         <div role="tabpanel" data-keep-scroll="panel" className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden overscroll-contain">
           {tab === "stats" && (
-            <>
-              <section className="grid grid-cols-2 gap-1.5">
-                {stats.map((stat) => (
-                  <div key={stat.label} className="bg-panel px-3.5 py-1.5">
-                    <p className="font-display text-2xl leading-7">{stat.value}</p>
-                    <p className="text-xs font-semibold text-muted">{stat.label}</p>
-                  </div>
-                ))}
-              </section>
-              <h2 className="section-title mt-2">Le tue posizioni</h2>
-              <MyLeaderboardPlaces />
-            </>
+            <section className="grid grid-cols-2 gap-1.5">
+              {stats.map((stat) => (
+                <div key={stat.label} className="bg-panel px-3.5 py-1">
+                  <p className="font-display text-2xl leading-7">{stat.value}</p>
+                  <p className="text-xs font-semibold text-muted">{stat.label}</p>
+                </div>
+              ))}
+            </section>
+          )}
+
+          {tab === "places" && (
+            <MyLeaderboardPlaces albo={ranked?.place ? { place: ranked.place, label: ranked.season_label } : null} />
           )}
 
           {tab === "conquests" &&
@@ -194,7 +191,7 @@ function ProfileView({ profile }: { profile: Profile }) {
               <p className="text-sm font-medium text-muted">Ancora nessuna Conquista.</p>
             ) : (
               <ul className="flex flex-col gap-0.5" aria-label="Carte conquistate e perse">
-                {history.map((entry) => (
+                {history.slice(0, CONQUESTS_SHOWN).map((entry) => (
                   <li
                     key={`${entry.created_at}-${entry.card.code}`}
                     className="flex items-center justify-between gap-3 bg-panel px-4 py-2.5"
@@ -213,11 +210,21 @@ function ProfileView({ profile }: { profile: Profile }) {
                     </span>
                   </li>
                 ))}
+                {history.length > CONQUESTS_SHOWN && (
+                  <li>
+                    <Link href="/storico" className="flex min-h-10 items-center justify-between bg-panel px-4 text-sm font-extrabold">
+                      Le altre {history.length - CONQUESTS_SHOWN} nello Storico partite
+                      <span className="font-display text-xl text-comic-yellow" aria-hidden>
+                        →
+                      </span>
+                    </Link>
+                  </li>
+                )}
               </ul>
             ))}
 
           {tab === "more" && (
-            <>
+            <div className="grid grid-cols-2 gap-1.5">
               <Link href="/imprese" className={ROW}>
                 <RowLabel>Imprese</RowLabel>
               </Link>
@@ -228,12 +235,12 @@ function ProfileView({ profile }: { profile: Profile }) {
                 <RowLabel>Storico partite</RowLabel>
               </Link>
               <Link href="/collezione" className={ROW}>
-                <RowLabel>Vai alla collezione</RowLabel>
+                <RowLabel>Collezione</RowLabel>
               </Link>
               <Link href="/bestiario" className={ROW}>
-                <RowLabel>Bestiario delle Minacce</RowLabel>
+                <RowLabel>Bestiario</RowLabel>
               </Link>
-              <TutorialButton className="min-h-12" />
+              <TutorialButton tile className={ROW} />
               <button type="button" aria-haspopup="dialog" onClick={() => worldSheet.current?.showModal()} className={ROW}>
                 <RowLabel>Il mondo</RowLabel>
               </button>
@@ -250,10 +257,10 @@ function ProfileView({ profile }: { profile: Profile }) {
                 </Link>
               )}
               {/* Inset: the slanted button would stick out of the panel and let it slide sideways. */}
-              <button type="button" onClick={signOut} className="btn btn-ghost mx-1 shrink-0">
+              <button type="button" onClick={signOut} className="btn btn-ghost col-span-2 mx-1 shrink-0">
                 Esci
               </button>
-            </>
+            </div>
           )}
         </div>
       </main>

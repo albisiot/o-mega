@@ -32,11 +32,14 @@ export function TabBar<T extends string>({
   current,
   onPick,
   label,
+  small = false,
 }: {
   tabs: { key: T; label: string }[];
   current: T;
   onPick: (key: T) => void;
   label: string;
+  /** Smaller lettering, so four tabs fit a phone's width. */
+  small?: boolean;
 }) {
   return (
     <div role="tablist" aria-label={label} className="flex shrink-0 gap-1.5">
@@ -47,7 +50,7 @@ export function TabBar<T extends string>({
           role="tab"
           aria-selected={tab.key === current}
           onClick={() => onPick(tab.key)}
-          className={`min-h-11 min-w-0 flex-1 -skew-x-8 px-1 font-display text-[17px] uppercase ${
+          className={`min-h-11 min-w-0 flex-1 -skew-x-8 px-1 font-display uppercase ${small ? "text-[14px]" : "text-[17px]"} ${
             tab.key === current ? "bg-comic-magenta text-black" : "bg-panel text-muted"
           }`}
         >

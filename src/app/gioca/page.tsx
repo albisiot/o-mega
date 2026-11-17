@@ -30,18 +30,18 @@ const DIFFICULTIES = ["easy", "medium", "hard", "super_pro"] as const;
 
 const MODES = [
   { key: "classic", label: "Partita classica", detail: "Contro un bot, online o in Conquista", color: "bg-comic-magenta", group: "versus" },
-  { key: "story", label: "Storia", detail: "Missioni a Nuova Megara, con carte in premio", color: "rays-gold", group: "solo" },
-  { key: "emergency", label: "Emergenza", detail: "La sfida del giorno, con la classifica", color: "bg-foreground", group: "solo" },
+  { key: "story", label: "Storia", detail: "Missioni con premi", color: "rays-gold", group: "solo" },
+  { key: "emergency", label: "Emergenza", detail: "La sfida del giorno", color: "bg-foreground", group: "solo" },
   { key: "boss", label: "Grande Minaccia", detail: "Un Boss, cinque fronti", color: "bg-comic-orange", group: "other" },
   { key: "triple", label: "Allarme Triplo", detail: "Tre Minacce, nove carte, tre round", color: "bg-comic-yellow", group: "other" },
   { key: "quadrant", label: "Quadrante", detail: "Una griglia 4×4, quattro abilità sui lati", color: "bg-comic-cyan", group: "other" },
 ] as const;
 
-/** The headings the menu groups its modes under, in order. */
+/** The headings the menu groups its modes under, in order; `pair`: its modes side by side. */
 const GROUPS = [
-  { key: "versus", label: "5 contro 5" },
-  { key: "solo", label: "Da solo" },
-  { key: "other", label: "Altre modalità" },
+  { key: "versus", label: "5 contro 5", pair: false },
+  { key: "solo", label: "Da solo", pair: true },
+  { key: "other", label: "Altre modalità", pair: false },
 ] as const;
 
 /** Modes the menu used to have, now inside another: a remembered one reopens its new home. */
@@ -56,11 +56,11 @@ function OptionRow({ href, title, detail, disabled = false }: { href: string; ti
     <Link
       href={disabled ? "#" : href}
       aria-disabled={disabled}
-      className={`row-link py-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}
+      className={`row-link min-h-12 py-1.5 ${disabled ? "pointer-events-none opacity-40" : ""}`}
     >
-      <div>
-        <p className="font-display text-xl uppercase leading-6">{title}</p>
-        <p className="text-[13px] font-medium leading-4 text-muted">{detail}</p>
+      <div className="min-w-0">
+        <p className="truncate font-display text-[19px] uppercase leading-5">{title}</p>
+        <p className="truncate text-[13px] font-medium leading-4 text-muted">{detail}</p>
       </div>
       <span className="font-display text-2xl text-comic-yellow" aria-hidden>
         →
@@ -72,10 +72,10 @@ function OptionRow({ href, title, detail, disabled = false }: { href: string; ti
 /** A chapter the player cannot open yet: shown, so they know what comes next. */
 function LockedRow({ title, detail }: { title: string; detail: string }) {
   return (
-    <div className="row-link py-2 opacity-60">
-      <div>
-        <p className="font-display text-xl uppercase leading-6">{title}</p>
-        <p className="text-[13px] font-medium leading-4 text-muted">{detail}</p>
+    <div className="row-link min-h-12 py-1.5 opacity-60">
+      <div className="min-w-0">
+        <p className="truncate font-display text-[19px] uppercase leading-5">{title}</p>
+        <p className="truncate text-[13px] font-medium leading-4 text-muted">{detail}</p>
       </div>
       <span className="shrink-0 text-xl" aria-label="Da sbloccare">
         🔒
@@ -84,9 +84,14 @@ function LockedRow({ title, detail }: { title: string; detail: string }) {
   );
 }
 
-/** Every chapter, the locked ones too, under the title of its season: each opens the Story on itself. */
+/**
+ * The chapters of one season at a time, the locked ones too: each opens the Story on itself.
+ * It opens on the season the player is in (its first chapter still to finish); the arrows go
+ * to the others. One season fits the screen, the whole Story would not.
+ */
 function StorySection({ disabled }: { disabled: boolean }) {
   const [chapters, setChapters] = useState<StoryChapter[] | null>(() => seenStory());
+  const [picked, setPicked] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,38 +105,59 @@ function StorySection({ disabled }: { disabled: boolean }) {
     };
   }, []);
 
+  const seasons = chapters ? [...new Set(chapters.map((chapter) => chapter.season))] : [];
+  const playing = chapters?.find((chapter) => chapterUnlocked(chapter) && chapter.missions.some((m) => !m.completed));
+  const lastOpen = chapters?.filter((chapter) => chapterUnlocked(chapter)).at(-1);
+  const season = picked ?? playing?.season ?? lastOpen?.season ?? seasons[0];
+  const index = seasons.indexOf(season);
+  const shown = chapters?.filter((chapter) => chapter.season === season) ?? [];
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5">
       {/* On top and as a button: at the bottom, among the chapters, it read as one more chapter. */}
       <Link href={leaderboardHref("story")} className="btn btn-outline w-full">
         <TrophyIcon />
         {MODE_BOARDS.story.title}
       </Link>
-      <p className="text-sm font-medium text-muted">
-        Missioni contro gli avversari di Nuova Megara, con squadre e Minacce preparate. La prima vittoria di ogni
-        missione dà monete, e il boss di fine capitolo una carta.
+      <p className="text-[13px] font-medium leading-4 text-muted">
+        Missioni contro gli avversari di Nuova Megara: la prima vittoria di ogni missione dà monete, il boss di fine
+        capitolo una carta.
       </p>
-      {chapters && chapters.length > 0 ? (
-        chapters.map((chapter, index) => {
-          const previous = chapters[index - 1];
-          // The chapters come in story order, so a season starts where the one before changes.
-          const season = previous?.season !== chapter.season && (
-            <GroupTitle>{`Stagione ${chapter.season} · ${chapter.season_title}`}</GroupTitle>
-          );
-          const title = `Capitolo ${chapter.number}: ${chapter.title}`;
-          if (!chapterUnlocked(chapter)) {
+      {shown.length > 0 ? (
+        <>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-label="Stagione precedente"
+              disabled={index <= 0}
+              onClick={() => setPicked(seasons[index - 1])}
+              className="btn btn-ghost h-9 w-9 shrink-0 px-0 disabled:opacity-30"
+            >
+              ‹
+            </button>
+            <h3 className="min-w-0 flex-1 truncate text-center font-display text-lg uppercase leading-5 text-comic-yellow">
+              {`Stagione ${shown[0].season} · ${shown[0].season_title}`}
+            </h3>
+            <button
+              type="button"
+              aria-label="Stagione successiva"
+              disabled={index >= seasons.length - 1}
+              onClick={() => setPicked(seasons[index + 1])}
+              className="btn btn-ghost h-9 w-9 shrink-0 px-0 disabled:opacity-30"
+            >
+              ›
+            </button>
+          </div>
+          {shown.map((chapter) => {
+            const previous = chapters?.[chapters.indexOf(chapter) - 1];
+            const title = `Capitolo ${chapter.number}: ${chapter.title}`;
+            if (!chapterUnlocked(chapter)) {
+              return <LockedRow key={chapter.chapter} title={title} detail={unlockHint(previous, chapter)} />;
+            }
+            const done = chapter.missions.filter((m) => m.completed).length;
             return (
-              <Fragment key={chapter.chapter}>
-                {season}
-                <LockedRow title={title} detail={unlockHint(previous, chapter)} />
-              </Fragment>
-            );
-          }
-          const done = chapter.missions.filter((m) => m.completed).length;
-          return (
-            <Fragment key={chapter.chapter}>
-              {season}
               <OptionRow
+                key={chapter.chapter}
                 href={`/storia/?capitolo=${chapter.chapter}`}
                 title={title}
                 detail={
@@ -141,9 +167,9 @@ function StorySection({ disabled }: { disabled: boolean }) {
                 }
                 disabled={disabled}
               />
-            </Fragment>
-          );
-        })
+            );
+          })}
+        </>
       ) : (
         <OptionRow href="/storia" title="Apri la Storia" detail="Carico i capitoli…" disabled={disabled} />
       )}
@@ -173,7 +199,7 @@ function BotGrid({ query, texts, color }: { query: string; texts: BotTexts; colo
             key={difficulty}
             href={`/squadra/?${query}difficulty=${difficulty}`}
             aria-label={`Contro il bot ${DIFFICULTY_LABELS[difficulty]}: ${texts[difficulty].detail}`}
-            className={`flex min-h-14 flex-col justify-center px-3 py-1.5 text-black ${color}`}
+            className={`flex min-h-12 flex-col justify-center px-3 py-1 text-black ${color}`}
           >
             <span className="font-display text-xl uppercase leading-6">{DIFFICULTY_LABELS[difficulty]}</span>
             <span className="text-xs font-bold leading-4">{texts[difficulty].short}</span>
@@ -192,14 +218,14 @@ function OnlineGroup({ query, randomDetail }: { query: string; randomDetail: str
       <div className="grid grid-cols-2 gap-2">
         <Link
           href={`/squadra/?mode=queue${query}`}
-          className="flex min-h-14 flex-col justify-center bg-comic-yellow px-3 py-1.5 text-black"
+          className="flex min-h-12 flex-col justify-center bg-comic-yellow px-3 py-1 text-black"
         >
           <span className="font-display text-xl uppercase leading-6">Avversario casuale</span>
           <span className="text-xs font-bold leading-4">{randomDetail}</span>
         </Link>
         <Link
           href={`/squadra/?mode=lobby${query}`}
-          className="flex min-h-14 flex-col justify-center bg-panel px-3 py-1.5 text-foreground"
+          className="flex min-h-12 flex-col justify-center bg-panel px-3 py-1 text-foreground"
         >
           <span className="font-display text-xl uppercase leading-6">Crea un codice</span>
           <span className="text-xs font-bold leading-4 text-muted">Mandalo a un amico</span>
@@ -213,11 +239,10 @@ function OnlineGroup({ query, randomDetail }: { query: string; randomDetail: str
 /** Grande Minaccia (SPEC §5.12): against a bot, or friendly between players. */
 function BossSection({ disabled }: { disabled: boolean }) {
   return (
-    <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
-      <p className="text-sm font-medium text-muted">
-        Il Boss ha cinque fronti, tutti visibili: ogni turno due sono caldi e valgono di più, sempre diversi. Ogni turno metti un personaggio su un tuo
-        fronte libero e resta lì fino alla fine: ogni fronte occupato paga a ogni turno, a chi è da solo o a chi fa più
-        punti. Nessuna carta in gioco e nessuna moneta.
+    <div className={`flex flex-col gap-1.5 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
+      <p className="text-[13px] font-medium leading-4 text-muted">
+        Cinque fronti, due caldi a ogni turno. Ogni turno un tuo personaggio entra su un fronte libero e ci resta: ogni
+        fronte paga a ogni turno a chi è da solo o fa più punti.
       </p>
       <BotGrid query="format=boss&" texts={BOSS_BOTS} color="bg-comic-orange" />
       <OnlineGroup query="&format=boss" randomDetail="Il primo giocatore libero" />
@@ -236,11 +261,10 @@ const BOSS_BOTS: BotTexts = {
 function TripleSection({ disabled }: { disabled: boolean }) {
   const { rounds, threats } = balance.triple;
   return (
-    <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
-      <p className="text-sm font-medium text-muted">
-        Porti un mazzo di {rounds * threats} personaggi. Escono {threats} Minacce a caso, sempre le stesse per tutta la
-        partita. Ogni round peschi {threats} carte e ne metti una per Minaccia: ogni Minaccia vinta vale un punto. Dopo{" "}
-        {rounds} round vince chi ha più punti. Nessuna carta in gioco e nessuna moneta.
+    <div className={`flex flex-col gap-1.5 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
+      <p className="text-[13px] font-medium leading-4 text-muted">
+        Mazzo di {rounds * threats}, {threats} Minacce fisse. Ogni round peschi {threats} carte e ne metti una per Minaccia: ogni
+        Minaccia vinta vale un punto, dopo {rounds} round vince chi ne ha di più.
       </p>
       <BotGrid query="format=triple&" texts={TRIPLE_BOTS} color="bg-comic-yellow" />
       <OnlineGroup query="&format=triple" randomDetail="Il primo giocatore libero" />
@@ -260,11 +284,10 @@ function QuadrantSection({ disabled }: { disabled: boolean }) {
   const [grid, setGrid] = useRememberedState<QuadrantFormat>("quadrant-grid", "quadrant");
   const { deckSize, handSize, cardsPerSide } = balance.quadrant;
   return (
-    <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
-      <p className="text-sm font-medium text-muted">
-        Porti un mazzo di {deckSize} personaggi e ne hai sempre {handSize} in mano. Escono 4 abilità, una per lato della carta:
-        a turno metti una carta accanto alle altre e ogni lato che supera quello vicino vale Sigilli. Dopo {cardsPerSide} carte a
-        testa vince chi ha più Sigilli. Nessuna carta in gioco e nessuna moneta.
+    <div className={`flex flex-col gap-1.5 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
+      <p className="text-[13px] font-medium leading-4 text-muted">
+        Mazzo di {deckSize}, {handSize} in mano, 4 abilità sui lati. A turno metti una carta accanto alle altre: ogni lato
+        che batte il vicino vale Sigilli. Dopo {cardsPerSide} carte a testa vince chi ne ha di più.
       </p>
       <div role="radiogroup" aria-label="La griglia" className="grid grid-cols-2 gap-1.5">
         {QUADRANT_FORMATS.map((format) => (
@@ -274,7 +297,7 @@ function QuadrantSection({ disabled }: { disabled: boolean }) {
             role="radio"
             aria-checked={grid === format}
             onClick={() => setGrid(format)}
-            className={`flex min-h-11 flex-col items-start justify-center px-2.5 py-1 text-left ${
+            className={`flex min-h-10 flex-col items-start justify-center px-2.5 py-0.5 text-left ${
               grid === format ? "bg-foreground text-black" : "bg-panel text-foreground"
             }`}
           >
@@ -303,32 +326,27 @@ const QUADRANT_BOTS: BotTexts = {
 
 /** Conquista (SPEC §6), inside the classic match: the winner takes a card, once unlocked. */
 function ConquestGroup({ status, disabled }: { status: ConquestStatus | null; disabled: boolean }) {
-  const { maxCardsLostPerDay, unlockAfterMatches, unlockAtLevel, minConquerableCards } = balance.conquest;
+  const { maxCardsLostPerDay, unlockAfterMatches, unlockAtLevel } = balance.conquest;
   const rewards = useMatchRewards();
   const loserCoins = rewards ? (rewardRule(rewards.rules, "conquest", "person", "loss")?.coins ?? 0) : 0;
   const limitReached = status !== null && status.cards_lost_today >= maxCardsLostPerDay;
   const available = status?.unlocked && !limitReached && !disabled;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5">
       <div className="flex items-end justify-between gap-2">
         <GroupTitle>Conquista · con le carte in palio</GroupTitle>
         <Link href={leaderboardHref("conquest")} className="shrink-0 text-[13px] font-extrabold text-comic-yellow underline">
           Classifica
         </Link>
       </div>
-      <p className="text-[13px] font-medium leading-4 text-muted">
-        Chi vince prende una carta dell&apos;avversario
-        {loserCoins > 0 ? `, chi perde guadagna ${loserCoins} monete` : ""}. Si rischia solo ciò
-        che si porta in campo: servono almeno {minConquerableCards} carte non starter.
-      </p>
       {available ? (
-        <Link href="/squadra/?mode=conquest" className="flex min-h-14 items-center justify-between gap-3 bg-comic-magenta px-4 py-2 text-black">
+        <Link href="/squadra/?mode=conquest" className="flex min-h-12 items-center justify-between gap-3 bg-comic-magenta px-4 py-1.5 text-black">
           <div>
             <p className="font-display text-xl uppercase leading-6">Cerca un avversario</p>
             <p className="text-[13px] font-semibold leading-4">
-              Un avversario del tuo livello, o un bot dopo {balance.matchmaking.conquestBotAfterSeconds} secondi. Carte
-              perse oggi: {status?.cards_lost_today}/{maxCardsLostPerDay}.
+              Chi vince prende una carta in campo dell&apos;altro{loserCoins > 0 ? `, chi perde ${loserCoins} monete` : ""}. Perse
+              oggi: {status?.cards_lost_today}/{maxCardsLostPerDay}.
             </p>
           </div>
           <span className="font-display text-2xl" aria-hidden>
@@ -336,7 +354,7 @@ function ConquestGroup({ status, disabled }: { status: ConquestStatus | null; di
           </span>
         </Link>
       ) : (
-        <div className="flex items-center justify-between gap-3 bg-panel px-4 py-2">
+        <div className="flex items-center justify-between gap-3 bg-panel px-4 py-1.5">
           <div>
             <p className="font-display text-lg uppercase leading-6 text-faint">Non disponibile</p>
             <p className="text-[13px] font-medium leading-4 text-muted">
@@ -365,8 +383,8 @@ function EmergencySection() {
     ? settings["emergency.rewards.tier1_coins"] + settings["emergency.rewards.tier2_coins"] + settings["emergency.rewards.tier3_coins"]
     : null;
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium text-muted">
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[13px] font-medium leading-4 text-muted">
         {threatsPerRun} Minacce uguali per tutti e un solo tentativo al giorno, con una classifica. Nessuna carta in
         gioco{maxCoins !== null && `, fino a ${maxCoins} monete`}. Si può giocare anche con una
         partita in corso.
@@ -392,12 +410,22 @@ const MODE_BOARDS: Record<ModeKey, { board: LeaderboardBoard; title: string }> =
  */
 function LeaderboardRow({ mode }: { mode: ModeKey }) {
   const { board, title } = MODE_BOARDS[mode];
-  return <OptionRow href={leaderboardHref(board)} title={title} detail="I primi della settimana e di sempre" />;
+  return (
+    <Link href={leaderboardHref(board)} className="flex min-h-10 shrink-0 items-center justify-between gap-2 bg-panel px-3 text-black">
+      <span className="flex min-w-0 items-center gap-2 text-comic-yellow">
+        <TrophyIcon className="h-4 w-4 shrink-0" />
+        <span className="truncate font-display text-[17px] uppercase leading-5 text-foreground">{title}</span>
+      </span>
+      <span className="font-display text-xl text-comic-yellow" aria-hidden>
+        →
+      </span>
+    </Link>
+  );
 }
 
 /** A small heading inside an open mode. */
 function GroupTitle({ children }: { children: string }) {
-  return <h3 className="pt-1 font-display text-lg uppercase leading-5 text-comic-yellow">{children}</h3>;
+  return <h3 className="pt-0.5 font-display text-lg uppercase leading-5 text-comic-yellow">{children}</h3>;
 }
 
 /**
@@ -442,13 +470,12 @@ function JoinCodeForm() {
 function ClassicSection({ conquest, disabled }: { conquest: ConquestStatus | null; disabled: boolean }) {
   const { teamSize, roundsToWin } = balance.match;
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium text-muted">
-        {teamSize} personaggi contro {teamSize} Minacce: vince chi fa {roundsToWin} round. Contro i bot e online è
-        un&apos;amichevole, senza carte in gioco né monete.
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[13px] font-medium leading-4 text-muted">
+        {teamSize} personaggi contro {teamSize} Minacce: vince chi fa {roundsToWin} round.
       </p>
 
-      <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
+      <div className={`flex flex-col gap-1.5 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
         <BotGrid query="" texts={CLASSIC_BOTS} color="bg-comic-cyan" />
         <OnlineGroup query="" randomDetail="Il primo giocatore libero" />
       </div>
@@ -459,28 +486,35 @@ function ClassicSection({ conquest, disabled }: { conquest: ConquestStatus | nul
 }
 
 /** A mode on the list: a tap opens its choices in place of the list. Open, it stays on top as the way back. */
-function ModeTile({ mode, open, onToggle }: { mode: Mode; open: boolean; onToggle: () => void }) {
+function ModeTile({ mode, open, onToggle, half = false }: { mode: Mode; open: boolean; onToggle: () => void; half?: boolean }) {
   return (
     <button
       type="button"
       aria-expanded={open}
+      aria-label={open ? `${mode.label}: chiudi` : `${mode.label}: ${mode.detail}`}
       onClick={onToggle}
-      className={`cut-both speed-lines flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-black ${mode.color} ${
-        open ? "shrink-0" : "flex-[1_1_0]"
+      className={`cut-both speed-lines flex w-full min-w-0 items-center justify-between gap-3 text-left text-black ${mode.color} ${
+        open ? "shrink-0 px-4 py-1.5" : half ? "h-full px-3 py-1.5" : "flex-[1_1_0] px-4 py-1.5"
       }`}
     >
-      <div>
-        <h2 className="-skew-x-8 font-display text-3xl uppercase leading-[34px]">{mode.label}</h2>
-        <p className="text-sm font-bold leading-[18px]">{mode.detail}</p>
+      <div className="min-w-0">
+        <h2
+          className={`-skew-x-8 truncate font-display uppercase ${open ? "text-2xl leading-7" : half ? "text-[22px] leading-6" : "text-[28px] leading-7"}`}
+        >
+          {mode.label}
+        </h2>
+        {!open && <p className="truncate text-[13px] font-bold leading-4">{mode.detail}</p>}
       </div>
       {open ? (
         <svg viewBox="0 0 14 14" className="h-5 w-5 shrink-0" stroke="currentColor" strokeWidth={2.6} aria-hidden>
           <path d="M1 1l12 12M13 1 1 13" />
         </svg>
       ) : (
-        <span className="font-display text-2xl" aria-hidden>
-          →
-        </span>
+        !half && (
+          <span className="font-display text-2xl" aria-hidden>
+            →
+          </span>
+        )
       )}
     </button>
   );
@@ -603,13 +637,13 @@ export default function PlayPage() {
       </header>
 
       {/* What a short window cannot fit scrolls inside, rather than being cut. */}
-      <main data-keep-scroll="main" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 pb-3 pt-1">
+      <main data-keep-scroll="main" className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-3 pb-3 pt-1">
         {error && <p className="shrink-0 text-sm font-semibold text-comic-magenta">{error}</p>}
         {active && <ActiveMatchBanner match={active} onForfeit={() => setConfirmForfeit(true)} />}
         {!opened && <EventBanner />}
 
         {opened ? (
-          <section className="flex flex-col gap-2">
+          <section className="flex flex-col gap-1.5">
             <ModeTile mode={opened} open onToggle={() => setOpenMode(null)} />
             {opened.key === "classic" && <ClassicSection conquest={conquest} disabled={blocked} />}
             {opened.key === "story" && <StorySection disabled={blocked} />}
@@ -623,9 +657,17 @@ export default function PlayPage() {
           GROUPS.map((group) => (
             <Fragment key={group.key}>
               <h2 className="shrink-0 font-display text-base uppercase leading-4 tracking-wide text-faint">{group.label}</h2>
-              {MODES.filter((mode) => mode.group === group.key).map((mode) => (
-                <ModeTile key={mode.key} mode={mode} open={false} onToggle={() => setOpenMode(mode.key)} />
-              ))}
+              {group.pair ? (
+                <div className="grid min-h-14 flex-[1_1_0] grid-cols-2 gap-1.5">
+                  {MODES.filter((mode) => mode.group === group.key).map((mode) => (
+                    <ModeTile key={mode.key} mode={mode} open={false} half onToggle={() => setOpenMode(mode.key)} />
+                  ))}
+                </div>
+              ) : (
+                MODES.filter((mode) => mode.group === group.key).map((mode) => (
+                  <ModeTile key={mode.key} mode={mode} open={false} onToggle={() => setOpenMode(mode.key)} />
+                ))
+              )}
             </Fragment>
           ))
         )}

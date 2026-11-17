@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
+  BOARDS,
   bestPlace,
   boardInfo,
   describePlace,
   fetchMyLeaderboardPlaces,
   leaderboardHref,
   PERIOD_LABELS,
+  type LeaderboardBoard,
   type LeaderboardPlace,
 } from "@/lib/leaderboards";
 
@@ -68,8 +70,12 @@ export function HomeLeaderboardButton() {
   );
 }
 
-/** The profile's list of places: every board where the player is ranked, this week and of all time. */
-export function MyLeaderboardPlaces() {
+/**
+ * The profile's places, as a table that fits its tab: a row per board where the player is ranked,
+ * this week and of all time side by side (each opens that board), and the Albo of the
+ * Classificata on top when the player is in this Mandato's (`albo`: their place).
+ */
+export function MyLeaderboardPlaces({ albo = null }: { albo?: { place: number; label: string } | null }) {
   const { places, failed } = useMyPlaces();
   if (places === null) {
     return (
@@ -79,24 +85,49 @@ export function MyLeaderboardPlaces() {
     );
   }
   const shown = places.filter((place) => place.period !== "day");
-  if (shown.length === 0) {
+  if (shown.length === 0 && !albo) {
     return <p className="text-sm font-medium text-muted">Ancora in nessuna classifica: gioca una partita o l&apos;Emergenza.</p>;
   }
+  const boards = BOARDS.filter((board) => shown.some((place) => place.board === board.key));
+  const cell = (board: LeaderboardBoard, period: "week" | "all") => {
+    const place = shown.find((entry) => entry.board === board && entry.period === period);
+    if (!place) return <span className="text-center text-sm text-faint">–</span>;
+    return (
+      <Link
+        href={leaderboardHref(board, period)}
+        aria-label={`${boardInfo(board).label}, ${PERIOD_LABELS[period]}: ${place.rank}° su ${place.players}`}
+        className="flex items-baseline justify-center gap-1 bg-black/40 py-1 font-display text-lg leading-5"
+      >
+        {place.rank}°<span className="font-sans text-[11px] font-semibold text-muted">su {place.players}</span>
+      </Link>
+    );
+  };
   return (
-    <ul className="flex flex-col gap-0.5" aria-label="Le tue posizioni">
-      {shown.map((place) => (
-        <li key={`${place.board}:${place.period}`}>
-          <Link href={leaderboardHref(place.board, place.period)} className="flex min-h-11 items-center justify-between gap-3 bg-panel px-3.5 py-1">
-            <span className="min-w-0">
-              <span className="block truncate font-display text-[17px] uppercase leading-5">{boardInfo(place.board).label}</span>
-              <span className="block text-xs font-semibold text-muted">{PERIOD_LABELS[place.period]}</span>
-            </span>
-            <span className="shrink-0 font-display text-xl">
-              {place.rank}° <span className="font-sans text-xs font-semibold text-muted">su {place.players}</span>
-            </span>
+    <div className="flex flex-col gap-0.5" aria-label="Le tue posizioni">
+      <div className="grid grid-cols-[1fr_6.5rem_6.5rem] gap-1 px-2.5 text-[11px] font-extrabold uppercase text-muted">
+        <span>Classifica</span>
+        <span className="text-center">{PERIOD_LABELS.week}</span>
+        <span className="text-center">{PERIOD_LABELS.all}</span>
+      </div>
+      {albo && (
+        <div className="grid min-h-[34px] grid-cols-[1fr_6.5rem_6.5rem] items-center gap-1 bg-panel px-2.5">
+          <span className="truncate font-display text-[16px] uppercase leading-5">Albo</span>
+          <Link
+            href="/classifiche/?scheda=albo"
+            aria-label={`Albo dei Reggenti, Mandato di ${albo.label}: ${albo.place}°`}
+            className="col-span-2 flex items-baseline justify-center gap-1 bg-black/40 py-1 font-display text-lg leading-5"
+          >
+            {albo.place}°<span className="font-sans text-[11px] font-semibold text-muted">nel Mandato</span>
           </Link>
-        </li>
+        </div>
+      )}
+      {boards.map((board) => (
+        <div key={board.key} className="grid min-h-[34px] grid-cols-[1fr_6.5rem_6.5rem] items-center gap-1 bg-panel px-2.5">
+          <span className="truncate font-display text-[16px] uppercase leading-5">{board.label}</span>
+          {board.periods.includes("week") ? cell(board.key, "week") : <span className="text-center text-sm text-faint">–</span>}
+          {cell(board.key, "all")}
+        </div>
       ))}
-    </ul>
+    </div>
   );
 }

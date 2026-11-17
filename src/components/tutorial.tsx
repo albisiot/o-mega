@@ -45,13 +45,18 @@ export function FirstRunTutorial() {
 }
 
 /** Replays the tutorial: a row on the Profile screen, a header button (`compact`) on the Play one. */
-export function TutorialButton({ compact = false, className = "" }: { compact?: boolean; className?: string }) {
+/** `tile`: just the words in `className`'s box (the profile's grid); `compact`: a small button. */
+export function TutorialButton({ compact = false, tile = false, className = "" }: { compact?: boolean; tile?: boolean; className?: string }) {
   const [replaying, setReplaying] = useState(false);
 
   return (
     <>
       {replaying && <TutorialPanels onClose={() => setReplaying(false)} />}
-      {compact ? (
+      {tile ? (
+        <button type="button" onClick={() => setReplaying(true)} className={className}>
+          Come si gioca
+        </button>
+      ) : compact ? (
         <button type="button" onClick={() => setReplaying(true)} className="btn btn-outline shrink-0">
           Come si gioca
         </button>
