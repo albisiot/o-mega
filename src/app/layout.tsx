@@ -23,6 +23,7 @@ import { NotificationBanner } from "@/components/notification-banner";
 import { EmergencyPrizePopup } from "@/components/emergency-prize-popup";
 import { PlaceMemory } from "@/components/place-memory";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
+import { STALE_BUILD_SCRIPT } from "@/lib/stale-build";
 import { Suspense } from "react";
 import "./globals.css";
 
@@ -89,6 +90,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="it"
       className={`${archivo.variable} ${anton.variable} ${bangers.variable} ${nameFonts} h-full antialiased`}
     >
+      <head>
+        {/* Reloads once a page whose HTML outlived a deploy (see src/lib/stale-build.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: STALE_BUILD_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col font-sans">
         <AuthProvider>
           {children}

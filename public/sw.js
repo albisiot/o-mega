@@ -24,7 +24,7 @@ const ASSET_DIRS = ["cards/", "world/", "fonts/", "models/"];
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
-      await (await caches.open(SHELL_CACHE)).add(SCOPE);
+      await (await caches.open(SHELL_CACHE)).add(revalidated(new Request(SCOPE)));
       // The splash image is a nicety: failing to fetch it must not block the install.
       const splash = new URL(`${SCOPE}world/citta.webp`, self.location.origin);
       const key = assetKey(splash);
@@ -93,7 +93,7 @@ self.addEventListener("fetch", (event) => {
   // Saved without the query string, so /carta/?id=… keeps one copy, not one per card.
   const key = url.origin + url.pathname;
   event.respondWith(
-    fetchAndCache(SHELL_CACHE, request, key).catch(async () => {
+    fetchAndCache(SHELL_CACHE, revalidated(request), key).catch(async () => {
       const cached = await caches.match(key);
       if (cached) return cached;
       if (request.mode === "navigate") {
@@ -111,6 +111,20 @@ function assetKey(url) {
   if (Object.keys(ASSET_VERSIONS).length === 0) return url.origin + url.pathname;
   const version = ASSET_VERSIONS[url.pathname.slice(SCOPE.length)];
   return version ? `${url.origin}${url.pathname}?v=${version}` : null;
+}
+
+/**
+ * The same request, checked with the server instead of answered by the browser's
+ * HTTP cache (a cheap 304 when unchanged). GitHub Pages lets the browser keep a
+ * page for 10 minutes: a page kept across a deploy asks for build files the
+ * server no longer has, and breaks (ChunkLoadError).
+ */
+function revalidated(request) {
+  // A page load cannot be copied with new options: rebuild it, and leave any redirect to the browser.
+  if (request.mode === "navigate") {
+    return new Request(request.url, { cache: "no-cache", credentials: "same-origin", redirect: "manual" });
+  }
+  return new Request(request, { cache: "no-cache" });
 }
 
 async function fetchAndCache(cacheName, request, key) {
