@@ -5,10 +5,12 @@ import { CardZoom } from "@/components/card-zoom";
 import { Silhouette } from "@/components/card-view";
 import { BackLink, TabBar } from "@/components/comic-parts";
 import { useOpenEventRewards } from "@/components/event-banner";
+import { EventLeaderboardList, useEventLeaderboard, type EventLeaderboardState } from "@/components/event-leaderboard";
 import { balance } from "@/config/balance";
 import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import type { AbilityInfo } from "@/lib/catalog";
+import { completionLine, isEventCompleted, lockedLine } from "@/lib/event-leaderboard";
 import {
   EVENT_KINDS,
   describeTierReward,
@@ -27,7 +29,8 @@ import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const TABS = [
   { key: "rewards", label: "Premi" },
-  { key: "points", label: "Come si fanno punti" },
+  { key: "points", label: "Punti" },
+  { key: "leaderboard", label: "Classifica" },
 ] as const;
 type Tab = (typeof TABS)[number]["key"];
 
@@ -61,6 +64,14 @@ export function EventDetails({ event, now, abilities }: { event: GameEvent; now:
   // Back from the rewards opened here, the same tab.
   const [tab, setTab] = useRememberedState<Tab>("tab", "rewards");
   const [zoomed, setZoomed] = useState<EventRewardCard | null>(null);
+  const completed = isEventCompleted(event);
+  // Before the start: the final leaderboard of the event before, if the player unlocked it.
+  // Otherwise this event's, asked for once completed (the place) or when its tab opens.
+  const leaderboard = useEventLeaderboard(
+    phase === "upcoming" ? null : event.id,
+    tab === "leaderboard" || (completed && phase !== "upcoming"),
+  );
+  const lastTier = event.tiers.at(-1)?.points ?? null;
 
   return (
     <EventShell title={event.title}>
@@ -105,7 +116,7 @@ export function EventDetails({ event, now, abilities }: { event: GameEvent; now:
           <div className="h-2.5 bg-black" aria-hidden>
             <div className="h-full bg-comic-yellow" style={{ width: `${Math.round(progress.fraction * 100)}%` }} />
           </div>
-          {event.daily_cap !== null && (
+          {event.daily_cap !== null && !completed && (
             <p className="text-xs font-medium leading-4 text-muted">
               Oggi {event.my_points_today} su {event.daily_cap} punti al massimo: si riparte a mezzanotte.
             </p>
@@ -113,10 +124,22 @@ export function EventDetails({ event, now, abilities }: { event: GameEvent; now:
         </section>
       )}
 
+      {/* After the last reward is opened (back from its reveal too): the place, and the way to the list. */}
+      {completed && phase !== "upcoming" && !toOpen && leaderboard.status !== "loading" && (
+        <CompletedBanner
+          eventId={event.id}
+          line={completionLine(leaderboard.status === "ready" ? leaderboard.board : null)}
+          showLink={tab !== "leaderboard"}
+          onOpen={() => setTab("leaderboard")}
+        />
+      )}
+
       <TabBar tabs={[...TABS]} current={tab} onPick={setTab} label="Evento" />
 
       <div role="tabpanel" data-keep-scroll="evento" className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain">
-        {tab === "rewards" ? (
+        {tab === "leaderboard" ? (
+          <LeaderboardTab state={leaderboard} upcoming={phase === "upcoming"} lockedText={lockedLine(lastTier)} />
+        ) : tab === "rewards" ? (
           <>
             <ol className="flex flex-col gap-1">
               {event.tiers.map((tier) => (
@@ -205,6 +228,73 @@ export function EventDetails({ event, now, abilities }: { event: GameEvent; now:
         />
       )}
     </EventShell>
+  );
+}
+
+/**
+ * "Evento completato! Sei 12° su 87": stamped in the first time the player sees it, then
+ * still there, quietly, on every visit.
+ */
+function CompletedBanner({ eventId, line, showLink, onOpen }: { eventId: string; line: string; showLink: boolean; onOpen: () => void }) {
+  const [firstTime] = useState(() => {
+    const key = `o-mega:event-completed:${eventId}`;
+    try {
+      if (window.localStorage.getItem(key)) return false;
+      window.localStorage.setItem(key, "1");
+    } catch {
+      // No storage (private window): no stamp, the line stays.
+      return false;
+    }
+    return true;
+  });
+  return (
+    <section
+      className={`flex shrink-0 items-center justify-between gap-2 border-[3px] border-black bg-comic-magenta px-3 py-1.5 text-black shadow-[3px_3px_0_#000] ${
+        firstTime ? "comic-stamp" : ""
+      }`}
+      aria-live="polite"
+    >
+      <p className="min-w-0 font-display text-xl uppercase leading-6">{line}</p>
+      {showLink && (
+        <button
+          type="button"
+          onClick={onOpen}
+          className="shrink-0 -skew-x-8 bg-black px-2.5 py-1 font-display text-base uppercase text-comic-magenta"
+        >
+          Classifica
+        </button>
+      )}
+    </section>
+  );
+}
+
+/** The leaderboard tab: the list, or why it is still closed. */
+function LeaderboardTab({ state, upcoming, lockedText }: { state: EventLeaderboardState; upcoming: boolean; lockedText: string }) {
+  if (state.status === "loading") return <p className="text-sm font-semibold text-muted">Caricamento della classifica…</p>;
+  if (state.status === "error") return <p className="text-sm font-semibold text-comic-magenta">{state.message}</p>;
+  if (state.status === "locked" || (upcoming && !state.board)) {
+    return (
+      <div className="flex flex-col gap-1.5 bg-panel px-3 py-2.5">
+        <p className="font-display text-xl uppercase leading-6 text-comic-yellow">Classifica generale</p>
+        <p className="text-sm font-semibold leading-5">
+          {upcoming ? "La classifica generale si sblocca quando completi l'evento, anche dopo la fine." : lockedText}
+        </p>
+        <p className="text-xs font-medium leading-4 text-muted">
+          Ci sono tutti quelli che hanno giocato l&apos;evento, con i loro punti, e chi l&apos;ha già completato.
+        </p>
+      </div>
+    );
+  }
+  if (!state.board) return <p className="text-sm font-medium text-muted">Ancora nessun giocatore in classifica.</p>;
+  return (
+    <>
+      {upcoming && (
+        <p className="shrink-0 text-[13px] font-bold leading-4">
+          Classifica finale dell&apos;evento precedente: <span className="text-comic-yellow">{state.board.title}</span>
+        </p>
+      )}
+      <EventLeaderboardList board={state.board} />
+    </>
   );
 }
 

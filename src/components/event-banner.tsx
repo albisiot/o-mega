@@ -157,7 +157,7 @@ export function EventBanner() {
           <span className="block h-full bg-black" style={{ width: `${Math.round(progress.fraction * 100)}%` }} />
         </span>
         <span className="shrink-0 text-[12px] font-extrabold leading-4">
-          {progress.next ? `${event.my_points}/${progress.next.points} punti` : "Traguardi completati"}
+          {progress.next ? `${event.my_points}/${progress.next.points} punti` : "Completato · vedi la classifica"}
         </span>
       </span>
       {(event.admitted ?? []).length > 0 && (
