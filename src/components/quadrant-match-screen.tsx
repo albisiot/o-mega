@@ -72,8 +72,13 @@ const BAND = 22;
 const BAND_GAP = 3;
 /** Against a bot: how long the player's move stays alone on the grid before the bot's, at least. */
 const BOT_THINK_MS = 1_600;
-/** And at most, however long the move's effects: the timer's pause is 4 seconds. */
-const BOT_THINK_MAX_MS = 3_400;
+/** The bot "thinks" this long once the effects of the move before have ended. */
+const BOT_AFTER_EFFECTS_MS = 2_000;
+/**
+ * And at most, however long the effects: with the bot's own effects (3 seconds or so) it stays
+ * within the pause before the player's timer (quadrant.movePauseSeconds, 10 seconds).
+ */
+const BOT_THINK_MAX_MS = 6_500;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -182,7 +187,7 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
           if (!mounted.current) return;
         }
         const seconds = showState({ ...step, previous: undefined });
-        wait = Math.min(BOT_THINK_MAX_MS, Math.max(BOT_THINK_MS, seconds * 1000 + 700));
+        wait = Math.min(BOT_THINK_MAX_MS, Math.max(BOT_THINK_MS, seconds * 1000 + BOT_AFTER_EFFECTS_MS));
       }
       setBotThinking(false);
     },
@@ -537,15 +542,20 @@ function PlayArea({
     };
     return effectsOf(story, abilityAt);
   }, [changes, view]);
-  const effects = moveEffects?.cells ?? new Map<string, CellEffects>();
+  // Once the player starts preparing a move, the last move's effects are over: they do not
+  // play again when the card goes back to the hand.
+  const [settledMove, setSettledMove] = useState<number | null>(null);
+  if (preview && changes && settledMove !== changes.move) setSettledMove(changes.move);
+  const liveEffects = !preview && changes && settledMove !== changes.move ? moveEffects : null;
+  const effects = liveEffects?.cells ?? new Map<string, CellEffects>();
   const last = view.moves.at(-1) ?? null;
   const frozen = frozenAxes(view);
   // Fixed grid: the four border threats around it, and what the last move did against them.
   const threats = view.border_threats?.length === 4 ? view.border_threats : null;
   const frame = threats ? 2 * (BAND + BAND_GAP) : 0;
-  const borderEffects = (!preview && moveEffects?.borders) || new Map<number, BorderEffect>();
+  const borderEffects = liveEffects?.borders ?? new Map<number, BorderEffect>();
   // A crushing gap jolts the whole grid; two keyframe names, so the next move starts it again.
-  const jolts = !preview && moveEffects ? moveEffects.jolts : [];
+  const jolts = liveEffects?.jolts ?? [];
   const jolt = jolts.length
     ? { animation: jolts.map((delay) => `quad-jolt-${(changes?.move ?? 0) % 2 ? "a" : "b"} 0.34s ease-out ${delay}s`).join(", ") }
     : undefined;
@@ -649,7 +659,7 @@ function PlayArea({
                       key={key}
                       cell={cell}
                       highlight={isLast}
-                      effects={preview ? undefined : effects.get(key)}
+                      effects={effects.get(key)}
                       delta={delta}
                       tentative={Boolean(preview)}
                       stampKey={preview ? "preview" : String(changes?.move ?? 0)}
@@ -705,7 +715,7 @@ function PlayArea({
                 );
               }),
             )}
-            {!preview && moveEffects && <ClashLayer effects={moveEffects} area={area} stampKey={stampKey} />}
+            {liveEffects && <ClashLayer effects={liveEffects} area={area} stampKey={stampKey} />}
           </div>
           {threats && <BorderThreat key={`1-${borderEffects.has(1) ? stampKey : "idle"}`} threat={threats[1]} direction={1} effect={borderEffects.get(1)} stampKey={stampKey} highlight={edgeHighlight.has(1)} />}
           {threats && <span aria-hidden />}
@@ -1312,7 +1322,7 @@ function BoardCard({
 
 /**
  * The move's seconds left, all of them: the pause to see the move before (the server waits
- * quadrant.movePauseSeconds before the 20) counts down too.
+ * quadrant.movePauseSeconds before the move's own seconds) counts down too.
  */
 function MoveTimer({ deadline, offset, mine }: { deadline: number; offset: number; mine: boolean }) {
   const seconds = useSecondsLeft(deadline, offset);

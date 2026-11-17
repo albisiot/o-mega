@@ -179,10 +179,13 @@ export const balance = {
     cardsPerSide: 8,
     /** Free seals on the opening card of the side that plays first. */
     firstPlayerSeals: 3,
-    /** Time for one move. */
-    moveTimerSeconds: 20,
-    /** Pause to show a move before the next timer starts. */
-    movePauseSeconds: 4,
+    /** Time for one move (20 until 17 November). */
+    moveTimerSeconds: 40,
+    /**
+     * Pause to show a move before the next timer starts: against a bot it covers the player's
+     * move, the bot "thinking" 2 seconds after its effects, and the bot's move (4 until 17 November).
+     */
+    movePauseSeconds: 10,
     /**
      * Fixed grid: a threat of the catalog on each border (SPEC §5.14). A card's side facing
      * out of the grid meets it: higher puts a seal on the card, lower takes one off.

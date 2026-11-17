@@ -3,6 +3,8 @@ export const PATCH_NOTES = [
   {
     date: "17 novembre 2026",
     changes: [
+      "Quadrante: più tempo per decidere. Ogni mossa ora ha 40 secondi invece di 20. Contro il bot, dopo la tua mossa c'è una pausa di un paio di secondi prima che giochi lui, così vedi bene cosa hai fatto; i tuoi 40 secondi partono quando la sua mossa è sullo schermo.",
+      "Quadrante: scontri più spettacolari. Quando un lato batte la carta vicina, l'effetto dipende dalla famiglia dell'abilità che vince (Corpo crepe, Mente onde, Potere fulmini, Mestiere tagli) ed è tanto più grande quanto più è largo lo scarto: di poco, netto o schiacciante, con le scritte da fumetto. Nella stellina c'è la sigla dell'abilità che ha vinto. Le Minacce dei bordi hanno il loro stile a strisce, il pareggio un lucchetto con «BLOCCATO!».",
       "Quadrante: i Sigilli non hanno più un tetto. Prima ognuno ne aveva 15 (20 sulla griglia fissa) e, finiti quelli, le carte battute non ne ricevevano più; ora ogni lato che vince conta sempre. In più gli eventi possono avere una regola per il Quadrante: un traguardo di Sigilli. Durante quegli eventi, alla fine di ogni giro (quando tu e l'avversario avete giocato lo stesso numero di carte), se qualcuno ha raggiunto il traguardo, per esempio 12 Sigilli sulla griglia, la partita finisce subito e vince chi ne ha di più. Si controlla a fine giro perché chi gioca per secondo abbia sempre la sua risposta. Il traguardo lo vedi nella pagina dell'evento e, in partita, accanto al numero della mossa.",
     ],
   },
