@@ -7,6 +7,7 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { EventBanner } from "@/components/event-banner";
 import { TrophyIcon } from "@/components/leaderboard-places";
 import { useMatchRewards } from "@/components/match-reward";
+import { rankedHref } from "@/components/ranked-modes";
 import { LeagueBadge } from "@/components/ranked-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { TutorialButton } from "@/components/tutorial";
@@ -25,7 +26,7 @@ import {
 } from "@/lib/match";
 import { useRememberedState } from "@/lib/place-memory";
 import { isQuadrantFormat, QUADRANT_FORMATS, QUADRANT_GRID_LABELS, type QuadrantFormat } from "@/lib/quadrant";
-import { fetchMyRanked, RANKED_RULES, type MyRanked } from "@/lib/ranked";
+import { fetchMyRanked, type MyRanked } from "@/lib/ranked";
 import { chapterUnlocked, fetchStory, seenStory, unlockHint, type StoryChapter } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
@@ -219,35 +220,24 @@ function OnlineGroup({ query, randomDetail }: { query: string; randomDetail: str
  */
 function RankedGroup({ format, ranked }: { format: MatchFormat; ranked: MyRanked | null }) {
   return (
-    <>
-      <div className="flex items-end justify-between gap-2">
-        <GroupTitle>Classificata · la Fama in gioco</GroupTitle>
-        <Link href="/classifiche/?scheda=albo" className="shrink-0 text-[13px] font-extrabold text-comic-yellow underline">
-          Albo
-        </Link>
+    // One row: the rules and the prizes are on the Classificata page, from the home.
+    <Link href={rankedHref(format)} className="flex min-h-14 items-center justify-between gap-3 bg-foreground px-4 py-2 text-black">
+      <div className="min-w-0">
+        <p className="font-display text-xl uppercase leading-6">Partita classificata</p>
+        <p className="flex items-center gap-1.5 text-[13px] font-semibold leading-4">
+          {ranked ? (
+            <>
+              {ranked.fama} Fama <LeagueBadge league={ranked.league} /> · la Fama in gioco
+            </>
+          ) : (
+            "La Fama in gioco, contro un avversario del tuo livello"
+          )}
+        </p>
       </div>
-      <Link
-        href={`/squadra/?mode=ranked${format === "classic" ? "" : `&format=${format}`}`}
-        className="flex min-h-14 items-center justify-between gap-3 bg-foreground px-4 py-2 text-black"
-      >
-        <div className="min-w-0">
-          <p className="font-display text-xl uppercase leading-6">Partita classificata</p>
-          <p className="flex items-center gap-1.5 text-[13px] font-semibold leading-4">
-            {ranked ? (
-              <>
-                {ranked.fama} Fama <LeagueBadge league={ranked.league} />
-              </>
-            ) : (
-              "Un avversario del tuo livello"
-            )}
-          </p>
-        </div>
-        <span className="font-display text-2xl" aria-hidden>
-          →
-        </span>
-      </Link>
-      <p className="text-[13px] font-medium leading-4 text-muted">{RANKED_RULES}</p>
-    </>
+      <span className="font-display text-2xl" aria-hidden>
+        →
+      </span>
+    </Link>
   );
 }
 

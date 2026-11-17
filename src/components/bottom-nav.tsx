@@ -15,7 +15,10 @@ const TABS = [
 
 // Pages where the bar stays out of the way: a match, a pack or a team choice
 // have their own bottom action and should not be left by accident.
-const SHOWN_ON = new Set([...TABS.map((tab) => tab.href), "/storico"]);
+const SHOWN_ON = new Set([...TABS.map((tab) => tab.href), "/storico", "/classificata"]);
+
+/** Pages that light up another tab: the Classificata is a way to play. */
+const TAB_OF: Record<string, string> = { "/classificata": "/gioca" };
 
 /** Main navigation of the signed-in player. */
 export function BottomNav() {
@@ -24,7 +27,7 @@ export function BottomNav() {
   // The tapped tab lights up at once, without waiting for the next screen.
   const [tapped, setTapped] = useState<{ from: string; href: string } | null>(null);
   if (!session || !SHOWN_ON.has(pathname)) return null;
-  const current = tapped?.from === pathname ? tapped.href : pathname;
+  const current = tapped?.from === pathname ? tapped.href : (TAB_OF[pathname] ?? pathname);
 
   return (
     <>

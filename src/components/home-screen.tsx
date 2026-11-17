@@ -6,6 +6,7 @@ import { markHomeReady } from "@/components/app-splash";
 import { CoinBadge } from "@/components/coin-badge";
 import { HomeObjectivesBar } from "@/components/daily-objectives";
 import { EventBanner } from "@/components/event-banner";
+import { HomePlayButtons } from "@/components/home-play-buttons";
 import { HomeLeaderboardButton } from "@/components/leaderboard-places";
 import { PackPanel } from "@/components/pack-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
@@ -15,6 +16,7 @@ import { fetchCatalog, fetchCollection, seenCatalog, seenCollection } from "@/li
 import { fetchActiveMatch, type ActiveMatch } from "@/lib/match";
 import { fetchPackOdds, seenPackOdds } from "@/lib/packs";
 import { countOwnedCards, type Profile } from "@/lib/player";
+import { fetchMyRanked, type MyRanked } from "@/lib/ranked";
 import { hasSeenTutorial } from "@/lib/tutorial-seen";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { usePackStatus } from "@/lib/use-pack-status";
@@ -40,6 +42,7 @@ export function HomeScreen({ profile }: { profile: Profile }) {
   const [cardCount, setCardCount] = useState<number | null>(null);
   const packs = usePackStatus();
   const [activeMatch, setActiveMatch] = useState<ActiveMatch | null>(null);
+  const [ranked, setRanked] = useState<MyRanked | null>(null);
   const [Tutorial, setTutorial] = useState<ComponentType | null>(null);
 
   // Only a player who has not seen the tutorial downloads it, while the world intro is still up.
@@ -72,6 +75,12 @@ export function HomeScreen({ profile }: { profile: Profile }) {
         if (!cancelled) setActiveMatch(match);
       })
       .catch((error: unknown) => console.error("Active match failed", error));
+    // The Fama on the Classificata button: without it the button still works.
+    fetchMyRanked()
+      .then((next) => {
+        if (!cancelled) setRanked(next);
+      })
+      .catch((error: unknown) => console.error("Ranked failed", error));
     return () => {
       cancelled = true;
     };
@@ -137,26 +146,7 @@ export function HomeScreen({ profile }: { profile: Profile }) {
           onFailed={packs.refresh}
         />
 
-        {/* Sized by its share of the room: the lettering follows its height. */}
-        <Link
-          href="/gioca"
-          className="cut-both speed-lines-moving flex min-h-21 flex-[1_1_0] items-center justify-between gap-3 bg-comic-magenta px-[18px] py-2 text-black [container-type:size] short:min-h-18"
-        >
-          <div>
-            <p className="-skew-x-8 font-display text-[length:clamp(46px,min(46cqh,27cqw),104px)] uppercase leading-[0.95] short:text-[length:clamp(36px,min(46cqh,27cqw),104px)]">
-              Gioca
-            </p>
-            <p className="mt-1 text-sm font-extrabold leading-[18px]">Sfide 1 contro 1 da 3 minuti</p>
-          </div>
-          <span
-            aria-hidden
-            className="flex size-[clamp(50px,34cqh,76px)] shrink-0 -skew-x-8 items-center justify-center bg-black"
-          >
-            <svg viewBox="0 0 24 24" className="size-[56%] fill-comic-magenta">
-              <path d="M6 4l14 8-14 8z" />
-            </svg>
-          </span>
-        </Link>
+        <HomePlayButtons ranked={ranked} />
 
         <div className="grid shrink-0 grid-cols-2 gap-2">
           <Link href="/collezione" className="flex min-h-[70px] flex-col justify-center gap-0.5 bg-comic-cyan px-3 py-2 text-black short:py-1">

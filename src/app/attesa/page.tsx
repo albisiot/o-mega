@@ -56,7 +56,11 @@ function WaitingContent() {
   if (!session) return <LoadingScreen />;
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader backHref="/gioca" backLabel="Gioca" title={mode === "lobby" ? "Sfida un amico" : "Ricerca avversario"} />
+      <PageHeader
+        backHref={queueMode === "ranked" ? "/classificata" : "/gioca"}
+        backLabel={queueMode === "ranked" ? "Classificata" : "Gioca"}
+        title={mode === "lobby" ? "Sfida un amico" : "Ricerca avversario"}
+      />
       {mode === "lobby" ? (
         <LobbyWait userId={session.user.id} />
       ) : (
@@ -225,7 +229,7 @@ function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: Q
           </Link>
         </div>
       )}
-      <Link href="/gioca" className="btn btn-ghost">
+      <Link href={queueMode === "ranked" ? "/classificata" : "/gioca"} className="btn btn-ghost">
         Annulla
       </Link>
     </main>

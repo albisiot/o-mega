@@ -10,13 +10,16 @@ import {
   type RankedMatchInfo,
 } from "@/lib/ranked";
 
-/** A league as a small slanted badge in its colour. */
-export function LeagueBadge({ league, className = "" }: { league: RankedLeague; className?: string }) {
+/**
+ * A league as a small slanted badge in its colour; `dark`: black with the colour in the
+ * letters, for a coloured background.
+ */
+export function LeagueBadge({ league, className = "", dark = false }: { league: RankedLeague; className?: string; dark?: boolean }) {
   const info = leagueInfo(league);
   return (
     <span
-      className={`inline-block -skew-x-8 px-1.5 py-0.5 text-[11px] font-extrabold uppercase leading-4 text-black ${className}`}
-      style={{ backgroundColor: info.color }}
+      className={`inline-block -skew-x-8 px-1.5 py-0.5 text-[11px] font-extrabold uppercase leading-4 ${dark ? "bg-black" : "text-black"} ${className}`}
+      style={dark ? { color: info.color } : { backgroundColor: info.color }}
     >
       {info.name}
     </span>

@@ -233,7 +233,10 @@ function TeamPageContent() {
   return (
     <div className="game-shell">
       <header className="flex items-center gap-2.5 px-3 py-1">
-        <BackLink href={mode.kind === "story" ? "/storia" : "/gioca"} label={`Torna a ${mode.kind === "story" ? "Storia" : "Gioca"}`} />
+        <BackLink
+          href={mode.kind === "story" ? "/storia" : mode.kind === "ranked" ? "/classificata" : "/gioca"}
+          label={`Torna a ${mode.kind === "story" ? "Storia" : mode.kind === "ranked" ? "Classificata" : "Gioca"}`}
+        />
         <div className="min-w-0">
           <h1 className="font-display text-[22px] uppercase leading-6 text-comic-yellow">
             {format === "triple" || isQuadrantFormat(format) ? "Il tuo mazzo" : "La tua squadra"}
