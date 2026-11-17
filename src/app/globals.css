@@ -771,43 +771,111 @@ html.screen-locked body {
   transform: var(--nm-letter);
 }
 
-/* Quadrante: two facing numbers clash; the winner swells in its side's colour. */
-@keyframes quad-num-win-me {
-  0%, 100% { scale: 1; }
-  35% { scale: 1.9; background: var(--comic-cyan); color: #000; }
-  75% { scale: 1.4; background: var(--comic-cyan); color: #000; }
+/* Quadrante (quadrant-fx.tsx): two facing numbers clash. The winner swells in its side's colour
+   (--quad-tone), as much as the gap says (--quad-swell); the loser shakes (--quad-shake). The
+   numbers are placed with translate: the keyframes use scale, rotate and transform only. */
+@keyframes quad-num-win {
+  0%, 100% { scale: 1; rotate: 0deg; }
+  32% { scale: var(--quad-swell); rotate: var(--quad-tilt); background: var(--quad-tone); color: #000; }
+  75% { scale: calc(var(--quad-swell) * 0.74); rotate: calc(var(--quad-tilt) * -0.5); background: var(--quad-tone); color: #000; }
 }
-@keyframes quad-num-win-opponent {
-  0%, 100% { scale: 1; }
-  35% { scale: 1.9; background: var(--comic-orange); color: #000; }
-  75% { scale: 1.4; background: var(--comic-orange); color: #000; }
-}
-/* rotate, not translate: the numbers are placed with translate. */
 @keyframes quad-num-lose {
   0%, 100% { scale: 1; rotate: 0deg; opacity: 1; }
-  30% { scale: 1.4; }
-  50% { rotate: -14deg; opacity: 0.45; }
-  65% { rotate: 14deg; opacity: 0.45; }
-  80% { rotate: -6deg; }
+  25% { scale: 1.3; }
+  45% { rotate: calc(var(--quad-shake) * -1); opacity: 0.4; }
+  62% { rotate: var(--quad-shake); opacity: 0.4; }
+  80% { rotate: calc(var(--quad-shake) * -0.5); opacity: 0.7; }
 }
+/* A tie: both numbers push against each other twice, and nobody gets through. */
 @keyframes quad-num-tie {
-  0%, 100% { scale: 1; }
-  40% { scale: 1.6; background: #fff; color: #000; }
+  0%, 100% { scale: 1; transform: none; }
+  25%, 65% { scale: 1.5; background: #fff; color: #000; transform: translate(var(--quad-push-x), var(--quad-push-y)); }
+  45% { scale: 1.45; background: #fff; color: #000; transform: none; }
 }
-@keyframes quad-spark {
-  0% { opacity: 0; scale: 0; rotate: 0deg; }
-  35% { opacity: 1; scale: 1.3; rotate: 15deg; }
-  100% { opacity: 0; scale: 0.7; rotate: 40deg; }
+@keyframes quad-burst {
+  0% { opacity: 0; scale: 0.2; rotate: calc(var(--quad-spin) * -20); }
+  30% { opacity: 1; scale: 1.15; rotate: calc(var(--quad-spin) * 4); }
+  62% { opacity: 1; scale: 1; rotate: 0deg; }
+  100% { opacity: 0; scale: 0.9; rotate: calc(var(--quad-spin) * 10); }
 }
+@keyframes quad-word {
+  0% { opacity: 0; scale: 2.2; transform: none; }
+  20% { opacity: 1; scale: 0.92; }
+  32% { opacity: 1; scale: 1; }
+  75% { opacity: 1; transform: translateY(-4px); }
+  100% { opacity: 0; scale: 1; transform: translateY(-10px); }
+}
+.quad-word {
+  z-index: 3;
+  font-family: var(--sfx-font);
+  line-height: 1;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  -webkit-text-stroke: 1.4px #000;
+  paint-order: stroke fill;
+  text-shadow: 2px 2px 0 #000;
+}
+/* The marks on a beaten card: lines drawn in (pathLength 1), then gone. */
+@keyframes quad-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes quad-trace {
+  0%, 65% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes quad-flicker {
+  0% { opacity: 1; }
+  25% { opacity: 0.15; }
+  35% { opacity: 1; }
+  50% { opacity: 0.3; }
+  60% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes quad-wave {
+  from { scale: 0; opacity: 1; }
+  to { scale: 1; opacity: 0; }
+}
+@keyframes quad-hazard {
+  0% { opacity: 0; background-position: 0 0; }
+  20% { opacity: var(--quad-peak); }
+  60% { opacity: calc(var(--quad-peak) * 0.8); }
+  100% { opacity: 0; background-position: 28px 0; }
+}
+@keyframes quad-glow {
+  0%, 100% { opacity: 0; }
+  20% { opacity: var(--quad-peak); }
+}
+@keyframes quad-daze-1 {
+  0%, 100% { filter: none; }
+  30% { filter: blur(1px) brightness(1.5) hue-rotate(40deg); }
+}
+@keyframes quad-daze-2 {
+  0%, 100% { filter: none; }
+  30% { filter: blur(2px) brightness(1.5) hue-rotate(40deg); }
+}
+@keyframes quad-zapped {
+  0%, 35%, 100% { filter: none; }
+  15% { filter: brightness(2.2); }
+  50% { filter: brightness(1.6); }
+}
+/* A beaten card pushed away from the edge hit (towards top, right, bottom, left), or shaken. */
+@keyframes quad-nudge-0 { 25% { translate: 0 -3px; } 55% { translate: 0 1px; } }
+@keyframes quad-nudge-1 { 25% { translate: 3px 0; } 55% { translate: -1px 0; } }
+@keyframes quad-nudge-2 { 25% { translate: 0 3px; } 55% { translate: 0 -1px; } }
+@keyframes quad-nudge-3 { 25% { translate: -3px 0; } 55% { translate: 1px 0; } }
+@keyframes quad-shake {
+  18% { translate: 5px -4px; rotate: -3deg; }
+  38% { translate: -4px 3px; rotate: 2deg; }
+  60% { translate: 3px 2px; rotate: -1deg; }
+  80% { translate: -1px -1px; }
+}
+/* A crushing gap: the whole grid jolts. Two names, so the next move starts it again. */
+@keyframes quad-jolt-a { 20% { translate: 3px -2px; } 45% { translate: -3px 2px; } 70% { translate: 1px -1px; } }
+@keyframes quad-jolt-b { 20% { translate: 3px -2px; } 45% { translate: -3px 2px; } 70% { translate: 1px -1px; } }
 @keyframes quad-ring {
   0% { opacity: 1; scale: 0.7; }
   100% { opacity: 0; scale: 1.25; }
-}
-/* A threat on a border of the fixed grid swells in magenta when it beats a card. */
-@keyframes quad-num-win-threat {
-  0%, 100% { scale: 1; }
-  35% { scale: 1.6; background: var(--comic-magenta); color: #000; }
-  75% { scale: 1.25; background: var(--comic-magenta); color: #000; }
 }
 /* The border bands of the fixed grid: hazard stripes, as on every threat. */
 .quad-border {
@@ -850,6 +918,7 @@ html.screen-locked body {
   .comic-hero,
   .comic-verdict:has(.comic-stamp),
   .quad-fx,
+  .quad-jolt,
   .comic-chip-open,
   .comic-ribbon,
   .comic-eq,
@@ -859,7 +928,9 @@ html.screen-locked body {
     animation: none !important;
   }
 
-  /* Without motion there is no cut-in (the balloon tells the power) and no mirror flash. */
+  /* Without motion there is no cut-in (the balloon tells the power) and no mirror flash; on the
+     Quadrante the bursts stay on the edges, without words, marks or flashes. */
+  .quad-fx-extra,
   .comic-cutin,
   .comic-page.fx-mirror::after {
     display: none;

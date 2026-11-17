@@ -382,3 +382,29 @@ export function storySeconds(story: QuadrantMoveStory | null): number {
   if (!story) return 0;
   return 0.3 + (story.clashes.length + story.borders.length) * CLASH_SECONDS + story.ripples.length * RIPPLE_SECONDS + 0.5;
 }
+
+/** How clearly a comparison went, for the size of its effect: 0 by a little, 1 clearly, 2 crushing. */
+export type ClashTier = 0 | 1 | 2;
+
+/** The gaps from which a comparison is clear (3: 7 against 4) and crushing (6: 10 against 4). */
+export const CLASH_TIER_GAPS = [3, 6] as const;
+
+export function clashTier(value: number, against: number): ClashTier {
+  const gap = Math.abs(value - against);
+  return gap >= CLASH_TIER_GAPS[1] ? 2 : gap >= CLASH_TIER_GAPS[0] ? 1 : 0;
+}
+
+/**
+ * The ability on each side of a card on the grid, as an index into the match's abilities:
+ * side d shows ability (d − turn). The turn is the move's when known; otherwise the first
+ * one whose numbers match the card (on equal numbers any matching turn shows the same values).
+ */
+export function sideAbilities(abilities: readonly string[], card: MatchCard, values: readonly number[], rotation?: number): number[] {
+  const turned = (turn: number) => [0, 1, 2, 3].map((d) => (d - turn + 4) % 4);
+  if (rotation !== undefined) return turned(((rotation % 4) + 4) % 4);
+  const base = abilities.map((code) => card.stats[code] ?? 0);
+  for (let turn = 0; turn < 4; turn++) {
+    if (values.every((value, d) => value === base[(d - turn + 4) % 4])) return turned(turn);
+  }
+  return turned(0);
+}

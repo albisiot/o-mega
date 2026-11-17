@@ -1,11 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { Silhouette } from "@/components/card-view";
 import { useEventPointsFor } from "@/components/event-banner";
 import { PlayerAvatar } from "@/components/player-avatar";
+import {
+  artMotion,
+  ClashBurst,
+  ClashFlash,
+  ClashTrace,
+  ClashWord,
+  familyStyle,
+  FX_COLOR,
+  fxWord,
+  hitMotion,
+  numberVars,
+  type FxStyle,
+} from "@/components/quadrant-fx";
 import { Sheet } from "@/components/sheet";
 import { balance } from "@/config/balance";
 import { artSrcSet } from "@/lib/art";
@@ -28,11 +41,14 @@ import {
   quadrantWindow,
   resolveQuadrantMove,
   CLASH_SECONDS,
+  clashTier,
   quadrantMoveStory,
   RIPPLE_SECONDS,
   sealDeltas,
+  sideAbilities,
   storySeconds,
   submitQuadrantMove,
+  type ClashTier,
   type QuadrantBorderThreatView,
   type QuadrantCellView,
   type QuadrantMoveStory,
@@ -508,13 +524,31 @@ function PlayArea({
   const shownDeltas = preview ? preview.deltas : (changes?.deltas ?? []);
   const deltaAt = (x: number, y: number) => shownDeltas.find((d) => d.x === x && d.y === y) ?? null;
   // The last move's effects, cell by cell, while no new move is being prepared.
-  const effects = useMemo(() => (changes?.story ? effectsOf(changes.story) : new Map<string, CellEffects>()), [changes]);
+  const moveEffects = useMemo(() => {
+    const story = changes?.story;
+    if (!story) return null;
+    const codes = view.abilities.map((a) => a.code);
+    // The ability on a side of a card: the card just played was turned as the move says.
+    const abilityAt = (x: number, y: number, side: number) => {
+      const cell = view.board.find((c) => c.x === x && c.y === y);
+      const rotation = x === story.x && y === story.y ? view.moves.find((m) => m.move === changes.move)?.rotation : undefined;
+      const ability = view.abilities[cell ? sideAbilities(codes, cell.card, cell.values, rotation)[side] : side];
+      return { code: ability?.code ?? "", style: familyStyle(ability?.family) };
+    };
+    return effectsOf(story, abilityAt);
+  }, [changes, view]);
+  const effects = moveEffects?.cells ?? new Map<string, CellEffects>();
   const last = view.moves.at(-1) ?? null;
   const frozen = frozenAxes(view);
   // Fixed grid: the four border threats around it, and what the last move did against them.
   const threats = view.border_threats?.length === 4 ? view.border_threats : null;
   const frame = threats ? 2 * (BAND + BAND_GAP) : 0;
-  const borderEffects = borderEffectsOf(preview ? null : changes?.story);
+  const borderEffects = (!preview && moveEffects?.borders) || new Map<number, BorderEffect>();
+  // A crushing gap jolts the whole grid; two keyframe names, so the next move starts it again.
+  const jolts = !preview && moveEffects ? moveEffects.jolts : [];
+  const jolt = jolts.length
+    ? { animation: jolts.map((delay) => `quad-jolt-${(changes?.move ?? 0) % 2 ? "a" : "b"} 0.34s ease-out ${delay}s`).join(", ") }
+    : undefined;
   const stampKey = preview ? "preview" : String(changes?.move ?? 0);
   // The borders the card being placed would meet.
   const edgeHighlight = new Set(
@@ -577,19 +611,20 @@ function PlayArea({
       {/* The grid, framed by the border threats on a fixed grid with them. */}
       <div className="flex min-h-0 flex-1 items-center justify-center px-3 py-1.5" style={{ containerType: "size" }}>
         <div
-          className="grid"
-          style={
-            threats
+          className={`grid ${jolt ? "quad-jolt" : ""}`}
+          style={{
+            ...(threats
               ? { gridTemplateColumns: `${BAND}px auto ${BAND}px`, gridTemplateRows: `${BAND}px auto ${BAND}px`, gap: BAND_GAP }
-              : undefined
-          }
+              : undefined),
+            ...jolt,
+          }}
         >
           {threats && <span aria-hidden />}
-          {threats && <BorderThreat threat={threats[0]} direction={0} effect={borderEffects.get(0)} stampKey={stampKey} highlight={edgeHighlight.has(0)} />}
+          {threats && <BorderThreat key={`0-${borderEffects.has(0) ? stampKey : "idle"}`} threat={threats[0]} direction={0} effect={borderEffects.get(0)} stampKey={stampKey} highlight={edgeHighlight.has(0)} />}
           {threats && <span aria-hidden />}
-          {threats && <BorderThreat threat={threats[3]} direction={3} effect={borderEffects.get(3)} stampKey={stampKey} highlight={edgeHighlight.has(3)} />}
+          {threats && <BorderThreat key={`3-${borderEffects.has(3) ? stampKey : "idle"}`} threat={threats[3]} direction={3} effect={borderEffects.get(3)} stampKey={stampKey} highlight={edgeHighlight.has(3)} />}
           <div
-            className="grid gap-1"
+            className="relative grid gap-1"
             style={{
               gridTemplateColumns: `repeat(${area.columns}, minmax(0, 1fr))`,
               gridTemplateRows: `repeat(${area.rows}, minmax(0, 1fr))`,
@@ -670,10 +705,11 @@ function PlayArea({
                 );
               }),
             )}
+            {!preview && moveEffects && <ClashLayer effects={moveEffects} area={area} stampKey={stampKey} />}
           </div>
-          {threats && <BorderThreat threat={threats[1]} direction={1} effect={borderEffects.get(1)} stampKey={stampKey} highlight={edgeHighlight.has(1)} />}
+          {threats && <BorderThreat key={`1-${borderEffects.has(1) ? stampKey : "idle"}`} threat={threats[1]} direction={1} effect={borderEffects.get(1)} stampKey={stampKey} highlight={edgeHighlight.has(1)} />}
           {threats && <span aria-hidden />}
-          {threats && <BorderThreat threat={threats[2]} direction={2} effect={borderEffects.get(2)} stampKey={stampKey} highlight={edgeHighlight.has(2)} />}
+          {threats && <BorderThreat key={`2-${borderEffects.has(2) ? stampKey : "idle"}`} threat={threats[2]} direction={2} effect={borderEffects.get(2)} stampKey={stampKey} highlight={edgeHighlight.has(2)} />}
           {threats && <span aria-hidden />}
         </div>
       </div>
@@ -812,82 +848,210 @@ function threatsText(beaten: number, lost: number): string | null {
 }
 
 /** A number of a card in a comparison: who won it, and when (seconds after the move appears). */
-type NumberEffect = { tone: "win-me" | "win-opponent" | "lose" | "tie"; delay: number };
+type Tone = "win-me" | "win-opponent" | "win-threat" | "lose" | "tie";
+
+/** How a number of a comparison moves: the winner swells in its colour, the loser shakes, a tie pushes. */
+type NumberEffect = { tone: Tone; tier: ClashTier; delay: number };
+
+/** A blow a card takes: the winner's style, how hard, and the edge it was hit on (0 top … 3 left). */
+type Hit = { style: FxStyle; tier: ClashTier; entry: number; delay: number };
 
 /** What a card on the grid shows while the last move is explained. */
 type CellEffects = {
   /** By side, 0 top … 3 left. */
   numbers: Map<number, NumberEffect>;
-  /** A burst on the edge where two numbers meet (on the card just played). */
-  sparks: { side: number; tone: NumberEffect["tone"]; delay: number }[];
+  hits: Hit[];
   /** A ring when a ripple takes one of this card's seals. */
   ring: { delay: number; mine: boolean } | null;
   /** When the seal badges stamp in. */
   badgeDelay: number;
 };
 
+/** A burst on an edge of the card on (x, y), with its comic word; `toward` is the side of the loser. */
+type Burst = {
+  x: number;
+  y: number;
+  side: number;
+  style: FxStyle;
+  tier: ClashTier;
+  code: string | null;
+  word: string | null;
+  toward: number | null;
+  delay: number;
+};
+
+/** How the card just played met a border threat. */
+type BorderEffect = { outcome: "win" | "tie" | "lose"; tier: ClashTier; style: FxStyle; delay: number };
+
+type MoveEffects = { cells: Map<string, CellEffects>; bursts: Burst[]; borders: Map<number, BorderEffect>; jolts: number[] };
+
+/** The marks land a moment after the numbers meet. */
+const HIT_DELAY = 0.06;
+
 /**
  * The timeline of a move: each comparison in turn (the two numbers clash, the higher one
- * lights up in the mover's colour), the seals landing on the beaten card and on the card
- * played, then each ripple (the beaten card's number against its neighbour, a ring, a seal off).
+ * swells in the colour of its side, a burst in the winning family's style, as large as the
+ * gap), the seals landing on the beaten card and on the card played, then each ripple (the
+ * beaten card's number against its neighbour, a ring, a seal off).
  */
-function effectsOf(story: QuadrantMoveStory): Map<string, CellEffects> {
-  const map = new Map<string, CellEffects>();
+function effectsOf(story: QuadrantMoveStory, abilityAt: (x: number, y: number, side: number) => { code: string; style: FxStyle }): MoveEffects {
+  const cells = new Map<string, CellEffects>();
   const of = (x: number, y: number) => {
     const key = `${x},${y}`;
-    let cell = map.get(key);
+    let cell = cells.get(key);
     if (!cell) {
-      cell = { numbers: new Map(), sparks: [], ring: null, badgeDelay: 0.3 };
-      map.set(key, cell);
+      cell = { numbers: new Map(), hits: [], ring: null, badgeDelay: 0.3 };
+      cells.set(key, cell);
     }
     return cell;
   };
-  const win: NumberEffect["tone"] = story.mine ? "win-me" : "win-opponent";
-  const lose: NumberEffect["tone"] = story.mine ? "win-opponent" : "win-me";
+  const bursts: Burst[] = [];
+  const borders = new Map<number, BorderEffect>();
+  const jolts: number[] = [];
+  const win: Tone = story.mine ? "win-me" : "win-opponent";
+  const lose: Tone = story.mine ? "win-opponent" : "win-me";
   const played = of(story.x, story.y);
+  const blow = (burst: Omit<Burst, "x" | "y" | "word">) => {
+    bursts.push({ ...burst, x: story.x, y: story.y, word: fxWord(burst.style, burst.tier) });
+    if (burst.tier === 2) jolts.push(burst.delay + HIT_DELAY);
+  };
+  const tie = (side: number, delay: number) => blow({ side, style: "tie", tier: 1, code: null, toward: null, delay });
+
   story.clashes.forEach((clash, i) => {
     const delay = 0.3 + i * CLASH_SECONDS;
-    const mine: NumberEffect["tone"] = clash.outcome === "win" ? win : clash.outcome === "tie" ? "tie" : "lose";
-    const theirs: NumberEffect["tone"] = clash.outcome === "win" ? "lose" : clash.outcome === "tie" ? "tie" : lose;
-    played.numbers.set(clash.side, { tone: mine, delay });
-    played.sparks.push({ side: clash.side, tone: mine, delay });
+    const tier = clashTier(clash.value, clash.against);
+    const back = (clash.side + 2) % 4;
     const other = of(clash.x, clash.y);
-    other.numbers.set((clash.side + 2) % 4, { tone: theirs, delay });
     other.badgeDelay = delay + 0.35;
+    if (clash.outcome === "tie") {
+      played.numbers.set(clash.side, { tone: "tie", tier, delay });
+      other.numbers.set(back, { tone: "tie", tier, delay });
+      tie(clash.side, delay);
+      return;
+    }
+    const won = clash.outcome === "win";
+    const ability = won ? abilityAt(story.x, story.y, clash.side) : abilityAt(clash.x, clash.y, back);
+    played.numbers.set(clash.side, { tone: won ? win : "lose", tier, delay });
+    other.numbers.set(back, { tone: won ? "lose" : lose, tier, delay });
+    (won ? other : played).hits.push({ style: ability.style, tier, entry: won ? back : clash.side, delay: delay + HIT_DELAY });
+    blow({ side: clash.side, style: ability.style, tier, code: ability.code, toward: won ? clash.side : back, delay });
   });
   story.borders.forEach((border, i) => {
     const delay = 0.3 + (story.clashes.length + i) * CLASH_SECONDS;
-    const tone: NumberEffect["tone"] = border.outcome === "win" ? win : border.outcome === "tie" ? "tie" : "lose";
-    played.numbers.set(border.side, { tone, delay });
-    played.sparks.push({ side: border.side, tone, delay });
+    const tier = clashTier(border.value, border.against);
+    if (border.outcome === "tie") {
+      played.numbers.set(border.side, { tone: "tie", tier, delay });
+      borders.set(border.side, { outcome: "tie", tier, style: "tie", delay });
+      tie(border.side, delay);
+      return;
+    }
+    const won = border.outcome === "win";
+    // The threat has its own look; the card that beats it, its family's.
+    const ability = won ? abilityAt(story.x, story.y, border.side) : { code: "!", style: "threat" as const };
+    played.numbers.set(border.side, { tone: won ? win : "lose", tier, delay });
+    borders.set(border.side, { outcome: border.outcome, tier, style: ability.style, delay });
+    if (!won) played.hits.push({ style: "threat", tier, entry: border.side, delay: delay + HIT_DELAY });
+    blow({ side: border.side, style: ability.style, tier, code: ability.code, toward: won ? border.side : (border.side + 2) % 4, delay });
   });
   const clashesEnd = 0.3 + (story.clashes.length + story.borders.length) * CLASH_SECONDS;
   played.badgeDelay = clashesEnd;
   story.ripples.forEach((ripple, i) => {
     const delay = clashesEnd + 0.15 + i * RIPPLE_SECONDS;
-    const from = of(ripple.from.x, ripple.from.y);
-    from.numbers.set(ripple.side, { tone: win, delay });
-    from.sparks.push({ side: ripple.side, tone: win, delay });
+    const tier = clashTier(ripple.value, ripple.against);
+    const back = (ripple.side + 2) % 4;
+    const ability = abilityAt(ripple.from.x, ripple.from.y, ripple.side);
+    of(ripple.from.x, ripple.from.y).numbers.set(ripple.side, { tone: win, tier, delay });
     const to = of(ripple.to.x, ripple.to.y);
-    to.numbers.set((ripple.side + 2) % 4, { tone: "lose", delay });
+    to.numbers.set(back, { tone: "lose", tier, delay });
+    to.hits.push({ style: ability.style, tier, entry: back, delay: delay + HIT_DELAY });
     to.ring = { delay: delay + 0.15, mine: story.mine };
     to.badgeDelay = Math.max(to.badgeDelay, delay + 0.4);
+    // A ripple: the burst and the mark, without a word.
+    bursts.push({ x: ripple.from.x, y: ripple.from.y, side: ripple.side, style: ability.style, tier, code: ability.code, word: null, toward: ripple.side, delay });
   });
-  return map;
+  return { cells, bursts, borders, jolts };
 }
 
-/** When each border threat met the card just played, and how it went. */
-function borderEffectsOf(story: QuadrantMoveStory | null | undefined): Map<number, { outcome: "win" | "tie" | "lose"; delay: number }> {
-  const map = new Map<number, { outcome: "win" | "tie" | "lose"; delay: number }>();
-  story?.borders.forEach((border, i) => {
-    map.set(border.side, { outcome: border.outcome, delay: 0.3 + (story.clashes.length + i) * CLASH_SECONDS });
-  });
-  return map;
+const TONE_COLOR: Record<Tone, string> = {
+  "win-me": "var(--comic-cyan)",
+  "win-opponent": "var(--comic-orange)",
+  "win-threat": "var(--comic-magenta)",
+  lose: "#fff",
+  tie: "#fff",
+};
+
+/** The animation of a number in a comparison; a tie pushes it towards `pushSide`. */
+function numberMotion(effect: NumberEffect, pushSide: number): CSSProperties {
+  const name = effect.tone === "lose" ? "quad-num-lose" : effect.tone === "tie" ? "quad-num-tie" : "quad-num-win";
+  return {
+    ...numberVars(effect.tier, TONE_COLOR[effect.tone], effect.tone === "tie" ? pushSide : null),
+    animation: `${name} ${[0.65, 0.72, 0.82][effect.tier]}s ease-out ${effect.delay}s both`,
+    // The winner over the loser facing it, when it swells across the gap.
+    zIndex: effect.tone === "lose" ? undefined : 4,
+  };
+}
+
+const STEP_XY = [
+  [0, -1],
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+] as const;
+
+/**
+ * The bursts and comic words of a move, over the grid: each on the edge where two numbers met.
+ * Placed in the grid's own terms (cells of equal size, 4px gaps), so it follows any window.
+ */
+function ClashLayer({
+  effects,
+  area,
+  stampKey,
+}: {
+  effects: MoveEffects;
+  area: { minX: number; minY: number; columns: number; rows: number };
+  stampKey: string;
+}) {
+  // `cells` cells and `gaps` gaps from the start, plus px, along an axis of n cells.
+  const along = (cells: number, gaps: number, px: number, n: number) => `calc((100% - ${(n - 1) * 4}px) * ${cells / n} + ${gaps * 4 + px}px)`;
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 z-10">
+      {effects.bursts.map((burst, i) => {
+        const c = burst.x - area.minX;
+        const r = burst.y - area.minY;
+        const [cx, px] = ([[c + 0.5, 0], [c + 1, 2], [c + 0.5, 0], [c, -2]] as const)[burst.side];
+        const [cy, py] = ([[r, -2], [r + 0.5, 0], [r + 1, 2], [r + 0.5, 0]] as const)[burst.side];
+        const left = along(cx, c, px, area.columns);
+        const top = along(cy, r, py, area.rows);
+        const toward = burst.toward === null ? [0, 0] : STEP_XY[burst.toward];
+        // The word over the loser's side of the edge (above it, on a side-by-side comparison).
+        const lift = burst.side % 2 === 1 || burst.toward === null ? -16 : toward[1] * 20;
+        const share = cx / area.columns;
+        return (
+          <Fragment key={`${stampKey}-${i}`}>
+            <ClashBurst style={burst.style} tier={burst.tier} code={burst.code} delay={burst.delay} left={left} top={top} />
+            {burst.word && (
+              <ClashWord
+                text={burst.word}
+                style={burst.style}
+                tier={burst.tier}
+                delay={burst.delay + HIT_DELAY}
+                left={`calc(${left} + ${toward[0] * 20}px)`}
+                top={`calc(${top} + ${lift}px)`}
+                anchor={share < 0.3 ? "-25%" : share > 0.7 ? "-75%" : "-50%"}
+                tilt={i % 2 ? 6 : -7}
+              />
+            )}
+          </Fragment>
+        );
+      })}
+    </div>
+  );
 }
 
 /**
  * A threat on a border of the fixed grid: its name and its value, along the border. When
- * the last move met it, its value swells in magenta if it won, shakes if it lost.
+ * the last move met it, its value swells in magenta if it won, shakes if it lost (and the
+ * border flashes in the winning family's colour), pushes back on a tie.
  */
 function BorderThreat({
   threat,
@@ -898,76 +1062,41 @@ function BorderThreat({
 }: {
   threat: QuadrantBorderThreatView;
   direction: number;
-  effect?: { outcome: "win" | "tie" | "lose"; delay: number };
+  effect?: BorderEffect;
   stampKey: string;
   highlight: boolean;
 }) {
   const vertical = direction === 1 || direction === 3;
   // From the threat's side of the comparison: the card's "win" is the threat's loss.
-  const animation = effect
-    ? effect.outcome === "win"
-      ? NUMBER_ANIMATION.lose
-      : effect.outcome === "tie"
-        ? NUMBER_ANIMATION.tie
-        : "quad-num-win-threat 0.7s ease-out"
+  const number: NumberEffect | null = effect
+    ? { tone: effect.outcome === "win" ? "lose" : effect.outcome === "tie" ? "tie" : "win-threat", tier: effect.tier, delay: effect.delay }
     : null;
+  // Beaten, the border is pushed outwards: it was hit on its edge towards the grid.
+  const motion = effect?.outcome === "win" ? hitMotion(effect.tier, (direction + 2) % 4, effect.delay + HIT_DELAY) : null;
   return (
     <div
-      className={`quad-border flex min-h-0 min-w-0 items-center justify-center gap-1 overflow-hidden ${vertical ? "flex-col" : ""} ${
+      className={`quad-border relative flex min-h-0 min-w-0 items-center justify-center gap-1 overflow-hidden ${vertical ? "flex-col" : ""} ${
         highlight ? "outline outline-2 -outline-offset-2 outline-comic-yellow" : ""
-      }`}
+      } ${motion ? "quad-fx" : ""}`}
+      style={motion ? { animation: motion } : undefined}
       aria-label={`Minaccia ${SIDE_NAMES[direction]}: ${threat.name}, ${threat.value}`}
       role="note"
     >
+      {effect?.outcome === "win" && <ClashFlash delay={effect.delay + HIT_DELAY} color={FX_COLOR[effect.style]} peak={0.55} />}
       <span
-        className="min-w-0 truncate text-[10px] font-extrabold uppercase leading-none tracking-wide text-comic-yellow"
+        className="relative z-[3] min-w-0 truncate text-[10px] font-extrabold uppercase leading-none tracking-wide text-comic-yellow"
         style={vertical ? { writingMode: "vertical-rl", rotate: direction === 3 ? "180deg" : undefined } : undefined}
       >
         {threat.name}
       </span>
       <span
         key={stampKey}
-        className={`flex h-[18px] min-w-[20px] shrink-0 items-center justify-center border-2 border-comic-magenta bg-black px-0.5 font-display text-[14px] leading-none text-comic-magenta ${effect ? "quad-fx" : ""}`}
-        style={effect && animation ? { animation: `${animation} ${effect.delay}s both` } : undefined}
+        className={`relative z-[3] flex h-[18px] min-w-[20px] shrink-0 items-center justify-center border-2 border-comic-magenta bg-black px-0.5 font-display text-[14px] leading-none text-comic-magenta ${number ? "quad-fx" : ""}`}
+        style={number ? numberMotion(number, (direction + 2) % 4) : undefined}
       >
         {threat.value}
       </span>
     </div>
-  );
-}
-
-const SPARK_POSITION = [
-  "left-1/2 top-0 -translate-x-1/2 -translate-y-1/2",
-  "right-0 top-1/2 translate-x-1/2 -translate-y-1/2",
-  "bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2",
-  "left-0 top-1/2 -translate-x-1/2 -translate-y-1/2",
-] as const;
-
-const SPARK_FILL = { "win-me": "var(--comic-cyan)", "win-opponent": "var(--comic-orange)", tie: "#fff", lose: "#fff" } as const;
-
-/** The burst where two numbers meet: a comic star in the winner's colour, "=" on a tie. */
-function Spark({ side, tone, delay }: { side: number; tone: NumberEffect["tone"]; delay: number }) {
-  return (
-    <span
-      aria-hidden
-      className={`quad-fx pointer-events-none absolute z-[6] h-9 w-9 ${SPARK_POSITION[side]}`}
-      style={{ animation: `quad-spark 0.6s ease-out ${delay}s both` }}
-    >
-      <svg viewBox="-20 -20 40 40" className="h-full w-full overflow-visible">
-        <polygon
-          points="0,-19 5,-7 18,-9 8,0 16,12 3,7 -4,18 -6,6 -18,9 -9,-2 -16,-13 -4,-8"
-          fill={SPARK_FILL[tone]}
-          stroke="#000"
-          strokeWidth={2.5}
-          strokeLinejoin="round"
-        />
-        {tone === "tie" && (
-          <text x="0" y="5" textAnchor="middle" fontSize="14" fontWeight="900" fill="#000">
-            =
-          </text>
-        )}
-      </svg>
-    </span>
   );
 }
 
@@ -1031,27 +1160,29 @@ const NUMBER_POSITION = [
   "left-0 top-1/2 -translate-y-1/2",
 ] as const;
 
-/** How a number of a comparison moves: the winner swells in its colour, the loser shakes. */
-const NUMBER_ANIMATION = {
-  "win-me": "quad-num-win-me 0.7s ease-out",
-  "win-opponent": "quad-num-win-opponent 0.7s ease-out",
-  lose: "quad-num-lose 0.7s ease-out",
-  tie: "quad-num-tie 0.7s ease-out",
-} as const;
-
-/** A square card: the face, and the four numbers on its sides. */
+/**
+ * A square card: the face (art, the marks of the blows it takes, the seals) and the four
+ * numbers on its sides, outside the face so a number that swells is not cut by its edge.
+ */
 function QuadCard({
   card,
   values,
   tone,
   seals,
   numbers,
+  hits = [],
+  entering = false,
+  stampKey = "",
 }: {
   card: MatchCard;
   values: readonly number[];
   tone: "mine" | "opponent" | "neutral" | "hand" | "draft";
   seals?: { me: number; opponent: number };
   numbers?: Map<number, NumberEffect>;
+  hits?: Hit[];
+  /** The card just played: it flashes in. */
+  entering?: boolean;
+  stampKey?: string;
 }) {
   const frame =
     tone === "mine"
@@ -1064,33 +1195,54 @@ function QuadCard({
             ? "border-comic-yellow shadow-[3px_3px_0_var(--comic-magenta)]"
             : "border-panel-raised";
   const number = "absolute z-[3] flex h-[18px] min-w-[18px] items-center justify-center bg-black px-0.5 font-display text-[14px] leading-none text-comic-yellow";
+  // A blow pushes or shakes the card, numbers too; Mente and Potere also cloud or light up the art.
+  const moves = hits.map((hit) => hitMotion(hit.tier, hit.entry, hit.delay)).filter((m) => m !== null);
+  const faceMotion = [...(entering ? ["comic-in 0.5s ease-out both"] : []), ...moves];
+  const artMotions = hits.map((hit) => artMotion(hit.style, hit.tier, hit.delay)).filter((m) => m !== null);
   return (
-    <span className={`relative block aspect-square w-full overflow-hidden border-[3px] bg-panel-raised ${frame}`}>
-      {card.art_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={withBasePath(card.art_url)}
-          srcSet={artSrcSet(card.art_url)}
-          sizes="96px"
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover object-top"
-        />
-      ) : (
-        <Silhouette faction={card.faction} accent={card.rarity.color} className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2" />
-      )}
-      {NUMBER_POSITION.map((position, side) => {
-        const effect = numbers?.get(side);
-        return (
-          <span
-            key={side}
-            className={`${number} ${position} ${effect ? "quad-fx" : ""}`}
-            style={effect ? { animation: `${NUMBER_ANIMATION[effect.tone]} ${effect.delay}s both` } : undefined}
-          >
-            {values[side]}
-          </span>
-        );
-      })}
-      {seals && <Seals me={seals.me} opponent={seals.opponent} />}
+    <span className="relative block aspect-square w-full">
+      <span
+        className={`absolute inset-0 overflow-hidden border-[3px] bg-panel-raised ${frame} ${moves.length ? "quad-fx" : ""}`}
+        style={faceMotion.length ? { animation: faceMotion.join(", ") } : undefined}
+      >
+        {card.art_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={withBasePath(card.art_url)}
+            srcSet={artSrcSet(card.art_url)}
+            sizes="96px"
+            alt=""
+            className={`absolute inset-0 h-full w-full object-cover object-top ${artMotions.length ? "quad-fx" : ""}`}
+            style={artMotions.length ? { animation: artMotions.join(", ") } : undefined}
+          />
+        ) : (
+          <Silhouette faction={card.faction} accent={card.rarity.color} className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2" />
+        )}
+        {hits.map((hit, i) => (
+          <Fragment key={`${stampKey}-${i}`}>
+            <ClashTrace style={hit.style} tier={hit.tier} entry={hit.entry} delay={hit.delay} />
+            {hit.tier === 2 && <ClashFlash delay={hit.delay} />}
+          </Fragment>
+        ))}
+        {seals && <Seals me={seals.me} opponent={seals.opponent} />}
+      </span>
+      <span
+        className={`pointer-events-none absolute inset-[3px] ${moves.length ? "quad-fx" : ""}`}
+        style={moves.length ? { animation: moves.join(", ") } : undefined}
+      >
+        {NUMBER_POSITION.map((position, side) => {
+          const effect = numbers?.get(side);
+          return (
+            <span
+              key={`${side}-${effect ? stampKey : ""}`}
+              className={`${number} ${position} ${effect ? "quad-fx" : ""}`}
+              style={effect ? numberMotion(effect, side) : undefined}
+            >
+              {values[side]}
+            </span>
+          );
+        })}
+      </span>
     </span>
   );
 }
@@ -1133,10 +1285,19 @@ function BoardCard({
         .map((v, d) => `${SIDE_NAMES[d]} ${v}`)
         .join(", ")}. Sigilli: tuoi ${cell.seals.me}, avversari ${cell.seals.opponent}`}
       className={`relative min-h-0 min-w-0 ${highlight ? "outline outline-2 outline-offset-1 outline-comic-yellow" : ""}`}
-      style={highlight ? flash : undefined}
     >
-      <QuadCard card={cell.card} values={cell.values} tone={control} seals={cell.seals} numbers={effects?.numbers} />
-      {effects?.sparks.map((spark) => <Spark key={`${stampKey}-${spark.side}`} {...spark} />)}
+      <QuadCard
+        // A card that takes a blow starts again, so the same blow two moves in a row shows twice.
+        key={effects?.hits.length ? stampKey : "still"}
+        card={cell.card}
+        values={cell.values}
+        tone={control}
+        seals={cell.seals}
+        numbers={effects?.numbers}
+        hits={effects?.hits}
+        entering={highlight}
+        stampKey={stampKey}
+      />
       {effects?.ring && (
         <span
           aria-hidden

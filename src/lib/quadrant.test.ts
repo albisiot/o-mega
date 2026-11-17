@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MatchCard } from "@/lib/match";
-import { quadrantMoveStory, sealDeltas, storySeconds, type QuadrantCellView } from "@/lib/quadrant";
+import { clashTier, quadrantMoveStory, sealDeltas, sideAbilities, storySeconds, type QuadrantCellView } from "@/lib/quadrant";
 
 const card = { definition_id: "d", name: "X" } as MatchCard;
 
@@ -40,5 +40,20 @@ describe("move story", () => {
 
   it("is null when the card is not on the grid", () => {
     expect(quadrantMoveStory([], [], { x: 0, y: 0, mine: false })).toBeNull();
+  });
+});
+
+describe("clash effects", () => {
+  it("sizes a comparison by its gap: a little, clearly, crushing", () => {
+    expect([clashTier(5, 4), clashTier(4, 6), clashTier(7, 4), clashTier(3, 8), clashTier(10, 4), clashTier(1, 10)]).toEqual([0, 0, 1, 1, 2, 2]);
+  });
+
+  it("finds the ability on each side of a turned card", () => {
+    const abilities = ["FOR", "VEL", "RES", "INT"];
+    const turned = { ...card, stats: { FOR: 7, VEL: 3, RES: 5, INT: 8 } } as MatchCard;
+    // A quarter turn: INT on top, FOR on the right, VEL at the bottom, RES on the left.
+    expect(sideAbilities(abilities, turned, [8, 7, 3, 5])).toEqual([3, 0, 1, 2]);
+    expect(sideAbilities(abilities, turned, [7, 3, 5, 8], 0)).toEqual([0, 1, 2, 3]);
+    expect(sideAbilities(abilities, turned, [8, 7, 3, 5], 5)).toEqual([3, 0, 1, 2]);
   });
 });
