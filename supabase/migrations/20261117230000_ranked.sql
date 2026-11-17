@@ -124,6 +124,12 @@ alter table public.matches add constraint matches_one_opponent check (
   -- A ranked match against the server's opponent: no second player, no difficulty on the match.
   or (mode = 'ranked' and bot_difficulty is null and player_b is null)
 );
+-- Grande Minaccia, Allarme Triplo and Quadrante can be ranked too.
+alter table public.matches drop constraint matches_boss_shape;
+alter table public.matches add constraint matches_boss_shape check (
+  (format = 'boss') = (boss_id is not null and boss_values is not null)
+  and (format = 'classic' or (mode in ('bot', 'friendly', 'ranked') and story_mission_id is null))
+);
 
 alter table public.matchmaking_queue drop constraint matchmaking_queue_mode_check;
 alter table public.matchmaking_queue add constraint matchmaking_queue_mode_check
