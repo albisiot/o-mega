@@ -113,25 +113,25 @@ export const TUTORIAL_POWERS = [
   { name: "Implacabile", text: "A parità di punteggio vince il round." },
 ];
 
-/** The three groups of the Gioca menu, in its order and colours. */
+/** The rows of the Gioca menu, in its order and colours. */
 export const TUTORIAL_MODES = [
   {
-    name: "Partita classica",
-    group: "5 contro 5",
-    color: "bg-comic-magenta",
-    text: `${match.teamSize} personaggi contro ${match.teamSize} Minacce. Contro i bot ti alleni, dal Facile al Super Pro. Online sfidi il primo giocatore libero o un amico con un codice di 6 caratteri, e guadagni più esperienza. Nessuna carta in gioco, tranne nella Conquista: chi vince ne prende una all'avversario. La Conquista si sblocca dopo ${conquest.unlockAfterMatches} partite completate, anche contro i bot, o al livello ${conquest.unlockAtLevel}.`,
-  },
-  {
     name: "Storia ed Emergenza",
-    group: "Da solo",
+    group: "Oggi",
     color: "rays-gold",
-    text: "La Storia sono missioni a Nuova Megara, con squadre e Minacce preparate e carte in premio. L'Emergenza è la sfida del giorno: 8 Minacce uguali per tutti, un solo tentativo e la classifica.",
+    text: "In cima, Gioca ancora rifà la tua ultima partita con un tocco. Sotto, le cose del giorno: l'evento, l'Emergenza (8 Minacce uguali per tutti, un solo tentativo e la classifica) e la Storia, missioni a Nuova Megara con carte in premio, ognuna con il suo stato.",
   },
   {
-    name: "Grande Minaccia, Allarme Triplo, Quadrante",
-    group: "Altre modalità",
+    name: "Classica, Grande Minaccia, Allarme Triplo, Quadrante",
+    group: "Modalità",
+    color: "bg-comic-magenta",
+    text: `Le regole: ${match.teamSize} personaggi contro ${match.teamSize} Minacce, un Boss con cinque fronti, tre Minacce per tutta la partita, una griglia 4×4. In ognuna scegli Allenamento, contro i bot dal Facile al Super Pro, o Amichevole online, con il primo giocatore libero o un amico con un codice di 6 caratteri. Nessuna carta in gioco.`,
+  },
+  {
+    name: "Classificata e Conquista",
+    group: "In palio",
     color: "bg-comic-cyan",
-    text: "Cambiano le regole: un Boss con cinque fronti, tre Minacce per tutta la partita, una griglia 4×4. Contro un bot o un giocatore, senza carte in gioco. La prima volta ognuna ti spiega come si gioca.",
+    text: `Nella Classificata vinci o perdi Fama. Nella Conquista chi vince prende una carta all'avversario: si sblocca dopo ${conquest.unlockAfterMatches} partite completate, anche contro i bot, o al livello ${conquest.unlockAtLevel}.`,
   },
 ];
 
@@ -233,7 +233,7 @@ export const TUTORIAL_STEPS = [
   {
     key: "modes",
     title: "Il menu Gioca",
-    points: ["In Gioca le modalità sono divise in tre gruppi. Sceglierne una apre le sue opzioni."],
+    points: ["In Gioca il pulsante grande in cima rifà la tua ultima partita. Sotto ci sono tre righe: Oggi, Modalità e In palio. Toccare una modalità apre le sue opzioni."],
   },
   {
     key: "conquest",

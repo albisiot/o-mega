@@ -15,6 +15,7 @@ import { balance } from "@/config/balance";
 import { isQuadrantFormat, QUADRANT_GRID_LABELS, startQuadrantBotMatch } from "@/lib/quadrant";
 import { startTripleBotMatch } from "@/lib/triple";
 import { describeServerError } from "@/lib/errors";
+import { rememberLastPlay } from "@/lib/last-play";
 import { startStoryMission, storyMatchHref } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import {
@@ -194,6 +195,7 @@ function TeamPageContent() {
                 : isQuadrantFormat(format)
                   ? await startQuadrantBotMatch(mode.difficulty, format, cardInstanceIds)
                   : await startBotMatch(mode.difficulty, cardInstanceIds);
+          rememberLastPlay({ mode: "bot", format, difficulty: mode.difficulty });
           router.push(`/partita/?id=${view.id}`);
           break;
         }
@@ -209,18 +211,22 @@ function TeamPageContent() {
         }
         case "lobby":
           await createLobby(cardInstanceIds, format);
+          rememberLastPlay({ mode: "lobby", format });
           router.push("/attesa/?mode=lobby");
           break;
         case "queue":
           storePendingTeam(cardInstanceIds);
+          rememberLastPlay({ mode: "queue", format });
           router.push(format === "classic" ? "/attesa/?mode=queue" : `/attesa/?mode=queue&format=${format}`);
           break;
         case "ranked":
           storePendingTeam(cardInstanceIds);
+          rememberLastPlay({ mode: "ranked", format });
           router.push(format === "classic" ? "/attesa/?mode=queue&type=ranked" : `/attesa/?mode=queue&type=ranked&format=${format}`);
           break;
         case "conquest":
           storePendingTeam(cardInstanceIds);
+          rememberLastPlay({ mode: "conquest", format: "classic" });
           router.push("/attesa/?mode=queue&type=conquest");
           break;
       }
