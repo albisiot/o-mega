@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
-import { ComicBurst, PageHeader } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
+import { LobbyMissingView, LobbyWaitView, QueueWaitView, WaitingMain, WaitingShell } from "@/components/waiting-views";
 import { balance } from "@/config/balance";
-import { WORLD_SEARCH_LINES } from "@/config/world";
 import { BASE_PATH } from "@/lib/base-path";
 import { describeServerError } from "@/lib/errors";
 import {
@@ -23,10 +22,9 @@ import {
   type MatchFormat,
   type QueueMode,
 } from "@/lib/match";
-import { QUADRANT_GRID_LABELS } from "@/lib/quadrant";
-import { formatCountdown, useNow } from "@/lib/use-now";
+import { useLockedScreen } from "@/lib/use-locked-screen";
+import { useNow } from "@/lib/use-now";
 
-const SEARCH_LINE_SECONDS = 4;
 // The server ignores a queue entry not refreshed for queueStaleSeconds:
 // refreshing at 2/5 of that leaves room for one lost request.
 const QUEUE_REFRESH_MS = (balance.matchmaking.queueStaleSeconds * 1000 * 2) / 5;
@@ -53,20 +51,17 @@ function WaitingContent() {
   const asked = asMatchFormat(params.get("format"));
   const format: MatchFormat = queueMode === "conquest" ? "classic" : asked;
   const { session } = useRequireSignedIn();
+  // The page fits the phone and never scrolls (see WaitingShell).
+  useLockedScreen(true);
   if (!session) return <LoadingScreen />;
   return (
-    <div className="flex flex-1 flex-col">
-      <PageHeader
-        backHref={queueMode === "ranked" ? "/classificata" : "/gioca"}
-        backLabel={queueMode === "ranked" ? "Classificata" : "Gioca"}
-        title={mode === "lobby" ? "Sfida un amico" : "Ricerca avversario"}
-      />
+    <WaitingShell lobby={mode === "lobby"} ranked={queueMode === "ranked"}>
       {mode === "lobby" ? (
         <LobbyWait userId={session.user.id} />
       ) : (
         <QueueWait userId={session.user.id} queueMode={queueMode} format={format} />
       )}
-    </div>
+    </WaitingShell>
   );
 }
 
@@ -162,7 +157,7 @@ function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: Q
 
   if (!team) {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+      <WaitingMain>
         <p className="text-sm font-semibold">Scegli prima la tua squadra.</p>
         <Link
           href={
@@ -174,66 +169,12 @@ function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: Q
         >
           Scegli la squadra
         </Link>
-      </main>
+      </WaitingMain>
     );
   }
 
   const waited = Math.max(0, Math.floor((now - startedAt) / 1000));
-  const line = Math.floor(waited / SEARCH_LINE_SECONDS);
-  return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
-      <div aria-hidden className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="rays-dark animate-rays-spin absolute left-1/2 top-1/2 h-[200vmax] w-[200vmax] -translate-x-1/2 -translate-y-1/2" />
-      </div>
-      <ComicBurst
-        fill="#ffd60a"
-        className="animate-search-burst relative h-36 w-36"
-        textClassName="text-[34px] tracking-wide"
-      >
-        CERCO!
-      </ComicBurst>
-      <div>
-        <p className="font-display text-3xl uppercase">
-          {queueMode === "conquest"
-            ? "Ricerca di un avversario per la Conquista…"
-            : `Ricerca di un avversario${queueMode === "ranked" ? " in Classificata" : ""}${
-                format === "boss"
-                  ? " per la Grande Minaccia"
-                  : format === "triple"
-                    ? " per Allarme Triplo"
-                    : format === "quadrant" || format === "quadrant_shifting"
-                      ? ` per Quadrante (${QUADRANT_GRID_LABELS[format].toLowerCase()})`
-                      : ""
-              }…`}
-        </p>
-        <p className="mt-1 font-display text-2xl text-comic-yellow">{waited} s</p>
-        <p key={line} className="animate-panel-fade mt-1 text-sm font-semibold text-comic-cyan">
-          {WORLD_SEARCH_LINES[line % WORLD_SEARCH_LINES.length]}
-        </p>
-      </div>
-      {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
-      {queueMode === "conquest" && (
-        <p className="max-w-xs text-sm font-semibold">
-          Se non arriva nessuno, dopo {balance.matchmaking.conquestBotAfterSeconds} secondi sfiderai un bot a caso. Le
-          carte restano in palio: puoi vincerne una o perderla.
-        </p>
-      )}
-      {queueMode === "ranked" && (
-        <p className="max-w-xs text-sm font-semibold">Classificata: chi vince guadagna Fama. Nessuna carta in gioco.</p>
-      )}
-      {queueMode === "friendly" && waited >= balance.matchmaking.suggestBotAfterSeconds && (
-        <div className="flex flex-col items-center gap-3 bg-panel p-4">
-          <p className="text-sm font-semibold">Nessun avversario disponibile al momento.</p>
-          <Link href="/gioca" className="btn btn-outline">
-            Gioca contro un bot
-          </Link>
-        </div>
-      )}
-      <Link href={queueMode === "ranked" ? "/classificata" : "/gioca"} className="btn btn-ghost">
-        Annulla
-      </Link>
-    </main>
-  );
+  return <QueueWaitView queueMode={queueMode} format={format} waited={waited} error={error} />;
 }
 
 function LobbyWait({ userId }: { userId: string }) {
@@ -289,43 +230,9 @@ function LobbyWait({ userId }: { userId: string }) {
 
   if (lobby === undefined) return <LoadingScreen />;
   const remaining = lobby ? Date.parse(lobby.expires_at) - now : 0;
-  if (!lobby || remaining <= 0) {
-    return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-sm font-semibold">{lobby ? "Il codice è scaduto." : "Nessun codice attivo."}</p>
-        <Link href="/squadra/?mode=lobby" className="btn btn-outline">
-          Crea un nuovo codice
-        </Link>
-      </main>
-    );
-  }
+  if (!lobby || remaining <= 0) return <LobbyMissingView expired={Boolean(lobby)} />;
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
-      <p className="text-base font-semibold">
-        {lobby.format === "boss"
-          ? "Grande Minaccia: dai questo codice al tuo amico:"
-          : lobby.format === "triple"
-            ? "Allarme Triplo: dai questo codice al tuo amico (gli servono 9 carte):"
-            : lobby.format === "quadrant" || lobby.format === "quadrant_shifting"
-              ? `Quadrante, ${QUADRANT_GRID_LABELS[lobby.format].toLowerCase()}: dai questo codice al tuo amico (gli servono ${balance.quadrant.deckSize} carte):`
-              : "Dai questo codice al tuo amico:"}
-      </p>
-      <p className="-skew-x-8 select-all bg-comic-yellow px-5 py-2 font-display text-5xl tracking-[0.15em] text-black shadow-[5px_5px_0_var(--comic-magenta)]">
-        {lobby.code}
-      </p>
-      <p className="text-sm font-medium text-muted">Valido ancora {formatCountdown(remaining)}</p>
-      <button type="button" onClick={() => share(lobby.code)} className="btn btn-primary px-6">
-        Condividi il codice
-      </button>
-      {notice && <p className="text-sm font-semibold text-comic-cyan">{notice}</p>}
-      <div className="flex items-center gap-2 text-sm font-semibold text-muted">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-comic-yellow" aria-hidden />
-        In attesa che il tuo amico entri…
-      </div>
-      <button type="button" onClick={cancel} className="btn btn-ghost">
-        Annulla
-      </button>
-    </main>
+    <LobbyWaitView lobby={lobby} remaining={remaining} notice={notice} onShare={() => share(lobby.code)} onCancel={cancel} />
   );
 }
