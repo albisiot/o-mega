@@ -85,6 +85,7 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   event_tier_no_reward: "Ogni traguardo deve dare almeno un premio: monete, pacchetti o carte.",
   event_invalid_card: "Una delle carte scelte non si può dare come premio.",
   event_has_points: "Qualcuno ha già punti in questo evento: disattivalo invece di eliminarlo.",
+  event_leaderboard_locked: "La classifica generale si sblocca quando completi l'ultimo traguardo dell'evento.",
   objective_not_found: "Obiettivo non trovato: ricarica la pagina.",
   objective_expired: "Questo obiettivo è scaduto a mezzanotte.",
   objective_not_completed: "Completa l'obiettivo per riscattare il premio.",

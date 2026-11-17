@@ -303,6 +303,13 @@ export const balance = {
     maxTiers: 5,
     /** An event that admits only some traits must allow at least this many characters (an Emergenza squad). */
     minAdmittedCharacters: 8,
+    /** Players shown in an event's Classifica generale; the player's own place is added when lower. */
+    leaderboardSize: 100,
+    /**
+     * Who sees an event's Classifica generale, during the event and after it: "completed" (the
+     * last target reached), "participants" (any event point) or "everyone". The server decides.
+     */
+    leaderboardVisibility: "completed" as "completed" | "participants" | "everyone",
   },
 
   /**

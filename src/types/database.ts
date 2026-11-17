@@ -3623,6 +3623,7 @@ export type Database = {
       get_emergency_lineups: { Args: never; Returns: Json }
       get_emergency_prizes: { Args: never; Returns: Json }
       get_event: { Args: never; Returns: Json }
+      get_event_leaderboard: { Args: { p_event_id?: string }; Returns: Json }
       get_event_points_for: { Args: { p_ref_id: string }; Returns: Json }
       get_leaderboard: {
         Args: { p_board: string; p_period: string }
