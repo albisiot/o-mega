@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { CardZoom } from "@/components/card-zoom";
 import { Silhouette } from "@/components/card-view";
 import { BackLink, TabBar } from "@/components/comic-parts";
@@ -10,7 +10,7 @@ import { balance } from "@/config/balance";
 import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import type { AbilityInfo } from "@/lib/catalog";
-import { completionLine, isEventCompleted, lockedLine } from "@/lib/event-leaderboard";
+import { completionLine, completionPlace, isEventCompleted, lockedLine, type EventLeaderboard } from "@/lib/event-leaderboard";
 import {
   EVENT_KINDS,
   describeTierReward,
@@ -56,7 +56,18 @@ export function EventShell({ title, children }: { title: string; children: React
  * An event as the player sees it. The countdown, the progress and a reward to open stay on
  * top; the targets and the point table share the room left, one tab at a time.
  */
-export function EventDetails({ event, now, abilities }: { event: GameEvent; now: number; abilities: AbilityInfo[] | null }) {
+export function EventDetails({
+  event,
+  now,
+  abilities,
+  fixedLeaderboard,
+}: {
+  event: GameEvent;
+  now: number;
+  abilities: AbilityInfo[] | null;
+  /** A leaderboard given as it is, not asked to the server (the test page /prova-evento). */
+  fixedLeaderboard?: EventLeaderboardState;
+}) {
   const phase = eventPhase(event, now);
   const progress = tierProgress(event.my_points, event.tiers);
   const { open, opening } = useOpenEventRewards();
@@ -67,10 +78,11 @@ export function EventDetails({ event, now, abilities }: { event: GameEvent; now:
   const completed = isEventCompleted(event);
   // Before the start: the final leaderboard of the event before, if the player unlocked it.
   // Otherwise this event's, asked for once completed (the place) or when its tab opens.
-  const leaderboard = useEventLeaderboard(
+  const asked = useEventLeaderboard(
     phase === "upcoming" ? null : event.id,
-    tab === "leaderboard" || (completed && phase !== "upcoming"),
+    !fixedLeaderboard && (tab === "leaderboard" || (completed && phase !== "upcoming")),
   );
+  const leaderboard = fixedLeaderboard ?? asked;
   const lastTier = event.tiers.at(-1)?.points ?? null;
 
   return (
@@ -128,7 +140,7 @@ export function EventDetails({ event, now, abilities }: { event: GameEvent; now:
       {completed && phase !== "upcoming" && !toOpen && leaderboard.status !== "loading" && (
         <CompletedBanner
           eventId={event.id}
-          line={completionLine(leaderboard.status === "ready" ? leaderboard.board : null)}
+          board={leaderboard.status === "ready" ? leaderboard.board : null}
           showLink={tab !== "leaderboard"}
           onOpen={() => setTab("leaderboard")}
         />
@@ -232,29 +244,46 @@ export function EventDetails({ event, now, abilities }: { event: GameEvent; now:
 }
 
 /**
- * "Evento completato! Sei 12° su 87": stamped in the first time the player sees it, then
- * still there, quietly, on every visit.
+ * "Evento completato! Sei 12° su 87": stamped in the first time the player sees it (also back
+ * from the reveal of the last reward), then still there, quietly, on every visit.
  */
-function CompletedBanner({ eventId, line, showLink, onOpen }: { eventId: string; line: string; showLink: boolean; onOpen: () => void }) {
-  const [firstTime] = useState(() => {
+function CompletedBanner({
+  eventId,
+  board,
+  showLink,
+  onOpen,
+}: {
+  eventId: string;
+  board: EventLeaderboard | null;
+  showLink: boolean;
+  onOpen: () => void;
+}) {
+  const ref = useRef<HTMLElement>(null);
+  const place = completionPlace(board);
+
+  // Read after the render, so the page is the same on the server and in the browser; before
+  // the paint, so the stamp does not flash in its final place first.
+  useLayoutEffect(() => {
     const key = `o-mega:event-completed:${eventId}`;
     try {
-      if (window.localStorage.getItem(key)) return false;
+      if (window.localStorage.getItem(key)) return;
       window.localStorage.setItem(key, "1");
     } catch {
-      // No storage (private window): no stamp, the line stays.
-      return false;
+      return; // No storage (private window): no stamp, the banner stays.
     }
-    return true;
-  });
+    ref.current?.classList.add("comic-stamp");
+  }, [eventId]);
+
   return (
     <section
-      className={`flex shrink-0 items-center justify-between gap-2 border-[3px] border-black bg-comic-magenta px-3 py-1.5 text-black shadow-[3px_3px_0_#000] ${
-        firstTime ? "comic-stamp" : ""
-      }`}
-      aria-live="polite"
+      ref={ref}
+      aria-label={completionLine(board)}
+      className="flex shrink-0 items-center justify-between gap-2 border-[3px] border-black bg-comic-magenta px-3 py-1.5 text-black shadow-[3px_3px_0_#000]"
     >
-      <p className="min-w-0 font-display text-xl uppercase leading-6">{line}</p>
+      <p className="min-w-0">
+        <span className="block font-display text-[22px] uppercase leading-6">Evento completato!</span>
+        {place && <span className="block text-[15px] font-extrabold leading-5">{place}</span>}
+      </p>
       {showLink && (
         <button
           type="button"

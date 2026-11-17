@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   completionLine,
+  completionPlace,
   entryProgress,
   fetchEventLeaderboard,
   isEventCompleted,
@@ -44,6 +45,13 @@ describe("isEventCompleted", () => {
   });
   it("is never true for an event without targets", () => {
     expect(isEventCompleted({ tiers: [] })).toBe(false);
+  });
+});
+
+describe("completionPlace", () => {
+  it("is the place, or nothing yet", () => {
+    expect(completionPlace({ me: entry(1, { is_me: true }), players: 1 })).toBe("Sei 1° su 1");
+    expect(completionPlace(null)).toBeNull();
   });
 });
 

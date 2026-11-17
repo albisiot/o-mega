@@ -59,10 +59,16 @@ export function isEventCompleted(event: Pick<GameEvent, "tiers">): boolean {
   return event.tiers.length > 0 && event.tiers.every((tier) => tier.reached);
 }
 
+/** "Sei 12° su 87", or null while the place is unknown. */
+export function completionPlace(board: Pick<EventLeaderboard, "me" | "players"> | null): string | null {
+  const me = board?.me;
+  return me ? `Sei ${me.rank}° su ${board.players}` : null;
+}
+
 /** "Evento completato! Sei 12° su 87", or without the place while it is unknown. */
 export function completionLine(board: Pick<EventLeaderboard, "me" | "players"> | null): string {
-  const me = board?.me;
-  return me ? `Evento completato! Sei ${me.rank}° su ${board.players}` : "Evento completato!";
+  const place = completionPlace(board);
+  return place ? `Evento completato! ${place}` : "Evento completato!";
 }
 
 /** The progress of a player in the list: "Completato" or "3/5 traguardi". */
