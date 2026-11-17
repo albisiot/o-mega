@@ -86,7 +86,11 @@ export function useOpenEventRewards(): { open: (event: GameEvent) => void; openi
  * On the home and in Gioca: the running event with its countdown and progress, the next one
  * with the time to its start, or a reward to open. Nothing when there is no event.
  */
-export function EventBanner() {
+/**
+ * `compact`: the home's tile, beside the objectives' in one row (name, countdown and points, a
+ * thin bar); the full banner, with the progress line and the admitted characters, elsewhere.
+ */
+export function EventBanner({ compact = false }: { compact?: boolean }) {
   const { status, offset } = useEventStatus();
   const now = useNow(30_000) + offset;
   const { open, opening } = useOpenEventRewards();
@@ -97,6 +101,21 @@ export function EventBanner() {
       : status?.ended_with_rewards && unseenOpenings(status.ended_with_rewards).length > 0
         ? status.ended_with_rewards
         : null;
+
+  if (withRewards && compact) {
+    return (
+      <button
+        type="button"
+        onClick={() => open(withRewards)}
+        disabled={opening}
+        aria-label={`Premio evento ottenuto: ${withRewards.title}. Aprilo`}
+        className="flex min-h-12 min-w-0 flex-1 flex-col justify-center bg-comic-yellow px-3 py-1 text-left text-black short:min-h-11"
+      >
+        <span className="block truncate font-display text-[17px] uppercase leading-5">Premio evento!</span>
+        <span className="block truncate text-[12px] font-bold leading-4">{opening ? "…" : "Tocca per aprirlo"}</span>
+      </button>
+    );
+  }
 
   if (withRewards) {
     return (
@@ -122,6 +141,21 @@ export function EventBanner() {
   const phase = eventPhase(event, now);
   if (phase === "ended") return null;
 
+  if (phase === "upcoming" && compact) {
+    return (
+      <Link
+        href="/evento"
+        aria-label={`Evento in arrivo: ${event.title}, tra ${formatEventCountdown(Date.parse(event.starts_at) - now)}`}
+        className="flex min-h-12 min-w-0 flex-1 flex-col justify-center border-2 border-comic-yellow px-3 py-0.5 short:min-h-11"
+      >
+        <span className="block truncate font-display text-[17px] uppercase leading-5">{event.title}</span>
+        <span className="block truncate text-[12px] font-extrabold leading-4 text-comic-yellow">
+          tra {formatEventCountdown(Date.parse(event.starts_at) - now)}
+        </span>
+      </Link>
+    );
+  }
+
   if (phase === "upcoming") {
     return (
       <Link
@@ -140,6 +174,24 @@ export function EventBanner() {
   }
 
   const progress = tierProgress(event.my_points, event.tiers);
+  if (compact) {
+    return (
+      <Link
+        href="/evento"
+        aria-label={`Evento ${event.title}: ${event.my_points} punti, finisce tra ${formatEventCountdown(Date.parse(event.ends_at) - now)}`}
+        className="flex min-h-12 min-w-0 flex-1 flex-col justify-center gap-0.5 bg-comic-yellow px-3 py-1 text-black short:min-h-11"
+      >
+        <span className="block truncate font-display text-[17px] uppercase leading-5">{event.title}</span>
+        <span className="block truncate text-[12px] font-extrabold leading-4">
+          {progress.next ? `${event.my_points}/${progress.next.points} punti` : "Completato"} ·{" "}
+          {formatEventCountdown(Date.parse(event.ends_at) - now)}
+        </span>
+        <span className="h-1 bg-black/25" aria-hidden>
+          <span className="block h-full bg-black" style={{ width: `${Math.round(progress.fraction * 100)}%` }} />
+        </span>
+      </Link>
+    );
+  }
   return (
     <Link
       href="/evento"

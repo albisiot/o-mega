@@ -54,24 +54,25 @@ export function HomeObjectivesBar() {
   const { objectives } = useDailyObjectives();
   const toClaim = claimableCount(objectives);
 
+  // On the home it shares a row with the event's tile: it takes the whole row when there is none.
   return (
     <Link
       href="/obiettivi/"
-      className={`flex min-h-11 shrink-0 items-center justify-between gap-3 px-3.5 py-1 short:min-h-10 ${
+      aria-label={`Obiettivi del giorno: ${objectives ? summarizeObjectives(objectives) : "caricamento"}`}
+      className={`flex min-h-12 min-w-0 flex-1 items-center justify-between gap-2 px-3 py-1 short:min-h-11 ${
         toClaim > 0 ? "bg-comic-yellow text-black" : "bg-panel"
       }`}
     >
       <span className="min-w-0">
-        <span className="block font-display text-[17px] uppercase leading-5">Obiettivi del giorno</span>
+        <span className="block font-display text-[17px] uppercase leading-5">Obiettivi</span>
         <span className={`block truncate text-[13px] font-bold leading-4 ${toClaim > 0 ? "" : "text-muted"}`}>
           {objectives ? summarizeObjectives(objectives) : "…"}
         </span>
       </span>
       {toClaim > 0 ? (
-        <span className="relative shrink-0 -skew-x-8 bg-black px-2.5 py-1 font-display text-base uppercase text-comic-yellow">
-          Riscatta
-          <span aria-hidden className="absolute -right-1 -top-1 size-2.5 animate-ping rounded-full bg-comic-magenta" />
-          <span aria-hidden className="absolute -right-1 -top-1 size-2.5 rounded-full bg-comic-magenta" />
+        <span aria-hidden className="relative size-3 shrink-0">
+          <span className="absolute inset-0 animate-ping rounded-full bg-comic-magenta" />
+          <span className="absolute inset-0 rounded-full bg-comic-magenta" />
         </span>
       ) : (
         <span aria-hidden className="shrink-0 font-display text-[22px]">

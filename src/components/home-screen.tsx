@@ -15,7 +15,7 @@ import { fetchAbilities, seenAbilities } from "@/lib/catalog";
 import { fetchCatalog, fetchCollection, seenCatalog, seenCollection } from "@/lib/collection";
 import { fetchActiveMatch, type ActiveMatch } from "@/lib/match";
 import { fetchPackOdds, seenPackOdds } from "@/lib/packs";
-import { countOwnedCards, type Profile } from "@/lib/player";
+import type { Profile } from "@/lib/player";
 import { fetchMyRanked, type MyRanked } from "@/lib/ranked";
 import { hasSeenTutorial } from "@/lib/tutorial-seen";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -39,7 +39,6 @@ function preloadScreens() {
 }
 
 export function HomeScreen({ profile }: { profile: Profile }) {
-  const [cardCount, setCardCount] = useState<number | null>(null);
   const packs = usePackStatus();
   const [activeMatch, setActiveMatch] = useState<ActiveMatch | null>(null);
   const [ranked, setRanked] = useState<MyRanked | null>(null);
@@ -86,18 +85,6 @@ export function HomeScreen({ profile }: { profile: Profile }) {
     };
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    countOwnedCards()
-      .then((count) => {
-        if (!cancelled) setCardCount(count);
-      })
-      .catch((error: unknown) => console.error("Card count failed", error));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   // The home fits the screen above the bottom bar and never scrolls: the pack panel and Gioca
   // share the room left, and a short window (Safari on a small phone) gets the compact sizes.
   useLockedScreen(true);
@@ -134,9 +121,11 @@ export function HomeScreen({ profile }: { profile: Profile }) {
           </Link>
         )}
 
-        <EventBanner />
-
-        <HomeObjectivesBar />
+        {/* Today in one row: the objectives and, while there is one, the event. */}
+        <div className="flex shrink-0 gap-2">
+          <HomeObjectivesBar />
+          <EventBanner compact />
+        </div>
 
         <PackPanel
           status={packs.status}
@@ -147,19 +136,6 @@ export function HomeScreen({ profile }: { profile: Profile }) {
         />
 
         <HomePlayButtons ranked={ranked} />
-
-        <div className="grid shrink-0 grid-cols-2 gap-2">
-          <Link href="/collezione" className="flex min-h-[70px] flex-col justify-center gap-0.5 bg-comic-cyan px-3 py-2 text-black short:py-1">
-            <span className="font-display text-[22px] uppercase leading-[26px]">Collezione</span>
-            <span className="text-[13px] font-bold leading-[17px]">
-              {cardCount === null ? "…" : cardCount} {cardCount === 1 ? "carta" : "carte"} · album e doppioni
-            </span>
-          </Link>
-          <Link href="/negozio" className="flex min-h-[70px] flex-col justify-center gap-0.5 bg-foreground px-3 py-2 text-black short:py-1">
-            <span className="font-display text-[22px] uppercase leading-[26px]">Negozio</span>
-            <span className="text-[13px] font-bold leading-[17px]">Pacchetti e probabilità</span>
-          </Link>
-        </div>
       </main>
     </div>
   );
