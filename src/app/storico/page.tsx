@@ -8,6 +8,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { describeServerError } from "@/lib/errors";
 import { DIFFICULTY_LABELS, fetchMatchHistory, type MatchHistoryEntry } from "@/lib/match";
 import { useLockedScreen } from "@/lib/use-locked-screen";
+import { describeFamaChange } from "@/lib/ranked";
 
 const RESULT_STYLES = {
   win: { label: "Vittoria", className: "text-comic-cyan" },
@@ -75,7 +76,7 @@ function HistoryRow({ entry }: { entry: MatchHistoryEntry }) {
   const mode = `${boss ? `${entry.boss_name ?? "Grande Minaccia"} · ` : triple ? "Allarme Triplo · " : quadrant ? "Quadrante · " : ""}${
     entry.mode === "bot"
       ? `Bot ${DIFFICULTY_LABELS[entry.bot_difficulty ?? "easy"]}`
-      : `${entry.mode === "conquest" ? "Conquista" : "Amichevole"} · ${
+      : `${entry.mode === "conquest" ? "Conquista" : entry.mode === "ranked" ? "Classificata" : "Amichevole"} · ${
           entry.bot_difficulty ? `Bot ${DIFFICULTY_LABELS[entry.bot_difficulty]}` : (entry.opponent ?? "giocatore rimosso")
         }`
   }`;
@@ -107,6 +108,7 @@ function HistoryRow({ entry }: { entry: MatchHistoryEntry }) {
               : `${entry.rounds_me} – ${entry.rounds_opponent}`}
         </p>
         {entry.coins > 0 && <p className="text-xs font-bold text-comic-yellow">+{entry.coins} monete</p>}
+        {entry.ranked?.delta != null && <p className="text-xs font-bold">{describeFamaChange(entry.ranked.delta)}</p>}
       </div>
     </Link>
   );

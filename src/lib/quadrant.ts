@@ -16,7 +16,8 @@ import {
   type QuadrantVariant,
 } from "@o-mega/game-engine";
 import { balance } from "@/config/balance";
-import { invokeFunction, remember, toCharacter, type MatchCard } from "@/lib/match";
+import { invokeFunction, remember, toCharacter, type MatchCard, type MatchMode } from "@/lib/match";
+import type { RankedMatchInfo } from "@/lib/ranked";
 
 export const QUADRANT_FORMATS = ["quadrant", "quadrant_shifting"] as const;
 export type QuadrantFormat = (typeof QUADRANT_FORMATS)[number];
@@ -66,7 +67,9 @@ export type QuadrantMoveView = {
 
 export type QuadrantView = {
   id: string;
-  mode: "bot" | "friendly";
+  mode: MatchMode;
+  /** Classificata only (SPEC §8.7). */
+  ranked?: RankedMatchInfo | null;
   format: QuadrantFormat;
   variant: QuadrantVariant;
   bot_difficulty: BotDifficulty | null;

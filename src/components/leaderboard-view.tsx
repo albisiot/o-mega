@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BackLink } from "@/components/comic-parts";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { RankedBoardPanel } from "@/components/ranked-board";
 import { balance } from "@/config/balance";
 import { describeServerError } from "@/lib/errors";
 import {
@@ -38,10 +39,20 @@ const WEEKLY_TITLES: Partial<Record<LeaderboardBoard, string>> = {
 /**
  * The Classifiche (SPEC §8.6): a tab per board, the periods it has, the first players and the
  * player's own place. The page fits the screen: the tabs scroll sideways inside their row, the
- * list scrolls inside the room left.
+ * list scrolls inside the room left. The first tab is the Albo dei Reggenti of the
+ * Classificata (SPEC §8.7), with a panel of its own.
  */
-export function LeaderboardView({ initialBoard, initialPeriod }: { initialBoard: LeaderboardBoard; initialPeriod: LeaderboardPeriod | null }) {
+export function LeaderboardView({
+  initialBoard,
+  initialPeriod,
+  initialAlbo = false,
+}: {
+  initialBoard: LeaderboardBoard;
+  initialPeriod: LeaderboardPeriod | null;
+  initialAlbo?: boolean;
+}) {
   useLockedScreen(true);
+  const [albo, setAlbo] = useState(initialAlbo);
   const [board, setBoard] = useState(initialBoard);
   const [period, setPeriod] = useState(() => periodFor(initialBoard, initialPeriod));
   const [result, setResult] = useState<{ key: string; data: Leaderboard | null; error: string | null } | null>(null);
@@ -55,6 +66,7 @@ export function LeaderboardView({ initialBoard, initialPeriod }: { initialBoard:
   const key = `${board}:${period}`;
 
   useEffect(() => {
+    if (albo) return;
     let cancelled = false;
     fetchLeaderboard(board, period)
       .then((data) => {
@@ -66,13 +78,13 @@ export function LeaderboardView({ initialBoard, initialPeriod }: { initialBoard:
     return () => {
       cancelled = true;
     };
-  }, [board, period]);
+  }, [albo, board, period]);
 
   // The chosen tab in view, also when it opens on one far to the right.
   useEffect(() => {
     const chosen = tabs.current?.querySelector<HTMLElement>('[aria-selected="true"]');
     chosen?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }, [board]);
+  }, [albo, board]);
 
   const info = boardInfo(board);
   const shown = result?.key === key ? result : null;
@@ -80,6 +92,7 @@ export function LeaderboardView({ initialBoard, initialPeriod }: { initialBoard:
   const title = WEEKLY_TITLES[board];
 
   const pickBoard = (next: LeaderboardBoard) => {
+    setAlbo(false);
     setBoard(next);
     // The same period when the new board has it: Settimana stays Settimana.
     setPeriod((current) => periodFor(next, current));
@@ -99,15 +112,26 @@ export function LeaderboardView({ initialBoard, initialPeriod }: { initialBoard:
           aria-label="Modalità"
           className="-mx-3 flex shrink-0 gap-1.5 overflow-x-auto overscroll-x-contain px-3 pb-0.5 [scrollbar-width:none]"
         >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={albo}
+            onClick={() => setAlbo(true)}
+            className={`min-h-11 shrink-0 -skew-x-8 whitespace-nowrap px-3 font-display text-[17px] uppercase ${
+              albo ? "bg-comic-magenta text-black" : "bg-foreground text-black"
+            }`}
+          >
+            Albo
+          </button>
           {BOARDS.map((entry) => (
             <button
               key={entry.key}
               type="button"
               role="tab"
-              aria-selected={entry.key === board}
+              aria-selected={!albo && entry.key === board}
               onClick={() => pickBoard(entry.key)}
               className={`min-h-11 shrink-0 -skew-x-8 whitespace-nowrap px-3 font-display text-[17px] uppercase ${
-                entry.key === board ? "bg-comic-magenta text-black" : "bg-panel text-muted"
+                !albo && entry.key === board ? "bg-comic-magenta text-black" : "bg-panel text-muted"
               }`}
             >
               {entry.label}
@@ -115,7 +139,9 @@ export function LeaderboardView({ initialBoard, initialPeriod }: { initialBoard:
           ))}
         </div>
 
-        {info.periods.length > 1 && (
+        {albo && <RankedBoardPanel />}
+
+        {!albo && info.periods.length > 1 && (
           <div role="tablist" aria-label="Periodo" className="flex shrink-0 gap-1.5">
             {info.periods.map((entry) => (
               <button
@@ -134,12 +160,12 @@ export function LeaderboardView({ initialBoard, initialPeriod }: { initialBoard:
           </div>
         )}
 
-        <p className="shrink-0 text-xs font-medium leading-4 text-muted">
+        <p className={albo ? "hidden" : "shrink-0 text-xs font-medium leading-4 text-muted"}>
           {rule}
           {title && period !== "all" && ` Il primo della settimana riceve il titolo «${title}» fino alla domenica dopo.`}
         </p>
 
-        <section aria-live="polite" className="flex min-h-0 flex-1 flex-col gap-1">
+        <section aria-live="polite" className={albo ? "hidden" : "flex min-h-0 flex-1 flex-col gap-1"}>
           {!shown && <p className="text-sm font-semibold text-muted">Caricamento della classifica…</p>}
           {shown?.error && <p className="text-sm font-semibold text-comic-magenta">{shown.error}</p>}
           {shown?.data && shown.data.top.length === 0 && (

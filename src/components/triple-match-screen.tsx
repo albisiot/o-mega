@@ -25,6 +25,7 @@ import {
   type MatchCard,
 } from "@/lib/match";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
+import { RankedResultChips, useRankedNudge } from "@/components/ranked-parts";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
 import { tripleBeforeRound, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
 import { TripleMapReveal } from "@/components/triple-comic";
@@ -138,7 +139,12 @@ function TripleSteps({ initial }: { initial: TripleView }) {
       setError(null);
       try {
         if (isBot) apply(await playTripleRound(view.id, round, cards));
-        else apply(cards === null ? await resolveTripleRound(view.id) : await submitTriplePlacement(view.id, round, cards));
+        else
+          apply(
+            cards === null
+              ? await resolveTripleRound(view.id)
+              : await submitTriplePlacement(view.id, round, cards, view.mode === "ranked"),
+          );
       } catch (cause) {
         // Someone (the timer, another tab) was faster: reload the state.
         if (cause instanceof Error && ["round_already_resolved", "match_not_active"].includes(cause.message)) {
@@ -151,8 +157,13 @@ function TripleSteps({ initial }: { initial: TripleView }) {
         setBusy(false);
       }
     },
-    [apply, fetchTriple, view.id, isBot],
+    [apply, fetchTriple, view.id, view.mode, isBot],
   );
+
+  // Classificata: once the cards are placed, ask now and then whether the opponent placed too.
+  useRankedNudge(view.mode === "ranked" && Boolean(current?.my_pending), async () => {
+    apply(await resolveTripleRound(view.id));
+  });
 
   // Against a player: broadcasts, pings and a poll while broadcasts cannot arrive.
   const refreshing = useRef(false);
@@ -277,7 +288,9 @@ function TripleSteps({ initial }: { initial: TripleView }) {
       <header className="relative flex items-center gap-1.5 px-3 py-1">
         <div className="min-w-0 max-w-[8rem] shrink-0 leading-none">
           <p className="truncate text-[10px] font-bold text-muted">
-            {view.mode === "bot" ? `Allarme Triplo · ${rival}` : `Amichevole · ${rivalTitle ? `«${rivalTitle}»` : rival}`}
+            {view.mode === "bot"
+              ? `Allarme Triplo · ${rival}`
+              : `${view.mode === "ranked" ? "Classificata" : "Amichevole"} · ${rivalTitle ? `«${rivalTitle}»` : rival}`}
           </p>
           <p className="mt-0.5 flex items-baseline gap-1 text-[11px] font-extrabold uppercase">
             Tu
@@ -895,6 +908,7 @@ function TripleResult({ view, rival }: { view: TripleView; rival: string }) {
           {view.points.me === view.points.opponent && ` · punteggi ${view.total_score.me} – ${view.total_score.opponent}`}
         </p>
         <div className="relative flex flex-wrap justify-center gap-2">
+          <RankedResultChips ranked={view.ranked} chip={chip} />
           <RewardChips reward={reward} chip={chip} />
           {eventPoints && <p className={`${chip} bg-comic-yellow text-black`}>{describeEventPoints(eventPoints)}</p>}
           {view.level_rewards.map((reward) => (
@@ -947,7 +961,13 @@ function TripleResult({ view, rival }: { view: TripleView; rival: string }) {
 
       <div className="flex shrink-0 gap-2">
         <Link
-          href={view.mode === "bot" ? `/squadra/?format=triple&difficulty=${view.bot_difficulty ?? "easy"}` : "/gioca"}
+          href={
+            view.mode === "bot"
+              ? `/squadra/?format=triple&difficulty=${view.bot_difficulty ?? "easy"}`
+              : view.mode === "ranked"
+                ? "/squadra/?mode=ranked&format=triple"
+                : "/gioca"
+          }
           className="btn btn-primary min-w-0 flex-1"
         >
           {view.mode === "bot" ? "Rivincita" : "Gioca ancora"}

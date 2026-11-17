@@ -3,7 +3,7 @@ import { getSupabase } from "@/lib/supabase/client";
 
 /** Kinds of play that earn event points, in the order the event page lists them. */
 export const EVENT_KINDS = [
-  { key: "friendly", label: "Amichevole online" },
+  { key: "friendly", label: "Online (amichevole o classificata)" },
   { key: "conquest", label: "Conquista" },
   { key: "bot", label: "Contro bot" },
   { key: "story", label: "Storia" },

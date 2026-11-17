@@ -68,7 +68,7 @@ export const REWARD_MODES: {
     label: "Partita classica",
     opponents: [
       { key: "bot", label: "Contro un bot" },
-      { key: "person", label: "Amichevole contro una persona" },
+      { key: "person", label: "Contro una persona (amichevole o classificata)" },
     ],
   },
   {
@@ -85,7 +85,7 @@ export const REWARD_MODES: {
     label: "Grande Minaccia",
     opponents: [
       { key: "bot", label: "Contro un bot" },
-      { key: "person", label: "Amichevole contro una persona" },
+      { key: "person", label: "Contro una persona (amichevole o classificata)" },
     ],
   },
   {
@@ -93,7 +93,7 @@ export const REWARD_MODES: {
     label: "Allarme Triplo",
     opponents: [
       { key: "bot", label: "Contro un bot" },
-      { key: "person", label: "Amichevole contro una persona" },
+      { key: "person", label: "Contro una persona (amichevole o classificata)" },
     ],
   },
   {
@@ -101,7 +101,7 @@ export const REWARD_MODES: {
     label: "Quadrante · griglia fissa",
     opponents: [
       { key: "bot", label: "Contro un bot" },
-      { key: "person", label: "Amichevole contro una persona" },
+      { key: "person", label: "Contro una persona (amichevole o classificata)" },
     ],
   },
   {
@@ -109,7 +109,7 @@ export const REWARD_MODES: {
     label: "Quadrante · griglia mobile",
     opponents: [
       { key: "bot", label: "Contro un bot" },
-      { key: "person", label: "Amichevole contro una persona" },
+      { key: "person", label: "Contro una persona (amichevole o classificata)" },
     ],
   },
   {

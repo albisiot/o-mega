@@ -237,7 +237,7 @@ function Banner({
           ? "★"
           : notification.kind === "achievement"
             ? "✪"
-            : notification.kind === "leaderboard"
+            : notification.kind === "leaderboard" || notification.kind === "ranked"
               ? "♛"
               : "✔"}
       </span>

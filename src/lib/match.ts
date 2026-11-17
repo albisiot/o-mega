@@ -1,6 +1,7 @@
 import type { ThreatRarity } from "@/lib/threat-rarity";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { BotDifficulty, Character, Power, ScoreParts, ThreatModifier } from "@o-mega/game-engine";
+import type { RankedMatchInfo } from "@/lib/ranked";
 import { getSupabase } from "@/lib/supabase/client";
 
 export const DIFFICULTY_LABELS: Record<BotDifficulty, string> = {
@@ -75,7 +76,9 @@ export type MatchRound = {
 /** What the server lets the player see (SPEC §10.2). */
 export type MatchView = {
   id: string;
-  mode: "bot" | "friendly" | "conquest";
+  mode: MatchMode;
+  /** Classificata only: both Fama and what the match moved (SPEC §8.7). */
+  ranked?: RankedMatchInfo | null;
   /**
    * "boss": a Grande Minaccia, whose state is a BossView (src/lib/boss.ts); "triple": an
    * Allarme Triplo, a TripleView (src/lib/triple.ts). Missing before they existed.
@@ -225,7 +228,10 @@ export function joinQueue(
   return invokeFunction({ action: "queue", mode, format, card_instance_ids: cardInstanceIds }, timeoutMs);
 }
 
-export type QueueMode = "friendly" | "conquest";
+export type QueueMode = "friendly" | "conquest" | "ranked";
+
+/** "ranked": a Classificata, against a person or the system's opponent (never told apart). */
+export type MatchMode = "bot" | "friendly" | "conquest" | "ranked";
 
 /**
  * A classic match, a Grande Minaccia, an Allarme Triplo or a Quadrante on its fixed or
@@ -283,9 +289,12 @@ export async function fetchConquestHistory(): Promise<ConquestHistoryEntry[]> {
   return data as unknown as ConquestHistoryEntry[];
 }
 
-/** Sends a secret choice; the round resolves as soon as both players chose. */
-export function submitChoice(matchId: string, round: number, cardInstanceId: string): Promise<MatchView> {
-  return invokeMatch({ action: "submit", match_id: matchId, round, card_instance_id: cardInstanceId });
+/**
+ * Sends a secret choice; the round resolves as soon as both players chose. In a Classificata
+ * (`ranked`) the server checks at once whether the opponent has chosen too.
+ */
+export function submitChoice(matchId: string, round: number, cardInstanceId: string, ranked = false): Promise<MatchView> {
+  return invokeMatch({ action: "submit", match_id: matchId, round, card_instance_id: cardInstanceId, ...(ranked ? { ranked } : {}) });
 }
 
 /** Asks the server to resolve the round once the time is up. Idempotent. */
@@ -374,7 +383,9 @@ export function subscribeToUpdates(
 
 export type MatchHistoryEntry = {
   id: string;
-  mode: "bot" | "friendly" | "conquest";
+  mode: MatchMode;
+  /** Classificata: the Fama the match moved for the player. */
+  ranked?: { delta: number | null } | null;
   bot_difficulty: BotDifficulty | null;
   finished_at: string;
   end_reason: "completed" | "forfeit";

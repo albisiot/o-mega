@@ -37,6 +37,7 @@ import {
   subscribeToUpdates,
 } from "@/lib/match";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
+import { RankedResultChips, useRankedNudge } from "@/components/ranked-parts";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { bossBeforeTurn, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -140,7 +141,12 @@ function BossSteps({ initial }: { initial: BossView }) {
       setError(null);
       try {
         if (isBot) apply(await playBossTurn(view.id, round, choice));
-        else apply(choice === null ? await resolveBossTurn(view.id) : await submitBossChoice(view.id, round, choice.instanceId, choice.front));
+        else
+          apply(
+            choice === null
+              ? await resolveBossTurn(view.id)
+              : await submitBossChoice(view.id, round, choice.instanceId, choice.front, view.mode === "ranked"),
+          );
       } catch (cause) {
         // Someone (the timer, another tab) was faster: reload the state.
         if (cause instanceof Error && ["round_already_resolved", "match_not_active"].includes(cause.message)) {
@@ -153,8 +159,13 @@ function BossSteps({ initial }: { initial: BossView }) {
         setBusy(false);
       }
     },
-    [apply, fetchBoss, view.id, isBot],
+    [apply, fetchBoss, view.id, view.mode, isBot],
   );
+
+  // Classificata: once the choice is sent, ask now and then whether the opponent chose too.
+  useRankedNudge(view.mode === "ranked" && Boolean(current?.my_pending), async () => {
+    apply(await resolveBossTurn(view.id));
+  });
 
   // Against a player: broadcasts, pings and a poll while broadcasts cannot arrive.
   const refreshing = useRef(false);
@@ -269,7 +280,9 @@ function BossSteps({ initial }: { initial: BossView }) {
       <header className="relative flex items-center gap-1.5 px-3 py-1">
         <div className="min-w-0 max-w-[7.5rem] shrink-0 leading-none">
           <p className="truncate text-[10px] font-bold text-muted">
-            {view.mode === "bot" ? `Grande Minaccia · ${rival}` : `Amichevole · ${rivalTitle ? `«${rivalTitle}»` : rival}`}
+            {view.mode === "bot"
+              ? `Grande Minaccia · ${rival}`
+              : `${view.mode === "ranked" ? "Classificata" : "Amichevole"} · ${rivalTitle ? `«${rivalTitle}»` : rival}`}
           </p>
           <p className="mt-0.5 flex items-baseline gap-1 text-[11px] font-extrabold uppercase">
             Tu
@@ -915,6 +928,7 @@ function BossResult({ view, rival }: { view: BossView; rival: string }) {
           Punti {view.points.me} – {view.points.opponent} · fronti {view.fronts_taken.me} – {view.fronts_taken.opponent}
         </p>
         <div className="relative flex flex-wrap justify-center gap-2">
+          <RankedResultChips ranked={view.ranked} chip={chip} />
           <RewardChips reward={reward} chip={chip} />
           {eventPoints && (
             <p className={`${chip} bg-comic-yellow text-black`}>
@@ -967,7 +981,13 @@ function BossResult({ view, rival }: { view: BossView; rival: string }) {
 
       <div className="flex shrink-0 gap-2">
         <Link
-          href={view.mode === "bot" ? `/squadra/?format=boss&difficulty=${view.bot_difficulty ?? "easy"}` : "/gioca"}
+          href={
+            view.mode === "bot"
+              ? `/squadra/?format=boss&difficulty=${view.bot_difficulty ?? "easy"}`
+              : view.mode === "ranked"
+                ? "/squadra/?mode=ranked&format=boss"
+                : "/gioca"
+          }
           className="btn btn-primary min-w-0 flex-1"
         >
           {view.mode === "bot" ? "Rivincita" : "Gioca ancora"}

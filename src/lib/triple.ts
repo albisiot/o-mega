@@ -15,7 +15,8 @@ import {
   type TripleState,
 } from "@o-mega/game-engine";
 import { balance } from "@/config/balance";
-import { invokeFunction, remember, toCharacter, type MatchCard, type MatchPlay } from "@/lib/match";
+import { invokeFunction, remember, toCharacter, type MatchCard, type MatchMode, type MatchPlay } from "@/lib/match";
+import type { RankedMatchInfo } from "@/lib/ranked";
 
 export type TripleThreat = {
   slot: number;
@@ -57,7 +58,9 @@ export type TripleRound = {
 
 export type TripleView = {
   id: string;
-  mode: "bot" | "friendly";
+  mode: MatchMode;
+  /** Classificata only (SPEC §8.7). */
+  ranked?: RankedMatchInfo | null;
   format: "triple";
   bot_difficulty: BotDifficulty | null;
   status: "active" | "finished";
@@ -100,8 +103,8 @@ export function playTripleRound(matchId: string, round: number, placement: strin
 }
 
 /** Between players: a secret placement; the round resolves as soon as both placed. */
-export function submitTriplePlacement(matchId: string, round: number, placement: string[]): Promise<TripleView> {
-  return invokeTriple({ action: "triple_submit", match_id: matchId, round, card_instance_ids: placement });
+export function submitTriplePlacement(matchId: string, round: number, placement: string[], ranked = false): Promise<TripleView> {
+  return invokeTriple({ action: "triple_submit", match_id: matchId, round, card_instance_ids: placement, ...(ranked ? { ranked } : {}) });
 }
 
 /** Between players: asks the server to resolve the round once the time is up. Idempotent. */

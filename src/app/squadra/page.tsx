@@ -39,6 +39,7 @@ const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
 // /squadra/?difficulty=easy|medium|hard|super_pro  (against a bot, default)
 // /squadra/?mode=queue                          (random opponent)
 // /squadra/?mode=conquest                       (Conquest, random opponent)
+// /squadra/?mode=ranked&format=boss             (Classificata, in any format)
 // /squadra/?mode=lobby                          (create a friend code)
 // /squadra/?mode=join&code=ABC234               (join a friend)
 // /squadra/?story=C1M1                          (a story mission)
@@ -70,6 +71,7 @@ type Loaded = {
 type Mode =
   | { kind: "bot"; difficulty: BotDifficulty }
   | { kind: "queue" }
+  | { kind: "ranked" }
   | { kind: "conquest" }
   | { kind: "lobby" }
   | { kind: "join"; code: string }
@@ -79,7 +81,7 @@ function readMode(params: URLSearchParams): Mode {
   const story = params.get("story");
   if (story) return { kind: "story", mission: story };
   const mode = params.get("mode");
-  if (mode === "queue" || mode === "lobby" || mode === "conquest") return { kind: mode };
+  if (mode === "queue" || mode === "lobby" || mode === "conquest" || mode === "ranked") return { kind: mode };
   if (mode === "join") return { kind: "join", code: (params.get("code") ?? "").toUpperCase() };
   const difficulty = params.get("difficulty") as BotDifficulty | null;
   return { kind: "bot", difficulty: difficulty && DIFFICULTIES.includes(difficulty) ? difficulty : "easy" };
@@ -88,7 +90,7 @@ function readMode(params: URLSearchParams): Mode {
 /** A Grande Minaccia, an Allarme Triplo or a Quadrante: against a bot, or friendly between players (never Conquest or Story). */
 function readFormat(params: URLSearchParams, mode: Mode): MatchFormat {
   const format = asMatchFormat(params.get("format"));
-  return ["bot", "queue", "lobby"].includes(mode.kind) ? format : "classic";
+  return ["bot", "queue", "lobby", "ranked"].includes(mode.kind) ? format : "classic";
 }
 
 const TRIPLE_DECK = balance.triple.rounds * balance.triple.threats;
@@ -121,6 +123,7 @@ const COPY: Record<Mode["kind"], { subtitle: (mode: Mode) => string; start: (mod
     start: (mode) => `Sfida il bot ${DIFFICULTY_LABELS[(mode as { difficulty: BotDifficulty }).difficulty]}`,
   },
   queue: { subtitle: () => "Amichevole contro un avversario casuale", start: () => "Cerca un avversario" },
+  ranked: { subtitle: () => "Classificata: in gioco c'è la Fama", start: () => "Cerca un avversario" },
   conquest: { subtitle: () => "Conquista: le carte in palio si possono perdere", start: () => "Cerca un avversario" },
   lobby: { subtitle: () => "Amichevole con un amico", start: () => "Crea il codice" },
   join: { subtitle: (mode) => `Entri con il codice ${(mode as { code: string }).code}`, start: () => "Entra nella partita" },
@@ -211,6 +214,10 @@ function TeamPageContent() {
         case "queue":
           storePendingTeam(cardInstanceIds);
           router.push(format === "classic" ? "/attesa/?mode=queue" : `/attesa/?mode=queue&format=${format}`);
+          break;
+        case "ranked":
+          storePendingTeam(cardInstanceIds);
+          router.push(format === "classic" ? "/attesa/?mode=queue&type=ranked" : `/attesa/?mode=queue&type=ranked&format=${format}`);
           break;
         case "conquest":
           storePendingTeam(cardInstanceIds);

@@ -1,7 +1,7 @@
 // The line of in-app banners (SPEC §11.1). The server writes the news; this only
 // decides which one shows and in what order. Pure: no I/O, no timers.
 
-export type NotificationKind = "objective_completed" | "event_reward" | "achievement" | "leaderboard";
+export type NotificationKind = "objective_completed" | "event_reward" | "achievement" | "leaderboard" | "ranked";
 
 export type PlayerNotification = {
   id: string;
@@ -78,6 +78,8 @@ export function bannerHref(notification: PlayerNotification): string | null {
       return typeof notification.data.board === "string"
         ? `/classifiche/?scheda=${encodeURIComponent(notification.data.board)}&periodo=week`
         : "/classifiche/";
+    case "ranked":
+      return "/classifiche/?scheda=albo";
     default:
       return null;
   }
@@ -109,6 +111,8 @@ export function bannerHint(notification: PlayerNotification): string {
       return Number(notification.data.count) > 1 ? "Tocca per vederle" : "Tocca per vederla";
     case "leaderboard":
       return "Tocca per vedere la classifica";
+    case "ranked":
+      return "Tocca per aprire l'Albo";
     default:
       return "Tocca per chiudere";
   }

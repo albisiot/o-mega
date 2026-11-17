@@ -49,6 +49,7 @@ import {
   type MatchView,
 } from "@/lib/match";
 import { RewardChips, hasReward, useMatchReward } from "@/components/match-reward";
+import { RankedResultChips, useRankedNudge } from "@/components/ranked-parts";
 import { useOpponentTitle } from "@/lib/achievements";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import {
@@ -174,7 +175,12 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
       setError(null);
       try {
         if (isBot) apply(await playRound(view.id, round, choice));
-        else apply(choice === null ? await resolvePvpRound(view.id) : await submitChoice(view.id, round, choice));
+        else
+          apply(
+            choice === null
+              ? await resolvePvpRound(view.id)
+              : await submitChoice(view.id, round, choice, view.mode === "ranked"),
+          );
       } catch (cause) {
         // Someone (the timer, another tab) was faster: reload the state.
         if (cause instanceof Error && ["round_already_resolved", "match_not_active"].includes(cause.message)) {
@@ -187,8 +193,13 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
         setBusy(false);
       }
     },
-    [apply, view.id, isBot],
+    [apply, view.id, view.mode, isBot],
   );
+
+  // Classificata: once the choice is sent, ask now and then whether the opponent chose too.
+  useRankedNudge(view.mode === "ranked" && Boolean(current?.my_pending_instance_id), async () => {
+    apply(await resolvePvpRound(view.id));
+  });
 
   // Against a player: follow the server's broadcasts and ping it. The ping tells
   // the server we are still here, and shows a change a missed broadcast hid;
@@ -314,7 +325,7 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
           <p className="truncate text-[10px] font-bold text-muted">
             {view.mode === "bot"
               ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}`
-              : `${view.mode === "conquest" ? "Conquista" : "Amichevole"} · ${
+              : `${view.mode === "conquest" ? "Conquista" : view.mode === "ranked" ? "Classificata" : "Amichevole"} · ${
                   isBot
                     ? `Bot ${DIFFICULTY_LABELS[view.bot_difficulty ?? "easy"]}`
                     : opponentTitle
@@ -1253,6 +1264,7 @@ function MatchResult({
   );
   const gains = (
     <>
+      <RankedResultChips ranked={view.ranked} chip={chip} />
       <RewardChips reward={reward} chip={chip} />
       {eventPoints && (
         <p className={`${chip} bg-comic-yellow text-black`}>
@@ -1310,7 +1322,9 @@ function MatchResult({
         ) : (
           <>
             {score}
-            {(hasReward(reward) || eventPoints) && <div className="relative flex flex-wrap justify-center gap-2">{gains}</div>}
+            {(hasReward(reward) || eventPoints || view.ranked?.delta != null) && (
+              <div className="relative flex flex-wrap justify-center gap-2">{gains}</div>
+            )}
             {levels}
           </>
         )}
@@ -1418,7 +1432,13 @@ function MatchResult({
           </Link>
         ) : (
           <Link
-            href={view.mode === "bot" ? `/squadra/?difficulty=${view.bot_difficulty ?? "easy"}` : "/gioca"}
+            href={
+              view.mode === "bot"
+                ? `/squadra/?difficulty=${view.bot_difficulty ?? "easy"}`
+                : view.mode === "ranked"
+                  ? "/squadra/?mode=ranked"
+                  : "/gioca"
+            }
             className="btn btn-primary min-w-0 flex-1"
           >
             {view.mode === "bot" ? "Rivincita" : "Gioca ancora"}

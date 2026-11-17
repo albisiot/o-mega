@@ -30,10 +30,12 @@ const SEARCH_LINE_SECONDS = 4;
 // The server ignores a queue entry not refreshed for queueStaleSeconds:
 // refreshing at 2/5 of that leaves room for one lost request.
 const QUEUE_REFRESH_MS = (balance.matchmaking.queueStaleSeconds * 1000 * 2) / 5;
+// The Classificata asks more often: its opponent may come at any second of the wait.
+const RANKED_REFRESH_MS = balance.ranked.matchmaking.refreshSeconds * 1000;
 // A friend code's host learns of the match from the broadcast; this is the fallback.
 const LOBBY_CHECK_MS = 10_000;
 
-// /attesa/?mode=queue | /attesa/?mode=lobby
+// /attesa/?mode=queue[&type=conquest|ranked][&format=...] | /attesa/?mode=lobby
 export default function WaitingPage() {
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -45,10 +47,11 @@ export default function WaitingPage() {
 function WaitingContent() {
   const params = useSearchParams();
   const mode = params.get("mode") === "lobby" ? "lobby" : "queue";
-  const queueMode: QueueMode = params.get("type") === "conquest" ? "conquest" : "friendly";
-  // A Grande Minaccia, an Allarme Triplo and a Quadrante are friendly only.
+  const type = params.get("type");
+  const queueMode: QueueMode = type === "conquest" ? "conquest" : type === "ranked" ? "ranked" : "friendly";
+  // Conquista is a classic match only.
   const asked = asMatchFormat(params.get("format"));
-  const format: MatchFormat = queueMode === "friendly" ? asked : "classic";
+  const format: MatchFormat = queueMode === "conquest" ? "classic" : asked;
   const { session } = useRequireSignedIn();
   if (!session) return <LoadingScreen />;
   return (
@@ -118,16 +121,17 @@ function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: Q
     let timer: ReturnType<typeof setTimeout> | undefined;
     let stopped = false;
     let botAt = Infinity;
+    const every = queueMode === "ranked" ? RANKED_REFRESH_MS : QUEUE_REFRESH_MS;
     const next = (attemptedAt: number) => {
       if (stopped || matched.current) return;
       const now = Date.now();
-      const refresh = Math.max(0, attemptedAt + QUEUE_REFRESH_MS - now);
+      const refresh = Math.max(0, attemptedAt + every - now);
       const untilBot = botAt - now;
       timer = setTimeout(attempt, untilBot > 0 ? Math.min(refresh, untilBot) : refresh);
     };
     const attempt = () => {
       const attemptedAt = Date.now();
-      joinQueue(team, queueMode, QUEUE_REFRESH_MS, format)
+      joinQueue(team, queueMode, every, format)
         .then((result) => {
           setError(null);
           if (result.matched && result.match_id) goToMatch(result.match_id);
@@ -158,7 +162,9 @@ function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: Q
         <p className="text-sm font-semibold">Scegli prima la tua squadra.</p>
         <Link
           href={
-            queueMode === "conquest" ? "/squadra/?mode=conquest" : format === "classic" ? "/squadra/?mode=queue" : `/squadra/?mode=queue&format=${format}`
+            queueMode === "conquest"
+              ? "/squadra/?mode=conquest"
+              : `/squadra/?mode=${queueMode === "ranked" ? "ranked" : "queue"}${format === "classic" ? "" : `&format=${format}`}`
           }
           className="btn btn-outline"
         >
@@ -186,13 +192,15 @@ function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: Q
         <p className="font-display text-3xl uppercase">
           {queueMode === "conquest"
             ? "Ricerca di un avversario per la Conquista…"
-            : format === "boss"
-              ? "Ricerca di un avversario per la Grande Minaccia…"
-              : format === "triple"
-                ? "Ricerca di un avversario per Allarme Triplo…"
-                : format === "quadrant" || format === "quadrant_shifting"
-                  ? `Ricerca di un avversario per Quadrante (${QUADRANT_GRID_LABELS[format].toLowerCase()})…`
-                  : "Ricerca di un avversario…"}
+            : `Ricerca di un avversario${queueMode === "ranked" ? " in Classificata" : ""}${
+                format === "boss"
+                  ? " per la Grande Minaccia"
+                  : format === "triple"
+                    ? " per Allarme Triplo"
+                    : format === "quadrant" || format === "quadrant_shifting"
+                      ? ` per Quadrante (${QUADRANT_GRID_LABELS[format].toLowerCase()})`
+                      : ""
+              }…`}
         </p>
         <p className="mt-1 font-display text-2xl text-comic-yellow">{waited} s</p>
         <p key={line} className="animate-panel-fade mt-1 text-sm font-semibold text-comic-cyan">
@@ -206,7 +214,10 @@ function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: Q
           carte restano in palio: puoi vincerne una o perderla.
         </p>
       )}
-      {queueMode !== "conquest" && waited >= balance.matchmaking.suggestBotAfterSeconds && (
+      {queueMode === "ranked" && (
+        <p className="max-w-xs text-sm font-semibold">Classificata: chi vince guadagna Fama. Nessuna carta in gioco.</p>
+      )}
+      {queueMode === "friendly" && waited >= balance.matchmaking.suggestBotAfterSeconds && (
         <div className="flex flex-col items-center gap-3 bg-panel p-4">
           <p className="text-sm font-semibold">Nessun avversario disponibile al momento.</p>
           <Link href="/gioca" className="btn btn-outline">

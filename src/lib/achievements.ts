@@ -155,7 +155,7 @@ export function describeAchievementReward(achievement: Pick<CompletedAchievement
  */
 export function availableTitles(
   board: AchievementBoard,
-  weeklyTitles: { id: string; title: string }[] = [],
+  weeklyTitles: { id: string; title: string; expires_at?: string | null }[] = [],
 ): { id: string; title: string; weekly: boolean }[] {
   const seen = new Set<string>();
   const titles: { id: string; title: string; weekly: boolean }[] = [];
@@ -167,7 +167,8 @@ export function availableTitles(
   for (const entry of weeklyTitles) {
     if (seen.has(entry.title)) continue;
     seen.add(entry.title);
-    titles.push({ id: entry.id, title: entry.title, weekly: true });
+    // A Mandato's title (Classificata) has no end: it is not a weekly one.
+    titles.push({ id: entry.id, title: entry.title, weekly: entry.expires_at !== null });
   }
   return titles;
 }

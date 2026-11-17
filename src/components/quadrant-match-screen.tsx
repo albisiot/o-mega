@@ -28,6 +28,7 @@ import { describeServerError } from "@/lib/errors";
 import { describeEventPoints } from "@/lib/events";
 import { claimVictory, DIFFICULTY_LABELS, fetchMatchState, forfeitMatch, pingMatch, subscribeToUpdates, type MatchCard } from "@/lib/match";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
+import { RankedResultChips, useRankedNudge } from "@/components/ranked-parts";
 import {
   bestRotation,
   borderClashesAt,
@@ -234,6 +235,11 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
     [apply, fetchQuadrant, view.id, isBot],
   );
 
+  // Classificata: on the opponent's turn, ask now and then whether its move has come.
+  useRankedNudge(view.mode === "ranked" && isActive && view.to_move === "opponent", async () => {
+    await apply(await resolveQuadrantMove(view.id));
+  });
+
   // Against a player: broadcasts, pings and a poll while broadcasts cannot arrive.
   const refreshing = useRef(false);
   const refresh = useCallback(async () => {
@@ -333,7 +339,10 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
       <header className="relative flex items-center gap-1.5 px-3 py-1">
         <div className="min-w-0 flex-1 leading-none">
           <p className="truncate text-[10px] font-bold text-muted">
-            Quadrante · {QUADRANT_GRID_LABELS[view.format]} · {view.mode === "bot" ? rival : `Amichevole · ${rivalTitle ? `«${rivalTitle}»` : rival}`}
+            Quadrante · {QUADRANT_GRID_LABELS[view.format]} ·{" "}
+            {view.mode === "bot"
+              ? rival
+              : `${view.mode === "ranked" ? "Classificata" : "Amichevole"} · ${rivalTitle ? `«${rivalTitle}»` : rival}`}
           </p>
           <p className="mt-0.5 flex items-baseline gap-1 text-[11px] font-extrabold uppercase">
             <span className="text-comic-cyan">Tu</span>
@@ -1477,7 +1486,12 @@ function QuadrantResult({ view, rival }: { view: QuadrantView; rival: string }) 
     : view.controlled.me !== view.controlled.opponent
       ? `Pari sui Sigilli: decidono le carte controllate, ${view.controlled.me} – ${view.controlled.opponent}.`
       : `Pari su tutto: vince chi ha giocato per secondo${view.i_open ? `, ${rival}` : ", cioè tu"}.`;
-  const again = view.mode === "bot" ? `/squadra/?format=${view.format}&difficulty=${view.bot_difficulty ?? "easy"}` : "/gioca";
+  const again =
+    view.mode === "bot"
+      ? `/squadra/?format=${view.format}&difficulty=${view.bot_difficulty ?? "easy"}`
+      : view.mode === "ranked"
+        ? `/squadra/?mode=ranked&format=${view.format}`
+        : "/gioca";
 
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
@@ -1500,6 +1514,7 @@ function QuadrantResult({ view, rival }: { view: QuadrantView; rival: string }) 
           <p className={`${chip} max-w-xs bg-white text-xs text-black`}>{tieBreak}</p>
         )}
         <div className="relative flex flex-wrap justify-center gap-2">
+          <RankedResultChips ranked={view.ranked} chip={chip} />
           <RewardChips reward={reward} chip={chip} />
           {eventPoints && <p className={`${chip} bg-comic-yellow text-black`}>{describeEventPoints(eventPoints)}</p>}
           {view.level_rewards.map((reward) => (

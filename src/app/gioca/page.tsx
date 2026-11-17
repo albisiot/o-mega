@@ -7,6 +7,7 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { EventBanner } from "@/components/event-banner";
 import { TrophyIcon } from "@/components/leaderboard-places";
 import { useMatchRewards } from "@/components/match-reward";
+import { LeagueBadge } from "@/components/ranked-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
@@ -20,16 +21,18 @@ import {
   forfeitMatch,
   type ActiveMatch,
   type ConquestStatus,
+  type MatchFormat,
 } from "@/lib/match";
 import { useRememberedState } from "@/lib/place-memory";
 import { isQuadrantFormat, QUADRANT_FORMATS, QUADRANT_GRID_LABELS, type QuadrantFormat } from "@/lib/quadrant";
+import { fetchMyRanked, RANKED_RULES, type MyRanked } from "@/lib/ranked";
 import { chapterUnlocked, fetchStory, seenStory, unlockHint, type StoryChapter } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const DIFFICULTIES = ["easy", "medium", "hard", "super_pro"] as const;
 
 const MODES = [
-  { key: "classic", label: "Partita classica", detail: "Contro un bot, online o in Conquista", color: "bg-comic-magenta", group: "versus" },
+  { key: "classic", label: "Partita classica", detail: "Classificata, contro un bot, online o in Conquista", color: "bg-comic-magenta", group: "versus" },
   { key: "story", label: "Storia", detail: "Missioni a Nuova Megara, con carte in premio", color: "rays-gold", group: "solo" },
   { key: "emergency", label: "Emergenza", detail: "La sfida del giorno, con la classifica", color: "bg-foreground", group: "solo" },
   { key: "boss", label: "Grande Minaccia", detail: "Un Boss, cinque fronti", color: "bg-comic-orange", group: "other" },
@@ -210,8 +213,46 @@ function OnlineGroup({ query, randomDetail }: { query: string; randomDetail: str
   );
 }
 
+/**
+ * The Classificata of a mode (SPEC §8.7): the Fama at stake, against a person or, when nobody
+ * is free, an opponent of the player's level the system plays.
+ */
+function RankedGroup({ format, ranked }: { format: MatchFormat; ranked: MyRanked | null }) {
+  return (
+    <>
+      <div className="flex items-end justify-between gap-2">
+        <GroupTitle>Classificata · la Fama in gioco</GroupTitle>
+        <Link href="/classifiche/?scheda=albo" className="shrink-0 text-[13px] font-extrabold text-comic-yellow underline">
+          Albo
+        </Link>
+      </div>
+      <Link
+        href={`/squadra/?mode=ranked${format === "classic" ? "" : `&format=${format}`}`}
+        className="flex min-h-14 items-center justify-between gap-3 bg-foreground px-4 py-2 text-black"
+      >
+        <div className="min-w-0">
+          <p className="font-display text-xl uppercase leading-6">Partita classificata</p>
+          <p className="flex items-center gap-1.5 text-[13px] font-semibold leading-4">
+            {ranked ? (
+              <>
+                {ranked.fama} Fama <LeagueBadge league={ranked.league} />
+              </>
+            ) : (
+              "Un avversario del tuo livello"
+            )}
+          </p>
+        </div>
+        <span className="font-display text-2xl" aria-hidden>
+          →
+        </span>
+      </Link>
+      <p className="text-[13px] font-medium leading-4 text-muted">{RANKED_RULES}</p>
+    </>
+  );
+}
+
 /** Grande Minaccia (SPEC §5.12): against a bot, or friendly between players. */
-function BossSection({ disabled }: { disabled: boolean }) {
+function BossSection({ disabled, ranked }: { disabled: boolean; ranked: MyRanked | null }) {
   return (
     <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
       <p className="text-sm font-medium text-muted">
@@ -219,6 +260,7 @@ function BossSection({ disabled }: { disabled: boolean }) {
         fronte libero e resta lì fino alla fine: ogni fronte occupato paga a ogni turno, a chi è da solo o a chi fa più
         punti. Nessuna carta in gioco e nessuna moneta.
       </p>
+      <RankedGroup format="boss" ranked={ranked} />
       <BotGrid query="format=boss&" texts={BOSS_BOTS} color="bg-comic-orange" />
       <OnlineGroup query="&format=boss" randomDetail="Il primo giocatore libero" />
     </div>
@@ -233,7 +275,7 @@ const BOSS_BOTS: BotTexts = {
 };
 
 /** Allarme Triplo (SPEC §5.13): against a bot, or friendly between players. */
-function TripleSection({ disabled }: { disabled: boolean }) {
+function TripleSection({ disabled, ranked }: { disabled: boolean; ranked: MyRanked | null }) {
   const { rounds, threats } = balance.triple;
   return (
     <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
@@ -242,6 +284,7 @@ function TripleSection({ disabled }: { disabled: boolean }) {
         partita. Ogni round peschi {threats} carte e ne metti una per Minaccia: ogni Minaccia vinta vale un punto. Dopo{" "}
         {rounds} round vince chi ha più punti. Nessuna carta in gioco e nessuna moneta.
       </p>
+      <RankedGroup format="triple" ranked={ranked} />
       <BotGrid query="format=triple&" texts={TRIPLE_BOTS} color="bg-comic-yellow" />
       <OnlineGroup query="&format=triple" randomDetail="Il primo giocatore libero" />
     </div>
@@ -256,7 +299,7 @@ const TRIPLE_BOTS: BotTexts = {
 };
 
 /** Quadrante (SPEC §5.14): two grids, each against a bot or friendly between players. */
-function QuadrantSection({ disabled }: { disabled: boolean }) {
+function QuadrantSection({ disabled, ranked }: { disabled: boolean; ranked: MyRanked | null }) {
   const [grid, setGrid] = useRememberedState<QuadrantFormat>("quadrant-grid", "quadrant");
   const { deckSize, handSize, cardsPerSide } = balance.quadrant;
   return (
@@ -283,6 +326,7 @@ function QuadrantSection({ disabled }: { disabled: boolean }) {
           </button>
         ))}
       </div>
+      <RankedGroup format={grid} ranked={ranked} />
       <BotGrid query={`format=${grid}&`} texts={QUADRANT_BOTS} color="bg-comic-cyan" />
       <OnlineGroup query={`&format=${grid}`} randomDetail="Sulla stessa griglia" />
     </div>
@@ -439,7 +483,15 @@ function JoinCodeForm() {
  * The classic match (SPEC §5): 5 characters against 5 Threats. Against a bot or online it is a
  * friendly, nothing at stake; in Conquista (SPEC §6) the winner takes a card.
  */
-function ClassicSection({ conquest, disabled }: { conquest: ConquestStatus | null; disabled: boolean }) {
+function ClassicSection({
+  conquest,
+  disabled,
+  ranked,
+}: {
+  conquest: ConquestStatus | null;
+  disabled: boolean;
+  ranked: MyRanked | null;
+}) {
   const { teamSize, roundsToWin } = balance.match;
   return (
     <div className="flex flex-col gap-2">
@@ -449,6 +501,7 @@ function ClassicSection({ conquest, disabled }: { conquest: ConquestStatus | nul
       </p>
 
       <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
+        <RankedGroup format="classic" ranked={ranked} />
         <BotGrid query="" texts={CLASSIC_BOTS} color="bg-comic-cyan" />
         <OnlineGroup query="" randomDetail="Il primo giocatore libero" />
       </div>
@@ -510,7 +563,9 @@ function ActiveMatchBanner({ match, onForfeit }: { match: ActiveMatch; onForfeit
                 ? match.bot_difficulty
                   ? `Conquista contro il bot ${DIFFICULTY_LABELS[match.bot_difficulty]}`
                   : "Conquista contro un giocatore"
-                : "Amichevole contro un giocatore"}{" "}
+                : match.mode === "ranked"
+                  ? "Classificata"
+                  : "Amichevole contro un giocatore"}{" "}
             · {match.format === "boss" ? "turno" : isQuadrantFormat(match.format) ? "mossa" : "round"}{" "}
             {match.format === "triple" ? Math.floor((match.current_round - 1) / balance.triple.threats) + 1 : match.current_round}
           </span>
@@ -533,6 +588,7 @@ export default function PlayPage() {
   const { session } = useRequireSignedIn();
   const [active, setActive] = useState<ActiveMatch | null | undefined>(undefined);
   const [conquest, setConquest] = useState<ConquestStatus | null>(null);
+  const [ranked, setRanked] = useState<MyRanked | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmForfeit, setConfirmForfeit] = useState(false);
   // Back from a match setup or the Story, the same mode is open where it was.
@@ -553,6 +609,12 @@ export default function PlayPage() {
       .catch((cause: unknown) => {
         if (!cancelled) setError(describeServerError(cause));
       });
+    // The Fama on the Classificata rows: without it they still work.
+    fetchMyRanked()
+      .then((next) => {
+        if (!cancelled) setRanked(next);
+      })
+      .catch((cause: unknown) => console.error("Ranked failed", cause));
     return () => {
       cancelled = true;
     };
@@ -597,12 +659,12 @@ export default function PlayPage() {
         {opened ? (
           <section className="flex flex-col gap-2">
             <ModeTile mode={opened} open onToggle={() => setOpenMode(null)} />
-            {opened.key === "classic" && <ClassicSection conquest={conquest} disabled={blocked} />}
+            {opened.key === "classic" && <ClassicSection conquest={conquest} disabled={blocked} ranked={ranked} />}
             {opened.key === "story" && <StorySection disabled={blocked} />}
             {opened.key === "emergency" && <EmergencySection />}
-            {opened.key === "boss" && <BossSection disabled={blocked} />}
-            {opened.key === "triple" && <TripleSection disabled={blocked} />}
-            {opened.key === "quadrant" && <QuadrantSection disabled={blocked} />}
+            {opened.key === "boss" && <BossSection disabled={blocked} ranked={ranked} />}
+            {opened.key === "triple" && <TripleSection disabled={blocked} ranked={ranked} />}
+            {opened.key === "quadrant" && <QuadrantSection disabled={blocked} ranked={ranked} />}
             {opened.key !== "story" && <LeaderboardRow mode={opened.key} />}
           </section>
         ) : (

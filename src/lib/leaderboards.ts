@@ -39,7 +39,14 @@ export type LeaderboardPlace = {
   value: number;
 };
 
-export type LeaderboardTitle = { id: string; board: LeaderboardBoard; title: string; week: string; expires_at: string };
+/** A title of the Classifiche: weekly (until expires_at), or of a Mandato (board "ranked", no end). */
+export type LeaderboardTitle = {
+  id: string;
+  board: LeaderboardBoard | "ranked";
+  title: string;
+  week: string | null;
+  expires_at: string | null;
+};
 
 /** The boards in the order of the tabs, with the periods each one has. */
 export const BOARDS: { key: LeaderboardBoard; label: string; periods: LeaderboardPeriod[]; rule: string }[] = [

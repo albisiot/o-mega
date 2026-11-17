@@ -16,6 +16,7 @@ import { describeServerError } from "@/lib/errors";
 import { fetchConquestHistory, type ConquestHistoryEntry } from "@/lib/match";
 import { bootstrapPlayer, updateUsername, type Profile } from "@/lib/player";
 import { levelProgress, xpForLevel } from "@/lib/progression";
+import { fetchMyRanked, leagueInfo, type MyRanked } from "@/lib/ranked";
 import { useRememberedState } from "@/lib/place-memory";
 import { useIsAdmin } from "@/lib/use-is-admin";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -57,6 +58,7 @@ function RowLabel({ children }: { children: string }) {
 function ProfileView({ profile }: { profile: Profile }) {
   const { signOut, setProfile } = useAuth();
   const [history, setHistory] = useState<ConquestHistoryEntry[] | null>(null);
+  const [ranked, setRanked] = useState<MyRanked | null>(null);
   // Back from the history, the album or the privacy page, the same tab is open.
   const [tab, setTab] = useRememberedState<ProfileTab>("tab", "stats");
   const nameSheet = useRef<HTMLDialogElement>(null);
@@ -75,6 +77,11 @@ function ProfileView({ profile }: { profile: Profile }) {
         if (!cancelled) setHistory(entries);
       })
       .catch((error: unknown) => console.error("Conquest history failed", error));
+    fetchMyRanked()
+      .then((next) => {
+        if (!cancelled) setRanked(next);
+      })
+      .catch((error: unknown) => console.error("Ranked failed", error));
     // Statistics change with every match: the profile loaded at sign-in is old.
     bootstrapPlayer()
       .then((fresh) => {
@@ -99,6 +106,12 @@ function ProfileView({ profile }: { profile: Profile }) {
     { label: "Carte conquistate", value: profile.cards_conquered },
     { label: "Carte perse", value: profile.cards_lost },
     { label: "Contro i bot: V / S / P", value: `${profile.bot_wins} / ${profile.bot_losses} / ${profile.bot_draws}` },
+    ...(ranked
+      ? [
+          { label: "Fama", value: `${ranked.fama} · ${leagueInfo(ranked.league).name}` },
+          { label: "Classificate: V / S / P", value: `${ranked.wins} / ${ranked.losses} / ${ranked.draws}` },
+        ]
+      : []),
   ];
 
   return (

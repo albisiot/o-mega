@@ -8,6 +8,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { parseBoard, PERIOD_LABELS, type LeaderboardPeriod } from "@/lib/leaderboards";
 
 // /classifiche/?scheda=<board>&periodo=<period>: query string, see CLAUDE.md (static export).
+// /classifiche/?scheda=albo opens the Albo dei Reggenti of the Classificata (SPEC §8.7).
 export default function LeaderboardsPage() {
   return (
     <Suspense fallback={<LoadingScreen label="Caricamento delle classifiche…" />}>
@@ -22,5 +23,11 @@ function LeaderboardsPageContent() {
   if (!session) return <LoadingScreen label="Caricamento delle classifiche…" />;
   const asked = params.get("periodo");
   const period = asked && asked in PERIOD_LABELS ? (asked as LeaderboardPeriod) : null;
-  return <LeaderboardView initialBoard={parseBoard(params.get("scheda"))} initialPeriod={period} />;
+  return (
+    <LeaderboardView
+      initialBoard={parseBoard(params.get("scheda"))}
+      initialPeriod={period}
+      initialAlbo={params.get("scheda") === "albo"}
+    />
+  );
 }
