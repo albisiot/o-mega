@@ -1014,26 +1014,50 @@ async function startChallengeBotMatch(
   return stateFor(matchId, "a");
 }
 
+/** What a challenge tells the Edge Function before its online queue (challenge_online_context). */
+type ChallengeOnlineContext = {
+  format: string;
+  match_rules: Record<string, unknown> | null;
+  bot_difficulties: BotDifficulty[];
+  rules: Record<string, unknown> | null;
+  admitted_definition_ids: string[] | null;
+  rarity_ranks: Record<string, number> | null;
+};
+
+/** The bots the server's opponent of a challenge may play as: the challenge's, or the first three. */
+const CHALLENGE_GHOST_DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard"];
+
 /**
  * A Sfida a tema online (SPEC §8.8): its own queue, any two players of the challenge. The
- * database knows the challenge's mode: both plans are sent, it uses the right one.
+ * database knows the challenge's mode: both plans are sent, it uses the right one. Nobody free
+ * after a while, the server's opponent comes, as in the Classificata (SPEC §8.7): it is described
+ * on every call (a bot of the challenge's levels, its squad within the challenge's rules) and the
+ * database starts it only once the wait is over.
  */
 async function joinChallengeQueue(userId: string, body: Record<string, unknown>) {
   if (typeof body.challenge_id !== "string") throw new GameError("invalid_request");
   const cards = cardIds(body.card_instance_ids);
-  // Classica's threats keep the challenge's match rules.
   const context = check(
     await admin.rpc("challenge_online_context", { p_user: userId, p_challenge_id: body.challenge_id }),
-  ) as { format: string; match_rules: Record<string, unknown> | null };
-  const { data, error } = await withBossTable((loaded) =>
-    admin.rpc("challenge_queue_join", {
+  ) as ChallengeOnlineContext;
+  const { data, error } = await withBossTable((loaded) => {
+    const size = teamSizeOf(loaded, context.format);
+    const difficulty = pickOne(rng, context.bot_difficulties.length > 0 ? context.bot_difficulties : CHALLENGE_GHOST_DIFFICULTIES);
+    const admitted = context.admitted_definition_ids ? new Set(context.admitted_definition_ids) : null;
+    const pool = admitted ? loaded.catalog.characters.filter((character) => admitted.has(character.definitionId)) : null;
+    const characters = pool && pool.length >= size ? pool : loaded.catalog.characters;
+    const team = buildChallengeBotTeam(difficulty, characters, size, rng, parseChallengeRules(context.rules), rarityOfRank(context.rarity_ranks));
+    return admin.rpc("challenge_queue_join", {
       p_user: userId,
       p_challenge_id: body.challenge_id,
       p_team: cards,
+      // Classica's threats keep the challenge's match rules.
       p_threat_ids: context.format === "classic" ? challengeThreats(loaded, parseMatchRules(context.match_rules)) : planThreats(loaded),
       p_boss_values: drawBossValues(rng, loaded.boss),
-    }),
-  );
+      p_bot_difficulty: difficulty,
+      p_bot_definition_ids: team.map((c) => c.definitionId),
+    });
+  });
   if (error) throw new Error(error.message);
   return { matched: Boolean(data), match_id: data ?? null };
 }
