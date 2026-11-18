@@ -176,6 +176,7 @@ function eventScene(): GameEvent {
     quadrant_seal_target: null,
     variant_chance_percent: 15,
     base_variant_chance_percent: 5,
+    variant_bonus_percent: 20,
     tiers: [
       { tier: 1, points: 100, coins: 100, packs: 0, cards: [], reached: true, opening_ids: [], seen: true },
       {
