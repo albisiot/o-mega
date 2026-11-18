@@ -2978,6 +2978,38 @@ export type Database = {
           },
         ]
       }
+      story_match_terms: {
+        Row: {
+          match_id: string
+          reward_coins: number
+          star_coins: number
+          star_rarities: string[]
+          star_traits: string[]
+        }
+        Insert: {
+          match_id: string
+          reward_coins: number
+          star_coins: number
+          star_rarities: string[]
+          star_traits: string[]
+        }
+        Update: {
+          match_id?: string
+          reward_coins?: number
+          star_coins?: number
+          star_rarities?: string[]
+          star_traits?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_match_terms_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       story_missions: {
         Row: {
           bot_definition_ids: string[]
@@ -2990,6 +3022,9 @@ export type Database = {
           ord: number
           reward_coins: number
           reward_definition_id: string | null
+          star_coins: number
+          star_rarities: string[]
+          star_traits: string[]
           threat_ids: string[]
           threat_modifiers: Json
           title: string
@@ -3005,6 +3040,9 @@ export type Database = {
           ord: number
           reward_coins: number
           reward_definition_id?: string | null
+          star_coins: number
+          star_rarities: string[]
+          star_traits: string[]
           threat_ids: string[]
           threat_modifiers: Json
           title: string
@@ -3020,6 +3058,9 @@ export type Database = {
           ord?: number
           reward_coins?: number
           reward_definition_id?: string | null
+          star_coins?: number
+          star_rarities?: string[]
+          star_traits?: string[]
           threat_ids?: string[]
           threat_modifiers?: Json
           title?: string
@@ -3118,6 +3159,55 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      story_stars: {
+        Row: {
+          coins: number
+          earned_at: string
+          match_id: string
+          mission_id: string
+          star: string
+          user_id: string
+        }
+        Insert: {
+          coins: number
+          earned_at?: string
+          match_id: string
+          mission_id: string
+          star: string
+          user_id: string
+        }
+        Update: {
+          coins?: number
+          earned_at?: string
+          match_id?: string
+          mission_id?: string
+          star?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_stars_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_stars_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "story_missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_stars_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       threat_definitions: {
         Row: {
@@ -3500,7 +3590,12 @@ export type Database = {
         Returns: Json
       }
       admin_save_story_chapter: {
-        Args: { p_chapter: number; p_intro: string; p_outro: string; p_title: string }
+        Args: {
+          p_chapter: number
+          p_intro: string
+          p_outro: string
+          p_title: string
+        }
         Returns: Json
       }
       admin_save_story_mission: {
@@ -3549,6 +3644,7 @@ export type Database = {
         Returns: undefined
       }
       admin_special_packs_payload: { Args: never; Returns: Json }
+      admin_story_payload: { Args: never; Returns: Json }
       admin_threat_districts: { Args: never; Returns: Json }
       admin_update_threat: {
         Args: {
@@ -4828,11 +4924,28 @@ export type Database = {
         }
         Returns: string
       }
+      story_default_star_coins: { Args: { p_chapter: number }; Returns: number }
+      story_match_stars: {
+        Args: { p_match: Database["public"]["Tables"]["matches"]["Row"] }
+        Returns: string[]
+      }
       story_mission_unlocked: {
         Args: {
           p_mission: Database["public"]["Tables"]["story_missions"]["Row"]
           p_user: string
         }
+        Returns: boolean
+      }
+      story_star_rules_payload: {
+        Args: { p_rarities: string[]; p_traits: string[] }
+        Returns: Json
+      }
+      story_team_has_rarities: {
+        Args: { p_definition_ids: string[]; p_rarities: string[] }
+        Returns: boolean
+      }
+      story_team_has_traits: {
+        Args: { p_definition_ids: string[]; p_traits: string[] }
         Returns: boolean
       }
       team_size_for: { Args: { p_format: string }; Returns: number }
