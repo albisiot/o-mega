@@ -101,6 +101,14 @@ const CLIENT_ERRORS = new Set([
   "invalid_placement",
   "not_your_turn",
   "no_ranked_opponent",
+  // Sfide a tema (SPEC §8.8)
+  "challenge_not_found",
+  "challenge_closed",
+  "challenge_format_unsupported",
+  "challenge_bot_not_allowed",
+  "challenge_daily_limit",
+  "challenge_card_not_admitted",
+  "challenge_variants_required",
 ]);
 
 class GameError extends Error {}
@@ -850,6 +858,7 @@ async function startBotMatch(userId: string, body: Record<string, unknown>) {
   const difficulty = body.difficulty as BotDifficulty;
   if (!DIFFICULTIES.includes(difficulty)) throw new GameError("invalid_difficulty");
   const cards = cardIds(body.card_instance_ids);
+  if (body.challenge_id !== undefined) return startChallengeBotMatch(userId, body.challenge_id, difficulty, cards, "classic");
 
   const { rules, catalog } = await load();
   const plan = planBotMatch({ rules, catalog, difficulty, rng });
@@ -893,6 +902,54 @@ async function playBotMatchRound(userId: string, body: Record<string, unknown>) 
   // the round is played for the player, as the rules require.
   if (saved.error?.message === "round_expired") saved = await record(null);
   return check(saved);
+}
+
+// ---------------------------------------------------------------------------
+// Sfide a tema against a bot (SPEC §8.8)
+// ---------------------------------------------------------------------------
+
+/**
+ * A match in a Sfida a tema: the database says whether the player can start one (open, the
+ * bot allowed, the matches of the day) and which characters its bot may use; the engine builds
+ * the bot's team among them, and the database creates the match of the challenge's mode,
+ * checking the squad against the rules it copies onto the match.
+ */
+async function startChallengeBotMatch(
+  userId: string,
+  challengeId: unknown,
+  difficulty: BotDifficulty,
+  cards: string[],
+  format: "classic" | "triple",
+) {
+  if (typeof challengeId !== "string") throw new GameError("invalid_request");
+  const context = check(
+    await admin.rpc("challenge_bot_context", { p_user: userId, p_challenge_id: challengeId, p_difficulty: difficulty }),
+  ) as { format: string; admitted_definition_ids: string[] | null };
+  // The team screen opened the challenge from its mode: another mode is a stale link.
+  if (context.format !== format) throw new GameError("challenge_format_unsupported");
+
+  const loaded = await load();
+  const size = format === "triple" ? loaded.triple.rounds * loaded.triple.threats : loaded.rules.teamSize;
+  const admitted = context.admitted_definition_ids ? new Set(context.admitted_definition_ids) : null;
+  const pool = admitted ? loaded.catalog.characters.filter((character) => admitted.has(character.definitionId)) : null;
+  // The rules always admit a squad; should the bots' catalog hold fewer, the bot takes the whole catalog.
+  const characters = pool && pool.length >= size ? pool : loaded.catalog.characters;
+  const plan =
+    format === "classic"
+      ? planBotMatch({ rules: loaded.rules, catalog: { ...loaded.catalog, characters }, difficulty, rng })
+      : { threats: null, botTeam: buildBotTeam(difficulty, characters, size, rng) };
+
+  const matchId = check(
+    await admin.rpc("challenge_create_bot_match", {
+      p_user: userId,
+      p_challenge_id: challengeId,
+      p_difficulty: difficulty,
+      p_card_instance_ids: cards,
+      p_bot_definition_ids: plan.botTeam.map((c) => c.definitionId),
+      p_threat_ids: plan.threats ? plan.threats.map((t) => t.id) : null,
+    }),
+  ) as string;
+  return stateFor(matchId, "a");
 }
 
 // ---------------------------------------------------------------------------
@@ -974,6 +1031,7 @@ async function startTripleBotMatch(userId: string, body: Record<string, unknown>
   const difficulty = body.difficulty as BotDifficulty;
   if (!DIFFICULTIES.includes(difficulty)) throw new GameError("invalid_difficulty");
   const cards = cardIds(body.card_instance_ids);
+  if (body.challenge_id !== undefined) return startChallengeBotMatch(userId, body.challenge_id, difficulty, cards, "triple");
   const { triple, catalog } = await load();
   const deckSize = triple.rounds * triple.threats;
   const matchId = check(
