@@ -26,6 +26,7 @@ import { useCardSwipe } from "@/lib/use-card-swipe";
 export function CardScreen({
   card,
   owned,
+  initialLook = null,
   abilities,
   browseIds,
   onBrowse,
@@ -34,6 +35,8 @@ export function CardScreen({
 }: {
   card: CatalogCard;
   owned: OwnedSummary | null;
+  /** The drawing to open the page on (a variant's style): the base, or the only variant, when unset or not owned. */
+  initialLook?: string | null;
   abilities: AbilityInfo[];
   /** The owned characters to browse, in the album's order; empty when the card stands alone. */
   browseIds: readonly string[];
@@ -42,7 +45,9 @@ export function CardScreen({
   onConverted: () => void;
 }) {
   // The drawing chosen belongs to this card: the next one starts from its own first.
-  const [chosenLook, setChosenLook] = useState<{ cardId: string; key: string } | null>(null);
+  const [chosenLook, setChosenLook] = useState<{ cardId: string; key: string } | null>(() =>
+    initialLook ? { cardId: card.id, key: initialLook } : null,
+  );
 
   const position = browsePosition(browseIds, card.id);
   const canStep = useCallback((step: SwipeStep) => neighbourId(browseIds, card.id, step) !== null, [browseIds, card.id]);

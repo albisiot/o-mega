@@ -27,9 +27,11 @@ import type { AbilityInfo } from "@/lib/catalog";
 import {
   convertAllDuplicates,
   foundVariantCount,
+  foundVariants,
   ownedArt,
   type CatalogCard,
   type ConversionResult,
+  type FoundVariant,
   type OwnedSummary,
 } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
@@ -37,7 +39,17 @@ import { loadSeenCards, saveSeenCards } from "@/lib/new-cards";
 import { rarityFrame } from "@/lib/rarity-theme";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
-type Ownership = "all" | "owned" | "missing";
+type Ownership = "all" | "owned" | "missing" | "variants";
+
+/** A tile of the album: a character, or under "★ Varianti" one of its variants found. */
+type TileEntry = { card: CatalogCard; owned: OwnedSummary | null; variant: FoundVariant | null };
+
+const OWNERSHIP_LABELS: Record<Ownership, string> = {
+  all: "Tutte",
+  owned: "Possedute",
+  missing: "Mancanti",
+  variants: "★ Varianti",
+};
 
 const VIEW_KEY = "o-mega.album-view";
 const OWNERSHIP_KEY = "o-mega.album-ownership";
@@ -46,7 +58,7 @@ const EXTRA_SORTS = [{ value: "copies", label: "Copie" }];
 function loadOwnership(): Ownership {
   try {
     const saved = sessionStorage.getItem(OWNERSHIP_KEY);
-    return saved === "owned" || saved === "missing" ? saved : "all";
+    return saved === "owned" || saved === "missing" || saved === "variants" ? saved : "all";
   } catch {
     return "all";
   }
@@ -99,7 +111,12 @@ export function Album({
   const sortAbility = sortAbilityOf(view.sort);
 
   const groups = useMemo(() => {
-    const cards = catalog.filter((card) => ownership === "all" || (ownership === "owned") === owned.has(card.id));
+    const shown = (card: CatalogCard) => {
+      const mine = owned.get(card.id);
+      if (ownership === "variants") return (mine?.variants.length ?? 0) > 0;
+      return ownership === "all" || (ownership === "owned") === Boolean(mine);
+    };
+    const cards = catalog.filter(shown);
     const copies = (card: CatalogCard) => owned.get(card.id)?.copies ?? 0;
     const sorted = applyCardListView(cards, view, traits, {
       copies: (a, b) => copies(b) - copies(a) || b.rarity.rank - a.rarity.rank || a.code.localeCompare(b.code),
@@ -116,6 +133,21 @@ export function Album({
     saveAlbumScroll();
     saveAlbumOrder(browseIds);
   };
+
+  // "★ Varianti" shows each variant found as a tile of its own; those still to find stay a count.
+  const variantTotals = useMemo(
+    () =>
+      catalog.reduce(
+        (totals, card) => {
+          const mine = owned.get(card.id);
+          if (!mine) return totals;
+          const found = foundVariantCount(mine);
+          return { found: totals.found + found, missing: totals.missing + Math.max(0, card.variantCount - found) };
+        },
+        { found: 0, missing: 0 },
+      ),
+    [catalog, owned],
+  );
 
   const rarities = useMemo(
     () => [...new Map(catalog.map((card) => [card.rarity.rank, card.rarity])).values()].sort((a, b) => a.rank - b.rank),
@@ -171,9 +203,9 @@ export function Album({
 
         <section className="flex flex-col gap-2">
           <ChipRow>
-            {(["all", "owned", "missing"] as const).map((value) => (
+            {(Object.keys(OWNERSHIP_LABELS) as Ownership[]).map((value) => (
               <Chip key={value} active={ownership === value} onClick={() => chooseOwnership(value)}>
-                {{ all: "Tutte", owned: "Possedute", missing: "Mancanti" }[value]}
+                {OWNERSHIP_LABELS[value]}
               </Chip>
             ))}
           </ChipRow>
@@ -188,28 +220,50 @@ export function Album({
           />
         </section>
 
+        {ownership === "variants" && (
+          <p className="text-sm font-bold text-muted">
+            {variantTotals.found === 1 ? "1 variante trovata" : `${variantTotals.found} varianti trovate`}
+            {variantTotals.missing > 0 && ` · ${variantTotals.missing} da trovare tra i tuoi personaggi`}
+          </p>
+        )}
+
         {groups[0].cards.length === 0 ? (
-          <p className="py-8 text-center text-sm font-semibold text-muted">Nessuna carta con questi filtri.</p>
+          <p className="py-8 text-center text-sm font-semibold text-muted">
+            {ownership !== "variants"
+              ? "Nessuna carta con questi filtri."
+              : variantTotals.found === 0
+                ? "Non hai ancora varianti: sono disegni più rari dei personaggi e si trovano nei pacchetti."
+                : "Nessuna variante con questi filtri."}
+          </p>
         ) : (
-          groups.map((group) => (
-            <section key={group.key} className="flex flex-col gap-1.5">
-              {group.label && <CardGroupHeading label={group.label} count={group.cards.length} />}
-              <ul className="grid grid-cols-3 gap-2">
-                {group.cards.map((card) => (
-                  <li key={card.id}>
-                    <AlbumTile
-                      card={card}
-                      owned={owned.get(card.id) ?? null}
-                      // Before the first visit nothing is new: an existing player's whole album would be.
-                      isNew={seenBefore !== null && owned.has(card.id) && !seenBefore.has(card.id)}
-                      sortAbility={sortAbility}
-                      onOpen={openCard}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))
+          groups.map((group) => {
+            // One tile per character, or, under "★ Varianti", one per variant found.
+            const tiles = group.cards.flatMap((card): TileEntry[] => {
+              const mine = owned.get(card.id) ?? null;
+              if (ownership !== "variants" || !mine) return [{ card, owned: mine, variant: null }];
+              return foundVariants(mine).map((variant) => ({ card, owned: mine, variant }));
+            });
+            return (
+              <section key={group.key} className="flex flex-col gap-1.5">
+                {group.label && <CardGroupHeading label={group.label} count={tiles.length} />}
+                <ul className="grid grid-cols-3 gap-2">
+                  {tiles.map(({ card, owned: mine, variant }) => (
+                    <li key={variant ? `${card.id}-${variant.style}` : card.id}>
+                      <AlbumTile
+                        card={card}
+                        owned={mine}
+                        variant={variant}
+                        // Before the first visit nothing is new: an existing player's whole album would be.
+                        isNew={!variant && seenBefore !== null && mine !== null && !seenBefore.has(card.id)}
+                        sortAbility={sortAbility}
+                        onOpen={openCard}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })
         )}
       </main>
     </div>
@@ -219,35 +273,42 @@ export function Album({
 function AlbumTile({
   card,
   owned,
+  variant,
   isNew,
   sortAbility,
   onOpen,
 }: {
   card: CatalogCard;
   owned: OwnedSummary | null;
+  /** Set under "★ Varianti": the tile is this variant, and opens the card's page on it. */
+  variant: FoundVariant | null;
   isNew: boolean;
   sortAbility: string | null;
   onOpen: () => void;
 }) {
   const number = card.code.replace(/^\D+/, "");
   const variants = owned ? foundVariantCount(owned) : 0;
+  // A variant's tile counts the copies of that drawing and names it; a character's tile counts
+  // all its copies and names its variant, or says how many it has.
+  const copies = variant ? variant.copies : (owned?.copies ?? 0);
+  const tag = variant ? variant.name : variants > 1 ? `${variants}` : owned?.variants[0]?.name;
   return (
     <Link
-      href={`/carta/?id=${card.id}`}
+      href={`/carta/?id=${card.id}${variant ? `&v=${encodeURIComponent(variant.style)}` : ""}`}
       onClick={onOpen}
       className="relative flex flex-col rounded-[7px] p-1"
       style={{ background: owned ? rarityFrame(card.rarity) : "var(--panel-raised)" }}
     >
-      {owned && owned.copies > 1 && (
+      {copies > 1 && (
         <span className="absolute left-1.5 top-1.5 z-10 bg-black px-1.5 text-xs font-extrabold leading-[18px] text-comic-yellow">
-          ×{owned.copies}
+          ×{copies}
         </span>
       )}
       {owned ? (
         <CardArt
           rarity={card.rarity}
           faction={card.faction}
-          artUrl={ownedArt(card, owned).art_url}
+          artUrl={variant ? variant.art_url : ownedArt(card, owned).art_url}
           // Three tiles per row inside the page padding, minus each tile's 4px frame.
           thumbSizes="calc((100vw - 72px) / 3)"
           effects={cardEffects(card, "sm")}
@@ -255,7 +316,7 @@ function AlbumTile({
         >
           {/* At the foot of the drawing, clear of the copies count and of the face: NEW! on the left,
               the variants on the right, whose name gives way to NEW! instead of covering it. */}
-          {(isNew || variants > 0) && (
+          {(isNew || tag) && (
             <div className="absolute bottom-1.5 left-0.5 right-1.5 z-10 flex items-end gap-1">
               {isNew && (
                 <span className="animate-new-pop shrink-0 bg-comic-yellow px-1.5 font-sfx text-sm leading-[18px] tracking-wide text-black shadow-[2px_2px_0_var(--comic-magenta)]">
@@ -263,10 +324,10 @@ function AlbumTile({
                 </span>
               )}
               {/* Several variants found: how many; the card's page shows them all. */}
-              {variants > 0 && (
+              {tag && (
                 <VariantTag
-                  name={variants > 1 ? `${variants}` : owned.variants[0].name}
-                  hint={variants > 1 ? "varianti" : undefined}
+                  name={tag}
+                  hint={!variant && variants > 1 ? "varianti" : undefined}
                   compact
                   className="ml-auto min-w-0 truncate"
                 />

@@ -5,7 +5,7 @@
 // next.config.ts serves *.dev.tsx pages in `next dev` only, so it is never part of the published
 // site. The catalog and the variants are the real ones (both public); the copies are made up.
 //   /prova-varianti/?s=album             the album, with the characters below owned
-//   /prova-varianti/?s=carta&c=P082      a character's page (default P082)
+//   /prova-varianti/?s=carta&c=P082      a character's page (default P082); &v=ink opens it on a variant
 // Owned here: P082 base + both variants, P014 both variants and no base, P047 base ×9 + one of
 // two (×10 on the tile), P015 base + its longest-named variant, P007 the same variant twice,
 // P003 base only.
@@ -94,6 +94,7 @@ function Scene() {
     <CardScreen
       card={card}
       owned={loaded.owned.get(card.id) ?? null}
+      initialLook={code === params.get("c") ? params.get("v") : null}
       abilities={loaded.abilities}
       browseIds={browseIds}
       onBrowse={(id) => setCode(loaded.catalog.find((entry) => entry.id === id)?.code ?? code)}

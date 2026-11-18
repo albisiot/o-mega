@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { foundVariantCount, ownedArt, ownedLooks, type CatalogCard, type OwnedSummary, type OwnedVariant } from "@/lib/collection";
+import {
+  foundVariantCount,
+  foundVariants,
+  ownedArt,
+  ownedLooks,
+  type CatalogCard,
+  type OwnedSummary,
+  type OwnedVariant,
+} from "@/lib/collection";
 
 const card: CatalogCard = {
   id: "def-1",
@@ -41,6 +49,20 @@ describe("foundVariantCount", () => {
     expect(foundVariantCount(owned(1, []))).toBe(0);
     expect(foundVariantCount(owned(0, [circuit, variant("circuit", "Circuito", "i-3")]))).toBe(1);
     expect(foundVariantCount(owned(1, [circuit, ink]))).toBe(2);
+  });
+});
+
+describe("foundVariants", () => {
+  it("lists each style once, in the order found, with its copies", () => {
+    const found = foundVariants(owned(1, [ink, circuit, variant("ink", "Inchiostro", "i-3")]));
+    expect(found).toEqual([
+      { style: "ink", name: "Inchiostro", art_url: ink.art_url, copies: 2 },
+      { style: "circuit", name: "Circuito", art_url: circuit.art_url, copies: 1 },
+    ]);
+  });
+
+  it("is empty for a player with only base copies", () => {
+    expect(foundVariants(owned(3, []))).toEqual([]);
   });
 });
 

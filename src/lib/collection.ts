@@ -33,6 +33,20 @@ export function ownedArt(card: CatalogCard, owned: OwnedSummary): Pick<CatalogCa
   return only ? { art_url: only.art_url, variant: { name: only.name } } : { art_url: card.art_url, variant: null };
 }
 
+/** An artwork variant of a character the player found, with how many copies of it the player owns. */
+export type FoundVariant = { style: string; name: string; art_url: string; copies: number };
+
+/** The variants of a character the player found: one per style, in the order found. */
+export function foundVariants(owned: OwnedSummary): FoundVariant[] {
+  const byStyle = new Map<string, FoundVariant>();
+  for (const { style, name, art_url } of owned.variants) {
+    const found = byStyle.get(style);
+    if (found) found.copies += 1;
+    else byStyle.set(style, { style, name, art_url, copies: 1 });
+  }
+  return [...byStyle.values()];
+}
+
 /** How many of a character's artwork variants the player has found: one per style, however many copies. */
 export function foundVariantCount(owned: OwnedSummary): number {
   return new Set(owned.variants.map((variant) => variant.style)).size;
@@ -43,8 +57,7 @@ export type CardLook = { key: string; label: string; art_url: CatalogCard["art_u
 
 /** The drawings of a character's page, one per style found, in the order found: the base first, unless the player has only variants. */
 export function ownedLooks(card: CatalogCard, owned: OwnedSummary): CardLook[] {
-  const styles = [...new Map(owned.variants.map((variant) => [variant.style, variant])).values()];
-  const looks = styles.map((v) => ({ key: v.style, label: v.name, art_url: v.art_url, variant: { name: v.name } }));
+  const looks = foundVariants(owned).map((v) => ({ key: v.style, label: v.name, art_url: v.art_url, variant: { name: v.name } }));
   if (owned.variants.length === owned.copies) return looks;
   return [{ key: "base", label: "Base", art_url: card.art_url, variant: null }, ...looks];
 }

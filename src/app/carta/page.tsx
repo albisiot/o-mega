@@ -19,7 +19,8 @@ import { savedAlbumOrder, savedAlbumScroll } from "@/lib/album-scroll";
 import { describeServerError } from "@/lib/errors";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
-// /carta/?id=<definition id>: query string, see CLAUDE.md (static export).
+// /carta/?id=<definition id>: query string, see CLAUDE.md (static export). An optional &v=<style>
+// opens the page on that variant, when the player owns it (the album's "★ Varianti").
 export default function CardPage() {
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -38,7 +39,9 @@ function seenData(): Loaded | null {
 }
 
 function CardPageContent() {
-  const urlId = useSearchParams().get("id");
+  const search = useSearchParams();
+  const urlId = search.get("id");
+  const urlLook = search.get("v");
   const router = useRouter();
   const { session } = useRequireSignedIn();
   const [loaded, setLoaded] = useState<Loaded | null>(seenData);
@@ -89,6 +92,8 @@ function CardPageContent() {
     setId(next);
     const params = new URLSearchParams(window.location.search);
     params.set("id", next);
+    // The variant asked for belongs to the card opened, not to the next one.
+    params.delete("v");
     window.history.replaceState(null, "", `?${params.toString()}`);
   }, []);
 
@@ -103,6 +108,7 @@ function CardPageContent() {
     <CardScreen
       card={card}
       owned={loaded.collection.get(card.id) ?? null}
+      initialLook={card.id === urlId ? urlLook : null}
       abilities={loaded.abilities}
       browseIds={browseIds}
       onBrowse={browse}
