@@ -9,11 +9,13 @@
 //   /prova-sfide/?s=squadra   the team screen of the Classica challenge
 //   /prova-sfide/?s=editor    the admin page, new challenge (tap the steps); the list in its second tab
 //   /prova-sfide/?s=attesa    the online queue of a challenge, after the wait (its bots offered)
+//   /prova-sfide/?s=menu      the EDITOR menu, with every admin tool (the real page needs an admin)
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { CardDetailProvider } from "@/components/card-detail";
 import { ChallengeAdmin } from "@/components/challenge-admin";
+import { EditorMenu } from "@/components/editor-menu";
 import { PlayMenuView } from "@/components/play-menu";
 import { TeamPicker } from "@/components/team-picker";
 import { QueueWaitView, WaitingShell } from "@/components/waiting-views";
@@ -281,6 +283,7 @@ function Scenes() {
   const scene = params.get("s") ?? "gioca";
   const [data, setData] = useState(adminData);
   if (scene === "squadra") return <SquadScene />;
+  if (scene === "menu") return <EditorMenu />;
   if (scene === "attesa") {
     return (
       <WaitingShell lobby={false} ranked={false}>

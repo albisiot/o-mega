@@ -484,7 +484,8 @@ function ChallengeForm({
 
   return (
     <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col gap-2">
-      <div role="tablist" aria-label="Parti della sfida" className="grid shrink-0 grid-cols-5 gap-1">
+      {/* Each step is as wide as its name and they share what is left: «Anteprima» is longer than a fifth of a phone. */}
+      <div role="tablist" aria-label="Parti della sfida" className="flex shrink-0 gap-1">
         {STEPS.map((entry) => (
           <button
             key={entry.key}
@@ -492,7 +493,7 @@ function ChallengeForm({
             role="tab"
             aria-selected={step === entry.key}
             onClick={() => setStep(entry.key)}
-            className={`min-h-11 min-w-0 border-2 px-0.5 text-[11px] font-extrabold uppercase ${
+            className={`min-h-11 min-w-0 flex-auto border-2 px-1 text-[11px] font-extrabold uppercase max-[350px]:px-0.5 max-[350px]:text-[10px] ${
               step === entry.key ? "border-comic-yellow bg-comic-yellow text-black" : "border-line text-foreground"
             }`}
           >
