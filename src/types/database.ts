@@ -1594,6 +1594,7 @@ export type Database = {
           starts_at: string
           title: string
           traits: string[]
+          variant_bonus_percent: number | null
           variant_chance_percent: number | null
         }
         Insert: {
@@ -1611,6 +1612,7 @@ export type Database = {
           starts_at: string
           title: string
           traits?: string[]
+          variant_bonus_percent?: number | null
           variant_chance_percent?: number | null
         }
         Update: {
@@ -1628,6 +1630,7 @@ export type Database = {
           starts_at?: string
           title?: string
           traits?: string[]
+          variant_bonus_percent?: number | null
           variant_chance_percent?: number | null
         }
         Relationships: [
@@ -4354,6 +4357,10 @@ export type Database = {
       event_ref_team: {
         Args: { p_ref_id: string; p_user: string }
         Returns: string[]
+      }
+      event_ref_team_variants: {
+        Args: { p_ref_id: string; p_user: string }
+        Returns: number
       }
       event_reward_cards: {
         Args: { p_card_codes: string[] }
