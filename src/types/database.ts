@@ -620,6 +620,179 @@ export type Database = {
           },
         ]
       }
+      challenge_emergencies: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          threat_ids: string[]
+          threat_levels: number[]
+          threat_modifiers: Json
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          threat_ids: string[]
+          threat_levels: number[]
+          threat_modifiers?: Json
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          threat_ids?: string[]
+          threat_levels?: number[]
+          threat_modifiers?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_emergencies_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: true
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_emergency_plays: {
+        Row: {
+          base_score: number
+          bonus: number
+          card_instance_id: string
+          created_at: string
+          definition_id: string
+          parts: Json | null
+          passed: boolean
+          required_score: number
+          round: number
+          run_id: string
+          score: number
+          threat_id: string
+        }
+        Insert: {
+          base_score: number
+          bonus: number
+          card_instance_id: string
+          created_at?: string
+          definition_id: string
+          parts?: Json | null
+          passed: boolean
+          required_score: number
+          round: number
+          run_id: string
+          score: number
+          threat_id: string
+        }
+        Update: {
+          base_score?: number
+          bonus?: number
+          card_instance_id?: string
+          created_at?: string
+          definition_id?: string
+          parts?: Json | null
+          passed?: boolean
+          required_score?: number
+          round?: number
+          run_id?: string
+          score?: number
+          threat_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_emergency_plays_card_instance_id_fkey"
+            columns: ["card_instance_id"]
+            isOneToOne: false
+            referencedRelation: "card_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_emergency_plays_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_emergency_plays_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_emergency_plays_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_emergency_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_emergency_plays_threat_id_fkey"
+            columns: ["threat_id"]
+            isOneToOne: false
+            referencedRelation: "threat_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_emergency_runs: {
+        Row: {
+          card_instance_ids: string[]
+          challenge_id: string
+          created_at: string
+          current_round: number
+          definition_ids: string[]
+          failed: number
+          finished_at: string | null
+          id: string
+          passed: number
+          status: string
+          total_score: number
+          user_id: string
+        }
+        Insert: {
+          card_instance_ids: string[]
+          challenge_id: string
+          created_at?: string
+          current_round?: number
+          definition_ids: string[]
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          passed?: number
+          status?: string
+          total_score?: number
+          user_id: string
+        }
+        Update: {
+          card_instance_ids?: string[]
+          challenge_id?: string
+          created_at?: string
+          current_round?: number
+          definition_ids?: string[]
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          passed?: number
+          status?: string
+          total_score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_emergency_runs_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_emergency_runs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenge_match_terms: {
         Row: {
           challenge_id: string
@@ -627,7 +800,9 @@ export type Database = {
           event_id: string | null
           event_points: Json | null
           match_id: string
+          match_rules: Json
           rules: Json
+          supplied: boolean
           title: string
           version: number
         }
@@ -637,7 +812,9 @@ export type Database = {
           event_id?: string | null
           event_points?: Json | null
           match_id: string
+          match_rules?: Json
           rules: Json
+          supplied?: boolean
           title: string
           version: number
         }
@@ -647,7 +824,9 @@ export type Database = {
           event_id?: string | null
           event_points?: Json | null
           match_id?: string
+          match_rules?: Json
           rules?: Json
+          supplied?: boolean
           title?: string
           version?: number
         }
@@ -851,17 +1030,21 @@ export type Database = {
           created_by: string | null
           daily_limit: number | null
           description: string
+          emergency_threats: number | null
           ends_at: string
           event_id: string | null
           event_points: Json | null
           format: string
           id: string
           is_active: boolean
+          leaderboard: boolean
+          match_rules: Json
           min_level: number | null
           online: boolean
           quadrant_seal_target: number | null
           rules: Json
           starts_at: string
+          supplied_team: string[] | null
           title: string
           version: number
         }
@@ -873,17 +1056,21 @@ export type Database = {
           created_by?: string | null
           daily_limit?: number | null
           description?: string
+          emergency_threats?: number | null
           ends_at: string
           event_id?: string | null
           event_points?: Json | null
           format: string
           id?: string
           is_active?: boolean
+          leaderboard?: boolean
+          match_rules?: Json
           min_level?: number | null
           online?: boolean
           quadrant_seal_target?: number | null
           rules: Json
           starts_at: string
+          supplied_team?: string[] | null
           title: string
           version?: number
         }
@@ -895,17 +1082,21 @@ export type Database = {
           created_by?: string | null
           daily_limit?: number | null
           description?: string
+          emergency_threats?: number | null
           ends_at?: string
           event_id?: string | null
           event_points?: Json | null
           format?: string
           id?: string
           is_active?: boolean
+          leaderboard?: boolean
+          match_rules?: Json
           min_level?: number | null
           online?: boolean
           quadrant_seal_target?: number | null
           rules?: Json
           starts_at?: string
+          supplied_team?: string[] | null
           title?: string
           version?: number
         }
@@ -4427,6 +4618,10 @@ export type Database = {
         Args: { p_challenge_id: string; p_difficulty: string; p_user: string }
         Returns: Json
       }
+      challenge_cheapest_squad: {
+        Args: { p_rules: Json; p_size: number }
+        Returns: number
+      }
       challenge_check_online: {
         Args: {
           p_challenge: Database["public"]["Tables"]["challenges"]["Row"]
@@ -4449,6 +4644,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      challenge_composition_possible: {
+        Args: { p_rules: Json; p_size: number }
+        Returns: boolean
+      }
+      challenge_composition_problem: {
+        Args: { p_definition_ids: string[]; p_rules: Json }
+        Returns: string
+      }
       challenge_create_bot_match: {
         Args: {
           p_boss_values?: Json
@@ -4460,6 +4663,93 @@ export type Database = {
           p_user: string
         }
         Returns: string
+      }
+      challenge_create_supplied_match: {
+        Args: {
+          p_bot_definition_ids: string[]
+          p_challenge: Database["public"]["Tables"]["challenges"]["Row"]
+          p_difficulty: string
+          p_threat_ids: string[]
+          p_user: string
+        }
+        Returns: string
+      }
+      challenge_emergency_config: {
+        Args: { p_threats: number }
+        Returns: string
+      }
+      challenge_emergency_ensure: {
+        Args: { p_challenge_id: string; p_threat_ids: string[] }
+        Returns: undefined
+      }
+      challenge_emergency_info: {
+        Args: { p_challenge_id: string; p_user: string }
+        Returns: Json
+      }
+      challenge_emergency_of: {
+        Args: { p_challenge_id: string; p_user: string }
+        Returns: {
+          bot_difficulties: string[]
+          bot_follows_rules: boolean
+          color: string
+          created_at: string
+          created_by: string | null
+          daily_limit: number | null
+          description: string
+          emergency_threats: number | null
+          ends_at: string
+          event_id: string | null
+          event_points: Json | null
+          format: string
+          id: string
+          is_active: boolean
+          leaderboard: boolean
+          match_rules: Json
+          min_level: number | null
+          online: boolean
+          quadrant_seal_target: number | null
+          rules: Json
+          starts_at: string
+          supplied_team: string[] | null
+          title: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "challenges"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      challenge_emergency_play_context: {
+        Args: { p_challenge_id: string; p_user: string }
+        Returns: Json
+      }
+      challenge_emergency_record_play: {
+        Args: {
+          p_base: number
+          p_bonus: number
+          p_card_instance_id: string
+          p_challenge_id: string
+          p_parts?: Json
+          p_required: number
+          p_round: number
+          p_score: number
+          p_user: string
+        }
+        Returns: Json
+      }
+      challenge_emergency_start: {
+        Args: {
+          p_card_instance_ids: string[]
+          p_challenge_id: string
+          p_user: string
+        }
+        Returns: string
+      }
+      challenge_emergency_state_payload: {
+        Args: { p_challenge_id: string; p_user: string }
+        Returns: Json
       }
       challenge_formats: { Args: never; Returns: string[] }
       challenge_insert_pvp_match: {
@@ -4476,7 +4766,19 @@ export type Database = {
         }
         Returns: string
       }
+      challenge_modifier_entry: {
+        Args: { p_code: string; p_level: number }
+        Returns: Json
+      }
+      challenge_normalize_match_rules: {
+        Args: { p_format: string; p_rules: Json }
+        Returns: Json
+      }
       challenge_normalize_rules: { Args: { p_rules: Json }; Returns: Json }
+      challenge_online_context: {
+        Args: { p_challenge_id: string; p_user: string }
+        Returns: Json
+      }
       challenge_payload: {
         Args: {
           p_challenge: Database["public"]["Tables"]["challenges"]["Row"]
@@ -4498,9 +4800,28 @@ export type Database = {
         }
         Returns: string
       }
+      challenge_ranking: {
+        Args: { p_challenge_id: string }
+        Returns: {
+          played: number
+          players: number
+          rank: number
+          score: number
+          user_id: string
+          wins: number
+        }[]
+      }
       challenge_rule_list: {
         Args: { p_key: string; p_rules: Json }
         Returns: string[]
+      }
+      challenge_simulation_context: {
+        Args: { p_rules: Json; p_supplied_codes?: string[] }
+        Returns: Json
+      }
+      challenge_size: {
+        Args: { p_emergency_threats: number; p_format: string }
+        Returns: number
       }
       challenge_tag_match: {
         Args: {
@@ -5893,6 +6214,10 @@ export type Database = {
         Returns: Json
       }
       with_short_foresight: {
+        Args: { p_match_id: string; p_payload: Json; p_side: string }
+        Returns: Json
+      }
+      with_supplied_team: {
         Args: { p_match_id: string; p_payload: Json; p_side: string }
         Returns: Json
       }
