@@ -137,14 +137,27 @@ function RarityTag({ rarity, compact }: { rarity: CardData["rarity"]; compact: b
 }
 
 /** Marks a copy with an artwork variant, on the card and in the lists that show its art. */
-export function VariantTag({ name, compact }: { name: string; compact: boolean }) {
+export function VariantTag({
+  name,
+  compact,
+  hint,
+  className = "absolute right-1.5 top-1.5 z-10",
+}: {
+  name: string;
+  compact: boolean;
+  /** Read by screen readers after the name, for a tag that shows a number. */
+  hint?: string;
+  /** Where the tag sits: by default in the art's top right corner. */
+  className?: string;
+}) {
   return (
     <span
-      className={`absolute right-1.5 top-1.5 z-10 -skew-x-8 bg-comic-magenta font-extrabold uppercase text-black ${
+      className={`${className} -skew-x-8 bg-comic-magenta font-extrabold uppercase text-black ${
         compact ? "px-1 text-[10px]" : "px-1.5 py-0.5 text-xs"
       }`}
     >
       ★ {name}
+      {hint && <span className="sr-only"> {hint}</span>}
     </span>
   );
 }

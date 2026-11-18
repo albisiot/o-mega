@@ -26,6 +26,7 @@ import { applyCardListView, groupCardList, sortAbilityOf } from "@/lib/card-list
 import type { AbilityInfo } from "@/lib/catalog";
 import {
   convertAllDuplicates,
+  foundVariantCount,
   ownedArt,
   type CatalogCard,
   type ConversionResult,
@@ -229,6 +230,7 @@ function AlbumTile({
   onOpen: () => void;
 }) {
   const number = card.code.replace(/^\D+/, "");
+  const variants = owned ? foundVariantCount(owned) : 0;
   return (
     <Link
       href={`/carta/?id=${card.id}`}
@@ -241,11 +243,6 @@ function AlbumTile({
           ×{owned.copies}
         </span>
       )}
-      {isNew && (
-        <span className="animate-new-pop absolute left-1.5 top-[76px] z-10 bg-comic-yellow px-1.5 font-sfx text-sm leading-[18px] tracking-wide text-black shadow-[2px_2px_0_var(--comic-magenta)]">
-          NEW!
-        </span>
-      )}
       {owned ? (
         <CardArt
           rarity={card.rarity}
@@ -256,7 +253,26 @@ function AlbumTile({
           effects={cardEffects(card, "sm")}
           className="h-24 rounded-t"
         >
-          {owned.variants[0] && <VariantTag name={owned.variants[0].name} compact />}
+          {/* At the foot of the drawing, clear of the copies count and of the face: NEW! on the left,
+              the variants on the right, whose name gives way to NEW! instead of covering it. */}
+          {(isNew || variants > 0) && (
+            <div className="absolute bottom-1.5 left-0.5 right-1.5 z-10 flex items-end gap-1">
+              {isNew && (
+                <span className="animate-new-pop shrink-0 bg-comic-yellow px-1.5 font-sfx text-sm leading-[18px] tracking-wide text-black shadow-[2px_2px_0_var(--comic-magenta)]">
+                  NEW!
+                </span>
+              )}
+              {/* Several variants found: how many; the card's page shows them all. */}
+              {variants > 0 && (
+                <VariantTag
+                  name={variants > 1 ? `${variants}` : owned.variants[0].name}
+                  hint={variants > 1 ? "varianti" : undefined}
+                  compact
+                  className="ml-auto min-w-0 truncate"
+                />
+              )}
+            </div>
+          )}
         </CardArt>
       ) : (
         <div className="relative h-24 overflow-hidden rounded-t bg-panel">
