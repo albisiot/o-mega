@@ -12,7 +12,7 @@ import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { packColor } from "@/lib/pack-colors";
 import { placeHref, returnLabel } from "@/lib/pack-return";
 import { packRevealHref, type PackCard, type PackOpening } from "@/lib/packs";
-import { forgetOpener, noteOpened, openedFrom, placeKey } from "@/lib/place-memory";
+import { navHistory } from "@/lib/nav-history";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 type Stage =
@@ -61,6 +61,10 @@ export function PackReveal({
   useLockedScreen(stage.kind === "summary");
   // No in-app banner while the cards come out (SPEC §11.1).
   useBannerHold(stage.kind !== "summary");
+  // Once seen, the reveal is over: the browser's back or forward never plays it again.
+  useEffect(() => {
+    if (stage.kind === "summary") navHistory()?.consumeCurrent();
+  }, [stage.kind]);
 
   useEffect(() => {
     fetchAbilities()
@@ -248,22 +252,12 @@ export function PackReveal({
 }
 
 /**
- * The next pack of the series takes the place of this one in the history, and keeps its opener:
- * at the end, the way out (and the browser's back) goes straight to the page it all started on.
+ * The next pack of the series takes the place of this one in the history: at the end, the way
+ * out (and the browser's back) goes straight to the page it all started on.
  */
 function NextPackLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <Link
-      href={href}
-      replace
-      data-return=""
-      className="btn btn-primary"
-      onClick={() => {
-        const opener = openedFrom();
-        if (opener) noteOpened(opener, placeKey(href));
-        else forgetOpener(placeKey(href));
-      }}
-    >
+    <Link href={href} replace data-return="" className="btn btn-primary">
       {children}
     </Link>
   );

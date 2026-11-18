@@ -3,22 +3,103 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { forgetOpener, markReturning, openedFrom, placeKey, placePath, rememberScroll } from "@/lib/place-memory";
+import { navHistory, usePreviousPage } from "@/lib/nav-history";
+import { isPlace } from "@/lib/nav-stack";
+import { placeHref } from "@/lib/pack-return";
+import { backLabel } from "@/lib/page-names";
+import { markReturning, placeKey, rememberScroll } from "@/lib/place-memory";
+
+type Router = ReturnType<typeof useRouter>;
 
 /**
- * A back arrow: it returns to `href` where the player left it (scroll, open mode, tab). When
- * this page was opened from there, it simply goes back in the history; otherwise it opens
- * `href`, and still restores its place if the player has been there before.
+ * Back to the page the player came from (see src/lib/nav-history.ts), where they left it.
+ * With nothing behind this page in the app (a shared link, the app just opened), `fallback`,
+ * its parent, takes its place: the history never leads back here from it.
  */
+export function goBack(router: Router, fallback: string) {
+  rememberScroll();
+  const history = navHistory();
+  const previous = history?.previous() ?? null;
+  if (history && previous !== null) {
+    markReturning(previous);
+    history.back();
+    return;
+  }
+  const key = placeKey(fallback);
+  markReturning(key);
+  router.replace(placeHref(key));
+}
+
+/**
+ * To the page `href`: back in the history when it is the page behind this one, so that going
+ * back from it does not lead here again. Otherwise it opens in place of this page (a "Torna a…"),
+ * or, `onward`, on top of it (a "Gioca ancora").
+ */
+export function returnTo(router: Router, href: string, onward = false) {
+  rememberScroll();
+  const key = placeKey(href);
+  const history = navHistory();
+  const previous = history?.previous() ?? null;
+  if (history && previous !== null && isPlace(previous, key)) {
+    markReturning(previous);
+    history.back();
+    return;
+  }
+  if (onward) {
+    router.push(placeHref(key));
+    return;
+  }
+  markReturning(key);
+  router.replace(placeHref(key));
+}
+
+/**
+ * A back arrow or button: to the page the player came from, `fallback` (the page above this
+ * one) when there is none. `children` gets the page it leads to (a place key) and whether it
+ * is the one behind; `labelled` names it for screen readers ("Torna al profilo").
+ */
+export function GoBackLink({
+  fallback,
+  className,
+  labelled = false,
+  children,
+}: {
+  fallback: string;
+  className: string;
+  labelled?: boolean;
+  children: (target: string, behind: boolean) => ReactNode;
+}) {
+  const router = useRouter();
+  const previous = usePreviousPage();
+  const target = previous ?? placeKey(fallback);
+  return (
+    <Link
+      href={placeHref(target)}
+      data-return=""
+      aria-label={labelled ? backLabel(target) : undefined}
+      className={className}
+      onClick={(event) => {
+        event.preventDefault();
+        goBack(router, fallback);
+      }}
+    >
+      {children(target, previous !== null)}
+    </Link>
+  );
+}
+
+/** A link to a named page that goes back to it when it is the page behind (see returnTo). */
 export function ReturnLink({
   href,
   className,
   label,
+  onward = false,
   children,
 }: {
   href: string;
   className: string;
   label?: string;
+  onward?: boolean;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -29,18 +110,8 @@ export function ReturnLink({
       aria-label={label}
       className={className}
       onClick={(event) => {
-        const target = placeKey(href);
-        const from = openedFrom();
-        rememberScroll();
-        if (from && placePath(from) === placePath(target) && window.history.length > 1) {
-          event.preventDefault();
-          markReturning(from);
-          router.back();
-        } else {
-          // Opened afresh on top of this page: going back from it no longer leads to its opener.
-          forgetOpener(target);
-          markReturning(target);
-        }
+        event.preventDefault();
+        returnTo(router, href, onward);
       }}
     >
       {children}

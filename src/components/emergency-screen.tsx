@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { resolveEmergencyPlay, type AbilityFamilies, type EmergencyRules } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
@@ -17,6 +16,7 @@ import { Sheet } from "@/components/sheet";
 import { TeamPicker } from "@/components/team-picker";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
 import { ThreatDiorama } from "@/components/threat-diorama";
+import { ReturnLink } from "@/components/return-link";
 import { knownLevels, levelText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
 import { abilityChips } from "@/lib/ability-marks";
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
@@ -129,7 +129,7 @@ function EmergencySteps({ initial }: { initial: EmergencyView }) {
       {titled ? (
         <>
           <header className="flex items-center gap-2.5 px-3 py-1">
-            <BackLink href="/gioca" label="Torna a Gioca" />
+            <BackLink href="/gioca" />
             <h1 className="whitespace-nowrap font-display text-[25px] uppercase leading-7 text-comic-yellow">
               {challenge ? (
                 <>
@@ -164,7 +164,7 @@ function EmergencySteps({ initial }: { initial: EmergencyView }) {
         </>
       ) : (
         <header className="relative flex items-center gap-1.5 px-3 py-1">
-          <BackLink href="/gioca" label="Torna a Gioca" />
+          <BackLink href="/gioca" />
           <LevelTrack view={strip} abilities={abilities} settled={settled} inline />
         </header>
       )}
@@ -904,14 +904,14 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
       </main>
 
       <div className="flex gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
-        <Link href="/gioca" className="btn btn-primary flex-1">
+        <ReturnLink href="/gioca" onward className="btn btn-primary flex-1">
           Gioca ancora
-        </Link>
-        <Link href="/" aria-label="Torna alla home" className="btn btn-ghost w-14 shrink-0 px-0">
+        </ReturnLink>
+        <ReturnLink href="/" label="Torna alla home" className="btn btn-ghost w-14 shrink-0 px-0">
           <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.4} aria-hidden>
             <path d="M2 10 10 3l8 7M5 8v9h4v-5h2v5h4V8" strokeLinejoin="round" />
           </svg>
-        </Link>
+        </ReturnLink>
       </div>
     </>
   );

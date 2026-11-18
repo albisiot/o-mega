@@ -8,6 +8,7 @@ import { PrizeCard, ZoomHint } from "@/components/card-zoom";
 import { BackLink } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { MissionStars, StarConditions, StarCount } from "@/components/story-stars";
+import { ReturnLink } from "@/components/return-link";
 import { fetchAbilities, seenAbilities, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
 import { DIFFICULTY_LABELS } from "@/lib/match";
@@ -69,9 +70,9 @@ function StoryPageContent() {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm font-semibold text-comic-magenta">{error}</p>
-        <Link href="/gioca" className="flex min-h-11 items-center text-sm font-bold underline">
+        <ReturnLink href="/gioca" className="flex min-h-11 items-center text-sm font-bold underline">
           Torna a Gioca
-        </Link>
+        </ReturnLink>
       </main>
     );
   }
@@ -87,7 +88,7 @@ function StoryPageContent() {
   return (
     <div className="game-shell">
       <header className="flex shrink-0 items-center gap-2.5 px-3 pb-1 pt-2">
-        <BackLink href="/gioca" label="Torna a Gioca" />
+        <BackLink href="/gioca" />
         <h1 className="font-display text-4xl uppercase text-comic-yellow">Storia</h1>
         {/* The season of the chapter on screen: the arrows page across seasons too. */}
         {chapter && (

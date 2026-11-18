@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
 import { ShopView } from "@/components/shop-view";
+import { ReturnLink } from "@/components/return-link";
 import { describeServerError } from "@/lib/errors";
 import {
   fetchPackOdds,
@@ -57,9 +57,9 @@ export default function ShopPage() {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm font-semibold text-comic-magenta">{error ?? statusError}</p>
-        <Link href="/" className="flex min-h-11 items-center text-sm font-bold underline">
+        <ReturnLink href="/" className="flex min-h-11 items-center text-sm font-bold underline">
           Torna alla home
-        </Link>
+        </ReturnLink>
       </main>
     );
   }

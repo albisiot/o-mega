@@ -1,16 +1,15 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useSyncExternalStore } from "react";
+import { navHistory } from "@/lib/nav-history";
+import { placeHref } from "@/lib/pack-return";
 import {
   KEEP_SCROLL_ATTRIBUTE,
   currentPlaceKey,
   doneReturning,
-  forgetOpener,
   isReturning,
-  landed,
   markReturning,
-  noteOpened,
   placeKey,
   rememberScroll,
   savedPlace,
@@ -20,13 +19,28 @@ import {
 const RESTORE_MS = 2500;
 const STEP_MS = 50;
 
+const noSubscription = () => () => {};
+const noRedirect = () => null;
+
 /**
  * Remembers where the player was on each page and takes them back there (see
- * src/lib/place-memory.ts). Mounted once, in the root layout.
+ * src/lib/place-memory.ts). Mounted once, in the root layout: importing it starts the app's
+ * record of the history (src/lib/nav-history.ts) before the router writes its first entry.
  */
 export function PlaceMemory() {
   const pathname = usePathname();
   const search = useSearchParams().toString();
+  const router = useRouter();
+  const history = navHistory();
+  const redirect = useSyncExternalStore(history?.subscribe ?? noSubscription, history?.redirect ?? noRedirect, noRedirect);
+
+  // The history landed on a step with nothing behind it (a team picker whose match started,
+  // opened from a shared link): its parent page takes its place, once the router shows the step
+  // (opening it any earlier, the router's own return to the step would undo it).
+  const shownKey = placeKey(search ? `${pathname}?${search}` : pathname);
+  useEffect(() => {
+    if (redirect !== null && shownKey === history?.current()) router.replace(placeHref(redirect));
+  }, [redirect, shownKey, history, router]);
 
   // Leaving a page by a link: save where it was.
   useEffect(() => {
@@ -34,11 +48,8 @@ export function PlaceMemory() {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const link = (event.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!link || (link.target && link.target !== "_self") || link.origin !== window.location.origin) return;
-      const from = currentPlaceKey();
-      rememberScroll(from);
+      rememberScroll(currentPlaceKey());
       doneReturning();
-      // A back link decides for itself (see ReturnLink).
-      if (!link.hasAttribute("data-return")) noteOpened(from, placeKey(link.href));
     };
     // The browser's back and forward: the page shown is one the player has been on. It must be
     // known before the page renders: the Navigation API tells first where there is one (the
@@ -62,7 +73,6 @@ export function PlaceMemory() {
   // A page coming back: scroll to where it was as soon as its content is tall enough.
   useEffect(() => {
     const key = currentPlaceKey();
-    if (!landed()) forgetOpener(key);
     if (!isReturning(key)) return;
     const place = savedPlace(key);
     const started = performance.now();

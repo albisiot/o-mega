@@ -1,16 +1,19 @@
 import { useId, type ReactNode } from "react";
-import { ReturnLink } from "@/components/return-link";
+import { GoBackLink } from "@/components/return-link";
+import { pageName } from "@/lib/page-names";
 
-/** Shared top bar of the inner pages. `centered`: the title (and subtitle) in the middle, for a page whose content is centred. */
+/**
+ * Shared top bar of the inner pages. `backHref`: the page above this one, where its back link
+ * leads when the player did not come from another page of the app (it names the page it leads
+ * to). `centered`: the title (and subtitle) in the middle, for a page whose content is centred.
+ */
 export function PageHeader({
   backHref,
-  backLabel,
   title,
   subtitle,
   centered = false,
 }: {
   backHref?: string;
-  backLabel?: string;
   title?: string;
   subtitle?: string;
   centered?: boolean;
@@ -18,9 +21,9 @@ export function PageHeader({
   return (
     <header className="flex flex-col gap-1 px-4 pb-3 pt-2">
       {backHref && (
-        <ReturnLink href={backHref} className="flex min-h-11 items-center self-start text-sm font-bold">
-          ← {backLabel}
-        </ReturnLink>
+        <GoBackLink fallback={backHref} className="flex min-h-11 items-center self-start text-sm font-bold">
+          {(target) => `← ${pageName(target)}`}
+        </GoBackLink>
       )}
       {title && <h1 className={`font-display text-4xl uppercase text-comic-yellow ${centered ? "text-center" : ""}`}>{title}</h1>}
       {subtitle && <p className={`text-sm font-semibold text-muted ${centered ? "text-center" : ""}`}>{subtitle}</p>}
@@ -63,14 +66,19 @@ export function TabBar<T extends string>({
   );
 }
 
-/** The arrow back of a screen that fits the phone, at the start of its one-row header. */
-export function BackLink({ href, label }: { href: string; label: string }) {
+/**
+ * The arrow back of a screen that fits the phone, at the start of its one-row header: to the
+ * page the player came from, `href` (the page above) when there is none.
+ */
+export function BackLink({ href }: { href: string }) {
   return (
-    <ReturnLink href={href} label={label} className="btn btn-ghost h-11 w-11 shrink-0 px-0">
-      <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.6} aria-hidden>
-        <path d="M12 3 5 10l7 7M5 10h13" strokeLinejoin="round" />
-      </svg>
-    </ReturnLink>
+    <GoBackLink fallback={href} labelled className="btn btn-ghost h-11 w-11 shrink-0 px-0">
+      {() => (
+        <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.6} aria-hidden>
+          <path d="M12 3 5 10l7 7M5 10h13" strokeLinejoin="round" />
+        </svg>
+      )}
+    </GoBackLink>
   );
 }
 

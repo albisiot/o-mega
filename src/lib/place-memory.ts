@@ -4,6 +4,7 @@
 // - Every in-app link click saves the page being left (see <PlaceMemory />).
 // - A page comes back "returning" after the browser's back/forward or a back link.
 // - Only then are the saved position and state restored: a page opened afresh starts clean.
+// Which page a way back leads to is src/lib/nav-history.ts.
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BASE_PATH } from "@/lib/base-path";
@@ -87,16 +88,9 @@ export function savedPlace(key: string): Place | null {
 
 // The page being returned to, until its place has been restored.
 let returningTo: string | null = null;
-// For each page, the page whose link opened it: a back arrow there can simply go back in the
-// history. Kept across a trip further on and back (privacy → admin page → privacy).
-const openers = new Map<string, string>();
-// Whether the navigation under way is one this module knows about (a link, a back arrow, the
-// browser's back): any other (a button that pushes a page) leaves the history unknown.
-let navigationKnown = false;
 
 export function markReturning(key: string) {
   returningTo = key;
-  navigationKnown = true;
 }
 
 export function isReturning(key: string): boolean {
@@ -105,28 +99,6 @@ export function isReturning(key: string): boolean {
 
 export function doneReturning() {
   returningTo = null;
-}
-
-export function noteOpened(from: string, to: string) {
-  openers.set(to, from);
-  navigationKnown = true;
-}
-
-/** A page reached some other way: what is behind it in the history is unknown. */
-export function forgetOpener(key: string) {
-  openers.delete(key);
-}
-
-/** Called once a navigation has landed: whether it was one of the known kinds. */
-export function landed(): boolean {
-  const known = navigationKnown;
-  navigationKnown = false;
-  return known;
-}
-
-/** The page the current one was opened from, if that was by a link inside the app. */
-export function openedFrom(key = currentPlaceKey()): string | null {
-  return openers.get(key) ?? null;
 }
 
 /**

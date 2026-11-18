@@ -46,7 +46,7 @@ export default function BestiaryPage() {
   return (
     // The page fits the screen (see .game-shell): the title stays, only the threats scroll.
     <div className="game-shell">
-      <PageHeader backHref="/collezione" backLabel="Collezione" title="Bestiario" subtitle={bestiary ? `${seen}/${bestiary.threats.length} Minacce incontrate` : undefined} />
+      <PageHeader backHref="/collezione" title="Bestiario" subtitle={bestiary ? `${seen}/${bestiary.threats.length} Minacce incontrate` : undefined} />
       <main
         data-keep-scroll="main"
         className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden overscroll-contain px-3 pb-[calc(env(safe-area-inset-bottom)+16px)]"

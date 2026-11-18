@@ -306,7 +306,7 @@ export function ChallengeAdmin({
   return (
     <div className="game-shell">
       <header className="flex shrink-0 items-center gap-2.5 px-3 pb-1 pt-2">
-        <BackLink href="/editor" label="Torna all'Editor" />
+        <BackLink href="/editor" />
         <div className="min-w-0">
           <h1 className="font-display text-[32px] uppercase leading-9 text-comic-yellow">Sfide a tema</h1>
           <p className="text-xs font-semibold leading-4 text-muted">Una modalità con vincoli, per un periodo. Ora italiana.</p>

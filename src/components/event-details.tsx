@@ -43,7 +43,7 @@ export function EventShell({ title, children }: { title: string; children: React
   return (
     <div className="game-shell">
       <header className="flex shrink-0 items-center gap-2.5 px-3 pb-1 pt-2">
-        <BackLink href="/" label="Torna alla home" />
+        <BackLink href="/" />
         <h1 className="min-w-0 truncate font-display text-[32px] uppercase leading-10 text-comic-yellow">{title}</h1>
       </header>
       {/* What a very short window cannot fit scrolls inside, rather than being cut. */}

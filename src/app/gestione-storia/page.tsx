@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
 import { StoryAdminView } from "@/components/story-admin";
+import { ReturnLink } from "@/components/return-link";
 import { describeServerError } from "@/lib/errors";
 import { fetchStoryAdmin, type StoryAdmin } from "@/lib/story-admin";
 
@@ -34,9 +34,9 @@ export default function StoryAdminPage() {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm font-semibold text-comic-magenta">{error}</p>
-        <Link href="/editor" className="flex min-h-11 items-center text-sm font-bold underline">
+        <ReturnLink href="/editor" className="flex min-h-11 items-center text-sm font-bold underline">
           Torna all&apos;Editor
-        </Link>
+        </ReturnLink>
       </main>
     );
   }

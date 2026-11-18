@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { CardScreen } from "@/components/card-screen";
+import { goBack, ReturnLink } from "@/components/return-link";
 import { LoadingScreen } from "@/components/loading-screen";
 import { fetchAbilities, seenAbilities, type AbilityInfo } from "@/lib/catalog";
 import {
@@ -15,7 +15,7 @@ import {
   type CatalogCard,
   type OwnedSummary,
 } from "@/lib/collection";
-import { savedAlbumOrder, savedAlbumScroll } from "@/lib/album-scroll";
+import { savedAlbumOrder } from "@/lib/album-scroll";
 import { describeServerError } from "@/lib/errors";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
@@ -80,11 +80,9 @@ function CardPageContent() {
     };
   }, [session, reloadKey]);
 
-  const close = useCallback(() => {
-    // Opened from the album: going back returns to the same place in it.
-    if (savedAlbumScroll() !== null && window.history.length > 1) router.back();
-    else router.push("/collezione");
-  }, [router]);
+  // Back to the page it was opened from (the album, at the same place in it); the album when
+  // there is none (a shared link).
+  const close = useCallback(() => goBack(router, "/collezione"), [router]);
 
   // The address names the card shown, replaced rather than pushed: the phone's back button
   // still returns to the album, not through every card swiped.
@@ -122,9 +120,9 @@ function Message({ text }: { text: string }) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
       <p className="text-sm font-semibold text-comic-magenta">{text}</p>
-      <Link href="/collezione" className="flex min-h-11 items-center text-sm font-bold underline">
+      <ReturnLink href="/collezione" className="flex min-h-11 items-center text-sm font-bold underline">
         Torna alla collezione
-      </Link>
+      </ReturnLink>
     </main>
   );
 }

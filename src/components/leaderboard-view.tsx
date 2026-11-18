@@ -22,7 +22,6 @@ import {
   type LeaderboardEntry,
   type LeaderboardPeriod,
 } from "@/lib/leaderboards";
-import { openedFrom, placePath } from "@/lib/place-memory";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 /** The weekly title of each board (the server gives it; here only to tell the player). */
@@ -60,12 +59,6 @@ export function LeaderboardView({
   const [board, setBoard] = useState(initialBoard);
   const [period, setPeriod] = useState(() => periodFor(initialBoard, initialPeriod));
   const [result, setResult] = useState<{ key: string; data: Leaderboard | null; error: string | null } | null>(null);
-  // Back to where the page was opened from (home, Gioca, profile), the home otherwise. Only
-  // rendered in the browser, once signed in, so the opener is known at the first render.
-  const [backHref] = useState(() => {
-    const from = typeof window === "undefined" ? null : openedFrom();
-    return from ? placePath(from) : "/";
-  });
   const tabs = useRef<HTMLDivElement>(null);
   const key = `${board}:${period}`;
 
@@ -105,7 +98,8 @@ export function LeaderboardView({
   return (
     <div className="game-shell">
       <header className="flex shrink-0 items-center gap-2.5 px-3 pb-1 pt-2">
-        <BackLink href={backHref} label="Indietro" />
+        {/* Back where it was opened from (home, Gioca, profile, a banner), the home otherwise. */}
+        <BackLink href="/" />
         <h1 className="min-w-0 truncate font-display text-[32px] uppercase leading-10 text-comic-yellow">Classifiche</h1>
       </header>
 

@@ -64,7 +64,7 @@ function EmergencyLoader({ kind, challengeId }: { kind: EmergencyKind; challenge
   if (error) {
     return (
       <div className="flex flex-1 flex-col">
-        <PageHeader backHref="/gioca" backLabel="Gioca" title={title} />
+        <PageHeader backHref="/gioca" title={title} />
         <p className="px-3 text-sm font-semibold text-comic-magenta">{error}</p>
       </div>
     );

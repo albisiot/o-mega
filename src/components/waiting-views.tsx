@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ComicBurst, PageHeader } from "@/components/comic-parts";
+import { GoBackLink } from "@/components/return-link";
 import { balance } from "@/config/balance";
 import { WORLD_SEARCH_LINES } from "@/config/world";
 import type { Lobby, MatchFormat, QueueMode } from "@/lib/match";
@@ -14,13 +15,13 @@ const SEARCH_LINE_SECONDS = 4;
 /**
  * The waiting page (/attesa) fits the phone and never scrolls (see .game-shell): its
  * content stays centred, and only a window too short for it scrolls inside, from the top.
+ * Its way back leads to the team picker it was opened from.
  */
 export function WaitingShell({ lobby, ranked, children }: { lobby: boolean; ranked: boolean; children: ReactNode }) {
   return (
     <div className="game-shell">
       <PageHeader
         backHref={ranked ? "/classificata" : "/gioca"}
-        backLabel={ranked ? "Classificata" : "Gioca"}
         title={lobby ? "Sfida un amico" : "Ricerca avversario"}
         centered
       />
@@ -110,14 +111,14 @@ export function QueueWaitView({
       {queueMode === "friendly" && !challenge && waited >= balance.matchmaking.suggestBotAfterSeconds && (
         <div className="flex items-center gap-3 bg-panel px-3 py-2 text-left">
           <p className="text-sm font-semibold leading-5">Nessun avversario disponibile al momento.</p>
-          <Link href="/gioca" className="btn btn-outline shrink-0">
+          <Link href="/gioca" replace className="btn btn-outline shrink-0">
             Contro un bot
           </Link>
         </div>
       )}
-      <Link href={queueMode === "ranked" ? "/classificata" : "/gioca"} className="btn btn-ghost">
-        Annulla
-      </Link>
+      <GoBackLink fallback={queueMode === "ranked" ? "/classificata" : "/gioca"} className="btn btn-ghost">
+        {() => "Annulla"}
+      </GoBackLink>
     </WaitingMain>
   );
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import type { BotDifficulty } from "@o-mega/game-engine";
@@ -8,6 +7,7 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { CardDetailProvider } from "@/components/card-detail";
 import { BackLink } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
+import { ReturnLink } from "@/components/return-link";
 import { SuppliedTeam } from "@/components/challenge-parts";
 import { TeamPicker } from "@/components/team-picker";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
@@ -251,6 +251,9 @@ function TeamPageContent() {
     return withoutStarters(loaded.owned, loaded.variantCopies, loaded.nonStarterBase, loaded.starterIds);
   }, [loaded, challenge]);
 
+  // A match that starts at once takes the place of the team picker in the history: going back
+  // from it never reopens the picker of a match already under way. The waiting page is put on
+  // top of it instead, and steps over it once the match starts (see src/app/attesa).
   async function start(cardInstanceIds: string[]) {
     setStarting(true);
     setError(null);
@@ -271,17 +274,17 @@ function TeamPageContent() {
               ? { mode: "bot", format, difficulty: mode.difficulty, challenge: { id: challenge.id, title: challenge.title } }
               : { mode: "bot", format, difficulty: mode.difficulty },
           );
-          router.push(`/partita/?id=${view.id}`);
+          router.replace(`/partita/?id=${view.id}`);
           break;
         }
         case "story": {
           const view = await startStoryMission(mode.mission, cardInstanceIds);
-          router.push(storyMatchHref(view.id));
+          router.replace(storyMatchHref(view.id));
           break;
         }
         case "join": {
           const view = await joinLobby(mode.code, cardInstanceIds);
-          router.push(`/partita/?id=${view.id}`);
+          router.replace(`/partita/?id=${view.id}`);
           break;
         }
         case "lobby":
@@ -319,10 +322,7 @@ function TeamPageContent() {
   return (
     <div className="game-shell">
       <header className="flex items-center gap-2.5 px-3 py-1">
-        <BackLink
-          href={mode.kind === "story" ? "/storia" : mode.kind === "ranked" ? "/classificata" : "/gioca"}
-          label={`Torna a ${mode.kind === "story" ? "Storia" : mode.kind === "ranked" ? "Classificata" : "Gioca"}`}
-        />
+        <BackLink href={mode.kind === "story" ? "/storia" : mode.kind === "ranked" ? "/classificata" : "/gioca"} />
         <div className="min-w-0">
           <h1 className="font-display text-[22px] uppercase leading-6 text-comic-yellow">
             {format === "triple" || isQuadrantFormat(format) ? "Il tuo mazzo" : "La tua squadra"}
@@ -340,18 +340,18 @@ function TeamPageContent() {
           <p className="text-sm font-semibold text-comic-magenta">
             {error}{" "}
             {error.includes("partita in corso") && (
-              <Link href="/gioca" className="underline">
+              <ReturnLink href="/gioca" onward className="underline">
                 Vai alla partita
-              </Link>
+              </ReturnLink>
             )}
           </p>
         )}
         {challengeGone && (
           <p className="text-sm font-semibold text-comic-magenta">
             Questa Sfida a tema non è più aperta.{" "}
-            <Link href="/gioca" className="underline">
+            <ReturnLink href="/gioca" className="underline">
               Torna a Gioca
-            </Link>
+            </ReturnLink>
           </p>
         )}
         {challenge && !challengeGone && mode.kind === "bot" && hasSuppliedTeam(challenge) ? (

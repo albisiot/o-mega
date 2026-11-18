@@ -63,7 +63,8 @@ describe("returnLabel", () => {
     expect(returnLabel("/partita?id=42")).toBe("Torna alla partita");
   });
 
-  it("falls back to a generic text", () => {
-    expect(returnLabel("/bestiario")).toBe("Torna indietro");
+  it("falls back to a generic text for a page without a name", () => {
+    expect(returnLabel("/bestiario")).toBe("Torna al Bestiario");
+    expect(returnLabel("/prova-tavole")).toBe("Torna indietro");
   });
 });

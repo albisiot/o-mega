@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
@@ -9,6 +8,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { MatchScreen } from "@/components/match-screen";
 import { QuadrantMatchScreen } from "@/components/quadrant-match-screen";
 import { TripleMatchScreen } from "@/components/triple-match-screen";
+import { ReturnLink } from "@/components/return-link";
 import { isBossView } from "@/lib/boss";
 import { describeServerError } from "@/lib/errors";
 import { cachedMatchView, fetchMatchState, type MatchView } from "@/lib/match";
@@ -51,9 +51,9 @@ function MatchPageContent() {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm font-semibold text-comic-magenta">{error ?? "Partita non trovata."}</p>
-        <Link href="/gioca" className="flex min-h-11 items-center text-sm font-bold underline">
+        <ReturnLink href="/gioca" className="flex min-h-11 items-center text-sm font-bold underline">
           Torna a Gioca
-        </Link>
+        </ReturnLink>
       </main>
     );
   }

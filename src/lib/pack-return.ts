@@ -1,5 +1,6 @@
 // Where a pack reveal goes when it ends: back to the page the pack was opened from (the
 // objectives, the shop, a match result…), carried in the reveal's address as `from`.
+import { backLabel } from "@/lib/page-names";
 import { placeKey, placePath } from "@/lib/place-memory";
 
 /** Pages a reveal never returns to: another reveal, the sign-in callback. */
@@ -40,21 +41,7 @@ function splitKey(key: string): [string, string] {
   return at < 0 ? [key, ""] : [key.slice(0, at), key.slice(at)];
 }
 
-const RETURN_LABELS: Record<string, string> = {
-  "/": "Torna alla home",
-  "/negozio": "Torna al negozio",
-  "/obiettivi": "Torna agli obiettivi",
-  "/imprese": "Torna alle imprese",
-  "/evento": "Torna all'evento",
-  "/gioca": "Torna a Gioca",
-  "/partita": "Torna alla partita",
-  "/profilo": "Torna al profilo",
-  "/collezione": "Torna alla collezione",
-  "/classifiche": "Torna alle classifiche",
-  "/storia": "Torna alla storia",
-};
-
 /** The text of the button that leaves the reveal: "Torna agli obiettivi". */
 export function returnLabel(key: string): string {
-  return RETURN_LABELS[placePath(key)] ?? "Torna indietro";
+  return backLabel(key);
 }

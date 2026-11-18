@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { EditorMenu } from "@/components/editor-menu";
 import { LoadingScreen } from "@/components/loading-screen";
+import { ReturnLink } from "@/components/return-link";
 import { useIsAdmin } from "@/lib/use-is-admin";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
@@ -22,9 +22,9 @@ export default function EditorPage() {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm font-semibold text-comic-magenta">Questa pagina è riservata agli amministratori.</p>
-        <Link href="/profilo" className="flex min-h-11 items-center text-sm font-bold underline">
+        <ReturnLink href="/profilo" className="flex min-h-11 items-center text-sm font-bold underline">
           Torna al profilo
-        </Link>
+        </ReturnLink>
       </main>
     );
   }

@@ -44,7 +44,7 @@ export default function HistoryPage() {
   return (
     // The page fits the screen above the bottom bar (see .home-shell): only the list scrolls.
     <div className="home-shell">
-      <PageHeader backHref="/profilo" backLabel="Profilo" title="Storico partite" />
+      <PageHeader backHref="/profilo" title="Storico partite" />
 
       <main data-keep-scroll="main" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain px-3 pb-6">
         {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}

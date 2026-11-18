@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { BackLink } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { ReturnLink } from "@/components/return-link";
 import { fetchChallengeLeaderboard, type ChallengeLeaderboard, type ChallengeLeaderboardEntry } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
 import { formatEventCountdown } from "@/lib/events";
@@ -55,14 +55,14 @@ function Missing({ text }: { text: string }) {
   return (
     <div className="game-shell">
       <header className="flex items-center gap-2.5 px-3 py-1">
-        <BackLink href="/gioca" label="Torna a Gioca" />
+        <BackLink href="/gioca" />
         <h1 className="font-display text-[25px] uppercase leading-7 text-comic-yellow">Classifica</h1>
       </header>
       <p className="px-3 text-sm font-semibold text-comic-magenta">
         {text}{" "}
-        <Link href="/gioca" className="underline">
+        <ReturnLink href="/gioca" className="underline">
           Torna a Gioca
-        </Link>
+        </ReturnLink>
       </p>
     </div>
   );
@@ -77,7 +77,7 @@ function BoardView({ board }: { board: ChallengeLeaderboard }) {
   return (
     <div className="game-shell">
       <header className="flex items-center gap-2.5 px-3 py-1">
-        <BackLink href="/gioca" label="Torna a Gioca" />
+        <BackLink href="/gioca" />
         <div className="min-w-0">
           <h1 className="font-display text-[25px] uppercase leading-7 text-comic-yellow">Classifica</h1>
           <p className="truncate text-[11px] font-bold leading-4">

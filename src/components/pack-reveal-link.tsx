@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, type ReactNode } from "react";
 import { packRevealHref } from "@/lib/packs";
-import { currentPlaceKey, doneReturning, noteOpened, placeKey, rememberScroll } from "@/lib/place-memory";
+import { currentPlaceKey, doneReturning, rememberScroll } from "@/lib/place-memory";
 
 /**
  * Opens the reveal of these openings from the page the player is on. At the end the reveal
@@ -20,8 +20,7 @@ export function useOpenPackReveal(): (ids: string[]) => void {
       const href = packRevealHref(ids, from);
       rememberScroll(from);
       doneReturning();
-      // The reveal knows it was opened from here, so its way out can simply go back.
-      noteOpened(from, placeKey(href));
+      // Its way out goes back here in the history (see ReturnLink).
       router.push(href);
     },
     [router],
@@ -34,7 +33,7 @@ export function PackRevealLink({ ids, className, children }: { ids: string[]; cl
   return (
     <Link
       href={packRevealHref(ids)}
-      // The opener is noted by `open`, with the reveal's real address.
+      // `open` writes the reveal's real address, with this page as its way out.
       data-return=""
       className={className}
       onClick={(event) => {
