@@ -2082,6 +2082,7 @@ export type Database = {
       }
       matches: {
         Row: {
+          challenge_id: string | null
           boss_id: string | null
           boss_values: Json | null
           bot_difficulty: string | null
@@ -2119,6 +2120,7 @@ export type Database = {
           total_score_b: number
         }
         Insert: {
+          challenge_id?: string | null
           boss_id?: string | null
           boss_values?: Json | null
           bot_difficulty?: string | null
@@ -2156,6 +2158,7 @@ export type Database = {
           total_score_b?: number
         }
         Update: {
+          challenge_id?: string | null
           boss_id?: string | null
           boss_values?: Json | null
           bot_difficulty?: string | null
@@ -3795,11 +3798,13 @@ export type Database = {
       admin_delete_special_pack: { Args: { p_id: string }; Returns: Json }
       admin_events_payload: { Args: never; Returns: Json }
       admin_get_boss_table: { Args: never; Returns: Json }
+      admin_delete_challenge: { Args: { p_id: string }; Returns: Json }
       admin_get_story: { Args: never; Returns: Json }
       admin_grant_achievement: {
         Args: { p_id: string; p_username: string }
         Returns: Json
       }
+      admin_list_challenges: { Args: never; Returns: Json }
       admin_list_achievements: { Args: never; Returns: Json }
       admin_list_bonus_codes: { Args: never; Returns: Json }
       admin_list_daily_objectives: { Args: never; Returns: Json }
@@ -3808,8 +3813,30 @@ export type Database = {
       admin_list_special_packs: { Args: never; Returns: Json }
       admin_list_threats: { Args: never; Returns: Json }
       admin_pack_cards_payload: { Args: never; Returns: Json }
+      admin_preview_challenge: {
+        Args: { p_format: string; p_rules: Json }
+        Returns: Json
+      }
       admin_preview_achievement: { Args: { p_draft: Json }; Returns: Json }
       admin_reorder_achievements: { Args: { p_ids: string[] }; Returns: Json }
+      admin_save_challenge: {
+        Args: {
+          p_bot_difficulties: string[]
+          p_bot_follows_rules: boolean
+          p_color: string
+          p_daily_limit?: number
+          p_description: string
+          p_ends_at: string
+          p_event_id?: string
+          p_event_points?: Json
+          p_format: string
+          p_id?: string
+          p_rules: Json
+          p_starts_at: string
+          p_title: string
+        }
+        Returns: Json
+      }
       admin_save_achievement: {
         Args: { p_draft: Json; p_id: string }
         Returns: Json
@@ -3906,6 +3933,10 @@ export type Database = {
       }
       admin_save_story_season: {
         Args: { p_ending: string; p_season: number; p_title: string }
+        Returns: Json
+      }
+      admin_set_challenge_active: {
+        Args: { p_active: boolean; p_id: string }
         Returns: Json
       }
       admin_set_achievement_active: {
@@ -4449,6 +4480,7 @@ export type Database = {
       }
       get_ranked_hall: { Args: never; Returns: Json }
       get_special_packs: { Args: never; Returns: Json }
+      get_challenges: { Args: never; Returns: Json }
       get_story: { Args: never; Returns: Json }
       get_story_reward: { Args: { p_match_id: string }; Returns: Json }
       grant_event_tier: {
