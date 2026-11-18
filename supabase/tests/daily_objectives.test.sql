@@ -286,6 +286,9 @@ begin
   insert into public.emergency_days (day, threat_ids, threat_levels)
   values (public.game_day(), v_threats, array[1, 2, 3, 4, 5, 6, 1, 2])
   on conflict do nothing;
+  -- No Rovescio (SPEC §5.15) on today's threats, live or drawn above: here a
+  -- threat is passed at or over its target.
+  update public.emergency_days set threat_modifiers = '[]' where day = public.game_day();
   insert into public.emergency_runs (user_id, day, card_instance_ids, definition_ids)
   values (v_b, public.game_day(), v_cards, v_definitions);
   perform public.emergency_record_play(v_b, 1, v_cards[1], 10, 0, 10, 7);

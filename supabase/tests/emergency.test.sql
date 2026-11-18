@@ -34,6 +34,7 @@ declare
   v_other uuid[];
   v_state jsonb;
   v_failed boolean;
+  v_score integer;
 begin
   select array_agg(t.id order by l.ord) into v_threats
   from unnest(array[1, 2, 3, 4, 5, 6, 3, 2]) with ordinality as l(level, ord)
@@ -63,6 +64,12 @@ begin
   begin perform public.emergency_ensure_day(v_threats[1:7]);
   exception when others then v_failed := sqlerrm = 'invalid_threats'; end;
   assert v_failed, 'accepted a short sequence';
+
+  -- The day's rules, whatever the catalog draws: only the 5th threat under Rovescio
+  -- (SPEC §5.15), passed at or under its target.
+  update public.emergency_days
+  set threat_modifiers = '[null, null, null, null, {"code": "reverse"}, null, null, null]'
+  where day = public.game_day();
 
   -- Before starting, only the levels are visible.
   v_state := public.emergency_state_payload(v_a);
@@ -137,11 +144,14 @@ begin
   assert (v_state -> 'run' -> 'foreseen_threats' -> 0 ->> 'round')::integer = 5, 'first foreseen round';
 
   -- Three failures end the run; a failure pays nothing and nothing more can be played.
+  -- Under Rovescio a score over the target fails.
   perform public.emergency_record_play(v_a, 4, v_squad_a[4], 1, 0, 1, 23);
-  perform public.emergency_record_play(v_a, 5, v_squad_a[5], 1, 0, 1, 28);
-  assert (select status = 'active' from public.emergency_runs where user_id = v_a), 'ended too early';
+  perform public.emergency_record_play(v_a, 5, v_squad_a[5], 30, 0, 30, 28);
+  assert (select not p.passed from public.emergency_plays p join public.emergency_runs r on r.id = p.run_id
+          where r.user_id = v_a and p.round = 5), 'over the target under Rovescio';
+  assert (select status = 'active' and failed = 2 from public.emergency_runs where user_id = v_a), 'ended too early';
   perform public.emergency_record_play(v_a, 6, v_squad_a[6], 1, 0, 1, 32);
-  assert (select status = 'finished' and passed = 3 and failed = 3 and coins = 10 and total_score = 41 and finished_at is not null
+  assert (select status = 'finished' and passed = 3 and failed = 3 and coins = 10 and total_score = 70 and finished_at is not null
           from public.emergency_runs where user_id = v_a), 'finished run';
   v_failed := false;
   begin perform public.emergency_record_play(v_a, 7, v_squad_a[7], 18, 0, 18, 18);
@@ -150,11 +160,14 @@ begin
   v_state := public.emergency_state_payload(v_a);
   assert jsonb_typeof(v_state -> 'run' -> 'current_threat') = 'null', 'current threat after the end';
 
-  -- A full run pays all three rewards.
+  -- A full run pays all three rewards. Under Rovescio a score under the target passes.
   perform public.emergency_start(v_b, v_squad_b);
   for i in 1..8 loop
-    perform public.emergency_record_play(v_b, i, v_squad_b[i], 40, 0, 40, 7);
+    v_score := case when i = 5 then 5 else 40 end;
+    perform public.emergency_record_play(v_b, i, v_squad_b[i], v_score, 0, v_score, 7);
   end loop;
+  assert (select p.passed from public.emergency_plays p join public.emergency_runs r on r.id = p.run_id
+          where r.user_id = v_b and p.round = 5), 'under the target under Rovescio';
   assert (select status = 'finished' and passed = 8 and coins = 50 from public.emergency_runs where user_id = v_b), 'full run';
   assert (select sum(amount) = 50 from public.coin_ledger where user_id = v_b and reason = 'emergency_reward'), 'full run rewards';
 end $$;
