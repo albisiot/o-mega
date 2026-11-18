@@ -3419,6 +3419,7 @@ export type Database = {
       admin_delete_special_pack: { Args: { p_id: string }; Returns: Json }
       admin_events_payload: { Args: never; Returns: Json }
       admin_get_boss_table: { Args: never; Returns: Json }
+      admin_get_story: { Args: never; Returns: Json }
       admin_grant_achievement: {
         Args: { p_id: string; p_username: string }
         Returns: Json
@@ -3496,6 +3497,27 @@ export type Database = {
           p_starts_at?: string
           p_variant_chance_percent: number
         }
+        Returns: Json
+      }
+      admin_save_story_chapter: {
+        Args: { p_chapter: number; p_intro: string; p_outro: string; p_title: string }
+        Returns: Json
+      }
+      admin_save_story_mission: {
+        Args: {
+          p_code: string
+          p_intro: string
+          p_opponent: string
+          p_reward_coins: number
+          p_star_coins: number
+          p_star_rarities: string[]
+          p_star_traits: string[]
+          p_title: string
+        }
+        Returns: Json
+      }
+      admin_save_story_season: {
+        Args: { p_ending: string; p_season: number; p_title: string }
         Returns: Json
       }
       admin_set_achievement_active: {
