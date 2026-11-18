@@ -74,6 +74,13 @@ export const ADMIN_TOOLS: AdminTool[] = [
     icon: "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5M8 14h3v3H8z",
   },
   {
+    href: "/gestione-sfide",
+    name: "Sfide a tema",
+    description: "Modalità con vincoli, per un periodo",
+    group: "events",
+    icon: "M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z",
+  },
+  {
     href: "/gestione-obiettivi",
     name: "Obiettivi del giorno",
     description: "Missioni giornaliere",
