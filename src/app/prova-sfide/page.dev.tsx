@@ -7,7 +7,8 @@
 //   /prova-sfide/?s=gioca     Gioca with a challenge on Classica and one on Allarme Triplo (tap a mode)
 //   /prova-sfide/?s=poche     the same, with too few characters for the Classica one
 //   /prova-sfide/?s=squadra   the team screen of the Classica challenge
-//   /prova-sfide/?s=editor    the admin page, new challenge (tap the steps); &t=elenco for the list
+//   /prova-sfide/?s=editor    the admin page, new challenge (tap the steps); the list in its second tab
+//   /prova-sfide/?s=attesa    the online queue of a challenge, after the wait (its bots offered)
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -15,6 +16,7 @@ import { CardDetailProvider } from "@/components/card-detail";
 import { ChallengeAdmin } from "@/components/challenge-admin";
 import { PlayMenuView } from "@/components/play-menu";
 import { TeamPicker } from "@/components/team-picker";
+import { QueueWaitView, WaitingShell } from "@/components/waiting-views";
 import type { AdminChallenge, AdminChallenges, ChallengePreview } from "@/lib/challenge-admin";
 import type { Challenge, ChallengeRulesJson } from "@/lib/challenges";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
@@ -53,7 +55,36 @@ function challenge(patch: Partial<Challenge>): Challenge {
     my_characters_with_variant: 3,
     event: EVENT,
     event_points: { win: 20, draw: 10, loss: 5 },
+    online: true,
+    min_level: null,
+    my_level: 7,
+    my_wins: 2,
+    banned_names: [],
+    only_names: [],
+    variant_style_names: [],
+    tiers: [
+      tier(1, 1, { coins: 50 }, true),
+      tier(2, 5, { packs: 1 }, false),
+      tier(3, 10, { random: 2 }, false),
+    ],
     ...patch,
+  };
+}
+
+function tier(index: number, wins: number, reward: { coins?: number; packs?: number; random?: number }, reached: boolean) {
+  return {
+    tier: index,
+    wins,
+    coins: reward.coins ?? 0,
+    packs: reward.packs ?? 0,
+    cards: [],
+    card_codes: [],
+    random_variants: reward.random ? { count: reward.random, styles: [], rarities: [] } : null,
+    random_variants_info: reward.random ? { count: reward.random, styles: [], rarities: [] } : null,
+    reached,
+    reached_by: reached ? 61 : 0,
+    opening_ids: reached ? ["o1"] : [],
+    seen: false,
   };
 }
 
@@ -63,6 +94,9 @@ const TRIPLE = challenge({
   description: "",
   color: "#16c8ff",
   format: "triple",
+  online: false,
+  tiers: [],
+  my_wins: 0,
   bot_difficulties: ["easy", "medium", "hard", "super_pro"],
   rules: { rarities: [], factions: ["villains"], traits: [], min_variants: 0, all_variants: false },
   admitted: [{ category: "Fazione", traits: ["Cattivi"] }],
@@ -74,6 +108,24 @@ const TRIPLE = challenge({
   my_characters_with_variant: 6,
   event: null,
   event_points: null,
+});
+
+const BOSS = challenge({
+  id: "c4",
+  title: "Minaccia senza starter",
+  description: "",
+  color: "#ff8a00",
+  format: "boss",
+  bot_difficulties: ["medium", "hard"],
+  online: true,
+  rules: { rarities: [], factions: [], traits: [], min_variants: 0, all_variants: false, no_starters: true, banned: ["P001"] },
+  admitted: [],
+  banned_names: ["Atlas"],
+  min_level: 5,
+  daily_limit: null,
+  event: null,
+  event_points: null,
+  tiers: [],
 });
 
 function GiocaScene({ few }: { few: boolean }) {
@@ -94,7 +146,7 @@ function GiocaScene({ few }: { few: boolean }) {
           <span className="block truncate text-[12px] font-extrabold leading-4">160/250 punti · 4g 4h</span>
         </span>
       }
-      challenges={[classic, TRIPLE]}
+      challenges={[classic, TRIPLE, BOSS]}
       now={NOW}
       onForfeit={() => {}}
     />
@@ -192,6 +244,18 @@ function adminData(): AdminChallenges {
       })),
     ],
     events: [EVENT],
+    cards: [
+      { code: "P001", name: "Atlas", rarity: "Delta", variants: [] },
+      { code: "P034", name: "Lullaby", rarity: "Gamma", variants: [{ style: "neon", name: "Neon" }] },
+      { code: "P054", name: "Vera Kross", rarity: "Beta", variants: [{ style: "oro", name: "Oro" }] },
+      { code: "P180", name: "Groma", rarity: "Alfa", variants: [{ style: "tarocco", name: "Tarocco" }] },
+    ],
+    variant_styles: [
+      { style: "neon", name: "Neon", characters: 24 },
+      { style: "oro", name: "Oro", characters: 9 },
+      { style: "tarocco", name: "Tarocco", characters: 13 },
+    ],
+    seal_target: { min: 5, max: 60, suggested: 12 },
   };
 }
 
@@ -217,6 +281,26 @@ function Scenes() {
   const scene = params.get("s") ?? "gioca";
   const [data, setData] = useState(adminData);
   if (scene === "squadra") return <SquadScene />;
+  if (scene === "attesa") {
+    return (
+      <WaitingShell lobby={false} ranked={false}>
+        <QueueWaitView
+          queueMode="friendly"
+          format="classic"
+          waited={52}
+          error={null}
+          challenge={{
+            title: "La notte dei Figli",
+            color: "#ff7ad9",
+            bots: [
+              { label: "Facile", href: "#" },
+              { label: "Medio", href: "#" },
+            ],
+          }}
+        />
+      </WaitingShell>
+    );
+  }
   if (scene === "editor") return <ChallengeAdmin data={data} onChange={setData} preview={fakePreview} />;
   return <GiocaScene few={scene === "poche"} />;
 }
