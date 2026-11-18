@@ -10,11 +10,15 @@
 //   /prova-sfide/?s=editor    the admin page, new challenge (tap the steps); the list in its second tab
 //   /prova-sfide/?s=attesa    the online queue of a challenge, after the wait (its bots offered)
 //   /prova-sfide/?s=menu      the EDITOR menu, with every admin tool (the real page needs an admin)
+//   /prova-sfide/?s=fornita   the team screen of a challenge that gives its squad (third stage)
+//   Gioca also shows an Emergenza a tema beside the week's, and the Classica challenge has a
+//   composition, match rules and its leaderboard (the trophy).
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { CardDetailProvider } from "@/components/card-detail";
 import { ChallengeAdmin } from "@/components/challenge-admin";
+import { SuppliedTeam } from "@/components/challenge-parts";
 import { EditorMenu } from "@/components/editor-menu";
 import { PlayMenuView } from "@/components/play-menu";
 import { TeamPicker } from "@/components/team-picker";
@@ -23,13 +27,22 @@ import type { AdminChallenge, AdminChallenges, ChallengePreview } from "@/lib/ch
 import type { Challenge, ChallengeRulesJson } from "@/lib/challenges";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
 import { fetchTraitIndex } from "@/lib/catalog";
-import type { VariantCopy } from "@/lib/match";
+import type { MatchCard, VariantCopy } from "@/lib/match";
 import { getSupabase } from "@/lib/supabase/client";
 
 const NOW = Date.parse("2026-11-20T18:00:00Z");
 const hours = (n: number) => new Date(NOW + n * 3_600_000).toISOString();
 
-const FIGLI: ChallengeRulesJson = { rarities: ["delta", "gamma", "beta"], factions: [], traits: ["group.figli"], min_variants: 1, all_variants: false };
+const FIGLI: ChallengeRulesJson = {
+  rarities: ["delta", "gamma", "beta"],
+  factions: [],
+  traits: ["group.figli"],
+  min_variants: 1,
+  all_variants: false,
+  rarity_budget: 10,
+  rarity_max: { beta: 1 },
+  min_factions: 2,
+};
 
 const EVENT = { id: "e1", title: "Settimana dei Figli", starts_at: hours(-30), ends_at: hours(100) };
 
@@ -69,9 +82,33 @@ function challenge(patch: Partial<Challenge>): Challenge {
       tier(2, 5, { packs: 1 }, false),
       tier(3, 10, { random: 2 }, false),
     ],
+    rarity_max_info: [{ code: "beta", name: "Beta", max: 1 }],
+    match_rules: { modifier: "focus", place: "giza", levels: [], rare_multiplier: 5 },
+    leaderboard: true,
     ...patch,
   };
 }
+
+const EMERGENCY = challenge({
+  id: "c5",
+  title: "Notte rossa",
+  description: "Dieci Minacce, solo Eroi: una corsa sola.",
+  color: "#ff9b8a",
+  format: "emergency",
+  bot_difficulties: [],
+  online: false,
+  rules: { rarities: [], factions: ["heroes"], traits: [], min_variants: 0, all_variants: false },
+  admitted: [{ category: "Fazione", traits: ["Eroi"] }],
+  rarity_max_info: [],
+  match_rules: {},
+  team_size: 10,
+  emergency_threats: 10,
+  my_run: { status: "active", passed: 3, failed: 1, total_score: 61, current_round: 5 },
+  daily_limit: null,
+  event: null,
+  event_points: null,
+  tiers: [tier(1, 5, { coins: 100 }, false)],
+});
 
 function tier(index: number, wins: number, reward: { coins?: number; packs?: number; random?: number }, reached: boolean) {
   return {
@@ -148,7 +185,7 @@ function GiocaScene({ few }: { few: boolean }) {
           <span className="block truncate text-[12px] font-extrabold leading-4">160/250 punti · 4g 4h</span>
         </span>
       }
-      challenges={[classic, TRIPLE, BOSS]}
+      challenges={[classic, TRIPLE, BOSS, EMERGENCY]}
       now={NOW}
       onForfeit={() => {}}
     />
@@ -217,6 +254,56 @@ function SquadScene() {
   );
 }
 
+/** The challenge's own squad: five characters of the catalog, drawn as matches draw them. */
+function SuppliedScene() {
+  const [team, setTeam] = useState<MatchCard[] | null>(null);
+  useEffect(() => {
+    fetchCatalog()
+      .then((catalog) =>
+        setTeam(
+          catalog
+            .filter((card) => card.unlockLevel === null)
+            .slice(10, 15)
+            .map((card) => ({
+              definition_id: card.id,
+              code: card.code,
+              name: card.name,
+              faction: card.faction,
+              flavor: card.flavor,
+              art_url: card.art_url ?? null,
+              stats: card.stats,
+              rarity: card.rarity,
+              power: null,
+            })),
+        ),
+      )
+      .catch((cause: unknown) => console.error(cause));
+  }, []);
+  if (!team) return <p className="p-4 text-sm">Caricamento del catalogo…</p>;
+  return (
+    <div className="game-shell">
+      <header className="flex items-center gap-2.5 px-3 py-1">
+        <div className="min-w-0">
+          <h1 className="font-display text-[22px] uppercase leading-6 text-comic-yellow">La tua squadra</h1>
+          <p className="truncate text-[11px] font-bold text-muted">
+            <span style={{ color: "#16c8ff" }}>★ Tutti uguali · </span>Classica · Contro il bot Difficile
+          </p>
+        </div>
+      </header>
+      <main className="flex min-h-0 flex-1 flex-col px-3 pt-1.5">
+        <CardDetailProvider>
+          <SuppliedTeam
+            challenge={challenge({ id: "c6", title: "Tutti uguali", color: "#16c8ff", supplied_team: team, rules: { rarities: [], factions: [], traits: [], min_variants: 0, all_variants: false } })}
+            startLabel="Sfida il bot Difficile"
+            starting={false}
+            onStart={() => {}}
+          />
+        </CardDetailProvider>
+      </main>
+    </div>
+  );
+}
+
 function adminData(): AdminChallenges {
   const stats = (patch: Partial<AdminChallenge>, base: Challenge): AdminChallenge => ({
     ...base,
@@ -262,10 +349,10 @@ function adminData(): AdminChallenges {
 }
 
 /** A made-up count: about 4 characters in 10 pass each rule chosen. */
-async function fakePreview(format: string, rules: ChallengeRulesJson): Promise<ChallengePreview> {
+async function fakePreview(format: string, rules: ChallengeRulesJson, emergencyThreats?: number): Promise<ChallengePreview> {
   const parts = [rules.rarities, rules.factions, rules.traits].filter((list) => list.length > 0).length;
   const admitted = Math.round(227 * 0.4 ** parts);
-  const size = format === "triple" ? 9 : 5;
+  const size = format === "emergency" ? (emergencyThreats ?? 10) : format === "triple" ? 9 : 5;
   const needed = rules.all_variants ? size : Math.min(rules.min_variants, size);
   return {
     rules,
@@ -275,6 +362,8 @@ async function fakePreview(format: string, rules: ChallengeRulesJson): Promise<C
     admitted_with_variant: Math.round(admitted * 0.9),
     players_ready: Math.round(1940 * Math.min(1, admitted / 60) * (needed > 0 ? 0.7 : 1)),
     players_total: 1940,
+    composition_possible: rules.rarity_budget == null || rules.rarity_budget >= size,
+    cheapest_budget: size,
   };
 }
 
@@ -284,6 +373,7 @@ function Scenes() {
   const [data, setData] = useState(adminData);
   if (scene === "squadra") return <SquadScene />;
   if (scene === "menu") return <EditorMenu />;
+  if (scene === "fornita") return <SuppliedScene />;
   if (scene === "attesa") {
     return (
       <WaitingShell lobby={false} ranked={false}>
