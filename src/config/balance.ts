@@ -475,6 +475,13 @@ export const balance = {
     descriptionMaxLength: 140,
     /** A rule admitting fewer characters warns the admin: few players can field a squad (client only). */
     warnBelow: 15,
+    /** Prize targets of wins a challenge can have, and the most wins one can ask. */
+    maxTiers: 3,
+    maxTierWins: 100,
+    /** Highest minimum player level a challenge can ask. */
+    maxMinLevel: 100,
+    /** Seconds in a challenge's online queue before the waiting page offers its bot (client only). */
+    onlineBotAfterSeconds: 45,
   },
 
   /**
