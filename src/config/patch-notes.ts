@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "19 novembre 2026",
+    changes: [
+      "L'apertura dell'app è nuova. L'Ω del pacchetto esplode, le lettere di O-MEGA arrivano una dopo l'altra come timbri e all'ultima lo schermo trema: SBAM! Sotto il titolo, ogni volta che apri l'app, una riga diversa da Nuova Megara, con quattro righe nuove. L'app si apre sempre appena è pronta: l'animazione non allunga l'attesa.",
+    ],
+  },
+  {
     date: "18 novembre 2026",
     changes: [
       "Tornare indietro ora porta sempre alla pagina da cui arrivi. La freccia in alto, «Annulla», il tasto indietro e lo scorrimento dal bordo dello schermo non ti mandano più in pagine sbagliate: per esempio il Bestiario aperto dal Profilo torna al Profilo e non alla Collezione, e la freccia dice dove porta. Quando una partita è iniziata, tornando indietro non riapri la scelta della squadra e non rientri in coda, e un pacchetto già aperto non ricomincia. Se apri l'app da un link condiviso, la freccia porta alla pagina principale di quella sezione.",
