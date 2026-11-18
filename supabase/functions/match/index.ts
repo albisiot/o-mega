@@ -109,6 +109,9 @@ const CLIENT_ERRORS = new Set([
   "challenge_daily_limit",
   "challenge_card_not_admitted",
   "challenge_variants_required",
+  "challenge_online_not_allowed",
+  "challenge_level_too_low",
+  "challenge_starter_not_allowed",
 ]);
 
 class GameError extends Error {}
@@ -919,7 +922,7 @@ async function startChallengeBotMatch(
   challengeId: unknown,
   difficulty: BotDifficulty,
   cards: string[],
-  format: "classic" | "triple",
+  format: "classic" | "boss" | "triple" | "quadrant" | "quadrant_shifting",
 ) {
   if (typeof challengeId !== "string") throw new GameError("invalid_request");
   const context = check(
@@ -929,27 +932,53 @@ async function startChallengeBotMatch(
   if (context.format !== format) throw new GameError("challenge_format_unsupported");
 
   const loaded = await load();
-  const size = format === "triple" ? loaded.triple.rounds * loaded.triple.threats : loaded.rules.teamSize;
+  const size = teamSizeOf(loaded, format);
   const admitted = context.admitted_definition_ids ? new Set(context.admitted_definition_ids) : null;
   const pool = admitted ? loaded.catalog.characters.filter((character) => admitted.has(character.definitionId)) : null;
   // The rules always admit a squad; should the bots' catalog hold fewer, the bot takes the whole catalog.
   const characters = pool && pool.length >= size ? pool : loaded.catalog.characters;
+  // Classica draws its threats here; the Grande Minaccia its points table; the other modes in the database.
   const plan =
     format === "classic"
       ? planBotMatch({ rules: loaded.rules, catalog: { ...loaded.catalog, characters }, difficulty, rng })
       : { threats: null, botTeam: buildBotTeam(difficulty, characters, size, rng) };
-
-  const matchId = check(
-    await admin.rpc("challenge_create_bot_match", {
+  const create = (current: Loaded) =>
+    admin.rpc("challenge_create_bot_match", {
       p_user: userId,
       p_challenge_id: challengeId,
       p_difficulty: difficulty,
       p_card_instance_ids: cards,
       p_bot_definition_ids: plan.botTeam.map((c) => c.definitionId),
       p_threat_ids: plan.threats ? plan.threats.map((t) => t.id) : null,
-    }),
-  ) as string;
+      p_boss_values: format === "boss" ? drawBossValues(rng, current.boss) : null,
+    });
+  const matchId = check(format === "boss" ? await withBossTable(create) : await create(loaded)) as string;
+  if (isQuadrantFormat(format)) {
+    // The bot may open: its first card goes down straight away.
+    const { loaded: again, quadrant: state } = await loadMatch(userId, matchId);
+    return playQuadrantBotTurns(matchId, state!, again.catalog, difficulty, await stateFor(matchId, "a"));
+  }
   return stateFor(matchId, "a");
+}
+
+/**
+ * A Sfida a tema online (SPEC §8.8): its own queue, any two players of the challenge. The
+ * database knows the challenge's mode: both plans are sent, it uses the right one.
+ */
+async function joinChallengeQueue(userId: string, body: Record<string, unknown>) {
+  if (typeof body.challenge_id !== "string") throw new GameError("invalid_request");
+  const cards = cardIds(body.card_instance_ids);
+  const { data, error } = await withBossTable((loaded) =>
+    admin.rpc("challenge_queue_join", {
+      p_user: userId,
+      p_challenge_id: body.challenge_id,
+      p_team: cards,
+      p_threat_ids: planThreats(loaded),
+      p_boss_values: drawBossValues(rng, loaded.boss),
+    }),
+  );
+  if (error) throw new Error(error.message);
+  return { matched: Boolean(data), match_id: data ?? null };
 }
 
 // ---------------------------------------------------------------------------
@@ -976,6 +1005,7 @@ async function startBossBotMatch(userId: string, body: Record<string, unknown>) 
   const difficulty = body.difficulty as BotDifficulty;
   if (!DIFFICULTIES.includes(difficulty)) throw new GameError("invalid_difficulty");
   const cards = cardIds(body.card_instance_ids);
+  if (body.challenge_id !== undefined) return startChallengeBotMatch(userId, body.challenge_id, difficulty, cards, "boss");
 
   const matchId = check(
     await withBossTable(({ rules, boss, catalog }) =>
@@ -1087,6 +1117,7 @@ async function startQuadrantBotMatch(userId: string, body: Record<string, unknow
   if (!DIFFICULTIES.includes(difficulty)) throw new GameError("invalid_difficulty");
   if (!isQuadrantFormat(body.format)) throw new GameError("invalid_request");
   const cards = cardIds(body.card_instance_ids);
+  if (body.challenge_id !== undefined) return startChallengeBotMatch(userId, body.challenge_id, difficulty, cards, body.format);
   const { quadrant, catalog } = await load();
   const matchId = check(
     await admin.rpc("match_create_quadrant_bot", {
@@ -1196,6 +1227,7 @@ function teamSizeOf(loaded: Loaded, format: unknown): number {
 }
 
 async function joinQueue(userId: string, body: Record<string, unknown>) {
+  if (body.challenge_id !== undefined) return joinChallengeQueue(userId, body);
   const cards = cardIds(body.card_instance_ids);
   const mode = body.mode === "conquest" ? "conquest" : body.mode === "ranked" ? "ranked" : "friendly";
   // Classificata (SPEC §8.7): the player's Fama and team, to plan the server's opponent.
