@@ -8,14 +8,13 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { LobbyMissingView, LobbyWaitView, QueueWaitView, WaitingMain, WaitingShell } from "@/components/waiting-views";
 import { balance } from "@/config/balance";
 import { BASE_PATH } from "@/lib/base-path";
-import { challengeHref, fetchChallenges, seenChallenges, type Challenge } from "@/lib/challenges";
+import { fetchChallenges, seenChallenges, type Challenge } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
 import {
   asMatchFormat,
   cancelLobby,
   fetchActiveMatch,
   fetchMyLobby,
-  DIFFICULTY_LABELS,
   joinQueue,
   leaveQueue,
   readPendingTeam,
@@ -112,7 +111,7 @@ function QueueWait({
 }) {
   const router = useRouter();
   const [team] = useState(readPendingTeam);
-  // A Sfida a tema: its name, and its bots to offer after a while.
+  // A Sfida a tema: its name. Nobody free: the server finds the opponent, as in the Classificata.
   const [challenge, setChallenge] = useState<Challenge | null>(
     () => seenChallenges()?.challenges.find((item) => item.id === challengeId) ?? null,
   );
@@ -212,18 +211,7 @@ function QueueWait({
       format={format}
       waited={waited}
       error={error}
-      challenge={
-        challengeId && challenge
-          ? {
-              title: challenge.title,
-              color: challenge.color,
-              bots: challenge.bot_difficulties.map((difficulty) => ({
-                label: DIFFICULTY_LABELS[difficulty],
-                href: challengeHref(challenge, difficulty),
-              })),
-            }
-          : null
-      }
+      challenge={challengeId && challenge ? { title: challenge.title, color: challenge.color } : null}
     />
   );
 }

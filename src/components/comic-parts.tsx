@@ -1,17 +1,19 @@
 import { useId, type ReactNode } from "react";
 import { ReturnLink } from "@/components/return-link";
 
-/** Shared top bar of the inner pages. */
+/** Shared top bar of the inner pages. `centered`: the title (and subtitle) in the middle, for a page whose content is centred. */
 export function PageHeader({
   backHref,
   backLabel,
   title,
   subtitle,
+  centered = false,
 }: {
   backHref?: string;
   backLabel?: string;
   title?: string;
   subtitle?: string;
+  centered?: boolean;
 }) {
   return (
     <header className="flex flex-col gap-1 px-4 pb-3 pt-2">
@@ -20,8 +22,8 @@ export function PageHeader({
           ← {backLabel}
         </ReturnLink>
       )}
-      {title && <h1 className="font-display text-4xl uppercase text-comic-yellow">{title}</h1>}
-      {subtitle && <p className="text-sm font-semibold text-muted">{subtitle}</p>}
+      {title && <h1 className={`font-display text-4xl uppercase text-comic-yellow ${centered ? "text-center" : ""}`}>{title}</h1>}
+      {subtitle && <p className={`text-sm font-semibold text-muted ${centered ? "text-center" : ""}`}>{subtitle}</p>}
     </header>
   );
 }

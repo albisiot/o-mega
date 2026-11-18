@@ -480,8 +480,13 @@ export const balance = {
     maxTierWins: 100,
     /** Highest minimum player level a challenge can ask. */
     maxMinLevel: 100,
-    /** Seconds in a challenge's online queue before the waiting page offers its bot (client only). */
-    onlineBotAfterSeconds: 45,
+    /**
+     * Seconds in a challenge's online queue before the server's opponent comes, drawn in this
+     * window for each wait: it plays with the challenge's rules and looks like a person, as in
+     * the Classificata (SPEC §8.7).
+     */
+    ghostMinSeconds: 20,
+    ghostMaxSeconds: 30,
     /** Highest rarity budget of a squad (the ranks Delta 1 … Omega 5 added up). */
     maxRarityBudget: 50,
     /** Most times as often a challenge can make rare threats turn up. */

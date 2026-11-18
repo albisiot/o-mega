@@ -741,7 +741,9 @@ function ChallengeForm({
             </Toggle>
             <p className="text-xs font-medium leading-4 text-muted">
               Online la sfida ha una coda sua: si incontrano solo i giocatori della sfida, ed entrambe le squadre rispettano le
-              regole. Dopo {limits.onlineBotAfterSeconds} secondi senza avversari la pagina d&apos;attesa propone i bot della sfida.
+              regole. Se nessuno arriva entro {limits.ghostMinSeconds}-{limits.ghostMaxSeconds} secondi, l&apos;avversario lo trova il
+              server, come in Classificata: un bot dei livelli della sfida (Facile, Medio o Difficile se non ne ha), con le sue
+              regole, che si presenta come un giocatore.
             </p>
               </>
             )}

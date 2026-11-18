@@ -8,7 +8,7 @@
 //   /prova-sfide/?s=poche     the same, with too few characters for the Classica one
 //   /prova-sfide/?s=squadra   the team screen of the Classica challenge
 //   /prova-sfide/?s=editor    the admin page, new challenge (tap the steps); the list in its second tab
-//   /prova-sfide/?s=attesa    the online queue of a challenge, after the wait (its bots offered)
+//   /prova-sfide/?s=attesa    the online queue of a challenge, after a while (the server finds the opponent)
 //   /prova-sfide/?s=menu      the EDITOR menu, with every admin tool (the real page needs an admin)
 //   /prova-sfide/?s=fornita   the team screen of a challenge that gives its squad (third stage)
 //   Gioca also shows an Emergenza a tema beside the week's, and the Classica challenge has a
@@ -382,14 +382,7 @@ function Scenes() {
           format="classic"
           waited={52}
           error={null}
-          challenge={{
-            title: "La notte dei Figli",
-            color: "#ff7ad9",
-            bots: [
-              { label: "Facile", href: "#" },
-              { label: "Medio", href: "#" },
-            ],
-          }}
+          challenge={{ title: "La notte dei Figli", color: "#ff7ad9" }}
         />
       </WaitingShell>
     );
