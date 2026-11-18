@@ -137,6 +137,27 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   missing_target: "Una Minaccia rara ha bisogno della soglia per l'Emergenza.",
   invalid_chance: "La probabilità deve essere un numero intero da 0 (mai) a 10.000.000.",
   too_few_threats: "Ogni livello deve tenere almeno 8 Minacce normali di Nuova Megara attive.",
+  // Sfide a tema (SPEC §8.8)
+  challenge_not_found: "Questa Sfida a tema non esiste più: torna in Gioca.",
+  challenge_closed: "Questa Sfida a tema non è aperta in questo momento.",
+  challenge_format_unsupported: "Questa Sfida a tema si gioca in un'altra modalità: aprila da Gioca.",
+  challenge_bot_not_allowed: "In questa Sfida a tema non c'è questo bot: scegline un altro.",
+  challenge_daily_limit: "Hai già giocato tutte le partite di oggi di questa sfida: torna dopo mezzanotte.",
+  challenge_card_not_admitted: "Una carta della squadra non è ammessa dalla sfida: guarda le regole in alto.",
+  challenge_variants_required: "Mancano varianti in squadra: tocca una carta con la stella e scegline il disegno.",
+  challenge_ended: "La sfida è finita: non si può più cambiare.",
+  challenge_in_use: "Qualcuno ha già giocato questa sfida: disattivala invece di eliminarla.",
+  challenge_invalid_text: "Il titolo deve avere da 3 a 40 caratteri e la descrizione al massimo 140.",
+  challenge_invalid_color: "Scegli uno dei colori.",
+  challenge_invalid_format: "Per ora le sfide si giocano in Classica o ad Allarme Triplo.",
+  challenge_invalid_bots: "Scegli almeno un bot.",
+  challenge_invalid_rules: "Controlla i vincoli: rarità, fazioni e tratti devono esistere, le varianti vanno da 0 alla squadra.",
+  challenge_too_few_characters: "Con questi vincoli non c'è abbastanza per una squadra: allarga le regole.",
+  challenge_invalid_period: "La sfida deve finire dopo l'inizio, nel futuro, e durare al massimo 90 giorni.",
+  challenge_invalid_daily_limit: "Le partite al giorno vanno da 1 a 20.",
+  challenge_invalid_event: "La sfida deve stare dentro le date di un evento attivo.",
+  challenge_invalid_points: "I punti evento vanno da 0 a 1000 per vittoria, pareggio e sconfitta.",
+  challenge_overlap: "In queste date c'è già una sfida nella stessa modalità.",
 };
 
 export function describeServerError(error: unknown): string {

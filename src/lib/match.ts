@@ -74,9 +74,20 @@ export type MatchRound = {
 };
 
 /** What the server lets the player see (SPEC §10.2). */
+/** The Sfida a tema a match was played in (SPEC §8.8): its name, color and the matches of the day. */
+export type MatchChallengeInfo = {
+  id: string;
+  title: string;
+  color: string;
+  daily_limit: number | null;
+  plays_today: number;
+};
+
 export type MatchView = {
   id: string;
   mode: MatchMode;
+  /** A Sfida a tema only. */
+  challenge?: MatchChallengeInfo | null;
   /** Classificata only: both Fama and what the match moved (SPEC §8.7). */
   ranked?: RankedMatchInfo | null;
   /**
@@ -174,8 +185,9 @@ async function invokeMatch(body: Record<string, unknown>): Promise<MatchView> {
   return remember(await invokeFunction<MatchView>(body));
 }
 
-export function startBotMatch(difficulty: BotDifficulty, cardInstanceIds: string[]): Promise<MatchView> {
-  return invokeMatch({ action: "start", difficulty, card_instance_ids: cardInstanceIds });
+/** A Sfida a tema passes its id: the server checks the squad against its rules (SPEC §8.8). */
+export function startBotMatch(difficulty: BotDifficulty, cardInstanceIds: string[], challengeId?: string): Promise<MatchView> {
+  return invokeMatch({ action: "start", difficulty, card_instance_ids: cardInstanceIds, challenge_id: challengeId });
 }
 
 /** null: the timer expired, the server plays a random character. */
@@ -386,6 +398,8 @@ export type MatchHistoryEntry = {
   mode: MatchMode;
   /** Classificata: the Fama the match moved for the player. */
   ranked?: { delta: number | null } | null;
+  /** A Sfida a tema (SPEC §8.8): its name and color. */
+  challenge?: { title: string; color: string } | null;
   bot_difficulty: BotDifficulty | null;
   finished_at: string;
   end_reason: "completed" | "forfeit";

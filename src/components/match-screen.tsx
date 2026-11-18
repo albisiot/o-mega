@@ -50,6 +50,7 @@ import {
 } from "@/lib/match";
 import { RewardChips, hasReward, useMatchReward } from "@/components/match-reward";
 import { RankedResultChips, useRankedNudge } from "@/components/ranked-parts";
+import { ChallengeResultChip } from "@/components/challenge-parts";
 import { useOpponentTitle } from "@/lib/achievements";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import {
@@ -1264,6 +1265,7 @@ function MatchResult({
   );
   const gains = (
     <>
+      <ChallengeResultChip challenge={view.challenge} chip={chip} />
       <RankedResultChips ranked={view.ranked} chip={chip} />
       <RewardChips reward={reward} chip={chip} />
       {eventPoints && (

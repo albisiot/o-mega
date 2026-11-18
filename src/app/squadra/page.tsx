@@ -14,6 +14,7 @@ import { startBossBotMatch } from "@/lib/boss";
 import { balance } from "@/config/balance";
 import { isQuadrantFormat, QUADRANT_GRID_LABELS, startQuadrantBotMatch } from "@/lib/quadrant";
 import { startTripleBotMatch } from "@/lib/triple";
+import { fetchChallenges, seenChallenges, type Challenge } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
 import { rememberLastPlay } from "@/lib/last-play";
 import { fetchStory, seenStory, startStoryMission, storyMatchHref, type StoryMission } from "@/lib/story";
@@ -44,6 +45,7 @@ const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
 // /squadra/?mode=lobby                          (create a friend code)
 // /squadra/?mode=join&code=ABC234               (join a friend)
 // /squadra/?story=C1M1                          (a story mission)
+// /squadra/?sfida=<id>&difficulty=medium        (a Sfida a tema against a bot; &format=triple for its mode)
 // &format=boss with difficulty, queue or lobby  (a Grande Minaccia)
 // &format=triple with difficulty, queue or lobby (an Allarme Triplo)
 // &format=quadrant|quadrant_shifting with difficulty, queue or lobby (a Quadrante)
@@ -140,6 +142,12 @@ function TeamPageContent() {
   const router = useRouter();
   const params = useSearchParams();
   const mode = readMode(params);
+  // A Sfida a tema (SPEC §8.8): only against a bot, in its own mode.
+  const challengeId = mode.kind === "bot" ? params.get("sfida") : null;
+  const findChallenge = (list: { challenges: Challenge[] } | null) =>
+    list?.challenges.find((challenge) => challenge.id === challengeId) ?? null;
+  const [challenge, setChallenge] = useState<Challenge | null>(() => (challengeId ? findChallenge(seenChallenges()) : null));
+  const [challengeGone, setChallengeGone] = useState(false);
   // A join learns its format from the code; until then the picker waits.
   const [joinFormat, setJoinFormat] = useState<MatchFormat | null>(null);
   const format = mode.kind === "join" ? (joinFormat ?? "classic") : readFormat(params, mode);
@@ -167,6 +175,25 @@ function TeamPageContent() {
       cancelled = true;
     };
   }, [session, storyCode]);
+
+  // The challenge as Gioca left it, then fresh: its rules may have changed, it may be over.
+  useEffect(() => {
+    if (!session || !challengeId) return;
+    let cancelled = false;
+    fetchChallenges()
+      .then((list) => {
+        if (cancelled) return;
+        const found = list.challenges.find((item) => item.id === challengeId) ?? null;
+        setChallenge(found);
+        setChallengeGone(found === null || Date.parse(found.ends_at) <= Date.parse(list.now));
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) setError(describeServerError(cause));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session, challengeId]);
 
   useEffect(() => {
     if (!session || joinCode === null) return;
@@ -208,15 +235,20 @@ function TeamPageContent() {
     try {
       switch (mode.kind) {
         case "bot": {
+          const sfida = challengeId ?? undefined;
           const view =
             format === "boss"
               ? await startBossBotMatch(mode.difficulty, cardInstanceIds)
               : format === "triple"
-                ? await startTripleBotMatch(mode.difficulty, cardInstanceIds)
+                ? await startTripleBotMatch(mode.difficulty, cardInstanceIds, sfida)
                 : isQuadrantFormat(format)
                   ? await startQuadrantBotMatch(mode.difficulty, format, cardInstanceIds)
-                  : await startBotMatch(mode.difficulty, cardInstanceIds);
-          rememberLastPlay({ mode: "bot", format, difficulty: mode.difficulty });
+                  : await startBotMatch(mode.difficulty, cardInstanceIds, sfida);
+          rememberLastPlay(
+            challenge
+              ? { mode: "bot", format, difficulty: mode.difficulty, challenge: { id: challenge.id, title: challenge.title } }
+              : { mode: "bot", format, difficulty: mode.difficulty },
+          );
           router.push(`/partita/?id=${view.id}`);
           break;
         }
@@ -269,6 +301,7 @@ function TeamPageContent() {
             {format === "triple" || isQuadrantFormat(format) ? "Il tuo mazzo" : "La tua squadra"}
           </h1>
           <p className="truncate text-[11px] font-bold text-muted">
+            {challengeId && <span style={{ color: challenge?.color }}>★ {challenge?.title ?? "Sfida a tema"} · </span>}
             {FORMAT_LABELS[format]}
             {COPY[mode.kind].subtitle(mode)}
           </p>
@@ -286,7 +319,15 @@ function TeamPageContent() {
             )}
           </p>
         )}
-        {loaded && (mode.kind !== "join" || joinFormat !== null) ? (
+        {challengeGone && (
+          <p className="text-sm font-semibold text-comic-magenta">
+            Questa Sfida a tema non è più aperta.{" "}
+            <Link href="/gioca" className="underline">
+              Torna a Gioca
+            </Link>
+          </p>
+        )}
+        {loaded && (mode.kind !== "join" || joinFormat !== null) && (!challengeId || challenge) ? (
           // A long press on a card shows it whole (CardDetailProvider).
           <CardDetailProvider>
             <TeamPicker
@@ -304,6 +345,7 @@ function TeamPageContent() {
               key={format}
               squadSize={squadSizeOf(format)}
               storyStars={mission && mission.star_rarities.length > 0 ? { rules: mission, earned: mission.stars } : null}
+              challenge={challengeGone ? null : challenge}
               intro={
                 format === "boss"
                   ? BOSS_INTRO
@@ -316,7 +358,7 @@ function TeamPageContent() {
             />
           </CardDetailProvider>
         ) : (
-          !error && <LoadingScreen label="Caricamento della collezione…" />
+          !error && !challengeGone && <LoadingScreen label="Caricamento della collezione…" />
         )}
       </main>
     </div>

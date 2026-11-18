@@ -7,6 +7,7 @@ import { EventDetails, EventShell } from "@/components/event-details";
 import { EventLeaderboardList, useEventLeaderboard } from "@/components/event-leaderboard";
 import { LoadingScreen } from "@/components/loading-screen";
 import { fetchAbilities, seenAbilities, type AbilityInfo } from "@/lib/catalog";
+import { fetchChallenges, seenChallenges, type Challenge } from "@/lib/challenges";
 import { useNow } from "@/lib/use-now";
 
 // The running event (or the next one): no id in the address, there is one at a time.
@@ -18,6 +19,21 @@ export default function EventPage() {
   const event = status ? (status.event ?? status.ended_with_rewards) : undefined;
   // No event to show: the final leaderboard of the last one, if the player unlocked it.
   const last = useEventLeaderboard(null, event === null);
+  // The Sfide a tema linked to the event (SPEC §8.8).
+  const [challenges, setChallenges] = useState<Challenge[]>(() => seenChallenges()?.challenges ?? []);
+
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    fetchChallenges()
+      .then((list) => {
+        if (!cancelled) setChallenges(list.challenges);
+      })
+      .catch((error: unknown) => console.error("Challenges failed", error));
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
 
   useEffect(() => {
     if (abilities) return;
@@ -51,5 +67,12 @@ export default function EventPage() {
       </EventShell>
     );
   }
-  return <EventDetails event={event} now={now} abilities={abilities} />;
+  return (
+    <EventDetails
+      event={event}
+      now={now}
+      abilities={abilities}
+      challenges={challenges.filter((challenge) => challenge.event?.id === event.id)}
+    />
+  );
 }

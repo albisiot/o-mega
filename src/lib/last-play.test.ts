@@ -51,3 +51,21 @@ describe("describeLastPlay", () => {
     });
   });
 });
+
+describe("a Sfida a tema", () => {
+  const play = { mode: "bot", format: "triple", difficulty: "medium", challenge: { id: "c1", title: "Notte dei Figli" } } as const;
+
+  it("is remembered, opened and named", () => {
+    expect(parseLastPlay(JSON.parse(JSON.stringify(play)))).toEqual(play);
+    expect(lastPlayHref(play)).toBe("/squadra/?sfida=c1&format=triple&difficulty=medium");
+    expect(describeLastPlay(play)).toEqual({ title: "Notte dei Figli", detail: "Sfida a tema · Allarme Triplo contro il bot Medio" });
+  });
+
+  it("a broken challenge is dropped, the play kept", () => {
+    expect(parseLastPlay({ mode: "bot", format: "classic", difficulty: "easy", challenge: { id: 3 } })).toEqual({
+      mode: "bot",
+      format: "classic",
+      difficulty: "easy",
+    });
+  });
+});

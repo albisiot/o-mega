@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { CardZoom } from "@/components/card-zoom";
 import { Silhouette } from "@/components/card-view";
+import Link from "next/link";
 import { BackLink, TabBar } from "@/components/comic-parts";
 import { useOpenEventRewards } from "@/components/event-banner";
 import { EventLeaderboardList, useEventLeaderboard, type EventLeaderboardState } from "@/components/event-leaderboard";
@@ -22,6 +23,7 @@ import {
   type EventRewardCard,
   type GameEvent,
 } from "@/lib/events";
+import type { Challenge } from "@/lib/challenges";
 import { useRememberedState } from "@/lib/place-memory";
 import { rarityFrame } from "@/lib/rarity-theme";
 import { describeAdmitted } from "@/lib/traits";
@@ -61,10 +63,13 @@ export function EventDetails({
   now,
   abilities,
   fixedLeaderboard,
+  challenges = [],
 }: {
   event: GameEvent;
   now: number;
   abilities: AbilityInfo[] | null;
+  /** The Sfide a tema of the event (SPEC §8.8): their own points, played from Gioca. */
+  challenges?: Challenge[];
   /** A leaderboard given as it is, not asked to the server (the test page /prova-evento). */
   fixedLeaderboard?: EventLeaderboardState;
 }) {
@@ -121,6 +126,22 @@ export function EventDetails({
             Varianti in squadra: ogni variante che schieri vale +{event.variant_bonus_percent}% di punti evento.
           </p>
         ) : null}
+        {challenges.map((challenge) => (
+          <Link
+            key={challenge.id}
+            href="/gioca"
+            className="mt-1 flex items-center gap-2 border-l-4 bg-panel px-2.5 py-1 text-[13px] font-bold leading-4"
+            style={{ borderColor: challenge.color }}
+          >
+            <span className="min-w-0 flex-1 truncate">
+              ★ Sfida a tema: {challenge.title}
+              {challenge.event_points && ` · ${challenge.event_points.win} punti a vittoria`}
+            </span>
+            <span className="shrink-0 font-display text-base uppercase" style={{ color: challenge.color }}>
+              Gioca →
+            </span>
+          </Link>
+        ))}
       </section>
 
       {toOpen && (
@@ -221,6 +242,20 @@ export function EventDetails({
                     </tr>
                   );
                 })}
+                {challenges.flatMap((challenge) =>
+                  challenge.event_points
+                    ? [
+                        <tr key={challenge.id} className="border-t border-white/10 font-semibold">
+                          <td className="py-1.5" style={{ color: challenge.color }}>
+                            ★ {challenge.title}
+                          </td>
+                          <td className="py-1.5 text-right">{challenge.event_points.win}</td>
+                          <td className="py-1.5 text-right">{challenge.event_points.draw}</td>
+                          <td className="py-1.5 text-right">{challenge.event_points.loss}</td>
+                        </tr>,
+                      ]
+                    : [],
+                )}
                 <tr className="border-t border-white/10 font-semibold">
                   <td className="py-1.5">Emergenza</td>
                   <td colSpan={3} className="py-1.5 text-right">

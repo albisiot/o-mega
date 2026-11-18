@@ -89,6 +89,11 @@ function HistoryRow({ entry }: { entry: MatchHistoryEntry }) {
           {dateTime.format(new Date(entry.finished_at))}
           {entry.end_reason === "forfeit" && " · abbandono"}
         </p>
+        {entry.challenge && (
+          <p className="truncate text-xs font-bold" style={{ color: entry.challenge.color }}>
+            ★ Sfida a tema: {entry.challenge.title}
+          </p>
+        )}
         <ConquestLine entry={entry} />
         {entry.rare_threats?.map((threat) => (
           <p key={threat.name} className="truncate text-xs font-bold" style={{ color: threat.color }}>

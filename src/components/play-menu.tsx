@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
+import { ChallengeCard, ChallengeRibbon } from "@/components/challenge-parts";
 import { TrophyIcon } from "@/components/leaderboard-places";
 import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
+import { runningChallenge, type Challenge } from "@/lib/challenges";
 import { daysLeft, daysLeftText, emergencyHref } from "@/lib/emergency";
 import { describeLastPlay, FIRST_PLAY, lastPlayHref, type LastPlay } from "@/lib/last-play";
 import { leaderboardHref, type LeaderboardBoard } from "@/lib/leaderboards";
@@ -132,14 +134,15 @@ export type EmergencyThisWeek =
   | undefined;
 
 /** The black chips under a mode's name: what it needs and how long it lasts. */
-function Needs({ items }: { items: readonly string[] }) {
+function Needs({ items, extra = null }: { items: readonly string[]; extra?: ReactNode }) {
   return (
-    <span className="mt-0.5 flex flex-wrap gap-1">
+    <span className="mt-0.5 flex flex-wrap items-center gap-1">
       {items.map((item) => (
         <span key={item} className="bg-black/80 px-1.5 text-[11px] font-extrabold leading-4 text-foreground">
           {item}
         </span>
       ))}
+      {extra}
     </span>
   );
 }
@@ -228,15 +231,30 @@ function OnlineGroup({ query, randomDetail }: { query: string; randomDetail: str
   );
 }
 
-type Opponent = "bot" | "online";
+type Opponent = "bot" | "online" | "challenge";
+
+const OPPONENT_TABS: { key: Opponent; label: string; detail: string }[] = [
+  { key: "bot", label: "Allenamento", detail: "Contro un bot" },
+  { key: "online", label: "Amichevole", detail: "Online, contro un giocatore" },
+];
 
 /**
  * An open mode: its rules, the Quadrante's grid, then Allenamento (the bots) or Amichevole
- * (online), one at a time, and the mode's leaderboard at the bottom.
+ * (online), one at a time, and the mode's leaderboard at the bottom. While a Sfida a tema
+ * runs on the mode (SPEC §8.8) a third tab, «★ A tema», shows it, and the sheet opens on it.
  */
-function ModeSheet({ mode, disabled }: { mode: Mode; disabled: boolean }) {
+function ModeSheet({ mode, disabled, challenge, now }: { mode: Mode; disabled: boolean; challenge: Challenge | null; now: number }) {
   const [grid, setGrid] = useRememberedState<QuadrantFormat>("quadrant-grid", "quadrant");
-  const [opponent, setOpponent] = useRememberedState<Opponent>("opponent", "bot");
+  const [chosen, setOpponent] = useRememberedState<Opponent>("opponent", challenge ? "challenge" : "bot");
+  const opponent: Opponent = chosen === "challenge" && !challenge ? "bot" : chosen;
+  // Three tabs leave room for a short line under each name.
+  const tabs: { key: Opponent; label: string; detail: string }[] = challenge
+    ? [
+        { key: "bot", label: "Allenamento", detail: "Bot" },
+        { key: "online", label: "Amichevole", detail: "Online" },
+        { key: "challenge", label: "★ A tema", detail: "Per poco" },
+      ]
+    : OPPONENT_TABS;
   const format: MatchFormat = mode.key === "quadrant" ? grid : mode.key;
   const query = format === "classic" ? "" : `format=${format}&`;
   const { board, title } = MODE_BOARDS[mode.key];
@@ -264,30 +282,32 @@ function ModeSheet({ mode, disabled }: { mode: Mode; disabled: boolean }) {
           ))}
         </div>
       )}
-      <div role="tablist" aria-label="Contro chi" className="grid grid-cols-2 gap-1.5 pt-0.5">
-        {(
-          [
-            ["bot", "Allenamento", "Contro un bot"],
-            ["online", "Amichevole", "Online, contro un giocatore"],
-          ] as const
-        ).map(([key, label, detail]) => (
-          <button
-            key={key}
-            type="button"
-            role="tab"
-            aria-selected={opponent === key}
-            onClick={() => setOpponent(key)}
-            className={`btn min-h-11 flex-col gap-0 border-2 py-0.5 ${
-              opponent === key ? "border-foreground bg-foreground text-black" : "border-line bg-panel text-foreground"
-            }`}
-          >
-            <span className="font-display text-lg uppercase leading-5">{label}</span>
-            <span className={`text-[11px] font-semibold leading-3.5 ${opponent === key ? "text-black/70" : "text-muted"}`}>{detail}</span>
-          </button>
-        ))}
+      <div role="tablist" aria-label="Contro chi" className={`grid gap-1.5 pt-0.5 ${tabs.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+        {tabs.map(({ key, label, detail }) => {
+          const selected = opponent === key;
+          const challengeTab = key === "challenge" && challenge !== null;
+          return (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => setOpponent(key)}
+              className={`btn min-h-11 min-w-0 flex-col gap-0 border-2 px-1 py-0.5 ${
+                selected ? "border-foreground text-black" : "border-line bg-panel text-foreground"
+              } ${selected && !challengeTab ? "bg-foreground" : ""}`}
+              style={challengeTab ? (selected ? { background: challenge.color, borderColor: "#000" } : { borderColor: challenge.color }) : undefined}
+            >
+              <span className="max-w-full truncate font-display text-lg uppercase leading-5">{label}</span>
+              <span className={`text-[11px] font-semibold leading-3.5 ${selected ? "text-black/70" : "text-muted"}`}>{detail}</span>
+            </button>
+          );
+        })}
       </div>
-      <div role="tabpanel" className={`flex flex-col gap-1.5 ${disabled ? "pointer-events-none opacity-40" : ""}`}>
-        {opponent === "bot" ? (
+      <div role="tabpanel" className={`flex flex-col gap-1.5 ${disabled && opponent !== "challenge" ? "pointer-events-none opacity-40" : ""}`}>
+        {opponent === "challenge" && challenge ? (
+          <ChallengeCard challenge={challenge} now={now} disabled={disabled} />
+        ) : opponent === "bot" ? (
           <BotGrid query={query} texts={BOTS[mode.key]} />
         ) : (
           <OnlineGroup
@@ -313,13 +333,30 @@ function ModeSheet({ mode, disabled }: { mode: Mode; disabled: boolean }) {
 }
 
 /** A mode on the list: a tap opens its choices in place of the list. Open, it stays on top as the way back. */
-function ModeTile({ mode, open, onToggle, now }: { mode: Mode; open: boolean; onToggle: () => void; now: number }) {
+function ModeTile({
+  mode,
+  open,
+  onToggle,
+  now,
+  challenge = null,
+}: {
+  mode: Mode;
+  open: boolean;
+  onToggle: () => void;
+  now: number;
+  /** A Sfida a tema running on the mode: its ribbon takes the place of «Nuovo». */
+  challenge?: Challenge | null;
+}) {
   const isNew = "newUntil" in mode && now < Date.parse(`${mode.newUntil}T00:00:00+01:00`);
   return (
     <button
       type="button"
       aria-expanded={open}
-      aria-label={open ? `${mode.label}: chiudi` : `${mode.label}: ${mode.needs.join(", ")}${isNew ? ". Nuova" : ""}`}
+      aria-label={
+        open
+          ? `${mode.label}: chiudi`
+          : `${mode.label}: ${mode.needs.join(", ")}${challenge ? `. Sfida a tema: ${challenge.title}` : isNew ? ". Nuova" : ""}`
+      }
       onClick={onToggle}
       className={`cut-both speed-lines relative flex w-full min-w-0 items-center justify-between gap-2 text-left text-black ${mode.color} ${
         open ? "shrink-0 px-4 py-1.5" : "h-full px-3 py-1.5"
@@ -329,14 +366,15 @@ function ModeTile({ mode, open, onToggle, now }: { mode: Mode; open: boolean; on
         <h2 className={`-skew-x-8 font-display uppercase ${open ? "truncate text-2xl leading-7" : "text-[22px] leading-6"}`}>
           {mode.label}
         </h2>
-        {!open && <Needs items={mode.needs} />}
+        {!open && <Needs items={mode.needs} extra={challenge ? <ChallengeRibbon color={challenge.color} /> : null} />}
       </div>
       {open ? (
         <svg viewBox="0 0 14 14" className="h-5 w-5 shrink-0" stroke="currentColor" strokeWidth={2.6} aria-hidden>
           <path d="M1 1l12 12M13 1 1 13" />
         </svg>
       ) : (
-        isNew && (
+        isNew &&
+        !challenge && (
           <span className="absolute right-2 top-2 rotate-3 bg-black px-1.5 font-sfx text-sm leading-5 tracking-wide text-comic-yellow" aria-hidden>
             Nuovo
           </span>
@@ -588,6 +626,7 @@ export function PlayMenuView({
   story,
   lastPlay,
   event,
+  challenges = null,
   now,
   onForfeit,
 }: {
@@ -603,6 +642,8 @@ export function PlayMenuView({
   lastPlay: LastPlay | null;
   /** The event's tile (EventBanner compact): nothing when there is no event. */
   event: ReactNode;
+  /** The Sfide a tema running or to come (SPEC §8.8); null while loading or without any. */
+  challenges?: Challenge[] | null;
   now: number;
   onForfeit: () => void;
 }) {
@@ -612,11 +653,19 @@ export function PlayMenuView({
   const blocked = Boolean(active) || (active === undefined && !error);
   const openKey = (openMode && MOVED_MODES[openMode]) ?? openMode;
   const opened = MODES.find((mode) => mode.key === openKey) ?? null;
+  const challengeOf = (key: ModeKey) => runningChallenge(challenges, key, now);
 
   // A Conquista no longer open falls back to a friendly classic match online.
   const conquestOpen = conquest !== null && conquest.unlocked && conquest.cards_lost_today < balance.conquest.maxCardsLostPerDay;
+  // A Sfida a tema no longer running falls back to its mode against the same bot.
+  const challengeRuns = (id: string) =>
+    Boolean(challenges?.some((challenge) => challenge.id === id && Date.parse(challenge.starts_at) <= now && now < Date.parse(challenge.ends_at)));
   const again: LastPlay | null =
-    lastPlay?.mode === "conquest" && !conquestOpen ? { mode: "queue", format: "classic" } : lastPlay;
+    lastPlay?.mode === "conquest" && !conquestOpen
+      ? { mode: "queue", format: "classic" }
+      : lastPlay?.mode === "bot" && lastPlay.challenge && !challengeRuns(lastPlay.challenge.id)
+        ? { mode: "bot", format: lastPlay.format, difficulty: lastPlay.difficulty }
+        : lastPlay;
 
   return (
     <div className="home-shell">
@@ -638,7 +687,7 @@ export function PlayMenuView({
         {opened ? (
           <section className="flex min-h-0 flex-1 flex-col gap-1.5">
             <ModeTile mode={opened} open now={now} onToggle={() => setOpenMode(null)} />
-            <ModeSheet key={opened.key} mode={opened} disabled={blocked} />
+            <ModeSheet key={opened.key} mode={opened} disabled={blocked} challenge={challengeOf(opened.key)} now={now} />
           </section>
         ) : (
           <>
@@ -655,7 +704,14 @@ export function PlayMenuView({
             <ListTitle>Modalità</ListTitle>
             <div className="grid min-h-28 flex-[1_1_0] auto-rows-fr grid-cols-2 gap-1.5">
               {MODES.map((mode) => (
-                <ModeTile key={mode.key} mode={mode} open={false} now={now} onToggle={() => setOpenMode(mode.key)} />
+                <ModeTile
+                  key={mode.key}
+                  mode={mode}
+                  open={false}
+                  now={now}
+                  challenge={challengeOf(mode.key)}
+                  onToggle={() => setOpenMode(mode.key)}
+                />
               ))}
             </div>
 

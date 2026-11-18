@@ -26,6 +26,7 @@ import {
 } from "@/lib/match";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { RankedResultChips, useRankedNudge } from "@/components/ranked-parts";
+import { ChallengeResultChip } from "@/components/challenge-parts";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
 import { tripleBeforeRound, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
 import { TripleMapReveal } from "@/components/triple-comic";
@@ -908,6 +909,7 @@ function TripleResult({ view, rival }: { view: TripleView; rival: string }) {
           {view.points.me === view.points.opponent && ` · punteggi ${view.total_score.me} – ${view.total_score.opponent}`}
         </p>
         <div className="relative flex flex-wrap justify-center gap-2">
+          <ChallengeResultChip challenge={view.challenge} chip={chip} />
           <RankedResultChips ranked={view.ranked} chip={chip} />
           <RewardChips reward={reward} chip={chip} />
           {eventPoints && <p className={`${chip} bg-comic-yellow text-black`}>{describeEventPoints(eventPoints)}</p>}

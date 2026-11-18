@@ -7,7 +7,8 @@ import type { MatchFormat } from "@/lib/match";
  * everything when the match starts (a locked Conquista, a match in progress...).
  */
 export type LastPlay =
-  | { mode: "bot"; format: MatchFormat; difficulty: BotDifficulty }
+  /** challenge: a Sfida a tema (SPEC §8.8); Gioca drops it once the challenge is over. */
+  | { mode: "bot"; format: MatchFormat; difficulty: BotDifficulty; challenge?: { id: string; title: string } }
   | { mode: "queue" | "lobby" | "ranked"; format: MatchFormat }
   | { mode: "conquest"; format: "classic" };
 
@@ -22,13 +23,14 @@ const DIFFICULTY_NAMES: Record<BotDifficulty, string> = { easy: "Facile", medium
 /** A stored value back to a play, or null if it is not one (an older or broken value). */
 export function parseLastPlay(value: unknown): LastPlay | null {
   if (typeof value !== "object" || value === null) return null;
-  const { mode, format, difficulty } = value as Record<string, unknown>;
+  const { mode, format, difficulty, challenge } = value as Record<string, unknown>;
   if (!FORMATS.includes(format as MatchFormat)) return null;
   const known = format as MatchFormat;
   if (mode === "bot") {
-    return DIFFICULTIES.includes(difficulty as BotDifficulty)
-      ? { mode, format: known, difficulty: difficulty as BotDifficulty }
-      : null;
+    if (!DIFFICULTIES.includes(difficulty as BotDifficulty)) return null;
+    const play: LastPlay = { mode, format: known, difficulty: difficulty as BotDifficulty };
+    const { id, title } = (challenge ?? {}) as Record<string, unknown>;
+    return typeof id === "string" && typeof title === "string" ? { ...play, challenge: { id, title } } : play;
   }
   if (mode === "queue" || mode === "lobby" || mode === "ranked") return { mode, format: known };
   if (mode === "conquest") return { mode, format: "classic" };
@@ -57,7 +59,7 @@ export function lastPlayHref(play: LastPlay): string {
   const format = play.format === "classic" ? "" : `format=${play.format}`;
   const params =
     play.mode === "bot"
-      ? [format, `difficulty=${play.difficulty}`]
+      ? [play.challenge ? `sfida=${play.challenge.id}` : "", format, `difficulty=${play.difficulty}`]
       : play.mode === "conquest"
         ? ["mode=conquest"]
         : [`mode=${play.mode}`, format];
@@ -86,5 +88,8 @@ export function describeLastPlay(play: LastPlay): { title: string; detail: strin
             ? "Classificata, la Fama in gioco"
             : "Conquista, carte in palio";
   const detail = `${grid}${how}`;
+  if (play.mode === "bot" && play.challenge) {
+    return { title: play.challenge.title, detail: `Sfida a tema · ${MODE_NAMES[play.format]} ${how}` };
+  }
   return { title: MODE_NAMES[play.format], detail: detail.charAt(0).toUpperCase() + detail.slice(1) };
 }

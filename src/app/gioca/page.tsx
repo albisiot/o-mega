@@ -5,6 +5,7 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { EventBanner } from "@/components/event-banner";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayMenuView, type EmergencyThisWeek, type EmergencyToday } from "@/components/play-menu";
+import { fetchChallenges, seenChallenges, type Challenge } from "@/lib/challenges";
 import { fetchEmergencyLeaderboard, fetchEmergencyWeekLeaderboard } from "@/lib/emergency";
 import { describeServerError } from "@/lib/errors";
 import { readLastPlay, type LastPlay } from "@/lib/last-play";
@@ -22,6 +23,8 @@ export default function PlayPage() {
   const [emergency, setEmergency] = useState<EmergencyToday>(undefined);
   const [emergencyWeek, setEmergencyWeek] = useState<EmergencyThisWeek>(undefined);
   const [story, setStory] = useState<StoryChapter[] | null>(() => seenStory());
+  // The Sfide a tema (SPEC §8.8): their ribbons on the modes.
+  const [challenges, setChallenges] = useState<Challenge[] | null>(() => seenChallenges()?.challenges ?? null);
   // On this device only: read once, the page is left to start a match anyway.
   const [lastPlay] = useState<LastPlay | null>(() => readLastPlay());
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +79,11 @@ export default function PlayPage() {
         if (!cancelled) setStory(next);
       })
       .catch((cause: unknown) => console.error("Story failed", cause));
+    fetchChallenges()
+      .then((next) => {
+        if (!cancelled) setChallenges(next.challenges);
+      })
+      .catch((cause: unknown) => console.error("Challenges failed", cause));
     return () => {
       cancelled = true;
     };
@@ -106,6 +114,7 @@ export default function PlayPage() {
         story={story}
         lastPlay={lastPlay}
         event={<EventBanner compact />}
+        challenges={challenges}
         now={now}
         onForfeit={() => setConfirmForfeit(true)}
       />

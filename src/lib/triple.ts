@@ -15,7 +15,7 @@ import {
   type TripleState,
 } from "@o-mega/game-engine";
 import { balance } from "@/config/balance";
-import { invokeFunction, remember, toCharacter, type MatchCard, type MatchMode, type MatchPlay } from "@/lib/match";
+import { invokeFunction, remember, toCharacter, type MatchCard, type MatchChallengeInfo, type MatchMode, type MatchPlay } from "@/lib/match";
 import type { RankedMatchInfo } from "@/lib/ranked";
 
 export type TripleThreat = {
@@ -59,6 +59,8 @@ export type TripleRound = {
 export type TripleView = {
   id: string;
   mode: MatchMode;
+  /** A Sfida a tema only (SPEC §8.8). */
+  challenge?: MatchChallengeInfo | null;
   /** Classificata only (SPEC §8.7). */
   ranked?: RankedMatchInfo | null;
   format: "triple";
@@ -93,8 +95,9 @@ async function invokeTriple(body: Record<string, unknown>): Promise<TripleView> 
   return remember(await invokeFunction<TripleView>(body));
 }
 
-export function startTripleBotMatch(difficulty: BotDifficulty, cardInstanceIds: string[]): Promise<TripleView> {
-  return invokeTriple({ action: "triple_start", difficulty, card_instance_ids: cardInstanceIds });
+/** A Sfida a tema passes its id: the server checks the deck against its rules (SPEC §8.8). */
+export function startTripleBotMatch(difficulty: BotDifficulty, cardInstanceIds: string[], challengeId?: string): Promise<TripleView> {
+  return invokeTriple({ action: "triple_start", difficulty, card_instance_ids: cardInstanceIds, challenge_id: challengeId });
 }
 
 /** A round against a bot: the cards on each threat, in threat order; null when the timer expired. */

@@ -6,8 +6,11 @@ import { CardGroupHeading, CardListControls, useCardListReference, useCardListVi
 import { Silhouette } from "@/components/card-view";
 import { InfoTip } from "@/components/info-tip";
 import { STAR_MARK_COLORS, StarIcon } from "@/components/story-stars";
+import { ChallengeRuleChips } from "@/components/challenge-parts";
 import { balance } from "@/config/balance";
 import { artSrcSet } from "@/lib/art";
+import { challengeVariantsNeeded } from "@o-mega/game-engine";
+import { toChallengeRules, whyNotAdmitted, type Challenge, type ChallengeExclusion } from "@/lib/challenges";
 import { withBasePath } from "@/lib/base-path";
 import { applyCardListView, DEFAULT_CARD_LIST_VIEW, groupCardList, sortAbilityOf } from "@/lib/card-list";
 import type { CatalogCard } from "@/lib/collection";
@@ -81,6 +84,11 @@ type TeamPickerProps = {
    * cards that fit them and says which stars the squad can still earn.
    */
   storyStars?: { rules: StarRulesText; earned: StoryStar[] } | null;
+  /**
+   * A Sfida a tema (SPEC §8.8): only the cards its rules admit can be picked. The picker shows
+   * them first, says why the others are out, and starts only with a squad that keeps the rules.
+   */
+  challenge?: Challenge | null;
 };
 
 /** The stars that depend on the squad. */
@@ -98,9 +106,14 @@ function listStars(stars: StoryStar[]): string {
  * It fills the screen: the squad and the start button stay put while the cards scroll between them.
  */
 export function TeamPicker(props: TeamPickerProps) {
-  const { catalog, owned, conquerable, atRiskCopies, variantCopies, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart, squadSize, intro, storyStars } = props;
+  const { catalog, owned, conquerable, atRiskCopies, variantCopies, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart, squadSize, intro, storyStars, challenge } = props;
   const size = squadSize ?? balance.match.teamSize;
-  const lastTeamKey = squadSize ? `${LAST_TEAM_KEY}.${squadSize}` : LAST_TEAM_KEY;
+  // A challenge remembers its own last squad: the usual one would rarely keep its rules.
+  const lastTeamKey = challenge
+    ? `${LAST_TEAM_KEY}.challenge.${challenge.id}`
+    : squadSize
+      ? `${LAST_TEAM_KEY}.${squadSize}`
+      : LAST_TEAM_KEY;
   // Conquest never brings back a variant on its own: a fielded variant is at stake, so the player chooses it each time.
   const lastVariantsKey = conquerable ? null : `${lastTeamKey}.variants`;
   const [selected, setSelected] = useState<string[]>(() => loadLastTeam(lastTeamKey, owned).slice(0, size));
@@ -134,11 +147,22 @@ export function TeamPicker(props: TeamPickerProps) {
       }
     };
   }, [storyStars, traits]);
+  // Sfida a tema: why each card is out of the squad (null: it can be picked); the list shows
+  // the admitted cards unless the player asks for all of them.
+  const challengeRules = useMemo(() => (challenge ? toChallengeRules(challenge.rules) : null), [challenge]);
+  const excludedWhy = useMemo(() => {
+    if (!challengeRules) return null;
+    return (card: CatalogCard): ChallengeExclusion | null =>
+      whyNotAdmitted(card, challengeRules, traits, (variantCopies.get(card.id)?.length ?? 0) > 0);
+  }, [challengeRules, traits, variantCopies]);
+  const [showExcluded, setShowExcluded] = useState(false);
+  const admittedCount = useMemo(() => (excludedWhy ? cards.filter((card) => excludedWhy(card) === null).length : 0), [cards, excludedWhy]);
   const groups = useMemo(() => {
     const shown = applyCardListView(cards, view, traits);
-    const fitting = starFilter && fitsStar ? shown.filter((card) => fitsStar(starFilter, card)) : shown;
+    const fittingStars = starFilter && fitsStar ? shown.filter((card) => fitsStar(starFilter, card)) : shown;
+    const fitting = excludedWhy && !showExcluded ? fittingStars.filter((card) => excludedWhy(card) === null) : fittingStars;
     return groupCardList(fitting, view.sort, traits);
-  }, [cards, view, traits, starFilter, fitsStar]);
+  }, [cards, view, traits, starFilter, fitsStar, excludedWhy, showExcluded]);
   const shownCount = groups.reduce((sum, group) => sum + group.cards.length, 0);
   const rarities = useMemo(
     () => [...new Map(cards.map((card) => [card.rarity.rank, card.rarity])).values()].sort((a, b) => a.rank - b.rank),
@@ -218,6 +242,13 @@ export function TeamPicker(props: TeamPickerProps) {
 
   function toggle(definitionId: string) {
     setMessage(null);
+    const card = byId.get(definitionId);
+    const adding = !selected.includes(definitionId);
+    const why = adding && card && excludedWhy ? excludedWhy(card) : null;
+    if (why) {
+      setMessage({ text: `${card!.name}: ${why.long}.`, isError: true });
+      return;
+    }
     setSelected((current) =>
       current.includes(definitionId)
         ? current.filter((id) => id !== definitionId)
@@ -225,6 +256,11 @@ export function TeamPicker(props: TeamPickerProps) {
           ? [...current, definitionId]
           : current,
     );
+    // A challenge that wants variants: a new card comes with its variant while some are missing.
+    if (adding && selected.length < size && variantsMissing > 0 && !fieldedVariant(definitionId)) {
+      const option = variantOptions(definitionId)[0];
+      if (option) chooseCopy(definitionId, option);
+    }
   }
 
   function loadFormation(formation: Formation) {
@@ -281,6 +317,27 @@ export function TeamPicker(props: TeamPickerProps) {
   const optionsDefault = optionsOf ? variantCopies.get(optionsOf)?.find((copy) => copy.id === owned.get(optionsOf)) : undefined;
   // Some character in the squad can be fielded with another drawing.
   const squadHasVariants = selected.some((id) => variantOptions(id).length > 0);
+
+  // Sfida a tema: the cards of the squad out of the rules, and the variants it still lacks.
+  const squadExcluded = excludedWhy
+    ? selected.filter((id) => {
+        const card = byId.get(id);
+        return !card || excludedWhy(card) !== null;
+      }).length
+    : 0;
+  const variantsWanted = challengeRules ? challengeVariantsNeeded(challengeRules, size) : 0;
+  const variantsFielded = selected.filter((id) => fieldedVariant(id) !== undefined).length;
+  const variantsMissing = Math.max(0, variantsWanted - variantsFielded);
+  const challengeBlock =
+    selected.length < size
+      ? null
+      : squadExcluded > 0
+        ? squadExcluded === 1
+          ? "Togli la carta non ammessa"
+          : `Togli le ${squadExcluded} carte non ammesse`
+        : variantsMissing > 0
+          ? `Manca${variantsMissing === 1 ? " 1 variante" : `no ${variantsMissing} varianti`}: tocca una carta con ★`
+          : null;
 
   // Story: the stars the squad can still earn. 3-0 depends on the match; the others on every card.
   const earnedStars = storyStars?.earned ?? [];
@@ -421,6 +478,48 @@ export function TeamPicker(props: TeamPickerProps) {
         </section>
       )}
 
+      {challenge && excludedWhy && (
+        <section
+          aria-label="Regole della sfida"
+          className="mt-1.5 flex flex-col gap-1 border-2 bg-panel px-2 py-1"
+          style={{ borderColor: challenge.color }}
+        >
+          <div className="flex items-start gap-1.5">
+            <ChallengeRuleChips challenge={challenge} className="min-w-0 flex-1" />
+            <span
+              className={`shrink-0 text-[11px] font-extrabold leading-4 ${squadExcluded > 0 ? "text-comic-magenta" : "text-comic-cyan"}`}
+            >
+              {squadExcluded > 0 ? `✗ ${squadExcluded} fuori` : `✓ ${selected.length}/${size}`}
+              {variantsWanted > 0 && (
+                <span className={variantsMissing > 0 ? "text-comic-magenta" : "text-comic-cyan"}>
+                  {" "}
+                  · ★ {Math.min(variantsFielded, variantsWanted)}/{variantsWanted}
+                </span>
+              )}
+            </span>
+          </div>
+          <div role="radiogroup" aria-label="Quali carte" className="grid grid-cols-2 border-2 border-black text-[11px] font-extrabold uppercase">
+            {(
+              [
+                [false, `Solo adatte · ${admittedCount}`],
+                [true, `Tutte · ${cards.length}`],
+              ] as const
+            ).map(([all, label]) => (
+              <button
+                key={label}
+                type="button"
+                role="radio"
+                aria-checked={showExcluded === all}
+                onClick={() => setShowExcluded(all)}
+                className={`min-h-8 px-1 ${showExcluded === all ? "bg-comic-yellow text-black" : "bg-panel text-muted"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {conquerable && (
         <section className="mt-2 flex flex-col gap-0.5 bg-comic-magenta px-3 py-1.5 text-xs font-semibold text-black">
           <p>
@@ -548,6 +647,8 @@ export function TeamPicker(props: TeamPickerProps) {
             ...group.cards.map((card) => {
               const position = selected.indexOf(card.id);
               const shown = fieldedCard(card);
+              // Sfida a tema, «Tutte»: a card out of the rules is greyed, with why.
+              const excluded = excludedWhy ? excludedWhy(card) : null;
               // How many drawings the player can field this character with.
               const drawings = variantOptions(card.id).length + 1;
               // The ability the list is sorted by comes first, then the card's best ones.
@@ -563,7 +664,7 @@ export function TeamPicker(props: TeamPickerProps) {
                     aria-pressed={position >= 0}
                     className={`relative flex w-full flex-col border-[3px] bg-panel text-left ${LONG_PRESS_CLASS} ${
                       position >= 0 ? "shadow-[4px_4px_0_var(--comic-magenta)]" : ""
-                    }`}
+                    } ${excluded && position < 0 ? "opacity-45 grayscale" : ""}`}
                     style={{ borderColor: position >= 0 ? "var(--comic-yellow)" : card.rarity.color }}
                   >
                     <span className="relative block aspect-square bg-panel-raised">
@@ -634,6 +735,9 @@ export function TeamPicker(props: TeamPickerProps) {
                         {isAtRisk(card.id) ? "In palio" : "Protetta"}
                       </span>
                     )}
+                    {excluded && (
+                      <span className="truncate px-1.5 text-[10px] font-bold leading-[13px] text-comic-magenta">{excluded.short}</span>
+                    )}
                     <span className="truncate px-1.5 pb-1 text-[10px] font-medium leading-[13px] text-muted">
                       {top.map(([code, value]) => `${code} ${value}`).join(" · ")}
                     </span>
@@ -650,7 +754,7 @@ export function TeamPicker(props: TeamPickerProps) {
         <button
           type="button"
           onClick={start}
-          disabled={selected.length < size || starting || notEnoughAtRisk}
+          disabled={selected.length < size || starting || notEnoughAtRisk || challengeBlock !== null}
           className="btn btn-primary w-full"
         >
           {starting
@@ -659,7 +763,7 @@ export function TeamPicker(props: TeamPickerProps) {
               ? `Scegli ancora ${size - selected.length}`
               : notEnoughAtRisk
                 ? `Servono almeno ${minConquerable} carte in palio`
-                : startLabel}
+                : (challengeBlock ?? startLabel)}
         </button>
       </div>
 
