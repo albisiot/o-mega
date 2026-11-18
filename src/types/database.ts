@@ -1579,6 +1579,7 @@ export type Database = {
           starts_at: string
           title: string
           traits: string[]
+          variant_chance_percent: number | null
         }
         Insert: {
           created_at?: string
@@ -1595,6 +1596,7 @@ export type Database = {
           starts_at: string
           title: string
           traits?: string[]
+          variant_chance_percent?: number | null
         }
         Update: {
           created_at?: string
@@ -1611,6 +1613,7 @@ export type Database = {
           starts_at?: string
           title?: string
           traits?: string[]
+          variant_chance_percent?: number | null
         }
         Relationships: [
           {
@@ -3099,10 +3102,13 @@ export type Database = {
           is_active: boolean
           name: string
           odds_mode: string
+          prefer_new_variants: boolean
           price: number
           starts_at: string | null
           updated_at: string
           variant_chance_percent: number
+          variant_styles: string[]
+          variants_only: boolean
           version: number
         }
         Insert: {
@@ -3117,10 +3123,13 @@ export type Database = {
           is_active?: boolean
           name: string
           odds_mode: string
+          prefer_new_variants?: boolean
           price: number
           starts_at?: string | null
           updated_at?: string
           variant_chance_percent: number
+          variant_styles?: string[]
+          variants_only?: boolean
           version?: number
         }
         Update: {
@@ -3135,10 +3144,13 @@ export type Database = {
           is_active?: boolean
           name?: string
           odds_mode?: string
+          prefer_new_variants?: boolean
           price?: number
           starts_at?: string | null
           updated_at?: string
           variant_chance_percent?: number
+          variant_styles?: string[]
+          variants_only?: boolean
           version?: number
         }
         Relationships: [
@@ -4161,6 +4173,14 @@ export type Database = {
       draw_rarity_rank: { Args: { p_min_rank: number }; Returns: number }
       draw_special_pack_card: {
         Args: { p_min_rank: number; p_pack_id: string }
+        Returns: string
+      }
+      draw_special_pack_variant: {
+        Args: {
+          p_definition_id: string
+          p_pack: Database["public"]["Tables"]["special_packs"]["Row"]
+          p_user: string
+        }
         Returns: string
       }
       draw_threat_modifiers: { Args: { p_levels: number[] }; Returns: Json }
@@ -5283,6 +5303,14 @@ export type Database = {
       validate_team_for: {
         Args: { p_format: string; p_instance_ids: string[]; p_user: string }
         Returns: string[]
+      }
+      variant_chance_now: { Args: never; Returns: number }
+      variant_event_now: {
+        Args: never
+        Returns: {
+          chance: number
+          title: string
+        }[]
       }
       visible_modifier: {
         Args: { p_hide: boolean; p_modifier: Json }
