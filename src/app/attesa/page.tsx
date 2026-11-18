@@ -8,12 +8,14 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { LobbyMissingView, LobbyWaitView, QueueWaitView, WaitingMain, WaitingShell } from "@/components/waiting-views";
 import { balance } from "@/config/balance";
 import { BASE_PATH } from "@/lib/base-path";
+import { challengeHref, fetchChallenges, seenChallenges, type Challenge } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
 import {
   asMatchFormat,
   cancelLobby,
   fetchActiveMatch,
   fetchMyLobby,
+  DIFFICULTY_LABELS,
   joinQueue,
   leaveQueue,
   readPendingTeam,
@@ -34,6 +36,7 @@ const RANKED_REFRESH_MS = balance.ranked.matchmaking.refreshSeconds * 1000;
 const LOBBY_CHECK_MS = 10_000;
 
 // /attesa/?mode=queue[&type=conquest|ranked][&format=...] | /attesa/?mode=lobby
+// /attesa/?mode=queue&sfida=<id>[&format=...]  (a Sfida a tema online: its own queue)
 export default function WaitingPage() {
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -50,6 +53,7 @@ function WaitingContent() {
   // Conquista is a classic match only.
   const asked = asMatchFormat(params.get("format"));
   const format: MatchFormat = queueMode === "conquest" ? "classic" : asked;
+  const challengeId = queueMode === "friendly" ? params.get("sfida") : null;
   const { session } = useRequireSignedIn();
   // The page fits the phone and never scrolls (see WaitingShell).
   useLockedScreen(true);
@@ -59,7 +63,7 @@ function WaitingContent() {
       {mode === "lobby" ? (
         <LobbyWait userId={session.user.id} />
       ) : (
-        <QueueWait userId={session.user.id} queueMode={queueMode} format={format} />
+        <QueueWait userId={session.user.id} queueMode={queueMode} format={format} challengeId={challengeId} />
       )}
     </WaitingShell>
   );
@@ -95,9 +99,35 @@ function useMatchStart(userId: string, onStart: (matchId: string) => void, check
   }, [userId, checkEveryMs]);
 }
 
-function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: QueueMode; format: MatchFormat }) {
+function QueueWait({
+  userId,
+  queueMode,
+  format,
+  challengeId,
+}: {
+  userId: string;
+  queueMode: QueueMode;
+  format: MatchFormat;
+  challengeId: string | null;
+}) {
   const router = useRouter();
   const [team] = useState(readPendingTeam);
+  // A Sfida a tema: its name, and its bots to offer after a while.
+  const [challenge, setChallenge] = useState<Challenge | null>(
+    () => seenChallenges()?.challenges.find((item) => item.id === challengeId) ?? null,
+  );
+  useEffect(() => {
+    if (!challengeId) return;
+    let cancelled = false;
+    fetchChallenges()
+      .then((list) => {
+        if (!cancelled) setChallenge(list.challenges.find((item) => item.id === challengeId) ?? null);
+      })
+      .catch((cause: unknown) => console.error("Challenges failed", cause));
+    return () => {
+      cancelled = true;
+    };
+  }, [challengeId]);
   const [startedAt] = useState(() => Date.now());
   const [error, setError] = useState<string | null>(null);
   const matched = useRef(false);
@@ -130,7 +160,7 @@ function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: Q
     };
     const attempt = () => {
       const attemptedAt = Date.now();
-      joinQueue(team, queueMode, every, format)
+      joinQueue(team, queueMode, every, format, challengeId ?? undefined)
         .then((result) => {
           setError(null);
           if (result.matched && result.match_id) goToMatch(result.match_id);
@@ -153,7 +183,7 @@ function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: Q
     };
     // goToMatch only reads refs and the router.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [team, queueMode, format]);
+  }, [team, queueMode, format, challengeId]);
 
   if (!team) {
     return (
@@ -163,7 +193,9 @@ function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: Q
           href={
             queueMode === "conquest"
               ? "/squadra/?mode=conquest"
-              : `/squadra/?mode=${queueMode === "ranked" ? "ranked" : "queue"}${format === "classic" ? "" : `&format=${format}`}`
+              : `/squadra/?${challengeId ? `sfida=${challengeId}&` : ""}mode=${queueMode === "ranked" ? "ranked" : "queue"}${
+                  format === "classic" ? "" : `&format=${format}`
+                }`
           }
           className="btn btn-outline"
         >
@@ -174,7 +206,26 @@ function QueueWait({ userId, queueMode, format }: { userId: string; queueMode: Q
   }
 
   const waited = Math.max(0, Math.floor((now - startedAt) / 1000));
-  return <QueueWaitView queueMode={queueMode} format={format} waited={waited} error={error} />;
+  return (
+    <QueueWaitView
+      queueMode={queueMode}
+      format={format}
+      waited={waited}
+      error={error}
+      challenge={
+        challengeId && challenge
+          ? {
+              title: challenge.title,
+              color: challenge.color,
+              bots: challenge.bot_difficulties.map((difficulty) => ({
+                label: DIFFICULTY_LABELS[difficulty],
+                href: challengeHref(challenge, difficulty),
+              })),
+            }
+          : null
+      }
+    />
+  );
 }
 
 function LobbyWait({ userId }: { userId: string }) {

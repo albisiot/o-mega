@@ -57,12 +57,18 @@ export function QueueWaitView({
   format,
   waited,
   error,
+  challenge = null,
 }: {
   queueMode: QueueMode;
   format: MatchFormat;
   /** Seconds since the page opened. */
   waited: number;
   error: string | null;
+  /**
+   * A Sfida a tema online (SPEC §8.8): its name, and its bots, which the page offers after a
+   * while (each to its team screen, the squad already chosen).
+   */
+  challenge?: { title: string; color: string; bots: { label: string; href: string }[] } | null;
 }) {
   const line = Math.floor(waited / SEARCH_LINE_SECONDS);
   return (
@@ -78,6 +84,11 @@ export function QueueWaitView({
         CERCO!
       </ComicBurst>
       <div>
+        {challenge && (
+          <p className="font-sfx text-lg leading-6 tracking-wide" style={{ color: challenge.color }}>
+            ★ {challenge.title}
+          </p>
+        )}
         <p className="font-display text-[28px] uppercase leading-8 short:text-2xl short:leading-7">{searchTitle(queueMode, format)}</p>
         <p className="mt-1 font-display text-2xl text-comic-yellow">{waited} s</p>
         <p key={line} className="animate-panel-fade mt-1 text-sm font-semibold text-comic-cyan">
@@ -94,7 +105,30 @@ export function QueueWaitView({
       {queueMode === "ranked" && (
         <p className="max-w-xs text-sm font-semibold">Classificata: chi vince guadagna Fama. Nessuna carta in gioco.</p>
       )}
-      {queueMode === "friendly" && waited >= balance.matchmaking.suggestBotAfterSeconds && (
+      {challenge && waited >= balance.challenges.onlineBotAfterSeconds && (
+        <div className="flex flex-col gap-2 bg-panel px-3 py-2 text-left">
+          <p className="text-sm font-semibold leading-5">
+            {challenge.bots.length > 0
+              ? "Nessuno libero nella sfida: gioca contro il suo bot, con la stessa squadra."
+              : "Nessuno libero nella sfida al momento: riprova più tardi o manda un codice a un amico."}
+          </p>
+          {challenge.bots.length > 0 && (
+            <div className="grid grid-cols-2 gap-1.5">
+              {challenge.bots.map((bot) => (
+                <Link
+                  key={bot.href}
+                  href={bot.href}
+                  className="flex min-h-11 items-center justify-center font-display text-base uppercase text-black"
+                  style={{ background: challenge.color }}
+                >
+                  {bot.label}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {queueMode === "friendly" && !challenge && waited >= balance.matchmaking.suggestBotAfterSeconds && (
         <div className="flex items-center gap-3 bg-panel px-3 py-2 text-left">
           <p className="text-sm font-semibold leading-5">Nessun avversario disponibile al momento.</p>
           <Link href="/gioca" className="btn btn-outline shrink-0">

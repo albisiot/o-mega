@@ -69,3 +69,17 @@ describe("a Sfida a tema", () => {
     });
   });
 });
+
+describe("a Sfida a tema online", () => {
+  const play = { mode: "queue", format: "classic", challenge: { id: "c2", title: "Solo Cattivi" } } as const;
+
+  it("the random queue remembers it, a friend code does not", () => {
+    expect(parseLastPlay(JSON.parse(JSON.stringify(play)))).toEqual(play);
+    expect(lastPlayHref(play)).toBe("/squadra/?sfida=c2&mode=queue");
+    expect(describeLastPlay(play).title).toBe("Solo Cattivi");
+    expect(parseLastPlay({ mode: "lobby", format: "classic", challenge: { id: "c2", title: "Solo Cattivi" } })).toEqual({
+      mode: "lobby",
+      format: "classic",
+    });
+  });
+});

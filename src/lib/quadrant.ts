@@ -122,8 +122,14 @@ async function invokeQuadrant(body: Record<string, unknown>): Promise<QuadrantVi
   return remember(await invokeFunction<QuadrantView>(body));
 }
 
-export function startQuadrantBotMatch(difficulty: BotDifficulty, format: QuadrantFormat, cardInstanceIds: string[]): Promise<QuadrantView> {
-  return invokeQuadrant({ action: "quadrant_start", difficulty, format, card_instance_ids: cardInstanceIds });
+/** A Sfida a tema passes its id: the server checks the deck against its rules (SPEC §8.8). */
+export function startQuadrantBotMatch(
+  difficulty: BotDifficulty,
+  format: QuadrantFormat,
+  cardInstanceIds: string[],
+  challengeId?: string,
+): Promise<QuadrantView> {
+  return invokeQuadrant({ action: "quadrant_start", difficulty, format, card_instance_ids: cardInstanceIds, challenge_id: challengeId });
 }
 
 export type QuadrantPlacementInput = { card_instance_id: string; x: number; y: number; rotation: number };

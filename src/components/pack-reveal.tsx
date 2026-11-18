@@ -38,6 +38,7 @@ const PACK_TITLES: Record<PackOpening["pack_type"], string> = {
   objective: "Premio obiettivo",
   achievement: "Premio impresa",
   emergency: "Premio classifica Emergenza",
+  challenge: "Premio della sfida",
 };
 
 /**

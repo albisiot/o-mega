@@ -83,8 +83,9 @@ async function invokeBoss(body: Record<string, unknown>): Promise<BossView> {
   return remember(await invokeFunction<BossView>(body));
 }
 
-export function startBossBotMatch(difficulty: BotDifficulty, cardInstanceIds: string[]): Promise<BossView> {
-  return invokeBoss({ action: "boss_start", difficulty, card_instance_ids: cardInstanceIds });
+/** A Sfida a tema passes its id: the server checks the squad against its rules (SPEC §8.8). */
+export function startBossBotMatch(difficulty: BotDifficulty, cardInstanceIds: string[], challengeId?: string): Promise<BossView> {
+  return invokeBoss({ action: "boss_start", difficulty, card_instance_ids: cardInstanceIds, challenge_id: challengeId });
 }
 
 /** A turn against a bot; null: the timer expired, the server plays for the player. */

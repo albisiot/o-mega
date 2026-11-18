@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import type { BotDifficulty } from "@o-mega/game-engine";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { CardDetailProvider } from "@/components/card-detail";
@@ -14,7 +14,7 @@ import { startBossBotMatch } from "@/lib/boss";
 import { balance } from "@/config/balance";
 import { isQuadrantFormat, QUADRANT_GRID_LABELS, startQuadrantBotMatch } from "@/lib/quadrant";
 import { startTripleBotMatch } from "@/lib/triple";
-import { fetchChallenges, seenChallenges, type Challenge } from "@/lib/challenges";
+import { createChallengeLobby, fetchChallenges, fetchLobbyChallenge, seenChallenges, type Challenge } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
 import { rememberLastPlay } from "@/lib/last-play";
 import { fetchStory, seenStory, startStoryMission, storyMatchHref, type StoryMission } from "@/lib/story";
@@ -31,6 +31,7 @@ import {
   joinLobby,
   startBotMatch,
   storePendingTeam,
+  withoutStarters,
   type Formation,
   type MatchFormat,
   type VariantCopy,
@@ -45,7 +46,8 @@ const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
 // /squadra/?mode=lobby                          (create a friend code)
 // /squadra/?mode=join&code=ABC234               (join a friend)
 // /squadra/?story=C1M1                          (a story mission)
-// /squadra/?sfida=<id>&difficulty=medium        (a Sfida a tema against a bot; &format=triple for its mode)
+// /squadra/?sfida=<id>&difficulty=medium        (a Sfida a tema against a bot; &format=… for its mode)
+// /squadra/?sfida=<id>&mode=queue|lobby         (a Sfida a tema online; a join learns it from the code)
 // &format=boss with difficulty, queue or lobby  (a Grande Minaccia)
 // &format=triple with difficulty, queue or lobby (an Allarme Triplo)
 // &format=quadrant|quadrant_shifting with difficulty, queue or lobby (a Quadrante)
@@ -69,6 +71,9 @@ type Loaded = {
   variantCopies: Map<string, VariantCopy[]>;
   instanceDefinitions: Map<string, string>;
   formations: Formation[];
+  /** Outside Conquest: for a Sfida a tema without starters, the copies that are not starter ones. */
+  nonStarterBase: Map<string, string> | null;
+  starterIds: Set<string> | null;
 };
 
 /** The mission of a story team: its stars. */
@@ -142,8 +147,9 @@ function TeamPageContent() {
   const router = useRouter();
   const params = useSearchParams();
   const mode = readMode(params);
-  // A Sfida a tema (SPEC §8.8): only against a bot, in its own mode.
-  const challengeId = mode.kind === "bot" ? params.get("sfida") : null;
+  // A Sfida a tema (SPEC §8.8): against a bot or online in its own mode; a join learns it from the code.
+  const [joinChallenge, setJoinChallenge] = useState<string | null>(null);
+  const challengeId = ["bot", "queue", "lobby"].includes(mode.kind) ? params.get("sfida") : mode.kind === "join" ? joinChallenge : null;
   const findChallenge = (list: { challenges: Challenge[] } | null) =>
     list?.challenges.find((challenge) => challenge.id === challengeId) ?? null;
   const [challenge, setChallenge] = useState<Challenge | null>(() => (challengeId ? findChallenge(seenChallenges()) : null));
@@ -198,9 +204,12 @@ function TeamPageContent() {
   useEffect(() => {
     if (!session || joinCode === null) return;
     let cancelled = false;
-    fetchLobbyFormat(joinCode)
-      .then((found) => {
-        if (!cancelled) setJoinFormat(found ?? "classic");
+    // The challenge first: the picker opens once the format is known.
+    Promise.all([fetchLobbyFormat(joinCode), fetchLobbyChallenge(joinCode).catch(() => null)])
+      .then(([found, lobbyChallenge]) => {
+        if (cancelled) return;
+        setJoinChallenge(lobbyChallenge);
+        setJoinFormat(found ?? "classic");
       })
       .catch(() => {
         // An unknown code is refused when joining, with its own message.
@@ -218,8 +227,13 @@ function TeamPageContent() {
       ? fetchConquestInstances()
       : fetchOwnedInstances().then((free) => ({ ...free, conquerable: null, atRiskCopies: null }));
     Promise.all([fetchCatalog(), copies, fetchInstanceDefinitions(), fetchFormations()])
-      .then(([catalog, { owned, conquerable, atRiskCopies, variantCopies }, instanceDefinitions, formations]) => {
-        if (!cancelled) setLoaded({ catalog, owned, conquerable, atRiskCopies, variantCopies, instanceDefinitions, formations });
+      .then(([catalog, found, instanceDefinitions, formations]) => {
+        const { owned, conquerable, atRiskCopies, variantCopies } = found;
+        const nonStarterBase = "nonStarterBase" in found ? found.nonStarterBase : null;
+        const starterIds = "starterIds" in found ? found.starterIds : null;
+        if (!cancelled) {
+          setLoaded({ catalog, owned, conquerable, atRiskCopies, variantCopies, instanceDefinitions, formations, nonStarterBase, starterIds });
+        }
       })
       .catch((cause: unknown) => {
         if (!cancelled) setError(describeServerError(cause));
@@ -228,6 +242,13 @@ function TeamPageContent() {
       cancelled = true;
     };
   }, [session, isConquest]);
+
+  // A challenge without starters: the copies to field are never starter ones.
+  const owned = useMemo(() => {
+    if (!loaded) return null;
+    if (!challenge?.rules.no_starters || !loaded.nonStarterBase || !loaded.starterIds) return loaded.owned;
+    return withoutStarters(loaded.owned, loaded.variantCopies, loaded.nonStarterBase, loaded.starterIds);
+  }, [loaded, challenge]);
 
   async function start(cardInstanceIds: string[]) {
     setStarting(true);
@@ -238,11 +259,11 @@ function TeamPageContent() {
           const sfida = challengeId ?? undefined;
           const view =
             format === "boss"
-              ? await startBossBotMatch(mode.difficulty, cardInstanceIds)
+              ? await startBossBotMatch(mode.difficulty, cardInstanceIds, sfida)
               : format === "triple"
                 ? await startTripleBotMatch(mode.difficulty, cardInstanceIds, sfida)
                 : isQuadrantFormat(format)
-                  ? await startQuadrantBotMatch(mode.difficulty, format, cardInstanceIds)
+                  ? await startQuadrantBotMatch(mode.difficulty, format, cardInstanceIds, sfida)
                   : await startBotMatch(mode.difficulty, cardInstanceIds, sfida);
           rememberLastPlay(
             challenge
@@ -263,14 +284,19 @@ function TeamPageContent() {
           break;
         }
         case "lobby":
-          await createLobby(cardInstanceIds, format);
+          if (challengeId) await createChallengeLobby(challengeId, cardInstanceIds);
+          else await createLobby(cardInstanceIds, format);
           rememberLastPlay({ mode: "lobby", format });
           router.push("/attesa/?mode=lobby");
           break;
         case "queue":
           storePendingTeam(cardInstanceIds);
-          rememberLastPlay({ mode: "queue", format });
-          router.push(format === "classic" ? "/attesa/?mode=queue" : `/attesa/?mode=queue&format=${format}`);
+          rememberLastPlay(
+            challenge ? { mode: "queue", format, challenge: { id: challenge.id, title: challenge.title } } : { mode: "queue", format },
+          );
+          router.push(
+            `/attesa/?mode=queue${challengeId ? `&sfida=${challengeId}` : ""}${format === "classic" ? "" : `&format=${format}`}`,
+          );
           break;
         case "ranked":
           storePendingTeam(cardInstanceIds);
@@ -327,12 +353,12 @@ function TeamPageContent() {
             </Link>
           </p>
         )}
-        {loaded && (mode.kind !== "join" || joinFormat !== null) && (!challengeId || challenge) ? (
+        {loaded && owned && (mode.kind !== "join" || joinFormat !== null) && (!challengeId || challenge) ? (
           // A long press on a card shows it whole (CardDetailProvider).
           <CardDetailProvider>
             <TeamPicker
               catalog={loaded.catalog}
-              owned={loaded.owned}
+              owned={owned}
               conquerable={loaded.conquerable}
               atRiskCopies={loaded.atRiskCopies}
               variantCopies={loaded.variantCopies}
@@ -342,7 +368,7 @@ function TeamPageContent() {
               startLabel={COPY[mode.kind].start(mode)}
               starting={starting}
               onStart={start}
-              key={format}
+              key={`${format}-${challenge?.id ?? ""}`}
               squadSize={squadSizeOf(format)}
               storyStars={mission && mission.star_rarities.length > 0 ? { rules: mission, earned: mission.stars } : null}
               challenge={challengeGone ? null : challenge}

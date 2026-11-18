@@ -236,8 +236,10 @@ export function joinQueue(
   mode: QueueMode,
   timeoutMs?: number,
   format: MatchFormat = "classic",
+  /** A Sfida a tema played online: its own queue (SPEC §8.8). */
+  challengeId?: string,
 ): Promise<{ matched: boolean; match_id: string | null }> {
-  return invokeFunction({ action: "queue", mode, format, card_instance_ids: cardInstanceIds }, timeoutMs);
+  return invokeFunction({ action: "queue", mode, format, card_instance_ids: cardInstanceIds, challenge_id: challengeId }, timeoutMs);
 }
 
 export type QueueMode = "friendly" | "conquest" | "ranked";
@@ -461,10 +463,11 @@ export function readPendingTeam(): string[] | null {
 export type Formation = { id: string; name: string; card_instance_ids: string[]; definition_ids: (string | null)[] | null };
 
 /** A copy with an artwork variant, which a player fields only by choosing it. */
-export type VariantCopy = { id: string; name: string; art_url: string };
+/** style: the variant style's code (a Sfida a tema may count only some styles). */
+export type VariantCopy = { id: string; name: string; art_url: string; style?: string };
 
-function variantCopyOf(id: string, variant: { style_name: string; art_url: string }): VariantCopy {
-  return { id, name: variant.style_name, art_url: variant.art_url };
+function variantCopyOf(id: string, variant: { style?: string; style_name: string; art_url: string }): VariantCopy {
+  return { id, name: variant.style_name, art_url: variant.art_url, style: variant.style };
 }
 
 function collectVariantCopy(copies: Map<string, VariantCopy[]>, definitionId: string, copy: VariantCopy) {
@@ -492,20 +495,47 @@ export function switchableVariants(copies: VariantCopy[] | undefined, defaultId:
 export async function fetchOwnedInstances(): Promise<{
   owned: Map<string, string>;
   variantCopies: Map<string, VariantCopy[]>;
+  /** For a Sfida a tema without starters: the oldest base copy that is not a starter one, by character. */
+  nonStarterBase: Map<string, string>;
+  starterIds: Set<string>;
 }> {
   const { data, error } = await getSupabase()
     .from("card_instances")
-    .select("id, definition_id, acquired_at, card_variants(style_name, art_url)")
+    .select("id, definition_id, acquired_at, is_starter, card_variants(style, style_name, art_url)")
     .order("acquired_at");
   if (error) throw error;
   const owned = new Map<string, string>();
   const variantCopies = new Map<string, VariantCopy[]>();
+  const nonStarterBase = new Map<string, string>();
+  const starterIds = new Set<string>();
   for (const row of data) {
+    if (row.is_starter) starterIds.add(row.id);
     if (row.card_variants) collectVariantCopy(variantCopies, row.definition_id, variantCopyOf(row.id, row.card_variants));
-    else if (!owned.has(row.definition_id)) owned.set(row.definition_id, row.id);
+    else {
+      if (!owned.has(row.definition_id)) owned.set(row.definition_id, row.id);
+      if (!row.is_starter && !nonStarterBase.has(row.definition_id)) nonStarterBase.set(row.definition_id, row.id);
+    }
   }
   for (const [definitionId, copies] of variantCopies) if (!owned.has(definitionId)) owned.set(definitionId, copies[0].id);
-  return { owned, variantCopies };
+  return { owned, variantCopies, nonStarterBase, starterIds };
+}
+
+/**
+ * The copies to field in a Sfida a tema without starters: a character's base copy that is not
+ * a starter one, else a variant copy (never a starter); a character owned only as starter is left out.
+ */
+export function withoutStarters(
+  owned: Map<string, string>,
+  variantCopies: Map<string, VariantCopy[]>,
+  nonStarterBase: Map<string, string>,
+  starterIds: Set<string>,
+): Map<string, string> {
+  const result = new Map<string, string>();
+  for (const [definitionId, instanceId] of owned) {
+    const copy = starterIds.has(instanceId) ? (nonStarterBase.get(definitionId) ?? variantCopies.get(definitionId)?.[0]?.id) : instanceId;
+    if (copy) result.set(definitionId, copy);
+  }
+  return result;
 }
 
 /**
@@ -524,7 +554,7 @@ export async function fetchConquestInstances(): Promise<{
 }> {
   const { data, error } = await getSupabase()
     .from("card_instances")
-    .select("id, definition_id, is_starter, locked_until, acquired_at, card_variants(style_name, art_url)")
+    .select("id, definition_id, is_starter, locked_until, acquired_at, card_variants(style, style_name, art_url)")
     .order("acquired_at");
   if (error) throw error;
   const owned = new Map<string, string>();

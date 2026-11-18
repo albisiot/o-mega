@@ -9,7 +9,14 @@ import { leagueInfo, type MyRanked } from "@/lib/ranked";
  * the Classificata (SPEC §8.7) with the player's Fama and league. Side by side, so on a short
  * phone they take no height from the pack panel. The lettering follows each tile's size.
  */
-export function HomePlayButtons({ ranked }: { ranked: MyRanked | null }) {
+export function HomePlayButtons({
+  ranked,
+  challenge = null,
+}: {
+  ranked: MyRanked | null;
+  /** A Sfida a tema running (SPEC §8.8): its name takes the place of «Tutte le modalità». */
+  challenge?: { title: string; color: string } | null;
+}) {
   return (
     <div className="flex min-h-21 flex-[1_1_0] gap-2 short:min-h-18">
       <Link
@@ -19,7 +26,16 @@ export function HomePlayButtons({ ranked }: { ranked: MyRanked | null }) {
         <p className="-skew-x-8 font-display text-[length:clamp(30px,min(46cqh,26cqw),96px)] uppercase leading-[0.95]">
           Gioca
         </p>
-        <p className="mt-0.5 truncate text-[13px] font-extrabold leading-4">Tutte le modalità</p>
+        {challenge ? (
+          <p className="mt-0.5 flex min-w-0 items-center gap-1 text-[13px] font-extrabold leading-4">
+            <span className="shrink-0 -rotate-2 border-2 border-black px-1 font-sfx text-[12px] leading-[14px] tracking-wide" style={{ background: challenge.color }}>
+              ★ A tema
+            </span>
+            <span className="min-w-0 truncate">{challenge.title}</span>
+          </p>
+        ) : (
+          <p className="mt-0.5 truncate text-[13px] font-extrabold leading-4">Tutte le modalità</p>
+        )}
       </Link>
       <Link
         href="/classificata"

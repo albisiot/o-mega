@@ -150,10 +150,16 @@ export function TeamPicker(props: TeamPickerProps) {
   // Sfida a tema: why each card is out of the squad (null: it can be picked); the list shows
   // the admitted cards unless the player asks for all of them.
   const challengeRules = useMemo(() => (challenge ? toChallengeRules(challenge.rules) : null), [challenge]);
+  // Only variants of the listed styles count, when the challenge lists some.
+  const styleCounts = (copy: VariantCopy | undefined): boolean =>
+    copy !== undefined &&
+    (!challengeRules || challengeRules.variantStyles.length === 0 || (copy.style !== undefined && challengeRules.variantStyles.includes(copy.style)));
   const excludedWhy = useMemo(() => {
     if (!challengeRules) return null;
+    const fits = (copy: VariantCopy) =>
+      challengeRules.variantStyles.length === 0 || (copy.style !== undefined && challengeRules.variantStyles.includes(copy.style));
     return (card: CatalogCard): ChallengeExclusion | null =>
-      whyNotAdmitted(card, challengeRules, traits, (variantCopies.get(card.id)?.length ?? 0) > 0);
+      whyNotAdmitted(card, challengeRules, traits, (variantCopies.get(card.id) ?? []).some(fits));
   }, [challengeRules, traits, variantCopies]);
   const [showExcluded, setShowExcluded] = useState(false);
   const admittedCount = useMemo(() => (excludedWhy ? cards.filter((card) => excludedWhy(card) === null).length : 0), [cards, excludedWhy]);
@@ -257,8 +263,8 @@ export function TeamPicker(props: TeamPickerProps) {
           : current,
     );
     // A challenge that wants variants: a new card comes with its variant while some are missing.
-    if (adding && selected.length < size && variantsMissing > 0 && !fieldedVariant(definitionId)) {
-      const option = variantOptions(definitionId)[0];
+    if (adding && selected.length < size && variantsMissing > 0 && !styleCounts(fieldedVariant(definitionId))) {
+      const option = variantOptions(definitionId).find(styleCounts);
       if (option) chooseCopy(definitionId, option);
     }
   }
@@ -326,7 +332,7 @@ export function TeamPicker(props: TeamPickerProps) {
       }).length
     : 0;
   const variantsWanted = challengeRules ? challengeVariantsNeeded(challengeRules, size) : 0;
-  const variantsFielded = selected.filter((id) => fieldedVariant(id) !== undefined).length;
+  const variantsFielded = selected.filter((id) => styleCounts(fieldedVariant(id))).length;
   const variantsMissing = Math.max(0, variantsWanted - variantsFielded);
   const challengeBlock =
     selected.length < size

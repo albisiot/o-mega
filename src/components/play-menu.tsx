@@ -261,7 +261,8 @@ function ModeSheet({ mode, disabled, challenge, now }: { mode: Mode; disabled: b
 
   return (
     <>
-      <p className="text-[13px] font-medium leading-4 text-muted">{mode.rules}</p>
+      {/* On the challenge's tab its card says what matters: the mode's rules make room for it. */}
+      {opponent !== "challenge" && <p className="text-[13px] font-medium leading-4 text-muted">{mode.rules}</p>}
       <Needs items={mode.needs} />
       {mode.key === "quadrant" && (
         <div role="radiogroup" aria-label="La griglia" className="grid grid-cols-2 gap-1.5">
@@ -665,7 +666,9 @@ export function PlayMenuView({
       ? { mode: "queue", format: "classic" }
       : lastPlay?.mode === "bot" && lastPlay.challenge && !challengeRuns(lastPlay.challenge.id)
         ? { mode: "bot", format: lastPlay.format, difficulty: lastPlay.difficulty }
-        : lastPlay;
+        : lastPlay?.mode === "queue" && lastPlay.challenge && !challengeRuns(lastPlay.challenge.id)
+          ? { mode: "queue", format: lastPlay.format }
+          : lastPlay;
 
   return (
     <div className="home-shell">

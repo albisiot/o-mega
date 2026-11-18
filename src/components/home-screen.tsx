@@ -12,6 +12,7 @@ import { PackPanel } from "@/components/pack-panel";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { WorldIntro } from "@/components/world-intro";
 import { fetchAbilities, seenAbilities } from "@/lib/catalog";
+import { fetchChallenges, seenChallenges, type Challenge } from "@/lib/challenges";
 import { fetchCatalog, fetchCollection, seenCatalog, seenCollection } from "@/lib/collection";
 import { fetchActiveMatch, type ActiveMatch } from "@/lib/match";
 import { fetchPackOdds, seenPackOdds } from "@/lib/packs";
@@ -19,6 +20,7 @@ import type { Profile } from "@/lib/player";
 import { fetchMyRanked, type MyRanked } from "@/lib/ranked";
 import { hasSeenTutorial } from "@/lib/tutorial-seen";
 import { useLockedScreen } from "@/lib/use-locked-screen";
+import { useNow } from "@/lib/use-now";
 import { usePackStatus } from "@/lib/use-pack-status";
 import { fetchCoinHistory, seenCoinHistory } from "@/lib/wallet";
 
@@ -42,6 +44,10 @@ export function HomeScreen({ profile }: { profile: Profile }) {
   const packs = usePackStatus();
   const [activeMatch, setActiveMatch] = useState<ActiveMatch | null>(null);
   const [ranked, setRanked] = useState<MyRanked | null>(null);
+  // A Sfida a tema running (SPEC §8.8): its name on the Gioca button.
+  const [challenges, setChallenges] = useState<Challenge[] | null>(() => seenChallenges()?.challenges ?? null);
+  // A minute is precise enough for a challenge starting or ending.
+  const now = useNow(60_000);
   const [Tutorial, setTutorial] = useState<ComponentType | null>(null);
 
   // Only a player who has not seen the tutorial downloads it, while the world intro is still up.
@@ -80,6 +86,12 @@ export function HomeScreen({ profile }: { profile: Profile }) {
         if (!cancelled) setRanked(next);
       })
       .catch((error: unknown) => console.error("Ranked failed", error));
+    // Asking for the challenges also brings the banner of a new one, the first time.
+    fetchChallenges()
+      .then((next) => {
+        if (!cancelled) setChallenges(next.challenges);
+      })
+      .catch((error: unknown) => console.error("Challenges failed", error));
     return () => {
       cancelled = true;
     };
@@ -135,7 +147,14 @@ export function HomeScreen({ profile }: { profile: Profile }) {
           onFailed={packs.refresh}
         />
 
-        <HomePlayButtons ranked={ranked} />
+        <HomePlayButtons
+          ranked={ranked}
+          challenge={
+            challenges?.find(
+              (challenge) => Date.parse(challenge.starts_at) <= now && now < Date.parse(challenge.ends_at),
+            ) ?? null
+          }
+        />
       </main>
     </div>
   );

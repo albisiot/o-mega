@@ -1,7 +1,14 @@
 // The line of in-app banners (SPEC §11.1). The server writes the news; this only
 // decides which one shows and in what order. Pure: no I/O, no timers.
 
-export type NotificationKind = "objective_completed" | "event_reward" | "achievement" | "leaderboard" | "ranked";
+export type NotificationKind =
+  | "objective_completed"
+  | "event_reward"
+  | "achievement"
+  | "leaderboard"
+  | "ranked"
+  | "challenge"
+  | "challenge_reward";
 
 export type PlayerNotification = {
   id: string;
@@ -80,6 +87,10 @@ export function bannerHref(notification: PlayerNotification): string | null {
         : "/classifiche/";
     case "ranked":
       return "/classifiche/?scheda=albo";
+    // Sfide a tema (SPEC §8.8): a new one, or a prize target reached; both are in Gioca.
+    case "challenge":
+    case "challenge_reward":
+      return "/gioca/";
     default:
       return null;
   }
@@ -113,6 +124,10 @@ export function bannerHint(notification: PlayerNotification): string {
       return "Tocca per vedere la classifica";
     case "ranked":
       return "Tocca per aprire l'Albo";
+    case "challenge":
+      return "Tocca per giocarla";
+    case "challenge_reward":
+      return "Tocca per vederlo in Gioca";
     default:
       return "Tocca per chiudere";
   }

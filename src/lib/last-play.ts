@@ -9,7 +9,7 @@ import type { MatchFormat } from "@/lib/match";
 export type LastPlay =
   /** challenge: a Sfida a tema (SPEC §8.8); Gioca drops it once the challenge is over. */
   | { mode: "bot"; format: MatchFormat; difficulty: BotDifficulty; challenge?: { id: string; title: string } }
-  | { mode: "queue" | "lobby" | "ranked"; format: MatchFormat }
+  | { mode: "queue" | "lobby" | "ranked"; format: MatchFormat; challenge?: { id: string; title: string } }
   | { mode: "conquest"; format: "classic" };
 
 /** What Gioca suggests before the player has started anything on this device. */
@@ -26,12 +26,15 @@ export function parseLastPlay(value: unknown): LastPlay | null {
   const { mode, format, difficulty, challenge } = value as Record<string, unknown>;
   if (!FORMATS.includes(format as MatchFormat)) return null;
   const known = format as MatchFormat;
+  const { id, title } = (challenge ?? {}) as Record<string, unknown>;
+  const knownChallenge = typeof id === "string" && typeof title === "string" ? { id, title } : null;
   if (mode === "bot") {
     if (!DIFFICULTIES.includes(difficulty as BotDifficulty)) return null;
     const play: LastPlay = { mode, format: known, difficulty: difficulty as BotDifficulty };
-    const { id, title } = (challenge ?? {}) as Record<string, unknown>;
-    return typeof id === "string" && typeof title === "string" ? { ...play, challenge: { id, title } } : play;
+    return knownChallenge ? { ...play, challenge: knownChallenge } : play;
   }
+  // Online, only the random queue remembers a challenge (a friend code is made again each time).
+  if (mode === "queue" && knownChallenge) return { mode, format: known, challenge: knownChallenge };
   if (mode === "queue" || mode === "lobby" || mode === "ranked") return { mode, format: known };
   if (mode === "conquest") return { mode, format: "classic" };
   return null;
@@ -62,7 +65,7 @@ export function lastPlayHref(play: LastPlay): string {
       ? [play.challenge ? `sfida=${play.challenge.id}` : "", format, `difficulty=${play.difficulty}`]
       : play.mode === "conquest"
         ? ["mode=conquest"]
-        : [`mode=${play.mode}`, format];
+        : [play.challenge ? `sfida=${play.challenge.id}` : "", `mode=${play.mode}`, format];
   return `/squadra/?${params.filter(Boolean).join("&")}`;
 }
 
@@ -88,7 +91,7 @@ export function describeLastPlay(play: LastPlay): { title: string; detail: strin
             ? "Classificata, la Fama in gioco"
             : "Conquista, carte in palio";
   const detail = `${grid}${how}`;
-  if (play.mode === "bot" && play.challenge) {
+  if ((play.mode === "bot" || play.mode === "queue") && play.challenge) {
     return { title: play.challenge.title, detail: `Sfida a tema · ${MODE_NAMES[play.format]} ${how}` };
   }
   return { title: MODE_NAMES[play.format], detail: detail.charAt(0).toUpperCase() + detail.slice(1) };
