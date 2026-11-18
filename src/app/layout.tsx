@@ -23,6 +23,7 @@ import { NotificationBanner } from "@/components/notification-banner";
 import { EmergencyPrizePopup } from "@/components/emergency-prize-popup";
 import { PlaceMemory } from "@/components/place-memory";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
+import { SPLASH_LINE_SCRIPT } from "@/lib/splash-line";
 import { STALE_BUILD_SCRIPT } from "@/lib/stale-build";
 import { Suspense } from "react";
 import "./globals.css";
@@ -93,6 +94,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         {/* Reloads once a page whose HTML outlived a deploy (see src/lib/stale-build.ts). */}
         <script dangerouslySetInnerHTML={{ __html: STALE_BUILD_SCRIPT }} />
+        {/* Picks the opening screen's subtitle before the first paint (see src/lib/splash-line.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: SPLASH_LINE_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col font-sans">
         <AuthProvider>

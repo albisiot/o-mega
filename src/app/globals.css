@@ -1106,3 +1106,123 @@ html.screen-locked body {
     animation: banner-fade-out 150ms linear both;
   }
 }
+
+/* Opening screen (src/components/app-splash.tsx, SPEC §11.3): the Ω of the pack bursts, the
+   letters of O-MEGA stamp in one after the other and the last one shakes the screen with a SBAM.
+   It is in the static HTML, so it plays from the first paint, before React: the title is complete at
+   about 0.35 s, before the quickest exit (the home ready 500 ms after the page load) fades it. */
+.splash-emblem {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  width: 150px;
+  height: 150px;
+  margin: -75px 0 0 -75px;
+  pointer-events: none;
+  animation: splash-emblem 0.26s linear both;
+}
+@keyframes splash-emblem {
+  0% { transform: scale(0) rotate(-50deg); opacity: 1; }
+  33% { transform: scale(1.18) rotate(6deg); opacity: 1; }
+  45% { transform: scale(1) rotate(0); opacity: 1; }
+  100% { transform: scale(3.2) rotate(18deg); opacity: 0; }
+}
+.splash-flash {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: 260px;
+  height: 260px;
+  margin: -130px 0 0 -130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--foreground) 0 30%, rgb(255 214 10 / 0.6) 45%, transparent 70%);
+  pointer-events: none;
+  animation: splash-flash 0.26s ease-out 0.05s both;
+}
+@keyframes splash-flash {
+  0% { transform: scale(0.3); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+.splash-letter {
+  display: inline-block;
+  animation: splash-stamp 0.13s linear calc(0.04s + var(--i) * 0.036s) both;
+}
+@keyframes splash-stamp {
+  0% { opacity: 0; transform: translateY(-26px) scale(2.5) rotate(-14deg); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  65% { opacity: 1; transform: translateY(2px) scale(0.9, 0.86) rotate(1deg); animation-timing-function: ease-out; }
+  100% { opacity: 1; transform: none; }
+}
+.splash-shake { animation: splash-shake 0.28s linear 0.3s both; }
+@keyframes splash-shake {
+  0%, 100% { transform: none; }
+  12% { transform: translate(-8px, 5px) rotate(-1.1deg); }
+  28% { transform: translate(7px, -4px) rotate(0.9deg); }
+  44% { transform: translate(-5px, 2px) rotate(-0.4deg); }
+  62% { transform: translate(3px, -1px); }
+  80% { transform: translate(-1px, 0); }
+}
+/* The dark star left behind the title: it turns slowly while the data is still loading. */
+.splash-star {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 330px;
+  height: 172px;
+  margin: -86px 0 0 -165px;
+  animation: splash-star 0.32s cubic-bezier(0.2, 1.5, 0.4, 1) 0.27s both;
+}
+@keyframes splash-star {
+  from { transform: scale(0.2) rotate(-30deg); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.splash-star-spin {
+  transform-box: view-box;
+  transform-origin: center;
+  animation: splash-spin 24s linear 0.6s infinite;
+}
+@keyframes splash-spin {
+  to { transform: rotate(360deg); }
+}
+.splash-sbam {
+  position: absolute;
+  right: -4px;
+  top: -26px;
+  z-index: 20;
+  font: 34px/1 var(--sfx-font);
+  letter-spacing: 0.04em;
+  color: var(--comic-yellow);
+  -webkit-text-stroke: 3px #000;
+  paint-order: stroke fill;
+  text-shadow: 3px 3px 0 #000;
+  transform: rotate(-12deg);
+  animation: splash-sbam 0.3s cubic-bezier(0.2, 1.6, 0.4, 1) 0.3s both;
+}
+@keyframes splash-sbam {
+  from { transform: rotate(-12deg) scale(0); opacity: 0; }
+  to { transform: rotate(-12deg) scale(1); opacity: 1; }
+}
+.splash-sub { animation: splash-sub 0.18s ease-out 0.22s both; }
+@keyframes splash-sub {
+  from { clip-path: inset(0 100% 0 0); transform: translateX(-10px) skewX(-8deg); }
+  to { clip-path: inset(0 0 0 0); transform: none; }
+}
+/* One line per opening: SPLASH_LINE_SCRIPT (src/lib/splash-line.ts) picks it before the first
+   paint; without it, the first one. */
+.splash-line + .splash-line { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .splash-letter,
+  .splash-shake,
+  .splash-star,
+  .splash-star-spin,
+  .splash-sbam,
+  .splash-sub {
+    animation: none;
+  }
+  .splash-emblem,
+  .splash-flash {
+    display: none;
+  }
+}

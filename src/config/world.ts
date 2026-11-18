@@ -17,11 +17,17 @@ export const WORLD_INTRO = [
   },
 ];
 
-export const WORLD_LOADING_LINES = [
+// Subtitle of the opening screen: one per opening, never the same twice in a row
+// (src/lib/splash-line.ts). Append new lines at the end: the device keeps the index of the last one.
+export const WORLD_SPLASH_LINES = [
   "Sismografo in ascolto…",
   "Il Banco conta le lastre…",
   "Le Lanterne accendono il quartiere…",
   "I Custodi chiudono il porto…",
+  "La Compagnia Lete alza le tariffe…",
+  "Gli Sciolti scaricano al molo…",
+  "I Figli dell'Ultima ripassano l'alfabeto…",
+  "Il Comune timbra le licenze…",
 ];
 
 export const WORLD_SEARCH_LINES = [
