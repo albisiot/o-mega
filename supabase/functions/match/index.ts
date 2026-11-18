@@ -7,7 +7,12 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   buildBotTeam,
+  buildChallengeBotTeam,
   computeAbilityMeans,
+  drawChallengeThreats,
+  parseChallengeRules,
+  parseMatchRules,
+  simulateChallenge,
   drawBossValues,
   drawEmergencyThreats,
   drawMatchThreats,
@@ -34,6 +39,10 @@ import {
   type BotDifficulty,
   type BotMatchCatalog,
   type Character,
+  type ChallengeMatchRules,
+  type ChallengeRules,
+  type ModifierNumbers,
+  type PlacedThreat,
   type EmergencyAttempt,
   type EmergencyRules,
   type MatchResult,
@@ -112,6 +121,13 @@ const CLIENT_ERRORS = new Set([
   "challenge_online_not_allowed",
   "challenge_level_too_low",
   "challenge_starter_not_allowed",
+  "challenge_over_budget",
+  "challenge_rarity_limit",
+  "challenge_too_few_factions",
+  "challenge_emergency_already_played",
+  "challenge_emergency_not_started",
+  "invalid_bot_team",
+  "not_admin",
 ]);
 
 class GameError extends Error {}
@@ -171,6 +187,10 @@ type Loaded = {
   catalog: BotMatchCatalog;
   /** Usual threats of Nuova Megara only: Emergenza never draws the places beyond it. */
   emergencyCatalog: Threat[];
+  /** The usual threats with their places, for the match rules of a Sfida a tema (SPEC §8.8). */
+  placedThreats: PlacedThreat[];
+  /** The numbers of the drawn modifiers, for the challenges' simulator. */
+  modifierNumbers: ModifierNumbers;
   /** The rare threats (SPEC §5.15), with their chance: in every mode that draws threats. */
   rareCatalog: RareThreat[];
   definitions: Map<string, Definition>;
@@ -353,6 +373,15 @@ async function load(): Promise<Loaded> {
     emergencyCatalog: activeThreats
       .filter((t) => t.region === "megara")
       .map(({ id, level, abilities }) => ({ id, level, abilities })),
+    placedThreats: activeThreats.map(({ id, level, abilities, modifier, region }) => ({ id, level, abilities, modifier, region })),
+    modifierNumbers: {
+      hostileBonus: value("threat_modifiers.hostile_bonus"),
+      hostileMalus: value("threat_modifiers.hostile_malus"),
+      underdogBonus: value("threat_modifiers.underdog_bonus"),
+      underdogMalus: value("threat_modifiers.underdog_malus"),
+      underdogCommonMaxRank: value("threat_modifiers.underdog_common_max_rank"),
+      underdogEliteMinRank: value("threat_modifiers.underdog_elite_min_rank"),
+    },
     definitions: new Map(definitionRows.map((d) => [d.id, d])),
     rareCatalog,
     threats: new Map(threatList.map(({ id, level, abilities, rarity, target }) => [id, { id, level, abilities, rarity, target }])),
@@ -911,11 +940,34 @@ async function playBotMatchRound(userId: string, body: Record<string, unknown>) 
 // Sfide a tema against a bot (SPEC §8.8)
 // ---------------------------------------------------------------------------
 
+/** What a challenge tells the Edge Function before a match against its bot (challenge_bot_context). */
+type ChallengeBotContext = {
+  format: string;
+  admitted_definition_ids: string[] | null;
+  rules: Record<string, unknown> | null;
+  match_rules: Record<string, unknown> | null;
+  supplied_definition_ids: string[] | null;
+  rarity_ranks: Record<string, number> | null;
+};
+
+/** A character's rarity code, from its rank (the database's rarity_definitions). */
+function rarityOfRank(ranks: Record<string, number> | null): (character: Character) => string {
+  const codes = new Map(Object.entries(ranks ?? {}).map(([code, rank]) => [rank, code]));
+  return (character) => codes.get(character.rarityRank) ?? "";
+}
+
+/** The threats of a Classica in a challenge: its match rules (SPEC §8.8), else the usual draw. */
+function challengeThreats(loaded: Loaded, matchRules: ChallengeMatchRules): string[] {
+  return drawChallengeThreats(rng, loaded.placedThreats, loaded.rareCatalog, loaded.rules, matchRules).map((t) => t.id);
+}
+
 /**
  * A match in a Sfida a tema: the database says whether the player can start one (open, the
  * bot allowed, the matches of the day) and which characters its bot may use; the engine builds
- * the bot's team among them, and the database creates the match of the challenge's mode,
- * checking the squad against the rules it copies onto the match.
+ * the bot's team among them, within the composition rules, and draws Classica's threats with
+ * the match rules; the database creates the match of the challenge's mode, checking the squad
+ * against the rules it copies onto the match. With a squad given by the challenge, the player
+ * fields it and the bot none of its characters.
  */
 async function startChallengeBotMatch(
   userId: string,
@@ -927,29 +979,30 @@ async function startChallengeBotMatch(
   if (typeof challengeId !== "string") throw new GameError("invalid_request");
   const context = check(
     await admin.rpc("challenge_bot_context", { p_user: userId, p_challenge_id: challengeId, p_difficulty: difficulty }),
-  ) as { format: string; admitted_definition_ids: string[] | null };
+  ) as ChallengeBotContext;
   // The team screen opened the challenge from its mode: another mode is a stale link.
   if (context.format !== format) throw new GameError("challenge_format_unsupported");
 
   const loaded = await load();
   const size = teamSizeOf(loaded, format);
+  const supplied = new Set(context.supplied_definition_ids ?? []);
   const admitted = context.admitted_definition_ids ? new Set(context.admitted_definition_ids) : null;
-  const pool = admitted ? loaded.catalog.characters.filter((character) => admitted.has(character.definitionId)) : null;
+  const usable = loaded.catalog.characters.filter((character) => !supplied.has(character.definitionId));
+  const pool = admitted ? usable.filter((character) => admitted.has(character.definitionId)) : null;
   // The rules always admit a squad; should the bots' catalog hold fewer, the bot takes the whole catalog.
-  const characters = pool && pool.length >= size ? pool : loaded.catalog.characters;
+  const characters = pool && pool.length >= size ? pool : usable;
+  const rules: ChallengeRules = parseChallengeRules(context.rules);
+  const botTeam = buildChallengeBotTeam(difficulty, characters, size, rng, rules, rarityOfRank(context.rarity_ranks));
   // Classica draws its threats here; the Grande Minaccia its points table; the other modes in the database.
-  const plan =
-    format === "classic"
-      ? planBotMatch({ rules: loaded.rules, catalog: { ...loaded.catalog, characters }, difficulty, rng })
-      : { threats: null, botTeam: buildBotTeam(difficulty, characters, size, rng) };
+  const threats = format === "classic" ? challengeThreats(loaded, parseMatchRules(context.match_rules)) : null;
   const create = (current: Loaded) =>
     admin.rpc("challenge_create_bot_match", {
       p_user: userId,
       p_challenge_id: challengeId,
       p_difficulty: difficulty,
       p_card_instance_ids: cards,
-      p_bot_definition_ids: plan.botTeam.map((c) => c.definitionId),
-      p_threat_ids: plan.threats ? plan.threats.map((t) => t.id) : null,
+      p_bot_definition_ids: botTeam.map((c) => c.definitionId),
+      p_threat_ids: threats,
       p_boss_values: format === "boss" ? drawBossValues(rng, current.boss) : null,
     });
   const matchId = check(format === "boss" ? await withBossTable(create) : await create(loaded)) as string;
@@ -968,12 +1021,16 @@ async function startChallengeBotMatch(
 async function joinChallengeQueue(userId: string, body: Record<string, unknown>) {
   if (typeof body.challenge_id !== "string") throw new GameError("invalid_request");
   const cards = cardIds(body.card_instance_ids);
+  // Classica's threats keep the challenge's match rules.
+  const context = check(
+    await admin.rpc("challenge_online_context", { p_user: userId, p_challenge_id: body.challenge_id }),
+  ) as { format: string; match_rules: Record<string, unknown> | null };
   const { data, error } = await withBossTable((loaded) =>
     admin.rpc("challenge_queue_join", {
       p_user: userId,
       p_challenge_id: body.challenge_id,
       p_team: cards,
-      p_threat_ids: planThreats(loaded),
+      p_threat_ids: context.format === "classic" ? challengeThreats(loaded, parseMatchRules(context.match_rules)) : planThreats(loaded),
       p_boss_values: drawBossValues(rng, loaded.boss),
     }),
   );
@@ -1422,6 +1479,8 @@ async function submitChoice(userId: string, body: Record<string, unknown>) {
 
 type EmergencyKind = {
   rules: (loaded: Loaded) => EmergencyRules;
+  /** Sent with every database call: the challenge of an Emergenza a tema. */
+  params?: Record<string, unknown>;
   /** Stores the first draw of the day (or of the week) for everyone. */
   ensure: string;
   start: string;
@@ -1458,6 +1517,31 @@ const WEEKLY_EMERGENCY: EmergencyKind = {
   record: "emergency_week_record_play",
 };
 
+/**
+ * An Emergenza a tema (SPEC §8.8): one run per player while the challenge lasts; 8 threats play
+ * as the daily one, 10 as the weekly one. The database checks the challenge on every call.
+ */
+async function challengeEmergencyKind(userId: string, challengeId: unknown): Promise<EmergencyKind> {
+  if (typeof challengeId !== "string") throw new GameError("invalid_request");
+  const info = check(
+    await admin.rpc("challenge_emergency_info", { p_user: userId, p_challenge_id: challengeId }),
+  ) as { threats: number };
+  return {
+    rules: (loaded) => {
+      const base = info.threats === 8 ? loaded.emergency : WEEKLY_EMERGENCY.rules(loaded);
+      return { ...base, threatsPerRun: info.threats };
+    },
+    params: { p_challenge_id: challengeId },
+    ensure: "challenge_emergency_ensure",
+    start: "challenge_emergency_start",
+    context: "challenge_emergency_play_context",
+    state: "challenge_emergency_state_payload",
+    notStarted: "challenge_emergency_not_started",
+    alreadyPlayed: "challenge_emergency_already_played",
+    record: "challenge_emergency_record_play",
+  };
+}
+
 /** The first request of the day (or of the week) draws the threats; the database keeps that draw for everyone. */
 async function ensureEmergencyThreats(loaded: Loaded, kind: EmergencyKind) {
   const threats = drawEmergencyThreats(
@@ -1466,12 +1550,12 @@ async function ensureEmergencyThreats(loaded: Loaded, kind: EmergencyKind) {
     kind.rules(loaded),
     loaded.rareCatalog.filter((t) => t.target !== null && t.target !== undefined),
   );
-  const { error } = await admin.rpc(kind.ensure, { p_threat_ids: threats.map((t) => t.id) });
+  const { error } = await admin.rpc(kind.ensure, { ...kind.params, p_threat_ids: threats.map((t) => t.id) });
   if (error) throw new Error(error.message);
 }
 
 async function emergencyState(userId: string, kind: EmergencyKind) {
-  return check(await admin.rpc(kind.state, { p_user: userId }));
+  return check(await admin.rpc(kind.state, { ...kind.params, p_user: userId }));
 }
 
 type EmergencyContext = {
@@ -1491,7 +1575,7 @@ async function openEmergency(userId: string, kind: EmergencyKind) {
 async function startEmergency(userId: string, body: Record<string, unknown>, kind: EmergencyKind) {
   const cards = cardIds(body.card_instance_ids);
   await ensureEmergencyThreats(await load(), kind);
-  const { error } = await admin.rpc(kind.start, { p_user: userId, p_card_instance_ids: cards });
+  const { error } = await admin.rpc(kind.start, { ...kind.params, p_user: userId, p_card_instance_ids: cards });
   if (error) throw new Error(error.message);
   return emergencyState(userId, kind);
 }
@@ -1501,7 +1585,7 @@ async function playEmergency(userId: string, body: Record<string, unknown>, kind
   if (typeof choice !== "string" || typeof body.round !== "number") throw new GameError("invalid_request");
 
   // The attempt in one request: the game day (or week) comes from the database, never computed here.
-  const [loaded, context] = await Promise.all([load(), admin.rpc(kind.context, { p_user: userId })]);
+  const [loaded, context] = await Promise.all([load(), admin.rpc(kind.context, { ...kind.params, p_user: userId })]);
   const { run, threat_ids: threatIds, threat_modifiers: modifiers, plays } = check(context) as EmergencyContext;
   // A threat of the run as it plays: with its fixed rule and what the rule drew.
   const runThreat = (i: number) => {
@@ -1542,6 +1626,7 @@ async function playEmergency(userId: string, body: Record<string, unknown>, kind
 
   return check(
     await admin.rpc(kind.record, {
+      ...kind.params,
       p_user: userId,
       p_round: run.current_round,
       p_card_instance_id: choice,
@@ -1553,6 +1638,68 @@ async function playEmergency(userId: string, body: Record<string, unknown>, kind
       p_parts: outcome.score.parts ?? null,
     }),
   );
+}
+
+// ---------------------------------------------------------------------------
+// The simulator of the Sfide a tema (SPEC §8.8): admins only, a draft of the Editor
+// ---------------------------------------------------------------------------
+
+/** Most simulated matches in one request, by bot: the Edge Function has about 2 s of CPU. */
+const SIMULATION_BATCH: Record<BotDifficulty, number> = { easy: 60, medium: 60, hard: 8, super_pro: 1 };
+
+/**
+ * Plays a batch of simulated Classica matches of an unsaved challenge against one bot: the
+ * Editor asks again until it has enough. Admins only (admin_users, read with the service key).
+ */
+async function simulateChallengeFor(userId: string, body: Record<string, unknown>) {
+  const { data: adminRow, error: adminError } = await admin.from("admin_users").select("user_id").eq("user_id", userId).maybeSingle();
+  if (adminError) throw new Error(adminError.message);
+  if (!adminRow) throw new GameError("not_admin");
+  const difficulty = body.difficulty as BotDifficulty;
+  if (!DIFFICULTIES.includes(difficulty)) throw new GameError("invalid_difficulty");
+  const requested = typeof body.matches === "number" && Number.isInteger(body.matches) ? body.matches : SIMULATION_BATCH[difficulty];
+  const matches = Math.max(1, Math.min(requested, SIMULATION_BATCH[difficulty]));
+  const rawRules = body.rules && typeof body.rules === "object" ? body.rules : {};
+  const codes = Array.isArray(body.supplied_codes) ? body.supplied_codes.map(String) : [];
+
+  const [loaded, context] = await Promise.all([
+    load(),
+    admin.rpc("challenge_simulation_context", { p_rules: rawRules, p_supplied_codes: codes }),
+  ]);
+  const { rules, admitted_definition_ids: admittedIds, rarity_ranks: ranks, supplied_definition_ids: suppliedIds } = check(context) as {
+    rules: Record<string, unknown>;
+    admitted_definition_ids: string[];
+    rarity_ranks: Record<string, number>;
+    supplied_definition_ids: string[];
+  };
+  const supplied = suppliedIds.map((id) => loaded.catalog.characters.find((c: Character) => c.definitionId === id));
+  if (codes.length > 0 && (supplied.length !== loaded.rules.teamSize || supplied.some((c) => c === undefined))) {
+    throw new GameError("invalid_request");
+  }
+  const admittedSet = new Set(admittedIds);
+  const suppliedSet = new Set(suppliedIds);
+  const admitted = loaded.catalog.characters.filter((c: Character) => admittedSet.has(c.definitionId));
+  const usable = loaded.catalog.characters.filter((c: Character) => !suppliedSet.has(c.definitionId));
+  const given = suppliedIds.length > 0 ? (supplied as Character[]) : null;
+  const followRules = body.bot_follows_rules !== false && !given;
+  const botPool = followRules && admitted.length >= loaded.rules.teamSize ? admitted : usable;
+  const matchRules = body.match_rules && typeof body.match_rules === "object" ? (body.match_rules as Record<string, unknown>) : {};
+  return simulateChallenge({
+    rules: loaded.rules,
+    knowledge: loaded.catalog,
+    threatCatalog: loaded.placedThreats,
+    rareCatalog: loaded.rareCatalog,
+    admitted,
+    botPool,
+    supplied: given,
+    squadRules: given ? parseChallengeRules({}) : parseChallengeRules(rules),
+    rarityOf: rarityOfRank(ranks),
+    matchRules: parseMatchRules(matchRules),
+    modifierNumbers: loaded.modifierNumbers,
+    difficulty,
+    matches,
+    rng,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1611,6 +1758,14 @@ Deno.serve(async (req) => {
         return json(await startEmergency(userId, body, WEEKLY_EMERGENCY));
       case "emergency_week_play":
         return json(await playEmergency(userId, body, WEEKLY_EMERGENCY));
+      case "challenge_emergency_open":
+        return json(await openEmergency(userId, await challengeEmergencyKind(userId, body.challenge_id)));
+      case "challenge_emergency_start":
+        return json(await startEmergency(userId, body, await challengeEmergencyKind(userId, body.challenge_id)));
+      case "challenge_emergency_play":
+        return json(await playEmergency(userId, body, await challengeEmergencyKind(userId, body.challenge_id)));
+      case "challenge_simulate":
+        return json(await simulateChallengeFor(userId, body));
       default:
         throw new GameError("invalid_request");
     }
