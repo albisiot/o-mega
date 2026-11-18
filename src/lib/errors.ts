@@ -83,6 +83,9 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   special_pack_invalid_odds: "Le percentuali devono essere maggiori di 0, con al massimo due decimali, e fare 100%.",
   special_pack_invalid_guarantee: "La carta garantita deve essere di una rarità tra le carte scelte, in un pacchetto di almeno 2 carte.",
   special_pack_has_openings: "Qualcuno ha già aperto questo pacchetto: disattivalo invece di eliminarlo.",
+  special_pack_invalid_styles: "Uno degli stili scelti non esiste più: aggiorna la pagina e sceglili di nuovo.",
+  special_pack_card_without_variant:
+    "In un pacchetto di sole varianti ogni carta deve avere una variante degli stili scelti: togli le altre o cambia gli stili.",
   event_not_found: "Evento non trovato.",
   event_ended: "L'evento è già concluso: duplicalo per ripeterlo.",
   event_invalid_text: "Il titolo deve avere da 3 a 60 caratteri, la descrizione al massimo 500.",
@@ -91,6 +94,7 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   event_invalid_traits: "Controlla i personaggi ammessi: rarità, fazioni e tratti devono esistere e lasciare almeno 8 personaggi (una squadra di Emergenza).",
   event_invalid_points: "Controlla i punti: numeri interi da 0 a 1000, tetto giornaliero da 1 in su.",
   event_invalid_seal_target: "Il traguardo di Sigilli del Quadrante va da 5 a 60, oppure lascialo vuoto.",
+  event_invalid_variant_chance: "La probabilità della Caccia alle varianti va da 1 a 100%, oppure lasciala vuota.",
   event_invalid_tiers: "Controlla i traguardi: da 1 a 5, ognuno con più punti del precedente, fino a 10 pacchetti e 10 carte.",
   event_tier_no_reward: "Ogni traguardo deve dare almeno un premio: monete, pacchetti o carte.",
   event_invalid_card: "Una delle carte scelte non si può dare come premio.",
