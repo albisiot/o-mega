@@ -443,6 +443,15 @@ export function storePendingTeam(cardInstanceIds: string[]) {
   }
 }
 
+/** The team has gone into a match: the waiting page, reopened, has nothing to queue with. */
+export function clearPendingTeam() {
+  try {
+    sessionStorage.removeItem(PENDING_TEAM_KEY);
+  } catch {
+    // Nothing to clean up.
+  }
+}
+
 export function readPendingTeam(): string[] | null {
   try {
     const value: unknown = JSON.parse(sessionStorage.getItem(PENDING_TEAM_KEY) ?? "null");

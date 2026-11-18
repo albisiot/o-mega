@@ -5,14 +5,17 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
+import { goBack } from "@/components/return-link";
 import { LobbyMissingView, LobbyWaitView, QueueWaitView, WaitingMain, WaitingShell } from "@/components/waiting-views";
 import { balance } from "@/config/balance";
 import { BASE_PATH } from "@/lib/base-path";
 import { fetchChallenges, seenChallenges, type Challenge } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
+import { navHistory } from "@/lib/nav-history";
 import {
   asMatchFormat,
   cancelLobby,
+  clearPendingTeam,
   fetchActiveMatch,
   fetchMyLobby,
   joinQueue,
@@ -36,6 +39,9 @@ const LOBBY_CHECK_MS = 10_000;
 
 // /attesa/?mode=queue[&type=conquest|ranked][&format=...] | /attesa/?mode=lobby
 // /attesa/?mode=queue&sfida=<id>[&format=...]  (a Sfida a tema online: its own queue)
+//
+// Opening a queue's page joins the queue: the history never stops on it (src/lib/nav-stack.ts).
+// The match takes the place of the page, and the team picker behind it is stepped over from then on.
 export default function WaitingPage() {
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -66,6 +72,13 @@ function WaitingContent() {
       )}
     </WaitingShell>
   );
+}
+
+/** The match started: it takes the place of the waiting page, and the team picker is over. */
+function openMatch(router: ReturnType<typeof useRouter>, matchId: string) {
+  navHistory()?.consumePrevious("/squadra");
+  clearPendingTeam();
+  router.replace(`/partita/?id=${matchId}`);
 }
 
 /** Goes to the player's running match, if there is one. */
@@ -111,6 +124,8 @@ function QueueWait({
 }) {
   const router = useRouter();
   const [team] = useState(readPendingTeam);
+  // Reopened by the browser's back or forward: the history is moving on, nothing to join.
+  const [leaving] = useState(() => navHistory()?.leaving() ?? false);
   // A Sfida a tema: its name. Nobody free: the server finds the opponent, as in the Classificata.
   const [challenge, setChallenge] = useState<Challenge | null>(
     () => seenChallenges()?.challenges.find((item) => item.id === challengeId) ?? null,
@@ -135,7 +150,7 @@ function QueueWait({
   const goToMatch = (matchId: string) => {
     if (matched.current) return;
     matched.current = true;
-    router.replace(`/partita/?id=${matchId}`);
+    openMatch(router, matchId);
   };
   // Joining tells us about the match itself: no other check is needed.
   useMatchStart(userId, goToMatch, null);
@@ -145,7 +160,7 @@ function QueueWait({
   // answer by then is given up). In Conquest one attempt also comes right
   // after the wait for a bot is over, counted from the first entry stored.
   useEffect(() => {
-    if (!team) return;
+    if (!team || leaving) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let stopped = false;
     let botAt = Infinity;
@@ -182,8 +197,9 @@ function QueueWait({
     };
     // goToMatch only reads refs and the router.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [team, queueMode, format, challengeId]);
+  }, [team, leaving, queueMode, format, challengeId]);
 
+  if (leaving) return <LoadingScreen />;
   if (!team) {
     return (
       <WaitingMain>
@@ -228,7 +244,7 @@ function LobbyWait({ userId }: { userId: string }) {
     (matchId) => {
       if (started.current) return;
       started.current = true;
-      router.replace(`/partita/?id=${matchId}`);
+      openMatch(router, matchId);
     },
     LOBBY_CHECK_MS,
   );
@@ -264,7 +280,7 @@ function LobbyWait({ userId }: { userId: string }) {
 
   async function cancel() {
     await cancelLobby().catch(() => {});
-    router.push("/gioca");
+    goBack(router, "/gioca");
   }
 
   if (lobby === undefined) return <LoadingScreen />;
