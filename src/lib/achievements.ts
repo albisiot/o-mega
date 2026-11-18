@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { describeRandomVariants, type RandomVariantsInfo } from "@/lib/random-variants";
 import { getSupabase } from "@/lib/supabase/client";
 
 // The Imprese (SPEC §8.5): long-term objectives that stay secret until completed. The
@@ -51,6 +52,8 @@ export type CompletedAchievement = {
   coins: number;
   packs: number;
   cards: AchievementCard[];
+  /** Random variants it gives, by name; null (or missing): none. */
+  random_variants?: RandomVariantsInfo | null;
   title: string | null;
   claimed: boolean;
   opening_ids: string[];
@@ -130,7 +133,7 @@ export function tierCounts(board: AchievementBoard): Record<AchievementTier, { d
 
 /** Whether a completed impresa has something to give. */
 export function hasReward(achievement: CompletedAchievement): boolean {
-  return achievement.coins > 0 || achievement.packs > 0 || achievement.cards.length > 0;
+  return achievement.coins > 0 || achievement.packs > 0 || achievement.cards.length > 0 || Boolean(achievement.random_variants);
 }
 
 /** Imprese whose reward waits to be claimed. */
@@ -140,11 +143,15 @@ export function claimableCount(board: AchievementBoard | null): number {
 }
 
 /** "150 monete · 1 pacchetto · Variante Neon di X · titolo «Il Conquistatore»", or "Solo la medaglia". */
-export function describeAchievementReward(achievement: Pick<CompletedAchievement, "coins" | "packs" | "cards" | "title">): string {
+export function describeAchievementReward(
+  achievement: Pick<CompletedAchievement, "coins" | "packs" | "cards" | "title" | "random_variants">,
+): string {
   const parts: string[] = [];
   if (achievement.coins > 0) parts.push(`${achievement.coins} ${achievement.coins === 1 ? "moneta" : "monete"}`);
   if (achievement.packs > 0) parts.push(achievement.packs === 1 ? "1 pacchetto" : `${achievement.packs} pacchetti`);
   for (const card of achievement.cards) parts.push(card.variant ? `${card.name} (${card.variant})` : card.name);
+  const random = describeRandomVariants(achievement.random_variants);
+  if (random) parts.push(random);
   if (achievement.title) parts.push(`titolo «${achievement.title}»`);
   return parts.length > 0 ? parts.join(" · ") : "Solo la medaglia";
 }

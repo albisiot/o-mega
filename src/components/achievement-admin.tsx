@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { AdminCardPicker, useAdminCardReference } from "@/components/admin-card-filter";
 import { BackLink, TabBar } from "@/components/comic-parts";
+import { RandomVariantsField } from "@/components/random-variants-field";
 import { balance } from "@/config/balance";
 import {
   METRICS,
@@ -28,6 +29,7 @@ import {
 } from "@/lib/achievement-admin";
 import { TIERS, TIER_COLORS, TIER_LABELS, type AchievementTier } from "@/lib/achievements";
 import { describeServerError } from "@/lib/errors";
+import type { RandomVariantsRule } from "@/lib/random-variants";
 import { DIFFICULTY_LABELS } from "@/lib/match";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
@@ -195,7 +197,7 @@ function AchievementRow({
       <p className="text-xs font-semibold leading-4">{describeCondition(achievement.metric, achievement.params, achievement.target, namers(data))}</p>
       <p className="text-xs font-semibold leading-4 text-muted">
         {achievement.hint ? `Indizio: «${achievement.hint}»` : "Nessun indizio"} ·{" "}
-        <span className="text-comic-yellow">{describeAdminReward(achievement)}</span>
+        <span className="text-comic-yellow">{describeAdminReward(achievement, data)}</span>
       </p>
       <p className="text-xs font-semibold leading-4 text-muted">
         Compiuta da {achievement.completed} su {data.players} ({share}%) ·{" "}
@@ -310,6 +312,7 @@ function AchievementForm({
   const [packs, setPacks] = useState(String(editing?.packs ?? balance.achievements.suggestedReward.bronze.packs));
   const [rewardTouched, setRewardTouched] = useState(editing !== null);
   const [cards, setCards] = useState<string[]>(editing?.card_codes ?? []);
+  const [randomVariants, setRandomVariants] = useState<RandomVariantsRule | null>(editing?.random_variants ?? null);
   const reference = useAdminCardReference();
   const [title, setTitle] = useState(editing?.title ?? "");
   const [countsPast, setCountsPast] = useState(editing?.counts_past ?? true);
@@ -337,6 +340,7 @@ function AchievementForm({
     coins: Number(coins) || 0,
     packs: Number(packs) || 0,
     card_codes: cards,
+    random_variants: randomVariants,
     title: title.trim(),
     counts_past: countsPast,
     until,
@@ -559,6 +563,12 @@ function AchievementForm({
               })}
             </ul>
           )}
+          <RandomVariantsField
+            value={randomVariants}
+            onChange={setRandomVariants}
+            styles={data.styles}
+            rarities={data.rarities ?? reference?.rarities ?? []}
+          />
           <label className={LABEL}>
             Titolo da mostrare (facoltativo)
             <input type="text" maxLength={30} value={title} onChange={(event) => setTitle(event.target.value)} className={INPUT} />
@@ -595,7 +605,16 @@ function AchievementForm({
               <p className="font-display text-base uppercase leading-5">{name.trim() || "Nome"}</p>
               <p className="text-xs font-semibold leading-4 text-muted">{shownDescription}</p>
               <p className="text-xs font-extrabold leading-4 text-comic-yellow">
-                {describeAdminReward({ coins: Number(coins) || 0, packs: Number(packs) || 0, card_codes: cards, title: title.trim() || null })}
+                {describeAdminReward(
+                  {
+                    coins: Number(coins) || 0,
+                    packs: Number(packs) || 0,
+                    card_codes: cards,
+                    random_variants: randomVariants,
+                    title: title.trim() || null,
+                  },
+                  data,
+                )}
               </p>
             </div>
           </div>

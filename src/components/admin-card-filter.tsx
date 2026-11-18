@@ -15,6 +15,7 @@ import {
   FACTION_CODES,
   filterAdminCards,
   toggleValue,
+  variantStylesOf,
   withCardFacts,
   type AdminCardFilter,
   type FilterableCard,
@@ -360,11 +361,4 @@ export function AdminCardPicker({ cards, chosen, onChange, max, reference, fallb
       )}
     </div>
   );
-}
-
-/** Every variant style among the cards, by name: the style filter's chips. */
-function variantStylesOf(cards: readonly PickerCard[]): FilterStyle[] {
-  const byStyle = new Map<string, string>();
-  for (const card of cards) for (const variant of card.variants) byStyle.set(variant.style, variant.name);
-  return [...byStyle].map(([style, name]) => ({ style, name })).sort((a, b) => a.name.localeCompare(b.name, "it"));
 }

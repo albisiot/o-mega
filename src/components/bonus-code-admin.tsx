@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { AdminCardPicker, useAdminCardReference } from "@/components/admin-card-filter";
 import { BackLink, TabBar } from "@/components/comic-parts";
+import { RandomVariantsField } from "@/components/random-variants-field";
 import { describeBonusReward } from "@/lib/packs";
 import {
   bonusCodeState,
@@ -11,7 +12,9 @@ import {
   type AdminBonusCode,
   type AdminBonusCodes,
 } from "@/lib/bonus-code-admin";
+import { variantStylesOf } from "@/lib/admin-card-filter";
 import { describeServerError } from "@/lib/errors";
+import { describeRandomVariants, type RandomVariantsRule } from "@/lib/random-variants";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const INPUT = "min-h-12 w-full min-w-0 max-w-full border-2 border-comic-yellow bg-black px-3 text-base font-semibold";
@@ -58,6 +61,7 @@ export function BonusCodeAdmin({ data, onChange }: BonusCodeAdminProps) {
         {tab === "form" ? (
           <NewCodeForm
             cards={data.cards}
+            rarities={data.rarities ?? []}
             onCreated={(next, code) => {
               onChange(next);
               setCreated(code);
@@ -99,9 +103,11 @@ type Step = (typeof STEPS)[number]["key"];
 /** The code in two steps, one at a time, with the create button always at the bottom. */
 function NewCodeForm({
   cards,
+  rarities,
   onCreated,
 }: {
   cards: AdminBonusCodes["cards"];
+  rarities: NonNullable<AdminBonusCodes["rarities"]>;
   onCreated: (next: AdminBonusCodes, code: string) => void;
 }) {
   const [step, setStep] = useState<Step>("reward");
@@ -109,6 +115,7 @@ function NewCodeForm({
   const [coins, setCoins] = useState("");
   const [packs, setPacks] = useState("");
   const [cardCodes, setCardCodes] = useState<string[]>([]);
+  const [randomVariants, setRandomVariants] = useState<RandomVariantsRule | null>(null);
   const reference = useAdminCardReference();
   const [maxUses, setMaxUses] = useState("");
   const [expiresOn, setExpiresOn] = useState("");
@@ -126,6 +133,7 @@ function NewCodeForm({
         coins: Number(coins),
         packs: Number(packs),
         cardCodes,
+        randomVariants,
         maxUses: maxUses === "" ? undefined : Number(maxUses),
         expiresOn: expiresOn === "" ? undefined : expiresOn,
         note: note === "" ? undefined : note,
@@ -228,6 +236,12 @@ function NewCodeForm({
                 })}
               </ul>
             )}
+            <RandomVariantsField
+              value={randomVariants}
+              onChange={setRandomVariants}
+              styles={variantStylesOf(cards)}
+              rarities={rarities.length > 0 ? rarities : (reference?.rarities ?? [])}
+            />
           </>
         ) : (
           <>
@@ -308,7 +322,9 @@ function CodeRow({ code, onChange }: { code: AdminBonusCode; onChange: BonusCode
           {state}
         </span>
       </div>
-      <p className="text-sm font-semibold leading-5">{[reward, ...code.card_names].filter(Boolean).join(" + ")}</p>
+      <p className="text-sm font-semibold leading-5">
+        {[reward, ...code.card_names, describeRandomVariants(code.random_variants)].filter(Boolean).join(" + ")}
+      </p>
       <div className="flex items-center justify-between gap-2">
         <p className="min-w-0 text-xs font-medium leading-4 text-muted">
           Usato {code.uses}

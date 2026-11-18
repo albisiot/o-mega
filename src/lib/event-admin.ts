@@ -1,4 +1,5 @@
 import type { EventPoints } from "@/lib/events";
+import type { RandomVariantsRule } from "@/lib/random-variants";
 import { getSupabase } from "@/lib/supabase/client";
 import type { TraitCategory } from "@/lib/traits";
 
@@ -10,6 +11,8 @@ export type AdminEventTier = {
   /** "P051" for the base drawing, "P051:neon" for that variant. */
   card_codes: string[];
   card_names: string[];
+  /** Random variants it gives, as saved (style and rarity codes); null (or missing): none. */
+  random_variants?: RandomVariantsRule | null;
   /** Players who reached it. */
   reached: number;
 };
@@ -80,7 +83,7 @@ export type EventDraft = {
   traits: string[];
   rarities: string[];
   factions: string[];
-  tiers: { points: number; coins: number; packs: number; cards: string[] }[];
+  tiers: { points: number; coins: number; packs: number; cards: string[]; random_variants?: RandomVariantsRule }[];
 };
 
 export async function fetchAdminEvents(): Promise<AdminEvents> {

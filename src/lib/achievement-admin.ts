@@ -1,4 +1,5 @@
 import type { AchievementTier } from "@/lib/achievements";
+import { describeRandomVariants, ruleInfo, ruleToSend, type RandomVariantsRule } from "@/lib/random-variants";
 import { DIFFICULTY_LABELS } from "@/lib/match";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Json } from "@/types/database";
@@ -49,6 +50,8 @@ export type AdminAchievement = {
   packs: number;
   /** "P051" for the base drawing, "P051:neon" for that variant. */
   card_codes: string[];
+  /** Random variants it gives, as saved; null (or missing): none. */
+  random_variants?: RandomVariantsRule | null;
   title: string | null;
   position: number;
   is_active: boolean;
@@ -65,6 +68,8 @@ export type AdminAchievements = {
   cards: { code: string; name: string; rarity: string; variants: { style: string; name: string }[] }[];
   traits: { code: string; name: string; category: string }[];
   styles: { style: string; name: string }[];
+  /** The rarities a rule of random variants can name (missing on an older server). */
+  rarities?: { code: string; name: string; rank: number; color: string }[];
   chapters: { chapter: number; season: number; number: number; title: string }[];
   seasons: { season: number; title: string }[];
 };
@@ -80,6 +85,7 @@ export type AchievementDraft = {
   coins: number;
   packs: number;
   card_codes: string[];
+  random_variants?: RandomVariantsRule | null;
   title: string;
   counts_past: boolean;
   /** Last day it can be completed (YYYY-MM-DD, Italian time), or "" for no end. */
@@ -361,12 +367,17 @@ export function describeCondition(
   }
 }
 
-/** "50 monete · 1 pacchetto · 2 carte · titolo «X»", or "Solo la medaglia". */
-export function describeAdminReward(achievement: Pick<AdminAchievement, "coins" | "packs" | "card_codes" | "title">): string {
+/** "50 monete · 1 pacchetto · 2 carte · 1 variante a caso · titolo «X»", or "Solo la medaglia". */
+export function describeAdminReward(
+  achievement: Pick<AdminAchievement, "coins" | "packs" | "card_codes" | "title" | "random_variants">,
+  lists: Partial<Pick<AdminAchievements, "styles" | "rarities">> = {},
+): string {
   const parts: string[] = [];
   if (achievement.coins > 0) parts.push(`${achievement.coins} monete`);
   if (achievement.packs > 0) parts.push(achievement.packs === 1 ? "1 pacchetto" : `${achievement.packs} pacchetti`);
   if (achievement.card_codes.length > 0) parts.push(achievement.card_codes.length === 1 ? "1 carta" : `${achievement.card_codes.length} carte`);
+  const random = describeRandomVariants(ruleInfo(achievement.random_variants, lists.styles ?? [], lists.rarities ?? []));
+  if (random) parts.push(random);
   if (achievement.title) parts.push(`titolo «${achievement.title}»`);
   return parts.length > 0 ? parts.join(" · ") : "Solo la medaglia";
 }
@@ -400,6 +411,7 @@ function draftJson(draft: AchievementDraft): Json {
     coins: draft.coins,
     packs: draft.packs,
     card_codes: draft.card_codes,
+    random_variants: ruleToSend(draft.random_variants),
     title: draft.title,
     counts_past: draft.counts_past,
     counts_from: draft.counts_from ?? null,

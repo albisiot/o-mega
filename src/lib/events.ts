@@ -1,4 +1,5 @@
 import { forget, keepSeen, lastSeen } from "@/lib/last-seen";
+import { describeRandomVariants, type RandomVariantsInfo } from "@/lib/random-variants";
 import { getSupabase } from "@/lib/supabase/client";
 
 /** Kinds of play that earn event points, in the order the event page lists them. */
@@ -39,6 +40,8 @@ export type EventTier = {
   reached: boolean;
   /** The cards and packs it paid, shown with the pack reveal. */
   opening_ids: string[];
+  /** Random variants it gives, by name; null (or missing): none. */
+  random_variants?: RandomVariantsInfo | null;
   seen: boolean;
 };
 
@@ -158,13 +161,16 @@ export function unseenOpenings(event: GameEvent): string[] {
   return event.tiers.filter((tier) => tier.reached && !tier.seen).flatMap((tier) => tier.opening_ids);
 }
 
-/** "100 monete, 1 carta e 2 pacchetti" for a target. */
-export function describeTierReward(tier: Pick<EventTier, "coins" | "packs"> & { cards: unknown[] }): string {
+/** "100 monete, 1 carta e 2 pacchetti" for a target, then its random variants ("1 variante a caso"). */
+export function describeTierReward(
+  tier: Pick<EventTier, "coins" | "packs"> & { cards: unknown[]; random_variants?: RandomVariantsInfo | null },
+): string {
   const parts = [
-    tier.coins > 0 && `${tier.coins} ${tier.coins === 1 ? "moneta" : "monete"}`,
-    tier.cards.length > 0 && `${tier.cards.length} ${tier.cards.length === 1 ? "carta" : "carte"}`,
-    tier.packs > 0 && `${tier.packs} ${tier.packs === 1 ? "pacchetto" : "pacchetti"}`,
-  ].filter((part) => part !== false);
+    tier.coins > 0 ? `${tier.coins} ${tier.coins === 1 ? "moneta" : "monete"}` : "",
+    tier.cards.length > 0 ? `${tier.cards.length} ${tier.cards.length === 1 ? "carta" : "carte"}` : "",
+    tier.packs > 0 ? `${tier.packs} ${tier.packs === 1 ? "pacchetto" : "pacchetti"}` : "",
+    describeRandomVariants(tier.random_variants),
+  ].filter((part) => part !== "");
   return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} e ${parts.at(-1)}` : (parts[0] ?? "");
 }
 

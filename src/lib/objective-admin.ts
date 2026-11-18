@@ -1,4 +1,5 @@
 import type { ObjectiveDifficulty } from "@/lib/objectives";
+import { describeRandomVariants, ruleInfo, ruleToSend, type RandomVariantsRule } from "@/lib/random-variants";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Json } from "@/types/database";
 
@@ -24,8 +25,12 @@ export type AdminObjective = {
   /** Null: the difficulty's coins. */
   coins: number | null;
   packs: number;
-  /** Reward cards, set with SQL only. */
+  /** How many reward cards. */
   cards: number;
+  /** The reward cards: "P051" for the base drawing, "P051:neon" for that variant (missing on an older server). */
+  card_codes?: string[];
+  /** Random variants it gives, as saved; null (or missing): none. */
+  random_variants?: RandomVariantsRule | null;
   is_active: boolean;
   /** How many times players got it. */
   assigned: number;
@@ -35,6 +40,13 @@ export type AdminObjectives = {
   objectives: AdminObjective[];
   per_day: Record<ObjectiveDifficulty, number>;
   reward_coins: Record<ObjectiveDifficulty, number>;
+  /** The cards an objective can give, with their variants (missing on an older server). */
+  cards?: { code: string; name: string; rarity: string; rarity_code?: string; faction?: string; variants: { style: string; name: string }[] }[];
+  /** The most reward cards an objective can give. */
+  max_cards?: number;
+  /** The styles and rarities a rule of random variants can name. */
+  variant_styles?: { style: string; name: string }[];
+  rarities?: { code: string; name: string; rank: number; color: string }[];
 };
 
 export type ObjectiveDraft = {
@@ -46,6 +58,9 @@ export type ObjectiveDraft = {
   target: number;
   coins: number | null;
   packs: number;
+  /** The reward cards; undefined keeps them as they are (an older server cannot set them). */
+  cardCodes?: string[];
+  randomVariants?: RandomVariantsRule | null;
 };
 
 /**
@@ -98,13 +113,19 @@ export function suggestTitle(kindKey: string, target: number): string {
   return target === 1 ? kind.one : kind.many.replace("{n}", String(target));
 }
 
-/** "40 monete (difficoltà)", "1 pacchetto", "1 pacchetto + 20 monete", "+ 2 carte". */
-export function describeAdminReward(objective: Pick<AdminObjective, "coins" | "packs" | "cards" | "difficulty">, rewardCoins: AdminObjectives["reward_coins"]): string {
+/** "40 monete (difficoltà)", "1 pacchetto", "1 pacchetto + 20 monete", "+ 2 carte", "+ 1 variante a caso". */
+export function describeAdminReward(
+  objective: Pick<AdminObjective, "coins" | "packs" | "cards" | "difficulty" | "random_variants">,
+  rewardCoins: AdminObjectives["reward_coins"],
+  lists: Pick<AdminObjectives, "variant_styles" | "rarities"> = {},
+): string {
   const parts: string[] = [];
   if (objective.packs > 0) parts.push(objective.packs === 1 ? "1 pacchetto" : `${objective.packs} pacchetti`);
   if (objective.coins === null) parts.push(`${rewardCoins[objective.difficulty]} monete`);
   else if (objective.coins > 0) parts.push(`${objective.coins} monete`);
   if (objective.cards > 0) parts.push(objective.cards === 1 ? "1 carta" : `${objective.cards} carte`);
+  const random = describeRandomVariants(ruleInfo(objective.random_variants, lists.variant_styles ?? [], lists.rarities ?? []));
+  if (random) parts.push(random);
   return parts.join(" + ");
 }
 
@@ -125,6 +146,9 @@ export async function saveAdminObjective(draft: ObjectiveDraft): Promise<AdminOb
     p_target: draft.target,
     p_coins: draft.coins as number,
     p_packs: draft.packs,
+    // Sent only when used, so the page keeps working against a server without them.
+    ...(ruleToSend(draft.randomVariants) ? { p_random_variants: ruleToSend(draft.randomVariants) } : {}),
+    ...(draft.cardCodes !== undefined ? { p_card_codes: draft.cardCodes } : {}),
   });
   if (error) throw error;
   return data as unknown as AdminObjectives;

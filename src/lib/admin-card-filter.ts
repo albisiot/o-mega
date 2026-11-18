@@ -142,3 +142,10 @@ export function countBy<T extends FilterableCard>(cards: readonly T[], key: "rar
   }
   return counts;
 }
+
+/** Every variant style among the cards (the editors' payloads list each card's variants), by name. */
+export function variantStylesOf(cards: readonly { variants: readonly { style: string; name: string }[] }[]): FilterStyle[] {
+  const byStyle = new Map<string, string>();
+  for (const card of cards) for (const variant of card.variants) byStyle.set(variant.style, variant.name);
+  return [...byStyle].map(([style, name]) => ({ style, name })).sort((a, b) => a.name.localeCompare(b.name, "it"));
+}

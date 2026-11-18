@@ -1,3 +1,5 @@
+import type { RandomVariantsInfo, RandomVariantsRule } from "@/lib/random-variants";
+import { ruleToSend } from "@/lib/random-variants";
 import { getSupabase } from "@/lib/supabase/client";
 
 export type AdminBonusCode = {
@@ -6,6 +8,8 @@ export type AdminBonusCode = {
   coins: number;
   packs: number;
   card_names: string[];
+  /** Random variants the code gives, by name; null (or missing): none. */
+  random_variants?: RandomVariantsInfo | null;
   max_uses: number | null;
   uses: number;
   expires_at: string | null;
@@ -17,6 +21,8 @@ export type AdminBonusCodes = {
   codes: AdminBonusCode[];
   /** The cards a code can give, each with the artwork variants it can come with. */
   cards: { code: string; name: string; rarity: string; variants: { style: string; name: string }[] }[];
+  /** The rarities a rule of random variants can name (missing on an older server). */
+  rarities?: { code: string; name: string; rank: number; color: string }[];
 };
 
 export type NewBonusCode = {
@@ -25,6 +31,8 @@ export type NewBonusCode = {
   packs: number;
   /** "P051" for the base drawing, "P051:neon" for that variant. */
   cardCodes: string[];
+  /** A reward of random variants; null: none. */
+  randomVariants?: RandomVariantsRule | null;
   maxUses?: number;
   /** Last valid day (YYYY-MM-DD), up to midnight Europe/Rome. */
   expiresOn?: string;
@@ -53,6 +61,8 @@ export async function createBonusCode(code: NewBonusCode): Promise<AdminBonusCod
     p_max_uses: code.maxUses,
     p_expires_on: code.expiresOn,
     p_note: code.note,
+    // Sent only when used, so the page keeps working against a server without it.
+    ...(ruleToSend(code.randomVariants) ? { p_random_variants: ruleToSend(code.randomVariants) } : {}),
   });
   if (error) throw error;
   return data as unknown as AdminBonusCodes;

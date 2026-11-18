@@ -4,6 +4,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { BackLink, TabBar } from "@/components/comic-parts";
 import { AdminCardPicker, useAdminCardReference } from "@/components/admin-card-filter";
 import { Chip } from "@/components/card-list-controls";
+import { RandomVariantsField } from "@/components/random-variants-field";
 import { TraitFilter } from "@/components/trait-filter";
 import { balance } from "@/config/balance";
 import {
@@ -12,9 +13,11 @@ import {
   FACTION_CODES,
   filterAdminCards,
   toggleValue,
+  variantStylesOf,
   withCardFacts,
   type AdminCardFilter,
   type FilterRarity,
+  type FilterStyle,
 } from "@/lib/admin-card-filter";
 import { FACTION_LABELS } from "@/lib/catalog";
 import {
@@ -28,6 +31,7 @@ import {
 } from "@/lib/event-admin";
 import { describeServerError } from "@/lib/errors";
 import { EVENT_KINDS, addHoursToInput, describeTierReward, formatRomeDateTime, toRomeInput, type EventPoints } from "@/lib/events";
+import { describeRandomVariants, ruleInfo, ruleToSend, type RandomVariantsRule } from "@/lib/random-variants";
 import type { TraitCategory } from "@/lib/traits";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
@@ -47,7 +51,7 @@ const OUTCOMES = [
   { key: "loss", label: "Sconfitta" },
 ] as const;
 
-type TierForm = { points: string; coins: string; packs: string; cards: string[] };
+type TierForm = { points: string; coins: string; packs: string; cards: string[]; random: RandomVariantsRule | null };
 type PointsForm = Record<MatchKind, Record<"win" | "draw" | "loss", string>> & { emergency: { passed: string } };
 
 type FormState = {
@@ -103,7 +107,7 @@ function emptyForm(now: number): FormState {
     traits: [],
     rarities: [],
     factions: [],
-    tiers: [{ points: "300", coins: "100", packs: "1", cards: [] }],
+    tiers: [{ points: "300", coins: "100", packs: "1", cards: [], random: null }],
   };
 }
 
@@ -130,6 +134,7 @@ function formFrom(event: AdminEvent, now: number, copy: boolean): FormState {
       coins: tier.coins > 0 ? String(tier.coins) : "",
       packs: tier.packs > 0 ? String(tier.packs) : "",
       cards: tier.card_codes,
+      random: tier.random_variants ?? null,
     })),
   };
 }
@@ -149,6 +154,7 @@ export function EventAdmin({ data, onChange }: EventAdminProps) {
   useLockedScreen(true);
   // Read once: the states are labels, the server decides what can change.
   const [now] = useState(() => Date.parse(data.now));
+  const styles = variantStylesOf(data.cards);
   const [form, setForm] = useState<FormState>(() => emptyForm(now));
   const [formKey, setFormKey] = useState(0);
   const [tab, setTab] = useState<ScreenTab>("form");
@@ -223,6 +229,8 @@ export function EventAdmin({ data, onChange }: EventAdminProps) {
                       <EventRow
                         key={event.id}
                         event={event}
+                        styles={styles}
+                        rarities={data.rarities ?? []}
                         now={now}
                         onChange={onChange}
                         onEdit={() => load(formFrom(event, now, false))}
@@ -341,6 +349,8 @@ function EventForm({
           coins: number(tier.coins),
           packs: number(tier.packs),
           cards: tier.cards,
+          // Sent only when used, so the page keeps working against a server without it.
+          ...(ruleToSend(tier.random) ? { random_variants: ruleToSend(tier.random) ?? undefined } : {}),
         })),
       });
       onSaved(next, form.title.trim());
@@ -626,7 +636,7 @@ function EventForm({
                   onClick={() => {
                     setForm((current) => ({
                       ...current,
-                      tiers: [...current.tiers, { points: "", coins: "", packs: "", cards: [] }],
+                      tiers: [...current.tiers, { points: "", coins: "", packs: "", cards: [], random: null }],
                     }));
                     setTierIndex(form.tiers.length);
                   }}
@@ -643,6 +653,7 @@ function EventForm({
               tier={form.tiers[shownTier]}
               cards={cards}
               catalog={catalog}
+              rarities={rarities}
               onChange={(patch) => updateTier(shownTier, patch)}
               onRemove={
                 form.tiers.length > 1
@@ -691,6 +702,7 @@ function TierEditor({
   tier,
   cards,
   catalog,
+  rarities,
   onChange,
   onRemove,
 }: {
@@ -698,6 +710,7 @@ function TierEditor({
   tier: TierForm;
   cards: AdminEvents["cards"];
   catalog: TraitCategory[];
+  rarities: FilterRarity[];
   onChange: (patch: Partial<TierForm>) => void;
   onRemove?: () => void;
 }) {
@@ -779,18 +792,29 @@ function TierEditor({
           })}
         </ul>
       )}
+      <RandomVariantsField
+        value={tier.random}
+        onChange={(random) => onChange({ random })}
+        styles={variantStylesOf(cards)}
+        rarities={rarities.length > 0 ? rarities : (reference?.rarities ?? [])}
+      />
     </div>
   );
 }
 
 function EventRow({
   event,
+  styles,
+  rarities,
   now,
   onChange,
   onEdit,
   onCopy,
 }: {
   event: AdminEvent;
+  /** To name the styles and rarities of the targets' random variants. */
+  styles: FilterStyle[];
+  rarities: FilterRarity[];
   now: number;
   onChange: EventAdminProps["onChange"];
   onEdit: () => void;
@@ -833,7 +857,12 @@ function EventRow({
       <ol className="flex flex-col gap-0.5 text-sm">
         {event.tiers.map((tier) => (
           <li key={tier.tier} className="font-semibold">
-            {tier.points} punti: {[describeTierReward({ coins: tier.coins, packs: tier.packs, cards: [] }), ...tier.card_names]
+            {tier.points} punti:{" "}
+            {[
+              describeTierReward({ coins: tier.coins, packs: tier.packs, cards: [] }),
+              ...tier.card_names,
+              describeRandomVariants(ruleInfo(tier.random_variants, styles, rarities)),
+            ]
               .filter(Boolean)
               .join(" + ")}
             <span className="text-muted"> · raggiunto da {tier.reached}</span>

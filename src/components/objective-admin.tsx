@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { AdminCardPicker, useAdminCardReference } from "@/components/admin-card-filter";
 import { BackLink, TabBar } from "@/components/comic-parts";
+import { RandomVariantsField } from "@/components/random-variants-field";
 import { describeServerError } from "@/lib/errors";
 import {
   OBJECTIVE_KINDS,
@@ -15,6 +17,7 @@ import {
   type AdminObjectives,
 } from "@/lib/objective-admin";
 import { DIFFICULTY_LABELS, type ObjectiveDifficulty } from "@/lib/objectives";
+import type { RandomVariantsRule } from "@/lib/random-variants";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const INPUT = "min-h-12 w-full min-w-0 max-w-full border-2 border-comic-yellow bg-black px-3 text-base font-semibold";
@@ -155,7 +158,7 @@ function ObjectiveRow({
       </div>
       <p className="text-xs font-semibold leading-4 text-muted">
         {kind ? kind.label : "Personalizzato (SQL)"} · soglia {objective.target} ·{" "}
-        <span className="text-comic-yellow">{describeAdminReward(objective, data.reward_coins)}</span> · assegnato{" "}
+        <span className="text-comic-yellow">{describeAdminReward(objective, data.reward_coins, data)}</span> · assegnato{" "}
         {objective.assigned} {objective.assigned === 1 ? "volta" : "volte"}
       </p>
       {error && <p className="text-xs font-bold text-comic-magenta">{error}</p>}
@@ -213,6 +216,11 @@ function ObjectiveForm({
   const [ownCoins, setOwnCoins] = useState(editing?.coins !== null && editing?.coins !== undefined);
   const [coins, setCoins] = useState(String(editing?.coins ?? data.reward_coins[editing?.difficulty ?? "easy"]));
   const [packs, setPacks] = useState(String(editing?.packs ?? 0));
+  const [cardCodes, setCardCodes] = useState<string[]>(editing?.card_codes ?? []);
+  const [randomVariants, setRandomVariants] = useState<RandomVariantsRule | null>(editing?.random_variants ?? null);
+  const reference = useAdminCardReference();
+  // An older server sends no cards: then they stay as SQL set them.
+  const canPickCards = data.cards !== undefined;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -237,6 +245,8 @@ function ObjectiveForm({
           target: targetNumber,
           coins: ownCoins ? Number(coins) : null,
           packs: Number(packs),
+          cardCodes: canPickCards ? cardCodes : undefined,
+          randomVariants,
         }),
       );
     } catch (cause) {
@@ -366,8 +376,50 @@ function ObjectiveForm({
               />
             </label>
           </div>
-          {editing && editing.cards > 0 && (
-            <p className="text-xs font-medium text-muted">Più {editing.cards} carte premio, impostate con SQL: restano.</p>
+          {canPickCards ? (
+            <>
+              <AdminCardPicker
+                cards={data.cards ?? []}
+                chosen={cardCodes}
+                onChange={setCardCodes}
+                max={data.max_cards ?? 5}
+                reference={reference}
+                label="Carte"
+              />
+              {cardCodes.length > 0 && (
+                <ul className="flex flex-wrap gap-1.5">
+                  {cardCodes.map((cardCode, index) => {
+                    const [code, style] = cardCode.split(":");
+                    const card = data.cards?.find((entry) => entry.code === code);
+                    const variant = card?.variants.find((entry) => entry.style === style);
+                    const label = `${card?.name ?? code}${variant ? ` (${variant.name})` : ""}`;
+                    return (
+                      <li key={`${cardCode}-${index}`}>
+                        <button
+                          type="button"
+                          onClick={() => setCardCodes((current) => current.filter((_, i) => i !== index))}
+                          aria-label={`Togli ${label}`}
+                          className="min-h-11 bg-panel px-3 text-sm font-bold"
+                        >
+                          {label} ✕
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <RandomVariantsField
+                value={randomVariants}
+                onChange={setRandomVariants}
+                styles={data.variant_styles ?? []}
+                rarities={data.rarities ?? reference?.rarities ?? []}
+              />
+            </>
+          ) : (
+            editing &&
+            editing.cards > 0 && (
+              <p className="text-xs font-medium text-muted">Più {editing.cards} carte premio, impostate con SQL: restano.</p>
+            )
           )}
         </fieldset>
       </div>
