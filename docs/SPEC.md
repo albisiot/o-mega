@@ -361,9 +361,91 @@ Capitoli di missioni da giocare da soli contro gli avversari di Nuova Megara. Se
 - **Ordine:** la prima missione è aperta; ogni altra si apre completando quella prima, anche tra un capitolo e l'altro.
 - **Finale del capitolo:** un testo (`story_chapters.outro`) che il server manda solo a chi ha completato tutte le missioni del capitolo; la pagina Storia lo mostra sotto l'elenco.
 - **Stagioni:** i capitoli sono raggruppati in stagioni (`story_seasons`: titolo e messaggio di fine stagione), e il menu Gioca li elenca sotto il titolo della loro stagione. Il giocatore legge il numero del capitolo dentro la stagione (`story_chapters.number`, da 1 in ogni stagione); l'ordine in cui si aprono le missioni resta quello di tutta la storia (`story_chapters.chapter`: 1-6 la Stagione 1, 7-12 la Stagione 2), anche da una stagione all'altra. Il messaggio di fine stagione arriva solo a chi ha completato tutte le missioni della stagione: sotto il suo ultimo capitolo e sul risultato della sua ultima missione. Finché una stagione non è finita di costruire, il suo messaggio dice che il prossimo capitolo arriva presto; il primo capitolo di una stagione nuova aggiorna il messaggio di quella prima.
-- **Premi solo alla prima vittoria**, pagati dal database nella stessa transazione che chiude la partita: monete a ogni missione, e una carta per il boss di fine capitolo. Le missioni si possono rigiocare senza premi. Sconfitte e abbandoni non pagano.
+- **Premi solo alla prima vittoria**, pagati dal database nella stessa transazione che chiude la partita: monete a ogni missione, e una carta per il boss di fine capitolo. Le missioni si possono rigiocare senza il premio della missione; le stelle che mancano (sotto) si prendono anche rigiocando. Sconfitte e abbandoni non pagano.
 - **Carte premio:** copie normali (`acquired_via = 'story'`), conquistabili come quelle dei pacchetti. Mai Omega.
 - Esperienza e statistiche come una partita contro bot. Le squadre avversarie e le Minacce restano segrete: il client legge solo `get_story` e `get_story_reward`.
+
+**Stelle delle missioni** (richiesta dell'utente del 17 novembre 2026, migrazione `20261118100000_story_stars.sql`). Ogni missione ha tre stelle, indipendenti tra loro e dal premio della missione:
+
+- **3-0:** vinci la missione 3-0, cioè il bot non vince nessun round (i round nulli non contano).
+- **Rarità:** vinci con una squadra i cui 5 personaggi hanno tutti una delle rarità della missione (`story_missions.star_rarities`), per esempio «solo Delta o Gamma».
+- **Tratti:** vinci con una squadra i cui 5 personaggi rispettano tutti i tratti della missione (`story_missions.star_traits`), con la regola di `card_matches_traits` (§4.7): dentro una categoria basta uno dei tratti elencati, devono essere rispettate tutte le categorie elencate. Per esempio «solo Figli dell'Ultima» o «solo Mito o Strappo».
+- **Come si prendono:** con qualsiasi vittoria nella missione, la prima o una rigiocata; una vittoria può darne più di una; una volta presa, una stella resta (`story_stars`, una riga per giocatore, missione e stella, con la partita che l'ha data). Le partite abbandonate (`end_reason = 'forfeit'`) non contano mai. Le calcola solo il database, nella transazione che chiude la partita (`grant_story_reward`), con la squadra schierata davvero (`match_teams`) e i round vinti dal bot (`rounds_won_b`).
+- **Regole copiate sulla partita:** quando la partita nasce, `story_create_match` copia in `story_match_terms` rarità, tratti, monete delle stelle e premio della missione, come un evento che non cambia le regole dopo l'inizio: una modifica dell'amministratore vale per le partite create dopo. Una partita nata prima della migrazione usa le regole della missione.
+- **Monete:** ogni stella paga le monete della missione (`story_missions.star_coins`) una volta sola, la prima volta che si prende, in `coin_ledger` con motivo `story_star` (una riga per partita, con tutte le stelle nuove). Valori di partenza per capitolo di tutta la storia: 10 monete nei capitoli 1-4, 20 nei 5-8, 30 nei 9-12 (`balance.ts` `story`, `game_config` `story.star_coins_base`, `story.star_coins_step`, `story.star_coins_step_chapters`); una missione nuova senza monete prende quelle del suo capitolo. In tutto le 180 stelle pagano 3.600 monete. Il premio della prima vittoria e le ricompense delle partite (§8.4, riga `story`) non cambiano.
+- **Controlli del server:** rarità e tratti devono esistere e lasciare almeno 5 personaggi (una squadra, `match.team_size`): lo controllano il trigger `validate_story_mission` e le funzioni admin. Sotto i 15 la pagina admin avvisa che pochi giocatori riusciranno a formare la squadra.
+- **Il giocatore vede:** nella pagina Storia tre stelle per missione (piene o vuote) al posto dello stato, le stelle del capitolo accanto al titolo («★ 7/15») e quelle della stagione in alto («★ 40/90»); toccando una missione legge le tre condizioni in italiano e quanto vale ogni stella. Nella scelta della squadra di una missione (`/squadra/?story=…`) tre caselle con le condizioni: le carte che vanno bene per Rarità hanno una stellina azzurra, per Tratti una rosa (solo per le stelle che mancano), toccando Rarità o Tratti la lista mostra solo le carte adatte, e una riga dice quali stelle può prendere la squadra scelta. A fine partita le stelle nuove arrivano una dopo l'altra con un anello, quelle già prese restano piene, sotto le monete e le condizioni che mancano.
+- **Gestione dall'app, solo amministratori:** il link *Storia* (`/gestione-storia`) nell'Editor. La scheda *Missioni* sceglie stagione e capitolo e mostra le cinque missioni con avversario, bot, premio, regole delle stelle, monete a stella, quanti giocatori l'hanno completata e quanti hanno ogni stella; *Capitoli* elenca stagioni e capitoli; *Modifica* apre il modulo. Di una missione si cambiano titolo, avversario, introduzione, monete del premio, rarità e tratti delle stelle (con il numero di personaggi ammessi, in rosso sotto 5 e in giallo sotto 15) e monete a stella (con la proposta del capitolo); di un capitolo titolo, introduzione e finale; di una stagione titolo e messaggio di fine stagione. Avversari, Minacce, modificatori, bot e carta premio sono tarati con la simulazione e si vedono soltanto. Ogni funzione (`admin_get_story`, `admin_save_story_mission`, `admin_save_story_chapter`, `admin_save_story_season`) verifica l'amministratore sul server; ogni salvataggio vale per le partite create dopo.
+
+**Regole di partenza delle stelle** (tutte si cambiano da `/gestione-storia`). Le rarità si fanno più strette andando avanti e sui boss: Delta, Gamma o Beta nelle prime missioni della Stagione 1, poi Delta o Gamma, solo Delta in alcune missioni difficili della Stagione 2 e nei finali di stagione; le missioni 1 dei Capitoli 1-3, dove l'avversario schiera 5 Delta, chiedono solo Delta, ad armi pari. I tratti seguono la missione e il suo avversario (`docs/STORY.md`): Mestiere per la gente comune del mercato, della fila allo sportello, dei periti e dei sacchi di sabbia; Lanterne e Custodi dove si protegge qualcuno; Creatura contro Cerbero e Polifemo; Macchina contro le voci di Multitude e per l'armatura di Absentia; Compagnia Lete quando la Compagnia sta dalla tua parte (Capitolo 6); Figli dell'Ultima contro Clementia, che li ha fondati. Ogni regola ammette almeno 16 personaggi (Macchina 16, Creatura 18, le altre da 23 in su): mai sotto i 15 che §4.7 sconsiglia.
+
+**Come sono state provate:** `scripts/simulate-story.mts` sul catalogo del 17 novembre 2026 (`scripts/story-catalog.sql`: i 227 personaggi dei pacchetti e le 75 Minacce comuni con le loro regole; le rare restano fuori, come nel server), con il metodo della taratura dei capitoli: il giocatore manda sempre la carta col punteggio più alto, contro la squadra, le Minacce e i modificatori della missione. Ogni stella è misurata con due squadre: **casuale**, 5 personaggi a caso tra quelli ammessi (il minimo), e **buona**, la migliore di 40 estrazioni sulle Minacce della missione, come chi la rigioca conoscendole e ha i personaggi giusti. Partite per misura: 2.000 o 1.500 con i bot Facile e Medio, il 60% con Difficile, il 15% con Super Pro (300 o 225 per ogni boss): i numeri hanno qualche punto di margine. Percentuali di vittoria, casuale / buona (per il 3-0: vittorie 3-0 con una squadra qualsiasi):
+
+| Missione | Rarità | Tratti | 3-0 | Rarità | Tratti |
+|---|---|---|---|---|---|
+| C1M1 Primo incarico | Delta | Mestiere | 39 / 61 | 78 / 98 | 78 / 95 |
+| C1M2 Il pugile di vetro | Delta, Gamma o Beta | Lanterne | 15 / 44 | 75 / 96 | 72 / 94 |
+| C1M3 Blackout | Delta, Gamma o Beta | Tecnologia | 41 / 77 | 56 / 94 | 70 / 95 |
+| C1M4 Campane a mezzanotte | Delta, Gamma o Beta | Custodi | 6 / 27 | 35 / 87 | 24 / 75 |
+| C1M5 Il caveau | Delta o Gamma | Sciolti | 1 / 11 | 28 / 70 | 22 / 55 |
+| C2M1 Ultima corsa | Delta | Custodi | 26 / 69 | 54 / 95 | 87 / 100 |
+| C2M2 Il cane a tre teste | Delta, Gamma o Beta | Creatura | 10 / 24 | 73 / 93 | 97 / 100 |
+| C2M3 Onde corte | Delta, Gamma o Beta | Segno | 12 / 52 | 64 / 94 | 65 / 98 |
+| C2M4 Due Reggenti | Delta, Gamma o Beta | Lanterne | 2 / 9 | 62 / 89 | 63 / 83 |
+| C2M5 Chi trova | Delta o Gamma | Mito o Strappo | 10 / 52 | 33 / 82 | 64 / 96 |
+| C3M1 Lo sportello | Delta | Mestiere | 16 / 37 | 85 / 100 | 96 / 100 |
+| C3M2 Le rampe | Delta, Gamma o Beta | Custodi | 9 / 41 | 62 / 91 | 66 / 90 |
+| C3M3 Il debito | Delta, Gamma o Beta | Lanterne | 2 / 25 | 23 / 76 | 36 / 90 |
+| C3M4 Il furto | Delta o Gamma | Banco | 5 / 27 | 39 / 90 | 41 / 80 |
+| C3M5 La fornace | Delta o Gamma | Tecnologia | 1 / 15 | 25 / 78 | 66 / 99 |
+| C4M1 Pensieri di nessuno | Delta, Gamma o Beta | Segno | 2 / 6 | 62 / 93 | 62 / 92 |
+| C4M2 La negoziatrice | Delta, Gamma o Beta | Lanterne | 6 / 29 | 49 / 88 | 37 / 68 |
+| C4M3 Sentire troppo | Delta o Gamma | Custodi | 41 / 93 | 67 / 99 | 75 / 99 |
+| C4M4 Facce note | Delta o Gamma | Strappo | 1 / 10 | 22 / 74 | 16 / 72 |
+| C4M5 Ultima voce | Delta o Gamma | Macchina | 2 / 10 | 12 / 52 | 15 / 54 |
+| C5M1 Il trono di rame | Delta, Gamma o Beta | Tecnologia | 5 / 29 | 65 / 94 | 88 / 100 |
+| C5M2 Il decreto | Delta o Gamma | Banco | 2 / 10 | 15 / 55 | 34 / 71 |
+| C5M3 Le colonne | Delta o Gamma | Lanterne | 14 / 50 | 22 / 78 | 31 / 94 |
+| C5M4 La vecchia licenza | Delta o Gamma | Magia o Mito | 1 / 10 | 15 / 55 | 25 / 74 |
+| C5M5 Nessuno passa | Delta o Gamma | Segno | 0 / 0 | 3 / 26 | 17 / 63 |
+| C6M1 Evacuazione | Delta o Gamma | Custodi | 21 / 57 | 58 / 95 | 26 / 75 |
+| C6M2 Le campane | Delta o Gamma | Lanterne | 20 / 57 | 17 / 66 | 31 / 83 |
+| C6M3 La strada che sale | Delta o Gamma | Compagnia Lete | 9 / 46 | 28 / 89 | 38 / 98 |
+| C6M4 Chi trova, di nuovo | Delta o Gamma | Mito | 0 / 0 | 12 / 62 | 62 / 86 |
+| C6M5 Lo sguardo | Delta | Macchina o Entità | 2 / 25 | 2 / 51 | 25 / 79 |
+| C7M1 Porto chiuso | Delta o Gamma | Lanterne | 16 / 55 | 64 / 97 | 68 / 97 |
+| C7M2 I ponti mobili | Delta o Gamma | Custodi | 3 / 26 | 27 / 85 | 48 / 93 |
+| C7M3 Il prestanome | Delta o Gamma | Banco | 25 / 58 | 42 / 86 | 58 / 95 |
+| C7M4 Il rilancio | Delta o Gamma | Sciolti | 4 / 37 | 17 / 78 | 27 / 93 |
+| C7M5 Aggiudicata | Delta | Mestiere | 1 / 10 | 4 / 26 | 8 / 35 |
+| C8M1 Il protocollo | Delta o Gamma | Lanterne | 40 / 81 | 58 / 96 | 71 / 99 |
+| C8M2 Il vincolo | Delta o Gamma | Mito | 20 / 76 | 20 / 84 | 58 / 99 |
+| C8M3 La linea chiusa | Delta o Gamma | Tecnologia | 8 / 44 | 67 / 99 | 83 / 99 |
+| C8M4 Una basta | Delta | Custodi | 1 / 16 | 3 / 39 | 14 / 79 |
+| C8M5 L'occhio solo | Delta o Gamma | Creatura | 1 / 10 | 4 / 30 | 19 / 85 |
+| C9M1 La stima | Delta o Gamma | Mestiere | 36 / 75 | 47 / 93 | 58 / 98 |
+| C9M2 Pezzi unici | Delta o Gamma | Strappo | 6 / 49 | 25 / 87 | 28 / 93 |
+| C9M3 La lingua | Delta o Gamma | Mito | 3 / 18 | 28 / 76 | 74 / 96 |
+| C9M4 Il caveau | Delta | Sciolti | 1 / 19 | 9 / 69 | 24 / 88 |
+| C9M5 Interessi | Delta o Gamma | Lanterne | 0 / 2 | 1 / 23 | 4 / 40 |
+| C10M1 Coprifuoco | Delta o Gamma | Custodi | 6 / 17 | 43 / 92 | 50 / 93 |
+| C10M2 Chi l'ha vista | Delta o Gamma | Segno | 5 / 30 | 13 / 68 | 19 / 77 |
+| C10M3 La taglia | Delta o Gamma | Macchina | 5 / 30 | 27 / 88 | 1 / 28 |
+| C10M4 Il pozzo | Delta o Gamma | Lanterne | 2 / 19 | 6 / 33 | 6 / 47 |
+| C10M5 Scatola nera | Delta o Gamma | Strappo | 1 / 7 | 3 / 20 | 3 / 43 |
+| C11M1 Sacchi di sabbia | Delta o Gamma | Mestiere | 13 / 46 | 29 / 86 | 2 / 34 |
+| C11M2 Quaranta braccia | Delta o Gamma | Lanterne | 1 / 3 | 27 / 74 | 27 / 82 |
+| C11M3 Il battito | Delta | Custodi | 3 / 21 | 4 / 28 | 15 / 70 |
+| C11M4 Il meteo | Delta | Tecnologia | 3 / 21 | 1 / 16 | 6 / 42 |
+| C11M5 Vento di terra | Delta o Gamma | Segno | 2 / 9 | 0 / 13 | 8 / 36 |
+| C12M1 La traversata | Delta o Gamma | Sciolti | 22 / 70 | 57 / 96 | 50 / 97 |
+| C12M2 Il faro | Delta o Gamma | Custodi | 3 / 27 | 18 / 66 | 19 / 55 |
+| C12M3 Chi torna | Delta | Mito o Strappo | 8 / 38 | 9 / 66 | 33 / 86 |
+| C12M4 L'occhio | Delta | Lanterne | 1 / 14 | 0 / 15 | 7 / 35 |
+| C12M5 Il brutto tempo | Delta | Figli dell'Ultima | 2 / 18 | 0 / 13 | 34 / 91 |
+- **Rarità e Tratti:** con una squadra buona ogni stella Rarità si vince almeno il 13% delle volte (le più dure sono C11M4, C11M5, C12M4 e C12M5, tra il 13% e il 16%) e ogni stella Tratti almeno il 28%; con una squadra casuale le più dure scendono sotto l'1%. Le rarità costano poco: i budget delle abilità sono vicini (in media 54 punti per un Delta, 61 per un Omega) e una squadra di Delta e Gamma vince quasi quanto una casuale; solo Delta, senza poteri, pesa di più dal Capitolo 4 della Stagione 2. Certi tratti aiutano: contro il boss del Capitolo 3 una squadra di Tecnologia vince più di una squadra qualsiasi.
+- **Cambiate dopo la prova:** in C4M5 Mestiere (2%) è diventato Macchina, e in C4M4 Macchina è diventato Strappo; in C10M5 Tecnologia (0%) è diventato Strappo, in C11M4 Magia (0%) Tecnologia; solo Delta è diventato Delta o Gamma sui boss C5M5, C8M5, C9M5, C10M5 e C11M5 (dal 3% all'8% con la squadra buona, 19% in C5M5) e in C10M4 (10%).
+- **Il 3-0 non si sceglie:** dipende dalla missione. Con una squadra buona va dallo 0% al 93%; sui boss dal 2% al 25% (52% in C2M5). In C5M5 e C6M4 è praticamente impossibile (0% anche con la squadra buona) e in C9M5 e C11M2 quasi (2-3%): in quelle missioni c'è un round che il giocatore non vince quasi mai.
 
 **Capitolo 1, Il porto:**
 
