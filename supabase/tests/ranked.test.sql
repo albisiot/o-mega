@@ -127,6 +127,17 @@ begin
   perform set_config('test.threats', v_threats::text, true);
 end $$;
 
+-- The Albo of the Mandato in course before the test players play: the live one
+-- may already have real players, so its checks count the test players on top.
+do $$
+declare
+  v_season text := public.ranked_current_season();
+begin
+  perform set_config('test.albo_players', (select count(*) from public.ranked_board_rows(v_season, null))::text, true);
+  perform set_config('test.albo_classic', (select count(*) from public.ranked_board_rows(v_season, 'classic'))::text, true);
+  perform set_config('test.albo_boss', (select count(*) from public.ranked_board_rows(v_season, 'boss'))::text, true);
+end $$;
+
 -- The queue, and the server's opponent as the player sees it.
 do $$
 declare
@@ -297,23 +308,46 @@ begin
   end loop;
 end $$;
 
--- The Albo: people only, sorted by Fama.
+-- The Albo: people only, sorted by Fama. Real players may be on it too, so the
+-- two test players count on top of them (the server's opponents would add more)
+-- and their places are checked against each other: A (300) ahead of B (Recluta).
 set local role authenticated;
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000002a2", "role": "authenticated"}', true);
+do $$
+declare
+  v_board jsonb := public.get_ranked_board();
+  v_place integer := (v_board -> 'me' ->> 'place')::integer;
+begin
+  assert v_place is not null, 'B not on the Albo';
+  assert v_place > jsonb_array_length(v_board -> 'top') or (v_board -> 'top' -> (v_place - 1) ->> 'is_me')::boolean,
+    'B''s row in the top';
+  perform set_config('test.place_b', v_place::text, true);
+end $$;
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000002a1", "role": "authenticated"}', true);
 do $$
 declare
   v_board jsonb := public.get_ranked_board();
   v_mine jsonb := public.get_my_ranked();
+  v_players integer := current_setting('test.albo_players')::integer + 2;
+  v_place integer := (v_board -> 'me' ->> 'place')::integer;
+  v_place_b integer := current_setting('test.place_b')::integer;
 begin
-  assert (v_board ->> 'current')::boolean and (v_board ->> 'players')::integer = 2, 'Albo players: ' || (v_board ->> 'players');
-  assert v_board -> 'top' -> 0 ->> 'username' = (select username from public.profiles where id = '00000000-0000-4000-8000-0000000002a1'),
-    'Albo order';
+  assert (v_board ->> 'current')::boolean and (v_board ->> 'players')::integer = v_players,
+    'Albo players: ' || (v_board ->> 'players') || ', expected ' || v_players;
+  assert (select bool_and((t.e ->> 'place')::integer = t.n
+                          and (t.n = 1 or (t.e ->> 'value')::integer <= (v_board -> 'top' -> (t.n::integer - 2) ->> 'value')::integer))
+          from jsonb_array_elements(v_board -> 'top') with ordinality t(e, n)), 'Albo order';
+  assert v_place < v_place_b and v_place_b <= v_players, 'test players'' places: ' || v_place || ' and ' || v_place_b;
+  assert v_place > jsonb_array_length(v_board -> 'top') or (v_board -> 'top' -> (v_place - 1) ->> 'is_me')::boolean,
+    'my row in the top';
   assert (v_board -> 'me' ->> 'fama')::integer = 300 and v_board -> 'me' ->> 'league' = 'vigilante', 'my row';
-  assert (public.get_ranked_board(null, 'classic') ->> 'players')::integer = 2, 'Albo of a format';
-  assert (public.get_ranked_board(null, 'boss') ->> 'players')::integer = 0, 'Albo of an unplayed format';
+  assert (public.get_ranked_board(null, 'classic') ->> 'players')::integer = current_setting('test.albo_classic')::integer + 2,
+    'Albo of a format';
+  assert (public.get_ranked_board(null, 'boss') ->> 'players')::integer = current_setting('test.albo_boss')::integer,
+    'Albo of a format the test players never played';
   assert (v_mine ->> 'fama')::integer = 300 and v_mine ->> 'league' = 'vigilante' and (v_mine ->> 'next_league_at')::integer = 700,
     'my ranked';
-  assert (v_mine ->> 'wins')::integer = 1 and (v_mine ->> 'place')::integer = 1, 'my results';
+  assert (v_mine ->> 'wins')::integer = 1 and (v_mine ->> 'place')::integer = v_place, 'my results';
   begin
     perform public.get_ranked_board(null, 'conquest');
     assert false, 'a board for Conquista';
@@ -351,9 +385,14 @@ declare
   v_coins integer := current_setting('test.coins')::integer;
   v_claim jsonb;
   v_titles jsonb := public.get_leaderboard_titles();
+  v_hall jsonb := public.get_ranked_hall();
+  v_old jsonb := (select e from jsonb_array_elements(v_hall) e where e ->> 'season' = '2000-01');
 begin
   assert jsonb_array_length(public.get_my_ranked() -> 'prizes') = 1, 'prize not listed';
-  assert public.get_ranked_hall() -> 0 ->> 'season' = '2000-01', 'Albo d''oro';
+  -- Real Mandati closed live come before the test's one (the newest first), and
+  -- after twelve of them it drops off the list.
+  assert (v_old -> 'podium' -> 0 ->> 'is_me')::boolean and jsonb_array_length(v_old -> 'podium') = 2
+      or (v_old is null and jsonb_array_length(v_hall) = 12 and v_hall -> 11 ->> 'season' > '2000-01'), 'Albo d''oro';
   assert (public.get_ranked_board('2000-01') ->> 'players')::integer = 2, 'Albo of a past Mandato';
   v_claim := public.claim_ranked_prize('2000-01');
   assert (v_claim ->> 'coins')::integer = 50 and (v_claim ->> 'coin_balance')::integer = v_coins + 50, 'prize not paid';
