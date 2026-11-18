@@ -1,11 +1,20 @@
-import type { BotDifficulty } from "@o-mega/game-engine";
-import type { Challenge, ChallengeEventPoints, ChallengeRulesJson } from "@/lib/challenges";
+import type { BotDifficulty, ChallengeSimulation } from "@o-mega/game-engine";
+import type { Challenge, ChallengeEventPoints, ChallengeMatchRulesJson, ChallengeRulesJson } from "@/lib/challenges";
+import { invokeFunction } from "@/lib/match";
 import { toRomeInput } from "@/lib/events";
 import { getSupabase } from "@/lib/supabase/client";
 
 /** The Sfide a tema as the admin page (/gestione-sfide) reads them: every function checks the admin. */
 
-export type AdminChallenge = Challenge & { is_active: boolean; version: number; matches: number; players: number };
+export type AdminChallenge = Challenge & {
+  is_active: boolean;
+  version: number;
+  /** Matches played (an Emergenza: runs), and the players who played them. */
+  matches: number;
+  players: number;
+  /** The codes of the squad the challenge gives, for the form; null: none. */
+  supplied_codes?: string[] | null;
+};
 
 export type AdminChallengeEvent = { id: string; title: string; starts_at: string; ends_at: string };
 
@@ -50,6 +59,9 @@ export type ChallengePreview = {
   admitted_with_variant: number;
   players_ready: number;
   players_total: number;
+  /** Third stage: a squad can keep the composition, and the rarity budget of the cheapest one (null: none fits). */
+  composition_possible?: boolean;
+  cheapest_budget?: number | null;
 };
 
 export type ChallengeDraft = {
@@ -71,7 +83,16 @@ export type ChallengeDraft = {
   minLevel: number | null;
   sealTarget: number | null;
   tiers: ChallengeTierDraft[];
+  /** Third stage. */
+  leaderboard: boolean;
+  matchRules: ChallengeMatchRulesJson;
+  /** The codes of the squad every player fields (Classica against the bots); empty: the player's own. */
+  suppliedTeam: string[];
+  /** An Emergenza: 8 or 10 threats. */
+  emergencyThreats: 8 | 10;
 };
+
+export const NO_MATCH_RULES_JSON: ChallengeMatchRulesJson = { modifier: null, place: null, levels: [], rare_multiplier: 1 };
 
 /** The modes a challenge can be played in today, with their squad. */
 export const CHALLENGE_FORMATS = [
@@ -80,6 +101,7 @@ export const CHALLENGE_FORMATS = [
   { key: "triple", label: "Allarme Triplo", detail: "Mazzo da 9" },
   { key: "quadrant", label: "Quadrante fisso", detail: "Mazzo da 10" },
   { key: "quadrant_shifting", label: "Quadrante mobile", detail: "Mazzo da 10" },
+  { key: "emergency", label: "Emergenza", detail: "8 o 10 Minacce, da soli" },
 ] as const;
 
 /** Light colors: the ribbon and the card's band carry black text. */
@@ -91,8 +113,12 @@ export async function fetchAdminChallenges(): Promise<AdminChallenges> {
   return data as unknown as AdminChallenges;
 }
 
-export async function previewChallenge(format: string, rules: ChallengeRulesJson): Promise<ChallengePreview> {
-  const { data, error } = await getSupabase().rpc("admin_preview_challenge", { p_format: format, p_rules: rules });
+export async function previewChallenge(format: string, rules: ChallengeRulesJson, emergencyThreats?: number): Promise<ChallengePreview> {
+  const { data, error } = await getSupabase().rpc("admin_preview_challenge", {
+    p_format: format,
+    p_rules: rules,
+    ...(format === "emergency" && emergencyThreats ? { p_emergency_threats: emergencyThreats } : {}),
+  });
   if (error) throw error;
   return data as unknown as ChallengePreview;
 }
@@ -116,6 +142,10 @@ export async function saveChallenge(draft: ChallengeDraft): Promise<AdminChallen
     p_min_level: draft.minLevel ?? undefined,
     p_quadrant_seal_target: draft.sealTarget ?? undefined,
     p_tiers: draft.tiers,
+    p_leaderboard: draft.leaderboard,
+    p_match_rules: draft.format === "classic" ? draft.matchRules : NO_MATCH_RULES_JSON,
+    p_supplied_team: draft.format === "classic" && draft.suppliedTeam.length > 0 ? draft.suppliedTeam : undefined,
+    p_emergency_threats: draft.format === "emergency" ? draft.emergencyThreats : undefined,
   });
   if (error) throw error;
   return data as unknown as AdminChallenges;
@@ -168,4 +198,36 @@ export function fromRomeInput(value: string): number {
   // The Rome offset at that moment: the wall clock the guess shows there, minus the guess.
   const offset = Date.parse(`${toRomeInput(guess)}Z`) - guess;
   return guess - offset;
+}
+
+/**
+ * One batch of simulated Classica matches of a draft against a bot (the Edge Function, admins
+ * only): the editor asks again until it has the matches it wants.
+ */
+export function simulateChallengeBatch(params: {
+  difficulty: BotDifficulty;
+  matches: number;
+  rules: ChallengeRulesJson;
+  matchRules: ChallengeMatchRulesJson;
+  botFollowsRules: boolean;
+  /** The codes of a squad the challenge gives; empty: none. */
+  suppliedCodes: string[];
+}): Promise<ChallengeSimulation> {
+  return invokeFunction({
+    action: "challenge_simulate",
+    difficulty: params.difficulty,
+    matches: params.matches,
+    rules: params.rules,
+    match_rules: params.matchRules,
+    bot_follows_rules: params.botFollowsRules,
+    supplied_codes: params.suppliedCodes,
+  });
+}
+
+/** A win rate in words, for the editor: how hard the challenge looks against a bot. */
+export function difficultyWord(winRate: number): string {
+  if (winRate >= 0.7) return "Facile";
+  if (winRate >= 0.5) return "Equilibrata";
+  if (winRate >= 0.3) return "Dura";
+  return "Molto dura";
 }

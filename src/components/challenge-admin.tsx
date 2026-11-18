@@ -16,11 +16,13 @@ import {
   CHALLENGE_FORMATS,
   adminChallengeState,
   deleteChallenge,
+  difficultyWord,
   fromRomeInput,
   overlappingChallenge,
   previewChallenge,
   saveChallenge,
   setChallengeActive,
+  simulateChallengeBatch,
   type AdminChallenge,
   type AdminChallengeCard,
   type AdminChallenges,
@@ -28,15 +30,18 @@ import {
   type ChallengeTierDraft,
 } from "@/lib/challenge-admin";
 import {
+  CHALLENGE_MODIFIER_NAMES,
+  CHALLENGE_PLACE_NAMES,
   describeChallengePoints,
   describeChallengeTierReward,
   type Challenge,
+  type ChallengeMatchRulesJson,
   type ChallengeRulesJson,
   type ChallengeTier,
 } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
 import { addHoursToInput, formatRomeDateTime, toRomeInput } from "@/lib/events";
-import { DIFFICULTY_LABELS } from "@/lib/match";
+import { DIFFICULTY_LABELS, type MatchCard } from "@/lib/match";
 import { describeRandomVariants, ruleInfo, ruleToSend, type RandomVariantsRule } from "@/lib/random-variants";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
@@ -88,6 +93,20 @@ type FormState = {
   eventId: string;
   points: { win: string; draw: string; loss: string };
   tiers: TierForm[];
+  /** Third stage: the composition of the squad (empty: no rule). */
+  rarityBudget: string;
+  rarityMax: Record<string, string>;
+  minFactions: number;
+  /** Classica's match rules. */
+  modifier: string;
+  /** "" as usual, "megara", a place, or "levels". */
+  threats: string;
+  levels: number[];
+  rareMultiplier: number;
+  /** The codes of the squad the challenge gives; empty: the player's own. */
+  supplied: string[];
+  emergencyThreats: 8 | 10;
+  leaderboard: boolean;
 };
 
 const isQuadrant = (format: string) => format === "quadrant" || format === "quadrant_shifting";
@@ -129,6 +148,16 @@ function emptyForm(now: number): FormState {
     eventId: "",
     points: pointsForm(limits.defaultEventPoints),
     tiers: [],
+    rarityBudget: "",
+    rarityMax: {},
+    minFactions: 0,
+    modifier: "",
+    threats: "",
+    levels: [],
+    rareMultiplier: 1,
+    supplied: [],
+    emergencyThreats: 10,
+    leaderboard: true,
   };
 }
 
@@ -147,6 +176,7 @@ function formFrom(challenge: AdminChallenge, now: number, copy: boolean): FormSt
   const hours = Math.round((Date.parse(challenge.ends_at) - Date.parse(challenge.starts_at)) / 3_600_000);
   const startsAt = copy ? nextHourInput(now) : toRomeInput(challenge.starts_at);
   const rules = challenge.rules;
+  const matchRules = challenge.match_rules && "rare_multiplier" in challenge.match_rules ? challenge.match_rules : null;
   return {
     id: copy ? undefined : challenge.id,
     started: !copy && Date.parse(challenge.starts_at) <= now,
@@ -175,6 +205,16 @@ function formFrom(challenge: AdminChallenge, now: number, copy: boolean): FormSt
     eventId: copy ? "" : (challenge.event?.id ?? ""),
     points: pointsForm(challenge.event_points ?? limits.defaultEventPoints),
     tiers: (challenge.tiers ?? []).map(tierForm),
+    rarityBudget: typeof rules.rarity_budget === "number" ? String(rules.rarity_budget) : "",
+    rarityMax: Object.fromEntries(Object.entries(rules.rarity_max ?? {}).map(([code, most]) => [code, String(most)])),
+    minFactions: rules.min_factions ?? 0,
+    modifier: matchRules?.modifier ?? "",
+    threats: matchRules?.place ?? ((matchRules?.levels ?? []).length > 0 ? "levels" : ""),
+    levels: matchRules?.levels ?? [],
+    rareMultiplier: matchRules?.rare_multiplier ?? 1,
+    supplied: challenge.supplied_codes ?? [],
+    emergencyThreats: challenge.emergency_threats === 8 ? 8 : 10,
+    leaderboard: challenge.leaderboard ?? true,
   };
 }
 
@@ -190,6 +230,23 @@ function rulesOf(form: FormState): ChallengeRulesJson {
     banned: form.banned,
     only: form.only,
     no_starters: form.noStarters,
+    rarity_budget: form.rarityBudget.trim() === "" ? null : Number(form.rarityBudget),
+    rarity_max: Object.fromEntries(
+      Object.entries(form.rarityMax)
+        .filter(([, most]) => most.trim() !== "")
+        .map(([code, most]) => [code, Number(most)]),
+    ),
+    min_factions: form.minFactions,
+  };
+}
+
+/** Classica's match rules from the form. */
+function matchRulesOf(form: FormState): ChallengeMatchRulesJson {
+  return {
+    modifier: form.modifier || null,
+    place: form.threats !== "" && form.threats !== "levels" ? form.threats : null,
+    levels: form.threats === "levels" ? form.levels : [],
+    rare_multiplier: form.rareMultiplier,
   };
 }
 
@@ -333,15 +390,16 @@ const DURATIONS = [
 function usePreview(
   format: Format,
   rules: ChallengeRulesJson,
+  emergencyThreats: number,
   ask: typeof previewChallenge,
 ): { preview: ChallengePreview | null; error: string | null } {
   const [state, setState] = useState<{ preview: ChallengePreview | null; error: string | null }>({ preview: null, error: null });
-  const key = JSON.stringify([format, rules]);
+  const key = JSON.stringify([format, rules, emergencyThreats]);
   useEffect(() => {
     let cancelled = false;
     const timer = setTimeout(() => {
-      const [askedFormat, askedRules] = JSON.parse(key) as [Format, ChallengeRulesJson];
-      ask(askedFormat, askedRules)
+      const [askedFormat, askedRules, askedThreats] = JSON.parse(key) as [Format, ChallengeRulesJson, number];
+      ask(askedFormat, askedRules, askedThreats)
         .then((preview) => !cancelled && setState({ preview, error: null }))
         .catch((cause: unknown) => !cancelled && setState({ preview: null, error: describeServerError(cause) }));
     }, 300);
@@ -382,7 +440,12 @@ function ChallengeForm({
   const styles = data.variant_styles ?? [];
   const seal = data.seal_target ?? balance.quadrant.sealTarget;
   const rules = rulesOf(form);
-  const { preview, error: previewError } = usePreview(form.format, rules, askPreview);
+  const matchRules = matchRulesOf(form);
+  const isEmergency = form.format === "emergency";
+  const isClassic = form.format === "classic";
+  // A squad the challenge gives: Classica against the bots, and no squad rules.
+  const supplying = isClassic && !form.online && form.supplied.length > 0;
+  const { preview, error: previewError } = usePreview(form.format, rules, form.emergencyThreats, askPreview);
   const event = data.events.find((entry) => entry.id === form.eventId) ?? null;
   const startsAt = fromRomeInput(form.startsAt);
   const endsAt = fromRomeInput(form.endsAt);
@@ -400,7 +463,7 @@ function ChallengeForm({
         description: form.description,
         color: form.color,
         format: form.format,
-        botDifficulties: form.bots,
+        botDifficulties: isEmergency ? [] : form.bots,
         botFollowsRules: form.botFollowsRules,
         rules,
         startsAt: form.startsAt,
@@ -410,10 +473,14 @@ function ChallengeForm({
         eventPoints: form.eventId
           ? { win: number(form.points.win), draw: number(form.points.draw), loss: number(form.points.loss) }
           : null,
-        online: form.online,
+        online: isEmergency ? false : form.online,
         minLevel: form.minLevel.trim() === "" ? null : Number(form.minLevel),
         sealTarget: isQuadrant(form.format) && form.sealTarget.trim() !== "" ? Number(form.sealTarget) : null,
         tiers: form.tiers.map(tierDraft),
+        leaderboard: form.leaderboard,
+        matchRules,
+        suppliedTeam: supplying ? form.supplied : [],
+        emergencyThreats: form.emergencyThreats,
       });
       onSaved(next, form.title.trim());
     } catch (cause) {
@@ -429,9 +496,9 @@ function ChallengeForm({
     description: form.description.trim(),
     color: form.color,
     format: form.format,
-    bot_difficulties: BOTS.filter((bot) => form.bots.includes(bot)),
+    bot_difficulties: isEmergency ? [] : BOTS.filter((bot) => form.bots.includes(bot)),
     bot_follows_rules: form.botFollowsRules,
-    online: form.online,
+    online: !isEmergency && form.online,
     min_level: form.minLevel.trim() === "" ? null : Number(form.minLevel),
     quadrant_seal_target: isQuadrant(form.format) && form.sealTarget.trim() !== "" ? Number(form.sealTarget) : null,
     rules,
@@ -451,10 +518,19 @@ function ChallengeForm({
     only_names: form.only.map(nameOf),
     variant_style_names: styles.filter((style) => rules.variant_styles?.includes(style.style)).map((style) => style.name),
     admitted_characters: preview?.admitted ?? 0,
-    team_size: preview?.team_size ?? (form.format === "triple" ? 9 : isQuadrant(form.format) ? 10 : 5),
+    team_size: preview?.team_size ?? (isEmergency ? form.emergencyThreats : form.format === "triple" ? 9 : isQuadrant(form.format) ? 10 : 5),
+    rarity_max_info: (reference?.rarities ?? [])
+      .filter((rarity) => (form.rarityMax[rarity.code] ?? "").trim() !== "")
+      .map((rarity) => ({ code: rarity.code, name: rarity.name, max: Number(form.rarityMax[rarity.code]) })),
+    match_rules: isClassic ? matchRules : {},
+    // The preview names the given squad; the real card arrives with the challenge.
+    supplied_team: supplying ? form.supplied.map((code) => ({ name: nameOf(code) }) as MatchCard) : null,
+    emergency_threats: isEmergency ? form.emergencyThreats : null,
+    my_run: null,
+    leaderboard: form.leaderboard,
     starts_at: Number.isNaN(startsAt) ? new Date(now).toISOString() : new Date(startsAt).toISOString(),
     ends_at: Number.isNaN(endsAt) ? new Date(now).toISOString() : new Date(endsAt).toISOString(),
-    daily_limit: form.dailyLimit.trim() === "" ? null : Number(form.dailyLimit),
+    daily_limit: isEmergency || form.dailyLimit.trim() === "" ? null : Number(form.dailyLimit),
     plays_today: 0,
     my_characters: null,
     my_characters_with_variant: null,
@@ -478,7 +554,8 @@ function ChallengeForm({
   };
 
   const tooFew =
-    preview !== null && (preview.admitted < preview.team_size || preview.admitted_with_variant < preview.variants_needed);
+    !supplying && preview !== null && (preview.admitted < preview.team_size || preview.admitted_with_variant < preview.variants_needed);
+  const compositionOk = supplying || preview?.composition_possible !== false;
   const readyShare = preview && preview.players_total > 0 ? Math.round((preview.players_ready / preview.players_total) * 100) : null;
   const winsGrow = form.tiers.every((tier, i) => i === 0 || number(tier.wins) > number(form.tiers[i - 1].wins));
 
@@ -614,6 +691,36 @@ function ChallengeForm({
                 </button>
               ))}
             </div>
+            {isEmergency ? (
+              <>
+                <span className={SUBLABEL}>Minacce dell&apos;Emergenza</span>
+                <div className="grid grid-cols-2 border-2 border-black text-xs font-extrabold uppercase" role="radiogroup" aria-label="Minacce">
+                  {(
+                    [
+                      [8, "8 · come quella del giorno"],
+                      [10, "10 · come quella della settimana"],
+                    ] as const
+                  ).map(([threats, label]) => (
+                    <button
+                      key={threats}
+                      type="button"
+                      role="radio"
+                      aria-checked={form.emergencyThreats === threats}
+                      onClick={() => update({ emergencyThreats: threats })}
+                      className={`min-h-11 px-1 ${form.emergencyThreats === threats ? "bg-comic-yellow text-black" : "bg-panel text-muted"}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs font-medium leading-4 text-muted">
+                  Si gioca da soli, un solo tentativo finché dura la sfida: le Minacce si estraggono una volta, uguali per tutti. Soglie
+                  e fallite come l&apos;Emergenza da {form.emergencyThreats}; la squadra rispetta i vincoli. Niente punti evento; il
+                  premio conta le Minacce superate nella corsa.
+                </p>
+              </>
+            ) : (
+              <>
             <span className={SUBLABEL}>Contro i bot · nessuno = solo online</span>
             <div className="flex flex-wrap gap-1.5" role="group" aria-label="Bot permessi">
               {BOTS.map((bot) => (
@@ -636,6 +743,29 @@ function ChallengeForm({
               Online la sfida ha una coda sua: si incontrano solo i giocatori della sfida, ed entrambe le squadre rispettano le
               regole. Dopo {limits.onlineBotAfterSeconds} secondi senza avversari la pagina d&apos;attesa propone i bot della sfida.
             </p>
+              </>
+            )}
+            {isClassic && <MatchRulesFields form={form} update={update} />}
+            {isClassic && (
+              <>
+                <CodeListPicker
+                  label={`Squadra della sfida · ${form.supplied.length}/5 · vuota = la propria`}
+                  cards={cards}
+                  chosen={form.supplied}
+                  onChange={(supplied) => update({ supplied: supplied.slice(0, 5) })}
+                  disabled={locked}
+                />
+                {form.supplied.length > 0 && (
+                  <p className={`text-xs font-medium leading-4 ${form.supplied.length === 5 && !form.online ? "text-muted" : "text-comic-magenta"}`}>
+                    {form.online
+                      ? "La squadra della sfida vale solo contro i bot: togli l'online."
+                      : form.supplied.length === 5
+                        ? "Tutti giocano con questi 5, anche senza averli: conta solo la bravura. I vincoli sulla squadra non contano; il bot non usa questi personaggi."
+                        : "Servono 5 personaggi diversi."}
+                  </p>
+                )}
+              </>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <label className={LABEL}>
                 Dal livello · vuoto = tutti
@@ -669,7 +799,12 @@ function ChallengeForm({
           </fieldset>
         )}
 
-        {step === "rules" && (
+        {step === "rules" && supplying && (
+          <p className="bg-panel px-3 py-2 text-sm font-semibold leading-5">
+            Questa sfida dà la sua squadra (passo Modalità): i vincoli sulla squadra non contano.
+          </p>
+        )}
+        {step === "rules" && !supplying && (
           <fieldset disabled={locked} className="flex min-w-0 flex-col gap-1.5 disabled:opacity-50">
             <legend className="mb-1 text-sm font-bold">Chi può giocare</legend>
             <span className={SUBLABEL}>Rarità · nessuna scelta = tutte</span>
@@ -772,12 +907,22 @@ function ChallengeForm({
             <Toggle checked={form.noStarters} onChange={(noStarters) => update({ noStarters })}>
               Senza carte dello starter set né carte di livello
             </Toggle>
+            <CompositionFields form={form} update={update} rarities={reference?.rarities ?? []} preview={preview} />
             <RulesCount preview={preview} error={previewError} tooFew={tooFew} readyShare={readyShare} />
           </fieldset>
         )}
 
         {step === "rewards" && (
           <div className="flex min-w-0 flex-col gap-2">
+            <Toggle checked={form.leaderboard} onChange={(leaderboard) => update({ leaderboard })}>
+              {isEmergency ? "Classifica della sfida: la corsa migliore" : "Classifica della sfida: chi vince di più"}
+            </Toggle>
+            {isEmergency ? (
+              <p className="text-xs font-medium leading-4 text-muted">
+                L&apos;Emergenza a tema non dà punti evento e non ha partite al giorno: un tentativo per giocatore.
+              </p>
+            ) : (
+              <>
             <fieldset disabled={locked} className="flex min-w-0 flex-col gap-2 disabled:opacity-50">
               <legend className="sr-only">Evento e punti</legend>
               <label className={LABEL}>
@@ -843,8 +988,12 @@ function ChallengeForm({
                 className={`${SMALL_INPUT} placeholder:text-faint disabled:opacity-50`}
               />
             </label>
+              </>
+            )}
             <fieldset disabled={locked} className="flex min-w-0 flex-col gap-2 disabled:opacity-50">
-              <legend className="mb-1 text-sm font-bold">Premio della sfida · vittorie nella sfida</legend>
+              <legend className="mb-1 text-sm font-bold">
+                {isEmergency ? "Premio della sfida · Minacce superate nella corsa" : "Premio della sfida · vittorie nella sfida"}
+              </legend>
               {form.tiers.length === 0 && (
                 <p className="text-xs font-medium leading-4 text-muted">Nessun premio: la sfida dà solo le ricompense delle partite.</p>
               )}
@@ -859,6 +1008,9 @@ function ChallengeForm({
                 />
               ))}
               {!winsGrow && <p className="text-xs font-bold text-comic-magenta">Ogni traguardo deve chiedere più vittorie del precedente.</p>}
+              {isEmergency && form.tiers.some((tier) => number(tier.wins) > form.emergencyThreats) && (
+                <p className="text-xs font-bold text-comic-magenta">Un traguardo non può chiedere più delle {form.emergencyThreats} Minacce.</p>
+              )}
               {form.tiers.length < limits.maxTiers && (
                 <button
                   type="button"
@@ -890,7 +1042,7 @@ function ChallengeForm({
             <span className={SUBLABEL}>Così la vedono i giocatori</span>
             <div
               className={`relative flex min-h-16 w-1/2 flex-col justify-between px-3 py-1.5 text-black ${
-                form.format === "triple"
+                form.format === "triple" || isEmergency
                   ? "bg-comic-yellow"
                   : form.format === "boss"
                     ? "bg-comic-orange"
@@ -909,9 +1061,20 @@ function ChallengeForm({
             <ChallengeCard challenge={shown} now={now} disabled />
             <span className={SUBLABEL}>Controlli</span>
             <ul className="flex flex-col gap-1 text-[13px] font-bold leading-4">
-              <Check ok={preview !== null && !tooFew}>
-                {preview ? `${preview.admitted} personaggi ammessi (servono ${preview.team_size})` : "Conteggio in corso…"}
-              </Check>
+              {supplying ? (
+                <Check ok={form.supplied.length === 5}>Squadra della sfida: {form.supplied.map(nameOf).join(", ")}</Check>
+              ) : (
+                <Check ok={preview !== null && !tooFew}>
+                  {preview ? `${preview.admitted} personaggi ammessi (servono ${preview.team_size})` : "Conteggio in corso…"}
+                </Check>
+              )}
+              {!supplying && preview && (rules.rarity_budget != null || Object.keys(rules.rarity_max ?? {}).length > 0 || (rules.min_factions ?? 0) > 0) && (
+                <Check ok={compositionOk}>
+                  {compositionOk
+                    ? `La composizione lascia una squadra${preview.cheapest_budget != null ? ` (la più economica vale ${preview.cheapest_budget})` : ""}`
+                    : "Con questo budget e questi limiti nessuna squadra rispetta le regole"}
+                </Check>
+              )}
               {preview && preview.variants_needed > 0 && (
                 <Check ok={preview.admitted_with_variant >= preview.variants_needed}>
                   {preview.admitted_with_variant} con una variante che conta (ne servono {preview.variants_needed})
@@ -922,13 +1085,17 @@ function ChallengeForm({
                   Oggi possono formare la squadra {preview!.players_ready} giocatori su {preview!.players_total} ({readyShare}%)
                 </Check>
               )}
-              <Check ok={form.bots.length > 0 || form.online}>
-                {form.bots.length > 0
-                  ? `Bot: ${form.bots.map((bot) => DIFFICULTY_LABELS[bot]).join(", ")}${form.online ? " · anche online" : ""}`
-                  : form.online
-                    ? "Solo online"
-                    : "Scegli almeno un bot, oppure l'online"}
-              </Check>
+              {isEmergency ? (
+                <Check ok>Emergenza da {form.emergencyThreats} Minacce, un tentativo a testa</Check>
+              ) : (
+                <Check ok={form.bots.length > 0 || form.online}>
+                  {form.bots.length > 0
+                    ? `Bot: ${form.bots.map((bot) => DIFFICULTY_LABELS[bot]).join(", ")}${form.online ? " · anche online" : ""}`
+                    : form.online
+                      ? "Solo online"
+                      : "Scegli almeno un bot, oppure l'online"}
+                </Check>
+              )}
               {event && (
                 <Check ok={startsAt >= Date.parse(event.starts_at) && endsAt <= Date.parse(event.ends_at)}>Dentro le date dell&apos;evento</Check>
               )}
@@ -937,6 +1104,16 @@ function ChallengeForm({
                 {overlap ? `In queste date c'è già «${overlap.title}» nella stessa modalità` : "Nessun'altra sfida nella stessa modalità"}
               </Check>
             </ul>
+            {isClassic && form.bots.length > 0 && (!supplying || form.supplied.length === 5) && (
+              <ChallengeSimulator
+                key={JSON.stringify([rules, matchRules, form.botFollowsRules, supplying ? form.supplied : []])}
+                bots={BOTS.filter((bot) => form.bots.includes(bot))}
+                rules={rules}
+                matchRules={matchRules}
+                botFollowsRules={form.botFollowsRules}
+                suppliedCodes={supplying ? form.supplied : []}
+              />
+            )}
             <p className="text-xs font-medium leading-4 text-muted">Dopo l&apos;inizio cambiano solo titolo, descrizione e fine.</p>
           </div>
         )}
@@ -956,6 +1133,268 @@ function ChallengeForm({
         </div>
       </div>
     </form>
+  );
+}
+
+/** The places a Classica can draw its threats from, and the other choices of the threats. */
+const THREAT_CHOICES = [
+  { key: "", label: "Come sempre" },
+  { key: "megara", label: "Solo Nuova Megara" },
+  ...["giza", "yucatan", "atlantis", "arctic", "japan"].map((place) => ({ key: place, label: CHALLENGE_PLACE_NAMES[place] })),
+  { key: "levels", label: "Solo alcuni livelli" },
+];
+
+const RARE_MULTIPLIERS = [1, 5, 20, 100];
+
+/** Classica's match rules: a modifier on every round, which threats, rare threats more often. */
+function MatchRulesFields({ form, update }: { form: FormState; update: (patch: Partial<FormState>) => void }) {
+  return (
+    <>
+      <span className={SUBLABEL}>Regole della partita · solo Classica</span>
+      <label className={LABEL}>
+        Modificatore su ogni round
+        <select value={form.modifier} onChange={(changed) => update({ modifier: changed.target.value })} className={INPUT}>
+          <option value="">Nessuno: estratti come sempre</option>
+          {Object.entries(CHALLENGE_MODIFIER_NAMES).map(([code, name]) => (
+            <option key={code} value={code}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={LABEL}>
+        Minacce
+        <select value={form.threats} onChange={(changed) => update({ threats: changed.target.value })} className={INPUT}>
+          {THREAT_CHOICES.map((choice) => (
+            <option key={choice.key} value={choice.key}>
+              {choice.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {form.threats !== "" && form.threats !== "megara" && form.threats !== "levels" && (
+        <p className="text-xs font-medium leading-4 text-muted">
+          Le 3 Minacce di {CHALLENGE_PLACE_NAMES[form.threats]} in ogni partita, con le loro regole, più 2 di Nuova Megara.
+        </p>
+      )}
+      {form.threats === "levels" && (
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Livelli delle Minacce">
+          {[1, 2, 3, 4, 5, 6].map((level) => (
+            <Chip
+              key={level}
+              active={form.levels.includes(level)}
+              onClick={() =>
+                update({
+                  levels: form.levels.includes(level)
+                    ? form.levels.filter((entry) => entry !== level)
+                    : [...form.levels, level].sort((a, b) => a - b),
+                })
+              }
+            >
+              Livello {level}
+            </Chip>
+          ))}
+        </div>
+      )}
+      <span className={SUBLABEL}>Minacce rare</span>
+      <div className="grid grid-cols-4 border-2 border-black text-xs font-extrabold uppercase" role="radiogroup" aria-label="Minacce rare">
+        {RARE_MULTIPLIERS.map((multiplier) => (
+          <button
+            key={multiplier}
+            type="button"
+            role="radio"
+            aria-checked={form.rareMultiplier === multiplier}
+            onClick={() => update({ rareMultiplier: multiplier })}
+            className={`min-h-11 px-1 ${form.rareMultiplier === multiplier ? "bg-comic-yellow text-black" : "bg-panel text-muted"}`}
+          >
+            {multiplier === 1 ? "Come sempre" : `×${multiplier}`}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/** The composition of the squad: rarity budget, most copies of each rarity, fewest factions. */
+function CompositionFields({
+  form,
+  update,
+  rarities,
+  preview,
+}: {
+  form: FormState;
+  update: (patch: Partial<FormState>) => void;
+  rarities: { code: string; name: string; rank: number; color: string }[];
+  preview: ChallengePreview | null;
+}) {
+  return (
+    <>
+      <span className={SUBLABEL}>Composizione della squadra</span>
+      <label className="flex items-center justify-between gap-2 text-sm font-bold">
+        <span className="min-w-0">
+          Budget di rarità · Delta 1 … Omega 5
+          {preview?.cheapest_budget != null && <span className="block text-xs font-medium text-muted">La squadra più economica: {preview.cheapest_budget}</span>}
+        </span>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={limits.maxRarityBudget}
+          value={form.rarityBudget}
+          onChange={(changed) => update({ rarityBudget: changed.target.value })}
+          placeholder="—"
+          className="min-h-11 w-20 shrink-0 border-2 border-comic-yellow bg-black px-2 text-center text-base font-semibold placeholder:text-faint"
+        />
+      </label>
+      <span className="text-xs font-bold text-muted">Al massimo, per rarità · vuoto = nessun limite</span>
+      <div className="grid grid-cols-5 gap-1">
+        {rarities.map((rarity) => (
+          <label key={rarity.code} className="flex min-w-0 flex-col items-center gap-0.5 text-[11px] font-extrabold uppercase">
+            <span className="max-w-full truncate" style={{ color: rarity.color }}>
+              {rarity.name}
+            </span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={10}
+              value={form.rarityMax[rarity.code] ?? ""}
+              onChange={(changed) => update({ rarityMax: { ...form.rarityMax, [rarity.code]: changed.target.value } })}
+              placeholder="—"
+              aria-label={`Al massimo ${rarity.name}`}
+              className="min-h-11 w-full border-2 border-comic-yellow bg-black px-1 text-center text-base font-semibold placeholder:text-faint"
+            />
+          </label>
+        ))}
+      </div>
+      <span className="text-xs font-bold text-muted">Fazioni diverse in squadra</span>
+      <div className="grid grid-cols-3 border-2 border-black text-xs font-extrabold uppercase" role="radiogroup" aria-label="Fazioni diverse">
+        {(
+          [
+            [0, "Nessun obbligo"],
+            [2, "Almeno 2"],
+            [3, "Tutte e 3"],
+          ] as const
+        ).map(([factions, label]) => (
+          <button
+            key={factions}
+            type="button"
+            role="radio"
+            aria-checked={form.minFactions === factions}
+            onClick={() => update({ minFactions: factions })}
+            className={`min-h-11 px-1 ${form.minFactions === factions ? "bg-comic-yellow text-black" : "bg-panel text-muted"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+type SimulationResult = { matches: number; random: { matches: number; wins: number; draws: number }; strong: { matches: number; wins: number; draws: number } };
+
+/**
+ * How hard the challenge looks against each bot (Classica): simulated matches on the server, a
+ * batch at a time. The player's side plays as a fair player, with a squad at random among the
+ * admitted characters and with a strong one. Estimates: the usual drawn modifiers are left out.
+ */
+function ChallengeSimulator({
+  bots,
+  rules,
+  matchRules,
+  botFollowsRules,
+  suppliedCodes,
+}: {
+  bots: BotDifficulty[];
+  rules: ChallengeRulesJson;
+  matchRules: ChallengeMatchRulesJson;
+  botFollowsRules: boolean;
+  suppliedCodes: string[];
+}) {
+  const [results, setResults] = useState<Partial<Record<BotDifficulty, SimulationResult>>>({});
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run() {
+    setRunning(true);
+    setError(null);
+    setResults({});
+    try {
+      for (const difficulty of bots) {
+        const wanted = limits.simulationMatches[difficulty];
+        const total: SimulationResult = { matches: 0, random: { matches: 0, wins: 0, draws: 0 }, strong: { matches: 0, wins: 0, draws: 0 } };
+        while (total.matches < wanted) {
+          const batch = await simulateChallengeBatch({ difficulty, matches: wanted - total.matches, rules, matchRules, botFollowsRules, suppliedCodes });
+          if (batch.matches === 0) break;
+          total.matches += batch.matches;
+          for (const key of ["random", "strong"] as const) {
+            total[key].matches += batch[key].matches;
+            total[key].wins += batch[key].wins;
+            total[key].draws += batch[key].draws;
+          }
+          setResults((current) => ({ ...current, [difficulty]: { ...total, random: { ...total.random }, strong: { ...total.strong } } }));
+        }
+      }
+    } catch (cause) {
+      setError(describeServerError(cause));
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  const rate = (tally: { matches: number; wins: number; draws: number }) =>
+    tally.matches > 0 ? (tally.wins + tally.draws / 2) / tally.matches : null;
+  const percent = (value: number | null) => (value === null ? "—" : `${Math.round(value * 100)}%`);
+
+  return (
+    <section aria-label="Simulatore" className="flex flex-col gap-1.5 border-2 border-dashed border-line px-2 py-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className={SUBLABEL}>Difficoltà stimata · partite simulate</span>
+        <button type="button" onClick={() => void run()} disabled={running} className="min-h-10 shrink-0 bg-comic-yellow px-2 font-display text-sm uppercase text-black">
+          {running ? "Simulo…" : Object.keys(results).length > 0 ? "Di nuovo" : "Simula"}
+        </button>
+      </div>
+      {error && <p className="text-xs font-bold text-comic-magenta">{error}</p>}
+      {Object.keys(results).length === 0 && !running ? (
+        <p className="text-xs font-medium leading-4 text-muted">
+          Gioca qualche partita contro ogni bot della sfida, con una squadra a caso tra gli ammessi e con una forte. Una stima:
+          i modificatori estratti di solito restano fuori.
+        </p>
+      ) : (
+        <table className="w-full text-[12px] font-bold leading-5">
+          <thead className="text-[10px] uppercase text-muted">
+            <tr>
+              <th className="text-left font-extrabold">Bot</th>
+              <th className="text-right font-extrabold">{suppliedCodes.length > 0 ? "Vittorie" : "A caso"}</th>
+              {suppliedCodes.length === 0 && <th className="text-right font-extrabold">Forte</th>}
+              <th className="text-right font-extrabold">Partite</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bots.map((difficulty) => {
+              const result = results[difficulty];
+              const random = result ? rate(result.random) : null;
+              const strong = result ? rate(result.strong) : null;
+              const word = suppliedCodes.length > 0 ? rate({ matches: (result?.random.matches ?? 0) + (result?.strong.matches ?? 0), wins: (result?.random.wins ?? 0) + (result?.strong.wins ?? 0), draws: (result?.random.draws ?? 0) + (result?.strong.draws ?? 0) }) : random;
+              return (
+                <tr key={difficulty} className="border-t border-line/50">
+                  <td>
+                    {DIFFICULTY_LABELS[difficulty]}
+                    {word !== null && <span className="ml-1 text-[10px] font-extrabold uppercase text-muted">· {difficultyWord(word)}</span>}
+                  </td>
+                  <td className="text-right">{percent(suppliedCodes.length > 0 ? word : random)}</td>
+                  {suppliedCodes.length === 0 && <td className="text-right">{percent(strong)}</td>}
+                  <td className="text-right text-muted">
+                    {result?.matches ?? 0}/{limits.simulationMatches[difficulty]}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </section>
   );
 }
 
@@ -1220,7 +1659,9 @@ function ChallengeRow({
   const state = adminChallengeState(challenge, now);
   const over = Date.parse(challenge.ends_at) <= now;
   const format = CHALLENGE_FORMATS.find((entry) => entry.key === challenge.format)?.label ?? challenge.format;
+  const emergency = challenge.format === "emergency";
   const opponents = [
+    emergency ? `${challenge.emergency_threats ?? 10} Minacce, da soli` : null,
     challenge.bot_difficulties.length > 0
       ? `bot ${challenge.bot_difficulties.map((bot) => DIFFICULTY_LABELS[bot]).join(", ")}${challenge.bot_follows_rules ? " (stesse regole)" : ""}`
       : null,
@@ -1260,15 +1701,25 @@ function ChallengeRow({
         <ol className="flex flex-col gap-0.5 text-xs font-semibold">
           {(challenge.tiers ?? []).map((tier) => (
             <li key={tier.tier}>
-              {tier.wins} {tier.wins === 1 ? "vittoria" : "vittorie"}: {describeChallengeTierReward(tier) || describeRandomVariants(tier.random_variants_info)}
+              {tier.wins}{" "}
+              {emergency ? (tier.wins === 1 ? "Minaccia superata" : "Minacce superate") : tier.wins === 1 ? "vittoria" : "vittorie"}:{" "}
+              {describeChallengeTierReward(tier) || describeRandomVariants(tier.random_variants_info)}
               <span className="text-muted"> · raggiunto da {tier.reached_by}</span>
             </li>
           ))}
         </ol>
       )}
       <p className="text-xs font-semibold">
-        {challenge.matches === 1 ? "1 partita" : `${challenge.matches} partite`} ·{" "}
-        {challenge.players === 1 ? "1 giocatore" : `${challenge.players} giocatori`} · {challenge.admitted_characters} personaggi ammessi
+        {emergency
+          ? challenge.matches === 1
+            ? "1 corsa"
+            : `${challenge.matches} corse`
+          : challenge.matches === 1
+            ? "1 partita"
+            : `${challenge.matches} partite`}{" "}
+        · {challenge.players === 1 ? "1 giocatore" : `${challenge.players} giocatori`} ·{" "}
+        {challenge.supplied_team ? "squadra della sfida" : `${challenge.admitted_characters} personaggi ammessi`}
+        {challenge.leaderboard === false && " · senza classifica"}
       </p>
       <div className="flex flex-wrap gap-x-4">
         {!over && (
