@@ -79,6 +79,8 @@ export const OBJECTIVE_KINDS: {
 }[] = [
   { key: "play", label: "Partite giocate", metric: "matches_played", params: {}, one: "Gioca una partita", many: "Gioca {n} partite" },
   { key: "story", label: "Missioni della Storia giocate", metric: "matches_played", params: { story: true }, one: "Gioca una missione della Storia", many: "Gioca {n} missioni della Storia" },
+  { key: "challenge_play", label: "Partite giocate in una Sfida a tema", metric: "matches_played", params: { challenge: true }, one: "Gioca una Sfida a tema", many: "Gioca {n} partite in una Sfida a tema" },
+  { key: "challenge_win", label: "Vittorie in una Sfida a tema", metric: "matches_won", params: { challenge: true }, one: "Vinci una Sfida a tema", many: "Vinci {n} partite in una Sfida a tema" },
   { key: "win", label: "Partite vinte", metric: "matches_won", params: {}, one: "Vinci una partita", many: "Vinci {n} partite" },
   { key: "win_online", label: "Vittorie contro un giocatore", metric: "matches_won", params: { opponent: "player" }, one: "Vinci una partita online contro un giocatore", many: "Vinci {n} partite online contro un giocatore" },
   { key: "win_bot", label: "Vittorie contro un bot", metric: "matches_won", params: { opponent: "bot" }, one: "Vinci una partita contro un bot", many: "Vinci {n} partite contro un bot" },

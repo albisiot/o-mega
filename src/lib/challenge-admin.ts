@@ -9,11 +9,36 @@ export type AdminChallenge = Challenge & { is_active: boolean; version: number; 
 
 export type AdminChallengeEvent = { id: string; title: string; starts_at: string; ends_at: string };
 
+/** A card the form picks from: prize cards, the banned and only-these lists. */
+export type AdminChallengeCard = {
+  code: string;
+  name: string;
+  rarity: string;
+  rarity_code?: string;
+  faction?: string;
+  traits?: string[];
+  variants: { style: string; name: string }[];
+};
+
 export type AdminChallenges = {
   now: string;
   challenges: AdminChallenge[];
   /** Active events not over yet: a challenge can be linked to one of them. */
   events: AdminChallengeEvent[];
+  /** Missing from the first stage. */
+  cards?: AdminChallengeCard[];
+  variant_styles?: { style: string; name: string; characters: number }[];
+  seal_target?: { min: number; max: number; suggested: number };
+};
+
+/** A prize target as the form sends it: wins, and the rewards of a bonus code. */
+export type ChallengeTierDraft = {
+  wins: number;
+  coins: number;
+  packs: number;
+  /** "P051" or "P051:neon". */
+  cards: string[];
+  random_variants?: { count: number; styles: string[]; rarities: string[] };
 };
 
 /** What the rules allow: admitted characters and players who can field a squad today. */
@@ -32,7 +57,7 @@ export type ChallengeDraft = {
   title: string;
   description: string;
   color: string;
-  format: "classic" | "triple";
+  format: (typeof CHALLENGE_FORMATS)[number]["key"];
   botDifficulties: BotDifficulty[];
   botFollowsRules: boolean;
   rules: ChallengeRulesJson;
@@ -42,12 +67,19 @@ export type ChallengeDraft = {
   dailyLimit: number | null;
   eventId: string | null;
   eventPoints: ChallengeEventPoints | null;
+  online: boolean;
+  minLevel: number | null;
+  sealTarget: number | null;
+  tiers: ChallengeTierDraft[];
 };
 
 /** The modes a challenge can be played in today, with their squad. */
 export const CHALLENGE_FORMATS = [
   { key: "classic", label: "Classica", detail: "Squadra da 5" },
+  { key: "boss", label: "Grande Minaccia", detail: "Squadra da 5" },
   { key: "triple", label: "Allarme Triplo", detail: "Mazzo da 9" },
+  { key: "quadrant", label: "Quadrante fisso", detail: "Mazzo da 10" },
+  { key: "quadrant_shifting", label: "Quadrante mobile", detail: "Mazzo da 10" },
 ] as const;
 
 /** Light colors: the ribbon and the card's band carry black text. */
@@ -80,6 +112,10 @@ export async function saveChallenge(draft: ChallengeDraft): Promise<AdminChallen
     p_daily_limit: draft.dailyLimit ?? undefined,
     p_event_id: draft.eventId ?? undefined,
     p_event_points: draft.eventPoints ?? undefined,
+    p_online: draft.online,
+    p_min_level: draft.minLevel ?? undefined,
+    p_quadrant_seal_target: draft.sealTarget ?? undefined,
+    p_tiers: draft.tiers,
   });
   if (error) throw error;
   return data as unknown as AdminChallenges;

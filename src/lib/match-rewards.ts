@@ -133,6 +133,15 @@ export const REWARD_MODES: {
     ],
   },
   {
+    key: "challenge",
+    label: "Sfide a tema",
+    note: "Ogni partita in una Sfida a tema, in ogni modalità: vale al posto della riga della sua modalità.",
+    opponents: [
+      { key: "bot", label: "Contro un bot" },
+      { key: "person", label: "Contro una persona (online, nella sfida)" },
+    ],
+  },
+  {
     key: "story",
     label: "Missioni della Storia",
     note: "Ogni partita, anche rigiocata. Il premio della prima vittoria resta quello della missione.",

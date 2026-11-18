@@ -2,13 +2,14 @@
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { BotDifficulty } from "@o-mega/game-engine";
-import { useAdminCardReference } from "@/components/admin-card-filter";
+import { AdminCardPicker, useAdminCardReference } from "@/components/admin-card-filter";
 import { Chip } from "@/components/card-list-controls";
 import { ChallengeCard, ChallengeRibbon, ChallengeRuleChips } from "@/components/challenge-parts";
 import { BackLink, TabBar } from "@/components/comic-parts";
+import { RandomVariantsField } from "@/components/random-variants-field";
 import { TraitFilter } from "@/components/trait-filter";
 import { balance } from "@/config/balance";
-import { FACTION_CODES, toggleValue } from "@/lib/admin-card-filter";
+import { FACTION_CODES, toggleValue, variantStylesOf } from "@/lib/admin-card-filter";
 import { FACTION_LABELS } from "@/lib/catalog";
 import {
   CHALLENGE_COLORS,
@@ -21,13 +22,22 @@ import {
   saveChallenge,
   setChallengeActive,
   type AdminChallenge,
+  type AdminChallengeCard,
   type AdminChallenges,
   type ChallengePreview,
+  type ChallengeTierDraft,
 } from "@/lib/challenge-admin";
-import { describeChallengePoints, type Challenge, type ChallengeRulesJson } from "@/lib/challenges";
+import {
+  describeChallengePoints,
+  describeChallengeTierReward,
+  type Challenge,
+  type ChallengeRulesJson,
+  type ChallengeTier,
+} from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
 import { addHoursToInput, formatRomeDateTime, toRomeInput } from "@/lib/events";
 import { DIFFICULTY_LABELS } from "@/lib/match";
+import { describeRandomVariants, ruleInfo, ruleToSend, type RandomVariantsRule } from "@/lib/random-variants";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const INPUT = "min-h-12 w-full min-w-0 max-w-full border-2 border-comic-yellow bg-black px-3 text-base font-semibold";
@@ -38,9 +48,13 @@ const SUBLABEL = "text-[11px] font-extrabold uppercase text-muted";
 const DATE_INPUT = `${INPUT} appearance-none [&::-webkit-date-and-time-value]:text-left`;
 const BOTS: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
 const { challenges: limits } = balance;
+/** The server's limit on the cards of one prize target. */
+const MAX_TIER_CARDS = 10;
 
 type VariantMode = "none" | "min" | "all";
 type Format = (typeof CHALLENGE_FORMATS)[number]["key"];
+
+type TierForm = { wins: string; coins: string; packs: string; cards: string[]; random: RandomVariantsRule | null };
 
 type FormState = {
   id?: string;
@@ -52,11 +66,20 @@ type FormState = {
   format: Format;
   bots: BotDifficulty[];
   botFollowsRules: boolean;
+  online: boolean;
+  /** Empty: any level. */
+  minLevel: string;
+  /** Quadrante: the seal target; empty: none. */
+  sealTarget: string;
   rarities: string[];
   factions: string[];
   traits: string[];
   variantMode: VariantMode;
   minVariants: string;
+  variantStyles: string[];
+  banned: string[];
+  only: string[];
+  noStarters: boolean;
   startsAt: string;
   endsAt: string;
   /** Empty: no limit. */
@@ -64,7 +87,10 @@ type FormState = {
   /** Empty: not linked to an event. */
   eventId: string;
   points: { win: string; draw: string; loss: string };
+  tiers: TierForm[];
 };
+
+const isQuadrant = (format: string) => format === "quadrant" || format === "quadrant_shifting";
 
 /** The next whole hour, Rome time, as a datetime-local value. */
 function nextHourInput(now: number): string {
@@ -85,16 +111,34 @@ function emptyForm(now: number): FormState {
     format: "classic",
     bots: ["easy", "medium", "hard"],
     botFollowsRules: true,
+    online: false,
+    minLevel: "",
+    sealTarget: "",
     rarities: [],
     factions: [],
     traits: [],
     variantMode: "none",
     minVariants: "1",
+    variantStyles: [],
+    banned: [],
+    only: [],
+    noStarters: false,
     startsAt,
     endsAt: addHoursToInput(startsAt, 72),
     dailyLimit: "",
     eventId: "",
     points: pointsForm(limits.defaultEventPoints),
+    tiers: [],
+  };
+}
+
+function tierForm(tier: ChallengeTier): TierForm {
+  return {
+    wins: String(tier.wins),
+    coins: tier.coins > 0 ? String(tier.coins) : "",
+    packs: tier.packs > 0 ? String(tier.packs) : "",
+    cards: tier.card_codes,
+    random: tier.random_variants,
   };
 }
 
@@ -109,30 +153,56 @@ function formFrom(challenge: AdminChallenge, now: number, copy: boolean): FormSt
     title: challenge.title,
     description: challenge.description,
     color: challenge.color,
-    format: challenge.format === "triple" ? "triple" : "classic",
+    format: (CHALLENGE_FORMATS.find((format) => format.key === challenge.format)?.key ?? "classic") as Format,
     bots: challenge.bot_difficulties,
     botFollowsRules: challenge.bot_follows_rules,
+    online: challenge.online ?? false,
+    minLevel: challenge.min_level != null ? String(challenge.min_level) : "",
+    sealTarget: challenge.quadrant_seal_target != null ? String(challenge.quadrant_seal_target) : "",
     rarities: rules.rarities,
     factions: rules.factions,
     traits: rules.traits,
     variantMode: rules.all_variants ? "all" : rules.min_variants > 0 ? "min" : "none",
     minVariants: String(Math.max(1, rules.min_variants)),
+    variantStyles: rules.variant_styles ?? [],
+    banned: rules.banned ?? [],
+    only: rules.only ?? [],
+    noStarters: rules.no_starters ?? false,
     startsAt,
     endsAt: copy ? addHoursToInput(startsAt, hours) : toRomeInput(challenge.ends_at),
     dailyLimit: challenge.daily_limit === null ? "" : String(challenge.daily_limit),
     // A copy runs in other dates: its event, if any, is chosen again.
     eventId: copy ? "" : (challenge.event?.id ?? ""),
     points: pointsForm(challenge.event_points ?? limits.defaultEventPoints),
+    tiers: (challenge.tiers ?? []).map(tierForm),
   };
 }
 
 function rulesOf(form: FormState): ChallengeRulesJson {
+  const variantRule = form.variantMode !== "none";
   return {
     rarities: form.rarities,
     factions: form.factions,
     traits: form.traits,
     min_variants: form.variantMode === "min" ? Math.max(0, Number(form.minVariants) || 0) : 0,
     all_variants: form.variantMode === "all",
+    variant_styles: variantRule ? form.variantStyles : [],
+    banned: form.banned,
+    only: form.only,
+    no_starters: form.noStarters,
+  };
+}
+
+const number = (value: string) => (value.trim() === "" ? 0 : Number(value));
+
+function tierDraft(tier: TierForm): ChallengeTierDraft {
+  const random = ruleToSend(tier.random);
+  return {
+    wins: number(tier.wins),
+    coins: number(tier.coins),
+    packs: number(tier.packs),
+    cards: tier.cards,
+    ...(random ? { random_variants: random } : {}),
   };
 }
 
@@ -305,14 +375,19 @@ function ChallengeForm({
   const [error, setError] = useState<string | null>(null);
   const locked = form.started;
   const update = (patch: Partial<FormState>) => setForm((current) => ({ ...current, ...patch }));
+  const updateTier = (index: number, patch: Partial<TierForm>) =>
+    setForm((current) => ({ ...current, tiers: current.tiers.map((tier, i) => (i === index ? { ...tier, ...patch } : tier)) }));
   const reference = useAdminCardReference();
+  const cards = data.cards ?? [];
+  const styles = data.variant_styles ?? [];
+  const seal = data.seal_target ?? balance.quadrant.sealTarget;
   const rules = rulesOf(form);
   const { preview, error: previewError } = usePreview(form.format, rules, askPreview);
   const event = data.events.find((entry) => entry.id === form.eventId) ?? null;
-  const number = (value: string) => (value.trim() === "" ? 0 : Number(value));
   const startsAt = fromRomeInput(form.startsAt);
   const endsAt = fromRomeInput(form.endsAt);
   const overlap = overlappingChallenge(data.challenges, { id: form.id, format: form.format, startsAt, endsAt });
+  const nameOf = (code: string) => cards.find((card) => card.code === code)?.name ?? code;
 
   async function submit(submitted: FormEvent) {
     submitted.preventDefault();
@@ -335,6 +410,10 @@ function ChallengeForm({
         eventPoints: form.eventId
           ? { win: number(form.points.win), draw: number(form.points.draw), loss: number(form.points.loss) }
           : null,
+        online: form.online,
+        minLevel: form.minLevel.trim() === "" ? null : Number(form.minLevel),
+        sealTarget: isQuadrant(form.format) && form.sealTarget.trim() !== "" ? Number(form.sealTarget) : null,
+        tiers: form.tiers.map(tierDraft),
       });
       onSaved(next, form.title.trim());
     } catch (cause) {
@@ -352,6 +431,9 @@ function ChallengeForm({
     format: form.format,
     bot_difficulties: BOTS.filter((bot) => form.bots.includes(bot)),
     bot_follows_rules: form.botFollowsRules,
+    online: form.online,
+    min_level: form.minLevel.trim() === "" ? null : Number(form.minLevel),
+    quadrant_seal_target: isQuadrant(form.format) && form.sealTarget.trim() !== "" ? Number(form.sealTarget) : null,
     rules,
     admitted: [
       ...(form.rarities.length > 0
@@ -365,14 +447,32 @@ function ChallengeForm({
         }))
         .filter((group) => group.traits.length > 0),
     ],
+    banned_names: form.banned.map(nameOf),
+    only_names: form.only.map(nameOf),
+    variant_style_names: styles.filter((style) => rules.variant_styles?.includes(style.style)).map((style) => style.name),
     admitted_characters: preview?.admitted ?? 0,
-    team_size: preview?.team_size ?? (form.format === "triple" ? 9 : 5),
+    team_size: preview?.team_size ?? (form.format === "triple" ? 9 : isQuadrant(form.format) ? 10 : 5),
     starts_at: Number.isNaN(startsAt) ? new Date(now).toISOString() : new Date(startsAt).toISOString(),
     ends_at: Number.isNaN(endsAt) ? new Date(now).toISOString() : new Date(endsAt).toISOString(),
     daily_limit: form.dailyLimit.trim() === "" ? null : Number(form.dailyLimit),
     plays_today: 0,
     my_characters: null,
     my_characters_with_variant: null,
+    my_wins: 0,
+    tiers: form.tiers.map((tier, index) => ({
+      tier: index + 1,
+      wins: number(tier.wins),
+      coins: number(tier.coins),
+      packs: number(tier.packs),
+      cards: tier.cards.map((code) => ({ name: nameOf(code.split(":")[0]) })),
+      card_codes: tier.cards,
+      random_variants: tier.random,
+      random_variants_info: ruleInfo(tier.random, styles, reference?.rarities ?? []),
+      reached: false,
+      reached_by: 0,
+      opening_ids: [],
+      seen: false,
+    })),
     event: event,
     event_points: event ? { win: number(form.points.win), draw: number(form.points.draw), loss: number(form.points.loss) } : null,
   };
@@ -380,6 +480,7 @@ function ChallengeForm({
   const tooFew =
     preview !== null && (preview.admitted < preview.team_size || preview.admitted_with_variant < preview.variants_needed);
   const readyShare = preview && preview.players_total > 0 ? Math.round((preview.players_ready / preview.players_total) * 100) : null;
+  const winsGrow = form.tiers.every((tier, i) => i === 0 || number(tier.wins) > number(form.tiers[i - 1].wins));
 
   return (
     <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col gap-2">
@@ -503,7 +604,7 @@ function ChallengeForm({
                   role="radio"
                   aria-checked={form.format === format.key}
                   onClick={() => update({ format: format.key })}
-                  className={`flex min-h-14 flex-col items-start justify-center border-2 px-3 text-left ${
+                  className={`flex min-h-12 flex-col items-start justify-center border-2 px-3 text-left ${
                     form.format === format.key ? "border-comic-yellow bg-comic-yellow text-black" : "border-line bg-panel"
                   }`}
                 >
@@ -511,14 +612,8 @@ function ChallengeForm({
                   <span className="text-xs font-bold">{format.detail}</span>
                 </button>
               ))}
-              {["Grande Minaccia", "Quadrante"].map((later) => (
-                <span key={later} className="flex min-h-14 flex-col justify-center border-2 border-dashed border-line px-3 text-faint">
-                  <span className="font-display text-lg uppercase leading-5">{later}</span>
-                  <span className="text-xs font-bold">Più avanti</span>
-                </span>
-              ))}
             </div>
-            <span className={SUBLABEL}>Contro quali bot</span>
+            <span className={SUBLABEL}>Contro i bot · nessuno = solo online</span>
             <div className="flex flex-wrap gap-1.5" role="group" aria-label="Bot permessi">
               {BOTS.map((bot) => (
                 <Chip
@@ -530,22 +625,46 @@ function ChallengeForm({
                 </Chip>
               ))}
             </div>
-            <label className="flex min-h-11 items-center justify-between gap-3 bg-panel px-3 text-sm font-bold">
+            <Toggle checked={form.botFollowsRules} onChange={(botFollowsRules) => update({ botFollowsRules })}>
               Il bot gioca con le stesse regole
-              <input
-                type="checkbox"
-                checked={form.botFollowsRules}
-                onChange={(changed) => update({ botFollowsRules: changed.target.checked })}
-                className="h-6 w-6 accent-comic-yellow"
-              />
-            </label>
+            </Toggle>
+            <Toggle checked={form.online} onChange={(online) => update({ online })}>
+              Anche online: avversario casuale e codice amico
+            </Toggle>
             <p className="text-xs font-medium leading-4 text-muted">
-              Acceso: la squadra del bot ha solo personaggi ammessi, come quella del giocatore. Spento: il bot pesca da tutto il
-              catalogo, e con regole strette vince molto più spesso.
+              Online la sfida ha una coda sua: si incontrano solo i giocatori della sfida, ed entrambe le squadre rispettano le
+              regole. Dopo {limits.onlineBotAfterSeconds} secondi senza avversari la pagina d&apos;attesa propone i bot della sfida.
             </p>
-            <p className="border-2 border-dashed border-line px-3 py-2 text-xs font-semibold leading-4 text-faint">
-              Più avanti: amichevole online, regole di partita (modificatore fisso, Minacce di un luogo, livelli).
-            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <label className={LABEL}>
+                Dal livello · vuoto = tutti
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={limits.maxMinLevel}
+                  value={form.minLevel}
+                  onChange={(changed) => update({ minLevel: changed.target.value })}
+                  placeholder="Tutti"
+                  className={`${SMALL_INPUT} placeholder:text-faint`}
+                />
+              </label>
+              {isQuadrant(form.format) && (
+                <label className={LABEL}>
+                  Sigilli · proposta {seal.suggested}
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={seal.min}
+                    max={seal.max}
+                    value={form.sealTarget}
+                    onChange={(changed) => update({ sealTarget: changed.target.value })}
+                    placeholder="Nessuno"
+                    className={`${SMALL_INPUT} placeholder:text-faint`}
+                  />
+                </label>
+              )}
+            </div>
           </fieldset>
         )}
 
@@ -611,7 +730,7 @@ function ChallengeForm({
                   type="number"
                   inputMode="numeric"
                   min={1}
-                  max={form.format === "triple" ? 9 : 5}
+                  max={form.format === "triple" ? 9 : isQuadrant(form.format) ? 10 : 5}
                   value={form.minVariants}
                   onChange={(changed) => update({ minVariants: changed.target.value })}
                   className="min-h-11 w-20 border-2 border-comic-yellow bg-black px-2 text-center text-base font-semibold"
@@ -619,6 +738,39 @@ function ChallengeForm({
                 varianti
               </label>
             )}
+            {form.variantMode !== "none" && styles.length > 0 && (
+              <>
+                <span className={SUBLABEL}>Stili che contano · nessuna scelta = tutti</span>
+                <div className="flex flex-wrap gap-1.5" role="group" aria-label="Stili delle varianti">
+                  {styles.map((style) => (
+                    <Chip
+                      key={style.style}
+                      active={form.variantStyles.includes(style.style)}
+                      onClick={() => update({ variantStyles: toggleValue(form.variantStyles, style.style) })}
+                    >
+                      {style.name}
+                    </Chip>
+                  ))}
+                </div>
+              </>
+            )}
+            <CodeListPicker
+              label="Solo questi personaggi · vuoto = nessun elenco"
+              cards={cards}
+              chosen={form.only}
+              onChange={(only) => update({ only })}
+              disabled={locked}
+            />
+            <CodeListPicker
+              label="Personaggi esclusi"
+              cards={cards}
+              chosen={form.banned}
+              onChange={(banned) => update({ banned })}
+              disabled={locked}
+            />
+            <Toggle checked={form.noStarters} onChange={(noStarters) => update({ noStarters })}>
+              Senza carte dello starter set né carte di livello
+            </Toggle>
             <RulesCount preview={preview} error={previewError} tooFew={tooFew} readyShare={readyShare} />
           </fieldset>
         )}
@@ -630,7 +782,7 @@ function ChallengeForm({
               <label className={LABEL}>
                 Evento collegato
                 <select value={form.eventId} onChange={(changed) => update({ eventId: changed.target.value })} className={INPUT}>
-                  <option value="">Nessuno: solo le ricompense della modalità</option>
+                  <option value="">Nessuno: solo le ricompense della sfida</option>
                   {data.events.map((entry) => (
                     <option key={entry.id} value={entry.id}>
                       {entry.title} · fino al {formatRomeDateTime(entry.ends_at)}
@@ -664,15 +816,15 @@ function ChallengeForm({
                     ))}
                   </div>
                   <p className="text-xs font-medium leading-4 text-muted">
-                    Valgono al posto della riga «Contro bot» dell&apos;evento, senza i suoi personaggi ammessi: le regole della sfida
-                    bastano. Bonus varianti, tetto giornaliero, traguardi e classifica vengono dall&apos;evento. La sfida deve stare
-                    dentro le sue date.
+                    Valgono al posto della riga dell&apos;evento per quel tipo di partita, senza i suoi personaggi ammessi: le regole
+                    della sfida bastano. Bonus varianti, tetto giornaliero, traguardi e classifica vengono dall&apos;evento. La sfida
+                    deve stare dentro le sue date.
                   </p>
                 </>
               ) : (
                 <p className="text-xs font-medium leading-4 text-muted">
-                  Senza evento le partite danno le ricompense normali della modalità (Ricompense partite) e, se c&apos;è un evento in
-                  corso, i suoi punti come qualsiasi partita contro un bot.
+                  Senza evento le partite danno la riga «Sfide a tema» di Ricompense partite e, se c&apos;è un evento in corso, i suoi
+                  punti come qualsiasi partita.
                 </p>
               )}
             </fieldset>
@@ -690,9 +842,45 @@ function ChallengeForm({
                 className={`${SMALL_INPUT} placeholder:text-faint disabled:opacity-50`}
               />
             </label>
-            <p className="border-2 border-dashed border-line px-3 py-2 text-xs font-semibold leading-4 text-faint">
-              Più avanti: un premio della sfida a 1, 5 o 10 vittorie.
-            </p>
+            <fieldset disabled={locked} className="flex min-w-0 flex-col gap-2 disabled:opacity-50">
+              <legend className="mb-1 text-sm font-bold">Premio della sfida · vittorie nella sfida</legend>
+              {form.tiers.length === 0 && (
+                <p className="text-xs font-medium leading-4 text-muted">Nessun premio: la sfida dà solo le ricompense delle partite.</p>
+              )}
+              {form.tiers.map((tier, index) => (
+                <TierEditor
+                  key={index}
+                  index={index}
+                  tier={tier}
+                  cards={cards}
+                  onChange={(patch) => updateTier(index, patch)}
+                  onRemove={() => update({ tiers: form.tiers.filter((_, i) => i !== index) })}
+                />
+              ))}
+              {!winsGrow && <p className="text-xs font-bold text-comic-magenta">Ogni traguardo deve chiedere più vittorie del precedente.</p>}
+              {form.tiers.length < limits.maxTiers && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    update({
+                      tiers: [
+                        ...form.tiers,
+                        {
+                          wins: String(form.tiers.length === 0 ? 1 : number(form.tiers[form.tiers.length - 1].wins) * 2 + 1),
+                          coins: "50",
+                          packs: "",
+                          cards: [],
+                          random: null,
+                        },
+                      ],
+                    })
+                  }
+                  className="min-h-11 border-2 border-dashed border-line px-3 text-left text-sm font-bold text-comic-yellow"
+                >
+                  + Aggiungi un traguardo
+                </button>
+              )}
+            </fieldset>
           </div>
         )}
 
@@ -701,7 +889,13 @@ function ChallengeForm({
             <span className={SUBLABEL}>Così la vedono i giocatori</span>
             <div
               className={`relative flex min-h-16 w-1/2 flex-col justify-between px-3 py-1.5 text-black ${
-                form.format === "triple" ? "bg-comic-yellow" : "bg-comic-magenta"
+                form.format === "triple"
+                  ? "bg-comic-yellow"
+                  : form.format === "boss"
+                    ? "bg-comic-orange"
+                    : isQuadrant(form.format)
+                      ? "bg-comic-cyan"
+                      : "bg-comic-magenta"
               }`}
             >
               <span className="-skew-x-8 font-display text-[22px] uppercase leading-6">
@@ -719,7 +913,7 @@ function ChallengeForm({
               </Check>
               {preview && preview.variants_needed > 0 && (
                 <Check ok={preview.admitted_with_variant >= preview.variants_needed}>
-                  {preview.admitted_with_variant} con una variante (ne servono {preview.variants_needed})
+                  {preview.admitted_with_variant} con una variante che conta (ne servono {preview.variants_needed})
                 </Check>
               )}
               {readyShare !== null && (
@@ -727,10 +921,17 @@ function ChallengeForm({
                   Oggi possono formare la squadra {preview!.players_ready} giocatori su {preview!.players_total} ({readyShare}%)
                 </Check>
               )}
-              <Check ok={form.bots.length > 0}>{form.bots.length > 0 ? `Bot: ${form.bots.map((bot) => DIFFICULTY_LABELS[bot]).join(", ")}` : "Scegli almeno un bot"}</Check>
+              <Check ok={form.bots.length > 0 || form.online}>
+                {form.bots.length > 0
+                  ? `Bot: ${form.bots.map((bot) => DIFFICULTY_LABELS[bot]).join(", ")}${form.online ? " · anche online" : ""}`
+                  : form.online
+                    ? "Solo online"
+                    : "Scegli almeno un bot, oppure l'online"}
+              </Check>
               {event && (
                 <Check ok={startsAt >= Date.parse(event.starts_at) && endsAt <= Date.parse(event.ends_at)}>Dentro le date dell&apos;evento</Check>
               )}
+              {form.tiers.length > 0 && <Check ok={winsGrow}>{form.tiers.length === 1 ? "1 traguardo" : `${form.tiers.length} traguardi`} di premio</Check>}
               <Check ok={overlap === null}>
                 {overlap ? `In queste date c'è già «${overlap.title}» nella stessa modalità` : "Nessun'altra sfida nella stessa modalità"}
               </Check>
@@ -740,7 +941,7 @@ function ChallengeForm({
         )}
       </div>
 
-      <div className="shrink-0 flex flex-col gap-1.5">
+      <div className="flex shrink-0 flex-col gap-1.5">
         {error && <p className="text-sm font-bold text-comic-magenta">{error}</p>}
         <div className="flex gap-2">
           <button type="submit" disabled={saving} className="btn btn-primary flex-1">
@@ -754,6 +955,191 @@ function ChallengeForm({
         </div>
       </div>
     </form>
+  );
+}
+
+function Toggle({ checked, onChange, children }: { checked: boolean; onChange: (checked: boolean) => void; children: ReactNode }) {
+  return (
+    <label className="flex min-h-11 items-center justify-between gap-3 bg-panel px-3 text-sm font-bold">
+      {children}
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(changed) => onChange(changed.target.checked)}
+        className="h-6 w-6 shrink-0 accent-comic-yellow"
+      />
+    </label>
+  );
+}
+
+/** Characters by code: a search, the matches to tap, the chosen ones as chips that a tap removes. */
+function CodeListPicker({
+  label,
+  cards,
+  chosen,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  cards: readonly AdminChallengeCard[];
+  chosen: string[];
+  onChange: (next: string[]) => void;
+  disabled: boolean;
+}) {
+  const [query, setQuery] = useState("");
+  const needle = query.trim().toLowerCase();
+  const found =
+    needle.length < 2
+      ? []
+      : cards.filter((card) => !chosen.includes(card.code) && (card.name.toLowerCase().includes(needle) || card.code.toLowerCase() === needle)).slice(0, 6);
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <span className={SUBLABEL}>{label}</span>
+      {chosen.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5">
+          {chosen.map((code) => (
+            <li key={code}>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onChange(chosen.filter((entry) => entry !== code))}
+                aria-label={`Togli ${cards.find((card) => card.code === code)?.name ?? code}`}
+                className="min-h-9 bg-black px-2.5 text-sm font-bold"
+              >
+                {cards.find((card) => card.code === code)?.name ?? code} ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <input
+        value={query}
+        onChange={(changed) => setQuery(changed.target.value)}
+        disabled={disabled}
+        placeholder="Cerca per nome o codice"
+        aria-label={`${label}: cerca`}
+        className="min-h-11 w-full min-w-0 border-2 border-line bg-black px-3 text-sm font-semibold placeholder:text-faint"
+      />
+      {found.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5">
+          {found.map((card) => (
+            <li key={card.code}>
+              <button
+                type="button"
+                onClick={() => {
+                  onChange([...chosen, card.code]);
+                  setQuery("");
+                }}
+                className="min-h-9 border-2 border-line px-2.5 text-sm font-bold"
+              >
+                + {card.name} <span className="text-faint">· {card.rarity}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** A prize target: the wins it asks, and the rewards of a bonus code. */
+function TierEditor({
+  index,
+  tier,
+  cards,
+  onChange,
+  onRemove,
+}: {
+  index: number;
+  tier: TierForm;
+  cards: AdminChallengeCard[];
+  onChange: (patch: Partial<TierForm>) => void;
+  onRemove: () => void;
+}) {
+  const reference = useAdminCardReference();
+  return (
+    <div className="flex flex-col gap-2 bg-panel p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-display text-lg uppercase">Traguardo {index + 1}</p>
+        <button type="button" onClick={onRemove} className="min-h-11 px-2 text-sm font-bold underline">
+          Togli
+        </button>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <label className={LABEL}>
+          Vittorie
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={limits.maxTierWins}
+            value={tier.wins}
+            onChange={(changed) => onChange({ wins: changed.target.value })}
+            className={SMALL_INPUT}
+          />
+        </label>
+        <label className={LABEL}>
+          Monete
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            value={tier.coins}
+            onChange={(changed) => onChange({ coins: changed.target.value })}
+            placeholder="0"
+            className={`${SMALL_INPUT} placeholder:text-faint`}
+          />
+        </label>
+        <label className={LABEL}>
+          Pacchetti
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={10}
+            value={tier.packs}
+            onChange={(changed) => onChange({ packs: changed.target.value })}
+            placeholder="0"
+            className={`${SMALL_INPUT} placeholder:text-faint`}
+          />
+        </label>
+      </div>
+      <AdminCardPicker
+        cards={cards}
+        chosen={tier.cards}
+        onChange={(next) => onChange({ cards: next })}
+        max={MAX_TIER_CARDS}
+        reference={reference}
+        label="Carte"
+      />
+      {tier.cards.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5">
+          {tier.cards.map((cardCode, cardIndex) => {
+            const [code, style] = cardCode.split(":");
+            const card = cards.find((entry) => entry.code === code);
+            const label = `${card?.name ?? code}${style ? ` · ${card?.variants.find((v) => v.style === style)?.name ?? style}` : ""}`;
+            return (
+              <li key={`${cardCode}-${cardIndex}`}>
+                <button
+                  type="button"
+                  onClick={() => onChange({ cards: tier.cards.filter((_, i) => i !== cardIndex) })}
+                  aria-label={`Togli ${label}`}
+                  className="min-h-11 bg-black px-3 text-sm font-bold"
+                >
+                  {label} ✕
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <RandomVariantsField
+        value={tier.random}
+        onChange={(random) => onChange({ random })}
+        styles={variantStylesOf(cards)}
+        rarities={reference?.rarities ?? []}
+      />
+    </div>
   );
 }
 
@@ -780,7 +1166,7 @@ function RulesCount({
       </p>
       {preview.variants_needed > 0 && (
         <p className="text-xs font-semibold leading-4 text-muted">
-          {preview.admitted_with_variant} hanno una variante; la squadra ne vuole {preview.variants_needed}.
+          {preview.admitted_with_variant} hanno una variante che conta; la squadra ne vuole {preview.variants_needed}.
         </p>
       )}
       {readyShare !== null && (
@@ -833,6 +1219,14 @@ function ChallengeRow({
   const state = adminChallengeState(challenge, now);
   const over = Date.parse(challenge.ends_at) <= now;
   const format = CHALLENGE_FORMATS.find((entry) => entry.key === challenge.format)?.label ?? challenge.format;
+  const opponents = [
+    challenge.bot_difficulties.length > 0
+      ? `bot ${challenge.bot_difficulties.map((bot) => DIFFICULTY_LABELS[bot]).join(", ")}${challenge.bot_follows_rules ? " (stesse regole)" : ""}`
+      : null,
+    challenge.online ? "online" : null,
+  ]
+    .filter(Boolean)
+    .join(" e ");
 
   async function run(action: () => Promise<AdminChallenges>) {
     setSaving(true);
@@ -854,13 +1248,23 @@ function ChallengeRow({
         <span className={`shrink-0 text-xs font-bold uppercase ${state === "In corso" ? "text-comic-cyan" : "text-muted"}`}>{state}</span>
       </div>
       <p className="text-xs font-medium leading-4 text-muted">
-        {format} · bot {challenge.bot_difficulties.map((bot) => DIFFICULTY_LABELS[bot]).join(", ")}
-        {challenge.bot_follows_rules ? " (stesse regole)" : ""} · dal {formatRomeDateTime(challenge.starts_at)} al{" "}
-        {formatRomeDateTime(challenge.ends_at)}
+        {format} · {opponents} · dal {formatRomeDateTime(challenge.starts_at)} al {formatRomeDateTime(challenge.ends_at)}
         {challenge.daily_limit !== null && ` · ${challenge.daily_limit} partite al giorno`}
+        {challenge.min_level != null && ` · dal livello ${challenge.min_level}`}
+        {challenge.quadrant_seal_target != null && ` · traguardo ${challenge.quadrant_seal_target} Sigilli`}
         {challenge.event && challenge.event_points && ` · evento «${challenge.event.title}» ${describeChallengePoints(challenge.event_points)}`}
       </p>
       <ChallengeRuleChips challenge={challenge} />
+      {(challenge.tiers ?? []).length > 0 && (
+        <ol className="flex flex-col gap-0.5 text-xs font-semibold">
+          {(challenge.tiers ?? []).map((tier) => (
+            <li key={tier.tier}>
+              {tier.wins} {tier.wins === 1 ? "vittoria" : "vittorie"}: {describeChallengeTierReward(tier) || describeRandomVariants(tier.random_variants_info)}
+              <span className="text-muted"> · raggiunto da {tier.reached_by}</span>
+            </li>
+          ))}
+        </ol>
+      )}
       <p className="text-xs font-semibold">
         {challenge.matches === 1 ? "1 partita" : `${challenge.matches} partite`} ·{" "}
         {challenge.players === 1 ? "1 giocatore" : `${challenge.players} giocatori`} · {challenge.admitted_characters} personaggi ammessi
