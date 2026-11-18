@@ -16,3 +16,4 @@ export * from "./triple-bots.ts";
 export * from "./quadrant.ts";
 export * from "./quadrant-bots.ts";
 export * from "./ranked.ts";
+export * from "./story-stars.ts";
