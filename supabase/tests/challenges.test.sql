@@ -134,8 +134,9 @@ begin
     assert sqlerrm = 'challenge_invalid_rules', sqlerrm;
   end;
   begin
-    perform public.admin_save_challenge('Prova', '', '#ff7ad9', 'emergency', '{easy}', true, '{}', v_now, v_now + interval '1 day');
-    raise exception 'ASSERT: a challenge in a mode without matches was accepted';
+    -- The Classificata keeps its Fama for every mode: no challenge there (the Emergenza is one since the third stage).
+    perform public.admin_save_challenge('Prova', '', '#ff7ad9', 'ranked', '{easy}', true, '{}', v_now, v_now + interval '1 day');
+    raise exception 'ASSERT: a challenge in a mode without challenges was accepted';
   exception when raise_exception then
     assert sqlerrm = 'challenge_invalid_format', sqlerrm;
   end;
