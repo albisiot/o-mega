@@ -3849,6 +3849,7 @@ export type Database = {
           p_tiers: Json
           p_title: string
           p_traits?: string[]
+          p_variant_bonus_percent?: number
           p_variant_chance_percent?: number
         }
         Returns: Json
