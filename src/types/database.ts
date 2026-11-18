@@ -3762,6 +3762,7 @@ export type Database = {
           p_max_uses?: number
           p_note?: string
           p_packs?: number
+          p_random_variants?: Json
         }
         Returns: Json
       }
@@ -3802,12 +3803,14 @@ export type Database = {
       }
       admin_save_daily_objective: {
         Args: {
+          p_card_codes?: string[]
           p_code: string
           p_coins: number
           p_difficulty: string
           p_metric: string
           p_packs: number
           p_params: Json
+          p_random_variants?: Json
           p_target: number
           p_title: string
         }
@@ -4106,6 +4109,7 @@ export type Database = {
           p_max_uses?: number
           p_note?: string
           p_packs?: number
+          p_random_variants?: Json
         }
         Returns: string
       }
