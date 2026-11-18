@@ -46,6 +46,13 @@ export const ADMIN_TOOLS: AdminTool[] = [
     icon: "M5 20V9l3 3 4-7 4 7 3-3v11zM9 16h6",
   },
   {
+    href: "/gestione-storia",
+    name: "Storia",
+    description: "Testi, premi e stelle delle missioni",
+    group: "contents",
+    icon: "M4 5a2 2 0 012-2h5v17H6a2 2 0 01-2-2zM20 5a2 2 0 00-2-2h-5v17h5a2 2 0 002-2zM16.5 7.5l.8 1.6 1.7.3-1.2 1.2.3 1.7-1.6-.8-1.6.8.3-1.7-1.2-1.2 1.7-.3z",
+  },
+  {
     href: "/gestione-codici",
     name: "Codici bonus",
     description: "Codici da riscattare",
