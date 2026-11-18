@@ -8,13 +8,14 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { CardDetailProvider } from "@/components/card-detail";
 import { BackLink } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
+import { SuppliedTeam } from "@/components/challenge-parts";
 import { TeamPicker } from "@/components/team-picker";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
 import { startBossBotMatch } from "@/lib/boss";
 import { balance } from "@/config/balance";
 import { isQuadrantFormat, QUADRANT_GRID_LABELS, startQuadrantBotMatch } from "@/lib/quadrant";
 import { startTripleBotMatch } from "@/lib/triple";
-import { createChallengeLobby, fetchChallenges, fetchLobbyChallenge, seenChallenges, type Challenge } from "@/lib/challenges";
+import { createChallengeLobby, fetchChallenges, fetchLobbyChallenge, hasSuppliedTeam, seenChallenges, type Challenge } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
 import { rememberLastPlay } from "@/lib/last-play";
 import { fetchStory, seenStory, startStoryMission, storyMatchHref, type StoryMission } from "@/lib/story";
@@ -353,7 +354,12 @@ function TeamPageContent() {
             </Link>
           </p>
         )}
-        {loaded && owned && (mode.kind !== "join" || joinFormat !== null) && (!challengeId || challenge) ? (
+        {challenge && !challengeGone && mode.kind === "bot" && hasSuppliedTeam(challenge) ? (
+          // A squad given by the challenge: nothing to choose, nothing of the player's at stake.
+          <CardDetailProvider>
+            <SuppliedTeam challenge={challenge} startLabel={COPY[mode.kind].start(mode)} starting={starting} onStart={() => void start([])} />
+          </CardDetailProvider>
+        ) : loaded && owned && (mode.kind !== "join" || joinFormat !== null) && (!challengeId || challenge) ? (
           // A long press on a card shows it whole (CardDetailProvider).
           <CardDetailProvider>
             <TeamPicker

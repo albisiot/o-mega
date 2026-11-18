@@ -9,8 +9,15 @@ import { STAR_MARK_COLORS, StarIcon } from "@/components/story-stars";
 import { ChallengeRuleChips } from "@/components/challenge-parts";
 import { balance } from "@/config/balance";
 import { artSrcSet } from "@/lib/art";
-import { challengeVariantsNeeded } from "@o-mega/game-engine";
-import { toChallengeRules, whyNotAdmitted, type Challenge, type ChallengeExclusion } from "@/lib/challenges";
+import { challengeVariantsNeeded, compositionBlock, compositionOfSquad, hasCompositionRules } from "@o-mega/game-engine";
+import {
+  compositionBlockText,
+  compositionProblemText,
+  toChallengeRules,
+  whyNotAdmitted,
+  type Challenge,
+  type ChallengeExclusion,
+} from "@/lib/challenges";
 import { withBasePath } from "@/lib/base-path";
 import { applyCardListView, DEFAULT_CARD_LIST_VIEW, groupCardList, sortAbilityOf } from "@/lib/card-list";
 import type { CatalogCard } from "@/lib/collection";
@@ -176,6 +183,16 @@ export function TeamPicker(props: TeamPickerProps) {
   );
   const sortAbility = sortAbilityOf(view.sort);
   const byId = useMemo(() => new Map(catalog.map((card) => [card.id, card])), [catalog]);
+  // What the composition rules look at in a card, and the cheapest rank that can fill the squad.
+  const compositionOf = (card: CatalogCard) => ({ rarity: card.rarity.code, faction: card.faction, rarityRank: card.rarity.rank });
+  const squadCopies = selected.flatMap((id) => {
+    const card = byId.get(id);
+    return card ? [compositionOf(card)] : [];
+  });
+  const cheapestRank = useMemo(() => {
+    const ranks = catalog.filter((card) => !excludedWhy || excludedWhy(card) === null).map((card) => card.rarity.rank);
+    return ranks.length > 0 ? Math.min(...ranks) : 1;
+  }, [catalog, excludedWhy]);
   // Characters for which the player fields the pack copy instead of the protected starter one.
   const [staked, setStaked] = useState<Set<string>>(new Set());
   // Characters for which the player fields a copy with an artwork variant: definition id → instance id.
@@ -253,6 +270,15 @@ export function TeamPicker(props: TeamPickerProps) {
     const why = adding && card && excludedWhy ? excludedWhy(card) : null;
     if (why) {
       setMessage({ text: `${card!.name}: ${why.long}.`, isError: true });
+      return;
+    }
+    // The composition: a card that would leave no full squad within the rules stays out.
+    const block =
+      adding && card && challengeRules && hasCompositionRules(challengeRules) && selected.length < size
+        ? compositionBlock(squadCopies, compositionOf(card), challengeRules, size, cheapestRank)
+        : null;
+    if (block && card && challengeRules) {
+      setMessage({ text: `${card.name}: ${compositionBlockText(block, card, challengeRules)}.`, isError: true });
       return;
     }
     setSelected((current) =>
@@ -334,6 +360,10 @@ export function TeamPicker(props: TeamPickerProps) {
   const variantsWanted = challengeRules ? challengeVariantsNeeded(challengeRules, size) : 0;
   const variantsFielded = selected.filter((id) => styleCounts(fieldedVariant(id))).length;
   const variantsMissing = Math.max(0, variantsWanted - variantsFielded);
+  // The composition of the full squad: rarity budget, most copies of a rarity, fewest factions.
+  const composition =
+    challengeRules && hasCompositionRules(challengeRules) ? compositionOfSquad(squadCopies, challengeRules) : null;
+  const compositionProblem = composition && challengeRules && selected.length === size ? compositionProblemText(composition, challengeRules, challenge?.rarity_max_info ?? []) : null;
   const challengeBlock =
     selected.length < size
       ? null
@@ -343,7 +373,7 @@ export function TeamPicker(props: TeamPickerProps) {
           : `Togli le ${squadExcluded} carte non ammesse`
         : variantsMissing > 0
           ? `Manca${variantsMissing === 1 ? " 1 variante" : `no ${variantsMissing} varianti`}: tocca una carta con ★`
-          : null;
+          : compositionProblem;
 
   // Story: the stars the squad can still earn. 3-0 depends on the match; the others on every card.
   const earnedStars = storyStars?.earned ?? [];
@@ -500,6 +530,12 @@ export function TeamPicker(props: TeamPickerProps) {
                 <span className={variantsMissing > 0 ? "text-comic-magenta" : "text-comic-cyan"}>
                   {" "}
                   · ★ {Math.min(variantsFielded, variantsWanted)}/{variantsWanted}
+                </span>
+              )}
+              {composition && challengeRules?.rarityBudget != null && (
+                <span className={composition.budget > challengeRules.rarityBudget ? "text-comic-magenta" : "text-comic-cyan"}>
+                  {" "}
+                  · Budget {composition.budget}/{challengeRules.rarityBudget}
                 </span>
               )}
             </span>

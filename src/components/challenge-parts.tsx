@@ -3,12 +3,20 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import type { BotDifficulty } from "@o-mega/game-engine";
+import { useCardDetail } from "@/components/card-detail";
+import { CardView } from "@/components/card-view";
+import { TrophyIcon } from "@/components/leaderboard-places";
 import { useOpenPackReveal } from "@/components/pack-reveal-link";
 import {
+  challengeEmergencyHref,
   challengeHref,
+  challengeLeaderboardHref,
   challengeOnlineHref,
   describeChallengePoints,
   describeChallengeRules,
+  describeMatchRules,
+  describeMatchRulesChip,
+  hasSuppliedTeam,
   describeChallengeTierReward,
   markChallengeRewardsSeen,
   missingForChallenge,
@@ -18,6 +26,7 @@ import {
 } from "@/lib/challenges";
 import { formatEventCountdown } from "@/lib/events";
 import { DIFFICULTY_LABELS, type MatchChallengeInfo } from "@/lib/match";
+import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
 
 /**
  * The pieces of a Sfida a tema (SPEC §8.8) shared by Gioca, the team screen, the result and
@@ -37,17 +46,23 @@ export function ChallengeRibbon({ color }: { color: string }) {
   );
 }
 
-/** The rules as chips: "Figli dell'Ultima", "Delta o Gamma", "★ Almeno 1 variante", "Senza starter". */
+/**
+ * The rules as chips: "Figli dell'Ultima", "Delta o Gamma", "★ Almeno 1 variante", "Senza
+ * starter", the composition, then the match rules ("Ogni round: Colpo mirato", "Minacce di Giza").
+ */
 export function ChallengeRuleChips({
   challenge,
   className = "",
 }: {
-  challenge: Pick<Challenge, "admitted" | "rules" | "color" | "banned_names" | "only_names" | "variant_style_names">;
+  challenge: Pick<
+    Challenge,
+    "admitted" | "rules" | "color" | "banned_names" | "only_names" | "variant_style_names" | "rarity_max_info" | "supplied_team" | "match_rules"
+  >;
   className?: string;
 }) {
   return (
     <span className={`flex flex-wrap gap-1 ${className}`}>
-      {describeChallengeRules(challenge).map((rule) => (
+      {[...describeChallengeRules(challenge), describeMatchRulesChip(challenge)].filter((rule): rule is string => rule !== null).map((rule) => (
         <span
           key={rule}
           className="border-2 px-1.5 text-[11px] font-extrabold leading-4 text-foreground"
@@ -70,17 +85,33 @@ export function ChallengeCard({ challenge, now, disabled }: { challenge: Challen
   const left = playsLeft(challenge);
   const closed = missing !== null || left === 0 || disabled;
   const isQuadrant = challenge.format === "quadrant" || challenge.format === "quadrant_shifting";
+  const isEmergency = challenge.format === "emergency";
+  const supplied = hasSuppliedTeam(challenge);
   return (
     <article className="flex flex-col border-[3px] border-black bg-panel shadow-[3px_3px_0_#000]">
-      <header className="flex items-baseline justify-between gap-2 border-b-[3px] border-black px-2.5 py-1 text-black" style={{ background: challenge.color }}>
+      <header className="flex items-center justify-between gap-2 border-b-[3px] border-black px-2.5 py-1 text-black" style={{ background: challenge.color }}>
         <h3 className="min-w-0 truncate font-display text-xl uppercase leading-6">{challenge.title}</h3>
-        <span className="shrink-0 text-[11px] font-extrabold">Finisce tra {formatEventCountdown(Date.parse(challenge.ends_at) - now)}</span>
+        <span className="flex shrink-0 items-center gap-1.5">
+          <span className="text-[11px] font-extrabold">Finisce tra {formatEventCountdown(Date.parse(challenge.ends_at) - now)}</span>
+          {challenge.leaderboard && (
+            <Link
+              href={challengeLeaderboardHref(challenge)}
+              aria-label={`Classifica della sfida ${challenge.title}`}
+              className="-my-1 flex h-8 w-8 items-center justify-center border-2 border-black bg-black/10"
+            >
+              <TrophyIcon className="h-4 w-4" />
+            </Link>
+          )}
+        </span>
       </header>
       <div className="flex flex-col gap-1.5 px-2.5 py-2">
         {challenge.description && <p className="text-[13px] font-medium leading-4 text-muted">{challenge.description}</p>}
         <ChallengeRuleChips challenge={challenge} />
         <dl className="text-[12px] font-semibold leading-4">
-          {challenge.my_characters !== null && (
+          {isEmergency && challenge.emergency_threats != null && (
+            <Row label="Minacce · un tentativo">{challenge.emergency_threats}</Row>
+          )}
+          {challenge.my_characters !== null && !supplied && (
             <Row label="I tuoi personaggi adatti">
               <span className={missing ? "text-comic-magenta" : "text-comic-cyan"}>
                 {challenge.my_characters}
@@ -125,7 +156,8 @@ export function ChallengeCard({ challenge, now, disabled }: { challenge: Challen
           <p className="text-[13px] font-extrabold leading-4 text-comic-magenta">Hai giocato tutte le partite di oggi: torna dopo mezzanotte.</p>
         ) : null}
         {/* Without a squad to field, the way to get one takes the bots' place. */}
-        {!missing && (
+        {!missing && isEmergency && <ChallengeEmergencyButton challenge={challenge} closed={missing !== null || disabled} />}
+        {!missing && !isEmergency && (
           <>
             {challenge.bot_difficulties.length > 0 && <ChallengeBots challenge={challenge} closed={closed} />}
             {challenge.online && <ChallengeOnline challenge={challenge} closed={closed} />}
@@ -149,18 +181,21 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
  * The prize of the challenge: its targets of wins, those reached ticked, and the button that
  * reveals what it paid when there is something not seen yet.
  */
-function ChallengePrize({ challenge }: { challenge: Challenge }) {
+export function ChallengePrize({ challenge }: { challenge: Challenge }) {
   const openReveal = useOpenPackReveal();
   const [opening, setOpening] = useState(false);
   const tiers = challenge.tiers ?? [];
   if (tiers.length === 0) return null;
   const toOpen = unseenChallengeOpenings(challenge);
   const wins = challenge.my_wins ?? 0;
+  // An Emergenza counts the threats passed in the run.
+  const unit = (count: number) =>
+    challenge.format === "emergency" ? (count === 1 ? "Minaccia superata" : "Minacce superate") : count === 1 ? "vittoria" : "vittorie";
   return (
     <section aria-label="Premio della sfida" className="flex flex-col gap-0.5 border-2 border-dashed px-2 py-1" style={{ borderColor: challenge.color }}>
       <div className="flex min-h-7 items-center justify-between gap-2">
         <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted">
-          Premio della sfida · {wins} {wins === 1 ? "vittoria" : "vittorie"}
+          Premio della sfida · {wins} {unit(wins)}
         </p>
         {toOpen.length > 0 && (
           <button
@@ -183,7 +218,7 @@ function ChallengePrize({ challenge }: { challenge: Challenge }) {
           <li key={tier.tier} className={`flex justify-between gap-2 ${tier.reached ? "text-comic-cyan" : ""}`}>
             <span className="shrink-0">
               {tier.reached ? "✓ " : ""}
-              {tier.wins} {tier.wins === 1 ? "vittoria" : "vittorie"}
+              {tier.wins} {unit(tier.wins)}
             </span>
             <span className="min-w-0 truncate text-right">{describeChallengeTierReward(tier)}</span>
           </li>
@@ -213,6 +248,24 @@ function ChallengeBots({ challenge, closed }: { challenge: Challenge; closed: bo
         </Link>
       ))}
     </div>
+  );
+}
+
+/** An Emergenza a tema: one run, started, resumed or seen at its end on the Emergenza page. */
+function ChallengeEmergencyButton({ challenge, closed }: { challenge: Challenge; closed: boolean }) {
+  const run = challenge.my_run;
+  const label = !run ? "Gioca l'Emergenza" : run.status === "active" ? "Continua la corsa" : `Corsa finita · ${run.passed} superate`;
+  return (
+    <Link
+      href={challengeEmergencyHref(challenge)}
+      aria-disabled={closed}
+      className={`flex min-h-11 items-center justify-center px-2 text-center font-display text-lg uppercase leading-5 text-black ${
+        closed ? "pointer-events-none opacity-40" : ""
+      }`}
+      style={{ background: challenge.color }}
+    >
+      {label}
+    </Link>
   );
 }
 
@@ -248,5 +301,54 @@ export function ChallengeResultChip({ challenge, chip }: { challenge: MatchChall
       ★ {challenge.title}
       {challenge.daily_limit !== null && ` · oggi ${Math.min(challenge.plays_today, challenge.daily_limit)}/${challenge.daily_limit}`}
     </p>
+  );
+}
+
+/**
+ * The team screen of a challenge that gives its squad (SPEC §8.8): everyone plays these
+ * characters, owned or not, and nothing of the player's is at stake. A long press shows a card whole.
+ */
+export function SuppliedTeam({
+  challenge,
+  startLabel,
+  starting,
+  onStart,
+}: {
+  challenge: Challenge;
+  startLabel: string;
+  starting: boolean;
+  onStart: () => void;
+}) {
+  const detail = useCardDetail();
+  const team = challenge.supplied_team ?? [];
+  const matchRules = describeMatchRules(challenge);
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <p className="text-xs font-medium leading-4 text-muted">
+        In questa sfida tutti giocano con la stessa squadra: conta solo come la usi. Le carte non sono tue e non rischi
+        niente. Tieni premuta una carta per vederla intera.
+      </p>
+      {matchRules.length > 0 && (
+        <span className="flex flex-wrap gap-1">
+          {matchRules.map((rule) => (
+            <span key={rule} className="border-2 px-1.5 text-[11px] font-extrabold leading-4" style={{ borderColor: challenge.color }}>
+              {rule}
+            </span>
+          ))}
+        </span>
+      )}
+      <ul className="grid grid-cols-3 gap-1.5" aria-label="La squadra della sfida">
+        {team.map((card) => (
+          <li key={card.definition_id} {...detail.press(card)} className={LONG_PRESS_CLASS}>
+            <CardView card={card} size="sm" thumbSizes="33vw" />
+          </li>
+        ))}
+      </ul>
+      <div className="mt-auto pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
+        <button type="button" className="btn btn-primary w-full" disabled={starting} onClick={onStart}>
+          {starting ? "Si comincia…" : startLabel}
+        </button>
+      </div>
+    </div>
   );
 }

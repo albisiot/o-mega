@@ -150,7 +150,7 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   challenge_invalid_text: "Il titolo deve avere da 3 a 40 caratteri e la descrizione al massimo 140.",
   challenge_invalid_color: "Scegli uno dei colori.",
   challenge_invalid_format: "Scegli la modalità della sfida.",
-  challenge_invalid_bots: "Scegli almeno un bot, oppure l'amichevole online.",
+  challenge_invalid_bots: "Scegli almeno un bot, oppure l'amichevole online. Un'Emergenza si gioca da soli: niente bot né online.",
   challenge_invalid_rules: "Controlla i vincoli: rarità, fazioni e tratti devono esistere, le varianti vanno da 0 alla squadra.",
   challenge_too_few_characters: "Con questi vincoli non c'è abbastanza per una squadra: allarga le regole.",
   challenge_invalid_period: "La sfida deve finire dopo l'inizio, nel futuro, e durare al massimo 90 giorni.",
@@ -163,8 +163,18 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   challenge_starter_not_allowed: "In questa sfida le carte dello starter set non sono ammesse: scegline altre.",
   challenge_invalid_level: "Il livello minimo va da 1 a 100.",
   challenge_invalid_seal_target: "Il traguardo di Sigilli vale solo nel Quadrante, da 5 a 60.",
-  challenge_invalid_tiers: "Controlla i premi: fino a 3 traguardi, ognuno con più vittorie del precedente (al massimo 100), monete fino a 100000, pacchetti fino a 10, carte fino a 10.",
+  challenge_invalid_tiers: "Controlla i premi: fino a 3 traguardi, ognuno con più vittorie del precedente (al massimo 100; in un'Emergenza, non più delle sue Minacce), monete fino a 100000, pacchetti fino a 10, carte fino a 10.",
   challenge_tier_no_reward: "Ogni traguardo del premio deve dare qualcosa.",
+  challenge_over_budget: "La squadra supera il budget di rarità della sfida: cambia una carta rara con una più comune.",
+  challenge_rarity_limit: "La squadra ha troppe carte di una rarità: guarda i limiti nelle regole della sfida.",
+  challenge_too_few_factions: "La squadra deve avere personaggi di più fazioni: guarda le regole della sfida.",
+  challenge_emergency_already_played: "Hai già fatto la tua corsa in questa Emergenza a tema.",
+  challenge_emergency_not_started: "Scegli prima la squadra dell'Emergenza a tema.",
+  challenge_leaderboard_off: "Questa sfida non ha una classifica.",
+  challenge_invalid_match_rules: "Le regole di partita valgono solo nella Classica: un modificatore, Minacce di un luogo o di alcuni livelli (non insieme), rare fino a ×100.",
+  challenge_invalid_supplied_team: "La squadra della sfida va solo nella Classica contro i bot: 5 personaggi diversi, senza carte di livello.",
+  challenge_invalid_emergency: "Un'Emergenza a tema ha 8 o 10 Minacce.",
+  challenge_composition_impossible: "Con questo budget e questi limiti nessuna squadra rispetta le regole: allarga il budget o i limiti.",
 };
 
 export function describeServerError(error: unknown): string {

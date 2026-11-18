@@ -4139,7 +4139,7 @@ export type Database = {
       admin_pack_cards_payload: { Args: never; Returns: Json }
       admin_preview_achievement: { Args: { p_draft: Json }; Returns: Json }
       admin_preview_challenge: {
-        Args: { p_format: string; p_rules: Json }
+        Args: { p_emergency_threats?: number; p_format: string; p_rules: Json }
         Returns: Json
       }
       admin_reorder_achievements: { Args: { p_ids: string[] }; Returns: Json }
@@ -4163,16 +4163,20 @@ export type Database = {
           p_color: string
           p_daily_limit?: number
           p_description: string
+          p_emergency_threats?: number
           p_ends_at: string
           p_event_id?: string
           p_event_points?: Json
           p_format: string
           p_id?: string
+          p_leaderboard?: boolean
+          p_match_rules?: Json
           p_min_level?: number
           p_online?: boolean
           p_quadrant_seal_target?: number
           p_rules: Json
           p_starts_at: string
+          p_supplied_team?: string[]
           p_tiers?: Json
           p_title: string
         }
@@ -4880,6 +4884,10 @@ export type Database = {
       get_achievements: { Args: never; Returns: Json }
       get_active_match: { Args: never; Returns: Json }
       get_bestiary: { Args: never; Returns: Json }
+      get_challenge_leaderboard: {
+        Args: { p_challenge_id: string }
+        Returns: Json
+      }
       get_challenges: { Args: never; Returns: Json }
       get_collection: {
         Args: never

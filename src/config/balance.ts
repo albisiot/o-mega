@@ -482,6 +482,14 @@ export const balance = {
     maxMinLevel: 100,
     /** Seconds in a challenge's online queue before the waiting page offers its bot (client only). */
     onlineBotAfterSeconds: 45,
+    /** Highest rarity budget of a squad (the ranks Delta 1 … Omega 5 added up). */
+    maxRarityBudget: 50,
+    /** Most times as often a challenge can make rare threats turn up. */
+    maxRareMultiplier: 100,
+    /** Players shown in the leaderboard of a challenge. */
+    leaderboardSize: 50,
+    /** Simulated matches the editor asks for each bot (client only): fewer for the slow ones. */
+    simulationMatches: { easy: 120, medium: 120, hard: 24, super_pro: 4 },
   },
 
   /**

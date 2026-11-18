@@ -2,14 +2,19 @@ import {
   admittedByChallenge,
   challengeVariantsNeeded,
   NO_CHALLENGE_RULES,
+  parseChallengeRules,
+  parseMatchRules,
   type BotDifficulty,
+  type ChallengeMatchRules,
   type ChallengeRules,
+  type ChallengeTeamCheck,
+  type CompositionBlock,
 } from "@o-mega/game-engine";
 import type { TraitIndex } from "@/lib/card-list";
 import { FACTION_LABELS } from "@/lib/catalog";
 import type { CatalogCard } from "@/lib/collection";
 import { keepSeen, lastSeen } from "@/lib/last-seen";
-import type { MatchFormat } from "@/lib/match";
+import type { MatchCard, MatchFormat } from "@/lib/match";
 import { describeRandomVariants, type RandomVariantsInfo, type RandomVariantsRule } from "@/lib/random-variants";
 import { joinOr, traitCategoryOf } from "@/lib/story-stars";
 import { getSupabase } from "@/lib/supabase/client";
@@ -34,7 +39,24 @@ export type ChallengeRulesJson = {
   only?: string[];
   /** No starter copies, no level cards. */
   no_starters?: boolean;
+  /** Composition (third stage): the rarity ranks of the squad add up to at most this; null: none. */
+  rarity_budget?: number | null;
+  /** The most copies of each listed rarity code. */
+  rarity_max?: Record<string, number>;
+  /** The fewest different factions; 0: no rule. */
+  min_factions?: number;
 };
+
+/** The match rules of a Classica (challenge_normalize_match_rules). */
+export type ChallengeMatchRulesJson = {
+  modifier: string | null;
+  place: string | null;
+  levels: number[];
+  rare_multiplier: number;
+};
+
+/** A challenge's mode: the modes with matches, and the Emergenza. */
+export type ChallengeFormat = MatchFormat | "emergency";
 
 export type ChallengeEventPoints = { win: number; draw: number; loss: number };
 
@@ -65,7 +87,7 @@ export type Challenge = {
   description: string;
   /** '#rrggbb': the tag in Gioca and the band of its card. */
   color: string;
-  format: MatchFormat;
+  format: ChallengeFormat;
   /** The bots players may choose, easiest first; none when it is online only. */
   bot_difficulties: BotDifficulty[];
   /** The bot plays only with characters the rules admit. */
@@ -101,6 +123,17 @@ export type Challenge = {
   /** The event whose points its matches give, if linked. */
   event: { id: string; title: string; starts_at: string; ends_at: string } | null;
   event_points: ChallengeEventPoints | null;
+  /** Third stage. The most copies of each limited rarity, by name. */
+  rarity_max_info?: { code: string; name: string; max: number }[];
+  /** Classica: a modifier on every round, the threats of a place or of some levels, rare threats more often. */
+  match_rules?: ChallengeMatchRulesJson | Record<string, never>;
+  /** The squad every player fields (Classica against the bots); null: the player's own cards. */
+  supplied_team?: MatchCard[] | null;
+  /** An Emergenza a tema: its threats (8 or 10), and the player's run. */
+  emergency_threats?: number | null;
+  my_run?: { status: "active" | "finished"; passed: number; failed: number; total_score: number; current_round: number } | null;
+  /** Players see its leaderboard. */
+  leaderboard?: boolean;
 };
 
 export type ChallengeList = { now: string; challenges: Challenge[] };
@@ -145,22 +178,22 @@ export function unseenChallengeOpenings(challenge: Pick<Challenge, "tiers">): st
 
 /** The rules for the engine's checks. */
 export function toChallengeRules(rules: ChallengeRulesJson): ChallengeRules {
-  return {
-    rarities: rules.rarities,
-    factions: rules.factions,
-    traits: rules.traits,
-    minVariants: rules.min_variants,
-    allVariants: rules.all_variants,
-    variantStyles: rules.variant_styles ?? [],
-    banned: rules.banned ?? [],
-    only: rules.only ?? [],
-    noStarters: rules.no_starters ?? false,
-  };
+  return parseChallengeRules(rules as unknown as Record<string, unknown>);
+}
+
+/** The match rules for the engine, and to say them. */
+export function toMatchRules(challenge: Pick<Challenge, "match_rules">): ChallengeMatchRules {
+  return parseMatchRules((challenge.match_rules ?? {}) as Record<string, unknown>);
 }
 
 /** The mode a challenge's tile is on in Gioca: the two Quadrante grids share one tile. */
-export function challengeModeKey(format: MatchFormat): string {
+export function challengeModeKey(format: ChallengeFormat): string {
   return format === "quadrant_shifting" ? "quadrant" : format;
+}
+
+/** The squad of a challenge is given: players field it, whatever they own. */
+export function hasSuppliedTeam(challenge: Pick<Challenge, "supplied_team">): boolean {
+  return Array.isArray(challenge.supplied_team) && challenge.supplied_team.length > 0;
 }
 
 /** The challenge running now on a mode's tile, if any (one per mode at a time). */
@@ -190,17 +223,82 @@ function listNames(names: readonly string[]): string {
   return names.length === 3 ? `${names[0]}, ${names[1]} e ${names[2]}` : `${names[0]}, ${names[1]} e altri ${names.length - 2}`;
 }
 
-/** Every rule as a chip: "Delta o Gamma", "Cattivi", "Figli dell'Ultima", "★ Almeno 1 variante", "Senza starter". */
+/**
+ * Every rule as a chip: "Delta o Gamma", "Cattivi", "Figli dell'Ultima", "★ Almeno 1 variante",
+ * "Senza starter", "Budget rarità 12", "Max 1 Alfa", "Almeno 3 fazioni"; a given squad: its names.
+ */
 export function describeChallengeRules(
-  challenge: Pick<Challenge, "admitted" | "rules" | "banned_names" | "only_names" | "variant_style_names">,
+  challenge: Pick<Challenge, "admitted" | "rules" | "banned_names" | "only_names" | "variant_style_names" | "rarity_max_info" | "supplied_team">,
 ): string[] {
+  if (challenge.supplied_team && challenge.supplied_team.length > 0) {
+    return [`Squadra della sfida: ${challenge.supplied_team.map((card) => card.name).join(", ")}`];
+  }
   const chips = challenge.admitted.map((group) => joinOr(group.traits));
   if (challenge.only_names && challenge.only_names.length > 0) chips.push(`Solo ${listNames(challenge.only_names)}`);
   if (challenge.banned_names && challenge.banned_names.length > 0) chips.push(`Senza ${listNames(challenge.banned_names)}`);
   const variants = describeVariantRule(challenge.rules, challenge.variant_style_names ?? []);
   if (variants) chips.push(variants);
   if (challenge.rules.no_starters) chips.push("Senza starter");
+  // The composition in one chip: the card stays short.
+  const composition = describeComposition(challenge);
+  if (composition.length > 0) chips.push(composition.join(" · "));
   return chips.length > 0 ? chips : ["Tutti i personaggi"];
+}
+
+/** The composition as chips: "Budget rarità 12", "Max 1 Alfa", "Nessun Omega", "Almeno 3 fazioni". */
+export function describeComposition(challenge: Pick<Challenge, "rules" | "rarity_max_info">): string[] {
+  const chips: string[] = [];
+  if (typeof challenge.rules.rarity_budget === "number") chips.push(`Budget rarità ${challenge.rules.rarity_budget}`);
+  for (const limit of challenge.rarity_max_info ?? []) {
+    chips.push(limit.max === 0 ? `Nessun ${limit.name}` : `Max ${limit.max} ${limit.name}`);
+  }
+  const factions = challenge.rules.min_factions ?? 0;
+  if (factions >= 2) chips.push(factions === 3 ? "Tutte e 3 le fazioni" : "Almeno 2 fazioni");
+  return chips;
+}
+
+/** The modifiers a challenge can put on every round, by name (src/lib/threat-modifiers.ts has the rules). */
+export const CHALLENGE_MODIFIER_NAMES: Record<string, string> = {
+  focus: "Colpo mirato",
+  weak_link: "Anello debole",
+  hostile_ground: "Territorio ostile",
+  underdogs: "Sottovalutati",
+};
+
+/** The places of the threats, by name. */
+export const CHALLENGE_PLACE_NAMES: Record<string, string> = {
+  megara: "Nuova Megara",
+  giza: "Giza",
+  yucatan: "Yucatán",
+  atlantis: "Atlantide",
+  arctic: "Artico",
+  japan: "Giappone",
+};
+
+/** "1-3", "2, 4 e 6": the levels of a rule. */
+function levelsText(levels: readonly number[]): string {
+  const sorted = [...levels].sort((a, b) => a - b);
+  const contiguous = sorted.every((level, i) => i === 0 || level === sorted[i - 1] + 1);
+  if (sorted.length > 2 && contiguous) return `${sorted[0]}-${sorted[sorted.length - 1]}`;
+  return sorted.length <= 1 ? sorted.join("") : `${sorted.slice(0, -1).join(", ")} e ${sorted[sorted.length - 1]}`;
+}
+
+/** The match rules as chips: "Ogni round: Colpo mirato", "Minacce di Giza", "Minacce di livello 1-3", "Rare ×10". */
+export function describeMatchRules(challenge: Pick<Challenge, "match_rules">): string[] {
+  const rules = toMatchRules(challenge);
+  const chips: string[] = [];
+  if (rules.modifier) chips.push(`Ogni round: ${CHALLENGE_MODIFIER_NAMES[rules.modifier] ?? rules.modifier}`);
+  if (rules.place === "megara") chips.push("Solo Minacce di Nuova Megara");
+  else if (rules.place) chips.push(`Minacce di ${CHALLENGE_PLACE_NAMES[rules.place] ?? rules.place}`);
+  if (rules.levels.length > 0) chips.push(`Minacce di livello ${levelsText(rules.levels)}`);
+  if (rules.rareMultiplier > 1) chips.push(`Rare ×${rules.rareMultiplier}`);
+  return chips;
+}
+
+/** The match rules in one chip, for the cards: "Ogni round: Colpo mirato · Minacce di Giza · Rare ×5"; null without. */
+export function describeMatchRulesChip(challenge: Pick<Challenge, "match_rules">): string | null {
+  const chips = describeMatchRules(challenge);
+  return chips.length > 0 ? chips.join(" · ") : null;
 }
 
 /** Matches the player can still start today; null without a limit. */
@@ -320,6 +418,43 @@ export function challengeHref(challenge: Pick<Challenge, "id" | "format">, diffi
   return `/squadra/?sfida=${challenge.id}${format}&difficulty=${difficulty}`;
 }
 
+/** The page of an Emergenza a tema (no dynamic routes in the static export). */
+export function challengeEmergencyHref(challenge: Pick<Challenge, "id">): string {
+  return `/emergenza/?sfida=${challenge.id}`;
+}
+
+/** The leaderboard of a challenge. */
+export function challengeLeaderboardHref(challenge: Pick<Challenge, "id">): string {
+  return `/classifica-sfida/?id=${challenge.id}`;
+}
+
+export type ChallengeLeaderboardEntry = {
+  rank: number;
+  username: string;
+  avatar_url: string | null;
+  /** Wins in the challenge (an Emergenza: threats passed in the run). */
+  wins: number;
+  /** Matches finished (an Emergenza: 1). */
+  played: number;
+  /** An Emergenza: the run's score. */
+  score: number;
+  is_me: boolean;
+};
+
+export type ChallengeLeaderboard = {
+  challenge: { id: string; title: string; color: string; format: ChallengeFormat; starts_at: string; ends_at: string };
+  ended: boolean;
+  players: number;
+  top: ChallengeLeaderboardEntry[];
+  me: ChallengeLeaderboardEntry | null;
+};
+
+export async function fetchChallengeLeaderboard(challengeId: string): Promise<ChallengeLeaderboard> {
+  const { data, error } = await getSupabase().rpc("get_challenge_leaderboard", { p_challenge_id: challengeId });
+  if (error) throw error;
+  return data as unknown as ChallengeLeaderboard;
+}
+
 /** The team screen of a challenge online: a random player of the challenge, or a code for a friend. */
 export function challengeOnlineHref(challenge: Pick<Challenge, "id" | "format">, mode: "queue" | "lobby"): string {
   const format = challenge.format === "classic" ? "" : `&format=${challenge.format}`;
@@ -340,4 +475,35 @@ export function describeChallengeTierReward(tier: Pick<ChallengeTier, "coins" | 
     describeRandomVariants(tier.random_variants_info) || null,
   ].filter((part): part is string => part !== null);
   return parts.join(" + ");
+}
+
+/** Why a card cannot join the squad under the composition rules, in words. */
+export function compositionBlockText(block: CompositionBlock, card: Pick<CatalogCard, "rarity">, rules: ChallengeRules): string {
+  switch (block) {
+    case "rarity": {
+      const max = rules.rarityMax[card.rarity.code] ?? 0;
+      return max === 0 ? `nessun ${card.rarity.name} in questa sfida` : `al massimo ${max} ${card.rarity.name} in squadra`;
+    }
+    case "budget":
+      return `con lei la squadra supererebbe il budget di rarità (${rules.rarityBudget})`;
+    case "factions":
+      return `servono personaggi di almeno ${rules.minFactions} fazioni diverse`;
+  }
+}
+
+/** What a full squad breaks of the composition, for the start button; null when it keeps it. */
+export function compositionProblemText(
+  check: Pick<ChallengeTeamCheck, "budget" | "overRarities" | "factions">,
+  rules: ChallengeRules,
+  names: readonly { code: string; name: string }[] = [],
+): string | null {
+  if (rules.rarityBudget !== null && check.budget > rules.rarityBudget) {
+    return `Budget di rarità ${check.budget}/${rules.rarityBudget}: cambia una carta`;
+  }
+  if (check.overRarities.length > 0) {
+    const code = check.overRarities[0];
+    return `Troppe ${names.find((entry) => entry.code === code)?.name ?? code}: cambiane una`;
+  }
+  if (check.factions < rules.minFactions) return `Servono ${rules.minFactions} fazioni: ne hai ${check.factions}`;
+  return null;
 }

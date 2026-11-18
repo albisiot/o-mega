@@ -87,10 +87,13 @@ export function bannerHref(notification: PlayerNotification): string | null {
         : "/classifiche/";
     case "ranked":
       return "/classifiche/?scheda=albo";
-    // Sfide a tema (SPEC §8.8): a new one, or a prize target reached; both are in Gioca.
+    // Sfide a tema (SPEC §8.8): a new one, or a prize target reached; both are in Gioca, an
+    // Emergenza a tema on its own page.
     case "challenge":
     case "challenge_reward":
-      return "/gioca/";
+      return notification.data.format === "emergency" && typeof notification.data.challenge_id === "string"
+        ? `/emergenza/?sfida=${encodeURIComponent(notification.data.challenge_id)}`
+        : "/gioca/";
     default:
       return null;
   }

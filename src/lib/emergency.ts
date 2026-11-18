@@ -2,6 +2,7 @@ import type { ScoreParts, ThreatModifier } from "@o-mega/game-engine";
 import { invokeFunction, type MatchCard } from "@/lib/match";
 import type { ThreatRarity } from "@/lib/threat-rarity";
 import type { EmergencyPrizeTier } from "@/lib/emergency-prizes";
+import { fetchChallengeLeaderboard, type ChallengeLeaderboardEntry } from "@/lib/challenges";
 import { getSupabase } from "@/lib/supabase/client";
 
 export type EmergencyThreat = {
@@ -90,17 +91,32 @@ export type EmergencyView = {
 
 const ACTION_PREFIX: Record<EmergencyKind, string> = { day: "emergency", week: "emergency_week" };
 
-/** Opens today's challenge (or this week's): the first player of the day (or week) makes the server draw it. */
-export function openEmergency(kind: EmergencyKind = "day"): Promise<EmergencyView> {
-  return invokeFunction({ action: `${ACTION_PREFIX[kind]}_open` });
+/** The action of a call: an Emergenza a tema (SPEC §8.8) names its challenge. */
+function emergencyAction(step: "open" | "start" | "play", kind: EmergencyKind, challengeId: string | null | undefined) {
+  return challengeId
+    ? { action: `challenge_emergency_${step}`, challenge_id: challengeId }
+    : { action: `${ACTION_PREFIX[kind]}_${step}` };
 }
 
-export function startEmergency(cardInstanceIds: string[], kind: EmergencyKind = "day"): Promise<EmergencyView> {
-  return invokeFunction({ action: `${ACTION_PREFIX[kind]}_start`, card_instance_ids: cardInstanceIds });
+/**
+ * Opens today's challenge (or this week's, or a Sfida a tema's): the first player of the day
+ * (or week, or challenge) makes the server draw it.
+ */
+export function openEmergency(kind: EmergencyKind = "day", challengeId?: string | null): Promise<EmergencyView> {
+  return invokeFunction(emergencyAction("open", kind, challengeId));
 }
 
-export function playEmergency(round: number, cardInstanceId: string, kind: EmergencyKind = "day"): Promise<EmergencyView> {
-  return invokeFunction({ action: `${ACTION_PREFIX[kind]}_play`, round, card_instance_id: cardInstanceId });
+export function startEmergency(cardInstanceIds: string[], kind: EmergencyKind = "day", challengeId?: string | null): Promise<EmergencyView> {
+  return invokeFunction({ ...emergencyAction("start", kind, challengeId), card_instance_ids: cardInstanceIds });
+}
+
+export function playEmergency(
+  round: number,
+  cardInstanceId: string,
+  kind: EmergencyKind = "day",
+  challengeId?: string | null,
+): Promise<EmergencyView> {
+  return invokeFunction({ ...emergencyAction("play", kind, challengeId), round, card_instance_id: cardInstanceId });
 }
 
 export type EmergencyRank = {
@@ -160,6 +176,21 @@ export async function fetchEmergencyLeaderboard(kind: EmergencyKind = "day"): Pr
   const { data, error } = await getSupabase().rpc("get_emergency_leaderboard");
   if (error) throw error;
   return data as unknown as EmergencyLeaderboard;
+}
+
+/** The leaderboard of an Emergenza a tema, in the shape of the others: its best runs. */
+export async function fetchChallengeEmergencyLeaderboard(challengeId: string): Promise<EmergencyLeaderboard> {
+  const board = await fetchChallengeLeaderboard(challengeId);
+  const rank = (entry: ChallengeLeaderboardEntry): EmergencyRank => ({
+    rank: entry.rank,
+    username: entry.username,
+    avatar_url: entry.avatar_url,
+    title: null,
+    passed: entry.wins,
+    total_score: entry.score,
+    is_me: entry.is_me,
+  });
+  return { players: board.players, top: board.top.map(rank), me: board.me ? rank(board.me) : null };
 }
 
 export async function fetchEmergencyWeekLeaderboard(): Promise<EmergencyWeekLeaderboard> {

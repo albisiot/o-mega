@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { resolveEmergencyPlay, type AbilityFamilies, type EmergencyRules } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
+import { ChallengePrize, ChallengeRuleChips } from "@/components/challenge-parts";
 import { EmergencyComic } from "@/components/emergency-comic";
 import { Silhouette } from "@/components/card-view";
 import { BackLink } from "@/components/comic-parts";
@@ -26,9 +27,11 @@ import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
+import { describeChallengeTierReward, fetchChallenges, type Challenge } from "@/lib/challenges";
 import {
   daysLeft,
   daysLeftText,
+  fetchChallengeEmergencyLeaderboard,
   fetchEmergencyLeaderboard,
   fetchEmergencyLineups,
   openEmergency,
@@ -56,14 +59,32 @@ import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
 const KindContext = createContext<EmergencyKind>("day");
 const useKind = () => useContext(KindContext);
 
-/** Today's challenge (or this week's) from the levels to the final result. */
-export function EmergencyScreen({ initial, kind = "day" }: { initial: EmergencyView; kind?: EmergencyKind }) {
+/**
+ * An Emergenza a tema (SPEC §8.8), when the screen plays one: its numbers are the daily
+ * Emergenza's (8 threats) or the weekly one's (10), its squad keeps the challenge's rules.
+ */
+const ChallengeContext = createContext<Challenge | null>(null);
+const useChallenge = () => useContext(ChallengeContext);
+
+/** Today's challenge (or this week's, or a Sfida a tema's) from the levels to the final result. */
+export function EmergencyScreen({
+  initial,
+  kind = "day",
+  challenge = null,
+}: {
+  initial: EmergencyView;
+  kind?: EmergencyKind;
+  challenge?: Challenge | null;
+}) {
+  const numbers: EmergencyKind = challenge ? (challenge.emergency_threats === 8 ? "day" : "week") : kind;
   // A long press on any card the challenge shows opens its detail, over every step.
   return (
-    <KindContext.Provider value={kind}>
-      <CardDetailProvider>
-        <EmergencySteps initial={initial} />
-      </CardDetailProvider>
+    <KindContext.Provider value={numbers}>
+      <ChallengeContext.Provider value={challenge}>
+        <CardDetailProvider>
+          <EmergencySteps initial={initial} />
+        </CardDetailProvider>
+      </ChallengeContext.Provider>
     </KindContext.Provider>
   );
 }
@@ -76,6 +97,7 @@ function weekLeftText(view: EmergencyView): string | null {
 
 function EmergencySteps({ initial }: { initial: EmergencyView }) {
   const kind = useKind();
+  const challenge = useChallenge();
   const [view, setView] = useState(initial);
   const [revealing, setRevealing] = useState<EmergencyPlay | null>(null);
   // The levels strip keeps the play's outcome until the result page tells it.
@@ -109,7 +131,17 @@ function EmergencySteps({ initial }: { initial: EmergencyView }) {
           <header className="flex items-center gap-2.5 px-3 py-1">
             <BackLink href="/gioca" label="Torna a Gioca" />
             <h1 className="whitespace-nowrap font-display text-[25px] uppercase leading-7 text-comic-yellow">
-              {kind === "week" ? (
+              {challenge ? (
+                <>
+                  Emergenza
+                  <span
+                    className="ml-1.5 inline-block -skew-x-8 px-1.5 align-[3px] font-sfx text-[13px] leading-5 tracking-wide text-black"
+                    style={{ background: challenge.color }}
+                  >
+                    ★ A tema
+                  </span>
+                </>
+              ) : kind === "week" ? (
                 <>
                   Emergenza
                   <span className="ml-1.5 inline-block -skew-x-8 bg-comic-yellow px-1.5 align-[3px] font-sfx text-[13px] leading-5 tracking-wide text-black">
@@ -121,7 +153,11 @@ function EmergencySteps({ initial }: { initial: EmergencyView }) {
               )}
             </h1>
             <p className="ml-auto max-w-[8.5rem] text-right text-[11px] font-bold leading-[13px] text-muted">
-              {kind === "week" ? `${weekLeftText(view) ?? "Questa settimana"}, uguale per tutti` : "La sfida di oggi, uguale per tutti"}
+              {challenge
+                ? `${weekLeftText(view) ?? challenge.title}, uguale per tutti`
+                : kind === "week"
+                  ? `${weekLeftText(view) ?? "Questa settimana"}, uguale per tutti`
+                  : "La sfida di oggi, uguale per tutti"}
             </p>
           </header>
           <LevelTrack view={view} abilities={abilities} />
@@ -266,6 +302,7 @@ function Briefing({
   onStarted: (next: EmergencyView) => void;
 }) {
   const kind = useKind();
+  const challenge = useChallenge();
   const [collection, setCollection] = useState<Collection | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -290,7 +327,7 @@ function Briefing({
     setStarting(true);
     setError(null);
     try {
-      onStarted(await startEmergency(cardInstanceIds, kind));
+      onStarted(await startEmergency(cardInstanceIds, kind, challenge?.id));
     } catch (cause) {
       setError(describeServerError(cause));
       setStarting(false);
@@ -302,7 +339,7 @@ function Briefing({
       <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pt-1.5">
         <p className="text-xs font-medium text-muted">
           Scegli {size} personaggi diversi guardando i livelli qui sopra: ognuno affronterà una sola Minaccia. Una volta
-          iniziata, la squadra non si cambia e il tentativo {kind === "week" ? "della settimana" : "di oggi"} è quello. Tieni
+          iniziata, la squadra non si cambia e il tentativo {challenge ? "della sfida" : kind === "week" ? "della settimana" : "di oggi"} è quello. Tieni
           premuta una carta per vederla intera.
         </p>
         {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
@@ -318,6 +355,7 @@ function Briefing({
             starting={starting}
             onStart={start}
             squadSize={size}
+            challenge={challenge ?? undefined}
           />
         ) : (
           !error && <LoadingScreen label="Caricamento della collezione…" />
@@ -335,7 +373,15 @@ function Briefing({
             {size} Minacce colpiscono Nuova Megara, le stesse per tutti. Per ora conosci solo i loro livelli. Scegli{" "}
             {size} personaggi, poi mandane uno contro ogni Minaccia che si svela.
           </p>
-          {kind === "week" ? (
+          {challenge ? (
+            <>
+              <p>
+                {challenge.title}: alla {maxFailures}ª fallita finisce. Un solo tentativo finché dura la sfida, con le sue
+                regole.
+              </p>
+              <ChallengeRuleChips challenge={challenge} />
+            </>
+          ) : kind === "week" ? (
             <p>
               Soglie più alte che ogni giorno; alla {maxFailures}ª fallita finisce. Un tentativo a settimana, da finire
               entro domenica.
@@ -360,6 +406,21 @@ function Briefing({
           </ul>
         </section>
 
+        {challenge ? (
+          (challenge.tiers ?? []).length > 0 && (
+            <section className="flex shrink-0 flex-col gap-1">
+              <h2 className="section-title">Premio della sfida</h2>
+              <ul className="flex flex-col gap-0.5 text-[12px] font-bold leading-4">
+                {(challenge.tiers ?? []).map((tier) => (
+                  <li key={tier.tier} className="flex justify-between gap-2 bg-panel px-2 py-1">
+                    <span className="shrink-0">{tier.wins === 1 ? "1 Minaccia superata" : `${tier.wins} Minacce superate`}</span>
+                    <span className="min-w-0 truncate text-right text-comic-yellow">{describeChallengeTierReward(tier)}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        ) : (
         <section className="flex shrink-0 flex-col gap-1">
           <h2 className="section-title">Premi</h2>
           <ul className="grid grid-cols-3 gap-1">
@@ -373,6 +434,7 @@ function Briefing({
             ))}
           </ul>
         </section>
+        )}
 
         <Leaderboard />
       </main>
@@ -400,6 +462,7 @@ function ChoosePhase({
   onStale: (next: EmergencyView) => void;
 }) {
   const kind = useKind();
+  const challenge = useChallenge();
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -459,7 +522,7 @@ function ChoosePhase({
     setBusy(true);
     setError(null);
     try {
-      onPlayed(await playEmergency(threat.round, chosen.instance_id, kind));
+      onPlayed(await playEmergency(threat.round, chosen.instance_id, kind, challenge?.id));
     } catch (cause) {
       // Another tab or device was faster, or midnight (Europe/Rome) started a new day (or week): reload the state.
       if (
@@ -470,9 +533,11 @@ function ChoosePhase({
           "emergency_not_started",
           "emergency_week_already_played",
           "emergency_week_not_started",
+          "challenge_emergency_already_played",
+          "challenge_emergency_not_started",
         ].includes(cause.message)
       ) {
-        onStale(await openEmergency(kind));
+        onStale(await openEmergency(kind, challenge?.id));
       } else {
         setError(describeServerError(cause));
       }
@@ -497,7 +562,13 @@ function ChoosePhase({
           <ThreatDiorama key={threat.round} name={threat.name} level={threat.level} fill />
         </div>
         <RareThreatAlert
-          alertKey={kind === "week" ? `emergency-week:${view.week}:${threat.round}` : `emergency:${view.day}:${threat.round}`}
+          alertKey={
+            challenge
+              ? `emergency-challenge:${challenge.id}:${threat.round}`
+              : kind === "week"
+                ? `emergency-week:${view.week}:${threat.round}`
+                : `emergency:${view.day}:${threat.round}`
+          }
           rarity={threat.rarity}
           name={threat.name}
         />
@@ -547,7 +618,7 @@ function ChoosePhase({
             </p>
           )}
           <p className="mt-1.5 text-xs font-bold">
-            <span className="font-extrabold uppercase">{kind === "week" ? "Settimana" : "Emergenza"}</span> · Superate{" "}
+            <span className="font-extrabold uppercase">{challenge ? "A tema" : kind === "week" ? "Settimana" : "Emergenza"}</span> · Superate{" "}
             {run.passed} · Fallite {run.failed} su{" "}
             {view.rules.max_failures}
           </p>
@@ -717,6 +788,7 @@ function decisiveNote(notes: EmergencyNote[], score: number, required: number): 
 
 function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["rules"] }) {
   const kind = useKind();
+  const challenge = useChallenge();
   const [tab, setTab] = useState<"day" | "board">("day");
   // Loaded once, whichever tab is open.
   const { board, failed } = useLeaderboard();
@@ -725,7 +797,23 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
   const cardOf = (instanceId: string) => run.squad.find((c) => c.instance_id === instanceId);
   const detail = useCardDetail();
   // The daily run is found by the server (null); the weekly one by its id.
-  const eventPoints = useEventPointsFor(kind === "week" ? (run.id ?? null) : null);
+  // An Emergenza a tema gives no event points: its run's id finds none.
+  const eventPoints = useEventPointsFor(kind === "week" || challenge ? (run.id ?? null) : null);
+  // Its prize, as it stands now that the run is over: the targets reached and what to open.
+  const challengeId = challenge?.id ?? null;
+  const [prize, setPrize] = useState<Challenge | null>(null);
+  useEffect(() => {
+    if (!challengeId) return;
+    let cancelled = false;
+    fetchChallenges()
+      .then((list) => {
+        if (!cancelled) setPrize(list.challenges.find((entry) => entry.id === challengeId) ?? null);
+      })
+      .catch((cause: unknown) => console.error("Challenge prize failed", cause));
+    return () => {
+      cancelled = true;
+    };
+  }, [challengeId]);
 
   // The outcome keeps its size; the day and the ranking share the room left, one tab at a time.
   return (
@@ -756,12 +844,19 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
             )}
           </div>
           <p className="relative text-[13px] font-semibold">
-            {kind === "week"
-              ? "La prossima Emergenza della settimana arriva lunedì."
-              : "Una nuova Emergenza arriva dopo la mezzanotte."}
+            {challenge
+              ? "Un solo tentativo per sfida: la classifica resta aperta finché dura."
+              : kind === "week"
+                ? "La prossima Emergenza della settimana arriva lunedì."
+                : "Una nuova Emergenza arriva dopo la mezzanotte."}
           </p>
         </section>
 
+        {prize && (prize.tiers ?? []).length > 0 && (
+          <div className="mt-2 shrink-0">
+            <ChallengePrize challenge={prize} />
+          </div>
+        )}
         <div role="tablist" aria-label="Risultato" className="mt-2.5 grid shrink-0 grid-cols-2 gap-1.5">
           {(["day", "board"] as const).map((key) => (
             <button
@@ -774,7 +869,7 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
                 tab === key ? "border-comic-yellow bg-comic-yellow text-black" : "border-line text-foreground"
               }`}
             >
-              {key === "board" ? "Classifica" : kind === "week" ? "La tua settimana" : "La tua giornata"}
+              {key === "board" ? "Classifica" : challenge ? "La tua corsa" : kind === "week" ? "La tua settimana" : "La tua giornata"}
             </button>
           ))}
         </div>
@@ -825,12 +920,18 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
 /** Today's ranking (or this week's), loaded once; `failed` when it could not be loaded. */
 function useLeaderboard() {
   const kind = useKind();
+  const challenge = useChallenge();
+  const challengeId = challenge?.id ?? null;
   const [board, setBoard] = useState<EmergencyLeaderboard | null>(null);
   const [failed, setFailed] = useState(false);
 
+  // A challenge without a leaderboard for players shows none.
+  const off = Boolean(challengeId && !challenge?.leaderboard);
+
   useEffect(() => {
+    if (off) return;
     let cancelled = false;
-    fetchEmergencyLeaderboard(kind)
+    (challengeId ? fetchChallengeEmergencyLeaderboard(challengeId) : fetchEmergencyLeaderboard(kind))
       .then((result) => {
         if (!cancelled) setBoard(result);
       })
@@ -841,9 +942,9 @@ function useLeaderboard() {
     return () => {
       cancelled = true;
     };
-  }, [kind]);
+  }, [kind, challengeId, off]);
 
-  return { board, failed };
+  return { board, failed: failed || off };
 }
 
 /** A place in the ranking, low enough for the lists that fit the screen; the title, when shown, goes under the name. */
@@ -949,6 +1050,7 @@ function RankList({
  */
 function Leaderboard() {
   const kind = useKind();
+  const challenge = useChallenge();
   const { board, failed } = useLeaderboard();
   const lineups = useLineupSheet();
   // Before one's own attempt only the last lineups: the current ones would give the best team away.
@@ -959,7 +1061,9 @@ function Leaderboard() {
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-1">
       <div className="flex shrink-0 items-baseline justify-between gap-2">
-        <h2 className="section-title">{kind === "week" ? "Classifica della settimana" : "Classifica di oggi"}</h2>
+        <h2 className="section-title">
+          {challenge ? "Classifica della sfida" : kind === "week" ? "Classifica della settimana" : "Classifica di oggi"}
+        </h2>
         {yesterday && (
           <button
             type="button"
@@ -996,6 +1100,7 @@ function Podium({
   lineups: LineupSheet;
 }) {
   const kind = useKind();
+  const challenge = useChallenge();
   if (failed) return <p className="text-sm font-medium text-muted">La classifica non è disponibile ora.</p>;
   if (!board) return null;
   if (board.top.length === 0) {
@@ -1012,7 +1117,8 @@ function Podium({
       )}
       <RankList board={board} openable={live} onOpen={lineups.open} />
       <p className="mt-1 text-center text-xs font-semibold text-muted">
-        {board.players === 1 ? "1 giocatore" : `${board.players} giocatori`} {kind === "week" ? "questa settimana" : "oggi"}
+        {board.players === 1 ? "1 giocatore" : `${board.players} giocatori`}{" "}
+        {challenge ? "nella sfida" : kind === "week" ? "questa settimana" : "oggi"}
       </p>
       <PrizeLine board={board} />
       {lineups.sheet}
@@ -1028,11 +1134,14 @@ type LineupSheet = { data: EmergencyLineups | null; open: (rank: number) => void
  */
 function useLineupSheet(): LineupSheet {
   const kind = useKind();
+  // An Emergenza a tema shows no podium lineups.
+  const themed = useChallenge() !== null;
   const [data, setData] = useState<EmergencyLineups | null>(null);
   const [focus, setFocus] = useState<number | null>(null);
   const sheetRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
+    if (themed) return;
     let cancelled = false;
     fetchEmergencyLineups(kind)
       .then((result) => {
@@ -1042,7 +1151,7 @@ function useLineupSheet(): LineupSheet {
     return () => {
       cancelled = true;
     };
-  }, [kind]);
+  }, [kind, themed]);
 
   useEffect(() => {
     if (focus !== null) document.getElementById(`emergency-lineup-${focus}`)?.scrollIntoView({ block: "start" });

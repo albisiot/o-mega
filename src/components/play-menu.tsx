@@ -7,7 +7,7 @@ import { ChallengeCard, ChallengeRibbon } from "@/components/challenge-parts";
 import { TrophyIcon } from "@/components/leaderboard-places";
 import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
-import { runningChallenge, type Challenge } from "@/lib/challenges";
+import { challengeEmergencyHref, runningChallenge, type Challenge } from "@/lib/challenges";
 import { daysLeft, daysLeftText, emergencyHref } from "@/lib/emergency";
 import { describeLastPlay, FIRST_PLAY, lastPlayHref, type LastPlay } from "@/lib/last-play";
 import { leaderboardHref, type LeaderboardBoard } from "@/lib/leaderboards";
@@ -467,7 +467,7 @@ function EmergencyTile({ today }: { today: EmergencyToday }) {
  * This week's Emergenza on one slim row under the day's tiles, drawn like the Emergenza tile:
  * the days left and where the player is (to play, in progress, done with the threats passed).
  */
-function EmergencyWeekRow({ week, now }: { week: EmergencyThisWeek; now: number }) {
+function EmergencyWeekRow({ week, now, compact = false }: { week: EmergencyThisWeek; now: number; compact?: boolean }) {
   if (week === null) return null;
   const run = week?.run ?? null;
   const days = week ? daysLeftText(daysLeft(week.endsAt, now)) : "Una sfida più dura";
@@ -479,6 +479,19 @@ function EmergencyWeekRow({ week, now }: { week: EmergencyThisWeek; now: number 
         : run.status === "active"
           ? `In corso · ${run.passed}/${week.threats}`
           : `✓ ${run.passed}/${week.threats}${week.rank ? ` · ${week.rank}°` : ""}`;
+  if (compact) {
+    // Half the row, beside an Emergenza a tema: the name and where the player is.
+    return (
+      <Link
+        href={emergencyHref("week")}
+        aria-label={`Emergenza della settimana: ${days}${state ? `, ${state}` : ""}`}
+        className="flex min-h-10 min-w-0 flex-1 flex-col justify-center bg-foreground px-2.5 py-1 text-black short:min-h-9"
+      >
+        <span className="block truncate font-display text-[15px] uppercase leading-5">Settimana</span>
+        <span className="block truncate text-[12px] font-bold leading-4">{state ?? days}</span>
+      </Link>
+    );
+  }
   return (
     <Link
       href={emergencyHref("week")}
@@ -497,6 +510,30 @@ function EmergencyWeekRow({ week, now }: { week: EmergencyThisWeek; now: number 
           {state}
         </span>
       )}
+    </Link>
+  );
+}
+
+/**
+ * An Emergenza a tema (SPEC §8.8) beside the week's, on the same slim row: no line more in Gioca.
+ * Its name, and where the player is: to play, in progress, done with the threats passed.
+ */
+function EmergencyChallengeRow({ challenge }: { challenge: Challenge }) {
+  const run = challenge.my_run ?? null;
+  const threats = challenge.emergency_threats ?? challenge.team_size;
+  const state = !run ? `Da fare · ${threats} Minacce` : run.status === "active" ? `In corso · ${run.passed}/${threats}` : `✓ ${run.passed}/${threats}`;
+  return (
+    <Link
+      href={challengeEmergencyHref(challenge)}
+      aria-label={`Emergenza a tema ${challenge.title}: ${state}`}
+      className="flex min-h-10 min-w-0 flex-[1.4_1_0] items-center gap-1.5 px-2 py-1 text-black short:min-h-9"
+      style={{ background: challenge.color }}
+    >
+      <span className="shrink-0 -rotate-2 border-2 border-black px-1 font-sfx text-[12px] leading-[14px] tracking-wide">★</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-display text-[15px] uppercase leading-5">{challenge.title}</span>
+        <span className="block truncate text-[12px] font-bold leading-4">{state}</span>
+      </span>
     </Link>
   );
 }
@@ -655,6 +692,8 @@ export function PlayMenuView({
   const openKey = (openMode && MOVED_MODES[openMode]) ?? openMode;
   const opened = MODES.find((mode) => mode.key === openKey) ?? null;
   const challengeOf = (key: ModeKey) => runningChallenge(challenges, key, now);
+  // An Emergenza a tema has no mode tile: it sits beside the week's Emergenza.
+  const themedEmergency = runningChallenge(challenges, "emergency", now);
 
   // A Conquista no longer open falls back to a friendly classic match online.
   const conquestOpen = conquest !== null && conquest.unlocked && conquest.cards_lost_today < balance.conquest.maxCardsLostPerDay;
@@ -702,7 +741,14 @@ export function PlayMenuView({
               <EmergencyTile today={emergency} />
               <StoryTile chapters={story} disabled={blocked} />
             </div>
-            <EmergencyWeekRow week={emergencyWeek} now={now} />
+            {themedEmergency ? (
+              <div className="flex shrink-0 gap-1.5">
+                <EmergencyWeekRow week={emergencyWeek} now={now} compact />
+                <EmergencyChallengeRow challenge={themedEmergency} />
+              </div>
+            ) : (
+              <EmergencyWeekRow week={emergencyWeek} now={now} />
+            )}
 
             <ListTitle>Modalità</ListTitle>
             <div className="grid min-h-28 flex-[1_1_0] auto-rows-fr grid-cols-2 gap-1.5">
