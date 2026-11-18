@@ -3815,6 +3815,7 @@ export type Database = {
           p_tiers: Json
           p_title: string
           p_traits?: string[]
+          p_variant_chance_percent?: number
         }
         Returns: Json
       }
@@ -3833,10 +3834,13 @@ export type Database = {
           p_id?: string
           p_name: string
           p_odds_mode: string
+          p_prefer_new_variants?: boolean
           p_price: number
           p_rarities?: Json
           p_starts_at?: string
           p_variant_chance_percent: number
+          p_variant_styles?: string[]
+          p_variants_only?: boolean
         }
         Returns: Json
       }

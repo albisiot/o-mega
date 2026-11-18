@@ -10,6 +10,9 @@ insert into auth.users (id, aud, role, email, raw_user_meta_data, created_at, up
   ('00000000-0000-4000-8000-0000000000a1', 'authenticated', 'authenticated', 'variant-a@example.test',
    '{"full_name": "Varianti A"}', now(), now());
 
+-- A running "Caccia alle varianti" would raise the chance this test sets: none here.
+update public.events set variant_chance_percent = null where variant_chance_percent is not null;
+
 -- The catalog: no variant on a level card, which no pack can give.
 do $$
 begin
@@ -29,7 +32,9 @@ begin
   assert (select variant_count from public.card_catalog where code = 'P072') = 1, 'catalog count of a variant';
   -- Level cards never come from packs, so they never get a variant.
   assert (select variant_count from public.card_catalog where code = 'P061') = 0, 'catalog count without a variant';
-  assert (public.get_pack_odds() ->> 'variant_chance_percent')::integer = 5, 'published chance';
+  -- An admin sets it in /gestione-ricompense; balance.ts has the default.
+  assert (public.get_pack_odds() ->> 'variant_chance_percent')::integer = public.config_int('packs.variant_chance_percent'),
+    'published chance';
   assert (public.get_pack_odds() ->> 'characters_with_variants')::integer =
     (select count(distinct definition_id) from public.card_variants where is_active), 'published characters';
 end $$;
