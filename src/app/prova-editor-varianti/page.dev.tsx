@@ -8,17 +8,26 @@
 //   /prova-editor-varianti/?s=negozio       the shop: that pack, and the standard pack during a variant hunt
 //   /prova-editor-varianti/?s=evento        an event page with a variant hunt at 15%
 //   /prova-editor-varianti/?s=evento-admin  the event editor
+//   /prova-editor-varianti/?s=codice        the bonus code editor, with a code of random variants
+//   /prova-editor-varianti/?s=obiettivo     the daily objectives editor
+//   /prova-editor-varianti/?s=impresa       the imprese editor
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { AchievementAdmin } from "@/components/achievement-admin";
+import { BonusCodeAdmin } from "@/components/bonus-code-admin";
 import { EventAdmin } from "@/components/event-admin";
+import { ObjectiveAdmin } from "@/components/objective-admin";
 import { EventDetails } from "@/components/event-details";
 import { ShopView } from "@/components/shop-view";
 import { SpecialPackAdmin } from "@/components/special-pack-admin";
+import type { AdminAchievements } from "@/lib/achievement-admin";
+import type { AdminBonusCodes } from "@/lib/bonus-code-admin";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
 import { DEFAULT_EVENT_POINTS, type AdminEvents } from "@/lib/event-admin";
 import type { GameEvent } from "@/lib/events";
 import type { PackOdds, PackStatus, SpecialPack } from "@/lib/packs";
+import type { AdminObjectives } from "@/lib/objective-admin";
 import type { AdminSpecialPacks } from "@/lib/special-pack-admin";
 import { getSupabase } from "@/lib/supabase/client";
 
@@ -169,7 +178,17 @@ function eventScene(): GameEvent {
     base_variant_chance_percent: 5,
     tiers: [
       { tier: 1, points: 100, coins: 100, packs: 0, cards: [], reached: true, opening_ids: [], seen: true },
-      { tier: 2, points: 300, coins: 0, packs: 2, cards: [], reached: false, opening_ids: [], seen: false },
+      {
+        tier: 2,
+        points: 300,
+        coins: 0,
+        packs: 1,
+        cards: [],
+        random_variants: { count: 2, styles: ["Neon"], rarities: [] },
+        reached: false,
+        opening_ids: [],
+        seen: false,
+      },
     ],
     my_points: 140,
     my_points_today: 30,
@@ -197,6 +216,109 @@ function eventAdmin(data: Loaded): AdminEvents {
   };
 }
 
+/** The cards an editor's picker offers, with their variants. */
+function rewardCards(data: Loaded) {
+  return data.catalog.map((card) => ({
+    code: card.code,
+    name: card.name,
+    rarity: card.rarity.name,
+    rarity_code: card.rarity.code,
+    faction: card.faction,
+    variants: data.variants.filter((v) => v.definition_id === card.id).map((v) => ({ style: v.style, name: v.style_name })),
+  }));
+}
+
+function styleList(data: Loaded) {
+  return [...new Map(data.variants.map((v) => [v.style, v.style_name]))]
+    .map(([style, name]) => ({ style, name }))
+    .sort((a, b) => a.name.localeCompare(b.name, "it"));
+}
+
+function codesAdmin(data: Loaded): AdminBonusCodes {
+  return {
+    codes: [
+      {
+        id: "code-1",
+        code: "CACCIANEON",
+        coins: 50,
+        packs: 0,
+        card_names: [],
+        random_variants: { count: 2, styles: ["Neon"], rarities: [] },
+        max_uses: 100,
+        uses: 12,
+        expires_at: null,
+        is_active: true,
+        note: null,
+      },
+    ],
+    cards: rewardCards(data),
+    rarities: RARITIES,
+  };
+}
+
+function objectivesAdmin(data: Loaded): AdminObjectives {
+  return {
+    objectives: [
+      {
+        code: "obj_1",
+        title: "Vinci 3 partite",
+        difficulty: "medium",
+        metric: "matches_won",
+        params: {},
+        target: 3,
+        coins: 0,
+        packs: 0,
+        cards: 0,
+        card_codes: [],
+        random_variants: { count: 1, styles: ["tarot"], rarities: [] },
+        is_active: true,
+        assigned: 40,
+      },
+    ],
+    per_day: { easy: 2, medium: 2, hard: 1 },
+    reward_coins: { easy: 20, medium: 40, hard: 80 },
+    cards: rewardCards(data),
+    max_cards: 5,
+    variant_styles: styleList(data),
+    rarities: RARITIES,
+  } as AdminObjectives;
+}
+
+function achievementsAdmin(data: Loaded): AdminAchievements {
+  return {
+    players: 13,
+    achievements: [
+      {
+        id: "ach-1",
+        name: "Collezionista di stili",
+        description: "Hai trovato varianti di 5 stili diversi.",
+        hint: "Stili",
+        tier: "silver",
+        metric: "variant_styles",
+        params: {},
+        target: 5,
+        coins: 100,
+        packs: 0,
+        card_codes: [],
+        random_variants: { count: 1, styles: [], rarities: ["omega"] },
+        title: null,
+        position: 1,
+        is_active: true,
+        counts_past: true,
+        counts_from: null,
+        available_until: null,
+        completed: 3,
+      },
+    ],
+    cards: rewardCards(data),
+    traits: [],
+    styles: styleList(data),
+    rarities: RARITIES,
+    chapters: [],
+    seasons: [],
+  } as AdminAchievements;
+}
+
 export default function VariantEditorPreviewPage() {
   return (
     <Suspense>
@@ -212,6 +334,9 @@ function Scene() {
   const [packs, setPacks] = useState<AdminSpecialPacks | null>(null);
   const [events, setEvents] = useState<AdminEvents | null>(null);
   const [now] = useState(() => Date.now());
+  const [codes, setCodes] = useState<AdminBonusCodes | null>(null);
+  const [objectives, setObjectives] = useState<AdminObjectives | null>(null);
+  const [achievements, setAchievements] = useState<AdminAchievements | null>(null);
 
   useEffect(() => {
     load().then(
@@ -219,13 +344,19 @@ function Scene() {
         setData(next);
         setPacks(packAdmin(next));
         setEvents(eventAdmin(next));
+        setCodes(codesAdmin(next));
+        setObjectives(objectivesAdmin(next));
+        setAchievements(achievementsAdmin(next));
       },
       (cause: unknown) => setError(String(cause)),
     );
   }, []);
 
   if (error) return <p className="p-4 text-comic-magenta">{error}</p>;
-  if (!data || !packs || !events) return <p className="p-4">Caricamento…</p>;
+  if (!data || !packs || !events || !codes || !objectives || !achievements) return <p className="p-4">Caricamento…</p>;
+  if (scene === "codice") return <BonusCodeAdmin data={codes} onChange={setCodes} />;
+  if (scene === "obiettivo") return <ObjectiveAdmin data={objectives} onChange={setObjectives} />;
+  if (scene === "impresa") return <AchievementAdmin data={achievements} onChange={setAchievements} />;
   if (scene === "negozio") {
     return (
       <ShopView
