@@ -91,6 +91,9 @@ const CLIENT_ERRORS = new Set([
   "emergency_already_played",
   "emergency_not_started",
   "invalid_emergency_squad",
+  "emergency_week_already_played",
+  "emergency_week_not_started",
+  "invalid_emergency_week_squad",
   "story_mission_not_found",
   "story_mission_locked",
   "invalid_front",
@@ -141,6 +144,8 @@ type Definition = { id: string; faction: string; rarity_rank: number; stats: Rec
 type Loaded = {
   rules: MatchRules;
   emergency: EmergencyRules;
+  /** Emergenza della settimana (SPEC §5.16); null until the database has its keys. */
+  emergencyWeek: EmergencyRules | null;
   boss: BossRules;
   triple: TripleRules;
   quadrant: QuadrantRules;
@@ -287,6 +292,21 @@ async function load(): Promise<Loaded> {
         maxSum: value("emergency.threat_levels.max_sum"),
       },
     },
+    emergencyWeek: values.has("emergency_week.threats_per_run")
+      ? {
+          threatsPerRun: value("emergency_week.threats_per_run"),
+          maxFailures: value("emergency_week.max_failures"),
+          targets: Object.fromEntries([1, 2, 3, 4, 5, 6].map((level) => [level, value(`emergency_week.targets.level${level}`)])),
+          threatLevels: {
+            min: value("match.threat_levels.min"),
+            max: value("match.threat_levels.max"),
+            requireOneAtMost: value("match.threat_levels.require_one_at_most"),
+            requireOneAtLeast: value("match.threat_levels.require_one_at_least"),
+            minSum: value("emergency_week.threat_levels.min_sum"),
+            maxSum: value("emergency_week.threat_levels.max_sum"),
+          },
+        }
+      : null,
     boss: {
       turns: value("boss.turns"),
       fronts: value("boss.fronts"),
@@ -1306,62 +1326,101 @@ async function submitChoice(userId: string, body: Record<string, unknown>) {
 }
 
 // ---------------------------------------------------------------------------
-// Emergenza (daily solo challenge)
+// Emergenza: the daily solo challenge (SPEC §5.10) and the weekly one (SPEC §5.16).
+// Both run on the same engine; each has its own rules and its own database functions.
 // ---------------------------------------------------------------------------
 
-/** The first request of the day draws the threats; the database keeps that draw for everyone. */
-async function ensureEmergencyDay(loaded: Loaded) {
+type EmergencyKind = {
+  rules: (loaded: Loaded) => EmergencyRules;
+  /** Stores the first draw of the day (or of the week) for everyone. */
+  ensure: string;
+  start: string;
+  context: string;
+  state: string;
+  notStarted: string;
+  alreadyPlayed: string;
+  /** Stores a play scored by the engine and answers with the state. */
+  record: string;
+};
+
+const DAILY_EMERGENCY: EmergencyKind = {
+  rules: (loaded) => loaded.emergency,
+  ensure: "emergency_ensure_day",
+  start: "emergency_start",
+  context: "emergency_play_context",
+  state: "emergency_state_payload",
+  notStarted: "emergency_not_started",
+  alreadyPlayed: "emergency_already_played",
+  record: "emergency_record_play_state",
+};
+
+const WEEKLY_EMERGENCY: EmergencyKind = {
+  rules: (loaded) => {
+    if (!loaded.emergencyWeek) throw new Error("missing game_config key: emergency_week.threats_per_run");
+    return loaded.emergencyWeek;
+  },
+  ensure: "emergency_week_ensure",
+  start: "emergency_week_start",
+  context: "emergency_week_play_context",
+  state: "emergency_week_state_payload",
+  notStarted: "emergency_week_not_started",
+  alreadyPlayed: "emergency_week_already_played",
+  record: "emergency_week_record_play",
+};
+
+/** The first request of the day (or of the week) draws the threats; the database keeps that draw for everyone. */
+async function ensureEmergencyThreats(loaded: Loaded, kind: EmergencyKind) {
   const threats = drawEmergencyThreats(
     rng,
     loaded.emergencyCatalog,
-    loaded.emergency,
+    kind.rules(loaded),
     loaded.rareCatalog.filter((t) => t.target !== null && t.target !== undefined),
   );
-  const { error } = await admin.rpc("emergency_ensure_day", { p_threat_ids: threats.map((t) => t.id) });
+  const { error } = await admin.rpc(kind.ensure, { p_threat_ids: threats.map((t) => t.id) });
   if (error) throw new Error(error.message);
 }
 
-async function emergencyState(userId: string) {
-  return check(await admin.rpc("emergency_state_payload", { p_user: userId }));
+async function emergencyState(userId: string, kind: EmergencyKind) {
+  return check(await admin.rpc(kind.state, { p_user: userId }));
 }
 
 type EmergencyContext = {
   run: { id: string; status: string; current_round: number; card_instance_ids: string[]; definition_ids: string[] } | null;
   threat_ids: string[] | null;
-  /** The fixed rules of the day's threats, as drawn (rare threats; the others have none). */
+  /** The fixed rules of the threats drawn (rare threats; the others have none). */
   threat_modifiers: (ThreatModifier | null)[] | null;
   /** `score` and `required`: how far each play was from its target (Riscossa sullo scarto). */
   plays: { card_instance_id: string; passed: boolean; score?: number; required?: number }[];
 };
 
-async function openEmergency(userId: string) {
-  await ensureEmergencyDay(await load());
-  return emergencyState(userId);
+async function openEmergency(userId: string, kind: EmergencyKind) {
+  await ensureEmergencyThreats(await load(), kind);
+  return emergencyState(userId, kind);
 }
 
-async function startEmergency(userId: string, body: Record<string, unknown>) {
+async function startEmergency(userId: string, body: Record<string, unknown>, kind: EmergencyKind) {
   const cards = cardIds(body.card_instance_ids);
-  await ensureEmergencyDay(await load());
-  const { error } = await admin.rpc("emergency_start", { p_user: userId, p_card_instance_ids: cards });
+  await ensureEmergencyThreats(await load(), kind);
+  const { error } = await admin.rpc(kind.start, { p_user: userId, p_card_instance_ids: cards });
   if (error) throw new Error(error.message);
-  return emergencyState(userId);
+  return emergencyState(userId, kind);
 }
 
-async function playEmergency(userId: string, body: Record<string, unknown>) {
+async function playEmergency(userId: string, body: Record<string, unknown>, kind: EmergencyKind) {
   const choice = body.card_instance_id;
   if (typeof choice !== "string" || typeof body.round !== "number") throw new GameError("invalid_request");
 
-  // Today's attempt in one request: the game day comes from the database, never computed here.
-  const [loaded, context] = await Promise.all([load(), admin.rpc("emergency_play_context", { p_user: userId })]);
+  // The attempt in one request: the game day (or week) comes from the database, never computed here.
+  const [loaded, context] = await Promise.all([load(), admin.rpc(kind.context, { p_user: userId })]);
   const { run, threat_ids: threatIds, threat_modifiers: modifiers, plays } = check(context) as EmergencyContext;
-  // A threat of the day as it plays: with its fixed rule and what the rule drew.
-  const dayThreat = (i: number) => {
+  // A threat of the run as it plays: with its fixed rule and what the rule drew.
+  const runThreat = (i: number) => {
     const threat = loaded.threats.get(threatIds![i]);
-    if (!threat) throw new Error("Unknown threat of the day");
+    if (!threat) throw new Error("Unknown threat of the Emergenza");
     return withRuleAbilities({ ...threat, modifier: modifiers?.[i] ?? null });
   };
-  if (!run || !threatIds) throw new GameError("emergency_not_started");
-  if (run.status !== "active") throw new GameError("emergency_already_played");
+  if (!run || !threatIds) throw new GameError(kind.notStarted);
+  if (run.status !== "active") throw new GameError(kind.alreadyPlayed);
   if (run.current_round !== body.round) throw new GameError("round_already_resolved");
 
   const squad = run.definition_ids.map((definitionId, i) => {
@@ -1369,7 +1428,7 @@ async function playEmergency(userId: string, body: Record<string, unknown>) {
     if (!definition) throw new Error(`Unknown card definition ${definitionId}`);
     return toCharacter(definition, run.card_instance_ids[i]);
   });
-  const threat = dayThreat(run.current_round - 1);
+  const threat = runThreat(run.current_round - 1);
 
   const character = squad.find((c) => c.id === choice);
   if (!character || plays.some((p) => p.card_instance_id === choice)) throw new GameError("character_not_available");
@@ -1378,7 +1437,7 @@ async function playEmergency(userId: string, body: Record<string, unknown>) {
   const attempts: EmergencyAttempt[] = plays.map((p, i) => ({
     character: squad.find((c) => c.id === p.card_instance_id)!,
     passed: p.passed,
-    level: dayThreat(i).level,
+    level: runThreat(i).level,
     ...(typeof p.score === "number" && typeof p.required === "number" ? { margin: p.score - p.required } : {}),
   }));
   const outcome = resolveEmergencyPlay({
@@ -1386,13 +1445,13 @@ async function playEmergency(userId: string, body: Record<string, unknown>) {
     threat,
     squad,
     attempts,
-    rules: loaded.emergency,
+    rules: kind.rules(loaded),
     families: loaded.catalog.families,
-    threatLevels: threatIds.map((_, i) => dayThreat(i).level),
+    threatLevels: threatIds.map((_, i) => runThreat(i).level),
   });
 
   return check(
-    await admin.rpc("emergency_record_play_state", {
+    await admin.rpc(kind.record, {
       p_user: userId,
       p_round: run.current_round,
       p_card_instance_id: choice,
@@ -1451,11 +1510,17 @@ Deno.serve(async (req) => {
         if (typeof body.match_id !== "string") throw new GameError("invalid_request");
         return json(await resolvePvpRound(userId, body.match_id));
       case "emergency_open":
-        return json(await openEmergency(userId));
+        return json(await openEmergency(userId, DAILY_EMERGENCY));
       case "emergency_start":
-        return json(await startEmergency(userId, body));
+        return json(await startEmergency(userId, body, DAILY_EMERGENCY));
       case "emergency_play":
-        return json(await playEmergency(userId, body));
+        return json(await playEmergency(userId, body, DAILY_EMERGENCY));
+      case "emergency_week_open":
+        return json(await openEmergency(userId, WEEKLY_EMERGENCY));
+      case "emergency_week_start":
+        return json(await startEmergency(userId, body, WEEKLY_EMERGENCY));
+      case "emergency_week_play":
+        return json(await playEmergency(userId, body, WEEKLY_EMERGENCY));
       default:
         throw new GameError("invalid_request");
     }
