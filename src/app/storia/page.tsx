@@ -7,10 +7,12 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { PrizeCard, ZoomHint } from "@/components/card-zoom";
 import { BackLink } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
+import { MissionStars, StarConditions, StarCount } from "@/components/story-stars";
 import { fetchAbilities, seenAbilities, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
 import { DIFFICULTY_LABELS } from "@/lib/match";
 import { chapterUnlocked, fetchStory, unlockHint, type StoryChapter, type StoryMission } from "@/lib/story";
+import { countStars } from "@/lib/story-stars";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 // /storia/?capitolo=<n> opens that chapter: query string, see CLAUDE.md (static export).
@@ -78,6 +80,9 @@ function StoryPageContent() {
   const chapter = chapters[shown];
   const mission = chapter?.missions.find((m) => m.code === open && m.unlocked) ?? null;
   const firstLocked = chapter?.missions.find((m) => !m.unlocked)?.code;
+  // Stars arrive with the database that has them: until then, none is shown.
+  const hasStars = chapters.some((c) => c.missions.some((m) => m.star_rarities.length > 0));
+  const seasonStars = countStars(chapters.filter((c) => c.season === chapter?.season).flatMap((c) => c.missions));
 
   return (
     <div className="game-shell">
@@ -88,6 +93,7 @@ function StoryPageContent() {
         {chapter && (
           <p className="ml-auto min-w-0 text-right text-xs font-extrabold uppercase leading-4 text-muted">
             Stagione {chapter.season}
+            {hasStars && <StarCount {...seasonStars} className="ml-1.5 text-foreground" />}
             <span className="block truncate text-comic-cyan">{chapter.season_title}</span>
           </p>
         )}
@@ -98,6 +104,7 @@ function StoryPageContent() {
         {chapter && (
           <ChapterBanner
             chapter={chapter}
+            stars={hasStars}
             compact={mission !== null}
             onPrev={!mission && shown > 0 ? () => setShown(shown - 1) : undefined}
             onNext={!mission && shown < chapters.length - 1 ? () => setShown(shown + 1) : undefined}
@@ -105,13 +112,13 @@ function StoryPageContent() {
           />
         )}
         {mission ? (
-          <MissionDetail mission={mission} abilities={abilities} onClose={() => setOpen(null)} />
+          <MissionDetail mission={mission} stars={hasStars} abilities={abilities} onClose={() => setOpen(null)} />
         ) : (
           <>
             <ol className="flex flex-col gap-1">
               {chapter?.missions.map((m) => (
                 <li key={m.code} className={`bg-panel ${m.unlocked ? "" : "opacity-60"}`}>
-                  <MissionRow mission={m} open={false} onToggle={() => setOpen(m.code)} />
+                  <MissionRow mission={m} stars={hasStars} open={false} onToggle={() => setOpen(m.code)} />
                   {/* Once, under the first locked one: the others wait behind it. */}
                   {m.code === firstLocked && (
                     <p className="-mt-1 pb-1.5 pl-15 pr-3 text-xs font-medium leading-4 text-muted">
@@ -144,19 +151,23 @@ function StoryPageContent() {
 /** The chapter on screen. Open on a mission it keeps to its name; with several chapters, arrows page through them. */
 function ChapterBanner({
   chapter,
+  stars,
   compact,
   paged,
   onPrev,
   onNext,
 }: {
   chapter: StoryChapter;
+  /** Show the chapter's stars. */
+  stars: boolean;
   compact: boolean;
   paged: boolean;
   onPrev?: () => void;
   onNext?: () => void;
 }) {
   const done = chapter.missions.filter((m) => m.completed).length;
-  const progress = chapterUnlocked(chapter) ? `${done}/${chapter.missions.length} missioni` : "da sbloccare 🔒";
+  const unlocked = chapterUnlocked(chapter);
+  const progress = unlocked ? `${done}/${chapter.missions.length} missioni` : "da sbloccare 🔒";
   return (
     <div className={`cut-bottom relative shrink-0 overflow-hidden bg-comic-magenta px-4 text-black ${compact ? "pb-5 pt-2" : "pb-6 pt-3"}`}>
       <div aria-hidden className="halftone absolute inset-0 [mask-image:linear-gradient(135deg,transparent_45%,#000_100%)]" />
@@ -172,7 +183,15 @@ function ChapterBanner({
             </div>
           )}
         </div>
-        <h2 className={`font-display uppercase ${compact ? "text-[28px] leading-8" : "text-[34px] leading-10"}`}>{chapter.title}</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className={`min-w-0 font-display uppercase ${compact ? "text-[28px] leading-8" : "text-[34px] leading-10"}`}>
+            {chapter.title}
+          </h2>
+          {/* The chapter's stars, once it is open. */}
+          {stars && unlocked && (
+            <StarCount {...countStars(chapter.missions)} className="shrink-0 -skew-x-8 bg-black px-2 py-0.5 text-sm font-extrabold text-comic-yellow" />
+          )}
+        </div>
         {!compact && <p className="mt-1 text-sm font-semibold">{chapter.intro}</p>}
       </div>
     </div>
@@ -196,7 +215,18 @@ function PageArrow({ label, path, onClick }: { label: string; path: string; onCl
 }
 
 /** A mission on the list: a tap opens it in place of the list. Open, it stays on top as the way back. */
-function MissionRow({ mission, open, onToggle }: { mission: StoryMission; open: boolean; onToggle: () => void }) {
+function MissionRow({
+  mission,
+  stars,
+  open,
+  onToggle,
+}: {
+  mission: StoryMission;
+  /** Its three stars in place of the state: the badge already tells completed from to play. */
+  stars: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const state = mission.completed ? "Completata" : "Da giocare";
   return (
     <button
@@ -224,6 +254,11 @@ function MissionRow({ mission, open, onToggle }: { mission: StoryMission; open: 
         <svg viewBox="0 0 14 14" className="h-5 w-5 shrink-0" stroke="currentColor" strokeWidth={2.6} aria-hidden>
           <path d="M1 1l12 12M13 1 1 13" />
         </svg>
+      ) : stars && mission.unlocked ? (
+        <span className="flex shrink-0 flex-col items-end gap-0.5">
+          <MissionStars earned={mission.stars} />
+          <span className="sr-only">{state}</span>
+        </span>
       ) : (
         <span className={`shrink-0 text-xs font-bold uppercase ${mission.completed ? "text-comic-cyan" : "text-muted"}`}>
           {mission.unlocked ? state : "🔒"}
@@ -236,10 +271,12 @@ function MissionRow({ mission, open, onToggle }: { mission: StoryMission; open: 
 /** An open mission: its story, the Threats, the prize and the way to play it, filling the room under the chapter. */
 function MissionDetail({
   mission,
+  stars,
   abilities,
   onClose,
 }: {
   mission: StoryMission;
+  stars: boolean;
   abilities: AbilityInfo[] | null;
   onClose: () => void;
 }) {
@@ -249,7 +286,9 @@ function MissionDetail({
       <p className={`text-xs font-extrabold uppercase ${mission.completed ? "text-comic-cyan" : "text-comic-yellow"}`}>{state}</p>
       <p className="text-sm font-bold">
         {mission.completed
-          ? "Premio già ottenuto: puoi rigiocarla senza premi."
+          ? stars && mission.stars.length < 3
+            ? "Premio già ottenuto: rigiocandola puoi ancora prendere le stelle."
+            : "Premio già ottenuto: puoi rigiocarla senza premi."
           : `Premio: ${mission.reward_coins} monete${mission.reward_card ? ` e la carta ${mission.reward_card.name}` : ""}.`}
       </p>
       <p className="text-xs font-medium text-faint">
@@ -261,7 +300,7 @@ function MissionDetail({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-panel">
-      <MissionRow mission={mission} open onToggle={onClose} />
+      <MissionRow mission={mission} stars={stars} open onToggle={onClose} />
       <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 pt-1">
         <p className="shrink-0 text-sm font-medium">{mission.intro}</p>
         <div className="flex shrink-0 flex-wrap items-center gap-1.5" aria-label="Livelli delle Minacce">
@@ -272,6 +311,7 @@ function MissionDetail({
             </span>
           ))}
         </div>
+        {stars && <StarConditions rules={mission} earned={mission.stars} coins={mission.star_coins} className="shrink-0" />}
         {mission.reward_card ? (
           <PrizeCard card={mission.reward_card} abilities={abilities} backLabel="Torna alla missione" className="flex-[1_1_0]">
             {prize}

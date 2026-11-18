@@ -16,7 +16,7 @@ import { isQuadrantFormat, QUADRANT_GRID_LABELS, startQuadrantBotMatch } from "@
 import { startTripleBotMatch } from "@/lib/triple";
 import { describeServerError } from "@/lib/errors";
 import { rememberLastPlay } from "@/lib/last-play";
-import { startStoryMission, storyMatchHref } from "@/lib/story";
+import { fetchStory, seenStory, startStoryMission, storyMatchHref, type StoryMission } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import {
   asMatchFormat,
@@ -68,6 +68,11 @@ type Loaded = {
   instanceDefinitions: Map<string, string>;
   formations: Formation[];
 };
+
+/** The mission of a story team: its stars. */
+function findMission(chapters: { missions: StoryMission[] }[] | null | undefined, code: string): StoryMission | null {
+  return chapters?.flatMap((chapter) => chapter.missions).find((mission) => mission.code === code) ?? null;
+}
 
 type Mode =
   | { kind: "bot"; difficulty: BotDifficulty }
@@ -144,8 +149,24 @@ function TeamPageContent() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const storyCode = mode.kind === "story" ? mode.mission : null;
+  // A story mission: its star rules and the stars earned, from the Storia page just left, then fresh.
+  const [mission, setMission] = useState<StoryMission | null>(() => (storyCode ? findMission(seenStory(), storyCode) : null));
   // The page fits the screen: only the card grid scrolls, inside the team picker.
   useLockedScreen(true);
+
+  useEffect(() => {
+    if (!session || !storyCode) return;
+    let cancelled = false;
+    fetchStory()
+      .then((chapters) => {
+        if (!cancelled) setMission(findMission(chapters, storyCode));
+      })
+      .catch((cause: unknown) => console.error("Story failed", cause));
+    return () => {
+      cancelled = true;
+    };
+  }, [session, storyCode]);
 
   useEffect(() => {
     if (!session || joinCode === null) return;
@@ -282,6 +303,7 @@ function TeamPageContent() {
               onStart={start}
               key={format}
               squadSize={squadSizeOf(format)}
+              storyStars={mission && mission.star_rarities.length > 0 ? { rules: mission, earned: mission.stars } : null}
               intro={
                 format === "boss"
                   ? BOSS_INTRO

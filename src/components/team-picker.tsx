@@ -5,6 +5,7 @@ import { useCardDetail } from "@/components/card-detail";
 import { CardGroupHeading, CardListControls, useCardListReference, useCardListView } from "@/components/card-list-controls";
 import { Silhouette } from "@/components/card-view";
 import { InfoTip } from "@/components/info-tip";
+import { STAR_MARK_COLORS, StarIcon } from "@/components/story-stars";
 import { balance } from "@/config/balance";
 import { artSrcSet } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
@@ -20,6 +21,8 @@ import {
   type VariantCopy,
 } from "@/lib/match";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
+import { fitsStarRarities, fitsStarTraits } from "@o-mega/game-engine";
+import { STAR_NAMES, STORY_STARS, starShort, traitCategoryOf, type StarRulesText, type StoryStar } from "@/lib/story-stars";
 import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
 
 const LAST_TEAM_KEY = "o-mega.last-team";
@@ -73,14 +76,29 @@ type TeamPickerProps = {
   squadSize?: number;
   /** The advice on how to choose, behind an "i". */
   intro?: string;
+  /**
+   * A story mission: its star rules and the stars the player has. The picker marks the
+   * cards that fit them and says which stars the squad can still earn.
+   */
+  storyStars?: { rules: StarRulesText; earned: StoryStar[] } | null;
 };
+
+/** The stars that depend on the squad. */
+type CardStar = Exclude<StoryStar, "flawless">;
+const CARD_STARS: CardStar[] = ["rarities", "traits"];
+
+/** "3-0 e Rarità", "3-0, Rarità e Tratti". */
+function listStars(stars: StoryStar[]): string {
+  const names = stars.map((star) => STAR_NAMES[star]);
+  return names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} e ${names.at(-1)}`;
+}
 
 /**
  * Pick different characters among the owned ones (a match team by default); load or save formations.
  * It fills the screen: the squad and the start button stay put while the cards scroll between them.
  */
 export function TeamPicker(props: TeamPickerProps) {
-  const { catalog, owned, conquerable, atRiskCopies, variantCopies, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart, squadSize, intro } = props;
+  const { catalog, owned, conquerable, atRiskCopies, variantCopies, instanceDefinitions, formations, onFormationsChanged, startLabel, starting, onStart, squadSize, intro, storyStars } = props;
   const size = squadSize ?? balance.match.teamSize;
   const lastTeamKey = squadSize ? `${LAST_TEAM_KEY}.${squadSize}` : LAST_TEAM_KEY;
   // Conquest never brings back a variant on its own: a fielded variant is at stake, so the player chooses it each time.
@@ -98,10 +116,29 @@ export function TeamPicker(props: TeamPickerProps) {
   const [view, updateView] = useCardListView(VIEW_KEY, DEFAULT_VIEW);
   const { abilities, traits } = useCardListReference();
   const cards = useMemo(() => catalog.filter((card) => owned.has(card.id)), [catalog, owned]);
-  const groups = useMemo(
-    () => groupCardList(applyCardListView(cards, view, traits), view.sort, traits),
-    [cards, view, traits],
-  );
+
+  // Story: which cards fit the star rules; a tapped star shows only the cards that fit it.
+  const [starFilter, setStarFilter] = useState<CardStar | null>(null);
+  const fitsStar = useMemo(() => {
+    if (!storyStars || storyStars.rules.star_rarities.length === 0) return null;
+    const rules = { rarities: storyStars.rules.star_rarities, traits: storyStars.rules.star_traits };
+    const categoryOf = traits ? traitCategoryOf(traits.catalog) : null;
+    return (star: CardStar, card: CatalogCard): boolean => {
+      const facts = { rarity: card.rarity.code, traits: traits?.byCard.get(card.id) ?? [] };
+      if (star === "rarities") return fitsStarRarities(facts, rules);
+      try {
+        // Until the trait catalog arrives no card is marked.
+        return categoryOf !== null && fitsStarTraits(facts, rules, categoryOf);
+      } catch {
+        return false;
+      }
+    };
+  }, [storyStars, traits]);
+  const groups = useMemo(() => {
+    const shown = applyCardListView(cards, view, traits);
+    const fitting = starFilter && fitsStar ? shown.filter((card) => fitsStar(starFilter, card)) : shown;
+    return groupCardList(fitting, view.sort, traits);
+  }, [cards, view, traits, starFilter, fitsStar]);
   const shownCount = groups.reduce((sum, group) => sum + group.cards.length, 0);
   const rarities = useMemo(
     () => [...new Map(cards.map((card) => [card.rarity.rank, card.rarity])).values()].sort((a, b) => a.rank - b.rank),
@@ -245,6 +282,24 @@ export function TeamPicker(props: TeamPickerProps) {
   // Some character in the squad can be fielded with another drawing.
   const squadHasVariants = selected.some((id) => variantOptions(id).length > 0);
 
+  // Story: the stars the squad can still earn. 3-0 depends on the match; the others on every card.
+  const earnedStars = storyStars?.earned ?? [];
+  const squadFits = (star: CardStar) =>
+    fitsStar !== null &&
+    selected.every((id) => {
+      const card = byId.get(id);
+      return card !== undefined && fitsStar(star, card);
+    });
+  const reachable = STORY_STARS.filter((star) => !earnedStars.includes(star) && (star === "flawless" || squadFits(star)));
+  const starSummary =
+    earnedStars.length === STORY_STARS.length
+      ? "Hai già tutte e tre le stelle di questa missione."
+      : selected.length < size
+        ? "Stellina azzurra sulla carta: va bene per Rarità; rosa: per Tratti."
+        : reachable.length > 0
+          ? `Con questa squadra puoi prendere: ${listStars(reachable)}.`
+          : "Con questa squadra non prendi stelle nuove.";
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* The squad. A slot with choices (Conquest stake, artwork variant) opens them; otherwise a tap removes the card. */}
@@ -309,6 +364,61 @@ export function TeamPicker(props: TeamPickerProps) {
         <p className="mt-1 truncate text-[11px] font-semibold leading-4 text-muted">
           <span className="text-comic-yellow">★</span> Tocca un personaggio con la stella per cambiare disegno.
         </p>
+      )}
+
+      {fitsStar && storyStars && (
+        <section aria-label="Stelle della missione" className="mt-1.5 flex flex-col gap-1">
+          <div className="grid grid-cols-3 gap-1">
+            {STORY_STARS.map((star) => {
+              const had = earnedStars.includes(star);
+              const possible = star === "flawless" || squadFits(star);
+              const pressed = star !== "flawless" && starFilter === star;
+              const look = pressed
+                ? "border-transparent text-black"
+                : had
+                  ? "border-line text-faint"
+                  : possible
+                    ? "text-foreground"
+                    : "border-dashed border-line text-faint";
+              const body = (
+                <>
+                  <StarIcon filled color={STAR_MARK_COLORS[star]} className="h-4 w-4" />
+                  <span className="line-clamp-2 min-w-0">
+                    {had && "✓ "}
+                    {starShort(star, storyStars.rules)}
+                  </span>
+                  <span className="sr-only">
+                    {had ? ": già ottenuta" : possible ? ": la puoi prendere" : ": non con questa squadra"}
+                  </span>
+                </>
+              );
+              const className = `flex min-h-11 min-w-0 items-center gap-1 border-2 px-1.5 text-left text-[11px] font-extrabold leading-[13px] ${look}`;
+              const style = pressed
+                ? { background: STAR_MARK_COLORS[star] }
+                : !had && possible
+                  ? { borderColor: STAR_MARK_COLORS[star] }
+                  : undefined;
+              return star === "flawless" ? (
+                <div key={star} className={className} style={style}>
+                  {body}
+                </div>
+              ) : (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setStarFilter((current) => (current === star ? null : star))}
+                  aria-pressed={pressed}
+                  title="Mostra solo le carte adatte"
+                  className={className}
+                  style={style}
+                >
+                  {body}
+                </button>
+              );
+            })}
+          </div>
+          <p className="truncate text-[11px] font-semibold leading-4 text-muted">{starSummary}</p>
+        </section>
       )}
 
       {conquerable && (
@@ -486,6 +596,17 @@ export function TeamPicker(props: TeamPickerProps) {
                       {position >= 0 && (
                         <span className="absolute right-0.5 top-0.5 flex h-6 w-6 -skew-x-8 items-center justify-center bg-comic-yellow font-display text-sm text-black">
                           {position + 1}
+                        </span>
+                      )}
+                      {fitsStar && (
+                        // Story: a star in its color for each star still to earn that this card fits.
+                        <span className="absolute bottom-0.5 left-0.5 flex gap-px">
+                          {CARD_STARS.filter((star) => !earnedStars.includes(star) && fitsStar(star, card)).map((star) => (
+                            <span key={star}>
+                              <StarIcon filled color={STAR_MARK_COLORS[star]} className="h-4 w-4 drop-shadow-[1px_1px_0_#000]" />
+                              <span className="sr-only">Va bene per la stella {STAR_NAMES[star]}.</span>
+                            </span>
+                          ))}
                         </span>
                       )}
                       {drawings > 1 && (

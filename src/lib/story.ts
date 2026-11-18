@@ -1,6 +1,7 @@
 import type { BotDifficulty } from "@o-mega/game-engine";
 import { forget, keepSeen, lastSeen } from "@/lib/last-seen";
 import { invokeFunction, type MatchCard, type MatchView } from "@/lib/match";
+import type { StarRulesText, StoryStar } from "@/lib/story-stars";
 import { getSupabase } from "@/lib/supabase/client";
 
 export type StoryMission = {
@@ -16,7 +17,11 @@ export type StoryMission = {
   reward_card: MatchCard | null;
   completed: boolean;
   unlocked: boolean;
-};
+  /** Coins each star pays the first time it is earned. */
+  star_coins: number;
+  /** The stars the player has earned, in any order. */
+  stars: StoryStar[];
+} & StarRulesText;
 
 export type StoryChapter = {
   /** Order of the whole story, across seasons: also what links use (/storia/?capitolo=). */
@@ -46,12 +51,29 @@ export type StoryReward = {
   completed_before: boolean;
   coins: number;
   card: (MatchCard & { instance_id: string }) | null;
-};
+  /** Stars this match earned for the first time, and the coins they paid. */
+  stars_now: StoryStar[];
+  star_coins: number;
+  /** Stars the player had already earned with other matches. */
+  stars_had: StoryStar[];
+  /** Stars whose conditions this match met, earned now or before. */
+  stars_met: StoryStar[];
+} & StarRulesText;
+
+/** Until the stars reach the database the fields are missing: no star and no rule. */
+const NO_STARS: StarRulesText = { star_rarities: [], star_rarity_names: [], star_traits: [], star_traits_text: [] };
+
+function withStars(chapters: StoryChapter[]): StoryChapter[] {
+  return chapters.map((chapter) => ({
+    ...chapter,
+    missions: chapter.missions.map((mission) => ({ ...NO_STARS, ...mission, star_coins: mission.star_coins ?? 0, stars: mission.stars ?? [] })),
+  }));
+}
 
 export async function fetchStory(): Promise<StoryChapter[]> {
   const { data, error } = await getSupabase().rpc("get_story");
   if (error) throw error;
-  return keepSeen("story", data as unknown as StoryChapter[]);
+  return keepSeen("story", withStars(data as unknown as StoryChapter[]));
 }
 
 /** The chapters as last seen in this visit, to show at once while the fresh ones load. */
@@ -78,9 +100,17 @@ export async function startStoryMission(mission: string, cardInstanceIds: string
 export async function fetchStoryReward(matchId: string): Promise<StoryReward | null> {
   const { data, error } = await getSupabase().rpc("get_story_reward", { p_match_id: matchId });
   if (error) throw error;
-  const reward = data as unknown as StoryReward | null;
-  if (reward?.completed_now) {
-    // Coins and maybe a card just arrived, and the next mission or chapter opened.
+  const sent = data as unknown as StoryReward | null;
+  const reward = sent && {
+    ...NO_STARS,
+    ...sent,
+    star_coins: sent.star_coins ?? 0,
+    stars_now: sent.stars_now ?? [],
+    stars_had: sent.stars_had ?? [],
+    stars_met: sent.stars_met ?? [],
+  };
+  if (reward && (reward.completed_now || reward.stars_now.length > 0)) {
+    // Coins, stars and maybe a card just arrived, and the next mission or chapter opened.
     forget("packStatus");
     forget("coinHistory");
     forget("story");

@@ -37,7 +37,7 @@ const RANKED: MyRanked = {
 };
 
 function mission(chapter: number, ord: number, completed: boolean, unlocked: boolean) {
-  return { code: `m${chapter}-${ord}`, ord, title: "Missione", intro: "", opponent: "Bot", bot_difficulty: "easy" as const, threat_levels: [], reward_coins: 20, reward_card: null, completed, unlocked };
+  return { code: `m${chapter}-${ord}`, ord, title: "Missione", intro: "", opponent: "Bot", bot_difficulty: "easy" as const, threat_levels: [], reward_coins: 20, reward_card: null, completed, unlocked, star_coins: 10, stars: [], star_rarities: [], star_rarity_names: [], star_traits: [], star_traits_text: [] };
 }
 
 function chapters(allDone: boolean): StoryChapter[] {

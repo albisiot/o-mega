@@ -453,6 +453,21 @@ export const balance = {
     dailyPackCap: 3,
   },
 
+  /** The stars of the story missions (SPEC §5.11). */
+  story: {
+    /**
+     * Coins a star pays the first time it is earned. Every mission keeps its own
+     * (story_missions.star_coins, changed by admins from /gestione-storia): a new mission
+     * gets starCoinsBase, plus starCoinsStep every starCoinsStepChapters chapters of the
+     * whole story (10 in chapters 1-4, 20 in 5-8, 30 in 9-12).
+     */
+    starCoinsBase: 10,
+    starCoinsStep: 10,
+    starCoinsStepChapters: 4,
+    /** A star rule admitting fewer characters warns the admin: few players can field 5 (client only). */
+    starWarnBelow: 15,
+  },
+
   progression: {
     /** XP needed for level L is levelXpBase * L * (L - 1). */
     levelXpBase: 50,
