@@ -55,4 +55,23 @@ describe("balance config", () => {
     expect(threatLevels.minSum).toBeGreaterThanOrEqual(min * threatsPerRun);
     expect(threatLevels.maxSum).toBeLessThanOrEqual(max * threatsPerRun);
   });
+
+  it("makes the weekly Emergenza longer and harder than the daily one, with reachable rewards", () => {
+    const week = balance.emergencyWeek;
+    const day = balance.emergency;
+    const { min, max } = balance.match.threatLevels;
+    expect(week.threatsPerRun).toBeGreaterThan(day.threatsPerRun);
+    expect(week.threatLevels.minSum).toBeGreaterThanOrEqual(min * week.threatsPerRun);
+    expect(week.threatLevels.maxSum).toBeLessThanOrEqual(max * week.threatsPerRun);
+    // Bigger threats on average than the daily ones.
+    expect(week.threatLevels.minSum / week.threatsPerRun).toBeGreaterThan(day.threatLevels.minSum / day.threatsPerRun);
+    for (const level of [1, 2, 3, 4, 5, 6] as const) {
+      expect(week.targets[`level${level}`]).toBeGreaterThan(day.targets[`level${level}`]);
+    }
+    expect(week.rewards.tier1Passed).toBeLessThan(week.rewards.tier2Passed);
+    expect(week.rewards.tier2Passed).toBeLessThan(week.rewards.tier3Passed);
+    expect(week.rewards.tier3Passed).toBeLessThanOrEqual(week.threatsPerRun);
+    expect(week.maxFailures).toBeLessThan(week.threatsPerRun);
+    expect(week.prizes.minPassed).toBeLessThanOrEqual(week.threatsPerRun);
+  });
 });

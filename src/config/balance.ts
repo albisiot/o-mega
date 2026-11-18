@@ -106,6 +106,59 @@ export const balance = {
   },
 
   /**
+   * Emergenza della settimana (SPEC §5.16): the daily one, harder, once a week (Monday to
+   * Sunday, Europe/Rome). Tuned with scripts/simulate-emergency.mts: the thresholds, 2 points
+   * above the daily ones at every level, make it harder; the level sum only gives bigger threats.
+   */
+  emergencyWeek: {
+    /** Threats of a run, and characters of its squad. */
+    threatsPerRun: 10,
+    maxFailures: 3,
+    /** Level limits and required levels are those of a match; only the sum changes. */
+    threatLevels: {
+      minSum: 36,
+      maxSum: 44,
+    },
+    /** Score needed to pass a threat of each level (a rare threat keeps its own). */
+    targets: {
+      level1: 9,
+      level2: 15,
+      level3: 20,
+      level4: 25,
+      level5: 30,
+      level6: 34,
+    },
+    /** Paid once per run, when the threats passed reach each tier. Admins change them. */
+    rewards: {
+      tier1Passed: 4,
+      tier1Coins: 20,
+      tier2Passed: 7,
+      tier2Coins: 30,
+      tier3Passed: 10,
+      tier3Coins: 50,
+    },
+    /** Players shown and prized in the week's leaderboard. */
+    leaderboardSize: 10,
+    /** Places whose lineups can be seen: this week's after one's own attempt, last week's before. */
+    lineupsShown: 3,
+    /**
+     * Prizes of the week's leaderboard, given when the week ends (Sunday midnight, Europe/Rome)
+     * to the first leaderboardSize players with at least minPassed threats passed. Admins change them.
+     */
+    prizes: {
+      minPassed: 1,
+      rank1Coins: 100,
+      rank1Packs: 2,
+      rank2Coins: 50,
+      rank2Packs: 1,
+      rank3Coins: 0,
+      rank3Packs: 1,
+      othersCoins: 50,
+      othersPacks: 0,
+    },
+  },
+
+  /**
    * Classifiche (SPEC §8.6): leaderboard points per match, written by the server when a
    * match ends (game_config `leaderboards.*`). A draw gives half, a loss and an abandoned
    * match nothing.

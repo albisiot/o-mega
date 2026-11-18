@@ -48,6 +48,11 @@ const ADMIN_KEYS = new Set([
   "emergency.rewards.finish_xp",
   "emergency.rewards.tier1_passed", "emergency.rewards.tier2_passed", "emergency.rewards.tier3_passed",
   "emergency.rewards.tier1_coins", "emergency.rewards.tier2_coins", "emergency.rewards.tier3_coins",
+  "emergency_week.rewards.tier1_passed", "emergency_week.rewards.tier2_passed", "emergency_week.rewards.tier3_passed",
+  "emergency_week.rewards.tier1_coins", "emergency_week.rewards.tier2_coins", "emergency_week.rewards.tier3_coins",
+  "emergency_week.prizes.min_passed", "emergency_week.prizes.rank1_coins", "emergency_week.prizes.rank1_packs",
+  "emergency_week.prizes.rank2_coins", "emergency_week.prizes.rank2_packs", "emergency_week.prizes.rank3_coins",
+  "emergency_week.prizes.rank3_packs", "emergency_week.prizes.others_coins", "emergency_week.prizes.others_packs",
 ]);
 const describe = (row) =>
   `${row.key}: database ${JSON.stringify(row.value)}, balance.ts ${flat.has(row.key) ? JSON.stringify(flat.get(row.key)) : "missing"}`;

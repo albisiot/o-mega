@@ -8,6 +8,7 @@ import {
   type EmergencyRules,
 } from "./emergency.ts";
 import { mulberry32 } from "./rng.ts";
+import { isValidLevelSequence } from "./threats.ts";
 import { character, FAMILIES, threat, threatCatalog } from "./test-fixtures.ts";
 import type { Character, Power, Threat } from "./types.ts";
 
@@ -166,5 +167,82 @@ describe("backlog powers in Emergenza", () => {
     // Still there three plays later.
     const later = [...attempts, ...["x", "y", "z"].map((id) => ({ character: character(id), passed: true, level: 1 }))];
     expect(resolve(character("last", { FOR: 2 }), FOR_THREAT, later).score.total).toBe(4);
+  });
+});
+
+// Emergenza della settimana (SPEC §5.16): the same engine with the week's rules.
+const WEEK: EmergencyRules = {
+  threatsPerRun: 10,
+  maxFailures: 3,
+  targets: { 1: 9, 2: 15, 3: 20, 4: 25, 5: 30, 6: 34 },
+  threatLevels: { min: 1, max: 6, requireOneAtMost: 2, requireOneAtLeast: 5, minSum: 36, maxSum: 44 },
+};
+
+describe("Emergenza della settimana", () => {
+  it("draws 10 distinct threats, bigger on average than the daily ones", () => {
+    const rng = mulberry32(11);
+    let total = 0;
+    for (let i = 0; i < 50; i++) {
+      const threats = drawEmergencyThreats(rng, threatCatalog(), WEEK);
+      const levels = threats.map((t) => t.level);
+      const sum = levels.reduce((a, b) => a + b, 0);
+      expect(threats).toHaveLength(10);
+      expect(new Set(threats.map((t) => t.id)).size).toBe(10);
+      expect(sum).toBeGreaterThanOrEqual(36);
+      expect(sum).toBeLessThanOrEqual(44);
+      expect(levels.some((level) => level <= 2)).toBe(true);
+      expect(levels.some((level) => level >= 5)).toBe(true);
+      total += sum;
+    }
+    expect(total / 50 / 10).toBeGreaterThan((24 + 32) / 2 / 8);
+  });
+
+  it("never needs more than 8 threats of one level: the 8 an admin must keep active are enough", () => {
+    // Every way to split 10 threats among the 6 levels that the week's rules accept.
+    let most = 0;
+    const split = (left: number, level: number, counts: number[]) => {
+      if (level === 6) {
+        const all = [...counts, left];
+        const levels = all.flatMap((count, i) => Array.from({ length: count }, () => i + 1));
+        if (isValidLevelSequence(levels, WEEK.threatLevels)) most = Math.max(most, ...all);
+        return;
+      }
+      for (let count = 0; count <= left; count++) split(left - count, level + 1, [...counts, count]);
+    };
+    split(10, 1, []);
+    expect(most).toBe(8);
+  });
+
+  it("asks the week's targets, 2 above the daily ones; a rare threat keeps its own", () => {
+    const hero = character("hero", { FOR: 8 });
+    expect(requiredScore(hero, FOR_THREAT, WEEK)).toBe(9);
+    expect(requiredScore(hero, FOR_THREAT, RULES)).toBe(7);
+    expect(resolveEmergencyPlay({ character: hero, threat: FOR_THREAT, squad: [hero], attempts: [], rules: WEEK, families: FAMILIES }).passed)
+      .toBe(false);
+    const rare: Threat = { ...FOR_THREAT, rarity: "rare", target: 8 };
+    expect(requiredScore(hero, rare, WEEK)).toBe(8);
+    // Under Rovescio the target is the most a play may score.
+    const reverse: Threat = { ...FOR_THREAT, modifier: { code: "reverse" }, rarity: "epic", target: 9 };
+    expect(resolveEmergencyPlay({ character: hero, threat: reverse, squad: [hero], attempts: [], rules: WEEK, families: FAMILIES }).passed)
+      .toBe(true);
+  });
+
+  it("ends at the third failure or after the tenth threat", () => {
+    const other = character("other");
+    const attempts = (passed: number, failed: number): EmergencyAttempt[] => [
+      ...Array.from({ length: passed }, () => ({ character: other, passed: true, level: 1 })),
+      ...Array.from({ length: failed }, () => ({ character: other, passed: false, level: 1 })),
+    ];
+    expect(isEmergencyFinished(attempts(8, 0), WEEK)).toBe(false);
+    expect(isEmergencyFinished(attempts(7, 2), WEEK)).toBe(false);
+    expect(isEmergencyFinished(attempts(10, 0), WEEK)).toBe(true);
+    expect(isEmergencyFinished(attempts(4, 3), WEEK)).toBe(true);
+  });
+
+  it("Legame counts the 10 of the squad", () => {
+    const bond = character("bond", { FOR: 1 }, { code: "bond", params: { bonus: 1 } });
+    const squad = [bond, ...Array.from({ length: 9 }, (_, i) => character(`m${i}`))];
+    const outcome = resolveEmergencyPlay({ character: bond, threat: FOR_THREAT, squad, attempts: [], rules: WEEK, families: FAMILIES });
+    expect(outcome.score.bonus).toBe(9);
   });
 });
