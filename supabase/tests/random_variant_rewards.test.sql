@@ -87,11 +87,13 @@ declare
     where v.style = current_setting('test.style') and v.is_active and d.is_active and d.unlock_level is null
     order by v.id limit 1);
   v_given uuid;
+  v_ids uuid[];
 begin
-  select i.variant_id into v_given
+  -- Read in a second statement: the first one cannot see the copies it creates.
+  select array_agg(g.instance_id) into v_ids
   from public.grant_random_variants('00000000-0000-4000-8000-0000000004a2',
-         jsonb_build_object('count', 1, 'styles', jsonb_build_array(current_setting('test.style'))), 'event') g
-  join public.card_instances i on i.id = g.instance_id;
+         jsonb_build_object('count', 1, 'styles', jsonb_build_array(current_setting('test.style'))), 'event') g;
+  select i.variant_id into v_given from public.card_instances i where i.id = v_ids[1];
   assert v_given = v_missing, format('gave %s instead of the missing %s', v_given, v_missing);
   assert (select count(*) from public.card_transfers t
           join public.card_instances i on i.id = t.instance_id
@@ -211,6 +213,7 @@ declare
   v_achievement public.achievements;
 begin
   select * into v_achievement from public.achievements where name = 'Caccia premiata';
+  perform set_config('test.achievement', v_achievement.id::text, false);
   assert public.complete_achievement('00000000-0000-4000-8000-0000000004a2', v_achievement, true), 'impresa completed';
 end $$;
 
@@ -221,7 +224,7 @@ declare
   v_today jsonb := public.get_daily_objectives();
   v_claim jsonb;
   v_board jsonb;
-  v_id uuid := (select a.id from public.achievements a where a.name = 'Caccia premiata');
+  v_id uuid := current_setting('test.achievement')::uuid;
 begin
   assert exists (
     select 1 from jsonb_array_elements(v_today -> 'objectives') o
