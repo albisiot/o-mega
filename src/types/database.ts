@@ -84,6 +84,7 @@ export type Database = {
           packs: number
           params: Json
           position: number
+          random_variants: Json | null
           target: number
           tier: string
           title: string | null
@@ -105,6 +106,7 @@ export type Database = {
           packs?: number
           params?: Json
           position: number
+          random_variants?: Json | null
           target: number
           tier: string
           title?: string | null
@@ -126,6 +128,7 @@ export type Database = {
           packs?: number
           params?: Json
           position?: number
+          random_variants?: Json | null
           target?: number
           tier?: string
           title?: string | null
@@ -234,6 +237,7 @@ export type Database = {
           max_uses: number | null
           note: string | null
           packs: number
+          random_variants: Json | null
         }
         Insert: {
           card_definition_ids?: string[]
@@ -247,6 +251,7 @@ export type Database = {
           max_uses?: number | null
           note?: string | null
           packs?: number
+          random_variants?: Json | null
         }
         Update: {
           card_definition_ids?: string[]
@@ -260,6 +265,7 @@ export type Database = {
           max_uses?: number | null
           note?: string | null
           packs?: number
+          random_variants?: Json | null
         }
         Relationships: []
       }
@@ -791,6 +797,7 @@ export type Database = {
           metric: string
           packs: number
           params: Json
+          random_variants: Json | null
           target: number
           title: string
         }
@@ -805,6 +812,7 @@ export type Database = {
           metric: string
           packs?: number
           params?: Json
+          random_variants?: Json | null
           target: number
           title: string
         }
@@ -819,6 +827,7 @@ export type Database = {
           metric?: string
           packs?: number
           params?: Json
+          random_variants?: Json | null
           target?: number
           title?: string
         }
@@ -841,6 +850,7 @@ export type Database = {
           packs: number
           params: Json
           progress: number
+          random_variants: Json | null
           replaced_at: string | null
           slot: number
           target: number
@@ -863,6 +873,7 @@ export type Database = {
           packs: number
           params: Json
           progress?: number
+          random_variants?: Json | null
           replaced_at?: string | null
           slot: number
           target: number
@@ -885,6 +896,7 @@ export type Database = {
           packs?: number
           params?: Json
           progress?: number
+          random_variants?: Json | null
           replaced_at?: string | null
           slot?: number
           target?: number
@@ -1533,6 +1545,7 @@ export type Database = {
           event_id: string
           packs: number
           points: number
+          random_variants: Json | null
           tier: number
         }
         Insert: {
@@ -1542,6 +1555,7 @@ export type Database = {
           event_id: string
           packs?: number
           points: number
+          random_variants?: Json | null
           tier: number
         }
         Update: {
@@ -1551,6 +1565,7 @@ export type Database = {
           event_id?: string
           packs?: number
           points?: number
+          random_variants?: Json | null
           tier?: number
         }
         Relationships: [
@@ -2361,6 +2376,7 @@ export type Database = {
           name: string
           opening_ids: string[]
           packs: number
+          random_variants: Json | null
           seen_at: string | null
           tier: string
           title: string | null
@@ -2378,6 +2394,7 @@ export type Database = {
           name: string
           opening_ids?: string[]
           packs: number
+          random_variants?: Json | null
           seen_at?: string | null
           tier: string
           title?: string | null
@@ -2395,6 +2412,7 @@ export type Database = {
           name?: string
           opening_ids?: string[]
           packs?: number
+          random_variants?: Json | null
           seen_at?: string | null
           tier?: string
           title?: string | null
@@ -3702,6 +3720,7 @@ export type Database = {
           packs: number
           params: Json
           position: number
+          random_variants: Json | null
           target: number
           tier: string
           title: string | null
@@ -4439,6 +4458,13 @@ export type Database = {
         Args: { p_match_id: string; p_user: string }
         Returns: undefined
       }
+      grant_random_variants: {
+        Args: { p_spec: Json; p_user: string; p_via: string }
+        Returns: {
+          instance_id: string
+          is_new: boolean
+        }[]
+      }
       grant_starter_set: { Args: { p_user: string }; Returns: number }
       has_active_match: { Args: { p_user: string }; Returns: boolean }
       insert_boss_match: {
@@ -4970,6 +4996,8 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      random_variants_payload: { Args: { p_spec: Json }; Returns: Json }
+      random_variants_spec: { Args: { p_spec: Json }; Returns: Json }
       ranked_board_entry: {
         Args: {
           p_fama: number
