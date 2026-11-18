@@ -129,7 +129,7 @@ begin
   v_payload := public.admin_save_challenge('Minaccia a tema', '', '#ff8a00', 'boss', '{easy}', true, '{}',
     v_now - interval '10 minutes', v_now + interval '1 day',
     p_tiers => '[{"wins": 1, "coins": 30}, {"wins": 2, "packs": 1}]');
-  v_boss := (select c from jsonb_array_elements(v_payload -> 'challenges') as c where c ->> 'format' = 'boss');
+  v_boss := (select c from jsonb_array_elements(v_payload -> 'challenges') as c where c ->> 'format' = 'boss' and (c ->> 'is_active')::boolean);
   assert jsonb_array_length(v_boss -> 'tiers') = 2 and (v_boss -> 'tiers' -> 1 ->> 'wins')::integer = 2, v_boss::text;
   perform set_config('stage2.boss', v_boss ->> 'id', true);
 
@@ -137,15 +137,15 @@ begin
   v_payload := public.admin_save_challenge('Quadrante a tema', '', '#16c8ff', 'quadrant', '{easy}', true, '{}',
     v_now - interval '10 minutes', v_now + interval '1 day', p_quadrant_seal_target => 12);
   perform set_config('stage2.quadrant', (select c ->> 'id' from jsonb_array_elements(v_payload -> 'challenges') as c
-                                         where c ->> 'format' = 'quadrant'), true);
+                                         where c ->> 'format' = 'quadrant' and (c ->> 'is_active')::boolean), true);
   v_payload := public.admin_save_challenge('Triplo online', '', '#7dffb0', 'triple', '{}', true, '{}',
     v_now - interval '10 minutes', v_now + interval '1 day', p_online => true);
   perform set_config('stage2.triple', (select c ->> 'id' from jsonb_array_elements(v_payload -> 'challenges') as c
-                                       where c ->> 'format' = 'triple'), true);
+                                       where c ->> 'format' = 'triple' and (c ->> 'is_active')::boolean), true);
   v_payload := public.admin_save_challenge('Classica per esperti', '', '#c9a0ff', 'classic', '{easy}', true, '{}',
     v_now - interval '10 minutes', v_now + interval '1 day', p_min_level => 50);
   perform set_config('stage2.classic', (select c ->> 'id' from jsonb_array_elements(v_payload -> 'challenges') as c
-                                        where c ->> 'format' = 'classic'), true);
+                                        where c ->> 'format' = 'classic' and (c ->> 'is_active')::boolean), true);
   assert jsonb_array_length(v_payload -> 'cards') > 0 and jsonb_array_length(v_payload -> 'variant_styles') > 0,
     'the cards and styles the form picks from';
 end $$;
@@ -317,7 +317,7 @@ begin
   v_payload := public.admin_save_challenge('Senza starter', '', '#ffd60a', 'quadrant_shifting', '{}', true, '{"no_starters": true}',
     v_now - interval '10 minutes', v_now + interval '1 day', p_online => true);
   perform set_config('stage2.shifting', (select c ->> 'id' from jsonb_array_elements(v_payload -> 'challenges') as c
-                                         where c ->> 'format' = 'quadrant_shifting'), true);
+                                         where c ->> 'format' = 'quadrant_shifting' and (c ->> 'is_active')::boolean), true);
 end $$;
 reset role;
 

@@ -172,10 +172,10 @@ begin
   v_payload := public.admin_save_challenge('Emergenza a tema', '', '#ff8a00', 'emergency', '{}', true, '{}',
     v_now - interval '1 hour', v_now + interval '1 day', p_emergency_threats => 8, p_tiers => '[{"wins": 1, "coins": 10}]');
   perform set_config('stage3.emergency', (select c ->> 'id' from jsonb_array_elements(v_payload -> 'challenges') as c
-                                          where c ->> 'format' = 'emergency'), true);
+                                          where c ->> 'format' = 'emergency' and (c ->> 'is_active')::boolean), true);
   assert (select (c ->> 'team_size')::integer from jsonb_array_elements(v_payload -> 'challenges') as c
-          where c ->> 'format' = 'emergency') = 8, 'an Emergenza of 8: a squad of 8';
-  assert (select c ->> 'daily_limit' from jsonb_array_elements(v_payload -> 'challenges') as c where c ->> 'format' = 'emergency') is null,
+          where c ->> 'format' = 'emergency' and (c ->> 'is_active')::boolean) = 8, 'an Emergenza of 8: a squad of 8';
+  assert (select c ->> 'daily_limit' from jsonb_array_elements(v_payload -> 'challenges') as c where c ->> 'format' = 'emergency' and (c ->> 'is_active')::boolean) is null,
     'no matches a day in an Emergenza';
   perform set_config('stage3.codes', array_to_string(v_codes, ','), true);
 end $$;

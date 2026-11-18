@@ -197,7 +197,7 @@ begin
   v_payload := public.admin_save_challenge('Triplo libero', '', '#16c8ff', 'triple', '{easy}', false, '{}',
     v_now - interval '10 minutes', v_now + interval '1 day');
   perform set_config('challenge_test.triple', (
-    select c ->> 'id' from jsonb_array_elements(v_payload -> 'challenges') as c where c ->> 'format' = 'triple'
+    select c ->> 'id' from jsonb_array_elements(v_payload -> 'challenges') as c where c ->> 'format' = 'triple' and (c ->> 'is_active')::boolean
   ), true);
 end $$;
 
