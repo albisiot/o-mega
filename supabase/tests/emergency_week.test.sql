@@ -292,7 +292,7 @@ begin
   assert jsonb_typeof(v_board -> 'me') = 'null', 'unfinished run ranked';
   assert v_board -> 'my_run' ->> 'status' = 'active' and (v_board -> 'my_run' ->> 'current_round')::integer = 2, 'run in progress';
   assert not (v_lineups ->> 'live')::boolean, 'live lineups before finishing';
-  assert (v_lineups ->> 'week')::date = public.game_week(public.game_day()) - 7, 'last week';
+  assert (v_lineups ->> 'week')::date = (v_board ->> 'week')::date - 7, 'last week';
 end $$;
 
 reset role;
