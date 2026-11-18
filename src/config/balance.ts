@@ -459,6 +459,25 @@ export const balance = {
   },
 
   /**
+   * Sfide a tema (SPEC §8.8): an existing mode, for a while, played only with some characters.
+   * Admins create them from /gestione-sfide; the server checks every squad when the match starts.
+   */
+  challenges: {
+    /** Event points of a challenge match linked to an event, proposed by the editor. */
+    defaultEventPoints: { win: 20, draw: 10, loss: 5 },
+    /** Highest event points a challenge match can give, per outcome. */
+    maxEventPoints: 1000,
+    /** Matches a day a challenge may allow; null in a challenge means no limit. */
+    maxDailyLimit: 20,
+    /** Longest a challenge can last. */
+    maxDays: 90,
+    titleMaxLength: 40,
+    descriptionMaxLength: 140,
+    /** A rule admitting fewer characters warns the admin: few players can field a squad (client only). */
+    warnBelow: 15,
+  },
+
+  /**
    * Daily objectives (SPEC §8.3): drawn by the server at the first use of the game day.
    * The catalog (titles, targets, rewards of each objective) is the table
    * daily_objective_definitions; an objective without its own coins pays rewardCoins.
