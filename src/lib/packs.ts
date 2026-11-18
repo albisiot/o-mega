@@ -41,7 +41,12 @@ export type PackOdds = {
   standard_pack_price: number;
   guaranteed_min_rarity_rank: number;
   guaranteed_rarity_name: string;
+  /** The variant chance now: during a "Caccia alle varianti" event, the event's. */
   variant_chance_percent: number;
+  /** The usual variant chance, outside such events. */
+  base_variant_chance_percent?: number;
+  /** The title of the event raising the chance now, or null. */
+  variant_event?: string | null;
   characters_with_variants: number;
   /** Per-card probability of each rarity, as used by the server draw. */
   odds: { code: string; name: string; rank: number; color: string; probability: number }[];
@@ -62,6 +67,12 @@ export type SpecialPack = {
   guaranteed_min_rarity_rank: number | null;
   guaranteed_rarity_name: string | null;
   variant_chance_percent: number;
+  /** Every card comes as a variant. */
+  variants_only?: boolean;
+  /** Among a character's variants, those the player lacks come first. */
+  prefer_new_variants?: boolean;
+  /** The styles the pack's variants can have ("Neon"…); empty: any. */
+  variant_style_names?: string[];
   characters_with_variants: number;
   /** Per-card probability of each rarity in this pack. */
   odds: { code: string; name: string; rank: number; color: string; probability: number }[];

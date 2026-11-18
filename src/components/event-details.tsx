@@ -109,6 +109,13 @@ export function EventDetails({
             di più, anche prima dell&apos;ultima carta.
           </p>
         ) : null}
+        {event.variant_chance_percent ? (
+          <p className="mt-1 border-l-4 border-comic-yellow bg-panel px-2.5 py-1 text-[13px] font-bold leading-4">
+            Caccia alle varianti: nei pacchetti (del giorno, del Negozio, dei premi) una carta con varianti esce con un disegno
+            variante al {event.variant_chance_percent}%
+            {event.base_variant_chance_percent !== undefined && ` invece del ${event.base_variant_chance_percent}%`}.
+          </p>
+        ) : null}
       </section>
 
       {toOpen && (

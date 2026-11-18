@@ -52,6 +52,10 @@ export type GameEvent = {
   daily_cap: number | null;
   /** Quadrante: the first side with this many seals on the grid wins; null (or missing) without a target. */
   quadrant_seal_target?: number | null;
+  /** "Caccia alle varianti": the variant chance of the standard packs during the event; null (or missing): unchanged. */
+  variant_chance_percent?: number | null;
+  /** The usual variant chance, outside such events. */
+  base_variant_chance_percent?: number;
   /** Only teams of these characters earn points, one part per category; empty (or missing): everyone. */
   admitted?: { category: string; traits: string[] }[];
   /** How many characters the rule admits; null without a rule. */

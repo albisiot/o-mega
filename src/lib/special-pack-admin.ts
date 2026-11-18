@@ -14,9 +14,14 @@ export type AdminPackCard = {
   rarity_code: string;
   art_url: string | null;
   has_variants: boolean;
+  /** The styles of the card's active variants. */
+  variant_styles: string[];
   /** Trait codes, to filter the list. */
   traits?: string[];
 };
+
+/** A variant style of the catalog, with how many characters have it. */
+export type AdminVariantStyle = { style: string; name: string; characters: number };
 
 export type AdminSpecialPack = {
   id: string;
@@ -28,6 +33,12 @@ export type AdminSpecialPack = {
   cards_per_pack: number;
   guaranteed_min_rarity_rank: number | null;
   variant_chance_percent: number;
+  /** Every card comes as a variant, and only characters with one of the pack's variants can be drawn. */
+  variants_only: boolean;
+  /** The styles a variant of this pack can have; empty: any. */
+  variant_styles: string[];
+  /** Among a character's variants, those the player lacks come first. */
+  prefer_new_variants: boolean;
   odds_mode: OddsMode;
   starts_at: string | null;
   ends_at: string | null;
@@ -45,6 +56,7 @@ export type AdminSpecialPacks = {
   max_cards_per_pack: number;
   trait_catalog?: TraitCategory[];
   rarities: AdminRarity[];
+  variant_styles: AdminVariantStyle[];
   /** Every card a special pack can hold (never level cards), least rare first. */
   cards: AdminPackCard[];
   packs: AdminSpecialPack[];
@@ -60,6 +72,9 @@ export type SpecialPackDraft = {
   price: string;
   cardsPerPack: string;
   variantChance: string;
+  variantsOnly: boolean;
+  variantStyles: string[];
+  preferNew: boolean;
   /** Null: no guaranteed card. */
   guarantee: number | null;
   mode: OddsMode;
@@ -88,7 +103,10 @@ export async function saveSpecialPack(draft: SpecialPackDraft, data: AdminSpecia
     p_color: draft.color,
     p_price: toInteger(draft.price) ?? 0,
     p_cards_per_pack: toInteger(draft.cardsPerPack) ?? 0,
-    p_variant_chance_percent: toInteger(draft.variantChance) ?? -1,
+    p_variant_chance_percent: draft.variantsOnly ? 100 : (toInteger(draft.variantChance) ?? -1),
+    p_variants_only: draft.variantsOnly,
+    p_variant_styles: draft.variantStyles,
+    p_prefer_new_variants: draft.preferNew,
     p_odds_mode: draft.mode,
     p_cards: chosen.map((card) => ({
       code: card.code,
@@ -166,6 +184,11 @@ export function chosenCards(draft: Pick<SpecialPackDraft, "cardCodes">, cards: A
   return cards.filter((card) => chosen.has(card.code));
 }
 
+/** Whether the pack can give this card as a variant: one of the chosen styles, or any style when none is chosen. */
+export function hasPackVariant(card: Pick<AdminPackCard, "variant_styles">, styles: readonly string[]): boolean {
+  return card.variant_styles.some((style) => styles.length === 0 || styles.includes(style));
+}
+
 /** The rarities of the chosen cards, by rank: in "rarity" mode each needs its percentage. */
 export function draftRarities(
   draft: Pick<SpecialPackDraft, "cardCodes">,
@@ -230,12 +253,20 @@ export function draftProblem(draft: SpecialPackDraft, data: AdminSpecialPacks, n
     return `Un pacchetto ha da 1 a ${data.max_cards_per_pack} carte.`;
   }
   const variant = toInteger(draft.variantChance);
-  if (variant === null || variant > 100) return "La probabilità delle varianti va da 0 a 100%.";
+  if (!draft.variantsOnly && (variant === null || variant > 100)) return "La probabilità delle varianti va da 0 a 100%.";
   if (draft.startsAt && draft.endsAt && draft.endsAt <= draft.startsAt) return "La fine deve venire dopo l'inizio.";
   if (draft.endsAt && draft.endsAt <= toRomeInput(now)) return "La fine non può essere già passata.";
 
   const chosen = chosenCards(draft, data.cards);
   if (chosen.length === 0) return "Scegli almeno una carta.";
+  if (draft.variantsOnly) {
+    const without = chosen.filter((card) => !hasPackVariant(card, draft.variantStyles)).length;
+    if (without > 0) {
+      const which = draft.variantStyles.length > 0 ? "una variante degli stili scelti" : "varianti";
+      const cards = without === 1 ? "1 carta scelta non ha" : `${without} carte scelte non hanno`;
+      return `${cards} ${which}: in un pacchetto di sole varianti non può uscire. Toglile o cambia gli stili.`;
+    }
+  }
 
   const { total, allValid } = oddsTotal(draft, data);
   if (!allValid) {
@@ -265,6 +296,9 @@ export function emptyDraft(): SpecialPackDraft {
     price: String(balance.packs.standardPackPrice),
     cardsPerPack: String(balance.packs.cardsPerPack),
     variantChance: String(balance.packs.variantChancePercent),
+    variantsOnly: false,
+    variantStyles: [],
+    preferNew: false,
     guarantee: balance.packs.guaranteedMinRarityRank,
     mode: "rarity",
     cardCodes: [],
@@ -286,6 +320,9 @@ export function draftFromPack(pack: AdminSpecialPack, copy = false): SpecialPack
     price: String(pack.price),
     cardsPerPack: String(pack.cards_per_pack),
     variantChance: String(pack.variant_chance_percent),
+    variantsOnly: pack.variants_only,
+    variantStyles: pack.variant_styles,
+    preferNew: pack.prefer_new_variants,
     guarantee: pack.guaranteed_min_rarity_rank,
     mode: pack.odds_mode,
     cardCodes: pack.cards.map((card) => card.code),

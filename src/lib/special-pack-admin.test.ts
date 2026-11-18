@@ -4,6 +4,7 @@ import {
   draftProblem,
   emptyDraft,
   formatHundredths,
+  hasPackVariant,
   oddsTotal,
   parsePercent,
   realOdds,
@@ -24,10 +25,14 @@ const data: AdminSpecialPacks = {
     { code: "alfa", name: "Alfa", rank: 4, color: "#f0f" },
   ],
   cards: [
-    { code: "P001", name: "Foundling", rarity_code: "delta", art_url: null, has_variants: false },
-    { code: "P002", name: "Écho Nero", rarity_code: "delta", art_url: null, has_variants: true },
-    { code: "P030", name: "Vetrix", rarity_code: "beta", art_url: null, has_variants: true },
-    { code: "P051", name: "Mongibello", rarity_code: "alfa", art_url: null, has_variants: false },
+    { code: "P001", name: "Foundling", rarity_code: "delta", art_url: null, has_variants: false, variant_styles: [] },
+    { code: "P002", name: "Écho Nero", rarity_code: "delta", art_url: null, has_variants: true, variant_styles: ["neon"] },
+    { code: "P030", name: "Vetrix", rarity_code: "beta", art_url: null, has_variants: true, variant_styles: ["ink", "neon"] },
+    { code: "P051", name: "Mongibello", rarity_code: "alfa", art_url: null, has_variants: false, variant_styles: [] },
+  ],
+  variant_styles: [
+    { style: "ink", name: "Inchiostro", characters: 1 },
+    { style: "neon", name: "Neon", characters: 2 },
   ],
   packs: [],
 };
@@ -128,6 +133,21 @@ describe("draftProblem", () => {
     expect(draftProblem(draft({ cardsPerPack: "1", guarantee: null }), data, NOW)).toBeNull();
   });
 
+  it("lets a pack of only variants hold only cards with one of its variants", () => {
+    const only = { variantsOnly: true, variantChance: "" };
+    expect(draftProblem(draft(only), data, NOW)).toBe(
+      "1 carta scelta non ha varianti: in un pacchetto di sole varianti non può uscire. Toglile o cambia gli stili.",
+    );
+    expect(draftProblem(draft({ ...only, cardCodes: ["P002", "P030"], rarityPercents: { delta: "60", beta: "40" } }), data, NOW)).toBeNull();
+    expect(
+      draftProblem(
+        draft({ ...only, variantStyles: ["ink"], cardCodes: ["P002", "P030"], rarityPercents: { delta: "60", beta: "40" } }),
+        data,
+        NOW,
+      ),
+    ).toMatch(/^1 carta scelta non ha una variante degli stili scelti/);
+  });
+
   it("checks the dates in Rome time", () => {
     expect(draftProblem(draft({ startsAt: "2026-12-02T10:00", endsAt: "2026-12-01T10:00" }), data, NOW)).toMatch(
       /dopo l'inizio/,
@@ -148,6 +168,9 @@ const saved: AdminSpecialPack = {
   cards_per_pack: 3,
   guaranteed_min_rarity_rank: 3,
   variant_chance_percent: 10,
+  variants_only: false,
+  variant_styles: [],
+  prefer_new_variants: false,
   odds_mode: "card",
   starts_at: "2026-11-14T17:00:00Z",
   ends_at: null,
@@ -186,5 +209,14 @@ describe("specialPackState", () => {
     expect(specialPackState({ ...saved, starts_at: null }, NOW)).toBe("Senza carte");
     expect(specialPackState({ ...saved, ends_at: "2026-11-01T00:00:00Z" }, NOW)).toBe("Concluso");
     expect(specialPackState({ ...saved, is_active: false }, NOW)).toBe("Disattivato");
+  });
+});
+
+describe("hasPackVariant", () => {
+  it("takes any variant when no style is chosen, otherwise one of the chosen styles", () => {
+    expect(hasPackVariant({ variant_styles: [] }, [])).toBe(false);
+    expect(hasPackVariant({ variant_styles: ["neon"] }, [])).toBe(true);
+    expect(hasPackVariant({ variant_styles: ["neon"] }, ["ink", "neon"])).toBe(true);
+    expect(hasPackVariant({ variant_styles: ["neon"] }, ["ink"])).toBe(false);
   });
 });

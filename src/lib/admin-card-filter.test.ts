@@ -3,6 +3,7 @@ import {
   activeAdminFilterCount,
   addAllCards,
   countBy,
+  countByStyle,
   describeAdminCardFilter,
   EMPTY_ADMIN_CARD_FILTER,
   filterAdminCards,
@@ -77,6 +78,16 @@ describe("describeAdminCardFilter", () => {
     ).toBe("Delta o Omega · Eroi o Cattivi · Mito");
   });
 
+  it("ends with the variant styles, by name", () => {
+    const styles = [
+      { style: "neon", name: "Neon" },
+      { style: "ink", name: "Inchiostro" },
+    ];
+    expect(describeAdminCardFilter(filter({ factions: ["heroes"], styles: ["neon", "ink"] }), rarities, catalog, styles)).toBe(
+      "Eroi · variante Neon o Inchiostro",
+    );
+  });
+
   it("is empty with nothing chosen", () => {
     expect(describeAdminCardFilter(filter({ query: "x" }), rarities, catalog)).toBe("");
   });
@@ -134,5 +145,29 @@ describe("countBy", () => {
   it("counts cards per rarity and per faction", () => {
     expect(countBy(cards, "rarity_code")).toEqual(new Map([["delta", 2], ["gamma", 1], ["omega", 1]]));
     expect(countBy(cards, "faction").get("villains")).toBe(2);
+  });
+});
+
+describe("variant styles", () => {
+  const styled = [
+    { code: "P001", name: "Aurora", variant_styles: ["neon", "ink"] },
+    { code: "P002", name: "Brama", variant_styles: ["ink"] },
+    { code: "P003", name: "Cenere", variant_styles: [] },
+    { code: "P004", name: "Dune" },
+  ];
+
+  it("keeps the cards with a variant of any chosen style", () => {
+    expect(codes(filterAdminCards(styled, filter({ styles: ["neon"] }), catalog))).toEqual(["P001"]);
+    expect(codes(filterAdminCards(styled, filter({ styles: ["neon", "ink"] }), catalog))).toEqual(["P001", "P002"]);
+    expect(activeAdminFilterCount(filter({ styles: ["neon", "ink"] }))).toBe(2);
+  });
+
+  it("counts the cards of each style once", () => {
+    expect(countByStyle([...styled, { code: "P005", name: "Eco", variant_styles: ["ink", "ink"] }])).toEqual(
+      new Map([
+        ["neon", 1],
+        ["ink", 3],
+      ]),
+    );
   });
 });

@@ -9,6 +9,7 @@ import {
   activeAdminFilterCount,
   addAllCards,
   countBy,
+  countByStyle,
   describeAdminCardFilter,
   EMPTY_ADMIN_CARD_FILTER,
   FACTION_CODES,
@@ -18,6 +19,7 @@ import {
   type AdminCardFilter,
   type FilterableCard,
   type FilterRarity,
+  type FilterStyle,
 } from "@/lib/admin-card-filter";
 import { FACTION_LABELS, fetchAdminCardReference, type AdminCardReference } from "@/lib/catalog";
 import { sortCards, type CardOrder } from "@/lib/card-sort";
@@ -55,11 +57,13 @@ type FilterBarProps<T extends FilterableCard> = {
   onOrder?: (next: CardOrder) => void;
   /** Accessible name of the search field. */
   searchLabel?: string;
+  /** The variant styles to filter by, with their names; none: no style filter. */
+  styles?: readonly FilterStyle[];
 };
 
 /**
- * Search on one line, with the sort and a «Filtri» button that opens rarity, faction and traits
- * in a sheet; under it how many cards match and what is chosen. Fits the admin pages that never
+ * Search on one line, with the sort and a «Filtri» button that opens rarity, faction, traits and
+ * variant styles in a sheet; under it how many cards match and what is chosen. Fits the admin pages that never
  * scroll: two lines, whatever the filter.
  */
 export function AdminCardFilterBar<T extends FilterableCard>({
@@ -72,13 +76,16 @@ export function AdminCardFilterBar<T extends FilterableCard>({
   order,
   onOrder,
   searchLabel = "Cerca una carta",
+  styles = [],
 }: FilterBarProps<T>) {
   const sheet = useRef<HTMLDialogElement>(null);
   const active = activeAdminFilterCount(filter);
   const byRarity = useMemo(() => countBy(cards, "rarity_code"), [cards]);
   const byFaction = useMemo(() => countBy(cards, "faction"), [cards]);
+  const byStyle = useMemo(() => countByStyle(cards), [cards]);
   const shownRarities = rarities.filter((rarity) => byRarity.has(rarity.code));
-  const summary = describeAdminCardFilter(filter, rarities, catalog);
+  const shownStyles = styles.filter((entry) => byStyle.has(entry.style));
+  const summary = describeAdminCardFilter(filter, rarities, catalog, styles);
   const set = (change: Partial<AdminCardFilter>) => onChange({ ...filter, ...change });
 
   return (
@@ -154,11 +161,28 @@ export function AdminCardFilterBar<T extends FilterableCard>({
             />
           </>
         )}
+        {shownStyles.length > 0 && (
+          <>
+            <h3 className="section-title">Stile della variante</h3>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Stile della variante">
+              {shownStyles.map((entry) => (
+                <Chip
+                  key={entry.style}
+                  active={filter.styles.includes(entry.style)}
+                  onClick={() => set({ styles: toggleValue(filter.styles, entry.style) })}
+                >
+                  ★ {entry.name} <span className="font-semibold opacity-75">{byStyle.get(entry.style)}</span>
+                </Chip>
+              ))}
+            </div>
+          </>
+        )}
         {shownRarities.length === 0 && catalog.length === 0 && (
           <p className="text-sm font-medium text-muted">Rarità, fazioni e tratti non disponibili al momento: resta la ricerca.</p>
         )}
         <p className="text-xs font-medium text-muted">
-          Più scelte nello stesso gruppo: basta una. Tra gruppi diversi (rarità, fazione, ogni tipo di tratto) servono tutte.
+          Più scelte nello stesso gruppo: basta una. Tra gruppi diversi (rarità, fazione, ogni tipo di tratto, stile) servono
+          tutte.
         </p>
         <div className="sticky bottom-0 flex items-center gap-2 bg-background py-2">
           <button
@@ -205,7 +229,16 @@ export function AdminCardPicker({ cards, chosen, onChange, max, reference, fallb
   const [pendingStyle, setPendingStyle] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const catalog = reference?.catalog ?? fallbackCatalog;
-  const enriched = useMemo(() => withCardFacts(cards, reference?.facts ?? null), [cards, reference]);
+  // The styles come from each card's variants, which the reward payloads already send.
+  const enriched = useMemo(
+    () =>
+      withCardFacts(cards, reference?.facts ?? null).map((card) => ({
+        ...card,
+        variant_styles: card.variants.map((variant) => variant.style),
+      })),
+    [cards, reference],
+  );
+  const styles = useMemo(() => variantStylesOf(cards), [cards]);
   const found = sortCards(filterAdminCards(enriched, filter, catalog), order);
   const pending = cards.find((card) => card.code === pendingCode) ?? null;
   const full = max !== undefined && chosen.length >= max;
@@ -244,6 +277,7 @@ export function AdminCardPicker({ cards, chosen, onChange, max, reference, fallb
         order={order}
         onOrder={setOrder}
         searchLabel={`Cerca una carta da aggiungere: ${label}`}
+        styles={styles}
       />
       <select
         value=""
@@ -326,4 +360,11 @@ export function AdminCardPicker({ cards, chosen, onChange, max, reference, fallb
       )}
     </div>
   );
+}
+
+/** Every variant style among the cards, by name: the style filter's chips. */
+function variantStylesOf(cards: readonly PickerCard[]): FilterStyle[] {
+  const byStyle = new Map<string, string>();
+  for (const card of cards) for (const variant of card.variants) byStyle.set(variant.style, variant.name);
+  return [...byStyle].map(([style, name]) => ({ style, name })).sort((a, b) => a.name.localeCompare(b.name, "it"));
 }

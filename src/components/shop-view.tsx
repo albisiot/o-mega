@@ -166,6 +166,8 @@ export function ShopView({ status, odds, specials, history, onFailed, onRedeemed
                 Varianti: {odds.characters_with_variants} personaggi hanno anche un disegno più raro. Quando ne esce
                 uno, ha il {odds.variant_chance_percent}% di probabilità di avere quel disegno. Valori e poteri restano
                 uguali.
+                {odds.variant_event &&
+                  ` Durante l'evento «${odds.variant_event}» la probabilità è del ${odds.variant_chance_percent}% invece del ${odds.base_variant_chance_percent}%.`}
               </p>
             </>
           )}
@@ -307,6 +309,17 @@ function describeSpecialPack(pack: SpecialPack): string {
   return pack.guaranteed_rarity_name ? `${cards}, almeno una ${pack.guaranteed_rarity_name} o superiore` : cards;
 }
 
+/** What the variants of a special pack are, in one or two sentences. */
+function describeSpecialVariants(pack: SpecialPack): string {
+  const styles = pack.variant_style_names ?? [];
+  const styleText =
+    styles.length === 0 ? "" : ` ${styles.length === 1 ? "in stile" : "negli stili"} ${styles.slice(0, -1).join(", ")}${styles.length > 1 ? " e " : ""}${styles[styles.length - 1]}`;
+  const prefer = pack.prefer_new_variants ? " Se puoi, è una variante che non hai ancora." : "";
+  if (pack.variants_only) return `Solo varianti: ogni carta esce con un disegno più raro${styleText}.${prefer}`;
+  if (pack.variant_chance_percent === 0 || pack.characters_with_variants === 0) return "In questo pacchetto non escono varianti.";
+  return `Varianti: ${pack.characters_with_variants} di questi personaggi hanno anche un disegno più raro${styleText}; quando ne esce uno, ha il ${pack.variant_chance_percent}% di probabilità di avere quel disegno.${prefer}`;
+}
+
 /** The published odds of a special pack: per rarity, then card by card, as the server draws them. */
 function SpecialOdds({ pack }: { pack: SpecialPack }) {
   const rarityOf = new Map(pack.odds.map((rarity) => [rarity.code, rarity]));
@@ -327,9 +340,7 @@ function SpecialOdds({ pack }: { pack: SpecialPack }) {
         {each} con queste probabilità, tra i {pack.cards.length} personaggi qui sotto.
         {pack.guaranteed_rarity_name &&
           ` Se le prime ${pack.cards_per_pack - 1} non contengono una ${pack.guaranteed_rarity_name} o superiore, l'ultima è garantita di quella rarità o superiore.`}{" "}
-        {pack.variant_chance_percent > 0 && pack.characters_with_variants > 0
-          ? `Varianti: ${pack.characters_with_variants} di questi personaggi hanno anche un disegno più raro; quando ne esce uno, ha il ${pack.variant_chance_percent}% di probabilità di avere quel disegno.`
-          : "In questo pacchetto non escono varianti."}{" "}
+        {describeSpecialVariants(pack)}{" "}
         Le estrazioni avvengono sul server.
       </p>
       <ul className="flex flex-col gap-0.5" aria-label="Probabilità di ogni personaggio">

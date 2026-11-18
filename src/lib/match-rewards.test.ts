@@ -73,6 +73,7 @@ const SETTINGS = {
   "emergency_week.prizes.rank3_packs": 1,
   "emergency_week.prizes.others_coins": 50,
   "emergency_week.prizes.others_packs": 0,
+  "packs.variant_chance_percent": 5,
 };
 
 describe("match rewards", () => {
@@ -114,6 +115,7 @@ describe("match rewards", () => {
     expect(rewardsProblem(RULES, SETTINGS, 7)).toMatch(/soglie/);
     expect(rewardsProblem(RULES, { ...SETTINGS, "emergency.prizes.rank2_packs": 4 }, 8)).toMatch(/tra 0 e 3/);
     expect(rewardsProblem(RULES, { ...SETTINGS, "emergency.prizes.min_passed": 9 }, 8)).toMatch(/classifica/);
+    expect(rewardsProblem(RULES, { ...SETTINGS, "packs.variant_chance_percent": 101 }, 8)).toMatch(/tra 0 e 100/);
   });
 
   it("checks the weekly Emergenza too, when the server has it", () => {

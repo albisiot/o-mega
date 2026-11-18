@@ -62,6 +62,8 @@ type FormState = {
   dailyCap: string;
   /** Quadrante: the seal target; empty: none. */
   sealTarget: string;
+  /** "Caccia alle varianti": the variant chance during the event, in %; empty: unchanged. */
+  variantChance: string;
   /** Admitted traits, rarity codes and factions; each empty: every character. */
   traits: string[];
   rarities: string[];
@@ -97,6 +99,7 @@ function emptyForm(now: number): FormState {
     points: pointsForm(DEFAULT_EVENT_POINTS),
     dailyCap: "",
     sealTarget: "",
+    variantChance: "",
     traits: [],
     rarities: [],
     factions: [],
@@ -118,6 +121,7 @@ function formFrom(event: AdminEvent, now: number, copy: boolean): FormState {
     points: pointsForm(event.points),
     dailyCap: event.daily_cap === null ? "" : String(event.daily_cap),
     sealTarget: event.quadrant_seal_target ? String(event.quadrant_seal_target) : "",
+    variantChance: event.variant_chance_percent ? String(event.variant_chance_percent) : "",
     traits: event.traits ?? [],
     rarities: event.rarities ?? [],
     factions: event.factions ?? [],
@@ -197,6 +201,7 @@ export function EventAdmin({ data, onChange }: EventAdminProps) {
             rarities={data.rarities}
             minAdmitted={data.min_admitted_characters ?? balance.events.minAdmittedCharacters}
             sealTarget={data.quadrant_seal_target ?? balance.quadrant.sealTarget}
+            baseVariantChance={data.base_variant_chance_percent ?? balance.packs.variantChancePercent}
             onSaved={(next, title) => {
               onChange(next);
               load(emptyForm(now));
@@ -265,6 +270,7 @@ function EventForm({
   rarities: payloadRarities,
   minAdmitted,
   sealTarget,
+  baseVariantChance,
   onSaved,
   onCancel,
 }: {
@@ -276,6 +282,8 @@ function EventForm({
   minAdmitted: number;
   /** The seal targets an event may set for Quadrante. */
   sealTarget: { min: number; max: number; suggested: number };
+  /** The usual variant chance of the standard packs. */
+  baseVariantChance: number;
   onSaved: (next: AdminEvents, title: string) => void;
   onCancel: () => void;
 }) {
@@ -299,7 +307,7 @@ function EventForm({
   const shownTier = Math.min(tierIndex, form.tiers.length - 1);
   const reference = useAdminCardReference();
   const rarities = payloadRarities ?? reference?.rarities ?? [];
-  const rule: AdminCardFilter = { query: "", rarities: form.rarities, factions: form.factions, traits: form.traits };
+  const rule: AdminCardFilter = { query: "", rarities: form.rarities, factions: form.factions, traits: form.traits, styles: [] };
   const ruleOn = activeAdminFilterCount(rule) > 0;
   // Same set and rule as the server's count: active cards that are not level cards.
   const admitted = filterAdminCards(withCardFacts(cards, reference?.facts ?? null), rule, catalog).length;
@@ -324,6 +332,7 @@ function EventForm({
         points,
         dailyCap: form.dailyCap.trim() === "" ? null : Number(form.dailyCap),
         sealTarget: form.sealTarget.trim() === "" ? null : Number(form.sealTarget),
+        variantChance: form.variantChance.trim() === "" ? null : Number(form.variantChance),
         traits: form.traits,
         rarities: form.rarities,
         factions: form.factions,
@@ -571,6 +580,25 @@ function EventForm({
                 </button>
               )}
             </p>
+            <label className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)] items-center gap-1.5 text-sm font-bold">
+              Caccia alle varianti: probabilità %
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={100}
+                value={form.variantChance}
+                onChange={(event) => update({ variantChance: event.target.value })}
+                placeholder={`Come sempre (${baseVariantChance}%)`}
+                aria-describedby="variant-chance-help"
+                className={`${SMALL_INPUT} placeholder:text-faint`}
+              />
+            </label>
+            <p id="variant-chance-help" className="text-xs font-medium leading-4 text-muted">
+              Da 1 a 100. Durante l&apos;evento una carta con varianti esce con un disegno variante con questa probabilità nel
+              pacchetto del giorno, in quelli del Negozio e in quelli dei premi (di solito {baseVariantChance}%). I pacchetti
+              speciali hanno la loro. Vuoto, o non più del solito: non cambia niente.
+            </p>
           </fieldset>
         )}
 
@@ -799,6 +827,7 @@ function EventRow({
         Dal {formatRomeDateTime(event.starts_at)} al {formatRomeDateTime(event.ends_at)}
         {event.daily_cap !== null && ` · max ${event.daily_cap} punti al giorno`}
         {event.quadrant_seal_target ? ` · Quadrante: traguardo ${event.quadrant_seal_target} Sigilli` : ""}
+        {event.variant_chance_percent ? ` · varianti al ${event.variant_chance_percent}%` : ""}
       </p>
       <p className="text-xs font-semibold">{event.players === 1 ? "1 giocatore" : `${event.players} giocatori`} con punti</p>
       <ol className="flex flex-col gap-0.5 text-sm">

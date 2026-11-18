@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import { AdminCardFilterBar, useAdminCardReference } from "@/components/admin-card-filter";
+import { Chip } from "@/components/card-list-controls";
 import { BackLink, TabBar } from "@/components/comic-parts";
 import { PackColorPicker } from "@/components/pack-color-picker";
 import { EMPTY_ADMIN_CARD_FILTER, filterAdminCards, withCardFacts, type AdminCardFilter } from "@/lib/admin-card-filter";
@@ -20,6 +21,7 @@ import {
   draftRarities,
   emptyDraft,
   formatHundredths,
+  hasPackVariant,
   oddsTotal,
   realOdds,
   saveSpecialPack,
@@ -183,8 +185,10 @@ function PackRow({
         {guarantee && ` · almeno una ${guarantee.name}`}
       </p>
       <p className="text-xs font-medium leading-4 text-muted">
-        {pack.odds_mode === "rarity" ? "Probabilità per rarità" : "Probabilità per carta"} · varianti{" "}
-        {pack.variant_chance_percent}% · aperto {pack.openings} {pack.openings === 1 ? "volta" : "volte"}
+        {pack.odds_mode === "rarity" ? "Probabilità per rarità" : "Probabilità per carta"} ·{" "}
+        {pack.variants_only ? "solo varianti" : `varianti ${pack.variant_chance_percent}%`}
+        {pack.variant_styles.length > 0 && ` ${styleNames(pack.variant_styles, data.variant_styles)}`}
+        {pack.prefer_new_variants && " · prima le nuove"} · aperto {pack.openings} {pack.openings === 1 ? "volta" : "volte"}
         {dates.length > 0 && ` · ${dates.join(" ")}`}
       </p>
       <div className="flex flex-wrap items-center justify-end gap-x-1">
@@ -406,12 +410,14 @@ function DetailsStep({ data, draft, update }: StepProps) {
             inputMode="numeric"
             min={0}
             max={100}
-            value={draft.variantChance}
+            value={draft.variantsOnly ? "100" : draft.variantChance}
+            disabled={draft.variantsOnly}
             onChange={(event) => update({ variantChance: event.target.value })}
-            className={SMALL_INPUT}
+            className={`${SMALL_INPUT} disabled:opacity-60`}
           />
         </label>
       </div>
+      <VariantRules data={data} draft={draft} update={update} />
       <label className={LABEL}>
         Carta garantita
         <select
@@ -447,7 +453,8 @@ function DetailsStep({ data, draft, update }: StepProps) {
       </label>
       <p className="text-xs font-medium leading-4 text-muted">
         Prezzo in monete. Orari in ora italiana; senza date il pacchetto è in vendita da subito e non scade. Varianti: la
-        probabilità che una carta con un disegno speciale esca con quel disegno (0 = mai).
+        probabilità che una carta con un disegno speciale esca con quel disegno (0 = mai); con «Solo varianti» è sempre
+        100%.
       </p>
     </div>
   );
@@ -459,8 +466,12 @@ function CardsStep({ data, draft, update }: StepProps) {
   const reference = useAdminCardReference();
   const catalog = data.trait_catalog ?? reference?.catalog ?? [];
   // The payload has rarity and traits; the faction comes from the public catalog.
-  const cards = useMemo(() => withCardFacts(data.cards, reference?.facts ?? null), [data.cards, reference]);
+  const enriched = useMemo(() => withCardFacts(data.cards, reference?.facts ?? null), [data.cards, reference]);
   const chosen = new Set(draft.cardCodes);
+  // Only variants: the list offers the characters with one of the pack's variants, and keeps the
+  // chosen ones that have none, marked, so they can be taken out.
+  const fits = (card: AdminPackCard) => !draft.variantsOnly || hasPackVariant(card, draft.variantStyles);
+  const cards = enriched.filter((card) => fits(card) || chosen.has(card.code));
   const found = sortCards(filterAdminCards(cards, filter, catalog), order);
   const fresh = found.filter((card) => !chosen.has(card.code)).length;
   const taken = found.length - fresh;
@@ -488,11 +499,18 @@ function CardsStep({ data, draft, update }: StepProps) {
         matching={found.length}
         order={order}
         onOrder={setOrder}
+        styles={data.variant_styles}
       />
+      {draft.variantsOnly && (
+        <p className="shrink-0 text-xs font-semibold leading-4 text-comic-yellow">
+          Solo varianti: qui ci sono i personaggi con una variante
+          {draft.variantStyles.length > 0 ? ` ${styleNames(draft.variantStyles, data.variant_styles)}` : ""}.
+        </p>
+      )}
       <div className="grid shrink-0 grid-cols-2 gap-2">
         <button
           type="button"
-          onClick={() => set(found.map((card) => card.code), true)}
+          onClick={() => set(found.filter(fits).map((card) => card.code), true)}
           disabled={fresh === 0}
           className="btn btn-ghost disabled:opacity-50"
         >
@@ -519,7 +537,11 @@ function CardsStep({ data, draft, update }: StepProps) {
                 <span className="text-xs font-semibold text-muted">
                   {card.code} ·{" "}
                   <span style={{ color: rarityColor.get(card.rarity_code) }}>{rarityName.get(card.rarity_code)}</span>
-                  {card.has_variants && " · con varianti"}
+                  {!fits(card) ? (
+                    <span className="text-comic-magenta"> · senza una variante adatta</span>
+                  ) : (
+                    card.has_variants && ` · ★ ${styleNames(card.variant_styles, data.variant_styles)}`
+                  )}
                 </span>
               </span>
               <input
@@ -697,5 +719,75 @@ function CardThumb({ card }: { card: Pick<AdminPackCard, "art_url"> }) {
         />
       )}
     </span>
+  );
+}
+
+/** "Neon e Tarocco": the names of some styles, in the catalog's order. */
+function styleNames(styles: readonly string[], catalog: AdminSpecialPacks["variant_styles"]): string {
+  const names = catalog.filter((entry) => styles.includes(entry.style)).map((entry) => entry.name);
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} e ${names[names.length - 1]}` : (names[0] ?? "");
+}
+
+/**
+ * The pack's variant rules: only variants, the styles a variant can have, and the player's missing
+ * variants first. The styles also narrow which characters a pack of only variants can hold.
+ */
+function VariantRules({ data, draft, update }: StepProps) {
+  const toggleStyle = (style: string) =>
+    update({
+      variantStyles: draft.variantStyles.includes(style)
+        ? draft.variantStyles.filter((entry) => entry !== style)
+        : [...draft.variantStyles, style],
+    });
+  return (
+    <fieldset className="flex flex-col gap-2 border-2 border-line px-3 pb-3 pt-1">
+      <legend className="px-1 text-sm font-bold">Varianti</legend>
+      <label className="flex min-h-11 items-center gap-3 text-sm font-bold">
+        <input
+          type="checkbox"
+          checked={draft.variantsOnly}
+          onChange={(event) => update({ variantsOnly: event.target.checked })}
+          className="h-6 w-6 shrink-0 accent-comic-yellow"
+        />
+        <span>
+          Solo varianti
+          <span className="block text-xs font-medium text-muted">Ogni carta esce con un disegno variante.</span>
+        </span>
+      </label>
+      <label className="flex min-h-11 items-center gap-3 text-sm font-bold">
+        <input
+          type="checkbox"
+          checked={draft.preferNew}
+          onChange={(event) => update({ preferNew: event.target.checked })}
+          className="h-6 w-6 shrink-0 accent-comic-yellow"
+        />
+        <span>
+          Prima le varianti che il giocatore non ha
+          <span className="block text-xs font-medium text-muted">
+            Tra le varianti di un personaggio sceglie quella che ancora gli manca, se c&apos;è.
+          </span>
+        </span>
+      </label>
+      <p className="text-sm font-bold">
+        Stili{" "}
+        <span className="font-semibold text-muted">
+          · {draft.variantStyles.length === 0 ? "tutti" : styleNames(draft.variantStyles, data.variant_styles)}
+        </span>
+      </p>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Stili delle varianti">
+        <Chip active={draft.variantStyles.length === 0} onClick={() => update({ variantStyles: [] })}>
+          Tutti
+        </Chip>
+        {data.variant_styles.map((entry) => (
+          <Chip key={entry.style} active={draft.variantStyles.includes(entry.style)} onClick={() => toggleStyle(entry.style)}>
+            ★ {entry.name} <span className="font-semibold opacity-75">{entry.characters}</span>
+          </Chip>
+        ))}
+      </div>
+      <p className="text-xs font-medium leading-4 text-muted">
+        Con uno o più stili, le varianti escono solo di quegli stili. Nelle Carte puoi filtrare per stile e aggiungere i
+        personaggi che ce l&apos;hanno.
+      </p>
+    </fieldset>
   );
 }

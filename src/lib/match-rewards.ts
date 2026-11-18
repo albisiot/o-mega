@@ -54,7 +54,9 @@ export type RewardSettingKey =
   | "emergency_week.prizes.rank3_coins"
   | "emergency_week.prizes.rank3_packs"
   | "emergency_week.prizes.others_coins"
-  | "emergency_week.prizes.others_packs";
+  | "emergency_week.prizes.others_packs"
+  // The variant chance of the standard packs (SPEC §4.6): set here like the other settings.
+  | "packs.variant_chance_percent";
 
 export type MatchRewards = {
   rules: MatchRewardRule[];
@@ -183,6 +185,7 @@ export const SETTING_LIMITS: Record<RewardSettingKey, { min: number; max: number
   "emergency_week.prizes.rank2_packs": { min: 0, max: 3 },
   "emergency_week.prizes.rank3_coins": { min: 0, max: 10000 },
   "emergency_week.prizes.rank3_packs": { min: 0, max: 3 },
+  "packs.variant_chance_percent": { min: 0, max: 100 },
   "emergency_week.prizes.others_coins": { min: 0, max: 10000 },
   "emergency_week.prizes.others_packs": { min: 0, max: 3 },
 };

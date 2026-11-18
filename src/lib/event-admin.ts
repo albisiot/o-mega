@@ -24,6 +24,8 @@ export type AdminEvent = {
   daily_cap: number | null;
   /** Quadrante: the first side with this many seals on the grid wins; null without a target. */
   quadrant_seal_target?: number | null;
+  /** "Caccia alle varianti": the variant chance of the standard packs during the event; null: unchanged. */
+  variant_chance_percent?: number | null;
   /** Admitted traits; empty: every character. */
   traits?: string[];
   /** Admitted rarity codes and factions; empty: every one. Absent from older servers. */
@@ -44,6 +46,8 @@ export type AdminEvents = {
   min_admitted_characters?: number;
   /** The seal targets an event may set for Quadrante, and the one the form suggests. */
   quadrant_seal_target?: { min: number; max: number; suggested: number };
+  /** The usual variant chance of the standard packs, which an event can raise. */
+  base_variant_chance_percent?: number;
   events: AdminEvent[];
   /** The cards a target can give, each with the artwork variants it can come with, its traits, rarity and faction. */
   cards: {
@@ -70,6 +74,8 @@ export type EventDraft = {
   dailyCap: number | null;
   /** Quadrante: the first side with this many seals wins. Null: no target. */
   sealTarget: number | null;
+  /** "Caccia alle varianti": the variant chance of the standard packs during the event. Null: unchanged. */
+  variantChance: number | null;
   /** Admitted traits, rarity codes and factions; each empty: every character. All must hold. */
   traits: string[];
   rarities: string[];
@@ -98,6 +104,7 @@ export async function saveEvent(draft: EventDraft): Promise<AdminEvents> {
     ...(draft.rarities.length > 0 ? { p_rarities: draft.rarities } : {}),
     ...(draft.factions.length > 0 ? { p_factions: draft.factions } : {}),
     ...(draft.sealTarget !== null ? { p_quadrant_seal_target: draft.sealTarget } : {}),
+    ...(draft.variantChance !== null ? { p_variant_chance_percent: draft.variantChance } : {}),
   });
   if (error) throw error;
   return data as unknown as AdminEvents;

@@ -171,6 +171,18 @@ export function MatchRewardAdmin({ initial }: { initial: MatchRewards }) {
                   />
                 ))}
               </section>
+              {/* Missing on a server without it: then the row is not shown nor sent. */}
+              {"packs.variant_chance_percent" in settings && (
+                <section aria-label="Pacchetti" className="flex flex-col gap-2 bg-panel px-3 py-2">
+                  <h2 className="font-display text-xl uppercase leading-6">Pacchetti</h2>
+                  <SettingRow
+                    label="Varianti %"
+                    hint="Probabilità che una carta con varianti esca con un disegno variante: pacchetto del giorno, Negozio e premi. Un evento «Caccia alle varianti» può alzarla; i pacchetti speciali hanno la loro."
+                    value={settings["packs.variant_chance_percent"]}
+                    onChange={(value) => setSetting("packs.variant_chance_percent", value)}
+                  />
+                </section>
+              )}
               <section aria-label="Emergenza" className="flex flex-col gap-2 bg-panel px-3 py-2">
                 <h2 className="font-display text-xl uppercase leading-6">Emergenza</h2>
                 <p className="text-[11px] font-medium leading-4 text-muted">
