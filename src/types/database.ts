@@ -4752,6 +4752,22 @@ export type Database = {
         Returns: Json
       }
       challenge_formats: { Args: never; Returns: string[] }
+      challenge_ghost_wait: {
+        Args: { p_since: string; p_user: string }
+        Returns: string
+      }
+      challenge_insert_ghost_match: {
+        Args: {
+          p_boss_values: Json
+          p_bot_definition_ids: string[]
+          p_challenge: Database["public"]["Tables"]["challenges"]["Row"]
+          p_difficulty: string
+          p_team: string[]
+          p_threat_ids: string[]
+          p_user: string
+        }
+        Returns: string
+      }
       challenge_insert_pvp_match: {
         Args: {
           p_boss_values: Json
@@ -4793,6 +4809,8 @@ export type Database = {
       challenge_queue_join: {
         Args: {
           p_boss_values?: Json
+          p_bot_definition_ids?: string[]
+          p_bot_difficulty?: string
           p_challenge_id: string
           p_team: string[]
           p_threat_ids?: string[]
