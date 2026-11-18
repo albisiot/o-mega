@@ -4,11 +4,19 @@ import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { ArtViewerButton } from "@/components/art-viewer";
 import { CopiesSheet, MissingCard } from "@/components/card-details";
 import { CardModelButton } from "@/components/card-model";
-import { CardView } from "@/components/card-view";
+import { CardView, Silhouette } from "@/components/card-view";
 import { CharacterProfileSheet } from "@/components/character-profile";
+import { thumbArtUrl } from "@/lib/art";
+import { withBasePath } from "@/lib/base-path";
 import { browsePosition, neighbourId, type SwipeStep } from "@/lib/card-swipe";
 import type { AbilityInfo } from "@/lib/catalog";
-import { ownedLooks, type CatalogCard, type OwnedSummary } from "@/lib/collection";
+import {
+  foundVariantCount,
+  ownedLooks,
+  type CardLook,
+  type CatalogCard,
+  type OwnedSummary,
+} from "@/lib/collection";
 import { useCardSwipe } from "@/lib/use-card-swipe";
 
 /**
@@ -76,22 +84,14 @@ export function CardScreen({
     <div className="game-shell" onClick={closeOnBackground}>
       <header className="flex min-h-13 shrink-0 items-center gap-1.5 px-4 py-1" onClick={closeOnBackground}>
         {/* The variants found show on the card in place of the base drawing. */}
-        {looks.length > 1 && (
-          <div className="-mx-1 flex min-w-0 gap-1.5 overflow-x-auto px-1" role="group" aria-label="Disegno">
-            {looks.map((l) => (
-              <button
-                key={l.key}
-                type="button"
-                aria-pressed={l.key === look.key}
-                onClick={() => setChosenLook({ cardId: card.id, key: l.key })}
-                className={`min-h-11 shrink-0 -skew-x-8 px-3 font-display text-base uppercase ${
-                  l.key === look.key ? "bg-comic-magenta text-black" : "bg-panel text-muted"
-                }`}
-              >
-                {l.variant ? `★ ${l.label}` : l.label}
-              </button>
-            ))}
-          </div>
+        {owned && looks.length > 1 && (
+          <DrawingPicker
+            looks={looks}
+            chosenKey={look.key}
+            missing={Math.max(0, card.variantCount - foundVariantCount(owned))}
+            faction={card.faction}
+            onChoose={(key) => setChosenLook({ cardId: card.id, key })}
+          />
         )}
         <span className="ml-auto shrink-0 text-sm font-bold text-muted">
           {browsing && (
@@ -161,6 +161,79 @@ export function CardScreen({
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The drawings of a character the player owns, as thumbnails that all fit beside the card's
+ * number: a tap shows that drawing on the card, which names it. After them, a "?" for each
+ * variant still to find, never its drawing.
+ */
+function DrawingPicker({
+  looks,
+  chosenKey,
+  missing,
+  faction,
+  onChoose,
+}: {
+  looks: CardLook[];
+  chosenKey: string;
+  missing: number;
+  faction: string;
+  onChoose: (key: string) => void;
+}) {
+  return (
+    // Scrolls sideways only if a character ever has more drawings than the header fits.
+    <div className="flex min-w-0 items-center overflow-x-auto pb-0.5" role="group" aria-label="Disegno">
+      {looks.map((l) => {
+        const chosen = l.key === chosenKey;
+        return (
+          // The 3px each side make the tap target 39px wide around a 33px thumbnail.
+          <button
+            key={l.key}
+            type="button"
+            aria-pressed={chosen}
+            aria-label={l.variant ? `Disegno ★ ${l.label}` : "Disegno base"}
+            onClick={() => onChoose(l.key)}
+            className="shrink-0 px-[3px]"
+          >
+            <span
+              className={`relative block h-11 w-[33px] overflow-hidden rounded-[3px] border-2 bg-panel-raised ${
+                chosen ? "border-comic-magenta shadow-[2px_2px_0_var(--comic-magenta)]" : "border-line opacity-80"
+              }`}
+            >
+              {l.art_url ? (
+                // Plain <img>: the static export has no image optimization.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={withBasePath(thumbArtUrl(l.art_url))}
+                  alt=""
+                  decoding="async"
+                  className="h-full w-full object-cover object-top"
+                />
+              ) : (
+                <Silhouette faction={faction} ink="#3a3a45" className="absolute -bottom-0.5 left-1/2 h-[90%] -translate-x-1/2" />
+              )}
+              {l.variant && (
+                <span aria-hidden className="absolute bottom-0 right-0 bg-comic-magenta px-0.5 text-[9px] font-black leading-[11px] text-black">
+                  ★
+                </span>
+              )}
+            </span>
+          </button>
+        );
+      })}
+      {Array.from({ length: missing }, (_, index) => (
+        <span
+          key={`missing-${index}`}
+          role="img"
+          aria-label="Variante da trovare"
+          className="mx-[3px] flex h-11 w-[33px] shrink-0 items-center justify-center rounded-[3px] border-2 border-dashed border-line font-display text-lg text-faint"
+        >
+          ?
+        </span>
+      ))}
     </div>
   );
 }

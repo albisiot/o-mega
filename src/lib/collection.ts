@@ -33,10 +33,15 @@ export function ownedArt(card: CatalogCard, owned: OwnedSummary): Pick<CatalogCa
   return only ? { art_url: only.art_url, variant: { name: only.name } } : { art_url: card.art_url, variant: null };
 }
 
+/** How many of a character's artwork variants the player has found: one per style, however many copies. */
+export function foundVariantCount(owned: OwnedSummary): number {
+  return new Set(owned.variants.map((variant) => variant.style)).size;
+}
+
 /** A drawing a character's page can show: the base one, or a variant the player found. */
 export type CardLook = { key: string; label: string; art_url: CatalogCard["art_url"]; variant: { name: string } | null };
 
-/** The drawings of a character's page, one per style found: the base first, unless the player has only variants. */
+/** The drawings of a character's page, one per style found, in the order found: the base first, unless the player has only variants. */
 export function ownedLooks(card: CatalogCard, owned: OwnedSummary): CardLook[] {
   const styles = [...new Map(owned.variants.map((variant) => [variant.style, variant])).values()];
   const looks = styles.map((v) => ({ key: v.style, label: v.name, art_url: v.art_url, variant: { name: v.name } }));
@@ -91,7 +96,10 @@ export async function fetchCollection(): Promise<Map<string, OwnedSummary>> {
     supabase
       .from("card_instances")
       .select("id, definition_id, variant_id, card_variants(style, style_name, art_url)")
-      .not("variant_id", "is", null),
+      .not("variant_id", "is", null)
+      // The first found first: the album tile and the page's drawings keep the same order every time.
+      .order("acquired_at")
+      .order("id"),
   ]);
   if (summary.error) throw summary.error;
   if (variants.error) throw variants.error;

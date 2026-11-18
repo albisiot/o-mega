@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Silhouette } from "@/components/card-view";
 import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { Sheet } from "@/components/sheet";
-import { convertDuplicates, type CatalogCard, type OwnedSummary } from "@/lib/collection";
+import { convertDuplicates, foundVariantCount, type CatalogCard, type OwnedSummary } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
 
 export function CopiesPanel({
@@ -108,7 +108,7 @@ export function CopiesSheet({
   onConverted: () => void;
 }) {
   const sheet = useRef<HTMLDialogElement>(null);
-  const found = new Set(owned.variants.map((variant) => variant.style)).size;
+  const found = foundVariantCount(owned);
   const counts = [
     { label: "Copie", value: `${owned.copies}`, lit: false },
     { label: "Doppioni", value: `${owned.convertible_copies}`, lit: owned.convertible_copies > 0 },
