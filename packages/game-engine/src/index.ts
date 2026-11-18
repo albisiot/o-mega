@@ -18,3 +18,4 @@ export * from "./quadrant-bots.ts";
 export * from "./ranked.ts";
 export * from "./story-stars.ts";
 export * from "./challenges.ts";
+export * from "./challenge-play.ts";

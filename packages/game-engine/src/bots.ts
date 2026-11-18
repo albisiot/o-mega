@@ -532,3 +532,30 @@ export function buildBotTeam(
   const strongest = [...distinct].sort((x, y) => characterStrength(y) - characterStrength(x));
   return shuffle(rng, strongest.slice(0, Math.max(size * 2, Math.round(strongest.length * share)))).slice(0, size);
 }
+
+/**
+ * Like buildBotTeam, for a squad that must also keep rules of its own (the composition of a
+ * Sfida a tema, SPEC §8.8): the characters in the bot's order of preference (its usual pool
+ * first, shuffled, then all the others, shuffled), and `pick` takes the squad from that order.
+ * When `pick` finds none, the bot keeps its usual squad.
+ */
+export function buildBotTeamWith(
+  difficulty: BotDifficulty,
+  catalog: readonly Character[],
+  size: number,
+  rng: Rng,
+  pick: (ordered: readonly Character[]) => Character[] | null,
+): Character[] {
+  const distinct = [...new Map(catalog.map((character) => [character.definitionId, character])).values()];
+  if (distinct.length < size) throw new Error("Not enough characters for a bot team");
+  const share = STRONG_TEAM_SHARE[difficulty];
+  let ordered: Character[];
+  if (share === undefined) {
+    ordered = shuffle(rng, distinct);
+  } else {
+    const strongest = [...distinct].sort((x, y) => characterStrength(y) - characterStrength(x));
+    const pool = Math.max(size * 2, Math.round(strongest.length * share));
+    ordered = [...shuffle(rng, strongest.slice(0, pool)), ...shuffle(rng, strongest.slice(pool))];
+  }
+  return pick(ordered) ?? ordered.slice(0, size);
+}

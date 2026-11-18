@@ -4,7 +4,9 @@ import {
   canFieldChallenge,
   challengeVariantsNeeded,
   checkChallengeTeam,
+  compositionBlock,
   NO_CHALLENGE_RULES,
+  pickWithComposition,
   type ChallengeCopy,
   type ChallengeRules,
 } from "./challenges.ts";
@@ -51,7 +53,7 @@ describe("Sfida a tema: a squad", () => {
     Array.from({ length: 5 }, (_, i) => copy("delta", "villains", ["group.figli"], i < variants));
 
   it("is ok only when full, admitted and with enough variants", () => {
-    expect(checkChallengeTeam(five(1), figli, categoryOf, 5)).toEqual({ notAdmitted: 0, starters: 0, variants: 1, variantsNeeded: 1, ok: true });
+    expect(checkChallengeTeam(five(1), figli, categoryOf, 5)).toMatchObject({ notAdmitted: 0, starters: 0, variants: 1, variantsNeeded: 1, ok: true });
     expect(checkChallengeTeam(five(0), figli, categoryOf, 5).ok).toBe(false);
     expect(checkChallengeTeam(five(1).slice(0, 4), figli, categoryOf, 5).ok).toBe(false);
     const outsider = [...five(1).slice(0, 4), copy("delta", "villains", ["group.custodi"])];
@@ -100,5 +102,49 @@ describe("Sfida a tema: a squad", () => {
     expect(canFieldChallenge({ admitted: 5, admittedWithVariant: 1 }, figli, 5)).toBe(true);
     expect(canFieldChallenge({ admitted: 4, admittedWithVariant: 4 }, figli, 5)).toBe(false);
     expect(canFieldChallenge({ admitted: 12, admittedWithVariant: 0 }, figli, 5)).toBe(false);
+  });
+});
+
+describe("Sfida a tema: composition of the squad", () => {
+  const RANK: Record<string, number> = { delta: 1, gamma: 2, beta: 3, alfa: 4, omega: 5 };
+  const card = (rarity: string, faction = "heroes"): ChallengeCopy => ({ rarity, faction, traits: [], variant: false, rarityRank: RANK[rarity] });
+
+  it("the rarity budget adds up the ranks of the squad", () => {
+    const budget = rules({ rarityBudget: 12 });
+    const squad = [card("omega"), card("alfa"), card("delta"), card("delta"), card("delta")];
+    expect(checkChallengeTeam(squad, budget, categoryOf, 5)).toMatchObject({ budget: 12, ok: true });
+    squad[2] = card("gamma");
+    expect(checkChallengeTeam(squad, budget, categoryOf, 5)).toMatchObject({ budget: 13, ok: false });
+  });
+
+  it("at most N copies of a rarity, and at least N factions", () => {
+    const rule = rules({ rarityMax: { alfa: 1 }, minFactions: 3 });
+    const squad = [card("alfa", "heroes"), card("alfa", "villains"), card("delta", "neutrals"), card("delta"), card("delta")];
+    expect(checkChallengeTeam(squad, rule, categoryOf, 5)).toMatchObject({ overRarities: ["alfa"], factions: 3, ok: false });
+    squad[1] = card("beta", "villains");
+    expect(checkChallengeTeam(squad, rule, categoryOf, 5)).toMatchObject({ overRarities: [], ok: true });
+    squad[1] = card("beta", "heroes");
+    expect(checkChallengeTeam(squad, rule, categoryOf, 5)).toMatchObject({ factions: 2, ok: false });
+  });
+
+  it("a character that would make a full squad impossible is blocked, with the rule it breaks", () => {
+    const rule = rules({ rarityBudget: 10, rarityMax: { omega: 0 }, minFactions: 2 });
+    expect(compositionBlock([], card("omega"), rule, 5)).toBe("rarity");
+    // 4 + 4 + three Delta = 11 > 10: the second Alfa cannot come in; a Beta (4 + 3 + 3 = 10) can.
+    expect(compositionBlock([card("alfa")], card("alfa"), rule, 5)).toBe("budget");
+    expect(compositionBlock([card("alfa")], card("beta"), rule, 5)).toBe(null);
+    // Four heroes and one place left: the last one must bring a second faction.
+    const heroes = [card("delta"), card("delta"), card("delta"), card("delta")];
+    expect(compositionBlock(heroes, card("delta"), rule, 5)).toBe("factions");
+    expect(compositionBlock(heroes, card("delta", "villains"), rule, 5)).toBe(null);
+  });
+
+  it("a bot's squad skips the characters that break the rules, keeping its order", () => {
+    const rule = rules({ rarityBudget: 10, minFactions: 2 });
+    const strongestFirst = [card("omega"), card("omega"), card("alfa"), card("beta"), card("delta"), card("delta"), card("delta", "villains"), card("delta")];
+    const squad = pickWithComposition(strongestFirst, rule, 5);
+    expect(squad?.map((entry) => entry.rarity)).toEqual(["omega", "delta", "delta", "delta", "delta"]);
+    expect(checkChallengeTeam(squad ?? [], rule, categoryOf, 5).ok).toBe(true);
+    expect(pickWithComposition([card("omega"), card("omega")], rule, 5)).toBeNull();
   });
 });
