@@ -620,6 +620,312 @@ export type Database = {
           },
         ]
       }
+      challenge_match_terms: {
+        Row: {
+          challenge_id: string
+          color: string
+          event_id: string | null
+          event_points: Json | null
+          match_id: string
+          rules: Json
+          title: string
+          version: number
+        }
+        Insert: {
+          challenge_id: string
+          color: string
+          event_id?: string | null
+          event_points?: Json | null
+          match_id: string
+          rules: Json
+          title: string
+          version: number
+        }
+        Update: {
+          challenge_id?: string
+          color?: string
+          event_id?: string | null
+          event_points?: Json | null
+          match_id?: string
+          rules?: Json
+          title?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_match_terms_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_match_terms_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_match_terms_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_notices: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_notices_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_notices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_queue: {
+        Row: {
+          card_instance_ids: string[]
+          challenge_id: string
+          enqueued_at: string
+          format: string
+          refreshed_at: string
+          user_id: string
+        }
+        Insert: {
+          card_instance_ids: string[]
+          challenge_id: string
+          enqueued_at?: string
+          format: string
+          refreshed_at?: string
+          user_id: string
+        }
+        Update: {
+          card_instance_ids?: string[]
+          challenge_id?: string
+          enqueued_at?: string
+          format?: string
+          refreshed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_queue_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_queue_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_rewards: {
+        Row: {
+          challenge_id: string
+          coins: number
+          created_at: string
+          id: string
+          opening_ids: string[]
+          packs: number
+          seen_at: string | null
+          tier: number
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          coins?: number
+          created_at?: string
+          id?: string
+          opening_ids?: string[]
+          packs?: number
+          seen_at?: string | null
+          tier: number
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          coins?: number
+          created_at?: string
+          id?: string
+          opening_ids?: string[]
+          packs?: number
+          seen_at?: string | null
+          tier?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_rewards_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_tiers: {
+        Row: {
+          card_definition_ids: string[]
+          card_variant_ids: string[]
+          challenge_id: string
+          coins: number
+          packs: number
+          random_variants: Json | null
+          tier: number
+          wins: number
+        }
+        Insert: {
+          card_definition_ids?: string[]
+          card_variant_ids?: string[]
+          challenge_id: string
+          coins?: number
+          packs?: number
+          random_variants?: Json | null
+          tier: number
+          wins: number
+        }
+        Update: {
+          card_definition_ids?: string[]
+          card_variant_ids?: string[]
+          challenge_id?: string
+          coins?: number
+          packs?: number
+          random_variants?: Json | null
+          tier?: number
+          wins?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_tiers_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          bot_difficulties: string[]
+          bot_follows_rules: boolean
+          color: string
+          created_at: string
+          created_by: string | null
+          daily_limit: number | null
+          description: string
+          ends_at: string
+          event_id: string | null
+          event_points: Json | null
+          format: string
+          id: string
+          is_active: boolean
+          min_level: number | null
+          online: boolean
+          quadrant_seal_target: number | null
+          rules: Json
+          starts_at: string
+          title: string
+          version: number
+        }
+        Insert: {
+          bot_difficulties: string[]
+          bot_follows_rules?: boolean
+          color: string
+          created_at?: string
+          created_by?: string | null
+          daily_limit?: number | null
+          description?: string
+          ends_at: string
+          event_id?: string | null
+          event_points?: Json | null
+          format: string
+          id?: string
+          is_active?: boolean
+          min_level?: number | null
+          online?: boolean
+          quadrant_seal_target?: number | null
+          rules: Json
+          starts_at: string
+          title: string
+          version?: number
+        }
+        Update: {
+          bot_difficulties?: string[]
+          bot_follows_rules?: boolean
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          daily_limit?: number | null
+          description?: string
+          ends_at?: string
+          event_id?: string | null
+          event_points?: Json | null
+          format?: string
+          id?: string
+          is_active?: boolean
+          min_level?: number | null
+          online?: boolean
+          quadrant_seal_target?: number | null
+          rules?: Json
+          starts_at?: string
+          title?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenges_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenges_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coin_ledger: {
         Row: {
           amount: number
@@ -1925,6 +2231,7 @@ export type Database = {
       match_lobbies: {
         Row: {
           card_instance_ids: string[]
+          challenge_id: string | null
           code: string
           created_at: string
           expires_at: string
@@ -1934,6 +2241,7 @@ export type Database = {
         }
         Insert: {
           card_instance_ids: string[]
+          challenge_id?: string | null
           code: string
           created_at?: string
           expires_at: string
@@ -1943,6 +2251,7 @@ export type Database = {
         }
         Update: {
           card_instance_ids?: string[]
+          challenge_id?: string | null
           code?: string
           created_at?: string
           expires_at?: string
@@ -1951,6 +2260,13 @@ export type Database = {
           mode?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "match_lobbies_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "match_lobbies_host_id_fkey"
             columns: ["host_id"]
@@ -2082,10 +2398,10 @@ export type Database = {
       }
       matches: {
         Row: {
-          challenge_id: string | null
           boss_id: string | null
           boss_values: Json | null
           bot_difficulty: string | null
+          challenge_id: string | null
           created_at: string
           current_round: number
           end_reason: string | null
@@ -2120,10 +2436,10 @@ export type Database = {
           total_score_b: number
         }
         Insert: {
-          challenge_id?: string | null
           boss_id?: string | null
           boss_values?: Json | null
           bot_difficulty?: string | null
+          challenge_id?: string | null
           created_at?: string
           current_round?: number
           end_reason?: string | null
@@ -2158,10 +2474,10 @@ export type Database = {
           total_score_b?: number
         }
         Update: {
-          challenge_id?: string | null
           boss_id?: string | null
           boss_values?: Json | null
           bot_difficulty?: string | null
+          challenge_id?: string | null
           created_at?: string
           current_round?: number
           end_reason?: string | null
@@ -2201,6 +2517,13 @@ export type Database = {
             columns: ["boss_id"]
             isOneToOne: false
             referencedRelation: "boss_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
             referencedColumns: ["id"]
           },
           {
@@ -3778,6 +4101,7 @@ export type Database = {
       admin_achievements_payload: { Args: never; Returns: Json }
       admin_bonus_codes_payload: { Args: never; Returns: Json }
       admin_boss_table_payload: { Args: never; Returns: Json }
+      admin_challenges_payload: { Args: never; Returns: Json }
       admin_create_bonus_code: {
         Args: {
           p_card_codes?: string[]
@@ -3793,32 +4117,45 @@ export type Database = {
       }
       admin_daily_objectives_payload: { Args: never; Returns: Json }
       admin_delete_achievement: { Args: { p_id: string }; Returns: Json }
+      admin_delete_challenge: { Args: { p_id: string }; Returns: Json }
       admin_delete_daily_objective: { Args: { p_code: string }; Returns: Json }
       admin_delete_event: { Args: { p_id: string }; Returns: Json }
       admin_delete_special_pack: { Args: { p_id: string }; Returns: Json }
       admin_events_payload: { Args: never; Returns: Json }
       admin_get_boss_table: { Args: never; Returns: Json }
-      admin_delete_challenge: { Args: { p_id: string }; Returns: Json }
       admin_get_story: { Args: never; Returns: Json }
       admin_grant_achievement: {
         Args: { p_id: string; p_username: string }
         Returns: Json
       }
-      admin_list_challenges: { Args: never; Returns: Json }
       admin_list_achievements: { Args: never; Returns: Json }
       admin_list_bonus_codes: { Args: never; Returns: Json }
+      admin_list_challenges: { Args: never; Returns: Json }
       admin_list_daily_objectives: { Args: never; Returns: Json }
       admin_list_events: { Args: never; Returns: Json }
       admin_list_pack_cards: { Args: never; Returns: Json }
       admin_list_special_packs: { Args: never; Returns: Json }
       admin_list_threats: { Args: never; Returns: Json }
       admin_pack_cards_payload: { Args: never; Returns: Json }
+      admin_preview_achievement: { Args: { p_draft: Json }; Returns: Json }
       admin_preview_challenge: {
         Args: { p_format: string; p_rules: Json }
         Returns: Json
       }
-      admin_preview_achievement: { Args: { p_draft: Json }; Returns: Json }
       admin_reorder_achievements: { Args: { p_ids: string[] }; Returns: Json }
+      admin_save_achievement: {
+        Args: { p_draft: Json; p_id: string }
+        Returns: Json
+      }
+      admin_save_boss_table: {
+        Args: {
+          p_base_value: number
+          p_hot_fronts: number
+          p_hot_growth: number
+          p_hot_value: number
+        }
+        Returns: Json
+      }
       admin_save_challenge: {
         Args: {
           p_bot_difficulties: string[]
@@ -3838,19 +4175,6 @@ export type Database = {
           p_starts_at: string
           p_tiers?: Json
           p_title: string
-        }
-        Returns: Json
-      }
-      admin_save_achievement: {
-        Args: { p_draft: Json; p_id: string }
-        Returns: Json
-      }
-      admin_save_boss_table: {
-        Args: {
-          p_base_value: number
-          p_hot_fronts: number
-          p_hot_growth: number
-          p_hot_value: number
         }
         Returns: Json
       }
@@ -3939,10 +4263,6 @@ export type Database = {
         Args: { p_ending: string; p_season: number; p_title: string }
         Returns: Json
       }
-      admin_set_challenge_active: {
-        Args: { p_active: boolean; p_id: string }
-        Returns: Json
-      }
       admin_set_achievement_active: {
         Args: { p_id: string; p_is_active: boolean }
         Returns: Json
@@ -3953,6 +4273,10 @@ export type Database = {
       }
       admin_set_cards_in_packs: {
         Args: { p_card_codes: string[]; p_in_packs: boolean }
+        Returns: Json
+      }
+      admin_set_challenge_active: {
+        Args: { p_active: boolean; p_id: string }
         Returns: Json
       }
       admin_set_daily_objective_active: {
@@ -4084,6 +4408,123 @@ export type Database = {
           }
       card_trait_codes: { Args: { p_definition_id: string }; Returns: Json }
       cards_lost_today: { Args: { p_user: string }; Returns: number }
+      challenge_admits: {
+        Args: { p_definition_id: string; p_rules: Json }
+        Returns: boolean
+      }
+      challenge_admitted_counts: {
+        Args: { p_rules: Json }
+        Returns: {
+          admitted: number
+          with_variant: number
+        }[]
+      }
+      challenge_bot_context: {
+        Args: { p_challenge_id: string; p_difficulty: string; p_user: string }
+        Returns: Json
+      }
+      challenge_check_online: {
+        Args: {
+          p_challenge: Database["public"]["Tables"]["challenges"]["Row"]
+          p_user: string
+        }
+        Returns: undefined
+      }
+      challenge_check_open: {
+        Args: {
+          p_challenge: Database["public"]["Tables"]["challenges"]["Row"]
+          p_user: string
+        }
+        Returns: undefined
+      }
+      challenge_check_start: {
+        Args: {
+          p_challenge: Database["public"]["Tables"]["challenges"]["Row"]
+          p_difficulty: string
+          p_user: string
+        }
+        Returns: undefined
+      }
+      challenge_create_bot_match: {
+        Args: {
+          p_boss_values?: Json
+          p_bot_definition_ids: string[]
+          p_card_instance_ids: string[]
+          p_challenge_id: string
+          p_difficulty: string
+          p_threat_ids?: string[]
+          p_user: string
+        }
+        Returns: string
+      }
+      challenge_formats: { Args: never; Returns: string[] }
+      challenge_insert_pvp_match: {
+        Args: {
+          p_boss_values: Json
+          p_challenge: Database["public"]["Tables"]["challenges"]["Row"]
+          p_definitions_a: string[]
+          p_definitions_b: string[]
+          p_player_a: string
+          p_player_b: string
+          p_team_a: string[]
+          p_team_b: string[]
+          p_threat_ids: string[]
+        }
+        Returns: string
+      }
+      challenge_normalize_rules: { Args: { p_rules: Json }; Returns: Json }
+      challenge_payload: {
+        Args: {
+          p_challenge: Database["public"]["Tables"]["challenges"]["Row"]
+          p_user: string
+        }
+        Returns: Json
+      }
+      challenge_plays_today: {
+        Args: { p_challenge_id: string; p_user: string }
+        Returns: number
+      }
+      challenge_queue_join: {
+        Args: {
+          p_boss_values?: Json
+          p_challenge_id: string
+          p_team: string[]
+          p_threat_ids?: string[]
+          p_user: string
+        }
+        Returns: string
+      }
+      challenge_rule_list: {
+        Args: { p_key: string; p_rules: Json }
+        Returns: string[]
+      }
+      challenge_tag_match: {
+        Args: {
+          p_challenge: Database["public"]["Tables"]["challenges"]["Row"]
+          p_match_id: string
+        }
+        Returns: undefined
+      }
+      challenge_team_problem: {
+        Args: { p_format: string; p_instance_ids: string[]; p_rules: Json }
+        Returns: string
+      }
+      challenge_tiers_payload: {
+        Args: { p_challenge_id: string; p_user: string }
+        Returns: Json
+      }
+      challenge_variant_counts: {
+        Args: { p_rules: Json; p_variant_id: string }
+        Returns: boolean
+      }
+      challenge_variants_needed: {
+        Args: { p_rules: Json; p_size: number }
+        Returns: number
+      }
+      challenge_wins: {
+        Args: { p_challenge_id: string; p_user: string }
+        Returns: number
+      }
       check_achievements: {
         Args: { p_metrics?: string[]; p_notify?: boolean; p_user: string }
         Returns: number
@@ -4439,6 +4880,7 @@ export type Database = {
       get_achievements: { Args: never; Returns: Json }
       get_active_match: { Args: never; Returns: Json }
       get_bestiary: { Args: never; Returns: Json }
+      get_challenges: { Args: never; Returns: Json }
       get_collection: {
         Args: never
         Returns: {
@@ -4489,9 +4931,15 @@ export type Database = {
       }
       get_ranked_hall: { Args: never; Returns: Json }
       get_special_packs: { Args: never; Returns: Json }
-      get_challenges: { Args: never; Returns: Json }
       get_story: { Args: never; Returns: Json }
       get_story_reward: { Args: { p_match_id: string }; Returns: Json }
+      grant_challenge_tier: {
+        Args: {
+          p_tier: Database["public"]["Tables"]["challenge_tiers"]["Row"]
+          p_user: string
+        }
+        Returns: undefined
+      }
       grant_event_tier: {
         Args: {
           p_tier: Database["public"]["Tables"]["event_tiers"]["Row"]
@@ -5399,6 +5847,10 @@ export type Database = {
       }
       visible_modifier: {
         Args: { p_hide: boolean; p_modifier: Json }
+        Returns: Json
+      }
+      with_challenge: {
+        Args: { p_match_id: string; p_payload: Json; p_side: string }
         Returns: Json
       }
       with_fog: {
