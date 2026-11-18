@@ -28,6 +28,11 @@ describe("boards and periods", () => {
     expect(periodFor("general", "day")).toBe("day");
     expect(periodFor("story", "week")).toBe("all");
     expect(periodFor("boss", null)).toBe("week");
+    // The weekly Emergenza has its week only.
+    expect(defaultPeriod("emergency_week")).toBe("week");
+    expect(periodFor("emergency_week", "day")).toBe("week");
+    expect(periodFor("emergency_week", "all")).toBe("week");
+    expect(parseBoard("emergency_week")).toBe("emergency_week");
   });
 
   it("links a board and a period", () => {
@@ -63,6 +68,11 @@ describe("numbers on a row", () => {
     });
     expect(entryNumbers("general", "week", { value: 80, value2: 0, detail: { level: 7 } }, 10).unit).toBe("XP");
     expect(entryNumbers("story", "all", { value: 1, value2: 0, detail: {} }, 10).unit).toBe("missione");
+    expect(entryNumbers("emergency_week", "week", { value: 7, value2: 190, detail: { total_score: 190 } }, 10)).toEqual({
+      value: "7",
+      unit: "superate",
+      note: "190 pt",
+    });
   });
 
   it("formats numbers the Italian way", () => {
@@ -97,5 +107,7 @@ describe("places", () => {
     expect(playersLine(5, "week")).toBe("5 giocatori questa settimana");
     expect(emptyLine("emergency", "day")).toContain("Emergenza");
     expect(emptyLine("classic", "week")).toContain("settimana");
+    expect(emptyLine("emergency_week", "week")).toContain("Emergenza della settimana");
+    expect(describePlace(place("emergency_week", "week", 2, 9))).toBe("Sei 2° su 9 questa settimana in Emergenza settimanale");
   });
 });

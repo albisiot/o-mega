@@ -123,7 +123,7 @@ export function MyLeaderboardPlaces({ albo = null }: { albo?: { place: number; l
       )}
       {boards.map((board) => (
         <div key={board.key} className="grid min-h-[34px] grid-cols-[1fr_6.5rem_6.5rem] items-center gap-1 bg-panel px-2.5">
-          <span className="truncate font-display text-[16px] uppercase leading-5">{board.label}</span>
+          <span className="truncate font-display text-[16px] uppercase leading-5">{board.short ?? board.label}</span>
           {board.periods.includes("week") ? cell(board.key, "week") : <span className="text-center text-sm text-faint">–</span>}
           {cell(board.key, "all")}
         </div>

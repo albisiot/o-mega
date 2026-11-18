@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { EventBanner } from "@/components/event-banner";
 import { LoadingScreen } from "@/components/loading-screen";
-import { PlayMenuView, type EmergencyToday } from "@/components/play-menu";
-import { fetchEmergencyLeaderboard } from "@/lib/emergency";
+import { PlayMenuView, type EmergencyThisWeek, type EmergencyToday } from "@/components/play-menu";
+import { fetchEmergencyLeaderboard, fetchEmergencyWeekLeaderboard } from "@/lib/emergency";
 import { describeServerError } from "@/lib/errors";
 import { readLastPlay, type LastPlay } from "@/lib/last-play";
 import { fetchActiveMatch, fetchConquestStatus, forfeitMatch, type ActiveMatch, type ConquestStatus } from "@/lib/match";
@@ -20,6 +20,7 @@ export default function PlayPage() {
   const [conquest, setConquest] = useState<ConquestStatus | null>(null);
   const [ranked, setRanked] = useState<MyRanked | null>(null);
   const [emergency, setEmergency] = useState<EmergencyToday>(undefined);
+  const [emergencyWeek, setEmergencyWeek] = useState<EmergencyThisWeek>(undefined);
   const [story, setStory] = useState<StoryChapter[] | null>(() => seenStory());
   // On this device only: read once, the page is left to start a match anyway.
   const [lastPlay] = useState<LastPlay | null>(() => readLastPlay());
@@ -55,6 +56,21 @@ export default function PlayPage() {
         if (!cancelled) setEmergency(board.me ? { passed: board.me.passed, rank: board.me.rank } : null);
       })
       .catch((cause: unknown) => console.error("Emergency board failed", cause));
+    // This week's Emergenza: the days left and the player's own run, finished or not.
+    fetchEmergencyWeekLeaderboard()
+      .then((board) => {
+        if (cancelled) return;
+        setEmergencyWeek({
+          endsAt: board.ends_at,
+          threats: board.threats_per_run,
+          run: board.my_run,
+          rank: board.me?.rank ?? null,
+        });
+      })
+      .catch((cause: unknown) => {
+        console.error("Weekly Emergency board failed", cause);
+        if (!cancelled) setEmergencyWeek(null);
+      });
     fetchStory()
       .then((next) => {
         if (!cancelled) setStory(next);
@@ -86,6 +102,7 @@ export default function PlayPage() {
         conquest={conquest}
         ranked={ranked}
         emergency={emergency}
+        emergencyWeek={emergencyWeek}
         story={story}
         lastPlay={lastPlay}
         event={<EventBanner compact />}

@@ -39,12 +39,30 @@ export type RewardSettingKey =
   | "emergency.prizes.rank3_coins"
   | "emergency.prizes.rank3_packs"
   | "emergency.prizes.others_coins"
-  | "emergency.prizes.others_packs";
+  | "emergency.prizes.others_packs"
+  | "emergency_week.rewards.tier1_passed"
+  | "emergency_week.rewards.tier2_passed"
+  | "emergency_week.rewards.tier3_passed"
+  | "emergency_week.rewards.tier1_coins"
+  | "emergency_week.rewards.tier2_coins"
+  | "emergency_week.rewards.tier3_coins"
+  | "emergency_week.prizes.min_passed"
+  | "emergency_week.prizes.rank1_coins"
+  | "emergency_week.prizes.rank1_packs"
+  | "emergency_week.prizes.rank2_coins"
+  | "emergency_week.prizes.rank2_packs"
+  | "emergency_week.prizes.rank3_coins"
+  | "emergency_week.prizes.rank3_packs"
+  | "emergency_week.prizes.others_coins"
+  | "emergency_week.prizes.others_packs";
 
 export type MatchRewards = {
   rules: MatchRewardRule[];
+  /** The keys of a server without the weekly Emergenza yet are missing. */
   settings: Record<RewardSettingKey, number>;
   emergency_threats_per_run: number;
+  /** Threats of the Emergenza della settimana (SPEC §5.16); missing on a server without it. */
+  emergency_week_threats_per_run?: number;
 };
 
 /** What the player earned in one finished match. */
@@ -152,6 +170,21 @@ export const SETTING_LIMITS: Record<RewardSettingKey, { min: number; max: number
   "emergency.prizes.rank3_packs": { min: 0, max: 3 },
   "emergency.prizes.others_coins": { min: 0, max: 10000 },
   "emergency.prizes.others_packs": { min: 0, max: 3 },
+  "emergency_week.rewards.tier1_passed": { min: 1, max: 100 },
+  "emergency_week.rewards.tier2_passed": { min: 1, max: 100 },
+  "emergency_week.rewards.tier3_passed": { min: 1, max: 100 },
+  "emergency_week.rewards.tier1_coins": { min: 1, max: 10000 },
+  "emergency_week.rewards.tier2_coins": { min: 1, max: 10000 },
+  "emergency_week.rewards.tier3_coins": { min: 1, max: 10000 },
+  "emergency_week.prizes.min_passed": { min: 0, max: 100 },
+  "emergency_week.prizes.rank1_coins": { min: 0, max: 10000 },
+  "emergency_week.prizes.rank1_packs": { min: 0, max: 3 },
+  "emergency_week.prizes.rank2_coins": { min: 0, max: 10000 },
+  "emergency_week.prizes.rank2_packs": { min: 0, max: 3 },
+  "emergency_week.prizes.rank3_coins": { min: 0, max: 10000 },
+  "emergency_week.prizes.rank3_packs": { min: 0, max: 3 },
+  "emergency_week.prizes.others_coins": { min: 0, max: 10000 },
+  "emergency_week.prizes.others_packs": { min: 0, max: 3 },
 };
 
 /** The modes to show: the known ones present on the server, then any other key it sends. */
@@ -225,6 +258,8 @@ export function rewardsProblem(
   rules: MatchRewardRule[],
   settings: Record<RewardSettingKey, number>,
   threatsPerRun: number,
+  /** Threats of the weekly Emergenza; undefined on a server without it. */
+  weekThreatsPerRun?: number,
 ): string | null {
   for (const rule of rules) {
     for (const field of ["coins", "xp", "packs"] as const) {
@@ -236,6 +271,8 @@ export function rewardsProblem(
     }
   }
   for (const [key, limit] of Object.entries(SETTING_LIMITS) as [RewardSettingKey, { min: number; max: number }][]) {
+    // A key the server does not have yet (the weekly Emergenza before its migration) is not sent.
+    if (!(key in settings)) continue;
     const value = settings[key];
     if (!Number.isInteger(value) || value < limit.min || value > limit.max) {
       return `Valore non valido: deve stare tra ${limit.min} e ${limit.max}.`;
@@ -247,6 +284,15 @@ export function rewardsProblem(
   }
   if (settings["emergency.prizes.min_passed"] > threatsPerRun) {
     return `Per i premi della classifica bastano al massimo ${threatsPerRun} Minacce superate.`;
+  }
+  if (weekThreatsPerRun !== undefined && "emergency_week.rewards.tier1_passed" in settings) {
+    const weekly = [1, 2, 3].map((tier) => settings[`emergency_week.rewards.tier${tier}_passed` as RewardSettingKey]);
+    if (!(weekly[0] < weekly[1] && weekly[1] < weekly[2] && weekly[2] <= weekThreatsPerRun)) {
+      return `Le soglie dell'Emergenza della settimana devono crescere e arrivare al massimo a ${weekThreatsPerRun} Minacce.`;
+    }
+    if (settings["emergency_week.prizes.min_passed"] > weekThreatsPerRun) {
+      return `Per i premi della classifica della settimana bastano al massimo ${weekThreatsPerRun} Minacce superate.`;
+    }
   }
   return null;
 }

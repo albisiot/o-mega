@@ -29,6 +29,7 @@ import { useLockedScreen } from "@/lib/use-locked-screen";
 const WEEKLY_TITLES: Partial<Record<LeaderboardBoard, string>> = {
   general: "Campione della settimana",
   emergency: "Campione dell'Emergenza",
+  emergency_week: "Eroe della settimana",
   classic: "Campione della Classica",
   boss: "Campione di Grande Minaccia",
   triple: "Campione di Allarme Triplo",

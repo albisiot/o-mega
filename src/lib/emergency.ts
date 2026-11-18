@@ -37,6 +37,8 @@ export type EmergencyPlay = {
 export type EmergencySquadCard = MatchCard & { instance_id: string; played_round: number | null };
 
 export type EmergencyRun = {
+  /** The player's own run (weekly challenge): its event points are looked up by it. */
+  id?: string;
   status: "active" | "finished";
   current_round: number;
   passed: number;
@@ -53,9 +55,23 @@ export type EmergencyRun = {
   foreseen_threats: { round: number; level: number; name: string; abilities: string[] }[];
 };
 
-/** What the server lets the player see of today's challenge (SPEC §5.10). */
+/**
+ * The two challenges: the daily Emergenza (SPEC §5.10) and the Emergenza della settimana
+ * (SPEC §5.16), harder, Monday to Sunday. Same screens, same engine, their own rules.
+ */
+export type EmergencyKind = "day" | "week";
+
+/** Where a challenge opens: the weekly one with ?settimana=1 (no dynamic routes in the static export). */
+export function emergencyHref(kind: EmergencyKind): string {
+  return kind === "week" ? "/emergenza/?settimana=1" : "/emergenza";
+}
+
+/** What the server lets the player see of today's challenge (SPEC §5.10), or of this week's (SPEC §5.16). */
 export type EmergencyView = {
   day: string;
+  /** The week's Monday (YYYY-MM-DD), and when it ends: the weekly challenge only. */
+  week?: string;
+  ends_at?: string;
   server_now: string;
   /** null: Livello ignoto, until it is the current threat. */
   threat_levels: (number | null)[];
@@ -72,17 +88,19 @@ export type EmergencyView = {
   run: EmergencyRun | null;
 };
 
-/** Opens today's challenge: the first player of the day makes the server draw it. */
-export function openEmergency(): Promise<EmergencyView> {
-  return invokeFunction({ action: "emergency_open" });
+const ACTION_PREFIX: Record<EmergencyKind, string> = { day: "emergency", week: "emergency_week" };
+
+/** Opens today's challenge (or this week's): the first player of the day (or week) makes the server draw it. */
+export function openEmergency(kind: EmergencyKind = "day"): Promise<EmergencyView> {
+  return invokeFunction({ action: `${ACTION_PREFIX[kind]}_open` });
 }
 
-export function startEmergency(cardInstanceIds: string[]): Promise<EmergencyView> {
-  return invokeFunction({ action: "emergency_start", card_instance_ids: cardInstanceIds });
+export function startEmergency(cardInstanceIds: string[], kind: EmergencyKind = "day"): Promise<EmergencyView> {
+  return invokeFunction({ action: `${ACTION_PREFIX[kind]}_start`, card_instance_ids: cardInstanceIds });
 }
 
-export function playEmergency(round: number, cardInstanceId: string): Promise<EmergencyView> {
-  return invokeFunction({ action: "emergency_play", round, card_instance_id: cardInstanceId });
+export function playEmergency(round: number, cardInstanceId: string, kind: EmergencyKind = "day"): Promise<EmergencyView> {
+  return invokeFunction({ action: `${ACTION_PREFIX[kind]}_play`, round, card_instance_id: cardInstanceId });
 }
 
 export type EmergencyRank = {
@@ -106,6 +124,16 @@ export type EmergencyLeaderboard = {
   prize_min_passed?: number;
 };
 
+/** This week's leaderboard (SPEC §5.16): also when the week ends and where the player's own run is. */
+export type EmergencyWeekLeaderboard = EmergencyLeaderboard & {
+  week: string;
+  ends_at: string;
+  server_now: string;
+  threats_per_run: number;
+  /** null before the player fields a squad this week. */
+  my_run: { status: "active" | "finished"; passed: number; failed: number; current_round: number } | null;
+};
+
 /** A card of a podium lineup, drawn as it was played; `play` is null for a card the run never reached. */
 export type EmergencyLineupCard = MatchCard & {
   instance_id: string;
@@ -120,14 +148,47 @@ export type EmergencyLineup = Omit<EmergencyRank, "rank"> & { rank: number; card
  */
 export type EmergencyLineups = { day: string; live: boolean; lineups: EmergencyLineup[] };
 
-export async function fetchEmergencyLineups(): Promise<EmergencyLineups> {
-  const { data, error } = await getSupabase().rpc("get_emergency_lineups");
+/** The podium's lineups: of the day (yesterday's before one's own attempt), or of the week (last week's before). */
+export async function fetchEmergencyLineups(kind: EmergencyKind = "day"): Promise<EmergencyLineups> {
+  const { data, error } = await getSupabase().rpc(kind === "week" ? "get_emergency_week_lineups" : "get_emergency_lineups");
   if (error) throw error;
   return data as unknown as EmergencyLineups;
 }
 
-export async function fetchEmergencyLeaderboard(): Promise<EmergencyLeaderboard> {
+export async function fetchEmergencyLeaderboard(kind: EmergencyKind = "day"): Promise<EmergencyLeaderboard> {
+  if (kind === "week") return fetchEmergencyWeekLeaderboard();
   const { data, error } = await getSupabase().rpc("get_emergency_leaderboard");
   if (error) throw error;
   return data as unknown as EmergencyLeaderboard;
+}
+
+export async function fetchEmergencyWeekLeaderboard(): Promise<EmergencyWeekLeaderboard> {
+  const { data, error } = await getSupabase().rpc("get_emergency_week_leaderboard");
+  if (error) throw error;
+  return data as unknown as EmergencyWeekLeaderboard;
+}
+
+/**
+ * Days left in the week, today included, from the server's clock: 7 on Monday, 1 on Sunday.
+ * Only for the words on screen; the server decides when the week ends.
+ */
+export function daysLeft(endsAt: string, now: number): number {
+  return Math.max(1, Math.ceil((Date.parse(endsAt) - now) / 86_400_000));
+}
+
+/** "Ultimo giorno", "Ancora 2 giorni", "Ancora 7 giorni". */
+export function daysLeftText(days: number): string {
+  return days <= 1 ? "Ultimo giorno" : `Ancora ${days} giorni`;
+}
+
+/** "dal 16 al 22 novembre", "dal 30 novembre al 6 dicembre", from a week's Monday (YYYY-MM-DD). */
+export function weekText(week: string): string {
+  const [year, month, date] = week.split("-").map(Number);
+  const monday = new Date(Date.UTC(year, month - 1, date));
+  const sunday = new Date(Date.UTC(year, month - 1, date + 6));
+  const day = (d: Date) => d.getUTCDate();
+  const monthName = (d: Date) => new Intl.DateTimeFormat("it-IT", { month: "long", timeZone: "UTC" }).format(d);
+  return monday.getUTCMonth() === sunday.getUTCMonth()
+    ? `dal ${day(monday)} al ${day(sunday)} ${monthName(sunday)}`
+    : `dal ${day(monday)} ${monthName(monday)} al ${day(sunday)} ${monthName(sunday)}`;
 }

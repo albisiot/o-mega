@@ -38,7 +38,7 @@ const toNumber = (value: string) => (value.trim() === "" ? NaN : Number(value));
 
 /**
  * What every match pays, for admins: per mode, opponent and outcome, XP, coins and packs;
- * then the daily caps and the Emergenza. Everything is saved at once and checked again on
+ * then the daily caps, the Emergenza and the Emergenza della settimana. Everything is saved at once and checked again on
  * the server; it applies to the matches that end after the save.
  */
 export function MatchRewardAdmin({ initial }: { initial: MatchRewards }) {
@@ -58,7 +58,9 @@ export function MatchRewardAdmin({ initial }: { initial: MatchRewards }) {
   const settingNumbers = Object.fromEntries(
     Object.entries(settings).map(([key, value]) => [key, toNumber(value)]),
   ) as Record<RewardSettingKey, number>;
-  const problem = rewardsProblem(ruleNumbers, settingNumbers, saved.emergency_threats_per_run);
+  const problem = rewardsProblem(ruleNumbers, settingNumbers, saved.emergency_threats_per_run, saved.emergency_week_threats_per_run);
+  // The Emergenza della settimana (SPEC §5.16): its threats, or undefined on a server without it.
+  const weekly = "emergency_week.rewards.tier1_passed" in saved.settings ? saved.emergency_week_threats_per_run : undefined;
   const changes = rewardChanges(saved, ruleNumbers, settingNumbers);
   const changed = changes.rules.length + Object.keys(changes.settings).length;
 
@@ -181,34 +183,7 @@ export function MatchRewardAdmin({ initial }: { initial: MatchRewards }) {
                   value={settings["emergency.rewards.finish_xp"]}
                   onChange={(value) => setSetting("emergency.rewards.finish_xp", value)}
                 />
-                <div className="grid grid-cols-[4.5rem_repeat(2,minmax(0,1fr))] items-center gap-x-1.5 gap-y-1">
-                  <span aria-hidden />
-                  <span className="text-center text-[11px] font-extrabold uppercase text-faint">Minacce</span>
-                  <span className="text-center text-[11px] font-extrabold uppercase text-faint">Monete</span>
-                  {([1, 2, 3] as const).map((tier) => {
-                    const passed = `emergency.rewards.tier${tier}_passed` as RewardSettingKey;
-                    const coins = `emergency.rewards.tier${tier}_coins` as RewardSettingKey;
-                    return (
-                      <div key={tier} className="contents">
-                        <span className="text-[13px] font-bold leading-4">Soglia {tier}</span>
-                        <input
-                          inputMode="numeric"
-                          value={settings[passed]}
-                          onChange={(event) => setSetting(passed, event.target.value)}
-                          aria-label={`Soglia ${tier}: Minacce superate`}
-                          className={NUMBER}
-                        />
-                        <input
-                          inputMode="numeric"
-                          value={settings[coins]}
-                          onChange={(event) => setSetting(coins, event.target.value)}
-                          aria-label={`Soglia ${tier}: monete`}
-                          className={NUMBER}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
+                <TierGrid prefix="emergency" settings={settings} onChange={setSetting} />
               </section>
               <section aria-label="Premi della classifica Emergenza" className="flex flex-col gap-2 bg-panel px-3 py-2">
                 <h2 className="font-display text-xl uppercase leading-6">Premi della classifica</h2>
@@ -223,42 +198,35 @@ export function MatchRewardAdmin({ initial }: { initial: MatchRewards }) {
                   value={settings["emergency.prizes.min_passed"]}
                   onChange={(value) => setSetting("emergency.prizes.min_passed", value)}
                 />
-                <div className="grid grid-cols-[4.5rem_repeat(2,minmax(0,1fr))] items-center gap-x-1.5 gap-y-1">
-                  <span aria-hidden />
-                  <span className="text-center text-[11px] font-extrabold uppercase text-faint">Monete</span>
-                  <span className="text-center text-[11px] font-extrabold uppercase text-faint">Pacchetti</span>
-                  {(
-                    [
-                      ["rank1", "1° posto"],
-                      ["rank2", "2° posto"],
-                      ["rank3", "3° posto"],
-                      ["others", "Dal 4°"],
-                    ] as const
-                  ).map(([tier, label]) => {
-                    const coins = `emergency.prizes.${tier}_coins` as RewardSettingKey;
-                    const packs = `emergency.prizes.${tier}_packs` as RewardSettingKey;
-                    return (
-                      <div key={tier} className="contents">
-                        <span className="text-[13px] font-bold leading-4">{label}</span>
-                        <input
-                          inputMode="numeric"
-                          value={settings[coins]}
-                          onChange={(event) => setSetting(coins, event.target.value)}
-                          aria-label={`${label}: monete`}
-                          className={NUMBER}
-                        />
-                        <input
-                          inputMode="numeric"
-                          value={settings[packs]}
-                          onChange={(event) => setSetting(packs, event.target.value)}
-                          aria-label={`${label}: pacchetti`}
-                          className={NUMBER}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
+                <PrizeGrid prefix="emergency" settings={settings} onChange={setSetting} />
               </section>
+              {weekly !== undefined && (
+                <>
+                  <section aria-label="Emergenza della settimana" className="flex flex-col gap-2 bg-panel px-3 py-2">
+                    <h2 className="font-display text-xl uppercase leading-6">Emergenza della settimana</h2>
+                    <p className="text-[11px] font-medium leading-4 text-muted">
+                      Un tentativo a settimana, da lunedì a domenica: paga a soglie di Minacce superate (su {weekly}),
+                      subito.
+                    </p>
+                    <TierGrid prefix="emergency_week" settings={settings} onChange={setSetting} />
+                  </section>
+                  <section aria-label="Premi della classifica della settimana" className="flex flex-col gap-2 bg-panel px-3 py-2">
+                    <h2 className="font-display text-xl uppercase leading-6">Premi della settimana</h2>
+                    <p className="text-[11px] font-medium leading-4 text-muted">
+                      Domenica a mezzanotte la classifica dell&apos;Emergenza della settimana è definitiva: i primi ricevono
+                      questi premi e li riscuotono dallo stesso popup. «Dal 4°» vale fino all&apos;ultimo posto mostrato.
+                      Un posto con 0 monete e 0 pacchetti non vince niente.
+                    </p>
+                    <SettingRow
+                      label="Minacce superate minime"
+                      hint={`Per vincere un premio · 0 = basta finire (al massimo ${weekly})`}
+                      value={settings["emergency_week.prizes.min_passed"]}
+                      onChange={(value) => setSetting("emergency_week.prizes.min_passed", value)}
+                    />
+                    <PrizeGrid prefix="emergency_week" settings={settings} onChange={setSetting} />
+                  </section>
+                </>
+              )}
             </>
           )}
         </div>
@@ -297,6 +265,87 @@ export function MatchRewardAdmin({ initial }: { initial: MatchRewards }) {
           </button>
         </div>
       </main>
+    </div>
+  );
+}
+
+type GridProps = {
+  prefix: "emergency" | "emergency_week";
+  settings: Record<RewardSettingKey, string>;
+  onChange: (key: RewardSettingKey, value: string) => void;
+};
+
+/** The three tiers of threats passed of an Emergenza, daily or weekly, and their coins. */
+function TierGrid({ prefix, settings, onChange }: GridProps) {
+  return (
+    <div className="grid grid-cols-[4.5rem_repeat(2,minmax(0,1fr))] items-center gap-x-1.5 gap-y-1">
+      <span aria-hidden />
+      <span className="text-center text-[11px] font-extrabold uppercase text-faint">Minacce</span>
+      <span className="text-center text-[11px] font-extrabold uppercase text-faint">Monete</span>
+      {([1, 2, 3] as const).map((tier) => {
+        const passed = `${prefix}.rewards.tier${tier}_passed` as RewardSettingKey;
+        const coins = `${prefix}.rewards.tier${tier}_coins` as RewardSettingKey;
+        return (
+          <div key={tier} className="contents">
+            <span className="text-[13px] font-bold leading-4">Soglia {tier}</span>
+            <input
+              inputMode="numeric"
+              value={settings[passed]}
+              onChange={(event) => onChange(passed, event.target.value)}
+              aria-label={`Soglia ${tier}: Minacce superate`}
+              className={NUMBER}
+            />
+            <input
+              inputMode="numeric"
+              value={settings[coins]}
+              onChange={(event) => onChange(coins, event.target.value)}
+              aria-label={`Soglia ${tier}: monete`}
+              className={NUMBER}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** What each place of an Emergenza leaderboard, daily or weekly, wins: coins and packs. */
+function PrizeGrid({ prefix, settings, onChange }: GridProps) {
+  return (
+    <div className="grid grid-cols-[4.5rem_repeat(2,minmax(0,1fr))] items-center gap-x-1.5 gap-y-1">
+      <span aria-hidden />
+      <span className="text-center text-[11px] font-extrabold uppercase text-faint">Monete</span>
+      <span className="text-center text-[11px] font-extrabold uppercase text-faint">Pacchetti</span>
+      {(
+        [
+          ["rank1", "1° posto"],
+          ["rank2", "2° posto"],
+          ["rank3", "3° posto"],
+          ["others", "Dal 4°"],
+        ] as const
+      ).map(([tier, label]) => {
+        const coins = `${prefix}.prizes.${tier}_coins` as RewardSettingKey;
+        const packs = `${prefix}.prizes.${tier}_packs` as RewardSettingKey;
+        return (
+          <div key={tier} className="contents">
+            <span className="text-[13px] font-bold leading-4">{label}</span>
+            <input
+              inputMode="numeric"
+              value={settings[coins]}
+              onChange={(event) => onChange(coins, event.target.value)}
+              aria-label={`${label}: monete`}
+              className={NUMBER}
+            />
+            <input
+              inputMode="numeric"
+              value={settings[packs]}
+              onChange={(event) => onChange(packs, event.target.value)}
+              aria-label={`${label}: pacchetti`}
+              className={NUMBER}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }

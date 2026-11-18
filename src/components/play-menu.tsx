@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react";
 import { TrophyIcon } from "@/components/leaderboard-places";
 import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
+import { daysLeft, daysLeftText, emergencyHref } from "@/lib/emergency";
 import { describeLastPlay, FIRST_PLAY, lastPlayHref, type LastPlay } from "@/lib/last-play";
 import { leaderboardHref, type LeaderboardBoard } from "@/lib/leaderboards";
 import { DIFFICULTY_LABELS, type ActiveMatch, type ConquestStatus, type MatchFormat } from "@/lib/match";
@@ -115,6 +116,20 @@ const QUADRANT_GRID_DETAILS: Record<QuadrantFormat, string> = {
 
 /** What the player did in today's Emergenza: null while it is still to play, undefined while loading. */
 export type EmergencyToday = { passed: number; rank: number } | null | undefined;
+
+/**
+ * This week's Emergenza (SPEC §5.16): when it ends, how many threats, and the player's run (null
+ * before the squad) with its place once finished. null when it cannot be loaded, undefined while loading.
+ */
+export type EmergencyThisWeek =
+  | {
+      endsAt: string;
+      threats: number;
+      run: { status: "active" | "finished"; passed: number; current_round: number } | null;
+      rank: number | null;
+    }
+  | null
+  | undefined;
 
 /** The black chips under a mode's name: what it needs and how long it lasts. */
 function Needs({ items }: { items: readonly string[] }) {
@@ -409,6 +424,44 @@ function EmergencyTile({ today }: { today: EmergencyToday }) {
   );
 }
 
+/**
+ * This week's Emergenza on one slim row under the day's tiles, drawn like the Emergenza tile:
+ * the days left and where the player is (to play, in progress, done with the threats passed).
+ */
+function EmergencyWeekRow({ week, now }: { week: EmergencyThisWeek; now: number }) {
+  if (week === null) return null;
+  const run = week?.run ?? null;
+  const days = week ? daysLeftText(daysLeft(week.endsAt, now)) : "Una sfida più dura";
+  const state =
+    week === undefined
+      ? undefined
+      : !run
+        ? "Da fare"
+        : run.status === "active"
+          ? `In corso · ${run.passed}/${week.threats}`
+          : `✓ ${run.passed}/${week.threats}${week.rank ? ` · ${week.rank}°` : ""}`;
+  return (
+    <Link
+      href={emergencyHref("week")}
+      aria-label={`Emergenza della settimana: ${days}${state ? `, ${state}` : ""}`}
+      className="flex min-h-10 shrink-0 items-center gap-2 bg-foreground px-2.5 py-1 text-black short:min-h-9"
+    >
+      <span className="shrink-0 -skew-x-8 bg-black px-1.5 font-sfx text-[13px] leading-5 tracking-wide text-comic-yellow">
+        Settimana
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-display text-[15px] uppercase leading-5">Emergenza della settimana</span>
+        <span className="block truncate text-[12px] font-bold leading-4">{days}</span>
+      </span>
+      {state && (
+        <span className="shrink-0 whitespace-nowrap bg-black px-1 text-[10px] font-extrabold uppercase leading-[14px] text-comic-yellow">
+          {state}
+        </span>
+      )}
+    </Link>
+  );
+}
+
 /** The Story at the chapter the player is in: the Story opens on its next mission. */
 function StoryTile({ chapters, disabled }: { chapters: StoryChapter[] | null; disabled: boolean }) {
   const playing = chapters?.find((chapter) => chapterUnlocked(chapter) && chapter.missions.some((m) => !m.completed));
@@ -531,6 +584,7 @@ export function PlayMenuView({
   conquest,
   ranked,
   emergency,
+  emergencyWeek,
   story,
   lastPlay,
   event,
@@ -543,6 +597,7 @@ export function PlayMenuView({
   conquest: ConquestStatus | null;
   ranked: MyRanked | null;
   emergency: EmergencyToday;
+  emergencyWeek: EmergencyThisWeek;
   story: StoryChapter[] | null;
   /** The last match set off on this device, or null for none. */
   lastPlay: LastPlay | null;
@@ -595,6 +650,7 @@ export function PlayMenuView({
               <EmergencyTile today={emergency} />
               <StoryTile chapters={story} disabled={blocked} />
             </div>
+            <EmergencyWeekRow week={emergencyWeek} now={now} />
 
             <ListTitle>Modalità</ListTitle>
             <div className="grid min-h-28 flex-[1_1_0] auto-rows-fr grid-cols-2 gap-1.5">

@@ -9,10 +9,11 @@
 //   /prova-gioca/?s=premio      an event reward to open, the Conquista limit reached
 //   /prova-gioca/?s=senza       no event, Story all done
 //   /prova-gioca/?s=carico      while loading
+// The Emergenza della settimana: to play (nuovo, senza), in progress (partita), done (ancora, premio).
 
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { PlayMenuView, type EmergencyToday } from "@/components/play-menu";
+import { PlayMenuView, type EmergencyThisWeek, type EmergencyToday } from "@/components/play-menu";
 import type { LastPlay } from "@/lib/last-play";
 import type { ActiveMatch, ConquestStatus } from "@/lib/match";
 import type { MyRanked } from "@/lib/ranked";
@@ -80,21 +81,41 @@ type Scene = {
   conquest: ConquestStatus | null;
   ranked: MyRanked | null;
   emergency: EmergencyToday;
+  emergencyWeek: EmergencyThisWeek;
   story: StoryChapter[] | null;
   lastPlay: LastPlay | null;
   event: "on" | "reward" | "off";
 };
 
+// The scenes are on Tuesday 17 November 2026: the week ends on Monday 23 at midnight, Rome.
+const WEEK_ENDS = "2026-11-22T23:00:00Z";
+const week = (run: NonNullable<EmergencyThisWeek>["run"], rank: number | null = null): EmergencyThisWeek => ({
+  endsAt: WEEK_ENDS,
+  threats: 10,
+  run,
+  rank,
+});
+
 const LOCKED: ConquestStatus = { unlocked: false, completed_matches: 2, level: 1, cards_lost_today: 0 };
 const OPEN: ConquestStatus = { unlocked: true, completed_matches: 40, level: 6, cards_lost_today: 2 };
 
 const SCENES: Record<string, Scene> = {
-  nuovo: { active: null, conquest: LOCKED, ranked: null, emergency: null, story: chapters(false), lastPlay: null, event: "on" },
+  nuovo: {
+    active: null,
+    conquest: LOCKED,
+    ranked: null,
+    emergency: null,
+    emergencyWeek: week(null),
+    story: chapters(false),
+    lastPlay: null,
+    event: "on",
+  },
   ancora: {
     active: null,
     conquest: OPEN,
     ranked: RANKED,
     emergency: { passed: 6, rank: 12 },
+    emergencyWeek: week({ status: "finished", passed: 7, current_round: 10 }, 4),
     story: chapters(false),
     lastPlay: { mode: "bot", format: "quadrant_shifting", difficulty: "hard" },
     event: "on",
@@ -104,6 +125,7 @@ const SCENES: Record<string, Scene> = {
     conquest: OPEN,
     ranked: RANKED,
     emergency: null,
+    emergencyWeek: week({ status: "active", passed: 3, current_round: 5 }),
     story: chapters(false),
     lastPlay: { mode: "ranked", format: "triple" },
     event: "on",
@@ -113,6 +135,7 @@ const SCENES: Record<string, Scene> = {
     conquest: { ...OPEN, cards_lost_today: 10 },
     ranked: RANKED,
     emergency: { passed: 8, rank: 1 },
+    emergencyWeek: week({ status: "finished", passed: 10, current_round: 10 }, 1),
     story: chapters(false),
     lastPlay: { mode: "conquest", format: "classic" },
     event: "reward",
@@ -122,11 +145,21 @@ const SCENES: Record<string, Scene> = {
     conquest: OPEN,
     ranked: RANKED,
     emergency: null,
+    emergencyWeek: week(null),
     story: chapters(true),
     lastPlay: { mode: "queue", format: "boss" },
     event: "off",
   },
-  carico: { active: undefined, conquest: null, ranked: null, emergency: undefined, story: null, lastPlay: null, event: "off" },
+  carico: {
+    active: undefined,
+    conquest: null,
+    ranked: null,
+    emergency: undefined,
+    emergencyWeek: undefined,
+    story: null,
+    lastPlay: null,
+    event: "off",
+  },
 };
 
 function Scenes() {
@@ -139,6 +172,7 @@ function Scenes() {
         conquest={scene.conquest}
         ranked={scene.ranked}
         emergency={scene.emergency}
+        emergencyWeek={scene.emergencyWeek}
         story={scene.story}
         lastPlay={scene.lastPlay}
         event={scene.event === "off" ? null : <FakeEvent reward={scene.event === "reward"} />}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { resolveEmergencyPlay, type AbilityFamilies, type EmergencyRules } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { EmergencyComic } from "@/components/emergency-comic";
@@ -27,11 +27,15 @@ import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
 import {
+  daysLeft,
+  daysLeftText,
   fetchEmergencyLeaderboard,
   fetchEmergencyLineups,
   openEmergency,
   playEmergency,
   startEmergency,
+  weekText,
+  type EmergencyKind,
   type EmergencyLeaderboard,
   type EmergencyLineup,
   type EmergencyLineups,
@@ -48,17 +52,30 @@ import { emergencyBeforePlay, useRevealHold } from "@/lib/reveal-hold";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
 
-/** Today's challenge from the levels to the final result. */
-export function EmergencyScreen({ initial }: { initial: EmergencyView }) {
+/** Which challenge the screen plays: today's (SPEC §5.10) or this week's (SPEC §5.16). */
+const KindContext = createContext<EmergencyKind>("day");
+const useKind = () => useContext(KindContext);
+
+/** Today's challenge (or this week's) from the levels to the final result. */
+export function EmergencyScreen({ initial, kind = "day" }: { initial: EmergencyView; kind?: EmergencyKind }) {
   // A long press on any card the challenge shows opens its detail, over every step.
   return (
-    <CardDetailProvider>
-      <EmergencySteps initial={initial} />
-    </CardDetailProvider>
+    <KindContext.Provider value={kind}>
+      <CardDetailProvider>
+        <EmergencySteps initial={initial} />
+      </CardDetailProvider>
+    </KindContext.Provider>
   );
 }
 
+/** "Ancora 3 giorni", from the server's clock when the view was loaded. */
+function weekLeftText(view: EmergencyView): string | null {
+  if (!view.ends_at) return null;
+  return daysLeftText(daysLeft(view.ends_at, Date.parse(view.server_now)));
+}
+
 function EmergencySteps({ initial }: { initial: EmergencyView }) {
+  const kind = useKind();
   const [view, setView] = useState(initial);
   const [revealing, setRevealing] = useState<EmergencyPlay | null>(null);
   // The levels strip keeps the play's outcome until the result page tells it.
@@ -91,9 +108,20 @@ function EmergencySteps({ initial }: { initial: EmergencyView }) {
         <>
           <header className="flex items-center gap-2.5 px-3 py-1">
             <BackLink href="/gioca" label="Torna a Gioca" />
-            <h1 className="font-display text-[25px] uppercase leading-7 text-comic-yellow">Emergenza</h1>
+            <h1 className="whitespace-nowrap font-display text-[25px] uppercase leading-7 text-comic-yellow">
+              {kind === "week" ? (
+                <>
+                  Emergenza
+                  <span className="ml-1.5 inline-block -skew-x-8 bg-comic-yellow px-1.5 align-[3px] font-sfx text-[13px] leading-5 tracking-wide text-black">
+                    Settimana
+                  </span>
+                </>
+              ) : (
+                "Emergenza"
+              )}
+            </h1>
             <p className="ml-auto max-w-[8.5rem] text-right text-[11px] font-bold leading-[13px] text-muted">
-              La sfida di oggi, uguale per tutti
+              {kind === "week" ? `${weekLeftText(view) ?? "Questa settimana"}, uguale per tutti` : "La sfida di oggi, uguale per tutti"}
             </p>
           </header>
           <LevelTrack view={view} abilities={abilities} />
@@ -237,6 +265,7 @@ function Briefing({
   onPick: () => void;
   onStarted: (next: EmergencyView) => void;
 }) {
+  const kind = useKind();
   const [collection, setCollection] = useState<Collection | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -261,7 +290,7 @@ function Briefing({
     setStarting(true);
     setError(null);
     try {
-      onStarted(await startEmergency(cardInstanceIds));
+      onStarted(await startEmergency(cardInstanceIds, kind));
     } catch (cause) {
       setError(describeServerError(cause));
       setStarting(false);
@@ -273,7 +302,8 @@ function Briefing({
       <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pt-1.5">
         <p className="text-xs font-medium text-muted">
           Scegli {size} personaggi diversi guardando i livelli qui sopra: ognuno affronterà una sola Minaccia. Una volta
-          iniziata, la squadra non si cambia e il tentativo di oggi è quello. Tieni premuta una carta per vederla intera.
+          iniziata, la squadra non si cambia e il tentativo {kind === "week" ? "della settimana" : "di oggi"} è quello. Tieni
+          premuta una carta per vederla intera.
         </p>
         {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
         {collection ? (
@@ -305,10 +335,17 @@ function Briefing({
             {size} Minacce colpiscono Nuova Megara, le stesse per tutti. Per ora conosci solo i loro livelli. Scegli{" "}
             {size} personaggi, poi mandane uno contro ogni Minaccia che si svela.
           </p>
-          <p>
-            Ogni Minaccia chiede un punteggio minimo. Alla {maxFailures}ª fallita l&apos;Emergenza finisce. Non rischi
-            nessuna carta, ma hai un solo tentativo al giorno.
-          </p>
+          {kind === "week" ? (
+            <p>
+              Soglie più alte che ogni giorno; alla {maxFailures}ª fallita finisce. Un tentativo a settimana, da finire
+              entro domenica.
+            </p>
+          ) : (
+            <p>
+              Ogni Minaccia chiede un punteggio minimo. Alla {maxFailures}ª fallita l&apos;Emergenza finisce. Non rischi
+              nessuna carta, ma hai un solo tentativo al giorno.
+            </p>
+          )}
         </section>
 
         <section className="flex shrink-0 flex-col gap-1">
@@ -362,6 +399,7 @@ function ChoosePhase({
   onPlayed: (next: EmergencyView) => void;
   onStale: (next: EmergencyView) => void;
 }) {
+  const kind = useKind();
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -376,7 +414,10 @@ function ChoosePhase({
     threatsPerRun: view.rules.threats_per_run,
     maxFailures: view.rules.max_failures,
     targets: view.rules.targets,
-    threatLevels: { ...balance.match.threatLevels, ...balance.emergency.threatLevels },
+    threatLevels: {
+      ...balance.match.threatLevels,
+      ...(kind === "week" ? balance.emergencyWeek.threatLevels : balance.emergency.threatLevels),
+    },
   };
   const squad = run.squad.map((card) => toCharacter(card, card.instance_id));
   const attempts = [...run.plays]
@@ -418,14 +459,20 @@ function ChoosePhase({
     setBusy(true);
     setError(null);
     try {
-      onPlayed(await playEmergency(threat.round, chosen.instance_id));
+      onPlayed(await playEmergency(threat.round, chosen.instance_id, kind));
     } catch (cause) {
-      // Another tab or device was faster, or midnight (Europe/Rome) started a new day: reload the state.
+      // Another tab or device was faster, or midnight (Europe/Rome) started a new day (or week): reload the state.
       if (
         cause instanceof Error &&
-        ["round_already_resolved", "emergency_already_played", "emergency_not_started"].includes(cause.message)
+        [
+          "round_already_resolved",
+          "emergency_already_played",
+          "emergency_not_started",
+          "emergency_week_already_played",
+          "emergency_week_not_started",
+        ].includes(cause.message)
       ) {
-        onStale(await openEmergency());
+        onStale(await openEmergency(kind));
       } else {
         setError(describeServerError(cause));
       }
@@ -435,6 +482,7 @@ function ChoosePhase({
   }
 
   const chosenOutcome = previews.find(({ card }) => card === chosen)?.outcome;
+  const wideHand = run.squad.length > 8;
   const previewNote = "Il punteggio è un'anteprima: lo calcola il server quando giochi.";
 
   return (
@@ -448,7 +496,11 @@ function ChoosePhase({
         >
           <ThreatDiorama key={threat.round} name={threat.name} level={threat.level} fill />
         </div>
-        <RareThreatAlert alertKey={`emergency:${view.day}:${threat.round}`} rarity={threat.rarity} name={threat.name} />
+        <RareThreatAlert
+          alertKey={kind === "week" ? `emergency-week:${view.week}:${threat.round}` : `emergency:${view.day}:${threat.round}`}
+          rarity={threat.rarity}
+          name={threat.name}
+        />
         <div className="relative">
           <div className="flex items-end justify-between gap-3">
             <div className="min-w-0">
@@ -495,7 +547,8 @@ function ChoosePhase({
             </p>
           )}
           <p className="mt-1.5 text-xs font-bold">
-            <span className="font-extrabold uppercase">Emergenza</span> · Superate {run.passed} · Fallite {run.failed} su{" "}
+            <span className="font-extrabold uppercase">{kind === "week" ? "Settimana" : "Emergenza"}</span> · Superate{" "}
+            {run.passed} · Fallite {run.failed} su{" "}
             {view.rules.max_failures}
           </p>
         </div>
@@ -503,8 +556,13 @@ function ChoosePhase({
 
       {error && <p className="mx-3 mt-1 text-sm font-semibold text-comic-magenta">{error}</p>}
 
-      {/* The hand on two rows: the widest margin over the target first, as before. */}
-      <div role="group" aria-label="Chi mandi?" className="grid grid-cols-4 gap-x-1.5 gap-y-3.5 px-3 pb-1.5 pt-3.5">
+      {/* The hand on two rows: the widest margin over the target first, as before. A squad of 10 (the
+          weekly one) goes five to a row, so the two rows still hold it. */}
+      <div
+        role="group"
+        aria-label="Chi mandi?"
+        className={`grid ${wideHand ? "grid-cols-5" : "grid-cols-4"} gap-x-1.5 gap-y-3.5 px-3 pb-1.5 pt-3.5`}
+      >
         {previews.map(({ card, outcome }) => (
           <HandCard
             key={card.instance_id}
@@ -514,8 +572,8 @@ function ChoosePhase({
             tone={outcome.passed ? "pass" : "fail"}
             note={outcome.required !== baseTarget ? `basta ${outcome.required}` : undefined}
             short
-            // Four to a row inside the page padding and the gaps, minus each card's 3px frame.
-            artSizes="calc((100vw - 66px) / 4)"
+            // Four (or five) to a row inside the page padding and the gaps, minus each card's 3px frame.
+            artSizes={wideHand ? "calc((100vw - 78px) / 5)" : "calc((100vw - 66px) / 4)"}
             selected={card.instance_id === selected}
             disabled={busy}
             onSelect={() => setSelected(card.instance_id)}
@@ -658,6 +716,7 @@ function decisiveNote(notes: EmergencyNote[], score: number, required: number): 
 }
 
 function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["rules"] }) {
+  const kind = useKind();
   const [tab, setTab] = useState<"day" | "board">("day");
   // Loaded once, whichever tab is open.
   const { board, failed } = useLeaderboard();
@@ -665,7 +724,8 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
   const complete = run.passed === rules.threats_per_run;
   const cardOf = (instanceId: string) => run.squad.find((c) => c.instance_id === instanceId);
   const detail = useCardDetail();
-  const eventPoints = useEventPointsFor(null);
+  // The daily run is found by the server (null); the weekly one by its id.
+  const eventPoints = useEventPointsFor(kind === "week" ? (run.id ?? null) : null);
 
   // The outcome keeps its size; the day and the ranking share the room left, one tab at a time.
   return (
@@ -695,7 +755,11 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
               </p>
             )}
           </div>
-          <p className="relative text-[13px] font-semibold">Una nuova Emergenza arriva dopo la mezzanotte.</p>
+          <p className="relative text-[13px] font-semibold">
+            {kind === "week"
+              ? "La prossima Emergenza della settimana arriva lunedì."
+              : "Una nuova Emergenza arriva dopo la mezzanotte."}
+          </p>
         </section>
 
         <div role="tablist" aria-label="Risultato" className="mt-2.5 grid shrink-0 grid-cols-2 gap-1.5">
@@ -710,7 +774,7 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
                 tab === key ? "border-comic-yellow bg-comic-yellow text-black" : "border-line text-foreground"
               }`}
             >
-              {key === "day" ? "La tua giornata" : "Classifica"}
+              {key === "board" ? "Classifica" : kind === "week" ? "La tua settimana" : "La tua giornata"}
             </button>
           ))}
         </div>
@@ -758,14 +822,15 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
   );
 }
 
-/** Today's ranking, loaded once; `failed` when it could not be loaded. */
+/** Today's ranking (or this week's), loaded once; `failed` when it could not be loaded. */
 function useLeaderboard() {
+  const kind = useKind();
   const [board, setBoard] = useState<EmergencyLeaderboard | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    fetchEmergencyLeaderboard()
+    fetchEmergencyLeaderboard(kind)
       .then((result) => {
         if (!cancelled) setBoard(result);
       })
@@ -776,7 +841,7 @@ function useLeaderboard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [kind]);
 
   return { board, failed };
 }
@@ -878,11 +943,15 @@ function RankList({
   );
 }
 
-/** Before the attempt: today's ranking as it stands, scrolling in the room it gets, and yesterday's podium lineups. */
+/**
+ * Before the attempt: today's ranking (or this week's) as it stands, scrolling in the room it
+ * gets, and yesterday's (or last week's) podium lineups.
+ */
 function Leaderboard() {
+  const kind = useKind();
   const { board, failed } = useLeaderboard();
   const lineups = useLineupSheet();
-  // Before one's own attempt only yesterday's lineups: today's would give the best team away.
+  // Before one's own attempt only the last lineups: the current ones would give the best team away.
   const yesterday = lineups.data && !lineups.data.live && lineups.data.lineups.length > 0;
 
   if (failed) return null;
@@ -890,7 +959,7 @@ function Leaderboard() {
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-1">
       <div className="flex shrink-0 items-baseline justify-between gap-2">
-        <h2 className="section-title">Classifica di oggi</h2>
+        <h2 className="section-title">{kind === "week" ? "Classifica della settimana" : "Classifica di oggi"}</h2>
         {yesterday && (
           <button
             type="button"
@@ -898,7 +967,7 @@ function Leaderboard() {
             className="flex min-h-11 shrink-0 items-center gap-1.5 text-xs font-extrabold uppercase text-comic-yellow underline"
           >
             <SquadIcon />
-            Podio di ieri
+            {kind === "week" ? "Podio scorso" : "Podio di ieri"}
           </button>
         )}
       </div>
@@ -926,6 +995,7 @@ function Podium({
   failed: boolean;
   lineups: LineupSheet;
 }) {
+  const kind = useKind();
   if (failed) return <p className="text-sm font-medium text-muted">La classifica non è disponibile ora.</p>;
   if (!board) return null;
   if (board.top.length === 0) {
@@ -942,7 +1012,7 @@ function Podium({
       )}
       <RankList board={board} openable={live} onOpen={lineups.open} />
       <p className="mt-1 text-center text-xs font-semibold text-muted">
-        {board.players === 1 ? "1 giocatore oggi" : `${board.players} giocatori oggi`}
+        {board.players === 1 ? "1 giocatore" : `${board.players} giocatori`} {kind === "week" ? "questa settimana" : "oggi"}
       </p>
       <PrizeLine board={board} />
       {lineups.sheet}
@@ -957,13 +1027,14 @@ type LineupSheet = { data: EmergencyLineups | null; open: (rank: number) => void
  * today's once the player's attempt is finished, yesterday's before.
  */
 function useLineupSheet(): LineupSheet {
+  const kind = useKind();
   const [data, setData] = useState<EmergencyLineups | null>(null);
   const [focus, setFocus] = useState<number | null>(null);
   const sheetRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetchEmergencyLineups()
+    fetchEmergencyLineups(kind)
       .then((result) => {
         if (!cancelled) setData(result);
       })
@@ -971,7 +1042,7 @@ function useLineupSheet(): LineupSheet {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [kind]);
 
   useEffect(() => {
     if (focus !== null) document.getElementById(`emergency-lineup-${focus}`)?.scrollIntoView({ block: "start" });
@@ -984,11 +1055,27 @@ function useLineupSheet(): LineupSheet {
 
   const sheet =
     data && data.lineups.length > 0 ? (
-      <Sheet sheetRef={sheetRef} title={data.live ? "Formazioni di oggi" : "Il podio di ieri"} onClose={() => setFocus(null)}>
+      <Sheet
+        sheetRef={sheetRef}
+        title={
+          kind === "week"
+            ? data.live
+              ? "Formazioni della settimana"
+              : "Il podio della settimana scorsa"
+            : data.live
+              ? "Formazioni di oggi"
+              : "Il podio di ieri"
+        }
+        onClose={() => setFocus(null)}
+      >
         <p className="text-xs font-semibold leading-4 text-muted">
-          {data.live
-            ? "Le squadre dei primi di oggi, nell'ordine in cui hanno giocato."
-            : `Le squadre dei primi di ${prizeDayText(data.day)}. Quelle di oggi le vedi dopo il tuo tentativo.`}{" "}
+          {kind === "week"
+            ? data.live
+              ? "Le squadre dei primi di questa settimana, nell'ordine in cui hanno giocato."
+              : `Le squadre dei primi della settimana ${weekText(data.day)}. Quelle di questa settimana le vedi dopo il tuo tentativo.`
+            : data.live
+              ? "Le squadre dei primi di oggi, nell'ordine in cui hanno giocato."
+              : `Le squadre dei primi di ${prizeDayText(data.day)}. Quelle di oggi le vedi dopo il tuo tentativo.`}{" "}
           Tieni premuta una carta per i dettagli.
         </p>
         {data.lineups.map((lineup) => (
@@ -1069,13 +1156,14 @@ function CardThumb({ card }: { card: Pick<MatchCard, "art_url" | "faction" | "ra
   );
 }
 
-/** What the places win at midnight, when the day's leaderboard is final. */
+/** What the places win at midnight (or on Sunday at midnight), when the leaderboard is final. */
 function PrizeLine({ board }: { board: EmergencyLeaderboard }) {
+  const kind = useKind();
   if (!board.prizes || board.prizes.length === 0) return null;
   const minPassed = board.prize_min_passed ?? 0;
   return (
     <p className="shrink-0 text-center text-[11px] font-semibold leading-4 text-muted">
-      <span className="font-extrabold text-comic-yellow">Premi a mezzanotte: </span>
+      <span className="font-extrabold text-comic-yellow">{kind === "week" ? "Premi a fine settimana: " : "Premi a mezzanotte: "}</span>
       {prizeTableText(board.prizes)}
       {minPassed > 0 && ` (con almeno ${minPassed === 1 ? "1 Minaccia superata" : `${minPassed} Minacce superate`})`}
     </p>

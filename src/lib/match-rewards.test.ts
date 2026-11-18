@@ -58,6 +58,21 @@ const SETTINGS = {
   "emergency.prizes.rank3_packs": 0,
   "emergency.prizes.others_coins": 25,
   "emergency.prizes.others_packs": 0,
+  "emergency_week.rewards.tier1_passed": 4,
+  "emergency_week.rewards.tier2_passed": 7,
+  "emergency_week.rewards.tier3_passed": 10,
+  "emergency_week.rewards.tier1_coins": 20,
+  "emergency_week.rewards.tier2_coins": 30,
+  "emergency_week.rewards.tier3_coins": 50,
+  "emergency_week.prizes.min_passed": 1,
+  "emergency_week.prizes.rank1_coins": 100,
+  "emergency_week.prizes.rank1_packs": 2,
+  "emergency_week.prizes.rank2_coins": 50,
+  "emergency_week.prizes.rank2_packs": 1,
+  "emergency_week.prizes.rank3_coins": 0,
+  "emergency_week.prizes.rank3_packs": 1,
+  "emergency_week.prizes.others_coins": 50,
+  "emergency_week.prizes.others_packs": 0,
 };
 
 describe("match rewards", () => {
@@ -99,6 +114,19 @@ describe("match rewards", () => {
     expect(rewardsProblem(RULES, SETTINGS, 7)).toMatch(/soglie/);
     expect(rewardsProblem(RULES, { ...SETTINGS, "emergency.prizes.rank2_packs": 4 }, 8)).toMatch(/tra 0 e 3/);
     expect(rewardsProblem(RULES, { ...SETTINGS, "emergency.prizes.min_passed": 9 }, 8)).toMatch(/classifica/);
+  });
+
+  it("checks the weekly Emergenza too, when the server has it", () => {
+    const weekly = SETTINGS;
+    expect(rewardsProblem(RULES, weekly, 8, 10)).toBeNull();
+    expect(rewardsProblem(RULES, { ...weekly, "emergency_week.rewards.tier3_passed": 11 }, 8, 10)).toMatch(/settimana/);
+    expect(rewardsProblem(RULES, { ...weekly, "emergency_week.rewards.tier2_passed": 3 }, 8, 10)).toMatch(/settimana/);
+    expect(rewardsProblem(RULES, { ...weekly, "emergency_week.prizes.rank1_packs": 4 }, 8, 10)).toMatch(/tra 0 e 3/);
+    expect(rewardsProblem(RULES, { ...weekly, "emergency_week.prizes.min_passed": 11 }, 8, 10)).toMatch(/settimana/);
+    // A server without the weekly keys: the daily ones only.
+    const dailyOnly = Object.fromEntries(Object.entries(SETTINGS).filter(([key]) => !key.startsWith("emergency_week."))) as typeof SETTINGS;
+    expect(rewardsProblem(RULES, dailyOnly, 8)).toBeNull();
+    expect(rewardsProblem(RULES, { ...dailyOnly, "emergency.rewards.tier2_passed": 3 }, 8)).toMatch(/soglie/);
   });
 
   it("sends only what changed", () => {

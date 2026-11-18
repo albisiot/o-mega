@@ -12,6 +12,7 @@ import {
   prizeText,
   type EmergencyPrize,
 } from "@/lib/emergency-prizes";
+import { weekText } from "@/lib/emergency";
 import { describeServerError } from "@/lib/errors";
 
 /** Screens the popup never covers: a match or a run being played, a pack being opened, the editors. */
@@ -21,8 +22,9 @@ const QUIET_PATHS = ["/partita", "/attesa", "/emergenza", "/pacchetto", "/editor
 const RECHECK_MS = 10 * 60 * 1000;
 
 /**
- * The prizes of the day's Emergenza leaderboard (SPEC §5.10), over whatever screen the player
- * is in once the day has ended: the place, the run and the prize, claimed from here. Waits
+ * The prizes of the day's Emergenza leaderboard (SPEC §5.10) and of the week's (SPEC §5.16), over
+ * whatever screen the player is in once the day (or week) has ended: the place, the run and the
+ * prize, claimed from here, one at a time. Waits
  * like the banners for the splash, a round result, a rare threat or a pack, and never opens
  * during a match.
  */
@@ -88,7 +90,7 @@ function PrizePopup() {
   const claim = (target: EmergencyPrize) => {
     setBusy(true);
     setError(null);
-    claimEmergencyPrize(target.id)
+    claimEmergencyPrize(target)
       .then((result) => {
         setPrizes((items) => items.filter((item) => item.id !== target.id));
         if (result.opening_ids.length > 0) {
@@ -110,7 +112,7 @@ function PrizePopup() {
     >
       <div className="rays-gold relative flex w-full max-w-sm flex-col items-center gap-2 overflow-hidden border-[3px] border-black px-4 pb-4 pt-3 text-center text-black shadow-[6px_6px_0_#000]">
         <p className="relative -skew-x-8 bg-black px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-comic-yellow">
-          Classifica dell&apos;Emergenza
+          {prize?.kind === "week" ? "Emergenza della settimana" : "Classifica dell'Emergenza"}
         </p>
         {prize ? (
           <>
@@ -118,7 +120,7 @@ function PrizePopup() {
               {prize.rank}° posto!
             </h2>
             <p className="relative text-[13px] font-bold leading-4">
-              Emergenza di {prizeDayText(prize.day)}
+              {prize.kind === "week" ? `Settimana ${weekText(prize.day)}` : `Emergenza di ${prizeDayText(prize.day)}`}
               <br />
               {prize.passed === 1 ? "1 Minaccia superata" : `${prize.passed} Minacce superate`} · {prize.total_score} punti ·{" "}
               {prize.players === 1 ? "1 giocatore" : `${prize.players} giocatori`}

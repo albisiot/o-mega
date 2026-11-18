@@ -46,6 +46,9 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   emergency_already_played: "Hai già giocato l'Emergenza di oggi: la prossima arriva dopo la mezzanotte.",
   emergency_not_started: "L'Emergenza di oggi non è ancora iniziata: scegli la squadra.",
   invalid_emergency_squad: "Scegli 8 personaggi.",
+  emergency_week_already_played: "Hai già giocato l'Emergenza di questa settimana: la prossima arriva lunedì.",
+  emergency_week_not_started: "L'Emergenza della settimana non è ancora iniziata: scegli la squadra.",
+  invalid_emergency_week_squad: "Scegli 10 personaggi.",
   bonus_code_invalid: "Questo codice non esiste.",
   bonus_code_expired: "Questo codice è scaduto.",
   bonus_code_exhausted: "Questo codice è esaurito.",
@@ -116,6 +119,8 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   player_not_found: "Nessun giocatore con questo nome.",
   invalid_match_rewards: "Controlla i valori: monete e XP da 0 a 10000, pacchetti da 0 a 3, numeri interi.",
   invalid_emergency_tiers: "Le soglie dell'Emergenza devono crescere e non superare le Minacce della sfida.",
+  invalid_emergency_week_tiers:
+    "Le soglie dell'Emergenza della settimana devono crescere e non superare le Minacce della sfida.",
   match_reward_not_found: "Una delle modalità non esiste più: ricarica la pagina.",
   objectives_too_few: "Ogni difficoltà deve avere almeno tanti obiettivi attivi quanti se ne danno al giorno.",
   threat_not_found: "Minaccia non trovata: ricarica la pagina.",

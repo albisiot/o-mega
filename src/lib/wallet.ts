@@ -14,6 +14,8 @@ export const COIN_REASON_LABELS: Record<string, string> = {
   story_star: "Stelle della Storia",
   event_reward: "Premio evento",
   emergency_prize: "Premio classifica Emergenza",
+  emergency_week_reward: "Premio Emergenza della settimana",
+  emergency_week_prize: "Premio classifica della settimana",
   admin_adjustment: "Rettifica",
 };
 

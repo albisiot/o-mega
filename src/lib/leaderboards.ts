@@ -2,7 +2,16 @@
 
 import { getSupabase } from "@/lib/supabase/client";
 
-export type LeaderboardBoard = "general" | "emergency" | "classic" | "boss" | "triple" | "quadrant" | "conquest" | "story";
+export type LeaderboardBoard =
+  | "general"
+  | "emergency"
+  | "emergency_week"
+  | "classic"
+  | "boss"
+  | "triple"
+  | "quadrant"
+  | "conquest"
+  | "story";
 export type LeaderboardPeriod = "day" | "week" | "all";
 
 export type LeaderboardEntry = {
@@ -13,7 +22,7 @@ export type LeaderboardEntry = {
   title: string | null;
   /** What the board ranks by: points, threats passed, experience, missions. */
   value: number;
-  /** The second key, only on the Emergenza of the day (the run's score); 0 elsewhere. */
+  /** The second key, only on the Emergenza of the day and of the week (the run's score); 0 elsewhere. */
   value2: number;
   /** Board numbers: wins and played (matches), runs and perfect (Emergenza), level (Generale). */
   detail: Record<string, number>;
@@ -48,8 +57,8 @@ export type LeaderboardTitle = {
   expires_at: string | null;
 };
 
-/** The boards in the order of the tabs, with the periods each one has. */
-export const BOARDS: { key: LeaderboardBoard; label: string; periods: LeaderboardPeriod[]; rule: string }[] = [
+/** The boards in the order of the tabs, with the periods each one has; `short` names it in the profile's table. */
+export const BOARDS: { key: LeaderboardBoard; label: string; short?: string; periods: LeaderboardPeriod[]; rule: string }[] = [
   {
     key: "general",
     label: "Generale",
@@ -61,6 +70,13 @@ export const BOARDS: { key: LeaderboardBoard; label: string; periods: Leaderboar
     label: "Emergenza",
     periods: ["day", "week", "all"],
     rule: "Minacce superate: oggi nel tentativo del giorno, poi sommate. Conta il tentativo finito.",
+  },
+  {
+    key: "emergency_week",
+    label: "Emergenza settimanale",
+    short: "Emergenza sett.",
+    periods: ["week"],
+    rule: "La sfida della settimana: Minacce superate, poi punteggio, poi chi ha finito prima. Conta il tentativo finito.",
   },
   { key: "classic", label: "Classica", periods: ["week", "all"], rule: "" },
   { key: "boss", label: "Grande Minaccia", periods: ["week", "all"], rule: "" },
@@ -127,6 +143,7 @@ export function entryNumbers(
     const rate = played >= minMatchesForRate && played > 0 ? ` · ${Math.round((wins / played) * 100)}%` : "";
     return { value: formatNumber(entry.value), unit: "pt", note: `${wins} ${wins === 1 ? "vittoria" : "vittorie"}${rate}` };
   }
+  if (board === "emergency_week") return { value: formatNumber(entry.value), unit: "superate", note: `${formatNumber(entry.value2)} pt` };
   if (board === "emergency") {
     if (period === "day") return { value: formatNumber(entry.value), unit: "superate", note: `${formatNumber(entry.value2)} pt` };
     const runs = detail.runs ?? 0;
@@ -154,6 +171,7 @@ export function playersLine(players: number, period: LeaderboardPeriod): string 
 /** What the list says when nobody is on it yet. */
 export function emptyLine(board: LeaderboardBoard, period: LeaderboardPeriod): string {
   if (board === "emergency" && period === "day") return "Nessuno ha ancora finito l'Emergenza di oggi: puoi essere il primo.";
+  if (board === "emergency_week") return "Nessuno ha ancora finito l'Emergenza della settimana: puoi essere il primo.";
   if (period === "day") return "Ancora nessuno oggi: puoi essere il primo.";
   if (period === "week") return "Ancora nessuno questa settimana: puoi essere il primo.";
   return "Ancora nessuno: puoi essere il primo.";
