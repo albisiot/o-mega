@@ -11,7 +11,9 @@ export type ObjectiveMetric =
   | "emergency_passed"
   | "packs_opened"
   | "duplicates_converted"
-  | "cards_conquered";
+  | "cards_conquered"
+  | "variants_found"
+  | "variant_wins";
 
 export type ObjectiveParams = Record<string, unknown>;
 
@@ -91,6 +93,8 @@ export const OBJECTIVE_KINDS: {
   { key: "cards_beta", label: "Carte Beta o più rare giocate", metric: "cards_played", params: { min_rarity_rank: 3 }, one: "Gioca una carta Beta o più rara", many: "Gioca {n} carte Beta o più rare" },
   { key: "emergency", label: "Minacce superate in Emergenza", metric: "emergency_passed", params: {}, one: "Supera una Minaccia in Emergenza", many: "Supera {n} Minacce in Emergenza" },
   { key: "packs", label: "Pacchetti aperti", metric: "packs_opened", params: {}, one: "Apri un pacchetto", many: "Apri {n} pacchetti" },
+  { key: "variants_found", label: "Varianti trovate nei pacchetti", metric: "variants_found", params: {}, one: "Trova una variante in un pacchetto", many: "Trova {n} varianti nei pacchetti" },
+  { key: "variant_wins", label: "Partite vinte con una variante in squadra", metric: "variant_wins", params: {}, one: "Vinci una partita con una variante in squadra", many: "Vinci {n} partite con una variante in squadra" },
   { key: "duplicates", label: "Doppioni convertiti", metric: "duplicates_converted", params: {}, one: "Converti un doppione", many: "Converti {n} doppioni" },
   { key: "conquer", label: "Carte conquistate", metric: "cards_conquered", params: {}, one: "Conquista una carta", many: "Conquista {n} carte" },
 ];

@@ -59,6 +59,8 @@ export type GameEvent = {
   variant_chance_percent?: number | null;
   /** The usual variant chance, outside such events. */
   base_variant_chance_percent?: number;
+  /** Points for each variant in the team, in % of the match's points; null (or missing): none. */
+  variant_bonus_percent?: number | null;
   /** Only teams of these characters earn points, one part per category; empty (or missing): everyone. */
   admitted?: { category: string; traits: string[] }[];
   /** How many characters the rule admits; null without a rule. */

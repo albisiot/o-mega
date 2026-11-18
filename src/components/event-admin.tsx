@@ -68,6 +68,8 @@ type FormState = {
   sealTarget: string;
   /** "Caccia alle varianti": the variant chance during the event, in %; empty: unchanged. */
   variantChance: string;
+  /** Points for each variant in the team, in %; empty: none. */
+  variantBonus: string;
   /** Admitted traits, rarity codes and factions; each empty: every character. */
   traits: string[];
   rarities: string[];
@@ -104,6 +106,7 @@ function emptyForm(now: number): FormState {
     dailyCap: "",
     sealTarget: "",
     variantChance: "",
+    variantBonus: "",
     traits: [],
     rarities: [],
     factions: [],
@@ -126,6 +129,7 @@ function formFrom(event: AdminEvent, now: number, copy: boolean): FormState {
     dailyCap: event.daily_cap === null ? "" : String(event.daily_cap),
     sealTarget: event.quadrant_seal_target ? String(event.quadrant_seal_target) : "",
     variantChance: event.variant_chance_percent ? String(event.variant_chance_percent) : "",
+    variantBonus: event.variant_bonus_percent ? String(event.variant_bonus_percent) : "",
     traits: event.traits ?? [],
     rarities: event.rarities ?? [],
     factions: event.factions ?? [],
@@ -341,6 +345,7 @@ function EventForm({
         dailyCap: form.dailyCap.trim() === "" ? null : Number(form.dailyCap),
         sealTarget: form.sealTarget.trim() === "" ? null : Number(form.sealTarget),
         variantChance: form.variantChance.trim() === "" ? null : Number(form.variantChance),
+        variantBonus: form.variantBonus.trim() === "" ? null : Number(form.variantBonus),
         traits: form.traits,
         rarities: form.rarities,
         factions: form.factions,
@@ -609,6 +614,24 @@ function EventForm({
               pacchetto del giorno, in quelli del Negozio e in quelli dei premi (di solito {baseVariantChance}%). I pacchetti
               speciali hanno la loro. Vuoto, o non più del solito: non cambia niente.
             </p>
+            <label className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)] items-center gap-1.5 text-sm font-bold">
+              Punti per variante in squadra %
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={100}
+                value={form.variantBonus}
+                onChange={(event) => update({ variantBonus: event.target.value })}
+                placeholder="Nessun bonus"
+                aria-describedby="variant-bonus-help"
+                className={`${SMALL_INPUT} placeholder:text-faint`}
+              />
+            </label>
+            <p id="variant-bonus-help" className="text-xs font-medium leading-4 text-muted">
+              Da 1 a 100. Ogni variante tra le carte schierate aggiunge questa parte dei punti della partita (o della Minaccia
+              in Emergenza): con 20%, 2 varianti danno il 40% in più. Vuoto: nessun bonus.
+            </p>
           </fieldset>
         )}
 
@@ -852,6 +875,7 @@ function EventRow({
         {event.daily_cap !== null && ` · max ${event.daily_cap} punti al giorno`}
         {event.quadrant_seal_target ? ` · Quadrante: traguardo ${event.quadrant_seal_target} Sigilli` : ""}
         {event.variant_chance_percent ? ` · varianti al ${event.variant_chance_percent}%` : ""}
+        {event.variant_bonus_percent ? ` · +${event.variant_bonus_percent}% per variante in squadra` : ""}
       </p>
       <p className="text-xs font-semibold">{event.players === 1 ? "1 giocatore" : `${event.players} giocatori`} con punti</p>
       <ol className="flex flex-col gap-0.5 text-sm">

@@ -116,6 +116,11 @@ export function EventDetails({
             {event.base_variant_chance_percent !== undefined && ` invece del ${event.base_variant_chance_percent}%`}.
           </p>
         ) : null}
+        {event.variant_bonus_percent ? (
+          <p className="mt-1 border-l-4 border-comic-cyan bg-panel px-2.5 py-1 text-[13px] font-bold leading-4">
+            Varianti in squadra: ogni variante che schieri vale +{event.variant_bonus_percent}% di punti evento.
+          </p>
+        ) : null}
       </section>
 
       {toOpen && (

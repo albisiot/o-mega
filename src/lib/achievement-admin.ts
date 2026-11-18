@@ -19,6 +19,8 @@ export type AchievementMetric =
   | "characters_owned"
   | "variants_owned"
   | "variant_styles"
+  | "variant_styles_complete"
+  | "variant_characters_complete"
   | "cards_conquered"
   | "cards_lost"
   | "duplicates_converted"
@@ -183,6 +185,8 @@ export const METRICS: MetricInfo[] = [
   { metric: "characters_owned", group: "Collezione", label: "Personaggi posseduti", fields: [FACTION, { key: "trait", kind: "trait", label: "Tratto" }, { key: "min_rarity_rank", kind: "select", label: "Rarità almeno", options: RARITY_OPTIONS }, { key: "max_rarity_rank", kind: "select", label: "Rarità al massimo", options: RARITY_OPTIONS }, { key: "all", kind: "flag", label: "Tutti (album completo)" }], unit: "personaggi diversi", hasDates: false },
   { metric: "variants_owned", group: "Collezione", label: "Varianti trovate", fields: [{ key: "style", kind: "style", label: "Stile" }], unit: "varianti diverse", hasDates: false },
   { metric: "variant_styles", group: "Collezione", label: "Stili di variante diversi", fields: [], unit: "stili", hasDates: false },
+  { metric: "variant_styles_complete", group: "Collezione", label: "Stili completi (tutte le varianti di uno stile)", fields: [], unit: "stili completi", hasDates: false },
+  { metric: "variant_characters_complete", group: "Collezione", label: "Personaggi con tutte le varianti", fields: [], unit: "personaggi", hasDates: false },
   { metric: "packs_opened", group: "Collezione", label: "Pacchetti aperti", fields: [], unit: "pacchetti", hasDates: true },
   { metric: "daily_packs", group: "Collezione", label: "Pacchetti del giorno ritirati", fields: [], unit: "giorni", hasDates: true },
   { metric: "duplicates_converted", group: "Collezione", label: "Doppioni convertiti", fields: [], unit: "doppioni", hasDates: true },
@@ -321,6 +325,10 @@ export function describeCondition(
     }
     case "variant_styles":
       return `Hai varianti in ${n} ${plural(n, "stile", "stili diversi")}.`;
+    case "variant_styles_complete":
+      return n === 1 ? "Hai tutte le varianti di uno stile." : `Hai tutte le varianti di ${n} stili.`;
+    case "variant_characters_complete":
+      return n === 1 ? "Hai tutte le varianti di un personaggio." : `Hai tutte le varianti di ${n} personaggi.`;
     case "packs_opened":
       return n === 1 ? "Hai aperto un pacchetto." : `Hai aperto ${n} pacchetti.`;
     case "daily_packs":

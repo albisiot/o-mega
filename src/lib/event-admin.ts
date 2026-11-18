@@ -29,6 +29,8 @@ export type AdminEvent = {
   quadrant_seal_target?: number | null;
   /** "Caccia alle varianti": the variant chance of the standard packs during the event; null: unchanged. */
   variant_chance_percent?: number | null;
+  /** Points for each variant in the team, in % of the match's points; null: none. */
+  variant_bonus_percent?: number | null;
   /** Admitted traits; empty: every character. */
   traits?: string[];
   /** Admitted rarity codes and factions; empty: every one. Absent from older servers. */
@@ -79,6 +81,8 @@ export type EventDraft = {
   sealTarget: number | null;
   /** "Caccia alle varianti": the variant chance of the standard packs during the event. Null: unchanged. */
   variantChance: number | null;
+  /** Points for each variant in the team, in %. Null: none. */
+  variantBonus: number | null;
   /** Admitted traits, rarity codes and factions; each empty: every character. All must hold. */
   traits: string[];
   rarities: string[];
@@ -108,6 +112,7 @@ export async function saveEvent(draft: EventDraft): Promise<AdminEvents> {
     ...(draft.factions.length > 0 ? { p_factions: draft.factions } : {}),
     ...(draft.sealTarget !== null ? { p_quadrant_seal_target: draft.sealTarget } : {}),
     ...(draft.variantChance !== null ? { p_variant_chance_percent: draft.variantChance } : {}),
+    ...(draft.variantBonus !== null ? { p_variant_bonus_percent: draft.variantBonus } : {}),
   });
   if (error) throw error;
   return data as unknown as AdminEvents;
