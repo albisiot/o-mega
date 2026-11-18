@@ -1162,6 +1162,257 @@ export type Database = {
           },
         ]
       }
+      emergency_week_plays: {
+        Row: {
+          base_score: number
+          bonus: number
+          card_instance_id: string
+          created_at: string
+          definition_id: string
+          parts: Json | null
+          passed: boolean
+          required_score: number
+          round: number
+          run_id: string
+          score: number
+          threat_id: string
+        }
+        Insert: {
+          base_score: number
+          bonus: number
+          card_instance_id: string
+          created_at?: string
+          definition_id: string
+          parts?: Json | null
+          passed: boolean
+          required_score: number
+          round: number
+          run_id: string
+          score: number
+          threat_id: string
+        }
+        Update: {
+          base_score?: number
+          bonus?: number
+          card_instance_id?: string
+          created_at?: string
+          definition_id?: string
+          parts?: Json | null
+          passed?: boolean
+          required_score?: number
+          round?: number
+          run_id?: string
+          score?: number
+          threat_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_week_plays_card_instance_id_fkey"
+            columns: ["card_instance_id"]
+            isOneToOne: false
+            referencedRelation: "card_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_week_plays_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_week_plays_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_week_plays_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "emergency_week_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_week_plays_threat_id_fkey"
+            columns: ["threat_id"]
+            isOneToOne: false
+            referencedRelation: "threat_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emergency_week_prize_weeks: {
+        Row: {
+          closed_at: string
+          week: string
+        }
+        Insert: {
+          closed_at?: string
+          week: string
+        }
+        Update: {
+          closed_at?: string
+          week?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_week_prize_weeks_week_fkey"
+            columns: ["week"]
+            isOneToOne: true
+            referencedRelation: "emergency_weeks"
+            referencedColumns: ["week"]
+          },
+        ]
+      }
+      emergency_week_prizes: {
+        Row: {
+          claimed_at: string | null
+          coins: number
+          created_at: string
+          id: string
+          opening_ids: string[]
+          packs: number
+          passed: number
+          players: number
+          rank: number
+          total_score: number
+          user_id: string
+          week: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          coins: number
+          created_at?: string
+          id?: string
+          opening_ids?: string[]
+          packs: number
+          passed: number
+          players: number
+          rank: number
+          total_score: number
+          user_id: string
+          week: string
+        }
+        Update: {
+          claimed_at?: string | null
+          coins?: number
+          created_at?: string
+          id?: string
+          opening_ids?: string[]
+          packs?: number
+          passed?: number
+          players?: number
+          rank?: number
+          total_score?: number
+          user_id?: string
+          week?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_week_prizes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_week_prizes_week_fkey"
+            columns: ["week"]
+            isOneToOne: false
+            referencedRelation: "emergency_week_prize_weeks"
+            referencedColumns: ["week"]
+          },
+        ]
+      }
+      emergency_week_runs: {
+        Row: {
+          card_instance_ids: string[]
+          coins: number
+          created_at: string
+          current_round: number
+          definition_ids: string[]
+          failed: number
+          finished_at: string | null
+          id: string
+          passed: number
+          status: string
+          total_score: number
+          user_id: string
+          week: string
+        }
+        Insert: {
+          card_instance_ids: string[]
+          coins?: number
+          created_at?: string
+          current_round?: number
+          definition_ids: string[]
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          passed?: number
+          status?: string
+          total_score?: number
+          user_id: string
+          week: string
+        }
+        Update: {
+          card_instance_ids?: string[]
+          coins?: number
+          created_at?: string
+          current_round?: number
+          definition_ids?: string[]
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          passed?: number
+          status?: string
+          total_score?: number
+          user_id?: string
+          week?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_week_runs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_week_runs_week_fkey"
+            columns: ["week"]
+            isOneToOne: false
+            referencedRelation: "emergency_weeks"
+            referencedColumns: ["week"]
+          },
+        ]
+      }
+      emergency_weeks: {
+        Row: {
+          created_at: string
+          threat_ids: string[]
+          threat_levels: number[]
+          threat_modifiers: Json
+          week: string
+        }
+        Insert: {
+          created_at?: string
+          threat_ids: string[]
+          threat_levels: number[]
+          threat_modifiers?: Json
+          week: string
+        }
+        Update: {
+          created_at?: string
+          threat_ids?: string[]
+          threat_levels?: number[]
+          threat_modifiers?: Json
+          week?: string
+        }
+        Relationships: []
+      }
       event_points: {
         Row: {
           created_at: string
@@ -3781,7 +4032,10 @@ export type Database = {
       claim_daily_objective: { Args: { p_objective_id: string }; Returns: Json }
       claim_daily_pack: { Args: never; Returns: Json }
       claim_emergency_prize: { Args: { p_prize_id: string }; Returns: Json }
-      claim_emergency_week_prize: { Args: { p_prize_id: string }; Returns: Json }
+      claim_emergency_week_prize: {
+        Args: { p_prize_id: string }
+        Returns: Json
+      }
       claim_ranked_prize: { Args: { p_season: string }; Returns: Json }
       claim_victory: { Args: { p_match_id: string }; Returns: Json }
       classic_match_state_payload: {
@@ -3974,6 +4228,55 @@ export type Database = {
       }
       emergency_state_payload: { Args: { p_user: string }; Returns: Json }
       emergency_state_payload_base: { Args: { p_user: string }; Returns: Json }
+      emergency_week_close: { Args: never; Returns: undefined }
+      emergency_week_current: { Args: never; Returns: string }
+      emergency_week_ends_at: { Args: { p_week: string }; Returns: string }
+      emergency_week_ensure: {
+        Args: { p_threat_ids: string[] }
+        Returns: undefined
+      }
+      emergency_week_lineups_payload: {
+        Args: { p_viewer: string; p_week: string }
+        Returns: Json
+      }
+      emergency_week_play_context: { Args: { p_user: string }; Returns: Json }
+      emergency_week_prize_for: {
+        Args: { p_rank: number }
+        Returns: {
+          coins: number
+          packs: number
+        }[]
+      }
+      emergency_week_prize_table: { Args: never; Returns: Json }
+      emergency_week_ranking: {
+        Args: { p_week: string }
+        Returns: {
+          passed: number
+          players: number
+          rank: number
+          run_id: string
+          total_score: number
+          user_id: string
+        }[]
+      }
+      emergency_week_record_play: {
+        Args: {
+          p_base: number
+          p_bonus: number
+          p_card_instance_id: string
+          p_parts?: Json
+          p_required: number
+          p_round: number
+          p_score: number
+          p_user: string
+        }
+        Returns: Json
+      }
+      emergency_week_start: {
+        Args: { p_card_instance_ids: string[]; p_user: string }
+        Returns: string
+      }
+      emergency_week_state_payload: { Args: { p_user: string }; Returns: Json }
       ensure_daily_objectives: { Args: { p_user: string }; Returns: string }
       event_admits_everyone: {
         Args: { p_factions: string[]; p_rarities: string[]; p_traits: string[] }
