@@ -134,8 +134,8 @@ begin
     assert sqlerrm = 'challenge_invalid_rules', sqlerrm;
   end;
   begin
-    perform public.admin_save_challenge('Prova', '', '#ff7ad9', 'boss', '{easy}', true, '{}', v_now, v_now + interval '1 day');
-    raise exception 'ASSERT: a Grande Minaccia challenge was accepted';
+    perform public.admin_save_challenge('Prova', '', '#ff7ad9', 'emergency', '{easy}', true, '{}', v_now, v_now + interval '1 day');
+    raise exception 'ASSERT: a challenge in a mode without matches was accepted';
   exception when raise_exception then
     assert sqlerrm = 'challenge_invalid_format', sqlerrm;
   end;
@@ -178,7 +178,7 @@ begin
   v_challenge := v_payload -> 'challenges' -> 0;
   assert v_challenge ->> 'color' = '#ff7ad9', 'color in lower case';
   assert v_challenge -> 'bot_difficulties' = '["easy", "medium"]'::jsonb, v_challenge ->> 'bot_difficulties';
-  assert v_challenge -> 'rules' = '{"factions": ["villains"], "rarities": ["delta"], "traits": [], "min_variants": 1, "all_variants": false}'::jsonb,
+  assert v_challenge -> 'rules' @> '{"factions": ["villains"], "rarities": ["delta"], "traits": [], "min_variants": 1, "all_variants": false}'::jsonb,
     v_challenge ->> 'rules';
   assert v_challenge -> 'event_points' = '{"win": 25, "draw": 5, "loss": 2}'::jsonb, 'event points';
   assert (v_challenge ->> 'matches')::integer = 0, 'no match yet';

@@ -3831,8 +3831,12 @@ export type Database = {
           p_event_points?: Json
           p_format: string
           p_id?: string
+          p_min_level?: number
+          p_online?: boolean
+          p_quadrant_seal_target?: number
           p_rules: Json
           p_starts_at: string
+          p_tiers?: Json
           p_title: string
         }
         Returns: Json
@@ -4167,6 +4171,10 @@ export type Database = {
         }
         Returns: string
       }
+      create_challenge_lobby: {
+        Args: { p_card_instance_ids: string[]; p_challenge_id: string }
+        Returns: Json
+      }
       create_lobby: {
         Args: { p_card_instance_ids: string[]; p_format?: string }
         Returns: Json
@@ -4458,6 +4466,7 @@ export type Database = {
         Returns: Json
       }
       get_leaderboard_titles: { Args: never; Returns: Json }
+      get_lobby_challenge: { Args: { p_code: string }; Returns: string }
       get_lobby_format: { Args: { p_code: string }; Returns: string }
       get_match_history: { Args: { p_limit?: number }; Returns: Json }
       get_match_opponent_title: {
@@ -4624,6 +4633,10 @@ export type Database = {
       }
       leave_queue: { Args: never; Returns: undefined }
       level_for_xp: { Args: { p_xp: number }; Returns: number }
+      mark_challenge_rewards_seen: {
+        Args: { p_challenge_id: string }
+        Returns: undefined
+      }
       mark_event_rewards_seen: {
         Args: { p_event_id: string }
         Returns: undefined

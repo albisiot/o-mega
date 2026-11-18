@@ -24,7 +24,8 @@ do $$
 declare
   v_payload jsonb := public.get_match_rewards();
 begin
-  assert jsonb_array_length(v_payload -> 'rules') = 45, format('rules %s', jsonb_array_length(v_payload -> 'rules'));
+  -- 45 rows, and the 6 of the Sfide a tema (SPEC §8.8) since 20261118260000_challenges_stage2.sql.
+  assert jsonb_array_length(v_payload -> 'rules') = 51, format('rules %s', jsonb_array_length(v_payload -> 'rules'));
   assert (v_payload -> 'settings' ->> 'match_rewards.daily_pack_cap')::integer = 3, 'pack cap';
   assert (v_payload -> 'settings' ->> 'emergency.rewards.finish_xp')::integer = 0, 'finish xp';
   begin
