@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AbilityFamilies } from "@o-mega/game-engine";
 import { BossComic } from "@/components/boss-comic";
@@ -38,6 +37,7 @@ import {
 } from "@/lib/match";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { RankedResultChips, useRankedNudge } from "@/components/ranked-parts";
+import { ReturnLink } from "@/components/return-link";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { bossBeforeTurn, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -323,11 +323,11 @@ function BossSteps({ initial }: { initial: BossView }) {
             </svg>
           </button>
         ) : (
-          <Link href="/" aria-label="Home" className="btn btn-ghost h-11 w-11 shrink-0 px-0">
+          <ReturnLink href="/" label="Home" className="btn btn-ghost h-11 w-11 shrink-0 px-0">
             <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.4} aria-hidden>
               <path d="M2 10 10 3l8 7M5 8v9h4v-5h2v5h4V8" strokeLinejoin="round" />
             </svg>
-          </Link>
+          </ReturnLink>
         )}
         {!isBot && isActive && view.opponent?.last_seen_at && (
           <OpponentAbsent lastSeenAt={view.opponent.last_seen_at} offset={offset} name={rival} busy={busy} onClaim={claim} />
@@ -980,7 +980,8 @@ function BossResult({ view, rival }: { view: BossView; rival: string }) {
       </section>
 
       <div className="flex shrink-0 gap-2">
-        <Link
+        <ReturnLink
+          onward
           href={
             view.mode === "bot"
               ? `/squadra/?format=boss&difficulty=${view.bot_difficulty ?? "easy"}`
@@ -991,10 +992,10 @@ function BossResult({ view, rival }: { view: BossView; rival: string }) {
           className="btn btn-primary min-w-0 flex-1"
         >
           {view.mode === "bot" ? "Rivincita" : "Gioca ancora"}
-        </Link>
-        <Link href="/" className="btn btn-ghost shrink-0">
+        </ReturnLink>
+        <ReturnLink href="/" className="btn btn-ghost shrink-0">
           Torna alla home
-        </Link>
+        </ReturnLink>
       </div>
     </main>
   );

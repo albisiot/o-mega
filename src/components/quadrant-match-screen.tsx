@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { Silhouette } from "@/components/card-view";
@@ -29,6 +28,7 @@ import { describeEventPoints } from "@/lib/events";
 import { claimVictory, DIFFICULTY_LABELS, fetchMatchState, forfeitMatch, pingMatch, subscribeToUpdates, type MatchCard } from "@/lib/match";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { RankedResultChips, useRankedNudge } from "@/components/ranked-parts";
+import { ReturnLink } from "@/components/return-link";
 import {
   bestRotation,
   borderClashesAt,
@@ -377,11 +377,11 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
             </svg>
           </button>
         ) : (
-          <Link href="/" aria-label="Home" className="btn btn-ghost h-11 w-11 shrink-0 px-0">
+          <ReturnLink href="/" label="Home" className="btn btn-ghost h-11 w-11 shrink-0 px-0">
             <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.4} aria-hidden>
               <path d="M2 10 10 3l8 7M5 8v9h4v-5h2v5h4V8" strokeLinejoin="round" />
             </svg>
-          </Link>
+          </ReturnLink>
         )}
         {!isBot && isActive && view.opponent?.last_seen_at && (
           <OpponentAbsent lastSeenAt={view.opponent.last_seen_at} offset={offset} name={rival} busy={busy} onClaim={claim} />
@@ -1551,12 +1551,12 @@ function QuadrantResult({ view, rival }: { view: QuadrantView; rival: string }) 
       </section>
 
       <div className="flex shrink-0 gap-2">
-        <Link href={again} className="btn btn-primary min-w-0 flex-1">
+        <ReturnLink href={again} onward className="btn btn-primary min-w-0 flex-1">
           {view.mode === "bot" ? "Rivincita" : "Gioca ancora"}
-        </Link>
-        <Link href="/" className="btn btn-ghost shrink-0">
+        </ReturnLink>
+        <ReturnLink href="/" className="btn btn-ghost shrink-0">
           Torna alla home
-        </Link>
+        </ReturnLink>
       </div>
     </main>
   );

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AbilityFamilies } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
@@ -31,6 +30,7 @@ import { RareThreatAlert } from "@/components/rare-threat-alert";
 import { tripleBeforeRound, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
 import { TripleMapReveal } from "@/components/triple-comic";
 import { TieInfo } from "@/components/tie-info";
+import { ReturnLink } from "@/components/return-link";
 import { tieExplanation } from "@/lib/round-powers";
 import { oddsText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
 import { describeThreatModifier } from "@/lib/threat-modifiers";
@@ -330,11 +330,11 @@ function TripleSteps({ initial }: { initial: TripleView }) {
             </svg>
           </button>
         ) : (
-          <Link href="/" aria-label="Home" className="btn btn-ghost h-11 w-11 shrink-0 px-0">
+          <ReturnLink href="/" label="Home" className="btn btn-ghost h-11 w-11 shrink-0 px-0">
             <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.4} aria-hidden>
               <path d="M2 10 10 3l8 7M5 8v9h4v-5h2v5h4V8" strokeLinejoin="round" />
             </svg>
-          </Link>
+          </ReturnLink>
         )}
         {!isBot && isActive && view.opponent?.last_seen_at && (
           <OpponentAbsent lastSeenAt={view.opponent.last_seen_at} offset={offset} name={rival} busy={busy} onClaim={claim} />
@@ -962,7 +962,8 @@ function TripleResult({ view, rival }: { view: TripleView; rival: string }) {
       </section>
 
       <div className="flex shrink-0 gap-2">
-        <Link
+        <ReturnLink
+          onward
           href={
             view.mode === "bot"
               ? `/squadra/?format=triple&difficulty=${view.bot_difficulty ?? "easy"}`
@@ -973,10 +974,10 @@ function TripleResult({ view, rival }: { view: TripleView; rival: string }) {
           className="btn btn-primary min-w-0 flex-1"
         >
           {view.mode === "bot" ? "Rivincita" : "Gioca ancora"}
-        </Link>
-        <Link href="/" className="btn btn-ghost shrink-0">
+        </ReturnLink>
+        <ReturnLink href="/" className="btn btn-ghost shrink-0">
           Torna alla home
-        </Link>
+        </ReturnLink>
       </div>
     </main>
   );
