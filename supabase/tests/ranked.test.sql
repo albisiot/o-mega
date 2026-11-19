@@ -357,7 +357,8 @@ begin
 end $$;
 reset role;
 
--- A Mandato over: results, prize, title and notification, once.
+-- A Mandato over: results, prize and title, once. No banner: the end notice tells it
+-- (20261119100000_end_notices.sql, tested in end_notices.test.sql).
 do $$
 begin
   update public.ranked_ledger set season = '2000-01'
@@ -372,7 +373,7 @@ begin
           from public.ranked_season_results where season = '2000-01' and user_id = '00000000-0000-4000-8000-0000000002a2'),
     'second of the Mandato';
   assert (select count(*) from public.player_notifications
-          where user_id = '00000000-0000-4000-8000-0000000002a1' and kind = 'ranked') = 1, 'notification';
+          where user_id = '00000000-0000-4000-8000-0000000002a1' and kind = 'ranked') = 0, 'no banner';
   assert (select title from public.profiles where id = '00000000-0000-4000-8000-0000000002a1') = '1° Reggente · gennaio 2000',
     'title not shown';
   perform set_config('test.coins', public.coin_balance('00000000-0000-4000-8000-0000000002a1')::text, true);

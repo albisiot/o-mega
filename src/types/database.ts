@@ -1922,6 +1922,35 @@ export type Database = {
         }
         Relationships: []
       }
+      end_notices_seen: {
+        Row: {
+          kind: string
+          ref: string
+          seen_at: string
+          user_id: string
+        }
+        Insert: {
+          kind: string
+          ref: string
+          seen_at?: string
+          user_id: string
+        }
+        Update: {
+          kind?: string
+          ref?: string
+          seen_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "end_notices_seen_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_points: {
         Row: {
           created_at: string
@@ -5151,6 +5180,33 @@ export type Database = {
         Returns: string
       }
       emergency_week_state_payload: { Args: { p_user: string }; Returns: Json }
+      end_notice_challenge: {
+        Args: { p_challenge_id: string; p_user: string }
+        Returns: Json
+      }
+      end_notice_emergency_week: {
+        Args: { p_user: string; p_week: string }
+        Returns: Json
+      }
+      end_notice_entry: {
+        Args: {
+          p_avatar_url: string
+          p_is_me: boolean
+          p_rank: number
+          p_username: string
+          p_value: number
+          p_value2: number
+        }
+        Returns: Json
+      }
+      end_notice_event: {
+        Args: { p_event_id: string; p_user: string }
+        Returns: Json
+      }
+      end_notice_ranked_season: {
+        Args: { p_season: string; p_user: string }
+        Returns: Json
+      }
       ensure_daily_objectives: { Args: { p_user: string }; Returns: string }
       event_admits_everyone: {
         Args: { p_factions: string[]; p_rarities: string[]; p_traits: string[] }
