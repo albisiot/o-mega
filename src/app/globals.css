@@ -749,6 +749,11 @@ html.screen-locked body {
 .animate-play-in-bottom { animation: play-in-bottom 0.4s ease-out 0.1s both; }
 .animate-burst-pop { animation: burst-pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) 1.05s both; }
 .animate-coin-bump { animation: coin-bump 0.7s ease-out; }
+/* The wheels of the shop's pack counter (PackCounter): each digit rolls to the next number. */
+.pack-counter-strip { transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.3, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .pack-counter-strip { transition: none; }
+}
 .animate-new-pop { animation: new-pop 0.5s ease-out both; }
 .animate-detail-pop { animation: detail-pop 0.18s ease-out both; }
 /* A star of a story mission earned now (story-stars.tsx): it lands spinning, and a ring bursts

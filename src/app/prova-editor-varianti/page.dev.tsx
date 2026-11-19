@@ -5,7 +5,8 @@
 // only, so it is never part of the published site. The catalog and the variants are the real
 // ones (both public); packs, events and balances are made up, and nothing can be saved.
 //   /prova-editor-varianti/?s=pacchetto     the special pack editor, with a pack of only Neon variants
-//   /prova-editor-varianti/?s=negozio       the shop: that pack, and the standard pack during a variant hunt
+//   /prova-editor-varianti/?s=negozio       the shop: that pack, and the standard pack during a variant hunt;
+//                                           &n=142 sets the pack counter (141 by default; a higher n rolls it)
 //   /prova-editor-varianti/?s=evento        an event page with a variant hunt at 15%
 //   /prova-editor-varianti/?s=evento-admin  the event editor
 //   /prova-editor-varianti/?s=codice        the bonus code editor, with a code of random variants
@@ -329,7 +330,8 @@ export default function VariantEditorPreviewPage() {
 }
 
 function Scene() {
-  const scene = useSearchParams().get("s") ?? "pacchetto";
+  const params = useSearchParams();
+  const scene = params.get("s") ?? "pacchetto";
   const [data, setData] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [packs, setPacks] = useState<AdminSpecialPacks | null>(null);
@@ -365,6 +367,7 @@ function Scene() {
         odds={ODDS}
         specials={[shopPack(data)]}
         history={[]}
+        openedPacks={Number(params.get("n") ?? 141)}
         onFailed={() => undefined}
         onRedeemed={() => undefined}
       />

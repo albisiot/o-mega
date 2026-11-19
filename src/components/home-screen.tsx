@@ -21,7 +21,14 @@ import {
   seenEmergencyWeekLeaderboard,
 } from "@/lib/emergency";
 import { fetchActiveMatch, fetchConquestStatus, seenActiveMatch, seenConquestStatus, type ActiveMatch } from "@/lib/match";
-import { fetchPackOdds, fetchSpecialPacks, seenPackOdds, seenSpecialPacks } from "@/lib/packs";
+import {
+  fetchOpenedPackCount,
+  fetchPackOdds,
+  fetchSpecialPacks,
+  seenOpenedPackCount,
+  seenPackOdds,
+  seenSpecialPacks,
+} from "@/lib/packs";
 import type { Profile } from "@/lib/player";
 import { fetchMyRanked, seenRanked, type MyRanked } from "@/lib/ranked";
 import { fetchStory, seenStory } from "@/lib/story";
@@ -40,6 +47,7 @@ function preloadScreens() {
     [seenCollection(), fetchCollection],
     [seenPackOdds(), fetchPackOdds],
     [seenSpecialPacks(), fetchSpecialPacks],
+    [seenOpenedPackCount(), fetchOpenedPackCount],
     [seenCoinHistory(), fetchCoinHistory],
     // The Gioca page's tiles (the match in progress and the Fama come with the home itself).
     [seenConquestStatus(), fetchConquestStatus],

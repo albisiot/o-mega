@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { PackArt, TabBar } from "@/components/comic-parts";
 import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { useMatchRewards } from "@/components/match-reward";
+import { PackCounter } from "@/components/pack-counter";
 import { PackRevealLink, useOpenPackReveal } from "@/components/pack-reveal-link";
 import { describeServerError } from "@/lib/errors";
 import { formatRomeDateTime } from "@/lib/events";
@@ -36,6 +37,8 @@ type ShopViewProps = {
   /** Special packs on sale, shown after the standard pack (SPEC §7.1). */
   specials: SpecialPack[];
   history: CoinMovement[];
+  /** Packs the player has opened, of every kind; null while it loads. */
+  openedPacks: number | null;
   onFailed: () => void;
   onRedeemed: () => void;
 };
@@ -54,7 +57,7 @@ const TABS: { key: ShopTab; label: string }[] = [
  * shares the room below as tabs, the coin history scrolling inside its own. With special packs on
  * sale, the purchase is a row of packs to swipe, and the odds are those of the pack in view.
  */
-export function ShopView({ status, odds, specials, history, onFailed, onRedeemed }: ShopViewProps) {
+export function ShopView({ status, odds, specials, history, openedPacks, onFailed, onRedeemed }: ShopViewProps) {
   // Back from a pack opened here (one bought, a code's rewards), the shop is as it was left.
   const [tab, setTab] = useRememberedState<ShopTab>("tab", "odds");
   const rewards = useMatchRewards();
@@ -80,7 +83,10 @@ export function ShopView({ status, odds, specials, history, onFailed, onRedeemed
   return (
     <div className="home-shell">
       <header className="flex shrink-0 items-center justify-between gap-3 px-4 pb-1 pt-2">
-        <h1 className="font-display text-4xl uppercase text-comic-yellow">Negozio</h1>
+        <div className="flex flex-col gap-0.5">
+          <h1 className="font-display text-4xl uppercase leading-10 text-comic-yellow">Negozio</h1>
+          <PackCounter count={openedPacks} />
+        </div>
         <p className="-skew-x-8 bg-black px-3 py-0.5 font-display text-3xl text-comic-yellow">
           <span className="sr-only">Il tuo saldo: </span>
           {status.coin_balance} <span className="text-sm uppercase">monete</span>

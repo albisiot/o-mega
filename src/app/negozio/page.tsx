@@ -7,8 +7,10 @@ import { ShopView } from "@/components/shop-view";
 import { ReturnLink } from "@/components/return-link";
 import { describeServerError } from "@/lib/errors";
 import {
+  fetchOpenedPackCount,
   fetchPackOdds,
   fetchSpecialPacks,
+  seenOpenedPackCount,
   seenPackOdds,
   seenSpecialPacks,
   type PackOdds,
@@ -24,8 +26,23 @@ export default function ShopPage() {
   const [specials, setSpecials] = useState<SpecialPack[] | null>(seenSpecialPacks);
   const [history, setHistory] = useState<CoinMovement[] | null>(seenCoinHistory);
   const [error, setError] = useState<string | null>(null);
+  const [openedPacks, setOpenedPacks] = useState<number | null>(seenOpenedPackCount);
 
   const [historyVersion, setHistoryVersion] = useState(0);
+
+  // The pack counter: a nicety, the shop does not wait for it nor fail without it.
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    fetchOpenedPackCount()
+      .then((count) => {
+        if (!cancelled) setOpenedPacks(count);
+      })
+      .catch((cause: unknown) => console.error("Pack count failed", cause));
+    return () => {
+      cancelled = true;
+    };
+  }, [session, historyVersion]);
 
   useEffect(() => {
     if (!session) return;
@@ -71,6 +88,7 @@ export default function ShopPage() {
       odds={odds}
       specials={specials}
       history={history}
+      openedPacks={openedPacks}
       onFailed={() => {
         // A special pack may have changed price or left the shop: show it as it is now.
         refresh();

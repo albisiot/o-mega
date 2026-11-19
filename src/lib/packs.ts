@@ -109,6 +109,18 @@ export async function fetchPackStatus(): Promise<PackStatus> {
   return keepSeen("packStatus", data as unknown as PackStatus);
 }
 
+/**
+ * How many packs the player has opened, of every kind (the daily one, bought, rewards): one row
+ * of pack_openings per opening, and the table shows each player only their own rows (RLS).
+ */
+export async function fetchOpenedPackCount(): Promise<number> {
+  const { count, error } = await getSupabase().from("pack_openings").select("id", { count: "exact", head: true });
+  if (error) throw error;
+  return keepSeen("openedPacks", count ?? 0);
+}
+
+export const seenOpenedPackCount = () => lastSeen<number>("openedPacks");
+
 export async function claimDailyPack(): Promise<PackOpening> {
   const { data, error } = await getSupabase().rpc("claim_daily_pack");
   if (error) throw error;
