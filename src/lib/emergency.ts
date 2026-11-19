@@ -3,6 +3,7 @@ import { invokeFunction, type MatchCard } from "@/lib/match";
 import type { ThreatRarity } from "@/lib/threat-rarity";
 import type { EmergencyPrizeTier } from "@/lib/emergency-prizes";
 import { fetchChallengeLeaderboard, type ChallengeLeaderboardEntry } from "@/lib/challenges";
+import { forget, keepSeen, lastSeen } from "@/lib/last-seen";
 import { getSupabase } from "@/lib/supabase/client";
 
 export type EmergencyThreat = {
@@ -107,6 +108,7 @@ export function openEmergency(kind: EmergencyKind = "day", challengeId?: string 
 }
 
 export function startEmergency(cardInstanceIds: string[], kind: EmergencyKind = "day", challengeId?: string | null): Promise<EmergencyView> {
+  forgetEmergencyBoards();
   return invokeFunction({ ...emergencyAction("start", kind, challengeId), card_instance_ids: cardInstanceIds });
 }
 
@@ -116,7 +118,14 @@ export function playEmergency(
   kind: EmergencyKind = "day",
   challengeId?: string | null,
 ): Promise<EmergencyView> {
+  forgetEmergencyBoards();
   return invokeFunction({ ...emergencyAction("play", kind, challengeId), round, card_instance_id: cardInstanceId });
+}
+
+/** A run moved on: the boards last seen no longer say where the player is. */
+function forgetEmergencyBoards() {
+  forget("emergencyDay");
+  forget("emergencyWeek");
 }
 
 export type EmergencyRank = {
@@ -175,8 +184,11 @@ export async function fetchEmergencyLeaderboard(kind: EmergencyKind = "day"): Pr
   if (kind === "week") return fetchEmergencyWeekLeaderboard();
   const { data, error } = await getSupabase().rpc("get_emergency_leaderboard");
   if (error) throw error;
-  return data as unknown as EmergencyLeaderboard;
+  return keepSeen("emergencyDay", data as unknown as EmergencyLeaderboard);
 }
+
+/** Today's board as last seen, for the Gioca page to show at once. */
+export const seenEmergencyLeaderboard = () => lastSeen<EmergencyLeaderboard>("emergencyDay");
 
 /** The leaderboard of an Emergenza a tema, in the shape of the others: its best runs. */
 export async function fetchChallengeEmergencyLeaderboard(challengeId: string): Promise<EmergencyLeaderboard> {
@@ -196,8 +208,10 @@ export async function fetchChallengeEmergencyLeaderboard(challengeId: string): P
 export async function fetchEmergencyWeekLeaderboard(): Promise<EmergencyWeekLeaderboard> {
   const { data, error } = await getSupabase().rpc("get_emergency_week_leaderboard");
   if (error) throw error;
-  return data as unknown as EmergencyWeekLeaderboard;
+  return keepSeen("emergencyWeek", data as unknown as EmergencyWeekLeaderboard);
 }
+
+export const seenEmergencyWeekLeaderboard = () => lastSeen<EmergencyWeekLeaderboard>("emergencyWeek");
 
 /**
  * Days left in the week, today included, from the server's clock: 7 on Monday, 1 on Sunday.

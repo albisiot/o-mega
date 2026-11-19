@@ -5,15 +5,16 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { LoadingScreen } from "@/components/loading-screen";
 import { RankedModesView } from "@/components/ranked-modes";
 import { describeServerError } from "@/lib/errors";
-import { fetchActiveMatch, type ActiveMatch } from "@/lib/match";
-import { fetchMyRanked, type MyRanked } from "@/lib/ranked";
+import { fetchActiveMatch, seenActiveMatch, type ActiveMatch } from "@/lib/match";
+import { fetchMyRanked, seenRanked, type MyRanked } from "@/lib/ranked";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 // /classificata: the Classificata of every mode, straight from the home (SPEC §8.7).
 export default function RankedPage() {
   const { session } = useRequireSignedIn();
-  const [ranked, setRanked] = useState<MyRanked | null>(null);
-  const [active, setActive] = useState<ActiveMatch | null | undefined>(undefined);
+  // Last seen first, then the server's answer.
+  const [ranked, setRanked] = useState<MyRanked | null>(seenRanked);
+  const [active, setActive] = useState<ActiveMatch | null | undefined>(seenActiveMatch);
   const [error, setError] = useState<string | null>(null);
   // The page fits the screen above the bottom bar: what does not fit scrolls inside.
   useLockedScreen(true);

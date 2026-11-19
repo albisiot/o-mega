@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import {
   CardGroupHeading,
   CardListControls,
@@ -51,6 +51,12 @@ const OWNERSHIP_LABELS: Record<Ownership, string> = {
   variants: "★ Varianti",
 };
 
+/**
+ * Tiles drawn with the page, a few screens' worth: the whole album (over 200 tiles) takes long
+ * enough to draw to hold the page back, so the rest follows right after it shows.
+ */
+const FIRST_TILES = 24;
+
 const VIEW_KEY = "o-mega.album-view";
 const OWNERSHIP_KEY = "o-mega.album-ownership";
 const EXTRA_SORTS = [{ value: "copies", label: "Copie" }];
@@ -82,6 +88,16 @@ export function Album({
   const [notice, setNotice] = useState<string | null>(null);
   // Read once: the badges stay for this whole visit, and the next one no longer shows them.
   const [seenBefore] = useState(loadSeenCards);
+  // The first tiles with the page, all of them right after it shows, as a Transition the
+  // player's taps can interrupt. Back from a card the album draws everything at once: its place
+  // may be far down.
+  const [complete, setComplete] = useState(() => savedAlbumScroll() !== null);
+  useEffect(() => {
+    if (complete) return;
+    const timer = setTimeout(() => startTransition(() => setComplete(true)), 0);
+    return () => clearTimeout(timer);
+  }, [complete]);
+  const tileLimit = complete ? Infinity : FIRST_TILES;
   useLockedScreen(true);
 
   useEffect(() => saveSeenCards([...owned.keys()]), [owned]);
@@ -123,6 +139,20 @@ export function Album({
     });
     return groupCardList(sorted, view.sort, traits);
   }, [catalog, owned, ownership, view, traits]);
+
+  // One tile per character, or, under "★ Varianti", one per variant found.
+  const groupTiles = useMemo(
+    () =>
+      groups.map((group) => ({
+        group,
+        tiles: group.cards.flatMap((card): TileEntry[] => {
+          const mine = owned.get(card.id) ?? null;
+          if (ownership !== "variants" || !mine) return [{ card, owned: mine, variant: null }];
+          return foundVariants(mine).map((variant) => ({ card, owned: mine, variant }));
+        }),
+      })),
+    [groups, owned, ownership],
+  );
 
   // What a card's page swipes through: the owned characters shown, in the order shown.
   const browseIds = useMemo(
@@ -236,18 +266,15 @@ export function Album({
                 : "Nessuna variante con questi filtri."}
           </p>
         ) : (
-          groups.map((group) => {
-            // One tile per character, or, under "★ Varianti", one per variant found.
-            const tiles = group.cards.flatMap((card): TileEntry[] => {
-              const mine = owned.get(card.id) ?? null;
-              if (ownership !== "variants" || !mine) return [{ card, owned: mine, variant: null }];
-              return foundVariants(mine).map((variant) => ({ card, owned: mine, variant }));
-            });
+          groupTiles.map(({ group, tiles }, index) => {
+            // Tiles of the groups above: past the first ones, the group waits for the rest.
+            const before = groupTiles.slice(0, index).reduce((sum, entry) => sum + entry.tiles.length, 0);
+            if (before >= tileLimit) return null;
             return (
               <section key={group.key} className="flex flex-col gap-1.5">
                 {group.label && <CardGroupHeading label={group.label} count={tiles.length} />}
                 <ul className="grid grid-cols-3 gap-2">
-                  {tiles.map(({ card, owned: mine, variant }) => (
+                  {tiles.slice(0, tileLimit - before).map(({ card, owned: mine, variant }) => (
                     <li key={variant ? `${card.id}-${variant.style}` : card.id}>
                       <AlbumTile
                         card={card}

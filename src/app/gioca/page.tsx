@@ -6,22 +6,55 @@ import { EventBanner } from "@/components/event-banner";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayMenuView, type EmergencyThisWeek, type EmergencyToday } from "@/components/play-menu";
 import { fetchChallenges, seenChallenges, type Challenge } from "@/lib/challenges";
-import { fetchEmergencyLeaderboard, fetchEmergencyWeekLeaderboard } from "@/lib/emergency";
+import {
+  fetchEmergencyLeaderboard,
+  fetchEmergencyWeekLeaderboard,
+  seenEmergencyLeaderboard,
+  seenEmergencyWeekLeaderboard,
+  type EmergencyLeaderboard,
+  type EmergencyWeekLeaderboard,
+} from "@/lib/emergency";
 import { describeServerError } from "@/lib/errors";
 import { readLastPlay, type LastPlay } from "@/lib/last-play";
-import { fetchActiveMatch, fetchConquestStatus, forfeitMatch, type ActiveMatch, type ConquestStatus } from "@/lib/match";
-import { fetchMyRanked, type MyRanked } from "@/lib/ranked";
+import {
+  fetchActiveMatch,
+  fetchConquestStatus,
+  forfeitMatch,
+  seenActiveMatch,
+  seenConquestStatus,
+  type ActiveMatch,
+  type ConquestStatus,
+} from "@/lib/match";
+import { fetchMyRanked, seenRanked, type MyRanked } from "@/lib/ranked";
 import { fetchStory, seenStory, type StoryChapter } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow } from "@/lib/use-now";
 
+/** Today's Emergenza is done once the player is on today's board (finished runs only). */
+function emergencyToday(board: EmergencyLeaderboard): EmergencyToday {
+  return board.me ? { passed: board.me.passed, rank: board.me.rank } : null;
+}
+
+/** This week's Emergenza: the days left and the player's own run, finished or not. */
+function emergencyThisWeek(board: EmergencyWeekLeaderboard): EmergencyThisWeek {
+  return { endsAt: board.ends_at, threats: board.threats_per_run, run: board.my_run, rank: board.me?.rank ?? null };
+}
+
 export default function PlayPage() {
   const { session } = useRequireSignedIn();
-  const [active, setActive] = useState<ActiveMatch | null | undefined>(undefined);
-  const [conquest, setConquest] = useState<ConquestStatus | null>(null);
-  const [ranked, setRanked] = useState<MyRanked | null>(null);
-  const [emergency, setEmergency] = useState<EmergencyToday>(undefined);
-  const [emergencyWeek, setEmergencyWeek] = useState<EmergencyThisWeek>(undefined);
+  // What the server said last time shows at once (seen on the home or a visit before), and the
+  // fresh answers replace it. The modes wait only when there is nothing to show.
+  const [active, setActive] = useState<ActiveMatch | null | undefined>(seenActiveMatch);
+  const [conquest, setConquest] = useState<ConquestStatus | null>(seenConquestStatus);
+  const [ranked, setRanked] = useState<MyRanked | null>(seenRanked);
+  const [emergency, setEmergency] = useState<EmergencyToday>(() => {
+    const board = seenEmergencyLeaderboard();
+    return board ? emergencyToday(board) : undefined;
+  });
+  const [emergencyWeek, setEmergencyWeek] = useState<EmergencyThisWeek>(() => {
+    const board = seenEmergencyWeekLeaderboard();
+    return board ? emergencyThisWeek(board) : undefined;
+  });
   const [story, setStory] = useState<StoryChapter[] | null>(() => seenStory());
   // The Sfide a tema (SPEC §8.8): their ribbons on the modes.
   const [challenges, setChallenges] = useState<Challenge[] | null>(() => seenChallenges()?.challenges ?? null);
@@ -53,22 +86,14 @@ export default function PlayPage() {
         if (!cancelled) setRanked(next);
       })
       .catch((cause: unknown) => console.error("Ranked failed", cause));
-    // Today's Emergenza is done once the player is on today's board (finished runs only).
     fetchEmergencyLeaderboard()
       .then((board) => {
-        if (!cancelled) setEmergency(board.me ? { passed: board.me.passed, rank: board.me.rank } : null);
+        if (!cancelled) setEmergency(emergencyToday(board));
       })
       .catch((cause: unknown) => console.error("Emergency board failed", cause));
-    // This week's Emergenza: the days left and the player's own run, finished or not.
     fetchEmergencyWeekLeaderboard()
       .then((board) => {
-        if (cancelled) return;
-        setEmergencyWeek({
-          endsAt: board.ends_at,
-          threats: board.threats_per_run,
-          run: board.my_run,
-          rank: board.me?.rank ?? null,
-        });
+        if (!cancelled) setEmergencyWeek(emergencyThisWeek(board));
       })
       .catch((cause: unknown) => {
         console.error("Weekly Emergency board failed", cause);

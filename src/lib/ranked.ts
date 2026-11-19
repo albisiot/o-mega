@@ -3,6 +3,7 @@
 // only names and shows them.
 
 import { balance } from "@/config/balance";
+import { forget, keepSeen, lastSeen } from "@/lib/last-seen";
 import type { MatchFormat } from "@/lib/match";
 import { getSupabase } from "@/lib/supabase/client";
 
@@ -138,8 +139,10 @@ export type RankedHallEntry = { season: string; label: string; podium: RankedBoa
 export async function fetchMyRanked(): Promise<MyRanked> {
   const { data, error } = await getSupabase().rpc("get_my_ranked");
   if (error) throw error;
-  return data as unknown as MyRanked;
+  return keepSeen("ranked", data as unknown as MyRanked);
 }
+
+export const seenRanked = () => lastSeen<MyRanked>("ranked");
 
 export async function fetchRankedBoard(format: RankedBoardFormat | null, season?: string): Promise<RankedBoard> {
   const { data, error } = await getSupabase().rpc("get_ranked_board", {
@@ -159,6 +162,7 @@ export async function fetchRankedHall(): Promise<RankedHallEntry[]> {
 export async function claimRankedPrize(season: string): Promise<{ coins: number; opening_ids: string[]; coin_balance: number }> {
   const { data, error } = await getSupabase().rpc("claim_ranked_prize", { p_season: season });
   if (error) throw error;
+  forget("ranked");
   return data as unknown as { coins: number; opening_ids: string[]; coin_balance: number };
 }
 

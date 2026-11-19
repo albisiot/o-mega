@@ -13,10 +13,10 @@ import { TutorialButton } from "@/components/tutorial";
 import { WorldGuide } from "@/components/world-intro";
 import { PATCH_NOTES } from "@/config/patch-notes";
 import { describeServerError } from "@/lib/errors";
-import { fetchConquestHistory, type ConquestHistoryEntry } from "@/lib/match";
+import { fetchConquestHistory, seenConquestHistory, type ConquestHistoryEntry } from "@/lib/match";
 import { bootstrapPlayer, updateUsername, type Profile } from "@/lib/player";
 import { levelProgress, xpForLevel } from "@/lib/progression";
-import { fetchMyRanked, leagueInfo, type MyRanked } from "@/lib/ranked";
+import { fetchMyRanked, leagueInfo, seenRanked, type MyRanked } from "@/lib/ranked";
 import { useRememberedState } from "@/lib/place-memory";
 import { useIsAdmin } from "@/lib/use-is-admin";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -54,8 +54,9 @@ function RowLabel({ children }: { children: string }) {
  */
 function ProfileView({ profile }: { profile: Profile }) {
   const { signOut, setProfile } = useAuth();
-  const [history, setHistory] = useState<ConquestHistoryEntry[] | null>(null);
-  const [ranked, setRanked] = useState<MyRanked | null>(null);
+  // Last seen first, then the server's answer.
+  const [history, setHistory] = useState<ConquestHistoryEntry[] | null>(seenConquestHistory);
+  const [ranked, setRanked] = useState<MyRanked | null>(seenRanked);
   // Back from the history, the album or the privacy page, the same tab is open.
   const [tab, setTab] = useRememberedState<ProfileTab>("tab", "stats");
   const nameSheet = useRef<HTMLDialogElement>(null);

@@ -14,10 +14,17 @@ import { WorldIntro } from "@/components/world-intro";
 import { fetchAbilities, seenAbilities } from "@/lib/catalog";
 import { fetchChallenges, seenChallenges, type Challenge } from "@/lib/challenges";
 import { fetchCatalog, fetchCollection, seenCatalog, seenCollection } from "@/lib/collection";
-import { fetchActiveMatch, type ActiveMatch } from "@/lib/match";
-import { fetchPackOdds, seenPackOdds } from "@/lib/packs";
+import {
+  fetchEmergencyLeaderboard,
+  fetchEmergencyWeekLeaderboard,
+  seenEmergencyLeaderboard,
+  seenEmergencyWeekLeaderboard,
+} from "@/lib/emergency";
+import { fetchActiveMatch, fetchConquestStatus, seenActiveMatch, seenConquestStatus, type ActiveMatch } from "@/lib/match";
+import { fetchPackOdds, fetchSpecialPacks, seenPackOdds, seenSpecialPacks } from "@/lib/packs";
 import type { Profile } from "@/lib/player";
-import { fetchMyRanked, type MyRanked } from "@/lib/ranked";
+import { fetchMyRanked, seenRanked, type MyRanked } from "@/lib/ranked";
+import { fetchStory, seenStory } from "@/lib/story";
 import { hasSeenTutorial } from "@/lib/tutorial-seen";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow } from "@/lib/use-now";
@@ -32,7 +39,13 @@ function preloadScreens() {
     [seenAbilities(), fetchAbilities],
     [seenCollection(), fetchCollection],
     [seenPackOdds(), fetchPackOdds],
+    [seenSpecialPacks(), fetchSpecialPacks],
     [seenCoinHistory(), fetchCoinHistory],
+    // The Gioca page's tiles (the match in progress and the Fama come with the home itself).
+    [seenConquestStatus(), fetchConquestStatus],
+    [seenEmergencyLeaderboard(), fetchEmergencyLeaderboard],
+    [seenEmergencyWeekLeaderboard(), fetchEmergencyWeekLeaderboard],
+    [seenStory(), fetchStory],
   ];
   for (const [seen, load] of loads) {
     // A nicety: the screen fetches for itself anyway.
@@ -42,8 +55,9 @@ function preloadScreens() {
 
 export function HomeScreen({ profile }: { profile: Profile }) {
   const packs = usePackStatus();
-  const [activeMatch, setActiveMatch] = useState<ActiveMatch | null>(null);
-  const [ranked, setRanked] = useState<MyRanked | null>(null);
+  // Last seen first, then the server's answer.
+  const [activeMatch, setActiveMatch] = useState<ActiveMatch | null>(() => seenActiveMatch() ?? null);
+  const [ranked, setRanked] = useState<MyRanked | null>(seenRanked);
   // A Sfida a tema running (SPEC §8.8): its name on the Gioca button.
   const [challenges, setChallenges] = useState<Challenge[] | null>(() => seenChallenges()?.challenges ?? null);
   // A minute is precise enough for a challenge starting or ending.

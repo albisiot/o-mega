@@ -17,8 +17,8 @@ const TABS = [
 // have their own bottom action and should not be left by accident.
 const SHOWN_ON = new Set([...TABS.map((tab) => tab.href), "/storico", "/classificata"]);
 
-/** Pages that light up another tab: the Classificata is a way to play. */
-const TAB_OF: Record<string, string> = { "/classificata": "/gioca" };
+/** Pages that light up another tab: the Classificata is a way to play, the Storico is opened from the profile. */
+const TAB_OF: Record<string, string> = { "/classificata": "/gioca", "/storico": "/profilo" };
 
 /** Main navigation of the signed-in player. */
 export function BottomNav() {
@@ -26,6 +26,9 @@ export function BottomNav() {
   const pathname = usePathname().replace(/\/+$/, "") || "/";
   // The tapped tab lights up at once, without waiting for the next screen.
   const [tapped, setTapped] = useState<{ from: string; href: string } | null>(null);
+  // Only while the next screen is on its way: once the page changes the tap is over. Kept, it
+  // would light the tapped tab again on coming back to that page later (the back gesture).
+  if (tapped && tapped.from !== pathname) setTapped(null);
   if (!session || !SHOWN_ON.has(pathname)) return null;
   const current = tapped?.from === pathname ? tapped.href : (TAB_OF[pathname] ?? pathname);
 

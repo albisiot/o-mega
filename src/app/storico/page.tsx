@@ -6,7 +6,7 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { PageHeader } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { describeServerError } from "@/lib/errors";
-import { DIFFICULTY_LABELS, fetchMatchHistory, type MatchHistoryEntry } from "@/lib/match";
+import { DIFFICULTY_LABELS, fetchMatchHistory, seenMatchHistory, type MatchHistoryEntry } from "@/lib/match";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { describeFamaChange } from "@/lib/ranked";
 
@@ -20,7 +20,8 @@ const dateTime = new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyl
 
 export default function HistoryPage() {
   const { session } = useRequireSignedIn();
-  const [history, setHistory] = useState<MatchHistoryEntry[] | null>(null);
+  // Last seen first (since the last match), then the server's answer.
+  const [history, setHistory] = useState<MatchHistoryEntry[] | null>(seenMatchHistory);
   const [error, setError] = useState<string | null>(null);
   useLockedScreen(true);
 

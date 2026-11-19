@@ -1,6 +1,7 @@
 import type { ThreatRarity } from "@/lib/threat-rarity";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { BotDifficulty, Character, Power, ScoreParts, ThreatModifier } from "@o-mega/game-engine";
+import { forget, keepSeen, lastSeen } from "@/lib/last-seen";
 import type { RankedMatchInfo } from "@/lib/ranked";
 import { getSupabase } from "@/lib/supabase/client";
 
@@ -162,7 +163,17 @@ export function cachedMatchView(id: string): MatchView | null {
 /** Keeps a match state, of either format, for the match page to open without a request. */
 export function remember<T extends { id: string }>(view: T): T {
   views.set(view.id, { view: view as unknown as MatchView, at: Date.now() });
+  forgetMatchSummaries();
   return view;
+}
+
+/**
+ * A match started, moved on or ended: what the other screens last saw of the player's matches
+ * (the one in progress, the Conquista, the Fama, the history) may be out of date, so they wait
+ * for the server's answer instead of showing it.
+ */
+function forgetMatchSummaries() {
+  for (const key of ["activeMatch", "conquestStatus", "conquestHistory", "matchHistory", "ranked"]) forget(key);
 }
 
 /**
@@ -198,6 +209,7 @@ export function playRound(matchId: string, round: number, cardInstanceId: string
 export async function fetchMatchState(matchId: string): Promise<MatchView> {
   const { data, error } = await getSupabase().rpc("get_match_state", { p_match_id: matchId });
   if (error) throw error;
+  forgetMatchSummaries();
   return data as unknown as MatchView;
 }
 
@@ -213,12 +225,18 @@ export type ActiveMatch = {
 export async function fetchActiveMatch(): Promise<ActiveMatch | null> {
   const { data, error } = await getSupabase().rpc("get_active_match");
   if (error) throw error;
-  return (data as unknown as ActiveMatch | null) ?? null;
+  const match = (data as unknown as ActiveMatch | null) ?? null;
+  keepSeen("activeMatch", { match });
+  return match;
 }
+
+/** The match in progress last seen (null: none), or undefined when not seen since the last match. */
+export const seenActiveMatch = (): ActiveMatch | null | undefined => lastSeen<{ match: ActiveMatch | null }>("activeMatch")?.match;
 
 export async function forfeitMatch(matchId: string): Promise<MatchView> {
   const { data, error } = await getSupabase().rpc("forfeit_match", { p_match_id: matchId });
   if (error) throw error;
+  forgetMatchSummaries();
   return data as unknown as MatchView;
 }
 
@@ -277,8 +295,10 @@ export type ConquestStatus = {
 export async function fetchConquestStatus(): Promise<ConquestStatus> {
   const { data, error } = await getSupabase().rpc("get_conquest_status");
   if (error) throw error;
-  return data as unknown as ConquestStatus;
+  return keepSeen("conquestStatus", data as unknown as ConquestStatus);
 }
+
+export const seenConquestStatus = () => lastSeen<ConquestStatus>("conquestStatus");
 
 /** The winner's pick; null only settles a pick whose time is up. */
 export async function claimConquestCard(matchId: string, cardInstanceId: string | null): Promise<MatchView> {
@@ -287,6 +307,7 @@ export async function claimConquestCard(matchId: string, cardInstanceId: string 
     p_card_instance_id: cardInstanceId as string,
   });
   if (error) throw error;
+  forgetMatchSummaries();
   return data as unknown as MatchView;
 }
 
@@ -300,8 +321,10 @@ export type ConquestHistoryEntry = {
 export async function fetchConquestHistory(): Promise<ConquestHistoryEntry[]> {
   const { data, error } = await getSupabase().rpc("get_conquest_history");
   if (error) throw error;
-  return data as unknown as ConquestHistoryEntry[];
+  return keepSeen("conquestHistory", data as unknown as ConquestHistoryEntry[]);
 }
+
+export const seenConquestHistory = () => lastSeen<ConquestHistoryEntry[]>("conquestHistory");
 
 /**
  * Sends a secret choice; the round resolves as soon as both players chose. In a Classificata
@@ -429,8 +452,10 @@ export type MatchHistoryEntry = {
 export async function fetchMatchHistory(): Promise<MatchHistoryEntry[]> {
   const { data, error } = await getSupabase().rpc("get_match_history");
   if (error) throw error;
-  return data as unknown as MatchHistoryEntry[];
+  return keepSeen("matchHistory", data as unknown as MatchHistoryEntry[]);
 }
+
+export const seenMatchHistory = () => lastSeen<MatchHistoryEntry[]>("matchHistory");
 
 const PENDING_TEAM_KEY = "o-mega.pending-team";
 
