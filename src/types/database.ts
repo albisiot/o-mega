@@ -85,6 +85,7 @@ export type Database = {
           params: Json
           position: number
           random_variants: Json | null
+          shards: number
           target: number
           tier: string
           title: string | null
@@ -107,6 +108,7 @@ export type Database = {
           params?: Json
           position: number
           random_variants?: Json | null
+          shards?: number
           target: number
           tier: string
           title?: string | null
@@ -129,6 +131,7 @@ export type Database = {
           params?: Json
           position?: number
           random_variants?: Json | null
+          shards?: number
           target?: number
           tier?: string
           title?: string | null
@@ -238,6 +241,7 @@ export type Database = {
           note: string | null
           packs: number
           random_variants: Json | null
+          shards: number
         }
         Insert: {
           card_definition_ids?: string[]
@@ -252,6 +256,7 @@ export type Database = {
           note?: string | null
           packs?: number
           random_variants?: Json | null
+          shards?: number
         }
         Update: {
           card_definition_ids?: string[]
@@ -266,6 +271,7 @@ export type Database = {
           note?: string | null
           packs?: number
           random_variants?: Json | null
+          shards?: number
         }
         Relationships: []
       }
@@ -938,6 +944,7 @@ export type Database = {
           opening_ids: string[]
           packs: number
           seen_at: string | null
+          shards: number
           tier: number
           user_id: string
         }
@@ -949,6 +956,7 @@ export type Database = {
           opening_ids?: string[]
           packs?: number
           seen_at?: string | null
+          shards?: number
           tier: number
           user_id: string
         }
@@ -960,6 +968,7 @@ export type Database = {
           opening_ids?: string[]
           packs?: number
           seen_at?: string | null
+          shards?: number
           tier?: number
           user_id?: string
         }
@@ -988,6 +997,7 @@ export type Database = {
           coins: number
           packs: number
           random_variants: Json | null
+          shards: number
           tier: number
           wins: number
         }
@@ -998,6 +1008,7 @@ export type Database = {
           coins?: number
           packs?: number
           random_variants?: Json | null
+          shards?: number
           tier: number
           wins: number
         }
@@ -1008,6 +1019,7 @@ export type Database = {
           coins?: number
           packs?: number
           random_variants?: Json | null
+          shards?: number
           tier?: number
           wins?: number
         }
@@ -1447,6 +1459,7 @@ export type Database = {
           packs: number
           params: Json
           random_variants: Json | null
+          shards: number
           target: number
           title: string
         }
@@ -1462,6 +1475,7 @@ export type Database = {
           packs?: number
           params?: Json
           random_variants?: Json | null
+          shards?: number
           target: number
           title: string
         }
@@ -1477,6 +1491,7 @@ export type Database = {
           packs?: number
           params?: Json
           random_variants?: Json | null
+          shards?: number
           target?: number
           title?: string
         }
@@ -1501,6 +1516,7 @@ export type Database = {
           progress: number
           random_variants: Json | null
           replaced_at: string | null
+          shards: number
           slot: number
           target: number
           title: string
@@ -1524,6 +1540,7 @@ export type Database = {
           progress?: number
           random_variants?: Json | null
           replaced_at?: string | null
+          shards?: number
           slot: number
           target: number
           title: string
@@ -1547,6 +1564,7 @@ export type Database = {
           progress?: number
           random_variants?: Json | null
           replaced_at?: string | null
+          shards?: number
           slot?: number
           target?: number
           title?: string
@@ -1709,6 +1727,7 @@ export type Database = {
           passed: number
           players: number
           rank: number
+          shards: number
           total_score: number
           user_id: string
         }
@@ -1723,6 +1742,7 @@ export type Database = {
           passed: number
           players: number
           rank: number
+          shards?: number
           total_score: number
           user_id: string
         }
@@ -1737,6 +1757,7 @@ export type Database = {
           passed?: number
           players?: number
           rank?: number
+          shards?: number
           total_score?: number
           user_id?: string
         }
@@ -1938,6 +1959,7 @@ export type Database = {
           passed: number
           players: number
           rank: number
+          shards: number
           total_score: number
           user_id: string
           week: string
@@ -1952,6 +1974,7 @@ export type Database = {
           passed: number
           players: number
           rank: number
+          shards?: number
           total_score: number
           user_id: string
           week: string
@@ -1966,6 +1989,7 @@ export type Database = {
           passed?: number
           players?: number
           rank?: number
+          shards?: number
           total_score?: number
           user_id?: string
           week?: string
@@ -2173,6 +2197,7 @@ export type Database = {
           opening_ids: string[]
           packs: number
           seen_at: string | null
+          shards: number
           tier: number
           user_id: string
         }
@@ -2184,6 +2209,7 @@ export type Database = {
           opening_ids?: string[]
           packs: number
           seen_at?: string | null
+          shards?: number
           tier: number
           user_id: string
         }
@@ -2195,6 +2221,7 @@ export type Database = {
           opening_ids?: string[]
           packs?: number
           seen_at?: string | null
+          shards?: number
           tier?: number
           user_id?: string
         }
@@ -2224,6 +2251,7 @@ export type Database = {
           packs: number
           points: number
           random_variants: Json | null
+          shards: number
           tier: number
         }
         Insert: {
@@ -2234,6 +2262,7 @@ export type Database = {
           packs?: number
           points: number
           random_variants?: Json | null
+          shards?: number
           tier: number
         }
         Update: {
@@ -2244,6 +2273,7 @@ export type Database = {
           packs?: number
           points?: number
           random_variants?: Json | null
+          shards?: number
           tier?: number
         }
         Relationships: [
@@ -3079,6 +3109,7 @@ export type Database = {
           packs: number
           random_variants: Json | null
           seen_at: string | null
+          shards: number
           tier: string
           title: string | null
           user_id: string
@@ -3097,6 +3128,7 @@ export type Database = {
           packs: number
           random_variants?: Json | null
           seen_at?: string | null
+          shards?: number
           tier: string
           title?: string | null
           user_id: string
@@ -3115,6 +3147,7 @@ export type Database = {
           packs?: number
           random_variants?: Json | null
           seen_at?: string | null
+          shards?: number
           tier?: string
           title?: string | null
           user_id?: string
@@ -4460,6 +4493,7 @@ export type Database = {
           params: Json
           position: number
           random_variants: Json | null
+          shards: number
           target: number
           tier: string
           title: string | null
@@ -4522,6 +4556,7 @@ export type Database = {
           p_note?: string
           p_packs?: number
           p_random_variants?: Json
+          p_shards?: number
         }
         Returns: Json
       }
@@ -4603,6 +4638,7 @@ export type Database = {
           p_packs: number
           p_params: Json
           p_random_variants?: Json
+          p_shards?: number
           p_target: number
           p_title: string
         }
@@ -5186,6 +5222,7 @@ export type Database = {
           p_note?: string
           p_packs?: number
           p_random_variants?: Json
+          p_shards?: number
         }
         Returns: string
       }
@@ -5302,6 +5339,7 @@ export type Database = {
         Returns: {
           coins: number
           packs: number
+          shards: number
         }[]
       }
       emergency_prize_table: { Args: never; Returns: Json }
@@ -5353,6 +5391,7 @@ export type Database = {
         Returns: {
           coins: number
           packs: number
+          shards: number
         }[]
       }
       emergency_week_prize_table: { Args: never; Returns: Json }
@@ -5571,6 +5610,15 @@ export type Database = {
           instance_id: string
           is_new: boolean
         }[]
+      }
+      grant_reward_shards: {
+        Args: {
+          p_reason: string
+          p_ref: string
+          p_shards: number
+          p_user: string
+        }
+        Returns: undefined
       }
       grant_starter_set: { Args: { p_user: string }; Returns: number }
       has_active_match: { Args: { p_user: string }; Returns: boolean }
@@ -6378,6 +6426,11 @@ export type Database = {
       }
       settle_expired_claims: { Args: { p_user: string }; Returns: undefined }
       shard_balance: { Args: { p_user: string }; Returns: number }
+      shard_reward_from: {
+        Args: { p_error: string; p_value: Json }
+        Returns: number
+      }
+      shard_reward_valid: { Args: { p_shards: number }; Returns: boolean }
       short_foresight_until: {
         Args: { p_match_id: string; p_side: string }
         Returns: number
