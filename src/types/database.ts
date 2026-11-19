@@ -5247,6 +5247,7 @@ export type Database = {
       get_emergency_week_leaderboard: { Args: never; Returns: Json }
       get_emergency_week_lineups: { Args: never; Returns: Json }
       get_emergency_week_prizes: { Args: never; Returns: Json }
+      get_end_notices: { Args: never; Returns: Json }
       get_event: { Args: never; Returns: Json }
       get_event_leaderboard: { Args: { p_event_id?: string }; Returns: Json }
       get_event_points_for: { Args: { p_ref_id: string }; Returns: Json }
@@ -5430,6 +5431,10 @@ export type Database = {
       level_for_xp: { Args: { p_xp: number }; Returns: number }
       mark_challenge_rewards_seen: {
         Args: { p_challenge_id: string }
+        Returns: undefined
+      }
+      mark_end_notice_seen: {
+        Args: { p_kind: string; p_ref: string }
         Returns: undefined
       }
       mark_event_rewards_seen: {

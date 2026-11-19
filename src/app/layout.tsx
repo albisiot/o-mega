@@ -21,6 +21,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { NoZoom } from "@/components/no-zoom";
 import { NotificationBanner } from "@/components/notification-banner";
 import { EmergencyPrizePopup } from "@/components/emergency-prize-popup";
+import { EndNoticePopup } from "@/components/end-notice-popup";
 import { PlaceMemory } from "@/components/place-memory";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { TextSelection } from "@/components/text-selection";
@@ -104,6 +105,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <BottomNav />
           <NotificationBanner />
           <EmergencyPrizePopup />
+          <EndNoticePopup />
           <AppSplash />
         </AuthProvider>
         <ServiceWorkerRegistration />

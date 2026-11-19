@@ -590,6 +590,19 @@ export const balance = {
   },
 
   /**
+   * End notices (SPEC §11.7): the full-screen notice, once per player, when an event, a Sfida a
+   * tema, the Emergenza della settimana or a Mandato ends. The server decides who gets one.
+   */
+  endNotices: {
+    /** Something that ended longer ago than this gets no notice (game_config). */
+    withinDays: 7,
+    /** Players shown in the final leaderboard; the player's own place is added when lower (game_config). */
+    boardSize: 10,
+    /** How often an open app asks again, so an end while it is open is not missed (client only). */
+    recheckMs: 10 * 60 * 1000,
+  },
+
+  /**
    * Imprese (SPEC §8.5): the reward the editor suggests for a new impresa of each tier
    * (client only; every impresa keeps its own reward in the database).
    */
