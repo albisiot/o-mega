@@ -1,0 +1,314 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback } from "react";
+import { PrizeCard, ZoomHint } from "@/components/card-zoom";
+import { BackLink } from "@/components/comic-parts";
+import { MissionStars, StarConditions, StarCount } from "@/components/story-stars";
+import type { AbilityInfo } from "@/lib/catalog";
+import { DIFFICULTY_LABELS } from "@/lib/match";
+import { useRememberedState } from "@/lib/place-memory";
+import { chapterUnlocked, unlockHint, type StoryChapter, type StoryMission } from "@/lib/story";
+import { STORY_PLACE, storyPlace, type StoryPlace } from "@/lib/story-place";
+import { countStars } from "@/lib/story-stars";
+
+/**
+ * Where the Storia stands, remembered across a trip to another page and back (a mission's
+ * match, the team picker): `settle` places it once the chapters arrive (see storyPlace). The
+ * page holds it from its first render, so a slow load still finds the place it came back to.
+ */
+export function useStoryPlace() {
+  const [place, setPlace] = useRememberedState<StoryPlace | null>(STORY_PLACE, null);
+  const settle = useCallback(
+    (chapters: StoryChapter[], asked: number | null) => setPlace((current) => storyPlace(chapters, asked, current)),
+    [setPlace],
+  );
+  return { place, setPlace, settle };
+}
+
+/**
+ * The Storia: the chapter at `place`, its missions, and the one open in place of the list. The
+ * page fits the screen and never scrolls (see .game-shell): one chapter at a time, and an open
+ * mission takes the place of the list, with its row on top as the way back.
+ */
+export function StoryView({
+  chapters,
+  abilities,
+  place,
+  onPlace,
+  backHref = "/gioca",
+  teamHref = (code) => `/squadra/?story=${code}`,
+}: {
+  chapters: StoryChapter[];
+  abilities: AbilityInfo[] | null;
+  place: StoryPlace | null;
+  onPlace: (next: StoryPlace) => void;
+  backHref?: string;
+  /** Where a mission's «Scegli la squadra» leads. */
+  teamHref?: (code: string) => string;
+}) {
+  const shown = Math.max(0, chapters.findIndex((c) => c.chapter === place?.chapter));
+  const chapter = chapters[shown];
+  const mission = chapter?.missions.find((m) => m.code === place?.mission && m.unlocked) ?? null;
+  const firstLocked = chapter?.missions.find((m) => !m.unlocked)?.code;
+  // Stars arrive with the database that has them: until then, none is shown.
+  const hasStars = chapters.some((c) => c.missions.some((m) => m.star_rarities.length > 0));
+  const seasonStars = countStars(chapters.filter((c) => c.season === chapter?.season).flatMap((c) => c.missions));
+  const page = (at: number) => onPlace({ chapter: chapters[at].chapter, mission: null });
+
+  return (
+    <div className="game-shell">
+      <header className="flex shrink-0 items-center gap-2.5 px-3 pb-1 pt-2">
+        <BackLink href={backHref} />
+        <h1 className="font-display text-4xl uppercase text-comic-yellow">Storia</h1>
+        {/* The season of the chapter on screen: the arrows page across seasons too. */}
+        {chapter && (
+          <p className="ml-auto min-w-0 text-right text-xs font-extrabold uppercase leading-4 text-muted">
+            Stagione {chapter.season}
+            {hasStars && <StarCount {...seasonStars} className="ml-1.5 text-foreground" />}
+            <span className="block truncate text-comic-cyan">{chapter.season_title}</span>
+          </p>
+        )}
+      </header>
+
+      {/* What a short window cannot fit scrolls inside, rather than being cut. */}
+      <main data-keep-scroll="main" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
+        {chapter && (
+          <ChapterBanner
+            chapter={chapter}
+            stars={hasStars}
+            compact={mission !== null}
+            onPrev={!mission && shown > 0 ? () => page(shown - 1) : undefined}
+            onNext={!mission && shown < chapters.length - 1 ? () => page(shown + 1) : undefined}
+            paged={!mission && chapters.length > 1}
+          />
+        )}
+        {mission ? (
+          <MissionDetail
+            mission={mission}
+            stars={hasStars}
+            abilities={abilities}
+            teamHref={teamHref(mission.code)}
+            onClose={() => onPlace({ chapter: chapter.chapter, mission: null })}
+          />
+        ) : (
+          <>
+            <ol className="flex flex-col gap-1">
+              {chapter?.missions.map((m) => (
+                <li key={m.code} className={`bg-panel ${m.unlocked ? "" : "opacity-60"}`}>
+                  <MissionRow
+                    mission={m}
+                    stars={hasStars}
+                    open={false}
+                    onToggle={() => onPlace({ chapter: chapter.chapter, mission: m.code })}
+                  />
+                  {/* Once, under the first locked one: the others wait behind it. */}
+                  {m.code === firstLocked && (
+                    <p className="-mt-1 pb-1.5 pl-15 pr-3 text-xs font-medium leading-4 text-muted">
+                      {m.ord === 1 && shown > 0
+                        ? unlockHint(chapters[shown - 1], chapter)
+                        : "Completa la missione precedente."}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ol>
+            {/* The server sends it only once every mission of the chapter is completed. */}
+            {chapter?.outro && (
+              <section className="shrink-0 bg-panel px-3 py-2.5">
+                <p className="text-xs font-extrabold uppercase text-comic-yellow">Com&apos;è finita</p>
+                <p className="mt-1 text-sm font-medium">{chapter.outro}</p>
+              </section>
+            )}
+            {/* Only on the last chapter of a season, once the whole season is completed. */}
+            {chapter?.season_ending && (
+              <p className="shrink-0 text-sm font-semibold text-comic-cyan">{chapter.season_ending}</p>
+            )}
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+/** The chapter on screen. Open on a mission it keeps to its name; with several chapters, arrows page through them. */
+function ChapterBanner({
+  chapter,
+  stars,
+  compact,
+  paged,
+  onPrev,
+  onNext,
+}: {
+  chapter: StoryChapter;
+  /** Show the chapter's stars. */
+  stars: boolean;
+  compact: boolean;
+  paged: boolean;
+  onPrev?: () => void;
+  onNext?: () => void;
+}) {
+  const done = chapter.missions.filter((m) => m.completed).length;
+  const unlocked = chapterUnlocked(chapter);
+  const progress = unlocked ? `${done}/${chapter.missions.length} missioni` : "da sbloccare 🔒";
+  return (
+    <div className={`cut-bottom relative shrink-0 overflow-hidden bg-comic-magenta px-4 text-black ${compact ? "pb-5 pt-2" : "pb-6 pt-3"}`}>
+      <div aria-hidden className="halftone absolute inset-0 [mask-image:linear-gradient(135deg,transparent_45%,#000_100%)]" />
+      <div className="relative">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-extrabold">
+            Capitolo {chapter.number} · {progress}
+          </p>
+          {paged && (
+            <div className="-my-1 flex shrink-0 gap-1.5">
+              <PageArrow label="Capitolo precedente" path="M12 3 5 10l7 7" onClick={onPrev} />
+              <PageArrow label="Capitolo successivo" path="m8 3 7 7-7 7" onClick={onNext} />
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className={`min-w-0 font-display uppercase ${compact ? "text-[28px] leading-8" : "text-[34px] leading-10"}`}>
+            {chapter.title}
+          </h2>
+          {/* The chapter's stars, once it is open. */}
+          {stars && unlocked && (
+            <StarCount {...countStars(chapter.missions)} className="shrink-0 -skew-x-8 bg-black px-2 py-0.5 text-sm font-extrabold text-comic-yellow" />
+          )}
+        </div>
+        {!compact && <p className="mt-1 text-sm font-semibold">{chapter.intro}</p>}
+      </div>
+    </div>
+  );
+}
+
+function PageArrow({ label, path, onClick }: { label: string; path: string; onClick?: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      disabled={!onClick}
+      className="flex h-11 w-11 -skew-x-8 items-center justify-center bg-black text-comic-yellow disabled:opacity-30"
+    >
+      <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={3} aria-hidden>
+        <path d={path} strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
+
+/** A mission on the list: a tap opens it in place of the list. Open, it stays on top as the way back. */
+function MissionRow({
+  mission,
+  stars,
+  open,
+  onToggle,
+}: {
+  mission: StoryMission;
+  /** Its three stars in place of the state: the badge already tells completed from to play. */
+  stars: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const state = mission.completed ? "Completata" : "Da giocare";
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={!mission.unlocked}
+      aria-expanded={open}
+      aria-label={open ? `${mission.title}: torna alle missioni` : undefined}
+      className="flex min-h-12 w-full items-center gap-3 px-3 py-1 text-left"
+    >
+      <span
+        className={`flex h-9 w-9 shrink-0 -skew-x-8 items-center justify-center font-display text-xl ${
+          mission.completed ? "bg-comic-cyan text-black" : mission.unlocked ? "bg-comic-yellow text-black" : "bg-panel-raised text-faint"
+        }`}
+      >
+        {mission.completed ? "✓" : mission.ord}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className={`block font-display text-xl uppercase leading-[26px] ${open ? "" : "truncate"}`}>{mission.title}</span>
+        <span className="block truncate text-xs font-semibold leading-4 text-muted">
+          {mission.opponent} · {DIFFICULTY_LABELS[mission.bot_difficulty]}
+        </span>
+      </span>
+      {open ? (
+        <svg viewBox="0 0 14 14" className="h-5 w-5 shrink-0" stroke="currentColor" strokeWidth={2.6} aria-hidden>
+          <path d="M1 1l12 12M13 1 1 13" />
+        </svg>
+      ) : stars && mission.unlocked ? (
+        <span className="flex shrink-0 flex-col items-end gap-0.5">
+          <MissionStars earned={mission.stars} />
+          <span className="sr-only">{state}</span>
+        </span>
+      ) : (
+        <span className={`shrink-0 text-xs font-bold uppercase ${mission.completed ? "text-comic-cyan" : "text-muted"}`}>
+          {mission.unlocked ? state : "🔒"}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/** An open mission: its story, the Threats, the prize and the way to play it, filling the room under the chapter. */
+function MissionDetail({
+  mission,
+  stars,
+  abilities,
+  teamHref,
+  onClose,
+}: {
+  mission: StoryMission;
+  stars: boolean;
+  abilities: AbilityInfo[] | null;
+  teamHref: string;
+  onClose: () => void;
+}) {
+  const state = mission.completed ? "Completata" : "Da giocare";
+  const prize = (
+    <div className="flex flex-col gap-1.5">
+      <p className={`text-xs font-extrabold uppercase ${mission.completed ? "text-comic-cyan" : "text-comic-yellow"}`}>{state}</p>
+      <p className="text-sm font-bold">
+        {mission.completed
+          ? stars && mission.stars.length < 3
+            ? "Premio già ottenuto: rigiocandola puoi ancora prendere le stelle."
+            : "Premio già ottenuto: puoi rigiocarla senza premi."
+          : `Premio: ${mission.reward_coins} monete${mission.reward_card ? ` e la carta ${mission.reward_card.name}` : ""}.`}
+      </p>
+      <p className="text-xs font-medium text-faint">
+        Il premio di una missione si riceve una volta sola, alla prima vittoria. Le carte ricevute sono normali e si
+        possono perdere in Conquista.
+      </p>
+    </div>
+  );
+
+  return (
+    <section className="flex min-h-0 flex-1 flex-col bg-panel">
+      <MissionRow mission={mission} stars={stars} open onToggle={onClose} />
+      <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 pt-1">
+        <p className="shrink-0 text-sm font-medium">{mission.intro}</p>
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5" aria-label="Livelli delle Minacce">
+          <span className="text-xs font-bold text-muted">Minacce:</span>
+          {mission.threat_levels.map((level, i) => (
+            <span key={i} className="-skew-x-8 bg-black px-2 font-display text-lg text-comic-yellow">
+              {level}
+            </span>
+          ))}
+        </div>
+        {stars && <StarConditions rules={mission} earned={mission.stars} coins={mission.star_coins} className="shrink-0" />}
+        {mission.reward_card ? (
+          <PrizeCard card={mission.reward_card} abilities={abilities} backLabel="Torna alla missione" className="flex-[1_1_0]">
+            {prize}
+            <ZoomHint />
+          </PrizeCard>
+        ) : (
+          <div className="flex-[1_1_0]">{prize}</div>
+        )}
+        <Link href={teamHref} className="btn btn-primary shrink-0">
+          Scegli la squadra
+        </Link>
+      </div>
+    </section>
+  );
+}

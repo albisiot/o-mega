@@ -73,6 +73,7 @@ import {
 import { RareThreatAlert } from "@/components/rare-threat-alert";
 import { ReturnLink } from "@/components/return-link";
 import { matchBeforeRound, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
+import { STORY_PLACE, playedMission } from "@/lib/story-place";
 import { knownLevels, levelText, rarityGlow, rarityTitle } from "@/lib/threat-rarity";
 import { describeThreatModifier, modifierLine } from "@/lib/threat-modifiers";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -1437,7 +1438,12 @@ function MatchResult({
       {/* Side by side: the room above goes to the result. */}
       <div className="flex shrink-0 gap-2">
         {story ? (
-          <ReturnLink href="/storia" className="btn btn-primary min-w-0 flex-1">
+          // To the mission just played, open, even when the Storia was left elsewhere (src/lib/story-place.ts).
+          <ReturnLink
+            href="/storia"
+            state={storyReward ? { [STORY_PLACE]: playedMission(storyReward.mission) } : undefined}
+            className="btn btn-primary min-w-0 flex-1"
+          >
             Torna alla Storia
           </ReturnLink>
         ) : (

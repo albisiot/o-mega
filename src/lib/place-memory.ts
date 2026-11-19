@@ -74,10 +74,14 @@ export function rememberScroll(key = currentPlaceKey()) {
   writePlaces(places);
 }
 
-function rememberState(key: string, name: string, value: unknown) {
+/**
+ * Sets state the page `key` finds when it comes back (see useRememberedState): a "Torna a…"
+ * can bring it back to something else than where it was left (the Storia, to the mission just played).
+ */
+export function rememberPlaceState(key: string, state: Record<string, unknown>) {
   const places = readPlaces();
   const place = placeOf(places, key);
-  place.state[name] = value;
+  Object.assign(place.state, state);
   places[key] = place;
   writePlaces(places);
 }
@@ -116,7 +120,7 @@ export function useRememberedState<T>(name: string, initial: T) {
   });
 
   useEffect(() => {
-    rememberState(currentPlaceKey(), name, value);
+    rememberPlaceState(currentPlaceKey(), { [name]: value });
   }, [name, value]);
 
   return [value, setValue] as const;
