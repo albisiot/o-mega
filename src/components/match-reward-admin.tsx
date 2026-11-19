@@ -202,7 +202,7 @@ export function MatchRewardAdmin({ initial }: { initial: MatchRewards }) {
                 <p className="text-[11px] font-medium leading-4 text-muted">
                   A mezzanotte la classifica di giornata dell&apos;Emergenza è definitiva: i primi della classifica
                   ricevono questi premi e li riscuotono da un popup. «Dal 4°» vale fino all&apos;ultimo posto mostrato.
-                  Un posto con 0 monete e 0 pacchetti non vince niente.
+                  Un posto senza monete, pacchetti e Schegge non vince niente.
                 </p>
                 <SettingRow
                   label="Minacce superate minime"
@@ -227,7 +227,7 @@ export function MatchRewardAdmin({ initial }: { initial: MatchRewards }) {
                     <p className="text-[11px] font-medium leading-4 text-muted">
                       Domenica a mezzanotte la classifica dell&apos;Emergenza della settimana è definitiva: i primi ricevono
                       questi premi e li riscuotono dallo stesso popup. «Dal 4°» vale fino all&apos;ultimo posto mostrato.
-                      Un posto con 0 monete e 0 pacchetti non vince niente.
+                      Un posto senza monete, pacchetti e Schegge non vince niente.
                     </p>
                     <SettingRow
                       label="Minacce superate minime"
@@ -321,13 +321,22 @@ function TierGrid({ prefix, settings, onChange }: GridProps) {
   );
 }
 
-/** What each place of an Emergenza leaderboard, daily or weekly, wins: coins and packs. */
+/**
+ * What each place of an Emergenza leaderboard, daily or weekly, wins: coins, packs and Schegge
+ * (these only on a server that has them).
+ */
 function PrizeGrid({ prefix, settings, onChange }: GridProps) {
+  const withShards = `${prefix}.prizes.rank1_shards` in settings;
   return (
-    <div className="grid grid-cols-[4.5rem_repeat(2,minmax(0,1fr))] items-center gap-x-1.5 gap-y-1">
+    <div
+      className={`grid ${
+        withShards ? "grid-cols-[4.5rem_repeat(3,minmax(0,1fr))]" : "grid-cols-[4.5rem_repeat(2,minmax(0,1fr))]"
+      } items-center gap-x-1.5 gap-y-1`}
+    >
       <span aria-hidden />
       <span className="text-center text-[11px] font-extrabold uppercase text-faint">Monete</span>
       <span className="text-center text-[11px] font-extrabold uppercase text-faint">Pacchetti</span>
+      {withShards && <span className="text-center text-[11px] font-extrabold uppercase text-faint">Schegge</span>}
       {(
         [
           ["rank1", "1° posto"],
@@ -338,6 +347,7 @@ function PrizeGrid({ prefix, settings, onChange }: GridProps) {
       ).map(([tier, label]) => {
         const coins = `${prefix}.prizes.${tier}_coins` as RewardSettingKey;
         const packs = `${prefix}.prizes.${tier}_packs` as RewardSettingKey;
+        const shards = `${prefix}.prizes.${tier}_shards` as RewardSettingKey;
         return (
           <div key={tier} className="contents">
             <span className="text-[13px] font-bold leading-4">{label}</span>
@@ -355,6 +365,15 @@ function PrizeGrid({ prefix, settings, onChange }: GridProps) {
               aria-label={`${label}: pacchetti`}
               className={NUMBER}
             />
+            {withShards && (
+              <input
+                inputMode="numeric"
+                value={settings[shards]}
+                onChange={(event) => onChange(shards, event.target.value)}
+                aria-label={`${label}: Schegge`}
+                className={NUMBER}
+              />
+            )}
           </div>
         );
       })}

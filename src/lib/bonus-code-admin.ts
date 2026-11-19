@@ -7,6 +7,8 @@ export type AdminBonusCode = {
   code: string;
   coins: number;
   packs: number;
+  /** Schegge the code gives (0: none; missing from older servers). */
+  shards?: number;
   card_names: string[];
   /** Random variants the code gives, by name; null (or missing): none. */
   random_variants?: RandomVariantsInfo | null;
@@ -33,6 +35,8 @@ export type NewBonusCode = {
   cardCodes: string[];
   /** A reward of random variants; null: none. */
   randomVariants?: RandomVariantsRule | null;
+  /** Schegge, 0 to MAX_SHARD_REWARD. */
+  shards?: number;
   maxUses?: number;
   /** Last valid day (YYYY-MM-DD), up to midnight Europe/Rome. */
   expiresOn?: string;
@@ -61,8 +65,9 @@ export async function createBonusCode(code: NewBonusCode): Promise<AdminBonusCod
     p_max_uses: code.maxUses,
     p_expires_on: code.expiresOn,
     p_note: code.note,
-    // Sent only when used, so the page keeps working against a server without it.
+    // Sent only when used, so the page keeps working against a server without them.
     ...(ruleToSend(code.randomVariants) ? { p_random_variants: ruleToSend(code.randomVariants) } : {}),
+    ...(code.shards ? { p_shards: code.shards } : {}),
   });
   if (error) throw error;
   return data as unknown as AdminBonusCodes;

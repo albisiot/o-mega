@@ -1,3 +1,4 @@
+import { MAX_SHARD_REWARD } from "@/lib/shard-rewards";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Json } from "@/types/database";
 
@@ -55,6 +56,15 @@ export type RewardSettingKey =
   | "emergency_week.prizes.rank3_packs"
   | "emergency_week.prizes.others_coins"
   | "emergency_week.prizes.others_packs"
+  // Schegge by place (SPEC §4.8): missing from a server before them.
+  | "emergency.prizes.rank1_shards"
+  | "emergency.prizes.rank2_shards"
+  | "emergency.prizes.rank3_shards"
+  | "emergency.prizes.others_shards"
+  | "emergency_week.prizes.rank1_shards"
+  | "emergency_week.prizes.rank2_shards"
+  | "emergency_week.prizes.rank3_shards"
+  | "emergency_week.prizes.others_shards"
   // The variant chance of the standard packs (SPEC §4.6): set here like the other settings.
   | "packs.variant_chance_percent";
 
@@ -197,6 +207,14 @@ export const SETTING_LIMITS: Record<RewardSettingKey, { min: number; max: number
   "packs.variant_chance_percent": { min: 0, max: 100 },
   "emergency_week.prizes.others_coins": { min: 0, max: 10000 },
   "emergency_week.prizes.others_packs": { min: 0, max: 3 },
+  "emergency.prizes.rank1_shards": { min: 0, max: MAX_SHARD_REWARD },
+  "emergency.prizes.rank2_shards": { min: 0, max: MAX_SHARD_REWARD },
+  "emergency.prizes.rank3_shards": { min: 0, max: MAX_SHARD_REWARD },
+  "emergency.prizes.others_shards": { min: 0, max: MAX_SHARD_REWARD },
+  "emergency_week.prizes.rank1_shards": { min: 0, max: MAX_SHARD_REWARD },
+  "emergency_week.prizes.rank2_shards": { min: 0, max: MAX_SHARD_REWARD },
+  "emergency_week.prizes.rank3_shards": { min: 0, max: MAX_SHARD_REWARD },
+  "emergency_week.prizes.others_shards": { min: 0, max: MAX_SHARD_REWARD },
 };
 
 /** The modes to show: the known ones present on the server, then any other key it sends. */

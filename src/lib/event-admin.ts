@@ -8,6 +8,8 @@ export type AdminEventTier = {
   points: number;
   coins: number;
   packs: number;
+  /** Schegge it gives (0: none; missing from older servers). */
+  shards?: number;
   /** "P051" for the base drawing, "P051:neon" for that variant. */
   card_codes: string[];
   card_names: string[];
@@ -87,7 +89,15 @@ export type EventDraft = {
   traits: string[];
   rarities: string[];
   factions: string[];
-  tiers: { points: number; coins: number; packs: number; cards: string[]; random_variants?: RandomVariantsRule }[];
+  tiers: {
+    points: number;
+    coins: number;
+    packs: number;
+    cards: string[];
+    random_variants?: RandomVariantsRule;
+    /** Schegge, 0 to MAX_SHARD_REWARD; sent only when used. */
+    shards?: number;
+  }[];
 };
 
 export async function fetchAdminEvents(): Promise<AdminEvents> {

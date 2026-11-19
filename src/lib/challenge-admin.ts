@@ -48,6 +48,8 @@ export type ChallengeTierDraft = {
   /** "P051" or "P051:neon". */
   cards: string[];
   random_variants?: { count: number; styles: string[]; rarities: string[] };
+  /** Schegge, 0 to MAX_SHARD_REWARD; sent only when used. */
+  shards?: number;
 };
 
 /** What the rules allow: admitted characters and players who can field a squad today. */

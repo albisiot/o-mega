@@ -186,7 +186,7 @@ export function CosmeticsPanel({
       {items.length === 0 ? (
         <p className="text-sm font-semibold text-muted">
           Non hai {kind === "frame" ? "cornici" : "effetti"} da applicare. Si ottengono con le Schegge, che escono rompendo
-          le varianti doppie.{" "}
+          le varianti doppie o vincendo alcuni premi.{" "}
           <Link href="/negozio/?schegge=1" className="font-bold text-foreground underline">
             Vai al Negozio
           </Link>

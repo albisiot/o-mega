@@ -1,5 +1,6 @@
 import { forget, keepSeen, lastSeen } from "@/lib/last-seen";
 import { describeRandomVariants, type RandomVariantsInfo } from "@/lib/random-variants";
+import { describeShards } from "@/lib/shard-rewards";
 import { getSupabase } from "@/lib/supabase/client";
 
 /** Kinds of play that earn event points, in the order the event page lists them. */
@@ -36,6 +37,8 @@ export type EventTier = {
   points: number;
   coins: number;
   packs: number;
+  /** Schegge it gives (0: none; missing from older servers). */
+  shards?: number;
   cards: EventRewardCard[];
   reached: boolean;
   /** The cards and packs it paid, shown with the pack reveal. */
@@ -163,14 +166,18 @@ export function unseenOpenings(event: GameEvent): string[] {
   return event.tiers.filter((tier) => tier.reached && !tier.seen).flatMap((tier) => tier.opening_ids);
 }
 
-/** "100 monete, 1 carta e 2 pacchetti" for a target, then its random variants ("1 variante a caso"). */
+/**
+ * "100 monete, 1 carta, 2 pacchetti e 3 Schegge" for a target, then its random variants
+ * ("1 variante a caso").
+ */
 export function describeTierReward(
-  tier: Pick<EventTier, "coins" | "packs"> & { cards: unknown[]; random_variants?: RandomVariantsInfo | null },
+  tier: Pick<EventTier, "coins" | "packs" | "shards"> & { cards: unknown[]; random_variants?: RandomVariantsInfo | null },
 ): string {
   const parts = [
     tier.coins > 0 ? `${tier.coins} ${tier.coins === 1 ? "moneta" : "monete"}` : "",
     tier.cards.length > 0 ? `${tier.cards.length} ${tier.cards.length === 1 ? "carta" : "carte"}` : "",
     tier.packs > 0 ? `${tier.packs} ${tier.packs === 1 ? "pacchetto" : "pacchetti"}` : "",
+    describeShards(tier.shards),
     describeRandomVariants(tier.random_variants),
   ].filter((part) => part !== "");
   return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} e ${parts.at(-1)}` : (parts[0] ?? "");

@@ -32,6 +32,7 @@ import {
 import { describeServerError } from "@/lib/errors";
 import { EVENT_KINDS, addHoursToInput, describeTierReward, formatRomeDateTime, toRomeInput, type EventPoints } from "@/lib/events";
 import { describeRandomVariants, ruleInfo, ruleToSend, type RandomVariantsRule } from "@/lib/random-variants";
+import { MAX_SHARD_REWARD, shardsInput } from "@/lib/shard-rewards";
 import type { TraitCategory } from "@/lib/traits";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
@@ -51,7 +52,14 @@ const OUTCOMES = [
   { key: "loss", label: "Sconfitta" },
 ] as const;
 
-type TierForm = { points: string; coins: string; packs: string; cards: string[]; random: RandomVariantsRule | null };
+type TierForm = {
+  points: string;
+  coins: string;
+  packs: string;
+  shards: string;
+  cards: string[];
+  random: RandomVariantsRule | null;
+};
 type PointsForm = Record<MatchKind, Record<"win" | "draw" | "loss", string>> & { emergency: { passed: string } };
 
 type FormState = {
@@ -110,7 +118,7 @@ function emptyForm(now: number): FormState {
     traits: [],
     rarities: [],
     factions: [],
-    tiers: [{ points: "300", coins: "100", packs: "1", cards: [], random: null }],
+    tiers: [{ points: "300", coins: "100", packs: "1", shards: "", cards: [], random: null }],
   };
 }
 
@@ -137,6 +145,7 @@ function formFrom(event: AdminEvent, now: number, copy: boolean): FormState {
       points: String(tier.points),
       coins: tier.coins > 0 ? String(tier.coins) : "",
       packs: tier.packs > 0 ? String(tier.packs) : "",
+      shards: tier.shards ? String(tier.shards) : "",
       cards: tier.card_codes,
       random: tier.random_variants ?? null,
     })),
@@ -354,8 +363,9 @@ function EventForm({
           coins: number(tier.coins),
           packs: number(tier.packs),
           cards: tier.cards,
-          // Sent only when used, so the page keeps working against a server without it.
+          // Sent only when used, so the page keeps working against a server without them.
           ...(ruleToSend(tier.random) ? { random_variants: ruleToSend(tier.random) ?? undefined } : {}),
+          ...(number(tier.shards) > 0 ? { shards: number(tier.shards) } : {}),
         })),
       });
       onSaved(next, form.title.trim());
@@ -659,7 +669,7 @@ function EventForm({
                   onClick={() => {
                     setForm((current) => ({
                       ...current,
-                      tiers: [...current.tiers, { points: "", coins: "", packs: "", cards: [], random: null }],
+                      tiers: [...current.tiers, { points: "", coins: "", packs: "", shards: "", cards: [], random: null }],
                     }));
                     setTierIndex(form.tiers.length);
                   }}
@@ -749,7 +759,7 @@ function TierEditor({
           </button>
         )}
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <label className={LABEL}>
           Punti
           <input
@@ -782,6 +792,19 @@ function TierEditor({
             max={10}
             value={tier.packs}
             onChange={(event) => onChange({ packs: event.target.value })}
+            placeholder="0"
+            className={`${SMALL_INPUT} placeholder:text-faint`}
+          />
+        </label>
+        <label className={LABEL}>
+          Schegge
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={MAX_SHARD_REWARD}
+            value={tier.shards}
+            onChange={(event) => onChange({ shards: shardsInput(event.target.value) })}
             placeholder="0"
             className={`${SMALL_INPUT} placeholder:text-faint`}
           />
@@ -883,7 +906,7 @@ function EventRow({
           <li key={tier.tier} className="font-semibold">
             {tier.points} punti:{" "}
             {[
-              describeTierReward({ coins: tier.coins, packs: tier.packs, cards: [] }),
+              describeTierReward({ coins: tier.coins, packs: tier.packs, shards: tier.shards, cards: [] }),
               ...tier.card_names,
               describeRandomVariants(ruleInfo(tier.random_variants, styles, rarities)),
             ]

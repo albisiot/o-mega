@@ -58,6 +58,10 @@ const SETTINGS = {
   "emergency.prizes.rank3_packs": 0,
   "emergency.prizes.others_coins": 25,
   "emergency.prizes.others_packs": 0,
+  "emergency.prizes.rank1_shards": 3,
+  "emergency.prizes.rank2_shards": 0,
+  "emergency.prizes.rank3_shards": 0,
+  "emergency.prizes.others_shards": 0,
   "emergency_week.rewards.tier1_passed": 4,
   "emergency_week.rewards.tier2_passed": 7,
   "emergency_week.rewards.tier3_passed": 10,
@@ -73,6 +77,10 @@ const SETTINGS = {
   "emergency_week.prizes.rank3_packs": 1,
   "emergency_week.prizes.others_coins": 50,
   "emergency_week.prizes.others_packs": 0,
+  "emergency_week.prizes.rank1_shards": 5,
+  "emergency_week.prizes.rank2_shards": 0,
+  "emergency_week.prizes.rank3_shards": 0,
+  "emergency_week.prizes.others_shards": 0,
   "packs.variant_chance_percent": 5,
 };
 
@@ -116,6 +124,17 @@ describe("match rewards", () => {
     expect(rewardsProblem(RULES, { ...SETTINGS, "emergency.prizes.rank2_packs": 4 }, 8)).toMatch(/tra 0 e 3/);
     expect(rewardsProblem(RULES, { ...SETTINGS, "emergency.prizes.min_passed": 9 }, 8)).toMatch(/classifica/);
     expect(rewardsProblem(RULES, { ...SETTINGS, "packs.variant_chance_percent": 101 }, 8)).toMatch(/tra 0 e 100/);
+    // Schegge by place: 0 to the most a prize can give.
+    expect(rewardsProblem(RULES, { ...SETTINGS, "emergency.prizes.others_shards": 100 }, 8)).toBeNull();
+    expect(rewardsProblem(RULES, { ...SETTINGS, "emergency.prizes.others_shards": 101 }, 8)).toMatch(/tra 0 e 100/);
+    expect(rewardsProblem(RULES, { ...SETTINGS, "emergency_week.prizes.rank2_shards": -1 }, 8)).toMatch(/tra 0 e 100/);
+    // A server before the Schegge sends no such key: nothing to check, nothing to send.
+    const noShards = Object.fromEntries(Object.entries(SETTINGS).filter(([key]) => !key.endsWith("_shards"))) as typeof SETTINGS;
+    expect(rewardsProblem(RULES, noShards, 8)).toBeNull();
+    expect(rewardChanges({ rules: RULES, settings: noShards, emergency_threats_per_run: 8 }, RULES, noShards)).toEqual({
+      rules: [],
+      settings: {},
+    });
   });
 
   it("checks the weekly Emergenza too, when the server has it", () => {

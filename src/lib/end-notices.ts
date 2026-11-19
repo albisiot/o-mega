@@ -67,6 +67,8 @@ export type EmergencyWeekEndResult = {
   threats: number;
   prize_coins: number;
   prize_packs: number;
+  /** Missing from older servers. */
+  prize_shards?: number;
   prize_claimed: boolean;
 };
 export type RankedSeasonEndResult = {
@@ -234,12 +236,13 @@ export function endNoticeSummary(notice: EndNotice): string {
   return parts.join(" · ");
 }
 
-/** "1 pacchetto e 50 monete", "100 monete", "2 pacchetti". */
-function prizeText(coins: number, packs: number): string {
+/** "1 pacchetto e 50 monete", "100 monete", "2 pacchetti", "1 pacchetto, 3 Schegge e 50 monete". */
+function prizeText(coins: number, packs: number, shards = 0): string {
   const parts: string[] = [];
   if (packs > 0) parts.push(plural(packs, "pacchetto", "pacchetti"));
+  if (shards > 0) parts.push(plural(shards, "Scheggia", "Schegge"));
   if (coins > 0) parts.push(`${coins} monete`);
-  return parts.join(" e ");
+  return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} e ${parts.at(-1)}` : (parts[0] ?? "");
 }
 
 /** What else the player should know: why there is no place, the prize, the title. */
@@ -255,10 +258,10 @@ export function endNoticeNotes(notice: EndNotice): string[] {
       }
       break;
     case "emergency_week": {
-      const { finished, prize_coins, prize_packs, prize_claimed } = notice.result;
+      const { finished, prize_coins, prize_packs, prize_shards = 0, prize_claimed } = notice.result;
       if (!finished) notes.push("Il tentativo non è finito in tempo: non è entrato in classifica.");
-      if (prize_coins > 0 || prize_packs > 0) {
-        notes.push(`Premio: ${prizeText(prize_coins, prize_packs)}${prize_claimed ? " (riscosso)" : ""}`);
+      if (prize_coins > 0 || prize_packs > 0 || prize_shards > 0) {
+        notes.push(`Premio: ${prizeText(prize_coins, prize_packs, prize_shards)}${prize_claimed ? " (riscosso)" : ""}`);
       }
       break;
     }

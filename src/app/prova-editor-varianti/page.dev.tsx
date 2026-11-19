@@ -7,11 +7,12 @@
 //   /prova-editor-varianti/?s=pacchetto     the special pack editor, with a pack of only Neon variants
 //   /prova-editor-varianti/?s=negozio       the shop: that pack, and the standard pack during a variant hunt;
 //                                           &n=142 sets the pack counter (141 by default; a higher n rolls it)
-//   /prova-editor-varianti/?s=evento        an event page with a variant hunt at 15%
-//   /prova-editor-varianti/?s=evento-admin  the event editor
-//   /prova-editor-varianti/?s=codice        the bonus code editor, with a code of random variants
-//   /prova-editor-varianti/?s=obiettivo     the daily objectives editor
-//   /prova-editor-varianti/?s=impresa       the imprese editor
+//   /prova-editor-varianti/?s=evento        an event page with a variant hunt at 15% (a target with Schegge)
+//   /prova-editor-varianti/?s=evento-admin  the event editor (an event with Schegge in a target)
+//   /prova-editor-varianti/?s=codice        the bonus code editor, with a code of random variants and Schegge
+//   /prova-editor-varianti/?s=obiettivo     the daily objectives editor (an objective with Schegge)
+//   /prova-editor-varianti/?s=impresa       the imprese editor (an impresa with Schegge)
+//   /prova-editor-varianti/?s=ricompense    the match rewards editor: the Emergenza places with Schegge in «Altro»
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -20,6 +21,8 @@ import { BonusCodeAdmin } from "@/components/bonus-code-admin";
 import { EventAdmin } from "@/components/event-admin";
 import { ObjectiveAdmin } from "@/components/objective-admin";
 import { EventDetails } from "@/components/event-details";
+import { MatchRewardAdmin } from "@/components/match-reward-admin";
+import { balance } from "@/config/balance";
 import { ShopView } from "@/components/shop-view";
 import { SpecialPackAdmin } from "@/components/special-pack-admin";
 import type { AdminAchievements } from "@/lib/achievement-admin";
@@ -29,6 +32,7 @@ import { DEFAULT_EVENT_POINTS, type AdminEvents } from "@/lib/event-admin";
 import type { GameEvent } from "@/lib/events";
 import type { PackOdds, PackStatus, SpecialPack } from "@/lib/packs";
 import type { AdminObjectives } from "@/lib/objective-admin";
+import { SETTING_LIMITS, type MatchRewards, type RewardSettingKey } from "@/lib/match-rewards";
 import type { AdminSpecialPacks } from "@/lib/special-pack-admin";
 import { getSupabase } from "@/lib/supabase/client";
 
@@ -185,6 +189,7 @@ function eventScene(): GameEvent {
         points: 300,
         coins: 0,
         packs: 1,
+        shards: 3,
         cards: [],
         random_variants: { count: 2, styles: ["Neon"], rarities: [] },
         reached: false,
@@ -204,7 +209,23 @@ function eventAdmin(data: Loaded): AdminEvents {
     base_variant_chance_percent: 5,
     quadrant_seal_target: { min: 6, max: 30, suggested: 12 },
     min_admitted_characters: 10,
-    events: [],
+    events: [
+      {
+        id: "event-1",
+        title: "Settimana delle Schegge",
+        description: "",
+        starts_at: new Date(Date.now() + 86_400_000).toISOString(),
+        ends_at: new Date(Date.now() + 8 * 86_400_000).toISOString(),
+        points: DEFAULT_EVENT_POINTS,
+        daily_cap: null,
+        is_active: true,
+        players: 0,
+        tiers: [
+          { tier: 1, points: 100, coins: 50, packs: 0, shards: 2, card_codes: [], card_names: [], reached: 0 },
+          { tier: 2, points: 300, coins: 0, packs: 1, shards: 5, card_codes: [], card_names: [], reached: 0 },
+        ],
+      },
+    ],
     cards: data.catalog.map((card) => ({
       code: card.code,
       name: card.name,
@@ -244,6 +265,7 @@ function codesAdmin(data: Loaded): AdminBonusCodes {
         code: "CACCIANEON",
         coins: 50,
         packs: 0,
+        shards: 5,
         card_names: [],
         random_variants: { count: 2, styles: ["Neon"], rarities: [] },
         max_uses: 100,
@@ -270,6 +292,7 @@ function objectivesAdmin(data: Loaded): AdminObjectives {
         target: 3,
         coins: 0,
         packs: 0,
+        shards: 2,
         cards: 0,
         card_codes: [],
         random_variants: { count: 1, styles: ["tarot"], rarities: [] },
@@ -281,6 +304,7 @@ function objectivesAdmin(data: Loaded): AdminObjectives {
     reward_coins: { easy: 20, medium: 40, hard: 80 },
     cards: rewardCards(data),
     max_cards: 5,
+    max_shards: 100,
     variant_styles: styleList(data),
     rarities: RARITIES,
   } as AdminObjectives;
@@ -289,6 +313,7 @@ function objectivesAdmin(data: Loaded): AdminObjectives {
 function achievementsAdmin(data: Loaded): AdminAchievements {
   return {
     players: 13,
+    max_shards: 100,
     achievements: [
       {
         id: "ach-1",
@@ -301,6 +326,7 @@ function achievementsAdmin(data: Loaded): AdminAchievements {
         target: 5,
         coins: 100,
         packs: 0,
+        shards: 4,
         card_codes: [],
         random_variants: { count: 1, styles: [], rarities: ["omega"] },
         title: null,
@@ -319,6 +345,24 @@ function achievementsAdmin(data: Loaded): AdminAchievements {
     chapters: [],
     seasons: [],
   } as AdminAchievements;
+}
+
+/** The settings of the rewards page as balance.ts has them, with Schegge for the first places. */
+function rewardsAdmin(): MatchRewards {
+  const valueOf = (key: string): number => {
+    let node: unknown = balance;
+    for (const part of key.split(".")) {
+      node = (node as Record<string, unknown>)[part.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase())];
+    }
+    return typeof node === "number" ? node : 0;
+  };
+  const settings = Object.fromEntries(
+    (Object.keys(SETTING_LIMITS) as RewardSettingKey[]).map((key) => [key, valueOf(key)]),
+  ) as Record<RewardSettingKey, number>;
+  settings["emergency.prizes.rank1_shards"] = 3;
+  settings["emergency_week.prizes.rank1_shards"] = 10;
+  settings["emergency_week.prizes.others_shards"] = 1;
+  return { rules: [], settings, emergency_threats_per_run: 8, emergency_week_threats_per_run: 10 };
 }
 
 export default function VariantEditorPreviewPage() {
@@ -360,6 +404,7 @@ function Scene() {
   if (scene === "codice") return <BonusCodeAdmin data={codes} onChange={setCodes} />;
   if (scene === "obiettivo") return <ObjectiveAdmin data={objectives} onChange={setObjectives} />;
   if (scene === "impresa") return <AchievementAdmin data={achievements} onChange={setAchievements} />;
+  if (scene === "ricompense") return <MatchRewardAdmin initial={rewardsAdmin()} />;
   if (scene === "negozio") {
     return (
       <ShopView

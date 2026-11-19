@@ -1,5 +1,6 @@
 import { forget, keepSeen, lastSeen } from "@/lib/last-seen";
 import { describeRandomVariants, type RandomVariantsInfo } from "@/lib/random-variants";
+import { describeShards } from "@/lib/shard-rewards";
 import { getSupabase } from "@/lib/supabase/client";
 
 export type ObjectiveDifficulty = "easy" | "medium" | "hard";
@@ -31,6 +32,8 @@ export type DailyObjective = {
   claimed: boolean;
   coins: number;
   packs: number;
+  /** Schegge it gives (0: none; missing from older servers). */
+  shards?: number;
   cards: ObjectiveRewardCard[];
   /** Random variants it gives, by name; null (or missing): none. */
   random_variants?: RandomVariantsInfo | null;
@@ -88,16 +91,19 @@ export function claimableCount(objectives: DailyObjectives | null): number {
   return objectives ? objectives.objectives.filter(isClaimable).length : 0;
 }
 
-/** "40 monete", "1 pacchetto + 20 monete", "Carta: Nome", "1 variante a caso". */
+/** "40 monete", "1 pacchetto + 20 monete", "2 Schegge", "Carta: Nome", "1 variante a caso". */
 export function describeObjectiveReward({
   coins,
   packs,
+  shards,
   cards,
   random_variants,
-}: Pick<DailyObjective, "coins" | "packs" | "cards" | "random_variants">): string {
+}: Pick<DailyObjective, "coins" | "packs" | "shards" | "cards" | "random_variants">): string {
   const parts: string[] = [];
   if (packs > 0) parts.push(packs === 1 ? "1 pacchetto" : `${packs} pacchetti`);
   if (coins > 0) parts.push(`${coins} monete`);
+  const shardText = describeShards(shards);
+  if (shardText) parts.push(shardText);
   if (cards.length === 1) parts.push(`Carta: ${cards[0].name}`);
   else if (cards.length > 1) parts.push(`${cards.length} carte`);
   const random = describeRandomVariants(random_variants);

@@ -1,7 +1,8 @@
+import { describeShards } from "@/lib/shard-rewards";
 import { getSupabase } from "@/lib/supabase/client";
 
 /** A place of the day's Emergenza leaderboard that wins something (SPEC §5.10). */
-export type EmergencyPrizeTier = { from: number; to: number; coins: number; packs: number };
+export type EmergencyPrizeTier = { from: number; to: number; coins: number; packs: number; shards?: number };
 
 /** A prize won when a day (or a week, SPEC §5.16) ended, still to claim. */
 export type EmergencyPrize = {
@@ -16,9 +17,11 @@ export type EmergencyPrize = {
   players: number;
   coins: number;
   packs: number;
+  /** Schegge (0: none; missing from older servers). */
+  shards?: number;
 };
 
-export type EmergencyPrizeClaim = { coins: number; opening_ids: string[]; coin_balance: number };
+export type EmergencyPrizeClaim = { coins: number; shards?: number; opening_ids: string[]; coin_balance: number };
 
 /**
  * Closes the days and the weeks that are over on the server, then the player's prizes still to
@@ -47,12 +50,14 @@ export async function claimEmergencyPrize(prize: Pick<EmergencyPrize, "id" | "ki
   return data as unknown as EmergencyPrizeClaim;
 }
 
-/** "1 pacchetto e 50 monete", "100 monete", "2 pacchetti". */
-export function prizeText({ coins, packs }: { coins: number; packs: number }): string {
+/** "1 pacchetto e 50 monete", "100 monete", "2 pacchetti", "1 pacchetto, 3 Schegge e 50 monete". */
+export function prizeText({ coins, packs, shards }: { coins: number; packs: number; shards?: number }): string {
   const parts: string[] = [];
   if (packs > 0) parts.push(packs === 1 ? "1 pacchetto" : `${packs} pacchetti`);
+  const shardText = describeShards(shards);
+  if (shardText) parts.push(shardText);
   if (coins > 0) parts.push(`${coins} monete`);
-  return parts.join(" e ");
+  return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} e ${parts.at(-1)}` : (parts[0] ?? "");
 }
 
 /** "1°", or "4°–10°" for a range of places. */

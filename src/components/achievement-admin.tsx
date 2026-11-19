@@ -30,6 +30,7 @@ import {
 import { TIERS, TIER_COLORS, TIER_LABELS, type AchievementTier } from "@/lib/achievements";
 import { describeServerError } from "@/lib/errors";
 import type { RandomVariantsRule } from "@/lib/random-variants";
+import { MAX_SHARD_REWARD, shardsFromInput, shardsInput } from "@/lib/shard-rewards";
 import { DIFFICULTY_LABELS } from "@/lib/match";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
@@ -310,6 +311,7 @@ function AchievementForm({
   const [hint, setHint] = useState(editing?.hint ?? "");
   const [coins, setCoins] = useState(String(editing?.coins ?? balance.achievements.suggestedReward.bronze.coins));
   const [packs, setPacks] = useState(String(editing?.packs ?? balance.achievements.suggestedReward.bronze.packs));
+  const [shards, setShards] = useState(editing?.shards ? String(editing.shards) : "");
   const [rewardTouched, setRewardTouched] = useState(editing !== null);
   const [cards, setCards] = useState<string[]>(editing?.card_codes ?? []);
   const [randomVariants, setRandomVariants] = useState<RandomVariantsRule | null>(editing?.random_variants ?? null);
@@ -339,6 +341,7 @@ function AchievementForm({
     target: targetNumber,
     coins: Number(coins) || 0,
     packs: Number(packs) || 0,
+    shards: shardsFromInput(shards),
     card_codes: cards,
     random_variants: randomVariants,
     title: title.trim(),
@@ -532,6 +535,19 @@ function AchievementForm({
                 className={INPUT}
               />
             </label>
+            <label className={LABEL}>
+              Schegge (0–{data.max_shards ?? MAX_SHARD_REWARD})
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={data.max_shards ?? MAX_SHARD_REWARD}
+                value={shards}
+                onChange={(event) => setShards(shardsInput(event.target.value))}
+                placeholder="0"
+                className={`${INPUT} placeholder:text-faint`}
+              />
+            </label>
           </div>
           <AdminCardPicker
             cards={data.cards}
@@ -609,6 +625,7 @@ function AchievementForm({
                   {
                     coins: Number(coins) || 0,
                     packs: Number(packs) || 0,
+                    shards: shardsFromInput(shards),
                     card_codes: cards,
                     random_variants: randomVariants,
                     title: title.trim() || null,

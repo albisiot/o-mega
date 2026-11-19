@@ -15,6 +15,7 @@ import {
 import { variantStylesOf } from "@/lib/admin-card-filter";
 import { describeServerError } from "@/lib/errors";
 import { describeRandomVariants, type RandomVariantsRule } from "@/lib/random-variants";
+import { MAX_SHARD_REWARD, shardsFromInput, shardsInput } from "@/lib/shard-rewards";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const INPUT = "min-h-12 w-full min-w-0 max-w-full border-2 border-comic-yellow bg-black px-3 text-base font-semibold";
@@ -114,6 +115,7 @@ function NewCodeForm({
   const [code, setCode] = useState("");
   const [coins, setCoins] = useState("");
   const [packs, setPacks] = useState("");
+  const [shards, setShards] = useState("");
   const [cardCodes, setCardCodes] = useState<string[]>([]);
   const [randomVariants, setRandomVariants] = useState<RandomVariantsRule | null>(null);
   const reference = useAdminCardReference();
@@ -134,6 +136,7 @@ function NewCodeForm({
         packs: Number(packs),
         cardCodes,
         randomVariants,
+        shards: shardsFromInput(shards),
         maxUses: maxUses === "" ? undefined : Number(maxUses),
         expiresOn: expiresOn === "" ? undefined : expiresOn,
         note: note === "" ? undefined : note,
@@ -205,6 +208,19 @@ function NewCodeForm({
                   min={0}
                   value={packs}
                   onChange={(event) => setPacks(event.target.value)}
+                  placeholder="0"
+                  className={`${INPUT} placeholder:text-faint`}
+                />
+              </label>
+              <label className={LABEL}>
+                Schegge (0–{MAX_SHARD_REWARD})
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={MAX_SHARD_REWARD}
+                  value={shards}
+                  onChange={(event) => setShards(shardsInput(event.target.value))}
                   placeholder="0"
                   className={`${INPUT} placeholder:text-faint`}
                 />
@@ -300,7 +316,7 @@ function CodeRow({ code, onChange }: { code: AdminBonusCode; onChange: BonusCode
   // Read once per row render: the state is only a label, the server decides on redemption.
   const [now] = useState(() => Date.now());
   const state = bonusCodeState(code, now);
-  const reward = describeBonusReward({ coins: code.coins, cards: 0, packs: code.packs });
+  const reward = describeBonusReward({ coins: code.coins, cards: 0, packs: code.packs, shards: code.shards });
 
   async function toggle() {
     setSaving(true);

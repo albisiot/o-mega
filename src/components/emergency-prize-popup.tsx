@@ -14,6 +14,7 @@ import {
 } from "@/lib/emergency-prizes";
 import { weekText } from "@/lib/emergency";
 import { describeServerError } from "@/lib/errors";
+import { describeShards } from "@/lib/shard-rewards";
 
 /** Screens the popup never covers: a match or a run being played, a pack being opened, the editors. */
 const QUIET_PATHS = ["/partita", "/attesa", "/emergenza", "/pacchetto", "/editor", "/prova-tavole"];
@@ -43,7 +44,7 @@ function PrizePopup() {
   const [shownId, setShownId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [claimed, setClaimed] = useState<{ coins: number; balance: number } | null>(null);
+  const [claimed, setClaimed] = useState<{ coins: number; shards: number; balance: number } | null>(null);
   const held = useSyncExternalStore(subscribeBannerHolds, bannersHeld, () => true);
 
   useEffect(() => {
@@ -97,7 +98,7 @@ function PrizePopup() {
           openReveal(result.opening_ids);
           return;
         }
-        setClaimed({ coins: result.coins, balance: result.coin_balance });
+        setClaimed({ coins: result.coins, shards: result.shards ?? 0, balance: result.coin_balance });
       })
       .catch((reason: unknown) => setError(describeServerError(reason)))
       .finally(() => setBusy(false));
@@ -137,6 +138,11 @@ function PrizePopup() {
                   +{prize.coins} monete
                 </p>
               )}
+              {(prize.shards ?? 0) > 0 && (
+                <p className="-skew-x-8 bg-black px-3 py-1 font-display text-2xl leading-7 text-comic-yellow">
+                  +{describeShards(prize.shards)}
+                </p>
+              )}
             </div>
             {error && <p className="relative bg-black px-2 py-0.5 text-xs font-bold text-comic-magenta">{error}</p>}
             <div className="relative mt-1 flex w-full gap-2">
@@ -163,9 +169,13 @@ function PrizePopup() {
           claimed && (
             <>
               <h2 id="emergency-prize-title" className="text-sfx relative text-6xl uppercase leading-[0.9] text-comic-magenta">
-                +{claimed.coins}
+                +{claimed.coins > 0 ? claimed.coins : claimed.shards}
               </h2>
-              <p className="relative text-[13px] font-bold">monete riscosse · ora ne hai {claimed.balance}</p>
+              <p className="relative text-[13px] font-bold">
+                {claimed.coins > 0
+                  ? `monete riscosse · ora ne hai ${claimed.balance}${claimed.shards > 0 ? ` · +${describeShards(claimed.shards)}` : ""}`
+                  : `${claimed.shards === 1 ? "Scheggia riscossa" : "Schegge riscosse"} · si spendono nel Negozio`}
+              </p>
               <button type="button" onClick={close} className="btn relative mt-1 min-h-14 w-full bg-black font-display text-2xl uppercase text-comic-yellow">
                 Fantastico!
               </button>

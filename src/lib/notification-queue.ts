@@ -1,6 +1,8 @@
 // The line of in-app banners (SPEC §11.1). The server writes the news; this only
 // decides which one shows and in what order. Pure: no I/O, no timers.
 
+import { describeShards } from "@/lib/shard-rewards";
+
 export type NotificationKind =
   | "objective_completed"
   | "event_reward"
@@ -101,14 +103,16 @@ export function bannerHref(notification: PlayerNotification): string | null {
 
 const count = (value: unknown) => (typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 0);
 
-/** The prize in a few words ("40 monete · 1 pacchetto"), or null when the data has none. */
+/** The prize in a few words ("40 monete · 1 pacchetto · 3 Schegge"), or null when the data has none. */
 export function bannerReward(notification: PlayerNotification): string | null {
   const coins = count(notification.data.coins);
   const packs = count(notification.data.packs);
+  const shards = count(notification.data.shards);
   const cards = count(notification.data.cards);
   const parts = [
     coins > 0 ? `${coins} ${coins === 1 ? "moneta" : "monete"}` : null,
     packs > 0 ? `${packs} ${packs === 1 ? "pacchetto" : "pacchetti"}` : null,
+    describeShards(shards) || null,
     cards > 0 ? `${cards} ${cards === 1 ? "carta" : "carte"}` : null,
   ].filter((p): p is string => p !== null);
   return parts.length > 0 ? parts.join(" · ") : null;

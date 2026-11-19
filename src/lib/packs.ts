@@ -1,5 +1,6 @@
 import { forget, keepSeen, lastSeen } from "@/lib/last-seen";
 import { safeReturnPath } from "@/lib/pack-return";
+import { describeShards } from "@/lib/shard-rewards";
 import { getSupabase } from "@/lib/supabase/client";
 
 export type PackCard = {
@@ -150,6 +151,8 @@ export type BonusReward = {
   coins: number;
   cards: number;
   packs: number;
+  /** Schegge (0: none; missing from older servers). */
+  shards?: number;
   /** Chosen cards first, then one opening per pack. */
   openings: PackOpening[];
 };
@@ -166,12 +169,13 @@ export async function redeemBonusCode(code: string): Promise<BonusReward> {
   return result;
 }
 
-/** "100 monete, 1 carta e 2 pacchetti" */
-export function describeBonusReward({ coins, cards, packs }: Pick<BonusReward, "coins" | "cards" | "packs">): string {
+/** "100 monete, 1 carta e 2 pacchetti", "100 monete e 3 Schegge" */
+export function describeBonusReward({ coins, cards, packs, shards }: Pick<BonusReward, "coins" | "cards" | "packs" | "shards">): string {
   const parts = [
     coins > 0 && `${coins} ${coins === 1 ? "moneta" : "monete"}`,
     cards > 0 && `${cards} ${cards === 1 ? "carta" : "carte"}`,
     packs > 0 && `${packs} ${packs === 1 ? "pacchetto" : "pacchetti"}`,
+    (shards ?? 0) > 0 && describeShards(shards),
   ].filter((part) => part !== false);
   return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} e ${parts.at(-1)}` : (parts[0] ?? "");
 }

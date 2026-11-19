@@ -79,7 +79,7 @@ function challenge(patch: Partial<Challenge>): Challenge {
     variant_style_names: [],
     tiers: [
       tier(1, 1, { coins: 50 }, true),
-      tier(2, 5, { packs: 1 }, false),
+      tier(2, 5, { packs: 1, shards: 3 }, false),
       tier(3, 10, { random: 2 }, false),
     ],
     rarity_max_info: [{ code: "beta", name: "Beta", max: 1 }],
@@ -110,12 +110,18 @@ const EMERGENCY = challenge({
   tiers: [tier(1, 5, { coins: 100 }, false)],
 });
 
-function tier(index: number, wins: number, reward: { coins?: number; packs?: number; random?: number }, reached: boolean) {
+function tier(
+  index: number,
+  wins: number,
+  reward: { coins?: number; packs?: number; shards?: number; random?: number },
+  reached: boolean,
+) {
   return {
     tier: index,
     wins,
     coins: reward.coins ?? 0,
     packs: reward.packs ?? 0,
+    shards: reward.shards ?? 0,
     cards: [],
     card_codes: [],
     random_variants: reward.random ? { count: reward.random, styles: [], rarities: [] } : null,

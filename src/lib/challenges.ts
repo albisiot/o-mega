@@ -16,6 +16,7 @@ import type { CatalogCard } from "@/lib/collection";
 import { keepSeen, lastSeen } from "@/lib/last-seen";
 import type { MatchCard, MatchFormat } from "@/lib/match";
 import { describeRandomVariants, type RandomVariantsInfo, type RandomVariantsRule } from "@/lib/random-variants";
+import { describeShards } from "@/lib/shard-rewards";
 import { joinOr, traitCategoryOf } from "@/lib/story-stars";
 import { getSupabase } from "@/lib/supabase/client";
 
@@ -66,6 +67,8 @@ export type ChallengeTier = {
   wins: number;
   coins: number;
   packs: number;
+  /** Schegge it gives (0: none; missing from older servers). */
+  shards?: number;
   cards: { name: string; variant?: { style: string; name: string } }[];
   /** "P051" or "P051:neon", for the admin's form. */
   card_codes: string[];
@@ -466,11 +469,14 @@ export function describeChallengePoints(points: ChallengeEventPoints): string {
   return `${points.win} · ${points.draw} · ${points.loss}`;
 }
 
-/** What a prize target gives, in a few words: "30 monete", "1 pacchetto + Falx", "2 varianti a caso". */
-export function describeChallengeTierReward(tier: Pick<ChallengeTier, "coins" | "packs" | "cards" | "random_variants_info">): string {
+/** What a prize target gives, in a few words: "30 monete", "1 pacchetto + Falx", "3 Schegge", "2 varianti a caso". */
+export function describeChallengeTierReward(
+  tier: Pick<ChallengeTier, "coins" | "packs" | "shards" | "cards" | "random_variants_info">,
+): string {
   const parts = [
     tier.coins > 0 ? `${tier.coins} ${tier.coins === 1 ? "moneta" : "monete"}` : null,
     tier.packs > 0 ? `${tier.packs} ${tier.packs === 1 ? "pacchetto" : "pacchetti"}` : null,
+    describeShards(tier.shards) || null,
     ...tier.cards.map((card) => (card.variant ? `${card.name} ${card.variant.name}` : card.name)),
     describeRandomVariants(tier.random_variants_info) || null,
   ].filter((part): part is string => part !== null);

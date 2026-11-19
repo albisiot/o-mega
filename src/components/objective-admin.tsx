@@ -18,6 +18,7 @@ import {
 } from "@/lib/objective-admin";
 import { DIFFICULTY_LABELS, type ObjectiveDifficulty } from "@/lib/objectives";
 import type { RandomVariantsRule } from "@/lib/random-variants";
+import { MAX_SHARD_REWARD, shardsFromInput, shardsInput } from "@/lib/shard-rewards";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const INPUT = "min-h-12 w-full min-w-0 max-w-full border-2 border-comic-yellow bg-black px-3 text-base font-semibold";
@@ -216,6 +217,7 @@ function ObjectiveForm({
   const [ownCoins, setOwnCoins] = useState(editing?.coins !== null && editing?.coins !== undefined);
   const [coins, setCoins] = useState(String(editing?.coins ?? data.reward_coins[editing?.difficulty ?? "easy"]));
   const [packs, setPacks] = useState(String(editing?.packs ?? 0));
+  const [shards, setShards] = useState(editing?.shards ? String(editing.shards) : "");
   const [cardCodes, setCardCodes] = useState<string[]>(editing?.card_codes ?? []);
   const [randomVariants, setRandomVariants] = useState<RandomVariantsRule | null>(editing?.random_variants ?? null);
   const reference = useAdminCardReference();
@@ -247,6 +249,8 @@ function ObjectiveForm({
           packs: Number(packs),
           cardCodes: canPickCards ? cardCodes : undefined,
           randomVariants,
+          // Sent when used or when there were some to take away, so an older server still saves.
+          shards: shards !== "" || (editing?.shards ?? 0) > 0 ? shardsFromInput(shards) : undefined,
         }),
       );
     } catch (cause) {
@@ -373,6 +377,19 @@ function ObjectiveForm({
                 value={packs}
                 onChange={(event) => setPacks(event.target.value)}
                 className={INPUT}
+              />
+            </label>
+            <label className={LABEL}>
+              Schegge (0–{data.max_shards ?? MAX_SHARD_REWARD})
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={data.max_shards ?? MAX_SHARD_REWARD}
+                value={shards}
+                onChange={(event) => setShards(shardsInput(event.target.value))}
+                placeholder="0"
+                className={`${INPUT} placeholder:text-faint`}
               />
             </label>
           </div>

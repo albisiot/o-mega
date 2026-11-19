@@ -1,5 +1,6 @@
 import type { AchievementTier } from "@/lib/achievements";
 import { describeRandomVariants, ruleInfo, ruleToSend, type RandomVariantsRule } from "@/lib/random-variants";
+import { describeShards } from "@/lib/shard-rewards";
 import { DIFFICULTY_LABELS } from "@/lib/match";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Json } from "@/types/database";
@@ -50,6 +51,8 @@ export type AdminAchievement = {
   target: number;
   coins: number;
   packs: number;
+  /** Schegge it gives (0: none; missing from older servers). */
+  shards?: number;
   /** "P051" for the base drawing, "P051:neon" for that variant. */
   card_codes: string[];
   /** Random variants it gives, as saved; null (or missing): none. */
@@ -66,6 +69,8 @@ export type AdminAchievement = {
 
 export type AdminAchievements = {
   players: number;
+  /** The most Schegge a prize can give (missing from older servers). */
+  max_shards?: number;
   achievements: AdminAchievement[];
   cards: { code: string; name: string; rarity: string; variants: { style: string; name: string }[] }[];
   traits: { code: string; name: string; category: string }[];
@@ -86,6 +91,8 @@ export type AchievementDraft = {
   target: number;
   coins: number;
   packs: number;
+  /** Schegge, 0 to the limit (an older server ignores them). */
+  shards: number;
   card_codes: string[];
   random_variants?: RandomVariantsRule | null;
   title: string;
@@ -375,14 +382,16 @@ export function describeCondition(
   }
 }
 
-/** "50 monete · 1 pacchetto · 2 carte · 1 variante a caso · titolo «X»", or "Solo la medaglia". */
+/** "50 monete · 1 pacchetto · 3 Schegge · 2 carte · 1 variante a caso · titolo «X»", or "Solo la medaglia". */
 export function describeAdminReward(
-  achievement: Pick<AdminAchievement, "coins" | "packs" | "card_codes" | "title" | "random_variants">,
+  achievement: Pick<AdminAchievement, "coins" | "packs" | "shards" | "card_codes" | "title" | "random_variants">,
   lists: Partial<Pick<AdminAchievements, "styles" | "rarities">> = {},
 ): string {
   const parts: string[] = [];
   if (achievement.coins > 0) parts.push(`${achievement.coins} monete`);
   if (achievement.packs > 0) parts.push(achievement.packs === 1 ? "1 pacchetto" : `${achievement.packs} pacchetti`);
+  const shards = describeShards(achievement.shards);
+  if (shards) parts.push(shards);
   if (achievement.card_codes.length > 0) parts.push(achievement.card_codes.length === 1 ? "1 carta" : `${achievement.card_codes.length} carte`);
   const random = describeRandomVariants(ruleInfo(achievement.random_variants, lists.styles ?? [], lists.rarities ?? []));
   if (random) parts.push(random);
@@ -418,6 +427,7 @@ function draftJson(draft: AchievementDraft): Json {
     target: draft.target,
     coins: draft.coins,
     packs: draft.packs,
+    shards: draft.shards,
     card_codes: draft.card_codes,
     random_variants: ruleToSend(draft.random_variants),
     title: draft.title,

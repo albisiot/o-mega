@@ -43,6 +43,7 @@ import { describeServerError } from "@/lib/errors";
 import { addHoursToInput, formatRomeDateTime, toRomeInput } from "@/lib/events";
 import { DIFFICULTY_LABELS, type MatchCard } from "@/lib/match";
 import { describeRandomVariants, ruleInfo, ruleToSend, type RandomVariantsRule } from "@/lib/random-variants";
+import { MAX_SHARD_REWARD, shardsInput } from "@/lib/shard-rewards";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const INPUT = "min-h-12 w-full min-w-0 max-w-full border-2 border-comic-yellow bg-black px-3 text-base font-semibold";
@@ -59,7 +60,14 @@ const MAX_TIER_CARDS = 10;
 type VariantMode = "none" | "min" | "all";
 type Format = (typeof CHALLENGE_FORMATS)[number]["key"];
 
-type TierForm = { wins: string; coins: string; packs: string; cards: string[]; random: RandomVariantsRule | null };
+type TierForm = {
+  wins: string;
+  coins: string;
+  packs: string;
+  shards: string;
+  cards: string[];
+  random: RandomVariantsRule | null;
+};
 
 type FormState = {
   id?: string;
@@ -166,6 +174,7 @@ function tierForm(tier: ChallengeTier): TierForm {
     wins: String(tier.wins),
     coins: tier.coins > 0 ? String(tier.coins) : "",
     packs: tier.packs > 0 ? String(tier.packs) : "",
+    shards: tier.shards ? String(tier.shards) : "",
     cards: tier.card_codes,
     random: tier.random_variants,
   };
@@ -259,7 +268,9 @@ function tierDraft(tier: TierForm): ChallengeTierDraft {
     coins: number(tier.coins),
     packs: number(tier.packs),
     cards: tier.cards,
+    // Sent only when used, so the page keeps working against a server without them.
     ...(random ? { random_variants: random } : {}),
+    ...(number(tier.shards) > 0 ? { shards: number(tier.shards) } : {}),
   };
 }
 
@@ -540,6 +551,7 @@ function ChallengeForm({
       wins: number(tier.wins),
       coins: number(tier.coins),
       packs: number(tier.packs),
+      shards: number(tier.shards),
       cards: tier.cards.map((code) => ({ name: nameOf(code.split(":")[0]) })),
       card_codes: tier.cards,
       random_variants: tier.random,
@@ -1024,6 +1036,7 @@ function ChallengeForm({
                           wins: String(form.tiers.length === 0 ? 1 : number(form.tiers[form.tiers.length - 1].wins) * 2 + 1),
                           coins: "50",
                           packs: "",
+                          shards: "",
                           cards: [],
                           random: null,
                         },
@@ -1507,7 +1520,7 @@ function TierEditor({
           Togli
         </button>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <label className={LABEL}>
           Vittorie
           <input
@@ -1541,6 +1554,19 @@ function TierEditor({
             max={10}
             value={tier.packs}
             onChange={(changed) => onChange({ packs: changed.target.value })}
+            placeholder="0"
+            className={`${SMALL_INPUT} placeholder:text-faint`}
+          />
+        </label>
+        <label className={LABEL}>
+          Schegge
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={MAX_SHARD_REWARD}
+            value={tier.shards}
+            onChange={(changed) => onChange({ shards: shardsInput(changed.target.value) })}
             placeholder="0"
             className={`${SMALL_INPUT} placeholder:text-faint`}
           />

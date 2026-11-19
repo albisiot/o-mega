@@ -1,5 +1,6 @@
 import type { ObjectiveDifficulty } from "@/lib/objectives";
 import { describeRandomVariants, ruleInfo, ruleToSend, type RandomVariantsRule } from "@/lib/random-variants";
+import { describeShards } from "@/lib/shard-rewards";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Json } from "@/types/database";
 
@@ -27,6 +28,8 @@ export type AdminObjective = {
   /** Null: the difficulty's coins. */
   coins: number | null;
   packs: number;
+  /** Schegge it gives (0: none; missing from older servers). */
+  shards?: number;
   /** How many reward cards. */
   cards: number;
   /** The reward cards: "P051" for the base drawing, "P051:neon" for that variant (missing on an older server). */
@@ -46,6 +49,8 @@ export type AdminObjectives = {
   cards?: { code: string; name: string; rarity: string; rarity_code?: string; faction?: string; variants: { style: string; name: string }[] }[];
   /** The most reward cards an objective can give. */
   max_cards?: number;
+  /** The most Schegge a prize can give (missing from older servers). */
+  max_shards?: number;
   /** The styles and rarities a rule of random variants can name. */
   variant_styles?: { style: string; name: string }[];
   rarities?: { code: string; name: string; rank: number; color: string }[];
@@ -63,6 +68,8 @@ export type ObjectiveDraft = {
   /** The reward cards; undefined keeps them as they are (an older server cannot set them). */
   cardCodes?: string[];
   randomVariants?: RandomVariantsRule | null;
+  /** Schegge, 0 to the limit; undefined keeps them as they are (and works with an older server). */
+  shards?: number;
 };
 
 /**
@@ -119,9 +126,9 @@ export function suggestTitle(kindKey: string, target: number): string {
   return target === 1 ? kind.one : kind.many.replace("{n}", String(target));
 }
 
-/** "40 monete (difficoltà)", "1 pacchetto", "1 pacchetto + 20 monete", "+ 2 carte", "+ 1 variante a caso". */
+/** "40 monete (difficoltà)", "1 pacchetto", "1 pacchetto + 20 monete", "+ 3 Schegge", "+ 2 carte", "+ 1 variante a caso". */
 export function describeAdminReward(
-  objective: Pick<AdminObjective, "coins" | "packs" | "cards" | "difficulty" | "random_variants">,
+  objective: Pick<AdminObjective, "coins" | "packs" | "shards" | "cards" | "difficulty" | "random_variants">,
   rewardCoins: AdminObjectives["reward_coins"],
   lists: Pick<AdminObjectives, "variant_styles" | "rarities"> = {},
 ): string {
@@ -129,6 +136,8 @@ export function describeAdminReward(
   if (objective.packs > 0) parts.push(objective.packs === 1 ? "1 pacchetto" : `${objective.packs} pacchetti`);
   if (objective.coins === null) parts.push(`${rewardCoins[objective.difficulty]} monete`);
   else if (objective.coins > 0) parts.push(`${objective.coins} monete`);
+  const shards = describeShards(objective.shards);
+  if (shards) parts.push(shards);
   if (objective.cards > 0) parts.push(objective.cards === 1 ? "1 carta" : `${objective.cards} carte`);
   const random = describeRandomVariants(ruleInfo(objective.random_variants, lists.variant_styles ?? [], lists.rarities ?? []));
   if (random) parts.push(random);
@@ -155,6 +164,7 @@ export async function saveAdminObjective(draft: ObjectiveDraft): Promise<AdminOb
     // Sent only when used, so the page keeps working against a server without them.
     ...(ruleToSend(draft.randomVariants) ? { p_random_variants: ruleToSend(draft.randomVariants) } : {}),
     ...(draft.cardCodes !== undefined ? { p_card_codes: draft.cardCodes } : {}),
+    ...(draft.shards !== undefined ? { p_shards: draft.shards } : {}),
   });
   if (error) throw error;
   return data as unknown as AdminObjectives;

@@ -86,7 +86,7 @@ export function ShardShop({ preview = null }: { preview?: CosmeticsState | null 
             <Link href="/collezione" className="font-bold text-foreground underline">
               Collezione
             </Link>
-            : {values}.
+            : {values}. Le danno anche alcuni premi.
           </p>
         </div>
         <p className="shrink-0 -skew-x-8 bg-comic-magenta px-2.5 font-display text-3xl text-black">
