@@ -5770,6 +5770,10 @@ export type Database = {
         }
         Returns: string
       }
+      match_opponent_looks: {
+        Args: { p_match_id: string; p_payload: Json; p_side: string }
+        Returns: Json
+      }
       match_ping: { Args: { p_match_id: string }; Returns: Json }
       match_queue_candidates: {
         Args: {
