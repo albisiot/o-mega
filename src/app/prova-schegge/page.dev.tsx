@@ -9,24 +9,35 @@
 //   /prova-schegge/?s=album          the album, with frames and effects on the characters below
 //   /prova-schegge/?s=carta&c=P002   a character's page: open «Cornice ed effetto» or the copies
 //   /prova-schegge/?s=negozio        the shop's Schegge tab
+//   /prova-schegge/?s=squadra        the team picker of every mode (tap a card to put it in the squad)
+//   /prova-schegge/?s=mano           the hand of a match: every frame, an effect on most
+//   /prova-schegge/?s=pacchetto      a pack opening with characters that have a frame or an effect
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Album } from "@/components/album";
+import { CardDetailProvider } from "@/components/card-detail";
+import { CardLooksProvider } from "@/components/card-looks";
 import { CardScreen } from "@/components/card-screen";
 import { CardView } from "@/components/card-view";
+import { HandCard } from "@/components/hand-card";
+import { PackReveal } from "@/components/pack-reveal";
 import { ShardShop } from "@/components/shard-shop";
+import { TeamPicker } from "@/components/team-picker";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import { fetchCatalog, type CatalogCard, type OwnedSummary, type OwnedVariant } from "@/lib/collection";
 import {
   COSMETIC_INFO,
   EFFECT_CODES,
   FRAME_CODES,
+  cosmeticsByCharacter,
   type AppliedCosmetics,
   type CosmeticsState,
   type EffectCode,
   type FrameCode,
 } from "@/lib/cosmetics";
+import type { VariantCopy } from "@/lib/match";
+import type { PackOpening } from "@/lib/packs";
 import { getSupabase } from "@/lib/supabase/client";
 import { keepCosmetics } from "@/lib/use-cosmetics";
 
@@ -167,6 +178,79 @@ function Scene() {
         onConverted={() => undefined}
       />
     );
+  }
+  if (scene === "squadra") {
+    // The characters with a look, and a few without.
+    const ownedIds = [...loaded.owned.keys()].slice(0, 18);
+    const owned = new Map(ownedIds.map((id) => [id, `${id}-copy`]));
+    const variantCopies = new Map<string, VariantCopy[]>(
+      ownedIds.map((id) => [
+        id,
+        (loaded.owned.get(id)?.variants ?? []).map((v) => ({ id: v.instance_id, name: v.name, art_url: v.art_url, style: v.style })),
+      ]),
+    );
+    return (
+      <div className="game-shell">
+        <main className="flex min-h-0 flex-1 flex-col px-3 pt-1.5">
+          <CardLooksProvider>
+            <CardDetailProvider>
+              <TeamPicker
+                catalog={loaded.catalog.filter((entry) => owned.has(entry.id))}
+                owned={owned}
+                variantCopies={variantCopies}
+                instanceDefinitions={new Map([...owned].map(([definition, instance]) => [instance, definition]))}
+                formations={[]}
+                onFormationsChanged={() => undefined}
+                startLabel="Gioca"
+                starting={false}
+                onStart={() => undefined}
+              />
+            </CardDetailProvider>
+          </CardLooksProvider>
+        </main>
+      </div>
+    );
+  }
+  if (scene === "mano") {
+    const looks = cosmeticsByCharacter(loaded.state);
+    const hand = [...loaded.owned.keys()].slice(0, 15).map((id) => loaded.catalog.find((entry) => entry.id === id)!);
+    return (
+      <main className="flex flex-col gap-5 px-3 py-4">
+        {[0, 5, 10].map((from) => (
+          <div key={from} className="flex justify-center gap-1.5">
+            {hand.slice(from, from + 5).map((entry, index) => (
+              <div key={entry.id} className="w-[calc((100%-1.5rem)/5)]">
+                <HandCard
+                  card={{ ...entry, art_url: entry.art_url ?? null }}
+                  score={12 + index}
+                  bonus={index % 2 ? 2 : 0}
+                  short={from === 10}
+                  artSizes="calc((100vw - 78px) / 5)"
+                  selected={from === 0 && index === 1}
+                  disabled={false}
+                  onSelect={() => undefined}
+                  look={looks.get(entry.id) ?? null}
+                />
+              </div>
+            ))}
+          </div>
+        ))}
+      </main>
+    );
+  }
+  if (scene === "pacchetto") {
+    const opening: PackOpening = {
+      id: "prova",
+      pack_type: "shards",
+      pack_name: null,
+      pack_color: null,
+      opened_at: new Date().toISOString(),
+      cards: [...loaded.owned.keys()].slice(0, 5).map((id, index) => {
+        const entry = loaded.catalog.find((c) => c.id === id)!;
+        return { ...entry, art_url: entry.art_url ?? null, instance_id: `pack-${index}`, definition_id: entry.id, is_new: false, variant: null };
+      }),
+    };
+    return <PackReveal opening={opening} />;
   }
   if (scene === "negozio") {
     return (

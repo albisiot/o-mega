@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
+import { CardLookLayers, CardLooksProvider, useCardLooks } from "@/components/card-looks";
 import { Silhouette } from "@/components/card-view";
 import { useEventPointsFor } from "@/components/event-banner";
 import { PlayerAvatar } from "@/components/player-avatar";
@@ -23,6 +24,7 @@ import { balance } from "@/config/balance";
 import { artSrcSet } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { useOpponentTitle } from "@/lib/achievements";
+import type { CardCosmetics } from "@/lib/cosmetics";
 import { describeServerError } from "@/lib/errors";
 import { describeEventPoints } from "@/lib/events";
 import { claimVictory, DIFFICULTY_LABELS, fetchMatchState, forfeitMatch, pingMatch, subscribeToUpdates, type MatchCard } from "@/lib/match";
@@ -334,7 +336,7 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
   // The opponent's title (Imprese, SPEC §8.5): the name is already on the line below.
   const rivalTitle = useOpponentTitle(view.id, !isBot && Boolean(view.opponent));
 
-  return (
+  const screen = (
     <div className="game-shell">
       <header className="relative flex items-center gap-1.5 px-3 py-1">
         <div className="min-w-0 flex-1 leading-none">
@@ -450,6 +452,7 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
       )}
     </div>
   );
+  return <CardLooksProvider opponent={view.opponent_looks}>{screen}</CardLooksProvider>;
 }
 
 /** The four abilities as the sides of an unturned card. */
@@ -494,6 +497,7 @@ function PlayArea({
   onShowResult: () => void;
 }) {
   const detail = useCardDetail();
+  const looks = useCardLooks();
   const isActive = view.status === "active";
   const myTurn = isActive && view.to_move === "me";
   const canPlay = myTurn && !busy;
@@ -672,7 +676,8 @@ function PlayArea({
                       delta={delta}
                       tentative={Boolean(preview)}
                       stampKey={preview ? "preview" : String(changes?.move ?? 0)}
-                      press={detail.press(cell.card)}
+                      look={looks(cell.card.definition_id, cell.mine ? "me" : "opponent")}
+                      press={detail.press(cell.card, looks(cell.card.definition_id, cell.mine ? "me" : "opponent"))}
                     />
                   );
                 }
@@ -689,7 +694,12 @@ function PlayArea({
                       aria-label={`${card.name} qui. Tocca per ruotarla, trascinala per spostarla`}
                       className="relative min-h-0 min-w-0 touch-none select-none"
                     >
-                      <QuadCard card={card} values={cardValues(view, card, draft.rotation)} tone="draft" />
+                      <QuadCard
+                        card={card}
+                        values={cardValues(view, card, draft.rotation)}
+                        tone="draft"
+                        look={looks(card.definition_id, "me")}
+                      />
                       {delta && <DeltaBadges delta={delta} tentative stampKey="preview" />}
                     </button>
                   );
@@ -755,7 +765,7 @@ function PlayArea({
                 >
                   <button
                     type="button"
-                    {...detail.press(inHand)}
+                    {...detail.press(inHand, looks(inHand.definition_id, "me"))}
                     onClick={() => canPlay && onDraft(selected ? null : { instanceId: inHand.instance_id, x: null, y: null, rotation: 0 })}
                     disabled={!canPlay}
                     aria-pressed={selected}
@@ -764,7 +774,12 @@ function PlayArea({
                       .join(", ")}`}
                     className={`block w-full ${selected && !onGrid ? "-translate-y-1.5" : ""} ${!myTurn ? "opacity-70" : ""}`}
                   >
-                    <QuadCard card={inHand} values={cardValues(view, inHand, 0)} tone={selected && !onGrid ? "draft" : "hand"} />
+                    <QuadCard
+                      card={inHand}
+                      values={cardValues(view, inHand, 0)}
+                      tone={selected && !onGrid ? "draft" : "hand"}
+                      look={looks(inHand.definition_id, "me")}
+                    />
                   </button>
                 </div>
               );
@@ -807,7 +822,7 @@ function PlayArea({
       )}
       {drag && card && (
         <div ref={ghostRef} aria-hidden className="pointer-events-none fixed left-0 top-0 z-50 w-20">
-          <QuadCard card={card} values={cardValues(view, card, 0)} tone="draft" />
+          <QuadCard card={card} values={cardValues(view, card, 0)} tone="draft" look={looks(card.definition_id, "me")} />
         </div>
       )}
     </main>
@@ -1192,6 +1207,7 @@ function QuadCard({
   hits = [],
   entering = false,
   stampKey = "",
+  look = null,
 }: {
   card: MatchCard;
   values: readonly number[];
@@ -1202,6 +1218,8 @@ function QuadCard({
   /** The card just played: it flashes in. */
   entering?: boolean;
   stampKey?: string;
+  /** The frame and the effect its owner applied (SPEC §4.8). */
+  look?: CardCosmetics | null;
 }) {
   const frame =
     tone === "mine"
@@ -1221,7 +1239,7 @@ function QuadCard({
   return (
     <span className="relative block aspect-square w-full">
       <span
-        className={`absolute inset-0 overflow-hidden border-[3px] bg-panel-raised ${frame} ${moves.length ? "quad-fx" : ""}`}
+        className={`@container absolute inset-0 overflow-hidden border-[3px] bg-panel-raised ${frame} ${moves.length ? "quad-fx" : ""}`}
         style={faceMotion.length ? { animation: faceMotion.join(", ") } : undefined}
       >
         {card.art_url ? (
@@ -1237,6 +1255,7 @@ function QuadCard({
         ) : (
           <Silhouette faction={card.faction} accent={card.rarity.color} className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2" />
         )}
+        <CardLookLayers look={look} card={card} />
         {hits.map((hit, i) => (
           <Fragment key={`${stampKey}-${i}`}>
             <ClashTrace style={hit.style} tier={hit.tier} entry={hit.entry} delay={hit.delay} />
@@ -1285,6 +1304,7 @@ function BoardCard({
   delta,
   tentative,
   stampKey,
+  look,
   press,
 }: {
   cell: QuadrantCellView;
@@ -1293,6 +1313,7 @@ function BoardCard({
   delta: SealDelta | null;
   tentative: boolean;
   stampKey: string;
+  look: CardCosmetics | null;
   press: ReturnType<ReturnType<typeof useCardDetail>["press"]>;
 }) {
   const control = controllerOf(cell);
@@ -1316,6 +1337,7 @@ function BoardCard({
         hits={effects?.hits}
         entering={highlight}
         stampKey={stampKey}
+        look={look}
       />
       {effects?.ring && (
         <span

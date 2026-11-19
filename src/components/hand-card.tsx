@@ -1,6 +1,8 @@
+import { CardLookLayers } from "@/components/card-looks";
 import { Silhouette } from "@/components/card-view";
 import { artSrcSet } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
+import type { CardCosmetics } from "@/lib/cosmetics";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { LONG_PRESS_CLASS, type LongPressHandlers } from "@/lib/use-long-press";
 
@@ -24,10 +26,25 @@ type HandCardProps = {
   onSelect: () => void;
   /** Long-press handlers that open the card's detail; a tap still selects it. */
   press?: LongPressHandlers;
+  /** The frame and the effect the player applied to this character (SPEC §4.8). */
+  look?: CardCosmetics | null;
 };
 
 /** A card in the hand of the choice phase: portrait art, name and the predicted score. */
-export function HandCard({ card, score, bonus, tone, note, short = false, artSizes, selected, disabled, onSelect, press }: HandCardProps) {
+export function HandCard({
+  card,
+  score,
+  bonus,
+  tone,
+  note,
+  short = false,
+  artSizes,
+  selected,
+  disabled,
+  onSelect,
+  press,
+  look,
+}: HandCardProps) {
   const outcome = tone === "pass" ? ", la supera" : tone === "fail" ? ", non basta" : "";
   return (
     <button
@@ -52,19 +69,23 @@ export function HandCard({ card, score, bonus, tone, note, short = false, artSiz
         </span>
       )}
       <span className={`relative block bg-panel-raised ${short ? "aspect-[4/3]" : "aspect-[3/4]"}`}>
-        {card.art_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={withBasePath(card.art_url)}
-            srcSet={artSrcSet(card.art_url)}
-            sizes={artSizes}
-            alt=""
-            decoding="async"
-            className="absolute inset-0 h-full w-full object-cover object-top"
-          />
-        ) : (
-          <Silhouette faction={card.faction} accent={card.rarity.color} className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2" />
-        )}
+        {/* The drawing and its look are clipped to the art; the score below sticks out of it. */}
+        <span className="@container absolute inset-0 overflow-hidden">
+          {card.art_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={withBasePath(card.art_url)}
+              srcSet={artSrcSet(card.art_url)}
+              sizes={artSizes}
+              alt=""
+              decoding="async"
+              className="absolute inset-0 h-full w-full object-cover object-top"
+            />
+          ) : (
+            <Silhouette faction={card.faction} accent={card.rarity.color} className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2" />
+          )}
+          <CardLookLayers look={look} card={card} />
+        </span>
         <span
           aria-hidden
           className="absolute left-0.5 top-0.5 flex h-4 w-4 items-center justify-center text-[11px] font-black text-black"

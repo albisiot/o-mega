@@ -17,6 +17,7 @@ import {
 } from "@o-mega/game-engine";
 import { balance } from "@/config/balance";
 import { invokeFunction, remember, toCharacter, type MatchCard, type MatchMode, type MatchPlay } from "@/lib/match";
+import type { OpponentLooks } from "@/lib/cosmetics";
 import type { RankedMatchInfo } from "@/lib/ranked";
 
 export type BossFront = { front: number; name: string; level: number; abilities: string[]; flavor: string };
@@ -70,6 +71,8 @@ export type BossView = {
   level_unlocks?: { name: string; level: number }[];
   server_now: string;
   opponent: { username: string; avatar_url: string | null; level: number; last_seen_at: string | null } | null;
+  /** The frames and effects of the opposing cards shown, by definition id (SPEC §4.8). */
+  opponent_looks?: OpponentLooks;
   spied_cards?: (MatchCard & { round: number })[];
   my_team: (MatchCard & { instance_id: string; played_round: number | null })[];
   rounds: BossRound[];

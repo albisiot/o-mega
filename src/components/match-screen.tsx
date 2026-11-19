@@ -13,6 +13,7 @@ import {
   type ThreatModifier,
 } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
+import { CardLookLayers, CardLooksProvider, useCardLooks } from "@/components/card-looks";
 import { Silhouette } from "@/components/card-view";
 import { ConquestPanel, ConquestPick, SecondsLeft } from "@/components/conquest-panel";
 import { HandCard } from "@/components/hand-card";
@@ -317,7 +318,7 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
   const fitted = choosing || Boolean(shownRound) || picking || view.status === "finished";
   useLockedScreen(fitted);
 
-  return (
+  const screen = (
     <div className={fitted ? "game-shell" : "flex flex-1 flex-col"}>
       {/* One strip: the score, the threat levels (with what each round revealed) and the way out.
           The conquest pick has a header of its own. */}
@@ -468,6 +469,7 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
       ) : null}
     </div>
   );
+  return <CardLooksProvider opponent={view.opponent_looks}>{screen}</CardLooksProvider>;
 }
 
 /**
@@ -496,6 +498,7 @@ function LevelTrack({
   const openPlay = openRound === null ? null : view.rounds.find((r) => r.round === openRound)?.opponent_play ?? null;
   const openThreat = openRound === null ? null : view.foreseen_threats?.find((t) => t.round === openRound) ?? null;
   const detail = useCardDetail();
+  const looks = useCardLooks();
   // A round that ended on equal totals: the cell shows an «i» and its balloon says what settled it.
   // The strip only has the rounds already revealed, so this never tells the outcome early.
   const tieOf = (round: MatchView["rounds"][number] | undefined) =>
@@ -566,7 +569,7 @@ function LevelTrack({
                 <button
                   type="button"
                   // A long press on the opponent's thumbnail shows that card whole.
-                  {...(played ? detail.press(played) : {})}
+                  {...(played ? detail.press(played, looks(played.definition_id, "opponent")) : {})}
                   onClick={() => setOpen(open === i ? null : i)}
                   aria-expanded={open === i}
                   aria-label={label}
@@ -684,6 +687,7 @@ function ChoosePhase({
   const opponentPlayedIds = new Set(view.rounds.map((r) => r.opponent_play?.definition_id).filter(Boolean));
   const spiedLeft = (view.spied_cards ?? []).filter((card) => !opponentPlayedIds.has(card.definition_id));
   const detail = useCardDetail();
+  const looks = useCardLooks();
 
   return (
     <main className="flex min-h-0 flex-1 flex-col">
@@ -752,8 +756,8 @@ function ChoosePhase({
                   {/* A tap has nothing else to do here: it opens the card's detail too. */}
                   <button
                     type="button"
-                    {...detail.press(card)}
-                    onClick={() => detail.open(card)}
+                    {...detail.press(card, looks(card.definition_id, "opponent"))}
+                    onClick={() => detail.open(card, looks(card.definition_id, "opponent"))}
                     aria-haspopup="dialog"
                     className={`font-extrabold underline decoration-dotted underline-offset-2 ${LONG_PRESS_CLASS}`}
                   >
@@ -785,7 +789,8 @@ function ChoosePhase({
               selected={card.instance_id === selected}
               disabled={busy}
               onSelect={() => onSelect(card.instance_id)}
-              press={detail.press(card)}
+              look={looks(card.definition_id, "me")}
+              press={detail.press(card, looks(card.definition_id, "me"))}
             />
           </div>
         ))}
@@ -984,6 +989,7 @@ function RoundReveal({
   const mine = team.find((card) => card.instance_id === round.my_play?.instance_id);
   const theirs = round.opponent_play;
   const detail = useCardDetail();
+  const looks = useCardLooks();
   const winnerCard = round.winner === "me" ? mine : round.winner === "opponent" ? theirs : null;
   const isTie = round.my_play && theirs && round.my_play.score === theirs.score;
   // With Implacabile on both sides, or against an Annullatore, the tie is settled as usual, by the highest value.
@@ -1168,7 +1174,7 @@ function RoundReveal({
         notes: myNotes,
         flag: flagOf(mine, myCharacter, myStanding),
         struckPoints: struckPoints(myChips, mine, theirs) + myScoreMalus,
-        press: mine ? detail.press(mine) : undefined,
+        press: mine ? detail.press(mine, looks(mine.definition_id, "me")) : undefined,
       }}
       opponent={{
         label: opponentName,
@@ -1179,7 +1185,7 @@ function RoundReveal({
         notes: theirNotes,
         flag: flagOf(theirs, theirCharacter, theirStanding),
         struckPoints: struckPoints(theirChips, theirs, mine) + theirScoreMalus,
-        press: theirs ? detail.press(theirs) : undefined,
+        press: theirs ? detail.press(theirs, looks(theirs.definition_id, "opponent")) : undefined,
       }}
       winner={winner}
       decisive={decisive}
@@ -1250,6 +1256,7 @@ function MatchResult({
   const eventPoints = useEventPointsFor(view.id);
   const conquest = view.conquest;
   const detail = useCardDetail();
+  const looks = useCardLooks();
 
   // A Conquest or a mission has more to tell: the banner gets compact, its rows on one line.
   // A card won or lost then takes the room left; otherwise the banner does.
@@ -1380,8 +1387,8 @@ function MatchResult({
                   {/* A long press on the tile shows your card whole; on "vs", the opponent's. */}
                   <span
                     aria-hidden
-                    {...(mine ? detail.press(mine) : {})}
-                    className={`relative block aspect-square overflow-hidden border-[3px] bg-panel-raised ${frame}`}
+                    {...(mine ? detail.press(mine, looks(mine.definition_id, "me")) : {})}
+                    className={`@container relative block aspect-square overflow-hidden border-[3px] bg-panel-raised ${frame}`}
                   >
                     {mine?.art_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -1403,6 +1410,7 @@ function MatchResult({
                         />
                       )
                     )}
+                    {mine && <CardLookLayers look={looks(mine.definition_id, "me")} card={mine} />}
                     <span className="absolute left-0.5 top-0.5 -skew-x-8 bg-black px-1 font-display text-[13px] leading-4 text-foreground">
                       {r.round}
                     </span>
@@ -1415,7 +1423,7 @@ function MatchResult({
                   </span>
                   <span
                     aria-hidden
-                    {...(r.opponent_play ? detail.press(r.opponent_play) : {})}
+                    {...(r.opponent_play ? detail.press(r.opponent_play, looks(r.opponent_play.definition_id, "opponent")) : {})}
                     className="truncate text-[10.5px] font-bold text-muted"
                   >
                     vs {r.opponent_play?.name ?? "—"}

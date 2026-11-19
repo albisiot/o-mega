@@ -2,6 +2,7 @@ import type { ThreatRarity } from "@/lib/threat-rarity";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { BotDifficulty, Character, Power, ScoreParts, ThreatModifier } from "@o-mega/game-engine";
 import { forget, keepSeen, lastSeen } from "@/lib/last-seen";
+import type { OpponentLooks } from "@/lib/cosmetics";
 import type { RankedMatchInfo } from "@/lib/ranked";
 import { getSupabase } from "@/lib/supabase/client";
 
@@ -101,6 +102,8 @@ export type MatchView = {
   my_side: "a" | "b";
   /** null against a bot. */
   opponent: { username: string; avatar_url: string | null; level: number; last_seen_at: string | null } | null;
+  /** The frames and effects of the opposing cards shown, by definition id (SPEC §4.8). */
+  opponent_looks?: OpponentLooks;
   current_round: number;
   /** null: Livello ignoto, until its round. */
   threat_levels: (number | null)[];

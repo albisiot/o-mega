@@ -17,6 +17,7 @@ import {
 } from "@o-mega/game-engine";
 import { balance } from "@/config/balance";
 import { invokeFunction, remember, toCharacter, type MatchCard, type MatchMode } from "@/lib/match";
+import type { OpponentLooks } from "@/lib/cosmetics";
 import type { RankedMatchInfo } from "@/lib/ranked";
 
 export const QUADRANT_FORMATS = ["quadrant", "quadrant_shifting"] as const;
@@ -107,6 +108,8 @@ export type QuadrantView = {
   level_unlocks?: { name: string; level: number }[];
   server_now: string;
   opponent: { username: string; avatar_url: string | null; level: number; last_seen_at: string | null } | null;
+  /** The frames and effects of the opposing cards shown, by definition id (SPEC §4.8). */
+  opponent_looks?: OpponentLooks;
   /**
    * Against a bot, the states before this one in the same answer: after the player's move,
    * then after each bot move but the last. The screen shows them one at a time.

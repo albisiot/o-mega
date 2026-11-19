@@ -258,7 +258,9 @@ function EntryPanel({
       aria-label={`${label}: ${entry.card?.name ?? "?"} su ${frontName}`}
       className={`comic-panel ${mine ? "bg-comic-cyan" : "halftone bg-comic-magenta"} ${lost ? "comic-lost" : voided ? "comic-void" : ""} ${LONG_PRESS_CLASS} relative min-h-[132px] flex-1 overflow-hidden text-black`}
     >
-      {entry.card && <ComicArt card={entry.card} className={`comic-dim absolute inset-y-0 h-full w-[40%] ${mine ? "left-0" : "right-0"}`} />}
+      {entry.card && (
+        <ComicArt card={entry.card} side={side} className={`comic-dim absolute inset-y-0 h-full w-[40%] ${mine ? "left-0" : "right-0"}`} />
+      )}
       <div
         data-fx={`${side}-score`}
         className={`comic-dim absolute top-1.5 z-[4] grid h-[50px] w-[50px] place-items-center rounded-full border-[3px] border-foreground bg-black font-display text-[24px] tabular-nums text-comic-yellow ${
@@ -289,7 +291,9 @@ function EntryPanel({
         >
           {tie && <TieInfo text={tie} className="absolute -left-4 -top-4 z-[3]" />}
           <div data-fx={`${side}-facing`} className="relative h-[66px] border-[3px] border-black bg-black shadow-[3px_3px_0_#000]">
-            {entry.facing.card && <ComicArt card={entry.facing.card} className="comic-dim absolute inset-0 h-full w-full" />}
+            {entry.facing.card && (
+              <ComicArt card={entry.facing.card} side={mine ? "opponent" : "me"} className="comic-dim absolute inset-0 h-full w-full" />
+            )}
             {/* On the art, not above it: above, on a short panel, it covered the front's abilities. */}
             <p className="absolute inset-x-0 bottom-0 z-[1] border-t-2 border-black bg-white px-1 text-[9px] font-bold leading-[10px]">
               <b className="block truncate uppercase">{entry.facing.card?.name ?? "?"}</b>

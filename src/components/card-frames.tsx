@@ -77,7 +77,7 @@ export function FrameShell({
           <rect x="1.6%" y="1.1%" width="96.8%" height="97.8%" rx={size === "lg" ? 9 : 4} pathLength={100} />
         </svg>
       )}
-      {frame === "baroque" && (["tl", "tr", "bl", "br"] as const).map((at) => <Corner key={at} at={at} />)}
+      {frame === "baroque" && (["tl", "tr", "bl", "br"] as const).map((at) => <FrameCorner key={at} at={at} />)}
       <div className={`cf-card ${column}`} style={size === "lg" ? { zoom: (300 - 2 * side) / 300 } : undefined}>
         {children}
       </div>
@@ -123,7 +123,8 @@ function serialFor(seed: string): string {
   return `${digits.slice(0, 4)} ${digits.slice(4)}`;
 }
 
-function Corner({ at }: { at: "tl" | "tr" | "bl" | "br" }) {
+/** An ornate corner of the Barocca frame. */
+export function FrameCorner({ at }: { at: "tl" | "tr" | "bl" | "br" }) {
   return (
     <svg viewBox="0 0 48 48" aria-hidden className={`cf-corner cf-corner-${at}`}>
       <defs>

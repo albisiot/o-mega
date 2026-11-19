@@ -395,7 +395,7 @@ function CardPanel({
       } ${LONG_PRESS_CLASS} relative min-h-0 overflow-hidden text-black`}
       style={{ animationDelay: `${paced(isMe ? 80 : 160)}ms` }}
     >
-      {data.card && <ComicArt card={data.card} className="comic-dim absolute inset-0 h-full w-full" />}
+      {data.card && <ComicArt card={data.card} side={side} className="comic-dim absolute inset-0 h-full w-full" />}
       <div
         data-fx={`${side}-score`}
         className={`comic-dim absolute top-1.5 z-[4] grid h-14 w-14 place-items-center rounded-full border-[3px] border-foreground bg-black font-display text-[28px] tabular-nums text-comic-yellow ${
@@ -647,6 +647,7 @@ export function RoundComic(props: RoundComicProps) {
         tone={winner === "me" ? "win" : winner === "opponent" ? "lose" : "void"}
         hero={winnerSide?.card ?? null}
         heroKey={`${props.round}-${winnerSide?.card?.code ?? "none"}`}
+        heroSide={winner === "none" ? undefined : winner}
         sfx={sfx}
         title={title}
       >

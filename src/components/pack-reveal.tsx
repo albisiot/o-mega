@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CardView } from "@/components/card-view";
 import { PackArt } from "@/components/comic-parts";
 import { ReturnLink } from "@/components/return-link";
@@ -9,10 +9,12 @@ import { balance } from "@/config/balance";
 import { useBannerHold } from "@/lib/banner-hold";
 import { withBasePath } from "@/lib/base-path";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
+import { cosmeticsByCharacter } from "@/lib/cosmetics";
 import { packColor } from "@/lib/pack-colors";
 import { placeHref, returnLabel } from "@/lib/pack-return";
 import { packRevealHref, type PackCard, type PackOpening } from "@/lib/packs";
 import { navHistory } from "@/lib/nav-history";
+import { useCosmetics } from "@/lib/use-cosmetics";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 type Stage =
@@ -59,6 +61,10 @@ export function PackReveal({
   const [abilities, setAbilities] = useState<AbilityInfo[] | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cards = opening.cards;
+  // A character that already has a frame or an effect shows it on its new card (SPEC §4.8).
+  const cosmetics = useCosmetics();
+  const looks = useMemo(() => cosmeticsByCharacter(cosmetics), [cosmetics]);
+  const lookOf = (card: PackCard) => (card.definition_id ? (looks.get(card.definition_id) ?? null) : null);
   useLockedScreen(stage.kind === "summary");
   // No in-app banner while the cards come out (SPEC §11.1).
   useBannerHold(stage.kind !== "summary");
@@ -191,7 +197,7 @@ export function PackReveal({
             </span>
           )}
           <div className={`rounded-xl ${rare ? "shadow-[8px_8px_0_#000]" : "shadow-[6px_6px_0_var(--comic-magenta)]"}`}>
-            <CardView card={card} abilities={abilities} priority animated />
+            <CardView card={card} abilities={abilities} priority animated cosmetics={lookOf(card)} />
           </div>
         </div>
         <div className="flex flex-col items-center gap-2">
@@ -232,7 +238,7 @@ export function PackReveal({
                   Nuova
                 </span>
               )}
-              <CardView card={card} size="sm" />
+              <CardView card={card} size="sm" cosmetics={lookOf(card)} />
             </div>
           ))}
         </div>

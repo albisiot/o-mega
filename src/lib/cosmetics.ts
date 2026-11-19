@@ -126,6 +126,23 @@ export function cosmeticsByCharacter(state: CosmeticsState | null): Map<string, 
   return looks;
 }
 
+/**
+ * The opponent's looks a match state names (match_state_payload's `opponent_looks`): only for the
+ * opposing characters already shown, by definition id, and only what the opponent left visible.
+ */
+export type OpponentLooks = Record<string, { frame: string | null; effect: string | null; serial: number | null }>;
+
+/** The opponent's looks of a match state, by definition id: unknown frames and effects are left out. */
+export function opponentCosmetics(looks: OpponentLooks | null | undefined): Map<string, CardCosmetics> {
+  const shown = new Map<string, CardCosmetics>();
+  for (const [definitionId, look] of Object.entries(looks ?? {})) {
+    const frame = isFrameCode(look?.frame) ? look.frame : null;
+    const effect = isEffectCode(look?.effect) ? look.effect : null;
+    if (frame || effect) shown.set(definitionId, { frame, effect, serial: effect === "numbered" ? (look.serial ?? null) : null });
+  }
+  return shown;
+}
+
 export function appliedTo(state: CosmeticsState | null, definitionId: string): AppliedCosmetics | null {
   return state?.applied.find((entry) => entry.definition_id === definitionId) ?? null;
 }

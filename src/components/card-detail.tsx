@@ -3,13 +3,17 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CardView, type CardData } from "@/components/card-view";
 import { fetchAbilities, seenAbilities, type AbilityInfo } from "@/lib/catalog";
+import type { CardCosmetics } from "@/lib/cosmetics";
 import { useLongPress, type LongPressHandlers } from "@/lib/use-long-press";
 
 type CardDetail = {
-  /** Pointer handlers that open the card's detail on a long press; spread them on its element. */
-  press: (card: CardData) => LongPressHandlers;
+  /**
+   * Pointer handlers that open the card's detail on a long press; spread them on its element.
+   * `look`: the frame and the effect its owner applied (SPEC §4.8), as the screen shows them.
+   */
+  press: (card: CardData, look?: CardCosmetics | null) => LongPressHandlers;
   /** Opens the card's detail at once (for an element whose tap has nothing else to do). */
-  open: (card: CardData) => void;
+  open: (card: CardData, look?: CardCosmetics | null) => void;
 };
 
 const CardDetailContext = createContext<CardDetail | null>(null);
@@ -25,18 +29,21 @@ function isHidden(card: CardData): boolean {
  * result giving way to the next threat).
  */
 export function CardDetailProvider({ children }: { children: ReactNode }) {
-  const [card, setCard] = useState<CardData | null>(null);
+  const [detail, setDetail] = useState<{ card: CardData; look: CardCosmetics | null } | null>(null);
   const bind = useLongPress();
   // A card covered by Nebbia has nothing to show: the long press does nothing on it.
-  const show = useCallback((shown: CardData) => {
-    if (!isHidden(shown)) setCard(shown);
+  const show = useCallback((shown: CardData, look?: CardCosmetics | null) => {
+    if (!isHidden(shown)) setDetail({ card: shown, look: look ?? null });
   }, []);
-  const value = useMemo<CardDetail>(() => ({ press: (shown) => bind(() => show(shown)), open: show }), [bind, show]);
+  const value = useMemo<CardDetail>(
+    () => ({ press: (shown, look) => bind(() => show(shown, look)), open: show }),
+    [bind, show],
+  );
 
   return (
     <CardDetailContext value={value}>
       {children}
-      {card && <CardDetailOverlay card={card} onClose={() => setCard(null)} />}
+      {detail && <CardDetailOverlay card={detail.card} look={detail.look} onClose={() => setDetail(null)} />}
     </CardDetailContext>
   );
 }
@@ -53,7 +60,15 @@ export function useCardDetail(): CardDetail {
  * power (or none), the 12 abilities by family and its flavor text. A tap beside it, "Chiudi"
  * or Esc closes it.
  */
-export function CardDetailOverlay({ card, onClose }: { card: CardData; onClose: () => void }) {
+export function CardDetailOverlay({
+  card,
+  look = null,
+  onClose,
+}: {
+  card: CardData;
+  look?: CardCosmetics | null;
+  onClose: () => void;
+}) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [abilities, setAbilities] = useState<AbilityInfo[] | null>(() => seenAbilities() ?? null);
 
@@ -83,7 +98,7 @@ export function CardDetailOverlay({ card, onClose }: { card: CardData; onClose: 
     >
       <div className="flex min-h-full flex-col items-center justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(var(--safe-top)+16px)]">
         <div data-detail-content className="animate-detail-pop flex w-[300px] flex-col gap-2.5">
-          <CardView card={card} abilities={abilities} />
+          <CardView card={card} abilities={abilities} cosmetics={look} />
           {(!card.power || card.flavor) && (
             <div className="flex flex-col gap-1 border-[3px] border-black bg-foreground px-3 py-2 text-black shadow-[4px_4px_0_var(--comic-magenta)]">
               {!card.power && <p className="font-display text-sm uppercase">Nessun potere</p>}

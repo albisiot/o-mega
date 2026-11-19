@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { resolveEmergencyPlay, type AbilityFamilies, type EmergencyRules } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
+import { CardLooksProvider, useCardLooks } from "@/components/card-looks";
 import { ChallengePrize, ChallengeRuleChips } from "@/components/challenge-parts";
 import { EmergencyComic } from "@/components/emergency-comic";
 import { Silhouette } from "@/components/card-view";
@@ -81,9 +82,11 @@ export function EmergencyScreen({
   return (
     <KindContext.Provider value={numbers}>
       <ChallengeContext.Provider value={challenge}>
-        <CardDetailProvider>
-          <EmergencySteps initial={initial} />
-        </CardDetailProvider>
+        <CardLooksProvider>
+          <CardDetailProvider>
+            <EmergencySteps initial={initial} />
+          </CardDetailProvider>
+        </CardLooksProvider>
       </ChallengeContext.Provider>
     </KindContext.Provider>
   );
@@ -468,6 +471,7 @@ function ChoosePhase({
   const [error, setError] = useState<string | null>(null);
   const threat = run.current_threat!;
   const detail = useCardDetail();
+  const looks = useCardLooks();
 
   const families: AbilityFamilies = useMemo(
     () => Object.fromEntries(abilities.map((a) => [a.code, a.family.code])),
@@ -648,7 +652,8 @@ function ChoosePhase({
             selected={card.instance_id === selected}
             disabled={busy}
             onSelect={() => setSelected(card.instance_id)}
-            press={detail.press(card)}
+            look={looks(card.definition_id, "me")}
+            press={detail.press(card, looks(card.definition_id, "me"))}
           />
         ))}
       </div>
@@ -722,6 +727,7 @@ function PlayReveal({
 }) {
   const card = run.squad.find((c) => c.instance_id === play.instance_id);
   const detail = useCardDetail();
+  const looks = useCardLooks();
   const earlier = run.plays.filter((p) => p.round < play.round).sort((a, b) => a.round - b.round);
   const before = earlier.flatMap((p) => {
     const played = run.squad.find((c) => c.instance_id === p.instance_id);
@@ -759,7 +765,7 @@ function PlayReveal({
       notes={notes}
       decisive={play.passed && modifier?.code !== "reverse" ? decisiveNote(notes, play.score, play.required) : null}
       ended={isLast && run.status === "finished"}
-      press={card ? detail.press(card) : undefined}
+      press={card ? detail.press(card, looks(card.definition_id, "me")) : undefined}
       onContinue={onContinue}
       onVerdict={onVerdict}
       action={(complete, skip) => (
@@ -796,6 +802,7 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
   const complete = run.passed === rules.threats_per_run;
   const cardOf = (instanceId: string) => run.squad.find((c) => c.instance_id === instanceId);
   const detail = useCardDetail();
+  const looks = useCardLooks();
   // The daily run is found by the server (null); the weekly one by its id.
   // An Emergenza a tema gives no event points: its run's id finds none.
   const eventPoints = useEventPointsFor(kind === "week" || challenge ? (run.id ?? null) : null);
@@ -882,7 +889,7 @@ function RunResult({ run, rules }: { run: EmergencyRun; rules: EmergencyView["ru
                 return (
                   <li
                     key={play.round}
-                    {...(card ? detail.press(card) : {})}
+                    {...(card ? detail.press(card, looks(card.definition_id, "me")) : {})}
                     className={`flex h-9 items-center gap-2.5 bg-panel pr-3 text-[13px] font-semibold ${LONG_PRESS_CLASS}`}
                   >
                     <CardThumb card={card} />

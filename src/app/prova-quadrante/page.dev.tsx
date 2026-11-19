@@ -10,11 +10,16 @@
 //   /prova-quadrante/?s=traguardo  an event with a seal target of 12
 //   /prova-quadrante/?s=scontri  the player's card meets four, one family each: crushing, clearly, a little, a tie
 //   /prova-quadrante/?s=minacce  the bot's card in a corner: two border threats (one won, one lost) and two cards
+//   /prova-quadrante/?s=cornici  frames and effects (SPEC §4.8) on the player's cards, on the grid and in
+//                                the hand, and on the opponent's on the grid
 
 import { useEffect, useState } from "react";
 import { QuadrantMatchScreen } from "@/components/quadrant-match-screen";
+import type { AppliedCosmetics, CosmeticsState } from "@/lib/cosmetics";
 import type { MatchCard } from "@/lib/match";
 import type { QuadrantCellView, QuadrantView } from "@/lib/quadrant";
+import { getSupabase } from "@/lib/supabase/client";
+import { keepCosmetics } from "@/lib/use-cosmetics";
 
 const RARITY = ["", "delta", "gamma", "beta", "alfa", "omega"];
 const card = (name: string, art: string, stats: Record<string, number>, faction = "heroes", rank = 3): MatchCard => ({
@@ -143,8 +148,58 @@ function familyScene(
   return { ...at(after, [...earlier, last]), to_move: "me", previous: [at(before, earlier)] };
 }
 
+// The player's looks in the frames scene: as get_cosmetics would answer for a player.
+const MY_LOOKS: [string, string | null, string | null][] = [
+  ["Talos", "prism", "sparkles"],
+  ["Dredge", "neon", "snow"],
+  ["Plinth", "gold", "signature"],
+  ["Mongibello", "slab", "numbered"],
+];
+const myCosmetics: CosmeticsState = {
+  shard_balance: 0,
+  costs: { pack: 1, cosmetic: 1, kind: 2, variant: 3 },
+  values: {},
+  catalog: [],
+  inventory: [],
+  applied: MY_LOOKS.map(
+    ([definition_id, frame, effect]): AppliedCosmetics => ({
+      definition_id,
+      frame,
+      frame_visible: true,
+      effect,
+      effect_visible: true,
+      effect_serial: effect === "numbered" ? 7 : null,
+    }),
+  ),
+  breakable: [],
+  missing_variants: 0,
+};
+
 function scene(name: string): QuadrantView {
   const view = baseView();
+  if (name === "cornici") {
+    // Malleus and Re Tifeo are the opponent's, with what the server would send; Recesso has none.
+    const tifeo = card("Re Tifeo", "P080", { FOR: 6, VEL: 4, RES: 9, INT: 5 }, "villains", 4);
+    const recesso = card("Recesso", "P224", { FOR: 5, VEL: 6, RES: 6, INT: 9 }, "heroes", 3);
+    return {
+      ...view,
+      move: 6,
+      to_move: "me",
+      board: [
+        cell(0, 0, false, malleus, 0, 2),
+        cell(1, 0, true, talos, 3, 0),
+        cell(2, 1, false, tifeo, 1, 2),
+        cell(1, 2, false, recesso, 0, 3),
+        cell(3, 3, true, card("Mongibello", "P060", { FOR: 9, VEL: 6, RES: 4, INT: 5 }, "heroes", 5), 2, 0),
+      ],
+      seals: { me: 6, opponent: 7 },
+      controlled: { me: 2, opponent: 3 },
+      opponent_looks: {
+        Malleus: { frame: "baroque", effect: "holo", serial: null },
+        "Re Tifeo": { frame: "void", effect: "rays", serial: null },
+      },
+    };
+  }
   if (name === "scontri") {
     // The player's card in the middle meets four of the bot's: Corpo 10–1 (crushing), Mente 7–3
     // (clearly), Potere 5–4 (a little), Mestiere 4–4 (a tie).
@@ -217,6 +272,8 @@ export default function QuadrantScenes() {
   const [name, setName] = useState<string | null>(null);
   useEffect(() => {
     const scene = new URLSearchParams(window.location.search).get("s") ?? "vuota";
+    // After the sign-in check, which forgets what was kept for a visitor without an account.
+    if (scene === "cornici") void getSupabase().auth.getSession().then(() => window.setTimeout(() => keepCosmetics(myCosmetics), 300));
     const timer = window.setTimeout(() => setName(scene), 0);
     return () => window.clearTimeout(timer);
   }, []);

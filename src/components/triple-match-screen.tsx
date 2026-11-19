@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AbilityFamilies } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
+import { CardLookLayers, CardLooksProvider, useCardLooks } from "@/components/card-looks";
 import { useEventPointsFor } from "@/components/event-banner";
 import { Silhouette } from "@/components/card-view";
 import { HandCard } from "@/components/hand-card";
@@ -11,6 +12,7 @@ import { PlayerAvatar } from "@/components/player-avatar";
 import { Sheet } from "@/components/sheet";
 import { balance } from "@/config/balance";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
+import type { CardCosmetics } from "@/lib/cosmetics";
 import { useOpponentTitle } from "@/lib/achievements";
 import { describeServerError } from "@/lib/errors";
 import { describeEventPoints } from "@/lib/events";
@@ -284,7 +286,7 @@ function TripleSteps({ initial }: { initial: TripleView }) {
   // Until the player touches anything: the placement already submitted, or nothing.
   const shownPlacement = placement ?? current?.my_pending ?? view.threats.map(() => null);
 
-  return (
+  const screen = (
     <div className="game-shell">
       <header className="relative flex items-center gap-1.5 px-3 py-1">
         <div className="min-w-0 max-w-[8rem] shrink-0 leading-none">
@@ -420,6 +422,7 @@ function TripleSteps({ initial }: { initial: TripleView }) {
       ) : null}
     </div>
   );
+  return <CardLooksProvider opponent={view.opponent_looks}>{screen}</CardLooksProvider>;
 }
 
 /** The rounds: the points each side took in each, the current one highlighted. */
@@ -529,6 +532,7 @@ function ChooseRound({
     .filter((threat) => threat.rarity)
     .sort((x, y) => (y.rarity?.rank ?? 0) - (x.rarity?.rank ?? 0))[0];
   const detail = useCardDetail();
+  const looks = useCardLooks();
   const cardOf = (id: string | null) => hand.find((card) => card.instance_id === id) ?? null;
   const slotOf = (id: string) => placement.indexOf(id);
   // A card dragged onto a threat goes there (swapping with the one there, which goes back
@@ -689,7 +693,8 @@ function ChooseRound({
                 selected={card.instance_id === active}
                 disabled={busy}
                 onSelect={() => onSelect(card.instance_id)}
-                press={detail.press(card)}
+                look={looks(card.definition_id, "me")}
+                press={detail.press(card, looks(card.definition_id, "me"))}
               />
             </div>
           );
@@ -724,13 +729,21 @@ function ChooseRound({
                 : `Piazza ancora ${placement.filter((id) => id === null).length}`}
         </button>
       </div>
-      {drag && <DragGhost ref={ghostRef} card={cardOf(drag.id)} />}
+      {drag && <DragGhost ref={ghostRef} card={cardOf(drag.id)} look={looks(cardOf(drag.id)?.definition_id, "me")} />}
     </main>
   );
 }
 
 /** The card under the finger while it is dragged. */
-function DragGhost({ ref, card }: { ref: (element: HTMLDivElement | null) => void; card: MatchCard | null }) {
+function DragGhost({
+  ref,
+  card,
+  look,
+}: {
+  ref: (element: HTMLDivElement | null) => void;
+  card: MatchCard | null;
+  look: CardCosmetics | null;
+}) {
   if (!card) return null;
   return (
     <div
@@ -738,7 +751,7 @@ function DragGhost({ ref, card }: { ref: (element: HTMLDivElement | null) => voi
       aria-hidden
       className="pointer-events-none fixed left-0 top-0 z-50 w-24 border-[3px] border-comic-yellow bg-panel shadow-[5px_5px_0_var(--comic-magenta)]"
     >
-      <span className="relative block aspect-[3/4] bg-panel-raised">
+      <span className="@container relative block aspect-[3/4] overflow-hidden bg-panel-raised">
         {card.art_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -751,6 +764,7 @@ function DragGhost({ ref, card }: { ref: (element: HTMLDivElement | null) => voi
         ) : (
           <Silhouette faction={card.faction} accent={card.rarity.color} className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2" />
         )}
+        <CardLookLayers look={look} card={card} />
       </span>
       <span className="block truncate px-0.5 py-0.5 text-center font-display text-xs uppercase leading-[15px]">{card.name}</span>
     </div>

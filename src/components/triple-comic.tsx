@@ -3,6 +3,7 @@
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
 import { abilityMalusOn, modifierPoints, scoreMalusOn, type Threat } from "@o-mega/game-engine";
 import { useCardDetail } from "@/components/card-detail";
+import { useCardLooks } from "@/components/card-looks";
 import { prefersReducedMotion } from "@/components/comic-page";
 import { RoundComic } from "@/components/round-comic";
 import { balance } from "@/config/balance";
@@ -58,6 +59,7 @@ function ContestComic({
   onDone: () => void;
 }) {
   const detail = useCardDetail();
+  const looks = useCardLooks();
   const threat = view.threats[contest.slot];
   const modifier = threat?.modifier ?? null;
   const mine = view.my_deck.find((card) => card.instance_id === contest.my_play?.instance_id) ?? null;
@@ -166,7 +168,7 @@ function ContestComic({
         notes: myNotes,
         flag: flagOf(mine, myCharacter, myPlay?.parts),
         struckPoints: struckPoints(myChips, mine, theirs) + (myCharacter && theirCharacter ? scoreMalusOn(myCharacter, theirCharacter) : 0),
-        press: mine ? detail.press(mine) : undefined,
+        press: mine ? detail.press(mine, looks(mine.definition_id, "me")) : undefined,
       }}
       opponent={{
         label: rival,
@@ -177,7 +179,7 @@ function ContestComic({
         notes: theirNotes,
         flag: flagOf(theirs, theirCharacter, theirs?.parts),
         struckPoints: struckPoints(theirChips, theirs, mine) + (myCharacter && theirCharacter ? scoreMalusOn(theirCharacter, myCharacter) : 0),
-        press: theirs ? detail.press(theirs) : undefined,
+        press: theirs ? detail.press(theirs, looks(theirs.definition_id, "opponent")) : undefined,
       }}
       winner={winner}
       decisive={decisive}

@@ -16,6 +16,7 @@ import {
 } from "@o-mega/game-engine";
 import { balance } from "@/config/balance";
 import { invokeFunction, remember, toCharacter, type MatchCard, type MatchChallengeInfo, type MatchMode, type MatchPlay } from "@/lib/match";
+import type { OpponentLooks } from "@/lib/cosmetics";
 import type { RankedMatchInfo } from "@/lib/ranked";
 
 export type TripleThreat = {
@@ -81,6 +82,8 @@ export type TripleView = {
   level_unlocks?: { name: string; level: number }[];
   server_now: string;
   opponent: { username: string; avatar_url: string | null; level: number; last_seen_at: string | null } | null;
+  /** The frames and effects of the opposing cards shown, by definition id (SPEC §4.8). */
+  opponent_looks?: OpponentLooks;
   spied_cards?: (MatchCard & { round: number })[];
   /** The whole deck, in an order that says nothing about the draw. */
   my_deck: (MatchCard & { instance_id: string; drawn_round: number | null; played: boolean })[];

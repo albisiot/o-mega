@@ -6,6 +6,7 @@ import {
   breakableCopies,
   cosmeticName,
   cosmeticsByCharacter,
+  opponentCosmetics,
   ownedCosmetics,
   shownCosmetics,
   type AppliedCosmetics,
@@ -64,6 +65,19 @@ describe("cosmetics", () => {
     expect(looks.get("d1")?.frame).toBe("neon");
     expect(looks.has("d2")).toBe(false);
     expect(cosmeticsByCharacter(null).size).toBe(0);
+  });
+
+  it("reads the opponent's looks of a match, leaving out what the app cannot draw", () => {
+    const looks = opponentCosmetics({
+      d1: { frame: "gold", effect: "numbered", serial: 12 },
+      d2: { frame: null, effect: "snow", serial: 3 },
+      d3: { frame: "unknown", effect: null, serial: null },
+    });
+    expect(looks.get("d1")).toEqual({ frame: "gold", effect: "numbered", serial: 12 });
+    // Only Numerata stamps a number.
+    expect(looks.get("d2")).toEqual({ frame: null, effect: "snow", serial: null });
+    expect(looks.has("d3")).toBe(false);
+    expect(opponentCosmetics(undefined).size).toBe(0);
   });
 
   it("lists what the player owns, in the catalog's order, without looks the app cannot draw", () => {

@@ -268,7 +268,7 @@ export function EmergencyComic(props: EmergencyComicProps) {
         className={`comic-panel ${verdict && !passed ? "comic-lost" : ""} ${LONG_PRESS_CLASS} relative min-h-[220px] flex-1 overflow-hidden bg-comic-cyan text-black`}
         style={{ animationDelay: "100ms" }}
       >
-        {props.card && <ComicArt card={props.card} className="comic-dim absolute inset-y-0 left-0 h-full w-[68%]" />}
+        {props.card && <ComicArt card={props.card} side="me" className="comic-dim absolute inset-y-0 left-0 h-full w-[68%]" />}
 
         {/* The gauge: the score climbs toward the threshold line. */}
         <div className="absolute bottom-3 right-4 top-[78px] z-[2] w-12 border-[3px] border-black bg-white">
@@ -361,6 +361,7 @@ export function EmergencyComic(props: EmergencyComicProps) {
         verdict={verdict}
         tone={passed ? "win" : "lose"}
         hero={passed ? props.card : null}
+        heroSide="me"
         heroKey={`${props.number}-${props.card?.code ?? "none"}`}
         sfx={passed ? "SBAM!" : "KRAK!"}
         title={passed ? "Superata!" : "Fallita"}

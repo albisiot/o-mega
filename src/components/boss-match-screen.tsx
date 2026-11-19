@@ -5,6 +5,7 @@ import type { AbilityFamilies } from "@o-mega/game-engine";
 import { BossComic } from "@/components/boss-comic";
 import { BossDiorama } from "@/components/boss-diorama";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
+import { CardLooksProvider, useCardLooks } from "@/components/card-looks";
 import { useEventPointsFor } from "@/components/event-banner";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
@@ -275,7 +276,7 @@ function BossSteps({ initial }: { initial: BossView }) {
   const strip = held && revealing !== null ? bossBeforeTurn(view, revealing) : view;
   useLockedScreen(true);
 
-  return (
+  const screen = (
     <div className="game-shell">
       <header className="relative flex items-center gap-1.5 px-3 py-1">
         <div className="min-w-0 max-w-[7.5rem] shrink-0 leading-none">
@@ -411,6 +412,7 @@ function BossSteps({ initial }: { initial: BossView }) {
       ) : null}
     </div>
   );
+  return <CardLooksProvider opponent={view.opponent_looks}>{screen}</CardLooksProvider>;
 }
 
 /** The five turns: what each side took in each, the current one highlighted. */
@@ -503,6 +505,7 @@ function ChooseTurn({
   const turnsLeft = view.turns - turn + 1;
   const worthToEnd = view.values.slice(turn - 1).reduce((sum, r) => sum + r[front], 0);
   const detail = useCardDetail();
+  const looks = useCardLooks();
   const previewNote =
     "Anteprima contro il personaggio avversario già sul fronte: se ne arriva uno in questo turno o nei prossimi, conta chi fa più punti. Il punteggio resta quello con cui la carta entra. Il server calcola tutto quando giochi.";
 
@@ -613,7 +616,8 @@ function ChooseTurn({
                 selected={card.instance_id === selected}
                 disabled={busy}
                 onSelect={() => onSelect(card.instance_id)}
-                press={detail.press(card)}
+                look={looks(card.definition_id, "me")}
+                press={detail.press(card, looks(card.definition_id, "me"))}
               />
             </div>
           );
@@ -761,6 +765,7 @@ function TurnReveal({
   finished: boolean;
 }) {
   const detail = useCardDetail();
+  const looks = useCardLooks();
   const entries = useMemo(() => bossTurnEntries(view, round, true), [view, round]);
   if (!entries || !round.my_play || !round.opponent_play) return null;
   const statsOf = (entry: BossEntry) => {
@@ -792,8 +797,10 @@ function TurnReveal({
       entries={entries}
       stats={{ me: statsOf(entries.me), opponent: statsOf(entries.opponent) }}
       press={{
-        me: entries.me.card ? detail.press(entries.me.card) : undefined,
-        opponent: entries.opponent.card ? detail.press(entries.opponent.card) : undefined,
+        me: entries.me.card ? detail.press(entries.me.card, looks(entries.me.card.definition_id, "me")) : undefined,
+        opponent: entries.opponent.card
+          ? detail.press(entries.opponent.card, looks(entries.opponent.card.definition_id, "opponent"))
+          : undefined,
       }}
       points={{ me: round.my_play.points, opponent: round.opponent_play.points }}
       totals={totals}

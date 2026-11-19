@@ -4,19 +4,24 @@
 // classic match, Allarme Triplo, Grande Minaccia and Emergenza with many powers at once, so
 // nothing covers anything. A development-only page: next.config.ts serves *.dev.tsx pages in
 // `next dev` only, so it is never part of the published site. Data are placeholders.
+// Every card wears an effect (SPEC §4.8), on both sides, so the check covers the art with them.
 
 import { useEffect, useState } from "react";
 import type { ThreatModifier } from "@o-mega/game-engine";
 import { BossComic } from "@/components/boss-comic";
 import { CardDetailProvider } from "@/components/card-detail";
+import { CardLooksProvider } from "@/components/card-looks";
 import { EmergencyComic } from "@/components/emergency-comic";
 import { RoundComic, type ComicSide } from "@/components/round-comic";
 import { TripleMapReveal } from "@/components/triple-comic";
 import { abilityChips, chipsTotal } from "@/lib/ability-marks";
 import type { BossEntry } from "@/lib/boss-powers";
+import { EFFECT_CODES, type CosmeticsState, type OpponentLooks } from "@/lib/cosmetics";
 import type { MatchCard } from "@/lib/match";
 import type { PowerNote } from "@/lib/round-powers";
+import { getSupabase } from "@/lib/supabase/client";
 import type { TripleView } from "@/lib/triple";
+import { keepCosmetics } from "@/lib/use-cosmetics";
 
 const RARITY = ["", "delta", "gamma", "beta", "alfa", "omega"];
 const card = (name: string, art: string, stats: Record<string, number>, faction = "heroes", rank = 3): MatchCard => ({
@@ -59,6 +64,30 @@ const zetaRax = card("Zeta Rax", "P099", { COM: 9, PER: 8, FUR: 7 }, "neutrals",
 const injunction = card("Injunction", "P179", { FOR: 4, RES: 5, ENE: 9, PER: 10, VOL: 10 }, "neutrals", 3);
 const contromano = card("Contromano", "P215", { FOR: 5, RES: 7, ENE: 9, PSI: 10, INT: 9 }, "neutrals", 4);
 const actuary = card("Actuary", "P047", { FOR: 5, RES: 6, ENE: 6, INT: 8, TEC: 8 }, "neutrals", 3);
+
+// An effect on every card, the same for both sides; the result pages leave out the frames and the
+// effects that write on the art (Autografo, Numerata), which stay on the cards of the table.
+const LOOK_CARDS = [dredge, talos, plinth, malleus, mongi, tifeo, afterimage, recesso, upkeep, statera, clementia, residuo, collateral, zetaRax, injunction, contromano, actuary];
+const LOOKS: OpponentLooks = Object.fromEntries(
+  LOOK_CARDS.map((c, i) => [c.definition_id, { frame: "gold", effect: EFFECT_CODES[i % EFFECT_CODES.length], serial: 7 }]),
+);
+const MY_LOOKS: CosmeticsState = {
+  shard_balance: 0,
+  costs: { pack: 1, cosmetic: 1, kind: 2, variant: 3 },
+  values: {},
+  catalog: [],
+  inventory: [],
+  applied: Object.entries(LOOKS).map(([definition_id, look]) => ({
+    definition_id,
+    frame: look.frame,
+    frame_visible: true,
+    effect: look.effect,
+    effect_visible: true,
+    effect_serial: look.serial,
+  })),
+  breakable: [],
+  missing_variants: 0,
+};
 // Sacrificio: Residuo scores 0, then every later card of its side gets this until the end of the match.
 const SACRIFICE = 3;
 const lasting = n("Sacrificio di Residuo", "sacrifice", `+${SACRIFICE}`, { points: SACRIFICE, source: "pack" });
@@ -610,6 +639,8 @@ export default function LayoutCheckPage() {
   useEffect(() => {
     const scene = new URLSearchParams(window.location.search).get("s") ?? "";
     (window as unknown as { __SCENES: string[] }).__SCENES = Object.keys(SCENES);
+    // After the sign-in check, which forgets what was kept for a visitor without an account.
+    void getSupabase().auth.getSession().then(() => window.setTimeout(() => keepCosmetics(MY_LOOKS), 300));
     const timer = window.setTimeout(() => setId(scene), 0);
     return () => window.clearTimeout(timer);
   }, []);
@@ -618,9 +649,11 @@ export default function LayoutCheckPage() {
       {/* As tall as a match's strip at the top, so the page gets the room it has in a match. */}
       <div className="h-16 shrink-0 bg-panel" />
       {id !== null && (
-        <CardDetailProvider>
-          <SceneView id={id} />
-        </CardDetailProvider>
+        <CardLooksProvider opponent={LOOKS}>
+          <CardDetailProvider>
+            <SceneView id={id} />
+          </CardDetailProvider>
+        </CardLooksProvider>
       )}
     </div>
   );

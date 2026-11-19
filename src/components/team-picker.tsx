@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useCardDetail } from "@/components/card-detail";
+import { CardLookLayers, useCardLooks } from "@/components/card-looks";
 import { CardGroupHeading, CardListControls, useCardListReference, useCardListView } from "@/components/card-list-controls";
 import { Silhouette } from "@/components/card-view";
 import { InfoTip } from "@/components/info-tip";
@@ -132,6 +133,8 @@ export function TeamPicker(props: TeamPickerProps) {
   const [optionsOf, setOptionsOf] = useState<string | null>(null);
   // A long press on a card, in the squad or in the list, shows it whole without picking it.
   const detail = useCardDetail();
+  // The frame and the effect the player applied to each character (SPEC §4.8).
+  const looks = useCardLooks();
 
   const [view, updateView] = useCardListView(VIEW_KEY, DEFAULT_VIEW);
   const { abilities, traits } = useCardListReference();
@@ -419,10 +422,10 @@ export function TeamPicker(props: TeamPickerProps) {
             <button
               key={i}
               type="button"
-              {...detail.press(shown)}
+              {...detail.press(shown, looks(card.id, "me"))}
               onClick={() => (hasOptions ? setOptionsOf(card.id) : toggle(card.id))}
               aria-label={hasOptions ? `${card.name}: scelte` : `Togli ${card.name}`}
-              className={`relative ${height} min-w-0 -skew-x-8 overflow-hidden border-2 bg-panel-raised ${LONG_PRESS_CLASS}`}
+              className={`@container relative ${height} min-w-0 -skew-x-8 overflow-hidden border-2 bg-panel-raised ${LONG_PRESS_CLASS}`}
               style={{ borderColor: card.rarity.color }}
             >
               {shown.art_url && (
@@ -436,6 +439,7 @@ export function TeamPicker(props: TeamPickerProps) {
                   className="absolute inset-0 h-full w-full object-cover object-top"
                 />
               )}
+              <CardLookLayers look={looks(card.id, "me")} card={card} />
               <span className="absolute left-1 top-0.5 bg-comic-yellow px-1 font-display text-[13px] leading-4 text-black">{i + 1}</span>
               {mark && (
                 <span
@@ -701,7 +705,7 @@ export function TeamPicker(props: TeamPickerProps) {
                 <li key={card.id} className="min-w-0">
                   <button
                     type="button"
-                    {...detail.press(shown)}
+                    {...detail.press(shown, looks(card.id, "me"))}
                     onClick={() => toggle(card.id)}
                     aria-pressed={position >= 0}
                     className={`relative flex w-full flex-col border-[3px] bg-panel text-left ${LONG_PRESS_CLASS} ${
@@ -709,7 +713,7 @@ export function TeamPicker(props: TeamPickerProps) {
                     } ${excluded && position < 0 ? "opacity-45 grayscale" : ""}`}
                     style={{ borderColor: position >= 0 ? "var(--comic-yellow)" : card.rarity.color }}
                   >
-                    <span className="relative block aspect-square bg-panel-raised">
+                    <span className="@container relative block aspect-square overflow-hidden bg-panel-raised">
                       {shown.art_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -729,6 +733,7 @@ export function TeamPicker(props: TeamPickerProps) {
                           className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2"
                         />
                       )}
+                      <CardLookLayers look={looks(card.id, "me")} card={card} />
                       <span
                         aria-hidden
                         className="absolute left-0.5 top-0.5 flex h-4 w-4 items-center justify-center text-[11px] font-black text-black"
@@ -848,7 +853,7 @@ export function TeamPicker(props: TeamPickerProps) {
                             fielded ? "border-comic-yellow shadow-[3px_3px_0_var(--comic-magenta)]" : "border-line"
                           }`}
                         >
-                          <span className="relative block aspect-[3/4] overflow-hidden">
+                          <span className="@container relative block aspect-[3/4] overflow-hidden">
                             {art ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
@@ -866,6 +871,7 @@ export function TeamPicker(props: TeamPickerProps) {
                                 className="absolute bottom-0 left-1/2 h-[90%] -translate-x-1/2"
                               />
                             )}
+                            <CardLookLayers look={looks(optionsCard.id, "me")} card={optionsCard} />
                             {fielded && (
                               <span className="absolute right-0.5 top-0.5 bg-comic-yellow px-1 text-[11px] font-black leading-4 text-black">✓</span>
                             )}

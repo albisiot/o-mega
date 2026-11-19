@@ -5,6 +5,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import type { BotDifficulty } from "@o-mega/game-engine";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { CardDetailProvider } from "@/components/card-detail";
+import { CardLooksProvider } from "@/components/card-looks";
 import { BackLink } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { ReturnLink } from "@/components/return-link";
@@ -360,35 +361,37 @@ function TeamPageContent() {
             <SuppliedTeam challenge={challenge} startLabel={COPY[mode.kind].start(mode)} starting={starting} onStart={() => void start([])} />
           </CardDetailProvider>
         ) : loaded && owned && (mode.kind !== "join" || joinFormat !== null) && (!challengeId || challenge) ? (
-          // A long press on a card shows it whole (CardDetailProvider).
-          <CardDetailProvider>
-            <TeamPicker
-              catalog={loaded.catalog}
-              owned={owned}
-              conquerable={loaded.conquerable}
-              atRiskCopies={loaded.atRiskCopies}
-              variantCopies={loaded.variantCopies}
-              instanceDefinitions={loaded.instanceDefinitions}
-              formations={loaded.formations}
-              onFormationsChanged={(formations) => setLoaded({ ...loaded, formations })}
-              startLabel={COPY[mode.kind].start(mode)}
-              starting={starting}
-              onStart={start}
-              key={`${format}-${challenge?.id ?? ""}`}
-              squadSize={squadSizeOf(format)}
-              storyStars={mission && mission.star_rarities.length > 0 ? { rules: mission, earned: mission.stars } : null}
-              challenge={challengeGone ? null : challenge}
-              intro={
-                format === "boss"
-                  ? BOSS_INTRO
-                  : format === "triple"
-                    ? TRIPLE_INTRO
-                    : isQuadrantFormat(format)
-                      ? QUADRANT_INTRO
-                      : "Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello basso e i generalisti per quelle alte. Con una pressione lunga su una carta la vedi intera."
-              }
-            />
-          </CardDetailProvider>
+          // A long press on a card shows it whole (CardDetailProvider), with the player's frames and effects.
+          <CardLooksProvider>
+            <CardDetailProvider>
+              <TeamPicker
+                catalog={loaded.catalog}
+                owned={owned}
+                conquerable={loaded.conquerable}
+                atRiskCopies={loaded.atRiskCopies}
+                variantCopies={loaded.variantCopies}
+                instanceDefinitions={loaded.instanceDefinitions}
+                formations={loaded.formations}
+                onFormationsChanged={(formations) => setLoaded({ ...loaded, formations })}
+                startLabel={COPY[mode.kind].start(mode)}
+                starting={starting}
+                onStart={start}
+                key={`${format}-${challenge?.id ?? ""}`}
+                squadSize={squadSizeOf(format)}
+                storyStars={mission && mission.star_rarities.length > 0 ? { rules: mission, earned: mission.stars } : null}
+                challenge={challengeGone ? null : challenge}
+                intro={
+                  format === "boss"
+                    ? BOSS_INTRO
+                    : format === "triple"
+                      ? TRIPLE_INTRO
+                      : isQuadrantFormat(format)
+                        ? QUADRANT_INTRO
+                        : "Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello basso e i generalisti per quelle alte. Con una pressione lunga su una carta la vedi intera."
+                }
+              />
+            </CardDetailProvider>
+          </CardLooksProvider>
         ) : (
           !error && !challengeGone && <LoadingScreen label="Caricamento della collezione…" />
         )}

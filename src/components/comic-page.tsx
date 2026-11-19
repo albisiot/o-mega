@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { CardArtEffects } from "@/components/card-effects";
+import { LookRing, useCardLooks, type LookSide } from "@/components/card-looks";
 import { Silhouette } from "@/components/card-view";
 import { WinnerName } from "@/components/winner-name";
 import type { AbilityChip } from "@/lib/ability-marks";
@@ -137,25 +139,62 @@ export function Crack() {
 const SHOUT_PATH =
   "M80 4 92 16 108 6 114 22 134 16 132 34 154 36 142 52 156 66 136 70 140 88 118 82 108 98 94 86 80 100 70 86 50 98 46 80 22 88 28 70 4 64 20 52 6 38 28 34 26 16 48 22 54 6 68 16Z";
 
-/** A card's art filling its box, or its silhouette when it has none. */
-export function ComicArt({ card, className }: { card: MatchCard; className: string }) {
-  if (!card.art_url) {
+/**
+ * A card's art filling its box, or its silhouette when it has none. With `side`, whose card it
+ * is, the art also shows the effect its owner applied (SPEC §4.8), and with `framed` (the art is
+ * a card: the round's winner, a cut-in) the frame too; a panel's background has no frame. Never
+ * Autografo and Numerata: words on the art would compete with the page's balloons.
+ */
+export function ComicArt({
+  card,
+  className,
+  side,
+  framed = false,
+}: {
+  card: MatchCard;
+  className: string;
+  side?: LookSide;
+  framed?: boolean;
+}) {
+  const looks = useCardLooks();
+  const look = side ? looks(card.definition_id, side) : null;
+  const effect = look?.effect && look.effect !== "signature" && look.effect !== "numbered" ? look.effect : null;
+  const frame = framed ? (look?.frame ?? null) : null;
+  const layer =
+    effect || frame ? (
+      <>
+        {effect && <CardArtEffects effects={[effect]} />}
+        <LookRing frame={frame} faction={card.faction} />
+      </>
+    ) : null;
+  const url = card.art_url;
+  if (!url) {
+    // A span: the art also sits in a line of text (Spia's strip).
     return (
-      <div className={`${className} bg-black`}>
+      <span className={`${className} block ${layer ? "@container overflow-hidden" : ""} bg-black`}>
         <Silhouette faction={card.faction} accent={card.rarity.color} className="absolute bottom-0 left-1/2 h-full -translate-x-1/2" />
-      </div>
+        {layer}
+      </span>
     );
   }
-  return (
+  const art = (fill: string) => (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={withBasePath(card.art_url)}
-      srcSet={artSrcSet(card.art_url)}
+      src={withBasePath(url)}
+      srcSet={artSrcSet(url)}
       sizes="60vw"
       alt=""
       decoding="async"
-      className={`${className} object-cover object-top`}
+      className={`${fill} object-cover object-top`}
     />
+  );
+  // Without a look the art is the image itself, as it always was.
+  if (!layer) return art(className);
+  return (
+    <span className={`${className} @container block overflow-hidden`}>
+      {art("absolute inset-0 h-full w-full")}
+      {layer}
+    </span>
   );
 }
 
@@ -445,7 +484,7 @@ export function RevealStrip({ title, lines, cards = [] }: { title: string; lines
       {cards.map((card) => (
         <p key={card.definition_id} className="mt-0.5 flex items-center gap-1.5">
           <span className="relative h-8 w-6 shrink-0 overflow-hidden border-2 border-black bg-black">
-            <ComicArt card={card} className="absolute inset-0 h-full w-full" />
+            <ComicArt card={card} side="opponent" className="absolute inset-0 h-full w-full" />
           </span>
           <span className="truncate font-display text-[15px] uppercase leading-4">{card.name}</span>
         </p>
@@ -589,7 +628,7 @@ export function CutIn({ card, side, title, text, harm }: { card: MatchCard | nul
     <div aria-hidden className={`comic-cutin ${side === "me" ? "comic-cutin-me" : "comic-cutin-opponent"} ${harm ? "comic-cutin-harm" : ""}`}>
       <div className="comic-cutin-speed" />
       <div className={`comic-cutin-inner ${side === "opponent" ? "flex-row-reverse text-right" : ""}`}>
-        {card && <ComicArt card={card} className="comic-cutin-art" />}
+        {card && <ComicArt card={card} side={side} framed className="comic-cutin-art" />}
         <div className="flex min-w-0 flex-col">
           <span className="comic-cutin-title font-sfx">{title}</span>
           {text && <span className="text-[14px] font-extrabold leading-4">{text}</span>}
@@ -710,6 +749,7 @@ export function VerdictPanel({
   tone,
   hero,
   heroKey,
+  heroSide,
   sfx,
   title,
   children,
@@ -719,6 +759,8 @@ export function VerdictPanel({
   /** The card that breaks out of the frame, if any. */
   hero: MatchCard | null;
   heroKey: string;
+  /** Whose card the hero is, for the effect it shows. */
+  heroSide?: LookSide;
   sfx: string;
   title: string;
   /** The lines under the title. */
@@ -736,7 +778,7 @@ export function VerdictPanel({
         <>
           {hero && (
             <div className="comic-hero absolute -top-3 left-2.5 z-10 h-[150px] w-[104px] -rotate-[5deg] border-4 border-black bg-black shadow-[6px_6px_0_#000]">
-              <ComicArt card={hero} className="relative h-full w-full" />
+              <ComicArt card={hero} side={heroSide} framed className="relative h-full w-full" />
             </div>
           )}
           <span

@@ -4,6 +4,8 @@ import { getSupabase } from "@/lib/supabase/client";
 
 export type PackCard = {
   instance_id: string;
+  /** The character, whose frame and effect the card shows (SPEC §4.8); missing in openings kept from before. */
+  definition_id?: string;
   is_new: boolean;
   code: string;
   name: string;
