@@ -11,6 +11,8 @@ export type CatalogCard = CardData & {
   unlockLevel: number | null;
   /** Artwork variants of this character that exist; players see only those they found. */
   variantCount: number;
+  /** False while an admin holds the character back from packs: the album hides it from players who lack it. */
+  inPacks: boolean;
 };
 
 export type OwnedVariant = { instance_id: string; variant_id: string; style: string; name: string; art_url: string };
@@ -37,6 +39,14 @@ export function ownedArt(card: CatalogCard, owned: OwnedSummary): Pick<CatalogCa
 export type FoundVariant = { style: string; name: string; art_url: string; copies: number };
 
 /** The variants of a character the player found: one per style, in the order found. */
+/**
+ * The characters the album shows and counts: a character an admin holds back from packs
+ * (SPEC §7) appears only to a player who already owns it, until it comes out.
+ */
+export function albumCatalog(catalog: CatalogCard[], owned: ReadonlyMap<string, unknown>): CatalogCard[] {
+  return catalog.filter((card) => card.inPacks || owned.has(card.id));
+}
+
 export function foundVariants(owned: OwnedSummary): FoundVariant[] {
   const byStyle = new Map<string, FoundVariant>();
   for (const { style, name, art_url } of owned.variants) {
@@ -83,6 +93,7 @@ async function loadCatalog(): Promise<CatalogCard[]> {
     duplicateCoinValue: row.duplicate_coin_value ?? 0,
     unlockLevel: row.unlock_level ?? null,
     variantCount: row.variant_count ?? 0,
+    inPacks: row.in_packs ?? true,
   })));
 }
 

@@ -11,13 +11,13 @@ declare
   v_count integer;
 begin
   select count(*) into v_count from public.card_definitions where is_active;
-  assert v_count = 231, format('expected 231 characters, got %s', v_count);
+  assert v_count = 261, format('expected 261 characters, got %s', v_count);
 
   assert (
     select jsonb_object_agg(rarity_code, n) from (
       select rarity_code, count(*) as n from public.card_definitions group by rarity_code
     ) s
-  ) = '{"delta": 74, "gamma": 68, "beta": 46, "alfa": 26, "omega": 17}'::jsonb,
+  ) = '{"delta": 84, "gamma": 77, "beta": 52, "alfa": 29, "omega": 19}'::jsonb,
     'unexpected rarity distribution';
 
   -- Rarer cards have more ability points: every card has exactly the budget of its rarity.
@@ -143,7 +143,7 @@ select set_config('request.jwt.claims',
 
 do $$
 begin
-  assert (select count(*) from public.card_definitions) = 231, 'players cannot read the full catalog';
+  assert (select count(*) from public.card_definitions) = 261, 'players cannot read the full catalog';
   assert (select count(*) from public.power_definitions) = 54, 'players cannot read powers';
   begin
     perform 1 from public.threat_definitions;

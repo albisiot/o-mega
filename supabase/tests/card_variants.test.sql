@@ -22,7 +22,7 @@ begin
     select jsonb_object_agg(style, n) from (
       select style, count(*) as n from public.card_variants where style not in ('neon', 'epic') group by style
     ) s
-  ) = '{"cinema": 9, "pastel": 12, "gold": 9, "classic": 9, "retro": 9, "oil": 9, "cartoon": 9, "poster": 9, "inferno": 8, "graphite": 9, "marble": 9, "gothic": 9, "tarot": 13, "ink": 9, "fantasy": 9, "prism": 9, "comet": 8, "regal": 8, "render": 10, "phoenix": 9, "manga": 8, "stained": 9, "crimson": 9, "wraith": 9, "flame": 8, "shadow": 9, "etching": 10, "circuit": 9, "watercolor": 9, "tempera": 9, "zombie": 7, "portrait": 9}'::jsonb,
+  ) = '{"cinema": 10, "pastel": 12, "gold": 10, "classic": 10, "retro": 10, "oil": 10, "cartoon": 10, "poster": 10, "inferno": 9, "graphite": 10, "marble": 10, "gothic": 10, "tarot": 13, "ink": 10, "fantasy": 10, "prism": 10, "comet": 10, "regal": 9, "render": 10, "phoenix": 10, "manga": 9, "stained": 10, "crimson": 10, "wraith": 10, "flame": 10, "shadow": 10, "etching": 10, "circuit": 10, "watercolor": 10, "tempera": 10, "zombie": 8, "portrait": 10}'::jsonb,
     'every series has its expected number of variants';
   assert not exists (
     select 1 from public.card_variants v
@@ -35,8 +35,12 @@ begin
   -- An admin sets it in /gestione-ricompense; balance.ts has the default.
   assert (public.get_pack_odds() ->> 'variant_chance_percent')::integer = public.config_int('packs.variant_chance_percent'),
     'published chance';
-  assert (public.get_pack_odds() ->> 'characters_with_variants')::integer =
-    (select count(distinct definition_id) from public.card_variants where is_active), 'published characters';
+  -- Only characters that packs can give (20261119240000_held_back_cards.sql).
+  assert (public.get_pack_odds() ->> 'characters_with_variants')::integer = (
+    select count(distinct v.definition_id) from public.card_variants v
+    join public.card_definitions d on d.id = v.definition_id
+    where v.is_active and public.is_pack_card(d)
+  ), 'published characters';
 end $$;
 
 -- The draw follows the configured chance, and only for characters with a variant.

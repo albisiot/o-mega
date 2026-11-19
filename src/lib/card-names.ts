@@ -2108,6 +2108,254 @@ const STYLES: Record<string, NameStyle> = {
     split: ["rgb(220 230 210 / 0.3)", "rgb(220 230 210 / 0.3)"],
     haze: true,
   },
+  // The Thousand Suns (P232-P261): from the Earth of a war among the stars, through the rift.
+  // Calafato: the starship mechanic, hull plates riveted over grease.
+  P232: {
+    font: "stencil",
+    fill: layers(dots("rgb(40 30 20 / 0.45)", 0.2), grad("#fff2e0", "#d8a070 50%", "#5a3a20")),
+    rim: "#0a0604",
+    side: ["#3a4a5a", "#0a0604"],
+    line: "#ff9a40",
+  },
+  // Raffica: the turret gunner, sage padding and yellow tracers.
+  P233: {
+    font: "block",
+    fill: layers(speedLines("rgb(255 230 90 / 0.5)"), grad("#f4f8ee", "#9ab08a 50%", "#3a4a32")),
+    rim: "#060804",
+    side: ["#3a4a32", "#060804"],
+    slant: -5,
+  },
+  // Patella: the hull spider, rust red and a single amber lamp.
+  P234: {
+    font: "pixel",
+    fill: layers(bricks("rgb(60 20 10 / 0.4)"), grad("#ffe8d8", "#c8603a 50%", "#5a1a0a")),
+    rim: "#0a0402",
+    side: ["#8a6a2a", "#0a0402"],
+    glow: "rgb(255 180 60 / 0.35)",
+  },
+  // Sentinella: the garrison soldier, tarnished bronze and a faded violet tabard.
+  P235: {
+    font: "myth",
+    fill: metal("#fff0d8", "#c89a5a", "#6a4a2a", "#8a6a3a", "#d8b080"),
+    rim: "#0a0604",
+    side: ["#4a2a5a", "#0a0604"],
+  },
+  // Sortita: the interceptor pilot, cream flight suit and a violet sash.
+  P236: {
+    font: "speed",
+    fill: layers(stripes("rgb(110 60 160 / 0.45)", 90, 0.06), grad("#fffaf0", "#ece0c8 50%", "#8a7a60")),
+    rim: "#0c0a06",
+    side: ["#5a3a7a", "#0c0a06"],
+    slant: -10,
+  },
+  // Gabella: the imperial tax collector, grey ledger and a brass chain of seals.
+  P237: {
+    font: "slab",
+    fill: layers(grain("rgb(30 30 30 / 0.35)"), grad("#f4f2ee", "#a8a8a4 50%", "#4a4a48")),
+    rim: "#080808",
+    side: ["#8a6a2a", "#080808"],
+    line: "#d8b050",
+  },
+  // Bracco: the seeker hound, white porcelain and lantern eyes.
+  P238: {
+    font: "scifi",
+    fill: layers(scanlines("rgb(200 160 60 / 0.35)"), grad("#ffffff", "#e8e4dc 50%", "#9a8a6a")),
+    rim: "#0a0806",
+    side: ["#a07a3a", "#0a0806"],
+    glow: "rgb(255 220 120 / 0.35)",
+  },
+  // Ostinato: the cantina musician, grey-violet feathers and one tune.
+  P239: {
+    font: "elegant",
+    fill: layers(waves("rgb(255 190 110 / 0.45)"), grad("#f6f0ff", "#a898c0 50%", "#4a3a5a")),
+    rim: "#08060a",
+    side: ["#4a3a5a", "#08060a"],
+    haze: true,
+  },
+  // Ferraglia: the four-armed junk dealer, shell plates and blue welding light.
+  P240: {
+    font: "anton",
+    fill: layers(scales("rgb(50 60 40 / 0.45)"), grad("#eef2e0", "#8a9a6a 50%", "#3a4228")),
+    rim: "#060804",
+    side: ["#5a4a3a", "#060804"],
+    line: "#7ad0ff",
+  },
+  // Alaggio: the tug pilot, sheet-metal green and a taut cable.
+  P241: {
+    font: "stencil",
+    fill: layers(stripes("rgb(30 40 30 / 0.45)", 160, 0.05), grad("#eef6ee", "#7aa08a 50%", "#2a4032")),
+    rim: "#040806",
+    side: ["#b06a2a", "#040806"],
+  },
+  // Virata: the starfighter ace, teal jacket and an orange engine trail.
+  P242: {
+    font: "speed",
+    fill: layers(speedLines("rgb(255 150 60 / 0.5)"), grad("#eefcff", "#5ab8c0 50%", "#0e4a52")),
+    rim: "#020a0c",
+    side: ["#0e4a52", "#020a0c"],
+    slant: -12,
+    glow: "rgb(255 160 70 / 0.3)",
+  },
+  // Rivalsa: the saboteur, dust grey with a lit fuse.
+  P243: {
+    font: "stencil",
+    fill: layers(cracks("rgb(255 130 40 / 0.75)"), grad("#f2f2ec", "#9a9e92 50%", "#3e423a")),
+    rim: "#060604",
+    side: ["#4a2a1a", "#060604"],
+    glow: "rgb(255 120 40 / 0.3)",
+  },
+  // Folata: the hover-bike scout, camouflage and dust.
+  P244: {
+    font: "comic",
+    fill: layers(dots("rgb(70 80 40 / 0.5)", 0.22), grad("#fbfff0", "#b0c080 50%", "#4a5a2a")),
+    rim: "#060802",
+    side: ["#c87a2a", "#060802"],
+    slant: -8,
+  },
+  // Testuggine: the assault trooper, oxblood lacquer behind a tower shield.
+  P245: {
+    font: "block",
+    fill: metal("#ffe8e0", "#b04a3a", "#5a1410", "#7a2418", "#c87060"),
+    rim: "#0a0202",
+    side: ["#8a6a3a", "#0a0202"],
+    depth: 11,
+  },
+  // Udienza: the inquisitor, dark violet and a crown of listening horns.
+  P246: {
+    font: "myth",
+    fill: layers(waves("rgb(230 200 120 / 0.4)"), grad("#f6eeff", "#8a6aa8 50%", "#2a1a3e")),
+    rim: "#06040a",
+    side: ["#2a1a3e", "#06040a"],
+    line: "#e8d080",
+    tracking: 0.03,
+  },
+  // Taglia: the bounty huntress, a cloak of other people's badges.
+  P247: {
+    font: "horror",
+    fill: layers(stars("rgb(220 180 90 / 0.5)"), grad("#eef6ea", "#8aa080 50%", "#33402e")),
+    rim: "#040604",
+    side: ["#6a2a1a", "#040604"],
+    glow: "rgb(255 110 60 / 0.3)",
+  },
+  // Soffiata: the informant, lilac ears and rings on every finger.
+  P248: {
+    font: "elegant",
+    fill: layers(dots("rgb(255 220 150 / 0.5)", 0.14), grad("#fff6ff", "#d0a8d8 50%", "#6a4878")),
+    rim: "#0a060c",
+    side: ["#6a4878", "#0a060c"],
+    split: ["rgb(220 170 230 / 0.35)", "rgb(220 170 230 / 0.35)"],
+  },
+  // Stazza: the amphibian copilot, slate plates and bubbles.
+  P249: {
+    font: "bubble",
+    fill: layers(scales("rgb(30 40 50 / 0.4)"), grad("#eef4f8", "#7a8a98 50%", "#2e3a44")),
+    rim: "#04060a",
+    side: ["#2e3a44", "#04060a"],
+    depth: 11,
+  },
+  // Azzardo: the gambler of the bank, silver and ruby.
+  P250: {
+    font: "elegant",
+    fill: metal("#ffffff", "#c8c8d0", "#5a5a64", "#8a8a94", "#e0e0e8"),
+    rim: "#08080a",
+    side: ["#8a1028", "#08080a"],
+    line: "#e0304a",
+  },
+  // Novizia: the apprentice duelist, quilted green and amber blades.
+  P251: {
+    font: "myth",
+    fill: layers(stitches("rgb(255 190 80 / 0.55)"), grad("#f0fff4", "#5a9a6a 50%", "#1a3a24")),
+    rim: "#020804",
+    side: ["#1a3a24", "#020804"],
+    glow: "rgb(255 190 80 / 0.35)",
+  },
+  // Egida: the shield knight, hexagons of gold light on grey steel.
+  P252: {
+    font: "slab",
+    fill: layers(honeycomb("rgb(255 210 110 / 0.5)"), grad("#f6f6f4", "#a0a4a8 50%", "#40444a")),
+    rim: "#06060a",
+    side: ["#8a7030", "#06060a"],
+    glow: "rgb(255 210 110 / 0.35)",
+    depth: 10,
+  },
+  // Plancia: the admiral without a fleet, violet-black and brass epaulettes.
+  P253: {
+    font: "myth",
+    fill: metal("#fff8e8", "#e0c070", "#5a3a6a", "#3a2448", "#8a6aa0"),
+    rim: "#06040a",
+    side: ["#2a1a38", "#06040a"],
+    tracking: 0.04,
+  },
+  // Legatura: the duelist hunter, bronze leather and a violet scythe.
+  P254: {
+    font: "gothic",
+    fill: layers(claws("rgb(170 110 255 / 0.55)"), grad("#fff0e0", "#b08a5a 50%", "#4a3018")),
+    rim: "#080402",
+    side: ["#3a2a5a", "#080402"],
+    glow: "rgb(170 110 255 / 0.3)",
+  },
+  // Franchigia: the smuggler captain, mustard leather and a crooked grin.
+  P255: {
+    font: "anton",
+    fill: layers(grain("rgb(80 50 10 / 0.4)"), grad("#fffbe0", "#e0b040 50%", "#7a5410")),
+    rim: "#0a0602",
+    side: ["#4a3010", "#0a0602"],
+    slant: 6,
+  },
+  // Glossa: the interpreter robot, glazed jade and copper horns.
+  P256: {
+    font: "scifi",
+    fill: layers(circuit("rgb(210 130 70 / 0.6)"), grad("#f0fff8", "#6ac0a0 50%", "#1a5040")),
+    rim: "#020a06",
+    side: ["#a0602a", "#020a06"],
+  },
+  // Appello: the teacher of the refugee column, slate blue and a red flare.
+  P257: {
+    font: "slab",
+    fill: layers(stitches("rgb(230 230 220 / 0.5)"), grad("#f2f6ff", "#6a80a0 50%", "#26344a")),
+    rim: "#04060a",
+    side: ["#26344a", "#04060a"],
+    glow: "rgb(255 90 50 / 0.35)",
+    line: "#ff6a40",
+  },
+  // Sferza: the fallen duelist, green copper and a violet whip.
+  P258: {
+    font: "gothic",
+    fill: layers(zigzag("rgb(190 120 255 / 0.6)"), metal("#eafff4", "#6ab894", "#1e4a3a", "#2e6a52", "#9ad8bc")),
+    rim: "#020806",
+    side: ["#4a1a6a", "#020806"],
+    glow: "rgb(190 120 255 / 0.4)",
+    depth: 10,
+  },
+  // Commiato: the exiled master, slate and bone fading into light.
+  P259: {
+    font: "myth",
+    fill: grad("#ffffff", "#e8e4dc 40%", "#8a98b0"),
+    rim: "#06080c",
+    side: ["#4a5a78", "#06080c"],
+    glow: "rgb(255 236 190 / 0.5)",
+    split: ["rgb(255 240 210 / 0.3)", "rgb(255 240 210 / 0.3)"],
+    haze: true,
+  },
+  // Caligine: the last master, ivory in the glowing mist.
+  P260: {
+    font: "elegant",
+    fill: layers(waves("rgb(160 150 140 / 0.4)"), grad("#ffffff", "#f0e8dc 50%", "#a89a88")),
+    rim: "#0a0806",
+    side: ["#8a5a3a", "#0a0806"],
+    glow: "rgb(255 245 225 / 0.55)",
+    split: ["rgb(255 250 240 / 0.35)", "rgb(255 250 240 / 0.35)"],
+    haze: true,
+  },
+  // Interregno: the regent by delegation, brushed brass and violet lightning.
+  P261: {
+    font: "myth",
+    fill: layers(cracks("rgb(200 140 255 / 0.85)", "2.4em 1em"), metal("#fffbe8", "#e8c870", "#7a5a2a", "#a0803a", "#f0d898")),
+    rim: "#0a0602",
+    side: ["#5a1a2a", "#0a0602"],
+    glow: "rgb(190 130 255 / 0.45)",
+    depth: 12,
+  },
 };
 
 const FACTION_LOOK: Record<string, Pick<NameStyle, "fill" | "side">> = {

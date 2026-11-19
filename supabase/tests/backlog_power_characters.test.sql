@@ -15,12 +15,13 @@ select public.bootstrap_player();
 reset role;
 
 -- The catalog: one new character for each power, with a full identity, in the packs.
+-- Nine of the powers went later to a character of the Thousand Suns too (P232-P261).
 do $$
 begin
   assert (
     select jsonb_object_agg(d.power_code, d.code)
     from public.card_definitions d
-    where d.power_code in ('scrappy', 'counterpunch', 'eclectic', 'lone_wolf', 'opportunist', 'reflect', 'vendetta',
+    where d.code < 'P232' and d.power_code in ('scrappy', 'counterpunch', 'eclectic', 'lone_wolf', 'opportunist', 'reflect', 'vendetta',
       'main_event', 'adaptable', 'sacrifice', 'pack_leader', 'echo', 'catalyst', 'fog')
   ) = '{"scrappy": "P218", "vendetta": "P219", "counterpunch": "P220", "adaptable": "P221", "opportunist": "P222",
         "lone_wolf": "P223", "reflect": "P224", "eclectic": "P225", "main_event": "P226", "sacrifice": "P227",

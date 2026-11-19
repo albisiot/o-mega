@@ -69,25 +69,26 @@ end $$;
 reset role;
 
 -- Imprese: owning every variant of a style completes one style; of a character, one character.
+-- Only characters that packs can give count (20261119240000_held_back_cards.sql).
 do $$
 declare
   v_user uuid := '00000000-0000-4000-8000-0000000005a2';
   v_style text := (
     select v.style from public.card_variants v join public.card_definitions d on d.id = v.definition_id
-    where v.is_active and d.is_active and d.unlock_level is null group by v.style order by count(*), v.style limit 1);
+    where v.is_active and public.is_pack_card(d) group by v.style order by count(*), v.style limit 1);
   v_styles_before integer := public.achievement_progress(v_user, 'variant_styles_complete', '{}', null);
   v_characters_before integer := public.achievement_progress(v_user, 'variant_characters_complete', '{}', null);
 begin
   insert into public.card_instances (definition_id, owner_id, acquired_via, variant_id)
   select v.definition_id, v_user, 'pack', v.id
   from public.card_variants v join public.card_definitions d on d.id = v.definition_id
-  where v.style = v_style and v.is_active and d.is_active and d.unlock_level is null;
+  where v.style = v_style and v.is_active and public.is_pack_card(d);
   assert public.achievement_progress(v_user, 'variant_styles_complete', '{}', null) = v_styles_before + 1,
     'one style completed';
   -- The style's characters with a single variant are complete too.
   assert public.achievement_progress(v_user, 'variant_characters_complete', '{}', null) = v_characters_before + (
     select count(*) from public.card_variants v join public.card_definitions d on d.id = v.definition_id
-    where v.style = v_style and v.is_active and d.is_active and d.unlock_level is null
+    where v.style = v_style and v.is_active and public.is_pack_card(d)
       and (select count(*) from public.card_variants w where w.definition_id = v.definition_id and w.is_active) = 1
   ), 'characters completed';
 end $$;

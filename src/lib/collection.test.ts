@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  albumCatalog,
   foundVariantCount,
   foundVariants,
   ownedArt,
@@ -22,6 +23,7 @@ const card: CatalogCard = {
   duplicateCoinValue: 5,
   unlockLevel: null,
   variantCount: 2,
+  inPacks: true,
 };
 
 const variant = (style: string, name: string, instance: string): OwnedVariant => ({
@@ -89,5 +91,18 @@ describe("ownedArt", () => {
 
   it("shows the first variant found when the player has only variants", () => {
     expect(ownedArt(card, owned(0, [ink, circuit]))).toEqual({ art_url: ink.art_url, variant: { name: "Inchiostro" } });
+  });
+});
+
+describe("albumCatalog", () => {
+  const held = { ...card, id: "def-2", code: "P232", inPacks: false };
+  const level = { ...card, id: "def-3", code: "P061", unlockLevel: 3 };
+
+  it("hides a character held back from packs from a player who does not own it", () => {
+    expect(albumCatalog([card, held, level], new Map()).map((c) => c.code)).toEqual(["P082", "P061"]);
+  });
+
+  it("shows it to a player who owns a copy", () => {
+    expect(albumCatalog([card, held], new Map([["def-2", owned(1, [])]])).map((c) => c.code)).toEqual(["P082", "P232"]);
   });
 });

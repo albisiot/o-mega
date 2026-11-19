@@ -216,7 +216,7 @@ function toCharacter(definition: Definition, id = definition.id): Character {
 async function load(): Promise<Loaded> {
   if (cache && Date.now() - cache.at < 60_000) return cache.loaded;
   const [definitions, rarities, threats, abilities, config, threatRarities] = await Promise.all([
-    admin.from("card_definitions").select("id, faction, rarity_code, stats, power_code, power_params, is_active"),
+    admin.from("card_definitions").select("id, faction, rarity_code, stats, power_code, power_params, is_active, in_packs, unlock_level"),
     admin.from("rarity_definitions").select("code, rank"),
     admin
       .from("threat_definitions")
@@ -233,7 +233,14 @@ async function load(): Promise<Loaded> {
   };
 
   const ranks = new Map((check(rarities) as { code: string; rank: number }[]).map((r) => [r.code, r.rank]));
-  const definitionRows = (check(definitions) as (Omit<Definition, "rarity_rank"> & { rarity_code: string; is_active: boolean })[]).map(
+  const definitionRows = (
+    check(definitions) as (Omit<Definition, "rarity_rank"> & {
+      rarity_code: string;
+      is_active: boolean;
+      in_packs: boolean;
+      unlock_level: number | null;
+    })[]
+  ).map(
     (d) => ({ ...d, rarity_rank: ranks.get(d.rarity_code) ?? 1 }),
   );
   const threatRows = check(threats) as {
@@ -249,6 +256,13 @@ async function load(): Promise<Loaded> {
   }[];
   const oneIn = new Map((check(threatRarities) as { code: string; one_in: number }[]).map((r) => [r.code, r.one_in]));
   const activeCharacters = definitionRows.filter((d) => d.is_active).map((d) => toCharacter(d));
+  // Bots, ghosts and challenge bots field only characters that packs can give (is_pack_card): a
+  // character an admin holds back (in_packs false) or a level card stays out of every bot team, so
+  // Conquista cannot hand it out. Teams already saved (a Story mission, a challenge's given squad)
+  // are read from `definitions`.
+  const teamCharacters = definitionRows
+    .filter((d) => d.is_active && d.in_packs && d.unlock_level === null)
+    .map((d) => toCharacter(d));
   const rankedLadder = RANKED_LEAGUES.every((league) => values.has(`ranked.ghosts.${league}.team_cap`))
     ? RANKED_LEAGUES.map((league) => ({
         from: value(`ranked.leagues.${league}`),
@@ -364,7 +378,7 @@ async function load(): Promise<Loaded> {
     graceSeconds: value("match.timeout_grace_seconds"),
     rankedLadder,
     catalog: {
-      characters: activeCharacters,
+      characters: teamCharacters,
       threatCatalog: activeThreats.map(({ id, level, abilities, modifier }) => ({ id, level, abilities, modifier })),
       rareCatalog,
       families: Object.fromEntries(check(abilities).map((a) => [a.code, a.family])),
@@ -1713,7 +1727,11 @@ async function simulateChallengeFor(userId: string, body: Record<string, unknown
     rarity_ranks: Record<string, number>;
     supplied_definition_ids: string[];
   };
-  const supplied = suppliedIds.map((id) => loaded.catalog.characters.find((c: Character) => c.definitionId === id));
+  // A given squad may hold characters the bots never field: read it from every definition.
+  const supplied = suppliedIds.map((id) => {
+    const definition = loaded.definitions.get(id);
+    return definition ? toCharacter(definition) : undefined;
+  });
   if (codes.length > 0 && (supplied.length !== loaded.rules.teamSize || supplied.some((c) => c === undefined))) {
     throw new GameError("invalid_request");
   }

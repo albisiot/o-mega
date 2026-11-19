@@ -26,6 +26,7 @@ import { cardEffects } from "@/lib/card-effects";
 import { applyCardListView, groupCardList, sortAbilityOf } from "@/lib/card-list";
 import type { AbilityInfo } from "@/lib/catalog";
 import {
+  albumCatalog,
   convertAllDuplicates,
   foundVariantCount,
   foundVariants,
@@ -73,7 +74,7 @@ function loadOwnership(): Ownership {
 }
 
 export function Album({
-  catalog,
+  catalog: fullCatalog,
   owned,
   abilities,
   onChanged,
@@ -83,6 +84,8 @@ export function Album({
   abilities: AbilityInfo[];
   onChanged: () => void;
 }) {
+  // Characters held back from packs stay out of the album, and of its total, until they come out.
+  const catalog = useMemo(() => albumCatalog(fullCatalog, owned), [fullCatalog, owned]);
   const [view, updateView] = useCardListView(VIEW_KEY);
   const [ownership, setOwnership] = useState<Ownership>(loadOwnership);
   // The frames and effects the player applied (SPEC §4.8): a nicety, the album works without them.

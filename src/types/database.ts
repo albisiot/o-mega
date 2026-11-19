@@ -4453,6 +4453,7 @@ export type Database = {
           faction: string | null
           flavor: string | null
           id: string | null
+          in_packs: boolean | null
           name: string | null
           power_name: string | null
           power_text: string | null
