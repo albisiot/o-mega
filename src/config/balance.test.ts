@@ -74,4 +74,28 @@ describe("balance config", () => {
     expect(week.maxFailures).toBeLessThan(week.threatsPerRun);
     expect(week.prizes.minPassed).toBeLessThanOrEqual(week.threatsPerRun);
   });
+  it("lets the server's opponent choose before the deadline, in time for the app to see it", () => {
+    const { delays, lateSeconds, deadlineMarginSeconds, nudgeSeconds } = balance.ranked.ghosts;
+    // Seconds from the opening of a round (or of a Quadrante move) to its deadline, as the database sets them.
+    const deadlines = {
+      classic: balance.match.revealPauseSeconds + balance.match.roundTimerSeconds,
+      boss: balance.match.revealPauseSeconds + balance.match.roundTimerSeconds,
+      tripleFirst: balance.match.revealPauseSeconds + balance.triple.roundTimerSeconds,
+      triple: balance.triple.revealPauseSeconds + balance.triple.roundTimerSeconds,
+      quadrant: balance.quadrant.movePauseSeconds + balance.quadrant.moveTimerSeconds,
+    } satisfies Record<keyof typeof delays, number>;
+    for (const kind of Object.keys(deadlines) as (keyof typeof delays)[]) {
+      expect(delays[kind].min).toBeLessThanOrEqual(delays[kind].max);
+      // The window of every mode ends before the margin: the margin never cuts it short.
+      expect(delays[kind].max).toBeLessThanOrEqual(deadlines[kind] - deadlineMarginSeconds);
+    }
+    // The late choices come in the last seconds of every timer, never inside the margin.
+    expect(lateSeconds.min).toBeGreaterThanOrEqual(deadlineMarginSeconds);
+    expect(lateSeconds.max).toBeGreaterThanOrEqual(lateSeconds.min);
+    expect(lateSeconds.max).toBeLessThan(
+      Math.min(balance.match.roundTimerSeconds, balance.triple.roundTimerSeconds, balance.quadrant.moveTimerSeconds),
+    );
+    // A choice at the margin is asked about at least once, with as long again left for the network.
+    expect(deadlineMarginSeconds).toBeGreaterThanOrEqual(2 * nudgeSeconds);
+  });
 });

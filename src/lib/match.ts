@@ -330,11 +330,20 @@ export async function fetchConquestHistory(): Promise<ConquestHistoryEntry[]> {
 export const seenConquestHistory = () => lastSeen<ConquestHistoryEntry[]>("conquestHistory");
 
 /**
- * Sends a secret choice; the round resolves as soon as both players chose. In a Classificata
- * (`ranked`) the server checks at once whether the opponent has chosen too.
+ * Sends a secret choice; the round resolves as soon as both players chose. Against the
+ * server's opponent the server itself checks at once whether it has chosen too.
  */
-export function submitChoice(matchId: string, round: number, cardInstanceId: string, ranked = false): Promise<MatchView> {
-  return invokeMatch({ action: "submit", match_id: matchId, round, card_instance_id: cardInstanceId, ...(ranked ? { ranked } : {}) });
+export function submitChoice(matchId: string, round: number, cardInstanceId: string): Promise<MatchView> {
+  return invokeMatch({ action: "submit", match_id: matchId, round, card_instance_id: cardInstanceId });
+}
+
+/**
+ * Whether the opponent of a match may be the server's, which the app never tells from a
+ * person: a Classificata (SPEC §8.7) or a Sfida a tema online (§8.8). There its choice may be
+ * known only to the server, so while the player waits the app asks for it (`useOpponentNudge`).
+ */
+export function opponentMayBeServer(view: { mode: MatchMode; bot_difficulty: BotDifficulty | null; challenge?: unknown }): boolean {
+  return view.bot_difficulty === null && (view.mode === "ranked" || Boolean(view.challenge));
 }
 
 /** Asks the server to resolve the round once the time is up. Idempotent. */

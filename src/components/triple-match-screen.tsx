@@ -21,12 +21,13 @@ import {
   DIFFICULTY_LABELS,
   fetchMatchState,
   forfeitMatch,
+  opponentMayBeServer,
   pingMatch,
   subscribeToUpdates,
   type MatchCard,
 } from "@/lib/match";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
-import { RankedResultChips, useRankedNudge } from "@/components/ranked-parts";
+import { RankedResultChips, useOpponentNudge } from "@/components/ranked-parts";
 import { ChallengeResultChip } from "@/components/challenge-parts";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
 import { tripleBeforeRound, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
@@ -146,7 +147,7 @@ function TripleSteps({ initial }: { initial: TripleView }) {
           apply(
             cards === null
               ? await resolveTripleRound(view.id)
-              : await submitTriplePlacement(view.id, round, cards, view.mode === "ranked"),
+              : await submitTriplePlacement(view.id, round, cards),
           );
       } catch (cause) {
         // Someone (the timer, another tab) was faster: reload the state.
@@ -160,11 +161,11 @@ function TripleSteps({ initial }: { initial: TripleView }) {
         setBusy(false);
       }
     },
-    [apply, fetchTriple, view.id, view.mode, isBot],
+    [apply, fetchTriple, view.id, isBot],
   );
 
-  // Classificata: once the cards are placed, ask now and then whether the opponent placed too.
-  useRankedNudge(view.mode === "ranked" && Boolean(current?.my_pending), async () => {
+  // Where the opponent may be the server's: once the cards are placed, ask now and then whether it placed too.
+  useOpponentNudge(opponentMayBeServer(view) && Boolean(current?.my_pending), async () => {
     apply(await resolveTripleRound(view.id));
   });
 

@@ -16,7 +16,7 @@ import {
   type QuadrantVariant,
 } from "@o-mega/game-engine";
 import { balance } from "@/config/balance";
-import { invokeFunction, remember, toCharacter, type MatchCard, type MatchMode } from "@/lib/match";
+import { invokeFunction, remember, toCharacter, type MatchCard, type MatchChallengeInfo, type MatchMode } from "@/lib/match";
 import type { OpponentLooks } from "@/lib/cosmetics";
 import type { RankedMatchInfo } from "@/lib/ranked";
 
@@ -71,6 +71,8 @@ export type QuadrantView = {
   mode: MatchMode;
   /** Classificata only (SPEC §8.7). */
   ranked?: RankedMatchInfo | null;
+  /** A Sfida a tema only (SPEC §8.8). */
+  challenge?: MatchChallengeInfo | null;
   format: QuadrantFormat;
   variant: QuadrantVariant;
   bot_difficulty: BotDifficulty | null;

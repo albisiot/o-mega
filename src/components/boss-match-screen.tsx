@@ -33,11 +33,12 @@ import {
   DIFFICULTY_LABELS,
   fetchMatchState,
   forfeitMatch,
+  opponentMayBeServer,
   pingMatch,
   subscribeToUpdates,
 } from "@/lib/match";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
-import { RankedResultChips, useRankedNudge } from "@/components/ranked-parts";
+import { RankedResultChips, useOpponentNudge } from "@/components/ranked-parts";
 import { ReturnLink } from "@/components/return-link";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { bossBeforeTurn, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
@@ -146,7 +147,7 @@ function BossSteps({ initial }: { initial: BossView }) {
           apply(
             choice === null
               ? await resolveBossTurn(view.id)
-              : await submitBossChoice(view.id, round, choice.instanceId, choice.front, view.mode === "ranked"),
+              : await submitBossChoice(view.id, round, choice.instanceId, choice.front),
           );
       } catch (cause) {
         // Someone (the timer, another tab) was faster: reload the state.
@@ -160,11 +161,11 @@ function BossSteps({ initial }: { initial: BossView }) {
         setBusy(false);
       }
     },
-    [apply, fetchBoss, view.id, view.mode, isBot],
+    [apply, fetchBoss, view.id, isBot],
   );
 
-  // Classificata: once the choice is sent, ask now and then whether the opponent chose too.
-  useRankedNudge(view.mode === "ranked" && Boolean(current?.my_pending), async () => {
+  // Where the opponent may be the server's: once the choice is sent, ask now and then whether it chose too.
+  useOpponentNudge(opponentMayBeServer(view) && Boolean(current?.my_pending), async () => {
     apply(await resolveBossTurn(view.id));
   });
 

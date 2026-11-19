@@ -16,7 +16,15 @@ import {
   type Side,
 } from "@o-mega/game-engine";
 import { balance } from "@/config/balance";
-import { invokeFunction, remember, toCharacter, type MatchCard, type MatchMode, type MatchPlay } from "@/lib/match";
+import {
+  invokeFunction,
+  remember,
+  toCharacter,
+  type MatchCard,
+  type MatchChallengeInfo,
+  type MatchMode,
+  type MatchPlay,
+} from "@/lib/match";
 import type { OpponentLooks } from "@/lib/cosmetics";
 import type { RankedMatchInfo } from "@/lib/ranked";
 
@@ -51,6 +59,8 @@ export type BossView = {
   mode: MatchMode;
   /** Classificata only (SPEC §8.7). */
   ranked?: RankedMatchInfo | null;
+  /** A Sfida a tema only (SPEC §8.8). */
+  challenge?: MatchChallengeInfo | null;
   format: "boss";
   bot_difficulty: BotDifficulty | null;
   status: "active" | "finished";
@@ -102,9 +112,12 @@ export function playBossTurn(matchId: string, round: number, choice: { instanceI
   });
 }
 
-/** Between players: a secret choice; the turn resolves as soon as both chose. */
-export function submitBossChoice(matchId: string, round: number, instanceId: string, front: number, ranked = false): Promise<BossView> {
-  return invokeBoss({ action: "submit", match_id: matchId, round, card_instance_id: instanceId, front, ...(ranked ? { ranked } : {}) });
+/**
+ * Between players: a secret choice; the turn resolves as soon as both chose. Against the
+ * server's opponent the server itself checks at once whether it has chosen too.
+ */
+export function submitBossChoice(matchId: string, round: number, instanceId: string, front: number): Promise<BossView> {
+  return invokeBoss({ action: "submit", match_id: matchId, round, card_instance_id: instanceId, front });
 }
 
 /** Between players: asks the server to resolve the turn once the time is up. Idempotent. */

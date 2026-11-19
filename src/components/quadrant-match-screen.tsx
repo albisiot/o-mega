@@ -27,9 +27,18 @@ import { useOpponentTitle } from "@/lib/achievements";
 import type { CardCosmetics } from "@/lib/cosmetics";
 import { describeServerError } from "@/lib/errors";
 import { describeEventPoints } from "@/lib/events";
-import { claimVictory, DIFFICULTY_LABELS, fetchMatchState, forfeitMatch, pingMatch, subscribeToUpdates, type MatchCard } from "@/lib/match";
+import {
+  claimVictory,
+  DIFFICULTY_LABELS,
+  fetchMatchState,
+  forfeitMatch,
+  opponentMayBeServer,
+  pingMatch,
+  subscribeToUpdates,
+  type MatchCard,
+} from "@/lib/match";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
-import { RankedResultChips, useRankedNudge } from "@/components/ranked-parts";
+import { RankedResultChips, useOpponentNudge } from "@/components/ranked-parts";
 import { ReturnLink } from "@/components/return-link";
 import {
   bestRotation,
@@ -237,8 +246,8 @@ function QuadrantSteps({ initial }: { initial: QuadrantView }) {
     [apply, fetchQuadrant, view.id, isBot],
   );
 
-  // Classificata: on the opponent's turn, ask now and then whether its move has come.
-  useRankedNudge(view.mode === "ranked" && isActive && view.to_move === "opponent", async () => {
+  // Where the opponent may be the server's: on its turn, ask now and then whether its move has come.
+  useOpponentNudge(opponentMayBeServer(view) && isActive && view.to_move === "opponent", async () => {
     await apply(await resolveQuadrantMove(view.id));
   });
 

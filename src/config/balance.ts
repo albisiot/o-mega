@@ -282,6 +282,19 @@ export const balance = {
         quadrant: { min: 5, max: 20 },
       },
       lateChancePercent: 4,
+      /** The late choices come between max and min seconds before the deadline. */
+      lateSeconds: { min: 4, max: 8 },
+      /**
+       * No choice comes later than this before the deadline, so the client, asking every
+       * nudgeSeconds, sees it with time to spare before the timer ends.
+       */
+      deadlineMarginSeconds: 4,
+      /**
+       * Client only: while the player waits for an opponent who may be the server's
+       * (Classificata, Sfide a tema online), the app asks the server this often whether it
+       * has chosen. Its choice is known only there; with a person the answer is the same.
+       */
+      nudgeSeconds: 2,
     },
   },
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  opponentMayBeServer,
   pingShowsChange,
   switchableVariants,
   teamFromFormation,
@@ -166,5 +167,19 @@ describe("pingShowsChange", () => {
     expect(pingShowsChange(picking, ping({ status: "finished", conquest_settled: false }))).toBe(false);
     expect(pingShowsChange(picking, ping({ status: "finished", conquest_settled: true }))).toBe(true);
     expect(pingShowsChange(view({ status: "finished" }), ping({ status: "finished", conquest_settled: false }))).toBe(true);
+  });
+});
+
+describe("opponentMayBeServer", () => {
+  it("is true in a Classificata and in a Sfida a tema online, where the server's opponent may come", () => {
+    expect(opponentMayBeServer({ mode: "ranked", bot_difficulty: null })).toBe(true);
+    expect(opponentMayBeServer({ mode: "friendly", bot_difficulty: null, challenge: { id: "c1" } })).toBe(true);
+  });
+
+  it("is false between people without a challenge and against any bot", () => {
+    expect(opponentMayBeServer({ mode: "friendly", bot_difficulty: null })).toBe(false);
+    expect(opponentMayBeServer({ mode: "friendly", bot_difficulty: null, challenge: null })).toBe(false);
+    expect(opponentMayBeServer({ mode: "conquest", bot_difficulty: "medium" })).toBe(false);
+    expect(opponentMayBeServer({ mode: "bot", bot_difficulty: "hard", challenge: { id: "c1" } })).toBe(false);
   });
 });

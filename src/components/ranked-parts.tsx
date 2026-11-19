@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { balance } from "@/config/balance";
 import { useOpenPackReveal } from "@/components/pack-reveal-link";
 import { describeServerError } from "@/lib/errors";
 import {
@@ -121,16 +122,17 @@ export function RankedResultChips({ ranked, chip }: { ranked: RankedMatchInfo | 
   );
 }
 
-/** How often a Classificata asks the server whether the opponent has chosen, while waiting for it. */
-const NUDGE_MS = 3000;
+/** How often the app asks the server whether the opponent has chosen, while waiting for it. */
+const NUDGE_MS = balance.ranked.ghosts.nudgeSeconds * 1000;
 
 /**
- * In a Classificata, while the player waits for the opponent (their choice sent, or the
- * opponent's move in Quadrante), asks the server to resolve every few seconds: the
- * opponent's choice may be known only there. Harmless otherwise: resolving answers with
- * the state until the round is ready.
+ * Where the opponent may be the server's (`opponentMayBeServer`: Classificata, Sfide a tema
+ * online), while the player waits for it (their choice sent, or the opponent's move in
+ * Quadrante), asks the server to resolve every few seconds: the opponent's choice may be
+ * known only there, and the server plays it once its moment has come, always before the
+ * deadline. Harmless otherwise: resolving answers with the state until the round is ready.
  */
-export function useRankedNudge(waiting: boolean, nudge: () => Promise<void>) {
+export function useOpponentNudge(waiting: boolean, nudge: () => Promise<void>) {
   const latest = useRef(nudge);
   useEffect(() => {
     latest.current = nudge;

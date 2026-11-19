@@ -37,6 +37,7 @@ import {
   DIFFICULTY_LABELS,
   fetchMatchState,
   forfeitMatch,
+  opponentMayBeServer,
   pingMatch,
   pingShowsChange,
   playRound,
@@ -49,7 +50,7 @@ import {
   type MatchView,
 } from "@/lib/match";
 import { RewardChips, hasReward, useMatchReward } from "@/components/match-reward";
-import { RankedResultChips, useRankedNudge } from "@/components/ranked-parts";
+import { RankedResultChips, useOpponentNudge } from "@/components/ranked-parts";
 import { ChallengeResultChip } from "@/components/challenge-parts";
 import { useOpponentTitle } from "@/lib/achievements";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
@@ -182,7 +183,7 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
           apply(
             choice === null
               ? await resolvePvpRound(view.id)
-              : await submitChoice(view.id, round, choice, view.mode === "ranked"),
+              : await submitChoice(view.id, round, choice),
           );
       } catch (cause) {
         // Someone (the timer, another tab) was faster: reload the state.
@@ -196,11 +197,11 @@ function MatchSteps({ initial, story = false }: { initial: MatchView; story?: bo
         setBusy(false);
       }
     },
-    [apply, view.id, view.mode, isBot],
+    [apply, view.id, isBot],
   );
 
-  // Classificata: once the choice is sent, ask now and then whether the opponent chose too.
-  useRankedNudge(view.mode === "ranked" && Boolean(current?.my_pending_instance_id), async () => {
+  // Where the opponent may be the server's: once the choice is sent, ask now and then whether it chose too.
+  useOpponentNudge(opponentMayBeServer(view) && Boolean(current?.my_pending_instance_id), async () => {
     apply(await resolvePvpRound(view.id));
   });
 

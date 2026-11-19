@@ -108,9 +108,12 @@ export function playTripleRound(matchId: string, round: number, placement: strin
   return invokeTriple({ action: "triple_play", match_id: matchId, round, card_instance_ids: placement });
 }
 
-/** Between players: a secret placement; the round resolves as soon as both placed. */
-export function submitTriplePlacement(matchId: string, round: number, placement: string[], ranked = false): Promise<TripleView> {
-  return invokeTriple({ action: "triple_submit", match_id: matchId, round, card_instance_ids: placement, ...(ranked ? { ranked } : {}) });
+/**
+ * Between players: a secret placement; the round resolves as soon as both placed. Against
+ * the server's opponent the server itself checks at once whether it has placed too.
+ */
+export function submitTriplePlacement(matchId: string, round: number, placement: string[]): Promise<TripleView> {
+  return invokeTriple({ action: "triple_submit", match_id: matchId, round, card_instance_ids: placement });
 }
 
 /** Between players: asks the server to resolve the round once the time is up. Idempotent. */

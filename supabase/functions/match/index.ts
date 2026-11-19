@@ -444,7 +444,7 @@ type MatchContext = {
     /** Events: the first side with this many seals on the grid wins; null without a target. */
     quadrant_seal_target?: number | null;
     /**
-     * Classificata against the server's opponent (side b): its difficulty, and whether it
+     * Against the server's opponent (side b; Classificata, Sfide a tema online): its difficulty, and whether it
      * has chosen in the current round or move by now. Null in every other match.
      */
     ghost?: { difficulty: BotDifficulty; ready: boolean } | null;
@@ -1381,8 +1381,10 @@ async function resolvePvpRound(userId: string, matchId: string) {
 
   const pendingOf = (pendingSide: Side) => pending.find((p) => p.side === pendingSide) ?? null;
   const expired = Date.now() > deadline + loaded.graceSeconds * 1000;
-  // Classificata against the server's opponent (side b, the player is a): it plays with
-  // the bots of the mode, and only once its time to choose has come (SPEC §8.7).
+  // Against the server's opponent (side b, the player is a; Classificata and Sfide a tema
+  // online): it plays with the bots of the mode, and only once its moment to choose has
+  // come, drawn by the database always before the deadline (SPEC §8.7). Clients ask here
+  // every few seconds while they wait for it, as they cannot tell it from a person.
   const ghost = match.ghost ?? null;
 
   let saved;
@@ -1455,6 +1457,27 @@ async function resolvePvpRound(userId: string, matchId: string) {
   return stateFor(matchId, side);
 }
 
+/**
+ * Whether the opponent of a match between players is the server's (Classificata, SPEC §8.7;
+ * Sfida a tema online, §8.8): its choice is known only here. Decided by the database, never
+ * by the client, which cannot tell the server's opponent from a person.
+ */
+async function againstServerOpponent(matchId: string): Promise<boolean> {
+  const { data, error } = await admin.from("ranked_matches").select("ghost_id").eq("match_id", matchId).maybeSingle();
+  if (error) throw new Error(error.message);
+  return Boolean(data?.ghost_id);
+}
+
+/**
+ * After a choice: resolves at once when both sides have chosen. Against the server's opponent
+ * the database cannot know that (its choice is played here, once its moment has come), so the
+ * round is checked here too: it resolves now if the opponent has already chosen.
+ */
+async function afterChoice(userId: string, matchId: string, status: unknown) {
+  if (status === "ready" || (await againstServerOpponent(matchId))) return resolvePvpRound(userId, matchId);
+  return check(await admin.rpc("match_state_for_user", { p_match_id: matchId, p_user: userId }));
+}
+
 /** Allarme Triplo between players: the cards of the round, one per threat, in one choice. */
 async function submitTriple(userId: string, body: Record<string, unknown>) {
   const placement = placementOf(body.card_instance_ids);
@@ -1469,10 +1492,7 @@ async function submitTriple(userId: string, body: Record<string, unknown>) {
       p_card_instance_ids: placement,
     }),
   );
-  // In a Classificata the opponent may be the server's, whose choice only the server
-  // knows: resolving checks, and answers with the state when the round is not ready.
-  if (status === "ready" || body.ranked === true) return resolvePvpRound(userId, body.match_id);
-  return check(await admin.rpc("match_state_for_user", { p_match_id: body.match_id, p_user: userId }));
+  return afterChoice(userId, body.match_id, status);
 }
 
 async function submitChoice(userId: string, body: Record<string, unknown>) {
@@ -1490,10 +1510,7 @@ async function submitChoice(userId: string, body: Record<string, unknown>) {
       ...(front === null ? {} : { p_front_slot: front + 1 }),
     }),
   );
-  // In a Classificata the opponent may be the server's, whose choice only the server
-  // knows: resolving checks, and answers with the state when the round is not ready.
-  if (status === "ready" || body.ranked === true) return resolvePvpRound(userId, body.match_id);
-  return check(await admin.rpc("match_state_for_user", { p_match_id: body.match_id, p_user: userId }));
+  return afterChoice(userId, body.match_id, status);
 }
 
 // ---------------------------------------------------------------------------
