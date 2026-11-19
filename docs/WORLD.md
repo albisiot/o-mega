@@ -433,6 +433,45 @@ Da P218 a P231: un personaggio per ciascuno dei 14 poteri che il motore conoscev
 | P230 | TF-184 | Omega, Cattivi | Capobranco | **Matins** (Compagnia Lete): la voce del notiziario del mattino, un richiamo di branco. | VEL 0, TEC 1 |
 | P231 | TF-039 | Omega, Cattivi | Nebbia | **Thicket** (Figli dell'Ultima): il bosco di nebbia di Vall'Oscura. | ENE 0, PSI 0, TEC 0, VEL 1 |
 
+### Dai Mille Soli
+
+Da P232 a P261: trenta personaggi dalla Terra dei Mille Soli, la E-9 del compendio (*The Thousand Suns*): una galassia di duemila mondi con un impero al tramonto, il **Novecielo**, un ordine di duellanti mistici in decadenza, l'**Ordine della Lama Muta**, e i mondi di confine in guerra contro l'impero. La notte dell'Ora Zero una nave è uscita in volo dallo strappo sopra il golfo, l'unico varco che si attraversa solo volando, e la loro guerra è continuata nel porto. I mistici sentono la **Trama**, il codice sotto la realtà del compendio, e la piegano: inganno, preveggenza, fulmini, scudi di luce. Le loro armi a energia non sono mai lame dritte: frusta, falce, doppia lama curva, scudo, lancia, alabarda. Il tono è quello di un'opera spaziale, ma ispirata solo nei generi: nessun nome, oggetto o disegno riconoscibile di saghe esistenti. Appello (TF-643) e Legatura (TF-458) tengono nome, ruolo, vero nome e frase della loro scheda; gli altri sono nuovi. Tutti hanno il tratto Origine Strappo. Poteri esistenti, ognuno su un posto ancora libero per la sua fazione. Gli Omega usano effetti esistenti: l'aura per Caligine, le scariche elettriche per Interregno. Una variante ciascuno, in uno stile esistente con colori propri (Cometa e Fiamma due volte, gli altri 26 stili una).
+
+Arrivano **fuori dai pacchetti** (`in_packs` falso): nessuna via automatica li dà finché un amministratore non li mette nei pacchetti dalla pagina *Carte nei pacchetti* (SPEC §7).
+
+| Carta | Rarità e fazione | Potere | Personaggio | Il difetto nei valori |
+|---|---|---|---|---|
+| P232 | Delta, Eroi | | **Calafato** (Lanterne): meccanica della nave ribelle caduta nel golfo, ora tiene a galla i pescherecci. | MAG 0, PSI 0, COM 1 |
+| P233 | Delta, Eroi | | **Raffica** (Custodi): mitragliere di torretta dei mondi di confine, di vedetta sulla torre del porto. | MAG 0, PSI 0 |
+| P234 | Delta, Eroi | | **Patella** (Lanterne): robot da scafo a otto zampe, si attacca dove c'è una falla. | MAG 0, PSI 0, COM 0 |
+| P235 | Delta, Cattivi | | **Sentinella** (Compagnia Lete): soldato di guarnigione dell'impero, di guardia anche senza ordini. | MAG 0, PSI 0, FUR 1 |
+| P236 | Delta, Cattivi | | **Sortita** (Compagnia Lete): pilota di intercettori, velocissima e nel panico appena va male. | VOL 1, MAG 0 |
+| P237 | Delta, Cattivi | | **Gabella** (Compagnia Lete): esattrice delle decime imperiali, ora riscuote le tasse d'attracco. | FOR 0, VEL 1 |
+| P238 | Delta, Cattivi | | **Bracco** (Compagnia Lete): drone segugio d'ottone e porcellana, fiuta chi arriva dallo strappo. | FOR 1, MAG 0, PSI 0 |
+| P239 | Delta, Neutrali | | **Ostinato** (Sciolti): musicista alieno di una cantina, suona da undici anni la stessa canzone. | FOR 0, COM 0 |
+| P240 | Delta, Neutrali | | **Ferraglia** (Sciolti): rigattiera aliena a quattro braccia, compra i pezzi delle navi cadute. | VEL 0, MAG 1 |
+| P241 | Delta, Neutrali | | **Alaggio** (Sciolti): pilota di rimorchiatore della Gilda delle Rotte, trascina i relitti fuori dal golfo. | MAG 0, PSI 1, FUR 0 |
+| P242 | Gamma, Eroi | Grande prova | **Virata** (Lanterne): asso dei caccia ribelli, vola meglio nella battaglia decisiva. | MAG 0, PSI 1 |
+| P243 | Gamma, Eroi | Vendetta | **Rivalsa** (Lanterne): sabotatrice che ha perso la sua luna per mano dell'impero. | MAG 0, PSI 0 |
+| P244 | Gamma, Eroi | Specialità (VEL) | **Folata** (Custodi): esploratore su moto a levitazione, parte prima di pensare. | INT 1, MAG 0 |
+| P245 | Gamma, Cattivi | Specialità (COM) | **Testuggine** (Compagnia Lete): soldato d'assalto pesante dietro uno scudo a torre. | INT 1, MAG 0, PSI 0 |
+| P246 | Gamma, Cattivi | Specialità (PER) | **Udienza** (Figli dell'Ultima): inquisitrice dell'impero, sente il respiro di chi mente. | FOR 1, MAG 1, COM 1 |
+| P247 | Gamma, Cattivi | Lupo solitario | **Taglia** (Sciolti, schierata con i Cattivi): cacciatrice di taglie aliena, sempre da sola. | MAG 0, PSI 0 |
+| P248 | Gamma, Neutrali | Spia (il più raro) | **Soffiata** (Sciolti): informatrice aliena delle cantine, sa chi vale di più in una sala. | FOR 0, COM 1 |
+| P249 | Gamma, Neutrali | Specialità (FOR) | **Stazza** (Sciolti): copilota anfibio di un mercantile, enorme e buono. | MAG 1, PSI 0, FUR 1 |
+| P250 | Gamma, Neutrali | Implacabile (in svantaggio) | **Azzardo** (Banco): giocatrice del Banco di Kest, quando perde non sbaglia più. | FOR 1, MAG 0 |
+| P251 | Beta, Eroi | Contrattacco | **Novizia** (Lanterne): allieva della Lama Muta a metà addestramento, impara dai più forti. | TEC 1, FUR 0 |
+| P252 | Beta, Eroi | Schermato (+2) | **Egida** (Custodi): cavaliera dei mondi di confine, il suo scudo di luce ferma i fulmini. | VEL 1, TEC 1, FUR 0 |
+| P253 | Beta, Cattivi | Legame (almeno 3) | **Plancia** (Compagnia Lete): ammiraglio del Novecielo senza più flotta. | FOR 1, MAG 0, PSI 1, FUR 0 |
+| P254 | Beta, Cattivi | Davide (1 grado) | **Legatura** (Figli dell'Ultima, TF-458): cacciatore di duellanti, immune a ogni lama che non l'ha ucciso. | INT 1, TEC 0 |
+| P255 | Beta, Neutrali | Adattabile | **Franchigia** (Sciolti): capitano contrabbandiere, le rotte strane sono le sue. | VOL 1, ENE 1, MAG 0, PSI 1 |
+| P256 | Beta, Neutrali | Eclettico | **Glossa** (Banco): robot interprete di corte, quattrocento lingue e nessun pugno. | FOR 1, COM 0 |
+| P257 | Alfa, Eroi | Sfavorito (+2) | **Appello** (Lanterne, TF-643): la maestra che guida la colonna dei profughi e mette ai voti ogni scelta. | FOR 1, MAG 0 |
+| P258 | Alfa, Cattivi | Slancio (+3) | **Sferza** (Figli dell'Ultima): duellista caduta della Lama Muta, con una frusta di Trama. | INT 1, TEC 0, FUR 1 |
+| P259 | Alfa, Neutrali | Sacrificio | **Commiato** (Sciolti): vecchio maestro della Lama Muta in esilio, il suo compito è farsi da parte. | FOR 1, VEL 1, TEC 0 |
+| P260 | Omega, Eroi | Nebbia | **Caligine** (Custodi): l'ultima grande maestra della Lama Muta, chi la guarda non ricorda chi ha visto. | FOR 0, COM 0, TEC 1 |
+| P261 | Omega, Cattivi | Catalizzatore | **Interregno** (Figli dell'Ultima): il reggente che da diciannove anni occupa per delega il trono vuoto del Novecielo. | VEL 0, FUR 0, COM 1, TEC 1 |
+
 ## 6. Minacce
 
 Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richiede Forza e Tecnologia. Molti nomi attuali funzionano già e vanno solo ambientati a Nuova Megara. Il testo di colore può usare il tono di un bollettino del sismografo.
@@ -528,7 +567,7 @@ Gli effetti cambiano solo l'aspetto, mai valori o regole. L'abbinamento è in `s
 | Alfa | Olografico, inclinazione 3D | Olografico |
 | Omega | Olografico, inclinazione 3D, effetto personale | Olografico |
 
-Effetti personali Omega: Holdout l'aura, Absentia le scariche elettriche, Multitude il glitch, Mongibello le braci, Wirepuller i fili da puparo che pendono dall'alto e ogni tanto vengono tirati, Parabellum il mirino di dodici lenti che si sposta sulla carta e aggancia un bersaglio, Ordito i fili come Wirepuller, Mordacchia le braci, Ansa gli anelli d'acqua che si allargano.
+Effetti personali Omega: Holdout l'aura, Absentia le scariche elettriche, Multitude il glitch, Mongibello le braci, Wirepuller i fili da puparo che pendono dall'alto e ogni tanto vengono tirati, Parabellum il mirino di dodici lenti che si sposta sulla carta e aggancia un bersaglio, Ordito i fili come Wirepuller, Mordacchia le braci, Ansa gli anelli d'acqua che si allargano. Tra gli Omega aggiunti dopo, Prosody il glitch, Novenarium, Thicket e Caligine l'aura, Matins gli anelli d'acqua, Interregno le scariche elettriche.
 
 ### Nomi delle carte
 

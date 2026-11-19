@@ -1,6 +1,13 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "20 novembre 2026",
+    changes: [
+      "Dallo strappo sono arrivati trenta personaggi dalla Terra dei Mille Soli, dove un impero al tramonto, un ordine di duellanti che piegano la Trama e i mondi di confine si fanno la guerra tra le stelle: piloti, contrabbandieri, cacciatori di taglie, robot, soldati dell'impero e maestri con armi di luce, ognuno con la sua variante. Per ora non escono dai pacchetti: arriveranno più avanti. Fino ad allora non li trovi nell'album, nello starter set, nelle varianti a caso dei premi e del Negozio delle Schegge, né nelle squadre dei bot.",
+      "I bot non schierano più le carte che si ricevono salendo di livello (Nadir, Nimbus, Tempestas e Novissima), quindi in Conquista contro un bot non si possono più vincere: come dice la regola, arrivano solo con il livello. Le imprese che chiedono tutti i personaggi di una fazione o tutte le varianti di uno stile contano solo i personaggi che puoi già trovare.",
+    ],
+  },
+  {
     date: "19 novembre 2026",
     changes: [
       "Nelle Sfide a tema online, quando l'avversario arrivava dopo l'attesa, ogni turno durava fino allo scadere del tempo, anche se l'avversario aveva già scelto. Ora il turno si chiude appena avete scelto tutti e due, in Classica, Grande Minaccia, Allarme Triplo e Quadrante, come in Classificata.",
