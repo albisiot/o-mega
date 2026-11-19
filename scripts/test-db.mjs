@@ -53,6 +53,9 @@ const ADMIN_KEYS = new Set([
   "emergency_week.prizes.min_passed", "emergency_week.prizes.rank1_coins", "emergency_week.prizes.rank1_packs",
   "emergency_week.prizes.rank2_coins", "emergency_week.prizes.rank2_packs", "emergency_week.prizes.rank3_coins",
   "emergency_week.prizes.rank3_packs", "emergency_week.prizes.others_coins", "emergency_week.prizes.others_packs",
+  "emergency.prizes.rank1_shards", "emergency.prizes.rank2_shards", "emergency.prizes.rank3_shards",
+  "emergency.prizes.others_shards", "emergency_week.prizes.rank1_shards", "emergency_week.prizes.rank2_shards",
+  "emergency_week.prizes.rank3_shards", "emergency_week.prizes.others_shards",
   // /gestione-ricompense, section Pacchetti
   "packs.variant_chance_percent",
   // /gestione-schegge

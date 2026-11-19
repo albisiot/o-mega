@@ -102,6 +102,11 @@ export const balance = {
       rank3Packs: 0,
       othersCoins: 25,
       othersPacks: 0,
+      /** Schegge by place too (SPEC §4.8), 0 to shards.maxReward. */
+      rank1Shards: 0,
+      rank2Shards: 0,
+      rank3Shards: 0,
+      othersShards: 0,
     },
   },
 
@@ -155,6 +160,11 @@ export const balance = {
       rank3Packs: 1,
       othersCoins: 50,
       othersPacks: 0,
+      /** Schegge by place too (SPEC §4.8), 0 to shards.maxReward. */
+      rank1Shards: 0,
+      rank2Shards: 0,
+      rank3Shards: 0,
+      othersShards: 0,
     },
   },
 
@@ -443,6 +453,11 @@ export const balance = {
     chosenKindCosmeticCost: 2,
     /** A random variant the player does not own yet. */
     newVariantCost: 3,
+    /**
+     * Most Schegge one prize can give: bonus codes, event and challenge targets, daily objectives,
+     * imprese and the places of the Emergenza leaderboards (0 = none; the server checks the same).
+     */
+    maxReward: 100,
   },
 
   /** Packs an admin creates from the app (/gestione-pacchetti-speciali); price and odds are per pack. */
