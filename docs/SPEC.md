@@ -1306,6 +1306,14 @@ Chiesto dall'utente il 19 novembre 2026: meno attesa passando da una pagina all'
 - **La Home prepara le altre pagine:** quando è pronta, dopo 800 ms carica quello che le altre schede non hanno ancora visto (catalogo, collezione, Negozio con i pacchetti speciali, monete, e le caselle di Gioca), così anche la prima visita di ogni scheda si apre piena.
 - **La Collezione a rate:** l'album ha oltre 200 tessere e disegnarle tutte insieme tratteneva la pagina (circa 0,3 s su un computer). Ora la pagina si apre con le prime 24 e le altre arrivano subito dopo, in una Transition di React che un tocco può interrompere. Tornando da una carta l'album le disegna tutte subito, perché il punto in cui era può essere in basso.
 
+### 11.6 Testo non selezionabile
+
+Chiesto dall'utente il 19 novembre 2026: nell'app le parole non si devono poter selezionare, tranne nell'Editor degli admin.
+
+- **Fuori dall'Editor** (`globals.css`, nel livello base): `user-select: none` e `-webkit-touch-callout: none` sul `body`. Una pressione lunga o un doppio tocco non evidenziano il testo e non aprono il menu di Safari per copiarlo, né quello di un link o di un'immagine.
+- **Restano selezionabili:** i campi in cui si scrive (`input`, `textarea`, elementi `contenteditable`) e il testo fatto per essere copiato, con una sua classe: il codice da dare a un amico (`select-all`, che lo seleziona tutto con un tocco).
+- **Nell'Editor** (`/editor` e le pagine `/gestione-*`; in `next dev` anche `/prova-editor-*`) la selezione torna come prima: `TextSelection`, montato nel layout, mette la classe `text-selectable` su `<html>` secondo la pagina (`allowsTextSelection` in `src/lib/text-selection.ts`, coperta da test).
+
 ## 12. Milestone di sviluppo
 
 **Fase 1 — Base giocabile**
