@@ -88,6 +88,7 @@ export function CardScreen({
 
   // The frame and effect the player applied (SPEC §4.8): a nicety, the page works without them.
   const cosmetics = useCosmetics();
+  const shown = shownCosmetics(appliedTo(cosmetics, card.id));
   const looks = owned ? ownedLooks(card, owned) : [];
   const look = looks.find((l) => chosenLook?.cardId === card.id && l.key === chosenLook.key) ?? looks[0];
   return (
@@ -133,7 +134,7 @@ export function CardScreen({
                       key={card.id}
                       card={{ ...card, art_url: look.art_url, variant: look.variant }}
                       abilities={abilities}
-                      cosmetics={shownCosmetics(appliedTo(cosmetics, card.id))}
+                      cosmetics={shown}
                       fit
                       animated
                     />
@@ -152,6 +153,8 @@ export function CardScreen({
                       name={look.variant ? `${card.name} · ${look.label}` : card.name}
                       label={look.variant ? `Guarda il disegno ${look.label}` : "Guarda il disegno"}
                       className="min-h-12 flex-1"
+                      card={card}
+                      cosmetics={shown}
                     />
                   )}
                   <CardModelButton key={card.id} code={card.code} name={card.name} className="min-h-12 flex-1" />

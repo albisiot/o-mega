@@ -9,6 +9,8 @@
 //   /prova-schegge/?s=album          the album, with frames and effects on the characters below
 //   /prova-schegge/?s=carta&c=P002   a character's page: open «Cornice ed effetto» or the copies
 //   /prova-schegge/?s=negozio        the shop's Schegge tab
+//   /prova-schegge/?s=disegni        every frame around the whole drawing («Guarda il disegno»)
+//   /prova-schegge/?s=disegni-effetti  every effect over the whole drawing
 //   /prova-schegge/?s=squadra        the team picker of every mode (tap a card to put it in the squad)
 //   /prova-schegge/?s=mano           the hand of a match: every frame, an effect on most
 //   /prova-schegge/?s=pacchetto      a pack opening with characters that have a frame or an effect
@@ -16,6 +18,7 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Album } from "@/components/album";
+import { DressedArt } from "@/components/art-viewer";
 import { CardDetailProvider } from "@/components/card-detail";
 import { CardLooksProvider } from "@/components/card-looks";
 import { CardScreen } from "@/components/card-screen";
@@ -38,6 +41,8 @@ import {
 } from "@/lib/cosmetics";
 import type { VariantCopy } from "@/lib/match";
 import type { PackOpening } from "@/lib/packs";
+import { fullArtUrl } from "@/lib/art";
+import { withBasePath } from "@/lib/base-path";
 import { getSupabase } from "@/lib/supabase/client";
 import { keepCosmetics } from "@/lib/use-cosmetics";
 
@@ -257,6 +262,32 @@ function Scene() {
       <main className="flex flex-1 flex-col gap-2 px-3 py-3">
         <h1 className="font-display text-3xl uppercase text-comic-yellow">Negozio · Schegge</h1>
         <ShardShop preview={loaded.state} />
+      </main>
+    );
+  }
+
+  if (scene === "disegni" || scene === "disegni-effetti") {
+    const looks =
+      scene === "disegni"
+        ? FRAME_CODES.map((frame) => ({ key: frame, name: COSMETIC_INFO[frame].name, look: { frame, effect: null, serial: null } }))
+        : EFFECT_CODES.map((effect) => ({ key: effect, name: COSMETIC_INFO[effect].name, look: { frame: null, effect, serial: 37 } }));
+    const artUrl = card.art_url ?? "";
+    return (
+      <main className="grid grid-cols-2 gap-x-2 gap-y-4 bg-black p-3 pb-10">
+        {looks.map((item) => (
+          <figure key={item.key} className="flex flex-col items-center gap-1">
+            <div className="h-[260px] w-full">
+              <DressedArt
+                src={withBasePath(fullArtUrl(artUrl) ?? artUrl)}
+                artUrl={artUrl}
+                alt={card.name}
+                card={card}
+                cosmetics={item.look}
+              />
+            </div>
+            <figcaption className="font-display text-lg uppercase text-comic-yellow">{item.name}</figcaption>
+          </figure>
+        ))}
       </main>
     );
   }
