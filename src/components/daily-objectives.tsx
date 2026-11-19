@@ -61,7 +61,7 @@ export function HomeObjectivesBar() {
       href="/obiettivi/"
       aria-label={`Obiettivi del giorno: ${objectives ? summarizeObjectives(objectives) : "caricamento"}`}
       className={`flex min-h-12 min-w-0 flex-1 items-center justify-between gap-2 px-3 py-1 short:min-h-11 ${
-        toClaim > 0 ? "bg-comic-yellow text-black" : "bg-panel"
+        toClaim > 0 ? "tile bg-comic-yellow text-black" : "bg-panel"
       }`}
     >
       <span className="min-w-0">

@@ -161,7 +161,7 @@ function BotGrid({ query, texts }: { query: string; texts: BotTexts }) {
           key={difficulty}
           href={`/squadra/?${query}difficulty=${difficulty}`}
           aria-label={`Contro il bot ${DIFFICULTY_LABELS[difficulty]}: ${texts[difficulty].detail}`}
-          className="flex min-h-12 flex-col justify-center bg-comic-cyan px-3 py-1 text-black"
+          className="tile flex min-h-12 flex-col justify-center bg-comic-cyan px-3 py-1 text-black"
         >
           <span className="font-display text-xl uppercase leading-6">{DIFFICULTY_LABELS[difficulty]}</span>
           <span className="text-xs font-bold leading-4">{texts[difficulty].short}</span>
@@ -213,7 +213,7 @@ function OnlineGroup({ query, randomDetail }: { query: string; randomDetail: str
       <div className="grid grid-cols-2 gap-2">
         <Link
           href={`/squadra/?mode=queue${query}`}
-          className="flex min-h-12 flex-col justify-center bg-comic-yellow px-3 py-1 text-black"
+          className="tile flex min-h-12 flex-col justify-center bg-comic-yellow px-3 py-1 text-black"
         >
           <span className="font-display text-xl uppercase leading-6">Avversario casuale</span>
           <span className="text-xs font-bold leading-4">{randomDetail}</span>
@@ -435,7 +435,7 @@ function TodayTile({
       href={href}
       aria-disabled={disabled}
       aria-label={`${title}: ${detail}${state ? `, ${state}` : ""}`}
-      className={`flex min-h-12 min-w-0 flex-[1_1_0] flex-col justify-center px-2.5 py-1 text-black short:min-h-11 ${className} ${
+      className={`tile flex min-h-12 min-w-0 flex-[1_1_0] flex-col justify-center px-2.5 py-1 text-black short:min-h-11 ${className} ${
         disabled ? "pointer-events-none opacity-40" : ""
       }`}
     >
@@ -485,7 +485,7 @@ function EmergencyWeekRow({ week, now, compact = false }: { week: EmergencyThisW
       <Link
         href={emergencyHref("week")}
         aria-label={`Emergenza della settimana: ${days}${state ? `, ${state}` : ""}`}
-        className="flex min-h-10 min-w-0 flex-1 flex-col justify-center bg-foreground px-2.5 py-1 text-black short:min-h-9"
+        className="tile flex min-h-10 min-w-0 flex-1 flex-col justify-center bg-foreground px-2.5 py-1 text-black short:min-h-9"
       >
         <span className="block truncate font-display text-[15px] uppercase leading-5">Settimana</span>
         <span className="block truncate text-[12px] font-bold leading-4">{state ?? days}</span>
@@ -496,7 +496,7 @@ function EmergencyWeekRow({ week, now, compact = false }: { week: EmergencyThisW
     <Link
       href={emergencyHref("week")}
       aria-label={`Emergenza della settimana: ${days}${state ? `, ${state}` : ""}`}
-      className="flex min-h-10 shrink-0 items-center gap-2 bg-foreground px-2.5 py-1 text-black short:min-h-9"
+      className="tile flex min-h-10 shrink-0 items-center gap-2 bg-foreground px-2.5 py-1 text-black short:min-h-9"
     >
       <span className="shrink-0 -skew-x-8 bg-black px-1.5 font-sfx text-[13px] leading-5 tracking-wide text-comic-yellow">
         Settimana
@@ -526,7 +526,7 @@ function EmergencyChallengeRow({ challenge }: { challenge: Challenge }) {
     <Link
       href={challengeEmergencyHref(challenge)}
       aria-label={`Emergenza a tema ${challenge.title}: ${state}`}
-      className="flex min-h-10 min-w-0 flex-[1.4_1_0] items-center gap-1.5 px-2 py-1 text-black short:min-h-9"
+      className="tile flex min-h-10 min-w-0 flex-[1.4_1_0] items-center gap-1.5 px-2 py-1 text-black short:min-h-9"
       style={{ background: challenge.color }}
     >
       <span className="shrink-0 -rotate-2 border-2 border-black px-1 font-sfx text-[12px] leading-[14px] tracking-wide">★</span>
@@ -610,7 +610,7 @@ function ActiveMatchBanner({ match, onForfeit }: { match: ActiveMatch; onForfeit
     <div className="flex shrink-0 gap-2">
       <Link
         href={`/partita/?id=${match.id}`}
-        className="flex min-h-14 min-w-0 flex-1 items-center justify-between gap-2 bg-comic-cyan px-3 py-1.5 text-black"
+        className="tile flex min-h-14 min-w-0 flex-1 items-center justify-between gap-2 bg-comic-cyan px-3 py-1.5 text-black"
       >
         <span className="min-w-0">
           <span className="block font-display text-[17px] uppercase leading-5">Hai una partita in corso</span>

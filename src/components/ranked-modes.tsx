@@ -70,7 +70,7 @@ export function RankedModesView({
         {active && (
           <Link
             href={`/partita/?id=${active.id}`}
-            className="flex min-h-11 shrink-0 items-center justify-between gap-3 bg-comic-cyan px-3.5 py-1 text-black"
+            className="tile flex min-h-11 shrink-0 items-center justify-between gap-3 bg-comic-cyan px-3.5 py-1 text-black"
           >
             <span className="font-display text-[17px] uppercase leading-5">Hai una partita in corso</span>
             <span className="whitespace-nowrap text-[13px] font-extrabold">riprendi →</span>

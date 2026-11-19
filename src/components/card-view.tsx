@@ -69,11 +69,11 @@ export function CardView({
   const article = (
     <article
       style={style}
-      className={`rounded-xl ${large ? `w-[300px] p-[7px] ${fit ? "flex min-h-0 flex-col" : ""}` : `w-full p-1 ${fill ? "flex h-full flex-col" : ""}`} ${
+      className={`card-frame rounded-xl ${large ? `card-frame-lg w-[300px] p-[7px] ${fit ? "flex min-h-0 flex-col" : ""}` : `w-full p-1 ${fill ? "flex h-full flex-col" : ""}`} ${
         effects.includes("aura") ? "fx-aura" : ""
       } ${glow ? "animate-rare-glow" : ""}`}
     >
-      <div className={`relative z-[1] flex flex-col overflow-hidden rounded-md bg-panel text-foreground ${fill ? "min-h-0 flex-1" : fit ? "min-h-0" : ""}`}>
+      <div className={`card-face relative z-[1] flex flex-col overflow-hidden rounded-md bg-panel text-foreground ${fill ? "min-h-0 flex-1" : fit ? "min-h-0" : ""}`}>
         <header className={`relative z-[2] flex shrink-0 items-center justify-between gap-2 ${large ? "h-12 px-2.5" : "h-8 px-1.5"}`}>
           <CardName card={card} size={size} />
           <RarityTag rarity={card.rarity} compact={!large} />

@@ -109,7 +109,7 @@ export function EventBanner({ compact = false }: { compact?: boolean }) {
         onClick={() => open(withRewards)}
         disabled={opening}
         aria-label={`Premio evento ottenuto: ${withRewards.title}. Aprilo`}
-        className="flex min-h-12 min-w-0 flex-[1.6_1_0] flex-col justify-center bg-comic-yellow px-3 py-1 text-left text-black short:min-h-11"
+        className="tile flex min-h-12 min-w-0 flex-[1.6_1_0] flex-col justify-center bg-comic-yellow px-3 py-1 text-left text-black short:min-h-11"
       >
         <span className="block truncate font-display text-[15px] uppercase leading-5">Premio evento!</span>
         <span className="block truncate text-[12px] font-bold leading-4">{opening ? "…" : "Tocca per aprirlo"}</span>
@@ -123,7 +123,7 @@ export function EventBanner({ compact = false }: { compact?: boolean }) {
         type="button"
         onClick={() => open(withRewards)}
         disabled={opening}
-        className="flex min-h-12 w-full shrink-0 items-center justify-between gap-3 bg-comic-yellow px-3.5 py-1 text-left text-black short:min-h-11"
+        className="tile flex min-h-12 w-full shrink-0 items-center justify-between gap-3 bg-comic-yellow px-3.5 py-1 text-left text-black short:min-h-11"
       >
         <span className="min-w-0">
           <span className="block font-display text-[17px] uppercase leading-5">Premio evento ottenuto!</span>
@@ -179,7 +179,7 @@ export function EventBanner({ compact = false }: { compact?: boolean }) {
       <Link
         href="/evento"
         aria-label={`Evento ${event.title}: ${event.my_points} punti, finisce tra ${formatEventCountdown(Date.parse(event.ends_at) - now)}`}
-        className="flex min-h-12 min-w-0 flex-[1.6_1_0] flex-col justify-center gap-0.5 bg-comic-yellow px-3 py-1 text-black short:min-h-11"
+        className="tile flex min-h-12 min-w-0 flex-[1.6_1_0] flex-col justify-center gap-0.5 bg-comic-yellow px-3 py-1 text-black short:min-h-11"
       >
         <span className="block truncate font-display text-[15px] uppercase leading-5">{event.title}</span>
         <span className="block truncate text-[12px] font-extrabold leading-4">
@@ -196,7 +196,7 @@ export function EventBanner({ compact = false }: { compact?: boolean }) {
     <Link
       href="/evento"
       aria-label={`Evento ${event.title}: ${event.my_points} punti`}
-      className="flex shrink-0 flex-col gap-1 bg-comic-yellow px-3.5 py-1.5 text-black"
+      className="tile flex shrink-0 flex-col gap-1 bg-comic-yellow px-3.5 py-1.5 text-black"
     >
       <span className="flex items-baseline justify-between gap-3">
         <span className="min-w-0 truncate font-display text-[17px] uppercase leading-5">{event.title}</span>

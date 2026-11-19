@@ -188,13 +188,13 @@ function Scenes() {
 function FakeNav() {
   const tabs = ["Home", "Gioca", "Collezione", "Negozio", "Profilo"];
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t-[3px] border-foreground bg-black">
+    <nav className="nav-console fixed inset-x-0 bottom-0 z-20 border-t-[3px] border-foreground">
       <ul className="mx-auto flex max-w-md">
         {tabs.map((tab) => (
           <li
             key={tab}
             className={`flex h-[60px] flex-1 flex-col items-center justify-center gap-0.5 text-[11px] ${
-              tab === "Gioca" ? "bg-comic-yellow font-extrabold text-black" : "font-bold text-muted"
+              tab === "Gioca" ? "nav-key-on font-extrabold text-black" : "font-bold text-muted"
             }`}
           >
             <span className="h-[22px] w-[22px] border-2 border-current" />

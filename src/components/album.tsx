@@ -296,7 +296,7 @@ function AlbumTile({
     <Link
       href={`/carta/?id=${card.id}${variant ? `&v=${encodeURIComponent(variant.style)}` : ""}`}
       onClick={onOpen}
-      className="relative flex flex-col rounded-[7px] p-1"
+      className="card-frame relative flex flex-col rounded-[7px] p-1"
       style={{ background: owned ? rarityFrame(card.rarity) : "var(--panel-raised)" }}
     >
       {copies > 1 && (

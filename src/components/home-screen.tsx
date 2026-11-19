@@ -121,7 +121,7 @@ export function HomeScreen({ profile }: { profile: Profile }) {
         {activeMatch && (
           <Link
             href={`/partita/?id=${activeMatch.id}`}
-            className="flex min-h-12 shrink-0 items-center justify-between gap-3 bg-comic-cyan px-3.5 py-1 text-black short:min-h-11"
+            className="tile flex min-h-12 shrink-0 items-center justify-between gap-3 bg-comic-cyan px-3.5 py-1 text-black short:min-h-11"
           >
             <span className="font-display text-[17px] uppercase leading-5">Hai una partita in corso</span>
             <span className="flex items-center gap-2 whitespace-nowrap text-[13px] font-extrabold">

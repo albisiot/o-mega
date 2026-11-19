@@ -36,7 +36,7 @@ export function BottomNav() {
       <nav
         aria-label="Navigazione principale"
         // Half the safe area: the icons still clear the iPhone home indicator, without a large empty band.
-        className="fixed inset-x-0 bottom-0 z-20 border-t-[3px] border-foreground bg-black pb-[calc(env(safe-area-inset-bottom)*0.5)]"
+        className="nav-console fixed inset-x-0 bottom-0 z-20 border-t-[3px] border-foreground pb-[calc(env(safe-area-inset-bottom)*0.5)]"
       >
         <ul className="mx-auto flex max-w-md">
           {TABS.map((tab) => {
@@ -48,7 +48,7 @@ export function BottomNav() {
                   onClick={() => setTapped({ from: pathname, href: tab.href })}
                   aria-current={active ? "page" : undefined}
                   className={`flex h-[60px] flex-col items-center justify-center gap-0.5 text-[11px] ${
-                    active ? "bg-comic-yellow font-extrabold text-black" : "font-bold text-muted"
+                    active ? "nav-key-on font-extrabold text-black" : "font-bold text-muted"
                   }`}
                 >
                   <svg
