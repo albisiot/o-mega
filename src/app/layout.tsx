@@ -23,6 +23,7 @@ import { NotificationBanner } from "@/components/notification-banner";
 import { EmergencyPrizePopup } from "@/components/emergency-prize-popup";
 import { PlaceMemory } from "@/components/place-memory";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
+import { TextSelection } from "@/components/text-selection";
 import { SPLASH_LINE_SCRIPT } from "@/lib/splash-line";
 import { STALE_BUILD_SCRIPT } from "@/lib/stale-build";
 import { Suspense } from "react";
@@ -107,6 +108,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </AuthProvider>
         <ServiceWorkerRegistration />
         <NoZoom />
+        <TextSelection />
         <Suspense fallback={null}>
           <PlaceMemory />
         </Suspense>

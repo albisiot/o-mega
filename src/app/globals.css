@@ -74,6 +74,24 @@ html {
   }
 }
 
+/* No text selection in the game: a long press or a double tap must not paint words blue nor
+   open the copy menu (nor a link's or an image's). The admin's Editor gives it back
+   (html.text-selectable, see src/lib/text-selection.ts). Fields stay editable, and text meant
+   to be copied keeps it with its own class (a friend's code: select-all). */
+@layer base {
+  html:not(.text-selectable) body {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  input,
+  textarea,
+  [contenteditable]:not([contenteditable="false"]) {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
 /* Notte di Megara: navy at the top fading into the black, under a faint halftone screen. One
    static background, which the browser paints on the whole canvas (it carries over from body). */
 body {
