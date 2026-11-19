@@ -1,11 +1,13 @@
 import type { CSSProperties, ReactNode } from "react";
 import { ArtMotion } from "@/components/art-motion";
 import { CARD_TOUCH_HANDLERS, CardArtEffects } from "@/components/card-effects";
+import { FrameShell, ringFrame } from "@/components/card-frames";
 import { CardName } from "@/components/card-name";
 import { artSrcSet, motionArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { cardEffects, type CardEffect } from "@/lib/card-effects";
 import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
+import type { CardCosmetics } from "@/lib/cosmetics";
 import { FACTION_COLORS, isFoil, rarityArt, rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 
 export type CardData = {
@@ -41,6 +43,8 @@ type CardViewProps = {
   priority?: boolean;
   /** Large layout only: an animated drawing plays its looping video (only where one card fills the screen). */
   animated?: boolean;
+  /** The frame and the effect the owner applied to this character and left visible (SPEC §4.8). */
+  cosmetics?: CardCosmetics | null;
 };
 
 /** A character card. The frame and art treatment grow with the rarity; without art it shows a placeholder silhouette. */
@@ -54,22 +58,28 @@ export function CardView({
   thumbSizes,
   priority = false,
   animated = false,
+  cosmetics = null,
 }: CardViewProps) {
   const color = card.rarity.color;
   const large = size === "lg";
   const moving = large && animated && Boolean(card.art_url && motionArtUrl(card.art_url));
   // The glitch repeats the still drawing over the art: it would freeze a moving one.
-  const effects = cardEffects(card, size).filter((effect) => !(moving && effect === "glitch"));
+  const rarityEffects = cardEffects(card, size);
+  const chosen = cosmetics?.effect;
+  const effects = (chosen && !rarityEffects.includes(chosen) ? [...rarityEffects, chosen] : rarityEffects).filter(
+    (effect) => !(moving && effect === "glitch"),
+  );
+  const frame = ringFrame(card.rarity, cosmetics?.frame, size);
   const style = {
     "--glow-color": `${color}aa`,
     "--fx-aura-color": FACTION_COLORS[card.faction] ?? "#fff8e7",
-    background: rarityFrame(card.rarity),
+    ...frame.style,
   } as CSSProperties;
 
   const article = (
     <article
       style={style}
-      className={`card-frame rounded-xl ${large ? `card-frame-lg w-[300px] p-[7px] ${fit ? "flex min-h-0 flex-col" : ""}` : `w-full p-1 ${fill ? "flex h-full flex-col" : ""}`} ${
+      className={`card-frame ${frame.className} rounded-xl ${large ? `card-frame-lg w-[300px] ${fit ? "flex min-h-0 flex-col" : ""}` : `w-full ${fill ? "flex h-full flex-col" : ""}`} ${
         effects.includes("aura") ? "fx-aura" : ""
       } ${glow ? "animate-rare-glow" : ""}`}
     >
@@ -87,6 +97,8 @@ export function CardView({
           priority={priority}
           motion={moving}
           effects={effects}
+          signature={card.name}
+          serial={cosmetics?.serial}
           className={fill ? "min-h-0 flex-1" : large ? `h-44 ${fit ? "min-h-24" : ""}` : "h-24"}
         >
           {card.variant && <VariantTag name={card.variant.name} compact={!large} />}
@@ -114,11 +126,17 @@ export function CardView({
     </article>
   );
 
-  if (!effects.includes("tilt")) return article;
-  return (
+  const body = effects.includes("tilt") ? (
     <div className={`fx-tilt ${fit ? "flex min-h-0 flex-col" : ""}`} {...CARD_TOUCH_HANDLERS}>
       {article}
     </div>
+  ) : (
+    article
+  );
+  return (
+    <FrameShell frame={cosmetics?.frame} size={size} card={card} fit={fit}>
+      {body}
+    </FrameShell>
   );
 }
 
@@ -170,6 +188,8 @@ export function CardArt({
   priority = false,
   motion = false,
   effects = [],
+  signature,
+  serial,
   className,
   children,
 }: {
@@ -183,6 +203,9 @@ export function CardArt({
   /** Plays the drawing's looping video over it, when it has one. */
   motion?: boolean;
   effects?: CardEffect[];
+  /** The name the "signature" effect writes, and the number the "numbered" one stamps. */
+  signature?: string;
+  serial?: number | null;
   className: string;
   children?: ReactNode;
 }) {
@@ -220,7 +243,7 @@ export function CardArt({
         </>
       )}
       {motion && artUrl && <ArtMotion artUrl={artUrl} className="absolute inset-0 h-full w-full object-cover object-top" />}
-      <CardArtEffects effects={effects} artUrl={artUrl} srcSet={srcSet} sizes={thumbSizes} />
+      <CardArtEffects effects={effects} artUrl={artUrl} srcSet={srcSet} sizes={thumbSizes} signature={signature} serial={serial} />
       {children}
     </div>
   );

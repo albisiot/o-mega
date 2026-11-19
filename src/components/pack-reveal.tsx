@@ -39,6 +39,7 @@ const PACK_TITLES: Record<PackOpening["pack_type"], string> = {
   achievement: "Premio impresa",
   emergency: "Premio classifica Emergenza",
   challenge: "Premio della sfida",
+  shards: "Con le Schegge",
 };
 
 /**

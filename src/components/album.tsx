@@ -10,6 +10,7 @@ import {
   useCardListReference,
   useCardListView,
 } from "@/components/card-list-controls";
+import { FrameShell, ringFrame } from "@/components/card-frames";
 import { CardName } from "@/components/card-name";
 import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { CardArt, Silhouette, VariantTag } from "@/components/card-view";
@@ -34,9 +35,10 @@ import {
   type FoundVariant,
   type OwnedSummary,
 } from "@/lib/collection";
+import { cosmeticsByCharacter, type CardCosmetics } from "@/lib/cosmetics";
 import { describeServerError } from "@/lib/errors";
 import { loadSeenCards, saveSeenCards } from "@/lib/new-cards";
-import { rarityFrame } from "@/lib/rarity-theme";
+import { useCosmetics } from "@/lib/use-cosmetics";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 type Ownership = "all" | "owned" | "missing" | "variants";
@@ -83,6 +85,9 @@ export function Album({
 }) {
   const [view, updateView] = useCardListView(VIEW_KEY);
   const [ownership, setOwnership] = useState<Ownership>(loadOwnership);
+  // The frames and effects the player applied (SPEC §4.8): a nicety, the album works without them.
+  const cosmetics = useCosmetics();
+  const looks = useMemo(() => cosmeticsByCharacter(cosmetics), [cosmetics]);
   const { traits } = useCardListReference();
   // Lives here: the conversion panel disappears once no duplicates are left.
   const [notice, setNotice] = useState<string | null>(null);
@@ -283,6 +288,7 @@ export function Album({
                         // Before the first visit nothing is new: an existing player's whole album would be.
                         isNew={!variant && seenBefore !== null && mine !== null && !seenBefore.has(card.id)}
                         sortAbility={sortAbility}
+                        cosmetics={looks.get(card.id) ?? null}
                         onOpen={openCard}
                       />
                     </li>
@@ -303,6 +309,7 @@ function AlbumTile({
   variant,
   isNew,
   sortAbility,
+  cosmetics,
   onOpen,
 }: {
   card: CatalogCard;
@@ -311,6 +318,8 @@ function AlbumTile({
   variant: FoundVariant | null;
   isNew: boolean;
   sortAbility: string | null;
+  /** The frame and effect the player applied to this character. */
+  cosmetics: CardCosmetics | null;
   onOpen: () => void;
 }) {
   const number = card.code.replace(/^\D+/, "");
@@ -319,13 +328,11 @@ function AlbumTile({
   // all its copies and names its variant, or says how many it has.
   const copies = variant ? variant.copies : (owned?.copies ?? 0);
   const tag = variant ? variant.name : variants > 1 ? `${variants}` : owned?.variants[0]?.name;
-  return (
-    <Link
-      href={`/carta/?id=${card.id}${variant ? `&v=${encodeURIComponent(variant.style)}` : ""}`}
-      onClick={onOpen}
-      className="card-frame relative flex flex-col rounded-[7px] p-1"
-      style={{ background: owned ? rarityFrame(card.rarity) : "var(--panel-raised)" }}
-    >
+  const look = owned ? cosmetics : null;
+  const frame = owned ? ringFrame(card.rarity, look?.frame, "sm") : { className: "p-1", style: { background: "var(--panel-raised)" } };
+  const effects = cardEffects(card, "sm");
+  const tile = (
+    <div className={`card-frame relative flex flex-1 flex-col rounded-[7px] ${frame.className}`} style={frame.style}>
       {copies > 1 && (
         <span className="absolute left-1.5 top-1.5 z-10 bg-black px-1.5 text-xs font-extrabold leading-[18px] text-comic-yellow">
           ×{copies}
@@ -338,7 +345,9 @@ function AlbumTile({
           artUrl={variant ? variant.art_url : ownedArt(card, owned).art_url}
           // Three tiles per row inside the page padding, minus each tile's 4px frame.
           thumbSizes="calc((100vw - 72px) / 3)"
-          effects={cardEffects(card, "sm")}
+          effects={look?.effect && !effects.includes(look.effect) ? [...effects, look.effect] : effects}
+          signature={card.name}
+          serial={look?.serial}
           className="h-24 rounded-t"
         >
           {/* At the foot of the drawing, clear of the copies count and of the face: NEW! on the left,
@@ -384,6 +393,17 @@ function AlbumTile({
           )}
         </div>
       </div>
+    </div>
+  );
+  return (
+    <Link
+      href={`/carta/?id=${card.id}${variant ? `&v=${encodeURIComponent(variant.style)}` : ""}`}
+      onClick={onOpen}
+      className="relative flex h-full flex-col"
+    >
+      <FrameShell frame={look?.frame} size="sm" card={card}>
+        {tile}
+      </FrameShell>
     </Link>
   );
 }

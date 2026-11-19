@@ -20,7 +20,18 @@ export type PackCard = {
 export type PackOpening = {
   id: string;
   /** "bonus" and "event": the cards chosen for a bonus code or an event target, shown like a pack. */
-  pack_type: "daily" | "standard" | "bonus" | "event" | "special" | "match" | "objective" | "achievement" | "emergency" | "challenge";
+  pack_type:
+    | "daily"
+    | "standard"
+    | "bonus"
+    | "event"
+    | "special"
+    | "match"
+    | "objective"
+    | "achievement"
+    | "emergency"
+    | "challenge"
+    | "shards";
   /** Name and colour of a special pack; null for the others. */
   pack_name: string | null;
   pack_color: string | null;
@@ -178,7 +189,8 @@ export function packRevealHref([first, ...rest]: string[], from?: string | null)
 // does not fetch them again. A reload falls back to get_pack_opening.
 const openings = new Map<string, PackOpening>();
 
-function remember(opening: PackOpening): PackOpening {
+/** Keeps an opening the server just sent, so its reveal shows at once (also for the Schegge, src/lib/cosmetics.ts). */
+export function remember(opening: PackOpening): PackOpening {
   openings.set(opening.id, opening);
   // A pack just opened: the old status would offer it again, the old balance is wrong.
   forget("packStatus");

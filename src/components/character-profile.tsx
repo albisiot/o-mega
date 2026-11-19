@@ -38,13 +38,13 @@ export function CharacterProfileSheet({ definitionId, name }: { definitionId: st
         aria-haspopup="dialog"
         disabled={!profile}
         onClick={() => sheet.current?.showModal()}
-        className="flex w-full max-w-sm shrink-0 gap-1 text-left"
+        className="flex min-w-0 flex-1 gap-1 text-left"
       >
-        <span className="flex min-w-0 flex-1 flex-col bg-panel px-3 py-1">
-          <span className="text-[13px] font-semibold leading-[17px] text-muted">Scheda · vero nome</span>
+        <span className="flex min-w-0 flex-1 flex-col bg-panel px-2.5 py-1">
+          <span className="truncate text-[13px] font-semibold leading-[17px] text-muted">Scheda · vero nome</span>
           <span className="truncate font-display text-xl leading-7">{profile ? (profile.realName ?? "Sconosciuto") : "…"}</span>
         </span>
-        <span aria-hidden className="flex w-11 shrink-0 items-center justify-center bg-panel text-comic-yellow">
+        <span aria-hidden className="flex w-7 shrink-0 items-center justify-center bg-panel text-comic-yellow">
           <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={3}>
             <path d="m8 3 7 7-7 7" strokeLinejoin="round" />
           </svg>

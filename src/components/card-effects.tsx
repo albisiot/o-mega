@@ -31,18 +31,35 @@ export const CARD_TOUCH_HANDLERS = {
   onPointerCancel: releasePointer,
 };
 
+/** Stars of the Prisma Lucentezza: left and top in %, size in px, delay in s. Away from the face, at the top. */
+const SPARKLES: [number, number, number, number][] = [
+  [12, 22, 12, 0],
+  [86, 14, 9, 0.7],
+  [72, 58, 14, 1.4],
+  [22, 70, 10, 2.1],
+  [52, 86, 12, 0.35],
+  [92, 78, 8, 1.75],
+  [6, 48, 8, 2.5],
+];
+
 /** The layers an effect paints over the art. */
 export function CardArtEffects({
   effects,
   artUrl,
   srcSet,
   sizes,
+  signature,
+  serial,
 }: {
   effects: CardEffect[];
   artUrl?: string | null;
   /** Same choice of files as the art underneath, so the glitch copies match it. */
   srcSet?: string;
   sizes?: string;
+  /** The name the "signature" effect writes. */
+  signature?: string;
+  /** The number the "numbered" effect stamps. */
+  serial?: number | null;
 }) {
   return (
     <>
@@ -57,6 +74,26 @@ export function CardArtEffects({
       {effects.includes("holo") && <span aria-hidden className="fx-layer fx-holo" />}
       {effects.includes("flash") && <span aria-hidden className="fx-layer fx-flash" />}
       {effects.includes("tilt") && <span aria-hidden className="fx-layer fx-glare" />}
+      {effects.includes("sparkles") && (
+        <span aria-hidden className="fx-layer fx-sparkles">
+          {SPARKLES.map(([left, top, size, delay]) => (
+            <i key={`${left}-${top}`} style={{ left: `${left}%`, top: `${top}%`, width: size, height: size, animationDelay: `${delay}s` }} />
+          ))}
+        </span>
+      )}
+      {effects.includes("glitter") && <span aria-hidden className="fx-layer fx-glitter" />}
+      {effects.includes("cracked") && <span aria-hidden className="fx-layer fx-cracked" />}
+      {effects.includes("snow") && <span aria-hidden className="fx-layer fx-snow" />}
+      {effects.includes("rays") && <span aria-hidden className="fx-layer fx-rays" />}
+      {effects.includes("halftone") && <span aria-hidden className="fx-layer fx-halftone" />}
+      {effects.includes("signature") && signature && (
+        <span aria-hidden className="fx-layer fx-signature">
+          <span>{signature.charAt(0).toUpperCase() + signature.slice(1).toLowerCase()}</span>
+        </span>
+      )}
+      {effects.includes("numbered") && serial != null && (
+        <span className="fx-number">N. {String(serial).padStart(3, "0")}</span>
+      )}
       {effects.includes("bolts") && <EffectCanvas draw={drawBolts} />}
       {effects.includes("embers") && <EffectCanvas draw={drawEmbers} />}
       {effects.includes("threads") && <EffectCanvas draw={drawThreads} />}

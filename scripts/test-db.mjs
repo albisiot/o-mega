@@ -55,6 +55,8 @@ const ADMIN_KEYS = new Set([
   "emergency_week.prizes.rank3_packs", "emergency_week.prizes.others_coins", "emergency_week.prizes.others_packs",
   // /gestione-ricompense, section Pacchetti
   "packs.variant_chance_percent",
+  // /gestione-schegge
+  "shards.pack_cost", "shards.random_cosmetic_cost", "shards.chosen_kind_cosmetic_cost", "shards.new_variant_cost",
 ]);
 const describe = (row) =>
   `${row.key}: database ${JSON.stringify(row.value)}, balance.ts ${flat.has(row.key) ? JSON.stringify(flat.get(row.key)) : "missing"}`;

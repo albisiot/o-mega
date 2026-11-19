@@ -6,6 +6,7 @@ import { CopiesSheet, MissingCard } from "@/components/card-details";
 import { CardModelButton } from "@/components/card-model";
 import { CardView, Silhouette } from "@/components/card-view";
 import { CharacterProfileSheet } from "@/components/character-profile";
+import { CosmeticsSheet } from "@/components/cosmetics-sheet";
 import { thumbArtUrl } from "@/lib/art";
 import { withBasePath } from "@/lib/base-path";
 import { browsePosition, neighbourId, type SwipeStep } from "@/lib/card-swipe";
@@ -17,7 +18,9 @@ import {
   type CatalogCard,
   type OwnedSummary,
 } from "@/lib/collection";
+import { appliedTo, shownCosmetics } from "@/lib/cosmetics";
 import { useCardSwipe } from "@/lib/use-card-swipe";
+import { keepCosmetics, useCosmetics } from "@/lib/use-cosmetics";
 
 /**
  * A character's page, fitting the screen. Opened from the album, it swipes (or arrows, or
@@ -83,6 +86,8 @@ export function CardScreen({
     if (event.target === event.currentTarget) onClose();
   };
 
+  // The frame and effect the player applied (SPEC §4.8): a nicety, the page works without them.
+  const cosmetics = useCosmetics();
   const looks = owned ? ownedLooks(card, owned) : [];
   const look = looks.find((l) => chosenLook?.cardId === card.id && l.key === chosenLook.key) ?? looks[0];
   return (
@@ -128,6 +133,7 @@ export function CardScreen({
                       key={card.id}
                       card={{ ...card, art_url: look.art_url, variant: look.variant }}
                       abilities={abilities}
+                      cosmetics={shownCosmetics(appliedTo(cosmetics, card.id))}
                       fit
                       animated
                     />
@@ -150,7 +156,17 @@ export function CardScreen({
                   )}
                   <CardModelButton key={card.id} code={card.code} name={card.name} className="min-h-12 flex-1" />
                 </div>
-                <CharacterProfileSheet key={`profile-${card.id}`} definitionId={card.id} name={card.name} />
+                {/* Side by side: the frame and effect must not take room from the card on a short phone. */}
+                <div className="flex w-full max-w-sm shrink-0 gap-1">
+                  <CharacterProfileSheet key={`profile-${card.id}`} definitionId={card.id} name={card.name} />
+                  <CosmeticsSheet
+                    key={`cosmetics-${card.id}`}
+                    card={{ ...card, art_url: look.art_url, variant: look.variant }}
+                    abilities={abilities}
+                    state={cosmetics}
+                    onChanged={keepCosmetics}
+                  />
+                </div>
                 <CopiesSheet key={`copies-${card.id}`} card={card} owned={owned} onConverted={onConverted} />
               </>
             ) : (

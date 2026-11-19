@@ -430,6 +430,21 @@ export const balance = {
     specialRevealMinRarityRank: 4,
   },
 
+  /**
+   * Schegge (SPEC §4.8): what they buy. Defaults: admins change them from /gestione-schegge.
+   * The Schegge a broken duplicate variant gives are per rarity (rarity_definitions.variant_shard_value).
+   */
+  shards: {
+    /** A standard pack, at the standard variant chance (never an event's), with no daily limit. */
+    packCost: 1,
+    /** A random frame or effect, every one as likely. */
+    randomCosmeticCost: 1,
+    /** A random frame, or a random effect: the player chooses which kind. */
+    chosenKindCosmeticCost: 2,
+    /** A random variant the player does not own yet. */
+    newVariantCost: 3,
+  },
+
   /** Packs an admin creates from the app (/gestione-pacchetti-speciali); price and odds are per pack. */
   specialPacks: {
     maxCardsPerPack: 10,

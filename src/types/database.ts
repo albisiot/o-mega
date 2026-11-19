@@ -3463,6 +3463,7 @@ export type Database = {
           duplicate_coin_value: number
           name: string
           rank: number
+          variant_shard_value: number
         }
         Insert: {
           ability_budget: number
@@ -3472,6 +3473,7 @@ export type Database = {
           duplicate_coin_value?: number
           name: string
           rank: number
+          variant_shard_value?: number
         }
         Update: {
           ability_budget?: number
@@ -3481,6 +3483,7 @@ export type Database = {
           duplicate_coin_value?: number
           name?: string
           rank?: number
+          variant_shard_value?: number
         }
         Relationships: []
       }
@@ -4606,6 +4609,25 @@ export type Database = {
         }[]
       }
       buy_pack: { Args: never; Returns: Json }
+      admin_get_shard_settings: { Args: never; Returns: Json }
+      admin_save_shard_settings: {
+        Args: { p_costs: Json; p_values: Json }
+        Returns: Json
+      }
+      apply_cosmetic: {
+        Args: { p_code: string; p_definition_id: string }
+        Returns: Json
+      }
+      break_variant_duplicates: {
+        Args: { p_count?: number; p_variant_id: string }
+        Returns: Json
+      }
+      buy_with_shards: { Args: { p_item: string }; Returns: Json }
+      get_cosmetics: { Args: never; Returns: Json }
+      set_cosmetic_visible: {
+        Args: { p_definition_id: string; p_kind: string; p_visible: boolean }
+        Returns: Json
+      }
       buy_special_pack: {
         Args: { p_pack_id: string; p_version: number }
         Returns: Json

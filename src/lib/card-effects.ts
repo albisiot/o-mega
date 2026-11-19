@@ -1,4 +1,23 @@
-export type CardEffect = "flash" | "tilt" | "holo" | "aura" | "bolts" | "embers" | "glitch" | "threads" | "lenses" | "ripples";
+export type CardEffect =
+  | "flash"
+  | "tilt"
+  | "holo"
+  | "aura"
+  | "bolts"
+  | "embers"
+  | "glitch"
+  | "threads"
+  | "lenses"
+  | "ripples"
+  // Only from an effect a player applies (src/lib/cosmetics.ts), never from the rarity.
+  | "sparkles"
+  | "glitter"
+  | "cracked"
+  | "snow"
+  | "rays"
+  | "halftone"
+  | "signature"
+  | "numbered";
 
 // Purely visual and tied to the rank, like the frames in rarity-theme: rarity never means power.
 const EFFECTS_BY_RANK: { minRank: number; effects: CardEffect[] }[] = [

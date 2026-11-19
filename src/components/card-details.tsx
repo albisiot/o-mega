@@ -5,7 +5,9 @@ import { Silhouette } from "@/components/card-view";
 import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { Sheet } from "@/components/sheet";
 import { convertDuplicates, foundVariantCount, type CatalogCard, type OwnedSummary } from "@/lib/collection";
+import { breakableCopies, breakVariantDuplicates, type CosmeticsState } from "@/lib/cosmetics";
 import { describeServerError } from "@/lib/errors";
+import { keepCosmetics, useCosmetics } from "@/lib/use-cosmetics";
 
 export function CopiesPanel({
   card,
@@ -50,7 +52,7 @@ export function CopiesPanel({
           <Row label="Bloccate" value={owned.locked_copies} hint="Appena conquistate: non convertibili per ora." />
         )}
         {owned.variants.length > 0 && (
-          <Row label="Varianti" value={owned.variants.length} hint="Disegno più raro: non si convertono in monete." />
+          <Row label="Varianti" value={owned.variants.length} hint="Disegno più raro: non si convertono in monete, si rompono in Schegge." />
         )}
       </dl>
 
@@ -93,6 +95,107 @@ export function CopiesPanel({
   );
 }
 
+/** The variants found more than once, one row each: their copies, and how many can be broken. */
+function variantRows(owned: OwnedSummary, cosmetics: CosmeticsState | null) {
+  const groups = new Map<string, { name: string; copies: number }>();
+  for (const variant of owned.variants) {
+    const group = groups.get(variant.variant_id) ?? { name: variant.name, copies: 0 };
+    group.copies += 1;
+    groups.set(variant.variant_id, group);
+  }
+  return [...groups]
+    .map(([variantId, group]) => ({ variantId, ...group, breakable: breakableCopies(cosmetics, variantId) }))
+    .filter((row) => row.copies > 1);
+}
+
+/**
+ * Duplicate variants break into Schegge (SPEC §4.8): one copy of each variant always stays, and
+ * copies just conquered or in a match wait.
+ */
+export function VariantBreakPanel({
+  card,
+  owned,
+  onBroken,
+}: {
+  card: CatalogCard;
+  owned: OwnedSummary;
+  onBroken: () => void;
+}) {
+  const cosmetics = useCosmetics();
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
+  const rows = variantRows(owned, cosmetics);
+  if (rows.length === 0 || !cosmetics) return null;
+  const value = cosmetics.values[card.rarity.code] ?? 0;
+
+  async function shatter(variantId: string, count: number) {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const result = await breakVariantDuplicates(variantId, count);
+      keepCosmetics(result.cosmetics);
+      setMessage({
+        text: `${result.broken === 1 ? "Rotta 1 copia" : `Rotte ${result.broken} copie`}: +${result.shards} Schegge (ora ${result.cosmetics.shard_balance}).`,
+        isError: false,
+      });
+      onBroken();
+    } catch (cause) {
+      setMessage({ text: describeServerError(cause), isError: true });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="flex w-full max-w-sm flex-col gap-2" aria-label="Varianti doppie">
+      <h3 className="font-display text-xl uppercase text-comic-yellow">Varianti doppie</h3>
+      <p className="text-xs font-medium text-muted">
+        Ogni copia in più di una variante si rompe in {value} {value === 1 ? "Scheggia" : "Schegge"} ({card.rarity.name}). Una
+        copia di ogni variante resta sempre. Tieni premuto: non si può annullare.
+      </p>
+      {rows.map((row) => (
+        <div key={row.variantId} className="flex flex-col gap-1.5 bg-panel px-3 py-2">
+          <p className="text-sm font-bold">
+            ★ {row.name} <span className="font-semibold text-muted">· {row.copies} copie</span>
+          </p>
+          {row.breakable < row.copies - 1 && (
+            <p className="text-xs font-medium text-faint">Le copie appena conquistate o in partita aspettano.</p>
+          )}
+          {row.breakable > 0 && (
+            <div className="flex gap-2">
+              <HoldToConfirmButton
+                onConfirm={() => shatter(row.variantId, 1)}
+                disabled={busy}
+                hint=""
+                fillColor="var(--comic-magenta)"
+                className="btn btn-outline flex-1 disabled:opacity-60"
+              >
+                Rompi 1 · +{value}
+              </HoldToConfirmButton>
+              {row.breakable > 1 && (
+                <HoldToConfirmButton
+                  onConfirm={() => shatter(row.variantId, row.breakable)}
+                  disabled={busy}
+                  hint=""
+                  fillColor="var(--comic-magenta)"
+                  className="btn btn-outline flex-1 disabled:opacity-60"
+                >
+                  Tutte ({row.breakable}) · +{value * row.breakable}
+                </HoldToConfirmButton>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+      {message && (
+        <p role="status" className={`text-sm font-semibold ${message.isError ? "text-comic-magenta" : "text-comic-cyan"}`}>
+          {message.text}
+        </p>
+      )}
+    </section>
+  );
+}
+
 /**
  * The copies of a character on one row, under its card. A tap opens them in full in a sheet
  * from the bottom: protected and locked copies, the conversion of duplicates and the
@@ -108,11 +211,14 @@ export function CopiesSheet({
   onConverted: () => void;
 }) {
   const sheet = useRef<HTMLDialogElement>(null);
+  const cosmetics = useCosmetics();
   const found = foundVariantCount(owned);
+  // Lit when a duplicate variant can break into Schegge.
+  const breakable = variantRows(owned, cosmetics).some((row) => row.breakable > 0);
   const counts = [
     { label: "Copie", value: `${owned.copies}`, lit: false },
     { label: "Doppioni", value: `${owned.convertible_copies}`, lit: owned.convertible_copies > 0 },
-    ...(card.variantCount > 0 ? [{ label: "Varianti", value: `${found}/${card.variantCount}`, lit: false }] : []),
+    ...(card.variantCount > 0 ? [{ label: "Varianti", value: `${found}/${card.variantCount}`, lit: breakable }] : []),
   ];
 
   return (
@@ -137,6 +243,7 @@ export function CopiesSheet({
       </button>
       <Sheet sheetRef={sheet} title={`Copie di ${card.name}`}>
         <CopiesPanel card={card} owned={owned} onConverted={onConverted} />
+        <VariantBreakPanel card={card} owned={owned} onBroken={onConverted} />
         <MissingVariants card={card} found={found} />
       </Sheet>
     </>
@@ -152,7 +259,7 @@ function MissingVariants({ card, found }: { card: CatalogCard; found: number }) 
       {missing === 1
         ? "Esiste una variante di questa carta che non hai ancora trovato."
         : `Esistono ${missing} varianti di questa carta che non hai ancora trovato.`}{" "}
-      Si trovano nei pacchetti.
+      Si trovano nei pacchetti, o con le Schegge nel Negozio.
     </p>
   );
 }

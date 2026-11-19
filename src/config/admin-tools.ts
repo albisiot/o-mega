@@ -67,6 +67,13 @@ export const ADMIN_TOOLS: AdminTool[] = [
     icon: "M12 4a8 8 0 100 16 8 8 0 000-16zM12 8v8M9.5 10h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4",
   },
   {
+    href: "/gestione-schegge",
+    name: "Schegge",
+    description: "Valori delle varianti rotte e prezzi",
+    group: "economy",
+    icon: "M12 2l3 7-3 13-3-13zM4 9h16M8 9l4-7 4 7",
+  },
+  {
     href: "/gestione-eventi",
     name: "Eventi",
     description: "Eventi a tempo e i loro premi",

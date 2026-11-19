@@ -6,6 +6,7 @@ import { PackArt, TabBar } from "@/components/comic-parts";
 import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { useMatchRewards } from "@/components/match-reward";
 import { PackCounter } from "@/components/pack-counter";
+import { ShardShop } from "@/components/shard-shop";
 import { PackRevealLink, useOpenPackReveal } from "@/components/pack-reveal-link";
 import { describeServerError } from "@/lib/errors";
 import { formatRomeDateTime } from "@/lib/events";
@@ -43,10 +44,11 @@ type ShopViewProps = {
   onRedeemed: () => void;
 };
 
-type ShopTab = "odds" | "history" | "codes";
+type ShopTab = "odds" | "shards" | "history" | "codes";
 
 const TABS: { key: ShopTab; label: string }[] = [
   { key: "odds", label: "Probabilità" },
+  { key: "shards", label: "Schegge" },
   { key: "history", label: "Movimenti" },
   { key: "codes", label: "Codici" },
 ];
@@ -60,6 +62,10 @@ const TABS: { key: ShopTab; label: string }[] = [
 export function ShopView({ status, odds, specials, history, openedPacks, onFailed, onRedeemed }: ShopViewProps) {
   // Back from a pack opened here (one bought, a code's rewards), the shop is as it was left.
   const [tab, setTab] = useRememberedState<ShopTab>("tab", "odds");
+  // A link from a card's page (/negozio/?schegge=1) opens on the Schegge.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("schegge")) setTab("shards");
+  }, [setTab]);
   const rewards = useMatchRewards();
   // 0 is the standard pack, then the special packs in order.
   const [shown, setShown] = useRememberedState("pack", 0);
@@ -224,6 +230,8 @@ export function ShopView({ status, odds, specials, history, openedPacks, onFaile
               )}
             </>
           )}
+
+          {tab === "shards" && <ShardShop />}
 
           {tab === "codes" && <BonusCodeSection onRedeemed={onRedeemed} />}
         </div>
