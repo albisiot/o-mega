@@ -1117,6 +1117,72 @@ export type Database = {
           },
         ]
       }
+      character_cosmetics: {
+        Row: {
+          definition_id: string
+          effect_item_id: string | null
+          effect_visible: boolean
+          frame_item_id: string | null
+          frame_visible: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          definition_id: string
+          effect_item_id?: string | null
+          effect_visible?: boolean
+          frame_item_id?: string | null
+          frame_visible?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          definition_id?: string
+          effect_item_id?: string | null
+          effect_visible?: boolean
+          frame_item_id?: string | null
+          frame_visible?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_cosmetics_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_cosmetics_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_cosmetics_effect_item_id_fkey"
+            columns: ["effect_item_id"]
+            isOneToOne: false
+            referencedRelation: "cosmetic_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_cosmetics_frame_item_id_fkey"
+            columns: ["frame_item_id"]
+            isOneToOne: false
+            referencedRelation: "cosmetic_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_cosmetics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coin_ledger: {
         Row: {
           amount: number
@@ -1216,6 +1282,92 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cosmetic_items: {
+        Row: {
+          acquired_at: string
+          acquired_via: string
+          cosmetic_code: string
+          id: string
+          owner_id: string
+          serial: number
+          used_at: string | null
+          used_on: string | null
+        }
+        Insert: {
+          acquired_at?: string
+          acquired_via: string
+          cosmetic_code: string
+          id?: string
+          owner_id: string
+          serial: number
+          used_at?: string | null
+          used_on?: string | null
+        }
+        Update: {
+          acquired_at?: string
+          acquired_via?: string
+          cosmetic_code?: string
+          id?: string
+          owner_id?: string
+          serial?: number
+          used_at?: string | null
+          used_on?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cosmetic_items_cosmetic_code_fkey"
+            columns: ["cosmetic_code"]
+            isOneToOne: false
+            referencedRelation: "cosmetics"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "cosmetic_items_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cosmetic_items_used_on_fkey"
+            columns: ["used_on"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cosmetic_items_used_on_fkey"
+            columns: ["used_on"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cosmetics: {
+        Row: {
+          code: string
+          is_active: boolean
+          kind: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          is_active?: boolean
+          kind: string
+          name: string
+          sort_order: number
+        }
+        Update: {
+          code?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       daily_claims: {
         Row: {
@@ -3579,6 +3731,41 @@ export type Database = {
           },
         ]
       }
+      shard_ledger: {
+        Row: {
+          amount: number
+          created_at: string
+          id: number
+          reason: string
+          ref_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: never
+          reason: string
+          ref_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: never
+          reason?: string
+          ref_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shard_ledger_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       special_pack_cards: {
         Row: {
           definition_id: string
@@ -4346,6 +4533,7 @@ export type Database = {
       admin_delete_special_pack: { Args: { p_id: string }; Returns: Json }
       admin_events_payload: { Args: never; Returns: Json }
       admin_get_boss_table: { Args: never; Returns: Json }
+      admin_get_shard_settings: { Args: never; Returns: Json }
       admin_get_story: { Args: never; Returns: Json }
       admin_grant_achievement: {
         Args: { p_id: string; p_username: string }
@@ -4441,6 +4629,10 @@ export type Database = {
       }
       admin_save_match_rewards: {
         Args: { p_rules: Json; p_settings: Json }
+        Returns: Json
+      }
+      admin_save_shard_settings: {
+        Args: { p_costs: Json; p_values: Json }
         Returns: Json
       }
       admin_save_special_pack: {
@@ -4551,6 +4743,10 @@ export type Database = {
         Args: { p_amount?: number; p_metric: string; p_user: string }
         Returns: undefined
       }
+      apply_cosmetic: {
+        Args: { p_code: string; p_definition_id: string }
+        Returns: Json
+      }
       award_event_points: {
         Args: {
           p_kind: string
@@ -4602,6 +4798,10 @@ export type Database = {
         Args: { p_match_id: string; p_side: string }
         Returns: Json
       }
+      break_variant_duplicates: {
+        Args: { p_count?: number; p_variant_id: string }
+        Returns: Json
+      }
       busy_instance_ids: {
         Args: { p_user: string }
         Returns: {
@@ -4609,29 +4809,11 @@ export type Database = {
         }[]
       }
       buy_pack: { Args: never; Returns: Json }
-      admin_get_shard_settings: { Args: never; Returns: Json }
-      admin_save_shard_settings: {
-        Args: { p_costs: Json; p_values: Json }
-        Returns: Json
-      }
-      apply_cosmetic: {
-        Args: { p_code: string; p_definition_id: string }
-        Returns: Json
-      }
-      break_variant_duplicates: {
-        Args: { p_count?: number; p_variant_id: string }
-        Returns: Json
-      }
-      buy_with_shards: { Args: { p_item: string }; Returns: Json }
-      get_cosmetics: { Args: never; Returns: Json }
-      set_cosmetic_visible: {
-        Args: { p_definition_id: string; p_kind: string; p_visible: boolean }
-        Returns: Json
-      }
       buy_special_pack: {
         Args: { p_pack_id: string; p_version: number }
         Returns: Json
       }
+      buy_with_shards: { Args: { p_item: string }; Returns: Json }
       cancel_lobby: { Args: never; Returns: undefined }
       card_admitted_by_event: {
         Args: {
@@ -4993,6 +5175,7 @@ export type Database = {
         Args: { p_count?: number; p_definition_id: string }
         Returns: Json
       }
+      cosmetics_payload: { Args: { p_user: string }; Returns: Json }
       create_bonus_code: {
         Args: {
           p_card_codes?: string[]
@@ -5318,6 +5501,7 @@ export type Database = {
       }
       get_conquest_history: { Args: never; Returns: Json }
       get_conquest_status: { Args: never; Returns: Json }
+      get_cosmetics: { Args: never; Returns: Json }
       get_daily_objectives: { Args: never; Returns: Json }
       get_emergency_leaderboard: { Args: never; Returns: Json }
       get_emergency_lineups: { Args: never; Returns: Json }
@@ -5832,6 +6016,10 @@ export type Database = {
         Args: { p_pack_type: string; p_user: string }
         Returns: string
       }
+      open_pack_at_chance: {
+        Args: { p_chance: number; p_pack_type: string; p_user: string }
+        Returns: string
+      }
       open_quadrant_move: {
         Args: { p_match_id: string; p_move: number }
         Returns: undefined
@@ -6145,6 +6333,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_cosmetic_visible: {
+        Args: { p_definition_id: string; p_kind: string; p_visible: boolean }
+        Returns: Json
+      }
       set_player_title: { Args: { p_achievement_id: string }; Returns: string }
       set_username: {
         Args: { p_username: string }
@@ -6181,6 +6373,7 @@ export type Database = {
         }
       }
       settle_expired_claims: { Args: { p_user: string }; Returns: undefined }
+      shard_balance: { Args: { p_user: string }; Returns: number }
       short_foresight_until: {
         Args: { p_match_id: string; p_side: string }
         Returns: number
@@ -6266,6 +6459,15 @@ export type Database = {
       validate_team_for: {
         Args: { p_format: string; p_instance_ids: string[]; p_user: string }
         Returns: string[]
+      }
+      variant_break_summary: {
+        Args: { p_user: string }
+        Returns: {
+          breakable: number
+          copies: number
+          definition_id: string
+          variant_id: string
+        }[]
       }
       variant_chance_now: { Args: never; Returns: number }
       variant_event_now: {
