@@ -3,6 +3,7 @@ export const PATCH_NOTES = [
   {
     date: "19 novembre 2026",
     changes: [
+      "L'app ha più rilievo. I pulsanti sono tasti lucidi su una base e quando li premi scendono; le caselle delle modalità, di Home e di Gioca hanno una fascia di luce, le carte una cornice in rilievo e la barra in basso è una console. Lo sfondo ora è il blu notte di Nuova Megara, che sfuma nel nero. Ogni schermata sta ancora in uno schermo, senza scorrere. Se sul telefono hai attivato «Riduci movimento», i pulsanti premuti non si spostano.",
       "L'apertura dell'app è nuova. L'Ω del pacchetto esplode, le lettere di O-MEGA arrivano una dopo l'altra come timbri e all'ultima lo schermo trema: SBAM! Sotto il titolo, ogni volta che apri l'app, una riga diversa da Nuova Megara, con quattro righe nuove. L'app si apre sempre appena è pronta: l'animazione non allunga l'attesa.",
     ],
   },
