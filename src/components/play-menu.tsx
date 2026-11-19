@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { ChallengeCard, ChallengeRibbon } from "@/components/challenge-parts";
 import { TrophyIcon } from "@/components/leaderboard-places";
+import { StarCount } from "@/components/story-stars";
 import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
 import { challengeEmergencyHref, runningChallenge, type Challenge } from "@/lib/challenges";
@@ -16,6 +17,7 @@ import { useRememberedState } from "@/lib/place-memory";
 import { isQuadrantFormat, QUADRANT_FORMATS, QUADRANT_GRID_LABELS, type QuadrantFormat } from "@/lib/quadrant";
 import { leagueInfo, type MyRanked } from "@/lib/ranked";
 import { chapterUnlocked, type StoryChapter } from "@/lib/story";
+import { storyStarCount } from "@/lib/story-stars";
 
 const DIFFICULTIES = ["easy", "medium", "hard", "super_pro"] as const;
 type Difficulty = (typeof DIFFICULTIES)[number];
@@ -419,28 +421,44 @@ function TodayTile({
   href,
   title,
   detail,
+  detailTail,
   state,
+  stateLabel,
   className,
   disabled = false,
 }: {
   href: string;
   title: string;
   detail: string;
-  state?: string;
+  /** Said after the detail only when it fits whole: beside the event the tile is narrow. */
+  detailTail?: string;
+  /** The black chip under the detail. */
+  state?: ReactNode;
+  /** What the chip says to a screen reader, when it is not plain text. */
+  stateLabel?: string;
   className: string;
   disabled?: boolean;
 }) {
+  const said = stateLabel ?? (typeof state === "string" ? state : undefined);
   return (
     <Link
       href={href}
       aria-disabled={disabled}
-      aria-label={`${title}: ${detail}${state ? `, ${state}` : ""}`}
+      aria-label={`${title}: ${detail}${said ? `, ${said}` : ""}`}
       className={`tile flex min-h-12 min-w-0 flex-[1_1_0] flex-col justify-center px-2.5 py-1 text-black short:min-h-11 ${className} ${
         disabled ? "pointer-events-none opacity-40" : ""
       }`}
     >
       <span className="block truncate font-display text-[15px] uppercase leading-5">{title}</span>
-      <span className="block truncate text-[12px] font-bold leading-4">{detail}</span>
+      {detailTail ? (
+        // A tail that does not fit wraps onto a second line, which the fixed height hides.
+        <span className="flex h-4 flex-wrap overflow-hidden text-[12px] font-bold leading-4">
+          <span className="truncate">{detail}</span>
+          <span className="whitespace-nowrap">&nbsp;· {detailTail}</span>
+        </span>
+      ) : (
+        <span className="block truncate text-[12px] font-bold leading-4">{detail}</span>
+      )}
       {state && (
         <span className="mt-0.5 max-w-full self-start truncate whitespace-nowrap bg-black px-1 text-[10px] font-extrabold uppercase leading-[14px] text-comic-yellow">
           {state}
@@ -538,16 +556,36 @@ function EmergencyChallengeRow({ challenge }: { challenge: Challenge }) {
   );
 }
 
-/** The Story at the chapter the player is in: the Story opens on its next mission. */
+/**
+ * The Story at the chapter the player is in, with the stars of the whole Story earned so far
+ * («★ 15/180», locked missions counted too): the Story opens on its next mission.
+ */
 function StoryTile({ chapters, disabled }: { chapters: StoryChapter[] | null; disabled: boolean }) {
   const playing = chapters?.find((chapter) => chapterUnlocked(chapter) && chapter.missions.some((m) => !m.completed));
   const done = playing?.missions.filter((m) => m.completed).length ?? 0;
+  const stars = chapters && storyStarCount(chapters);
+  const missions = playing ? `${done}/${playing.missions.length}` : null;
+  if (stars) {
+    // The stars take the chip; the chapter's missions move beside its number, when there is room.
+    return (
+      <TodayTile
+        href="/storia"
+        title="Storia"
+        detail={playing ? `Capitolo ${playing.number}` : "Completata"}
+        detailTail={missions ?? undefined}
+        state={<StarCount {...stars} className="align-top text-[11px]" />}
+        stateLabel={`${missions ? `${missions} missioni, ` : ""}${stars.earned} stelle su ${stars.total}`}
+        className="rays-gold"
+        disabled={disabled}
+      />
+    );
+  }
   return (
     <TodayTile
       href="/storia"
       title="Storia"
       detail={playing ? `Capitolo ${playing.number}` : chapters ? "Completata" : "Missioni"}
-      state={playing ? `${done}/${playing.missions.length} missioni` : undefined}
+      state={missions ? `${missions} missioni` : undefined}
       className="rays-gold"
       disabled={disabled}
     />

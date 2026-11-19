@@ -74,6 +74,17 @@ export function countStars(missions: readonly { stars: readonly StoryStar[] }[])
   };
 }
 
+/**
+ * Stars earned in the whole Story out of every star it has, locked missions included: "15/180"
+ * on the Story tile in Gioca. null until the stars reach the database (no mission has their rules).
+ */
+export function storyStarCount(
+  chapters: readonly { missions: readonly ({ stars: readonly StoryStar[] } & Pick<StarRulesText, "star_rarities">)[] }[],
+): { earned: number; total: number } | null {
+  const missions = chapters.flatMap((chapter) => chapter.missions);
+  return missions.some((mission) => mission.star_rarities.length > 0) ? countStars(missions) : null;
+}
+
 /** The coins a star of a new mission pays, by its chapter in the whole story (balance.story). */
 export function defaultStarCoins(chapter: number): number {
   const { starCoinsBase, starCoinsStep, starCoinsStepChapters } = balance.story;

@@ -8,6 +8,7 @@
 //   /prova-gioca/?s=partita     a match in progress: no «Gioca ancora», the modes blocked
 //   /prova-gioca/?s=premio      an event reward to open, the Conquista limit reached
 //   /prova-gioca/?s=senza       no event, Story all done
+//   /prova-gioca/?s=storia      no event, Story in progress: the chapter's missions beside its number
 //   /prova-gioca/?s=carico      while loading
 // The Emergenza della settimana: to play (nuovo, senza), in progress (partita), done (ancora, premio).
 
@@ -18,6 +19,7 @@ import type { LastPlay } from "@/lib/last-play";
 import type { ActiveMatch, ConquestStatus } from "@/lib/match";
 import type { MyRanked } from "@/lib/ranked";
 import type { StoryChapter } from "@/lib/story";
+import type { StoryStar } from "@/lib/story-stars";
 
 const RANKED: MyRanked = {
   season: "2026-11",
@@ -37,21 +39,31 @@ const RANKED: MyRanked = {
   prizes: [],
 };
 
-function mission(chapter: number, ord: number, completed: boolean, unlocked: boolean) {
-  return { code: `m${chapter}-${ord}`, ord, title: "Missione", intro: "", opponent: "Bot", bot_difficulty: "easy" as const, threat_levels: [], reward_coins: 20, reward_card: null, completed, unlocked, star_coins: 10, stars: [], star_rarities: [], star_rarity_names: [], star_traits: [], star_traits_text: [] };
+function mission(chapter: number, ord: number, completed: boolean, unlocked: boolean, stars: StoryStar[]) {
+  return { code: `m${chapter}-${ord}`, ord, title: "Missione", intro: "", opponent: "Bot", bot_difficulty: "easy" as const, threat_levels: [], reward_coins: 20, reward_card: null, completed, unlocked, star_coins: 10, stars, star_rarities: ["delta"], star_rarity_names: ["Delta"], star_traits: [], star_traits_text: [] };
 }
 
+/**
+ * The Story's real size, 12 chapters of 5 missions (180 stars). Playing: chapter 3 at 2/5,
+ * 19 stars; all done: 156 stars, the widest the tile's count gets.
+ */
 function chapters(allDone: boolean): StoryChapter[] {
-  return [1, 2, 3, 4].map((n) => ({
+  return Array.from({ length: 12 }, (_, i) => i + 1).map((n) => ({
     chapter: n,
-    season: 1,
-    season_title: "Il risveglio",
-    number: n,
-    title: ["Le prime luci", "Il porto", "La torre", "Il patto"][n - 1],
+    season: n <= 6 ? 1 : 2,
+    season_title: n <= 6 ? "Il risveglio" : "La marea",
+    number: ((n - 1) % 6) + 1,
+    title: `Capitolo ${n}`,
     intro: "",
     outro: null,
     season_ending: null,
-    missions: [1, 2, 3].map((ord) => mission(n, ord, allDone || n === 1 || (n === 2 && ord === 1), allDone || n <= 2)),
+    missions: [1, 2, 3, 4, 5].map((ord) => {
+      const completed = allDone || n <= 2 || (n === 3 && ord <= 2);
+      const stars: StoryStar[] = allDone
+        ? ord === 5 ? ["flawless"] : ["flawless", "rarities", "traits"]
+        : completed ? (ord % 2 ? ["flawless", "rarities"] : ["traits"]) : [];
+      return mission(n, ord, completed, completed || (n === 3 && ord === 3), stars);
+    }),
   }));
 }
 
@@ -148,6 +160,16 @@ const SCENES: Record<string, Scene> = {
     emergencyWeek: week(null),
     story: chapters(true),
     lastPlay: { mode: "queue", format: "boss" },
+    event: "off",
+  },
+  storia: {
+    active: null,
+    conquest: OPEN,
+    ranked: RANKED,
+    emergency: { passed: 6, rank: 12 },
+    emergencyWeek: week(null),
+    story: chapters(false),
+    lastPlay: { mode: "bot", format: "classic", difficulty: "medium" },
     event: "off",
   },
   carico: {

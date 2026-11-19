@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { countStars, defaultStarCoins, joinOr, starCondition, starShort, traitCategoryOf, type StarRulesText } from "./story-stars";
+import {
+  countStars,
+  defaultStarCoins,
+  joinOr,
+  starCondition,
+  starShort,
+  storyStarCount,
+  traitCategoryOf,
+  type StarRulesText,
+  type StoryStar,
+} from "./story-stars";
 
 const RULES: StarRulesText = {
   star_rarities: ["delta", "gamma"],
@@ -34,6 +44,22 @@ describe("story stars as players read them", () => {
       earned: 3,
       total: 9,
     });
+  });
+
+  it("counts the stars of the whole story, locked missions included", () => {
+    const open = (stars: StoryStar[]) => ({ stars, star_rarities: ["delta"] });
+    expect(
+      storyStarCount([
+        { missions: [open(["flawless", "rarities", "traits"]), open(["traits"])] },
+        { missions: [open([]), open([])] },
+      ]),
+    ).toEqual({ earned: 4, total: 12 });
+    expect(storyStarCount([{ missions: [open([])] }, { missions: [] }])).toEqual({ earned: 0, total: 3 });
+  });
+
+  it("counts no stars before the database has them", () => {
+    expect(storyStarCount([])).toBeNull();
+    expect(storyStarCount([{ missions: [{ stars: [], star_rarities: [] }] }])).toBeNull();
   });
 
   it("gives new missions more coins per star later in the story", () => {
