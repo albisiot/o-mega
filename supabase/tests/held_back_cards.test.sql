@@ -1,6 +1,7 @@
--- Integration test for characters held back from packs (in_packs false) with the thirty
--- characters of the Thousand Suns, P232-P261 (20261119250000_thousand_suns_characters.sql),
--- which arrive held back: no automatic path gives them (packs, starter set, random
+-- Integration test for characters held back from packs (in_packs false) with the sixty
+-- characters that arrived held back: the Thousand Suns, P232-P261
+-- (20261119250000_thousand_suns_characters.sql), and the Marches of Arcadia, P262-P291
+-- (20261120200000_marches_characters.sql): no automatic path gives them (packs, starter set, random
 -- variants, Conquista against a bot, imprese counting a whole faction), and once an admin
 -- ticks them in with admin_set_cards_in_packs they come out like every other card
 -- (20261119240000_held_back_cards.sql). Bot teams are built in the match Edge Function.
@@ -24,11 +25,11 @@ do $$ begin perform public.bootstrap_player(); end $$;
 reset role;
 insert into public.admin_users (user_id) values ('00000000-0000-4000-8000-0000000009e1');
 
--- Only the thirty are held back here, whatever the live flags of the others are.
-update public.card_definitions set in_packs = (code not between 'P232' and 'P261') where is_active and unlock_level is null;
+-- Only the sixty are held back here, whatever the live flags of the others are.
+update public.card_definitions set in_packs = (code not between 'P232' and 'P291') where is_active and unlock_level is null;
 
 create function pg_temp.held() returns setof uuid language sql as $$
-  select id from public.card_definitions where code between 'P232' and 'P261'
+  select id from public.card_definitions where code between 'P232' and 'P291'
 $$;
 
 -- A new player with the starter set: bootstrap_player grants it.
@@ -44,23 +45,23 @@ begin
 end;
 $$;
 
--- The thirty, as they arrive.
+-- The sixty, as they arrive.
 do $$
 begin
-  assert (select count(*) from public.card_definitions where code between 'P232' and 'P261' and is_active and not in_packs) = 30,
-    'the thirty arrive active and held back';
+  assert (select count(*) from public.card_definitions where code between 'P232' and 'P291' and is_active and not in_packs) = 60,
+    'the sixty arrive active and held back';
   assert not exists (select 1 from public.card_definitions d where d.id in (select pg_temp.held()) and public.is_pack_card(d)),
     'a held-back character is a pack card';
-  assert (select count(*) from public.card_variants v where v.definition_id in (select pg_temp.held()) and v.is_active) = 30,
+  assert (select count(*) from public.card_variants v where v.definition_id in (select pg_temp.held()) and v.is_active) = 60,
     'one variant each';
   assert (select count(*) from public.card_definition_traits t where t.definition_id in (select pg_temp.held())
-          and t.trait_code = 'origin.strappo') = 30, 'all of them came through the rift';
+          and t.trait_code = 'origin.strappo') = 60, 'all of them came through the rift';
   -- The album reads the flag and hides them from players who lack them.
-  assert (select count(*) from public.card_catalog where code between 'P232' and 'P261' and not in_packs) = 30,
+  assert (select count(*) from public.card_catalog where code between 'P232' and 'P291' and not in_packs) = 60,
     'the album view tells which characters are held back';
 end $$;
 
--- Packs: a hundred packs never give one of the thirty.
+-- Packs: a hundred packs never give one of the sixty.
 do $$
 declare
   v_drawn uuid[] := '{}';
@@ -78,25 +79,25 @@ begin
 end $$;
 
 -- Starter set: with only ten other Delta in packs, a new player gets exactly those ten,
--- never one of the ten held-back Delta.
+-- never one of the twenty held-back Delta.
 do $$
 declare
   v_keep uuid[] := array(
     select id from public.card_definitions
-    where rarity_code = 'delta' and is_active and unlock_level is null and code not between 'P232' and 'P261'
+    where rarity_code = 'delta' and is_active and unlock_level is null and code not between 'P232' and 'P291'
     order by code limit 10);
   v_user uuid;
 begin
   update public.card_definitions set in_packs = (id = any (v_keep))
-  where rarity_code = 'delta' and is_active and unlock_level is null and code not between 'P232' and 'P261';
+  where rarity_code = 'delta' and is_active and unlock_level is null and code not between 'P232' and 'P291';
   v_user := pg_temp.new_player(1);
   assert (select array_agg(definition_id order by definition_id) from public.card_instances where owner_id = v_user and is_starter)
     = (select array_agg(u order by u) from unnest(v_keep) u), 'the starter set picked outside the pack cards';
   update public.card_definitions set in_packs = true
-  where rarity_code = 'delta' and is_active and unlock_level is null and code not between 'P232' and 'P261';
+  where rarity_code = 'delta' and is_active and unlock_level is null and code not between 'P232' and 'P291';
 end $$;
 
--- Random variants (rewards and the Schegge shop): a hundred never give one of the thirty,
+-- Random variants (rewards and the Schegge shop): a hundred never give one of the sixty,
 -- and the shop counts only the missing variants it can give.
 do $$
 declare
@@ -166,7 +167,7 @@ begin
     'only the two cards in packs can be taken';
   assert not exists (
     select 1 from jsonb_array_elements(v_offered) o
-    where (o ->> 'eligible')::boolean and (o ->> 'code' between 'P232' and 'P261' or o ->> 'code' = 'P061')
+    where (o ->> 'eligible')::boolean and (o ->> 'code' between 'P232' and 'P291' or o ->> 'code' = 'P061')
   ), 'a held-back copy or a level card can be taken';
   assert not exists (
     select 1 from public.conquest_claims c, unnest(c.eligible_instance_ids) e(id)
@@ -188,41 +189,42 @@ begin
     'every villain owned, held-back ones aside';
 end $$;
 
--- The admin ticks the thirty in: they come out like every other card.
+-- The admin ticks the sixty in: they come out like every other card.
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000009e1", "role": "authenticated"}', true);
 do $$
 declare
-  v_list jsonb := public.admin_set_cards_in_packs(array(select code from public.card_definitions where code between 'P232' and 'P261'), true);
+  v_list jsonb := public.admin_set_cards_in_packs(array(select code from public.card_definitions where code between 'P232' and 'P291'), true);
 begin
   assert (select count(*) from jsonb_array_elements(v_list -> 'cards') c
-          where c ->> 'code' between 'P232' and 'P261' and (c ->> 'in_packs')::boolean) = 30, 'the list shows them in packs';
+          where c ->> 'code' between 'P232' and 'P291' and (c ->> 'in_packs')::boolean) = 60, 'the list shows them in packs';
 end $$;
 reset role;
 
 do $$
 declare
   v_drawn uuid[] := '{}';
-  v_keep uuid[] := array(select id from public.card_definitions where code between 'P232' and 'P241' order by id);
+  v_new_delta uuid[] := array(select id from public.card_definitions where rarity_code = 'delta' and code between 'P232' and 'P291');
   v_user uuid;
   v_given uuid[];
 begin
-  assert (select count(*) from public.card_definitions d where d.id in (select pg_temp.held()) and public.is_pack_card(d)) = 30,
-    'all thirty are pack cards';
+  assert (select count(*) from public.card_definitions d where d.id in (select pg_temp.held()) and public.is_pack_card(d)) = 60,
+    'all sixty are pack cards';
   for i in 1..100 loop
     v_drawn := v_drawn || public.draw_pack_definitions(5, public.config_int('packs.guaranteed_min_rarity_rank'));
   end loop;
-  assert v_drawn && array(select pg_temp.held()), 'a hundred packs and none of the thirty';
+  assert v_drawn && array(select pg_temp.held()), 'a hundred packs and none of the sixty';
 
-  -- With the other Delta held back, the starter set is the ten new Delta.
+  -- With the other Delta held back, the starter set is ten of the twenty new Delta.
   update public.card_definitions set in_packs = false
-  where rarity_code = 'delta' and is_active and unlock_level is null and code not between 'P232' and 'P261';
+  where rarity_code = 'delta' and is_active and unlock_level is null and code not between 'P232' and 'P291';
   v_user := pg_temp.new_player(2);
-  assert (select array_agg(definition_id order by definition_id) from public.card_instances where owner_id = v_user and is_starter)
-    = v_keep, 'the starter set did not take the new Delta';
+  assert (select count(*) from public.card_instances where owner_id = v_user and is_starter) = 10
+    and array(select definition_id from public.card_instances where owner_id = v_user and is_starter) <@ v_new_delta,
+    'the starter set did not take the new Delta';
 
-  -- With every other character held back, random variants come from the thirty.
-  update public.card_definitions set in_packs = (code between 'P232' and 'P261') where is_active and unlock_level is null;
+  -- With every other character held back, random variants come from the sixty.
+  update public.card_definitions set in_packs = (code between 'P232' and 'P291') where is_active and unlock_level is null;
   v_given := array(select g.instance_id from public.grant_random_variants(v_user, '{"count": 5}', 'bonus_code') g);
   v_given := array(select i.definition_id from public.card_instances i where i.id = any (v_given));
   assert cardinality(v_given) = 5 and v_given <@ array(select pg_temp.held()), 'random variants once in packs';

@@ -1,5 +1,5 @@
 -- Test for 20261120100000_thirteen_new_powers.sql: the thirteen powers of 20 November 2026
--- in the catalog with their texts, on no card yet, and what the server shows for
+-- in the catalog with their texts, each on one character of the Marches (P262-P291), and what the server shows for
 -- Infiltrato, Presagio and Oracolo, in a match and in an Emergenza. Runs inside a
 -- rolled-back transaction:
 --   npm run test:db
@@ -14,7 +14,7 @@ select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-000000
 select public.bootstrap_player();
 reset role;
 
--- The catalog: names, tiers, texts; on no card yet.
+-- The catalog: names, tiers, texts; each on the one character of the Marches made for it.
 do $$
 declare
   v_plinth public.card_definitions := (select d from public.card_definitions d where d.code = 'P112');
@@ -25,11 +25,14 @@ begin
                     'spoiler', 'infiltrator') and tier = 'simple')
        or (code in ('attrition', 'omen', 'oracle') and tier = 'distinctive')
   ) = 13, 'the thirteen powers and their tier';
-  assert not exists (
-    select 1 from public.card_definitions
+  assert (
+    select jsonb_object_agg(code, power_code order by code) from public.card_definitions
     where power_code in ('attrition', 'peak', 'euphoria', 'away', 'twin', 'match_point', 'icebreaker', 'even_score',
                          'diminuendo', 'spoiler', 'omen', 'infiltrator', 'oracle')
-  ), 'no card has them yet: they wait for characters made for them';
+  ) = '{"P272": "peak", "P273": "icebreaker", "P274": "euphoria", "P275": "match_point", "P276": "diminuendo",
+        "P278": "infiltrator", "P279": "twin", "P281": "away", "P282": "even_score", "P283": "spoiler",
+        "P287": "omen", "P290": "oracle", "P291": "attrition"}'::jsonb,
+    'one character each, made for it (20261120200000_marches_characters.sql)';
 
   assert public.power_text('attrition', '{"malus": 2}')
     = 'Dopo averlo giocato, il prossimo personaggio dell''avversario ha -2 al punteggio (non allo spareggio)', 'Logoramento text';
@@ -65,10 +68,12 @@ declare
   v_state jsonb;
   v_play jsonb;
 begin
+  -- Villains: Epigrafe (Presagio) and Millenario (Oracolo) hold the heroes' places, and an
+  -- exact power goes on one card per faction.
   insert into public.card_definitions (code, name, faction, rarity_code, stats, power_code, power_params) values
-    ('TEST_OMEN', 'Presagio', v_plinth.faction, v_plinth.rarity_code, v_plinth.stats, 'omen', '{}'),
-    ('TEST_ORACLE', 'Oracolo', v_plinth.faction, v_plinth.rarity_code, v_plinth.stats, 'oracle', '{}'),
-    ('TEST_INFIL', 'Infiltrato', v_plinth.faction, v_plinth.rarity_code, v_plinth.stats, 'infiltrator', '{}');
+    ('TEST_OMEN', 'Presagio', 'villains', v_plinth.rarity_code, v_plinth.stats, 'omen', '{}'),
+    ('TEST_ORACLE', 'Oracolo', 'villains', v_plinth.rarity_code, v_plinth.stats, 'oracle', '{}'),
+    ('TEST_INFIL', 'Infiltrato', 'villains', v_plinth.rarity_code, v_plinth.stats, 'infiltrator', '{}');
   v_omen := (select id from public.card_definitions where code = 'TEST_OMEN');
   v_oracle := (select id from public.card_definitions where code = 'TEST_ORACLE');
   v_infiltrator := (select id from public.card_definitions where code = 'TEST_INFIL');

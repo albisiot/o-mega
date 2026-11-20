@@ -16,7 +16,7 @@ begin
     select count(*) from public.card_definitions
     where power_code in ('scrappy', 'counterpunch', 'eclectic', 'lone_wolf', 'opportunist', 'reflect', 'vendetta',
       'main_event', 'adaptable', 'sacrifice', 'pack_leader', 'echo', 'catalyst', 'fog')
-  ) = 23, 'each backlog power on its card, nine also on a character of the Thousand Suns (P232-P261)';
+  ) = 25, 'each backlog power on its card, nine also on a character of the Thousand Suns (P232-P261), two on one of the Marches (P262-P291)';
   assert public.power_text('scrappy', '{"min_value": 3}')
     = 'Le abilità richieste che valgono meno di 3 contano 3', 'Arte di arrangiarsi text';
   assert public.power_text('counterpunch', '{"bonus": 1, "max": 3}')

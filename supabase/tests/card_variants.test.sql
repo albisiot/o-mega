@@ -22,8 +22,8 @@ begin
     select jsonb_object_agg(style, n) from (
       select style, count(*) as n from public.card_variants where style not in ('neon', 'epic') group by style
     ) s
-  ) = '{"cinema": 10, "pastel": 12, "gold": 10, "classic": 10, "retro": 10, "oil": 10, "cartoon": 10, "poster": 10, "inferno": 9, "graphite": 10, "marble": 10, "gothic": 10, "tarot": 13, "ink": 10, "fantasy": 10, "prism": 10, "comet": 10, "regal": 9, "render": 10, "phoenix": 10, "manga": 9, "stained": 10, "crimson": 10, "wraith": 10, "flame": 10, "shadow": 10, "etching": 10, "circuit": 10, "watercolor": 10, "tempera": 10, "zombie": 8, "portrait": 10}'::jsonb,
-    'every series has its expected number of variants';
+  ) = '{"cinema": 10, "pastel": 12, "gold": 10, "classic": 10, "retro": 10, "oil": 10, "cartoon": 10, "poster": 10, "inferno": 10, "graphite": 10, "marble": 10, "gothic": 11, "tarot": 13, "ink": 11, "fantasy": 11, "prism": 10, "comet": 10, "regal": 10, "render": 11, "phoenix": 10, "manga": 10, "stained": 11, "crimson": 10, "wraith": 11, "flame": 11, "shadow": 10, "etching": 11, "circuit": 10, "watercolor": 11, "tempera": 10, "zombie": 9, "portrait": 11, "iris": 2, "cyber": 2, "geometric": 2, "pulp": 2, "realism": 2, "ornate": 2, "nineties": 2, "anime": 2}'::jsonb,
+    'every series has its expected number of variants (the eight styles of 20 November 2026 with the Marches, P262-P291)';
   assert not exists (
     select 1 from public.card_variants v
     join public.card_definitions d on d.id = v.definition_id

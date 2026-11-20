@@ -34,8 +34,9 @@ begin
     select 1 from public.card_definitions where power_code is not null
     group by power_code, power_params, faction having count(*) > 1
   ), 'an exact power on two cards of one faction';
-  -- 157 on 16 November 2026, then the twenty of the Thousand Suns with a power (P242-P261).
-  assert (select count(*) from public.card_definitions where power_code is not null) = 177, 'cards with a power';
+  -- 157 on 16 November 2026, then the twenty of the Thousand Suns with a power (P242-P261)
+  -- and the twenty of the Marches (P272-P291).
+  assert (select count(*) from public.card_definitions where power_code is not null) = 197, 'cards with a power';
 
   assert public.power_text('bond_threshold', '{"bonus": 3, "min_allies": 2}')
     = '+3 se in squadra ci sono almeno 2 altri personaggi della sua fazione', 'Legame text';

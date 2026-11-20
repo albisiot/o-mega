@@ -32,12 +32,13 @@ begin
   -- Annullatore, Miliarium (P161) and Holloway (P177) Crescendo, Quarantine (P182)
   -- Slancio, Penates (P206) Davide. Injunction (P179) took the Annullatore ritardato on
   -- 16 November 2026; some of the others keep the power with other numbers. Sferza
-  -- (P258) took Slancio and Legatura (P254) Davide on 20 November 2026.
+  -- (P258) took Slancio and Legatura (P254) Davide on 20 November 2026, Fumarola (P289)
+  -- Slancio the same day.
   assert (
     select jsonb_object_agg(p.code, (select count(*) from public.card_definitions d where d.power_code = p.code and d.is_active))
     from public.power_definitions p
     where p.code in ('nullifier', 'giant_slayer', 'crescendo', 'momentum')
-  ) = '{"nullifier": 3, "giant_slayer": 4, "crescendo": 4, "momentum": 4}'::jsonb, 'cards with each new power';
+  ) = '{"nullifier": 3, "giant_slayer": 4, "crescendo": 4, "momentum": 5}'::jsonb, 'cards with each new power';
   assert (select count(*) from public.card_definitions where code between 'P115' and 'P122' and is_active) = 8,
     'eight new characters';
   assert public.power_text('giant_slayer', '{"bonus": 3, "min_gap": 2}')

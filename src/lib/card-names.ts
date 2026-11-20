@@ -2356,6 +2356,258 @@ const STYLES: Record<string, NameStyle> = {
     glow: "rgb(190 130 255 / 0.45)",
     depth: 12,
   },
+  // The Marches of Arcadia (P262-P291): from the Earth where matter obeys words spoken well.
+  // Stoppia: the company's cook, mustard quilting and a copper pot.
+  P262: {
+    font: "bubble",
+    fill: layers(stitches("rgb(120 70 20 / 0.45)"), grad("#fffbe8", "#e0b850 50%", "#7a5418")),
+    rim: "#0a0602",
+    side: ["#a0582a", "#0a0602"],
+    depth: 10,
+  },
+  // Torrione: the shield of the gorge, sintered stone and oxblood padding.
+  P263: {
+    font: "block",
+    fill: layers(bricks("rgb(40 40 44 / 0.45)"), grad("#f4f2ee", "#a8a49c 50%", "#4a4640")),
+    rim: "#060504",
+    side: ["#6a1e1a", "#060504"],
+    depth: 12,
+  },
+  // Muschio: the forest tracker, lichen green and wood grain.
+  P264: {
+    font: "myth",
+    fill: layers(veins("rgb(60 80 40 / 0.45)"), grad("#f4fff0", "#9ab88a 50%", "#3a5230")),
+    rim: "#040804",
+    side: ["#5a4028", "#040804"],
+    glow: "rgb(255 220 120 / 0.25)",
+  },
+  // Ceralacca: the stamped soldier, rust-red lacquer and a blob of wax.
+  P265: {
+    font: "stencil",
+    fill: layers(spiral("rgb(255 120 100 / 0.35)", "rgb(120 10 10 / 0.25)"), grad("#ffece8", "#c84a3a 50%", "#5a120c")),
+    rim: "#0a0202",
+    side: ["#5a120c", "#0a0202"],
+  },
+  // Macigno: the erased quarryman, granite crossed by a black stripe.
+  P266: {
+    font: "anton",
+    fill: layers(stripes("rgb(10 10 10 / 0.55)", 170, 0.12), cracks("rgb(30 30 30 / 0.5)"), grad("#f0f0ee", "#9a9a98 50%", "#3e3e3c")),
+    rim: "#050505",
+    side: ["#3e3e3c", "#050505"],
+    depth: 13,
+  },
+  // Anagrafe: the name collector, bottle green and black ink.
+  P267: {
+    font: "elegant",
+    fill: layers(drips("rgb(10 14 12 / 0.75)"), grad("#f0fff6", "#5a8a6a 50%", "#1a3424")),
+    rim: "#020604",
+    side: ["#1a3424", "#020604"],
+    line: "#ffd27a",
+  },
+  // Guado: the ferrywoman, ochre waxed canvas over black water.
+  P268: {
+    font: "slab",
+    fill: layers(waves("rgb(30 40 50 / 0.45)"), grad("#fff8e8", "#d0a050 50%", "#5a3e14")),
+    rim: "#06050a",
+    side: ["#1a2a3a", "#06050a"],
+  },
+  // Ortica: the herbalist, nettle green and a glowing tincture.
+  P269: {
+    font: "elegant",
+    fill: layers(zigzag("rgb(40 90 30 / 0.45)"), grad("#f6fff0", "#7ab060 50%", "#24481a")),
+    rim: "#040802",
+    side: ["#24481a", "#040802"],
+    glow: "rgb(150 255 120 / 0.35)",
+  },
+  // Postilla: the stamped chancellor, black robe and red seals.
+  P270: {
+    font: "gothic",
+    fill: layers(dots("rgb(220 30 30 / 0.6)", 0.3), grad("#f8f4f0", "#8a8480 50%", "#1e1a18")),
+    rim: "#060404",
+    side: ["#6a0e0e", "#060404"],
+    jitter: [[-3, 0], [2, 0.02], [-1, -0.02], [3, 0]],
+  },
+  // Brina: the mountain guide, frost white and a lava glow.
+  P271: {
+    font: "myth",
+    fill: layers(blueprint("rgb(150 190 220 / 0.3)"), grad("#ffffff", "#e4eef6 50%", "#8aa0b4")),
+    rim: "#04060a",
+    side: ["#c0501a", "#04060a"],
+    glow: "rgb(255 120 40 / 0.3)",
+  },
+  // Cocca: the forest archer, horn and gold fletching.
+  P272: {
+    font: "speed",
+    fill: layers(speedLines("rgb(255 210 90 / 0.5)"), grad("#fffbf0", "#c8b088 50%", "#4a3a20")),
+    rim: "#060402",
+    side: ["#3a5a2a", "#060402"],
+    slant: 8,
+  },
+  // Sperone: the plains rider, rust-orange cloak and the charge.
+  P273: {
+    font: "comic",
+    fill: layers(speedLines("rgb(255 240 200 / 0.45)"), grad("#fff2e0", "#e07a30 50%", "#6a2a08")),
+    rim: "#0a0402",
+    side: ["#6a2a08", "#0a0402"],
+    slant: 10,
+    depth: 10,
+  },
+  // Vessillo: the exiled heir, a torn crimson banner on navy blue.
+  P274: {
+    font: "myth",
+    fill: metal("#ffeef0", "#e04050", "#2a3460", "#1a2448", "#7080b0"),
+    rim: "#04040a",
+    side: ["#1a2448", "#04040a"],
+    line: "#ffd060",
+  },
+  // Scure: the executioner, oiled leather and a crescent blade.
+  P275: {
+    font: "horror",
+    fill: layers(claws("rgb(200 210 220 / 0.5)"), grad("#eceae8", "#5a5048 50%", "#1a1410")),
+    rim: "#040302",
+    side: ["#4a3a2a", "#040302"],
+    depth: 11,
+  },
+  // Imbrunire: the dusk spectre, orange fading into violet.
+  P276: {
+    font: "elegant",
+    fill: grad("#fff4e0", "#ff9a40 35%", "#9a3a8a 70%", "#2a1040"),
+    rim: "#08040c",
+    side: ["#2a1040", "#08040c"],
+    glow: "rgb(255 140 60 / 0.4)",
+    split: ["rgb(150 60 180 / 0.35)", "rgb(255 150 60 / 0.3)"],
+    haze: true,
+  },
+  // Mantice: the bellows automaton, riveted iron and a white-hot furnace.
+  P277: {
+    font: "block",
+    fill: layers(honeycomb("rgb(255 200 90 / 0.4)"), metal("#fff6e8", "#ffb040", "#4a3a34", "#2a2220", "#8a7060")),
+    rim: "#060302",
+    side: ["#2a2220", "#060302"],
+    glow: "rgb(255 160 50 / 0.45)",
+    depth: 12,
+  },
+  // Pertugio: the hill-folk burglar, grey wool and a ring of lockpicks.
+  P278: {
+    font: "stencil",
+    fill: layers(dots("rgb(255 180 80 / 0.4)", 0.2), grad("#f4f4f8", "#8a8c98 50%", "#2a2c38")),
+    rim: "#040408",
+    side: ["#4a3420", "#040408"],
+    slant: -6,
+  },
+  // Bifora: the two halves of a people, selenite split in two.
+  P279: {
+    font: "myth",
+    fill: layers(cracks("rgb(255 250 220 / 0.7)"), grad("#f8f8f6", "#b4b2ac 50%", "#5a5852")),
+    rim: "#060606",
+    side: ["#5a5852", "#060606"],
+    split: ["rgb(255 255 255 / 0.35)", "rgb(40 40 40 / 0.35)"],
+    tracking: 0.05,
+  },
+  // Picozza: the quarry miner, blue ice and a brass lamp.
+  P280: {
+    font: "anton",
+    fill: layers(facets("rgb(220 245 255 / 0.5)", "rgb(120 180 220 / 0.3)", "rgb(20 60 100 / 0.3)"), grad("#f0faff", "#7ab4d8 50%", "#1e4a6a")),
+    rim: "#02060a",
+    side: ["#8a6a2a", "#02060a"],
+    slant: 5,
+  },
+  // Gerla: the bearer, wicker and a dull red glow in the basket.
+  P281: {
+    font: "slab",
+    fill: layers(stitches("rgb(90 50 20 / 0.5)"), grad("#fff6e4", "#c89a5a 50%", "#5a3a18")),
+    rim: "#080402",
+    side: ["#7a1a10", "#080402"],
+    glow: "rgb(220 60 40 / 0.35)",
+  },
+  // Concordato: the chief of the quarrymen, cast-iron counterweights.
+  P282: {
+    font: "block",
+    fill: metal("#f4f4f4", "#a0a0a4", "#2e2e32", "#48484e", "#b8b8bc"),
+    rim: "#040404",
+    side: ["#7a5a2a", "#040404"],
+    depth: 14,
+    tracking: 0.03,
+  },
+  // Rasura: the scraped spectre, parchment and one red line.
+  P283: {
+    font: "gothic",
+    fill: layers(stripes("rgb(200 30 30 / 0.55)", 180, 0.04), grad("#fbf6ea", "#d8ccb0 50%", "#7a6e58")),
+    rim: "#0a0806",
+    side: ["#7a6e58", "#0a0806"],
+    split: ["rgb(240 230 210 / 0.35)", "rgb(240 230 210 / 0.35)"],
+    haze: true,
+  },
+  // Decana: the dean who sold the syllables, plum velvet and gold tattoos.
+  P284: {
+    font: "elegant",
+    fill: layers(stars("rgb(255 215 120 / 0.6)"), grad("#fff0fa", "#a04a8a 50%", "#3a0e30")),
+    rim: "#08020a",
+    side: ["#3a0e30", "#08020a"],
+    line: "#ffd078",
+  },
+  // Tempra: the lame smith, white-hot iron on the anvil.
+  P285: {
+    font: "slab",
+    fill: layers(cracks("rgb(255 230 150 / 0.9)", "2em 0.9em"), grad("#fff8e0", "#ff9030 45%", "#7a1e08")),
+    rim: "#0a0402",
+    side: ["#3a2a20", "#0a0402"],
+    glow: "rgb(255 150 40 / 0.5)",
+    depth: 11,
+  },
+  // Cunicolo: the blind creature of the tunnels, chalk white swallowing light.
+  P286: {
+    font: "horror",
+    fill: layers(veins("rgb(90 60 80 / 0.45)"), grad("#ffffff", "#e8e0e4 50%", "#a0909a")),
+    rim: "#060406",
+    side: ["#d07a90", "#060406"],
+    glow: "rgb(255 200 220 / 0.3)",
+  },
+  // Epigrafe: the silenced mage, chalk letters glowing on deep blue.
+  P287: {
+    font: "myth",
+    fill: layers(blueprint("rgb(255 255 255 / 0.35)"), grad("#ffffff", "#c8d4f0 45%", "#2a3a7a")),
+    rim: "#04060c",
+    side: ["#8a6a3a", "#04060c"],
+    glow: "rgb(255 245 210 / 0.5)",
+    tracking: 0.04,
+  },
+  // Nomina: the sovereign who writes names, copper scales and red wax.
+  P288: {
+    font: "elegant",
+    fill: layers(scales("rgb(90 40 20 / 0.45)"), metal("#fff2e4", "#e09060", "#6a2e18", "#8a4a28", "#f0b890")),
+    rim: "#080302",
+    side: ["#8a0e14", "#080302"],
+    line: "#ff3a3a",
+    depth: 10,
+  },
+  // Fumarola: the old dragon of the volcano, lava crust and glowing cracks.
+  P289: {
+    font: "gothic",
+    fill: layers(cracks("rgb(255 140 40 / 0.9)", "1.8em 0.9em"), grad("#e8e8ec", "#6a6a74 50%", "#24242a")),
+    rim: "#050405",
+    side: ["#a03a10", "#050405"],
+    glow: "rgb(255 120 30 / 0.45)",
+    depth: 12,
+  },
+  // Millenario: the walking olive tree, silver leaves on gnarled bark.
+  P290: {
+    font: "myth",
+    fill: layers(grain("rgb(70 50 30 / 0.4)"), grad("#f6fbf0", "#a8b898 40%", "#5a4a32")),
+    rim: "#060402",
+    side: ["#5a4a32", "#060402"],
+    glow: "rgb(255 230 150 / 0.45)",
+    depth: 13,
+  },
+  // Apocrifo: the nameless one, dripping ink and paper.
+  P291: {
+    font: "gothic",
+    fill: layers(drips("rgb(5 5 8 / 0.9)"), grad("#fbf6e8", "#c8bc9c 55%", "#3a3428")),
+    rim: "#020202",
+    side: ["#1a1a1e", "#020202"],
+    split: ["rgb(20 20 25 / 0.45)", "rgb(240 230 200 / 0.3)"],
+    jitter: [[2, 0], [-3, 0.03], [1, -0.02], [-2, 0]],
+  },
 };
 
 const FACTION_LOOK: Record<string, Pick<NameStyle, "fill" | "side">> = {
