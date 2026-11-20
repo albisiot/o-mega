@@ -1,10 +1,13 @@
 import {
   abilityMalusOn,
   asPlayedAgainst,
+  calmedThreat,
   carriedBonusFrom,
   compareScores,
+  returnsAfterLoss,
   scorePlay,
   wearDownFrom,
+  withTheft,
   type PlayOutcome,
   type PlayedBefore,
 } from "./scoring.ts";
@@ -50,8 +53,13 @@ export function currentThreat(state: MatchState): Threat {
 
 /** Characters of a side not yet used: each one plays once per match (SPEC §5.5). */
 export function availableCharacters(state: MatchState, side: Side): Character[] {
-  const used = new Set(state.rounds.map((round) => round.plays[side].characterId));
-  return state.teams[side].filter((character) => !used.has(character.id));
+  return state.teams[side].filter((character) => {
+    const rounds = state.rounds.filter((round) => round.plays[side].characterId === character.id);
+    if (rounds.length === 0) return true;
+    // Fenice: back once after its only round, if it lost it with its power on.
+    const [only] = rounds;
+    return rounds.length === 1 && only.winner === otherSide(side) && returnsAfterLoss(playedIn(state, only, side));
+  });
 }
 
 /** How a round ended for `side`. */
@@ -159,17 +167,19 @@ export function resolveRound(
     b: asPlayedAgainst(chosen.b, chosen.a, threat, playedBefore(state, number, "b")),
   };
   const totals = totalScores(state);
+  // Calma piatta: the threat's rule does not count in this round, for both sides.
+  const ruled = calmedThreat(threat, acting.a, acting.b);
 
-  const plays = {} as Record<Side, PlayRecord>;
+  let plays = {} as Record<Side, PlayRecord>;
   for (const side of SIDES) {
-    const score = scorePlay(acting[side], threat, {
+    const score = scorePlay(acting[side], ruled, {
       families,
       roundsWon: won[side],
       opponentRoundsWon: won[otherSide(side)],
       carriedBonus: carriedBonus(state, side),
       round: currentRoundNumber(state),
       team: state.teams[side],
-      abilityMalus: abilityMalusOn(acting[side], acting[otherSide(side)], threat),
+      abilityMalus: abilityMalusOn(acting[side], acting[otherSide(side)], ruled),
       opponent: acting[otherSide(side)],
       previousLevel: previousLevel(state),
       previousOutcome: previousOutcome(state, side),
@@ -180,12 +190,14 @@ export function resolveRound(
     });
     plays[side] = { ...score, autoPlayed: choices[side].autoPlayed };
   }
+  // Ladro: the points the opposing power gave go to it.
+  plays = withTheft(plays, acting);
 
   const round: RoundRecord = {
     round: currentRoundNumber(state),
     threatId: threat.id,
     plays,
-    winner: compareScores(plays.a, plays.b, threat),
+    winner: compareScores(plays.a, plays.b, ruled),
   };
   return { state: { ...state, rounds: [...state.rounds, round] }, round };
 }

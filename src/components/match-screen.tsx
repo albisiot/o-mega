@@ -62,8 +62,12 @@ import {
   flipBefore,
   lastingSacrifice,
   outcomeOf,
+  calmedBy,
   playedBefore,
+  resultPowers,
   roundPlaysBefore,
+  rulePowerOutcome,
+  signed,
   roundPowerNotes,
   roundThreat,
   tieBreakReason,
@@ -75,7 +79,7 @@ import {
   wornDownBy,
 } from "@/lib/round-powers";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
-import { SeenCards } from "@/components/seen-cards";
+import { SeenCards, TrackedRarities } from "@/components/seen-cards";
 import { ReturnLink } from "@/components/return-link";
 import { matchBeforeRound, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
 import { STORY_PLACE, playedMission } from "@/lib/story-place";
@@ -663,7 +667,8 @@ function ChoosePhase({
 
   // Riscossa or Slancio: bonus earned in the previous rounds, unless an Annullatore stopped it.
   const previous = view.rounds.find((r) => r.round === round.round - 1);
-  const carried = carriedIntoRound(view.rounds, view.my_team, round.round, "me").points;
+  const carriedIn = carriedIntoRound(view.rounds, view.my_team, round.round, "me");
+  const carried = carriedIn.points;
 
   const available = view.my_team.filter((card) => card.played_round === null);
   const myPlayed = playedBefore(view.rounds, view.my_team, round.round, "me");
@@ -727,7 +732,7 @@ function ChoosePhase({
           <div className="mt-1.5 flex flex-wrap gap-1">
             {round.threat.hidden && (
               <span className="bg-black px-1.5 py-0.5 text-xs font-extrabold text-muted">
-                Abilità nascoste: si scoprono dopo la scelta
+                {round.ambushed ? `Imboscata di ${opponentName}: abilità nascoste fino alla scelta` : "Abilità nascoste: si scoprono dopo la scelta"}
               </span>
             )}
             {round.threat.abilities.map((code, index) => {
@@ -754,8 +759,13 @@ function ChoosePhase({
             />
           )}
           <TimerBar key={deadline} deadline={deadline} offset={offset} />
-          {carried > 0 && <p className="mt-1.5 text-xs font-bold">Riscossa: +{carried} al personaggio di questo round.</p>}
+          {carried !== 0 && (
+            <p className="mt-1.5 text-xs font-bold">
+              {carriedIn.from ?? "Riscossa"}: {signed(carried)} al personaggio di questo round.
+            </p>
+          )}
           <SeenCards cards={view.spied_cards ?? []} rival={opponentName} played={opponentPlayedIds} />
+          <TrackedRarities rarities={view.tracked_rarities} rival={opponentName} />
           {!isBot && (
             <p className="mt-1.5 text-xs font-bold">
               {round.opponent_has_chosen ? `${opponentName} ha scelto.` : `${opponentName} sta scegliendo…`}
@@ -777,6 +787,8 @@ function ChoosePhase({
               selected={card.instance_id === selected}
               disabled={busy}
               onSelect={() => onSelect(card.instance_id)}
+              // Fenice: back in the team after a lost round.
+              note={card.returned ? "Di nuovo" : undefined}
               look={looks(card.definition_id, "me")}
               press={detail.press(card, looks(card.definition_id, "me"))}
             />
@@ -942,7 +954,7 @@ function ModifierBanner({
 }
 
 function RoundReveal({
-  round,
+  round: playedRound,
   rounds,
   team,
   abilities,
@@ -974,6 +986,16 @@ function RoundReveal({
   /** Server time minus device time. */
   offset: number;
 }) {
+  // Calma piatta: the threat's rule did not count in this round, so the page tells it without.
+  const calmedRule = calmedBy(
+    team.find((card) => card.instance_id === playedRound.my_play?.instance_id),
+    playedRound.opponent_play,
+    playedRound.modifier,
+    roundPlaysBefore(rounds, team, playedRound.round),
+  )
+    ? playedRound.modifier
+    : null;
+  const round = calmedRule ? { ...playedRound, modifier: null } : playedRound;
   const mine = team.find((card) => card.instance_id === round.my_play?.instance_id);
   const theirs = round.opponent_play;
   const detail = useCardDetail();
@@ -1014,6 +1036,22 @@ function RoundReveal({
   const theirStanding = { roundsWon: myStanding.opponentRoundsWon, opponentRoundsWon: myStanding.roundsWon };
   const myBefore = playedBefore(rounds, team, round.round, "me");
   const theirBefore = playedBefore(rounds, team, round.round, "opponent");
+  const previousRound = rounds.find((r) => r.round === round.round - 1);
+  // The rule powers between the two cards (Gelo, Jolly, Abissi, Vampiro…), as they played.
+  const families = Object.fromEntries(abilities.map((a) => [a.code, a.family.code]));
+  const acting = (card: MatchCard | null | undefined, other: MatchCard | null | undefined) =>
+    card ? (powerless(card, other) ? { ...toCharacter(card, card.definition_id), power: null } : toCharacter(card, card.definition_id)) : null;
+  const ruleThreatOf = { id: "round", ...threat };
+  const myRules = rulePowerOutcome(acting(mine, theirs), acting(theirs, mine), ruleThreatOf, { families, played: myBefore }, {
+    previous: team.find((card) => card.instance_id === previousRound?.my_play?.instance_id),
+    rival: theirs,
+  });
+  const theirRules = rulePowerOutcome(acting(theirs, mine), acting(mine, theirs), ruleThreatOf, { families, played: theirBefore }, {
+    previous: previousRound?.opponent_play,
+    rival: mine,
+  });
+  const results = resultPowers(round.my_play, theirs, mine, theirs, round.winner, round.modifier, before);
+  const calmedName = calmedRule ? describeThreatModifier(calmedRule, round.threat.abilities[0] ?? "").name : undefined;
   const myPack = mine ? packBonus(toCharacter(mine, mine.definition_id), myBefore) : 0;
   const theirPack = theirs ? packBonus(toCharacter(theirs, theirs.definition_id), theirBefore) : 0;
   // Sacrificio: its bonus lasts to the end of the match. The server's parts say it; plays
@@ -1022,7 +1060,6 @@ function RoundReveal({
   const mySacrifice = lastingSacrifice(myBefore, earlier.map((r) => team.find((card) => card.instance_id === r.my_play?.instance_id)));
   const theirSacrifice = lastingSacrifice(theirBefore, earlier.map((r) => r.opponent_play));
   // Logoramento: the opposing card of the round before takes points from this one.
-  const previousRound = rounds.find((r) => r.round === round.round - 1);
   const myWorn = wornDownBy(before, previousRound?.opponent_play);
   const theirWorn = wornDownBy(flipBefore(before), team.find((card) => card.instance_id === previousRound?.my_play?.instance_id));
   // Guastafeste: what the other card would have had from its side's earlier cards.
@@ -1058,6 +1095,11 @@ function RoundReveal({
           standing: myStanding,
           opponentHasPower: Boolean(theirs?.power),
           spyRevealed: revealed.spied.length > 0,
+          ...myRules,
+          stolenBy: theirActing?.power?.code === "thief" ? theirs?.name : undefined,
+          calmedRule: calmedName,
+          upsetWon: results.upset === "me",
+          wallVoided: results.wall === "me",
         }, true)
       : [];
   const theirNotes = theirs
@@ -1084,6 +1126,11 @@ function RoundReveal({
         standing: theirStanding,
         opponentHasPower: Boolean(mine?.power),
         spyRevealed: theirSpyRevealed,
+        ...theirRules,
+        stolenBy: myActing?.power?.code === "thief" ? mine?.name : undefined,
+        calmedRule: calmedName,
+        upsetWon: results.upset === "opponent",
+        wallVoided: results.wall === "opponent",
       }, true)
     : [];
 
@@ -1142,13 +1189,17 @@ function RoundReveal({
   const resultLine =
     winner === "none"
       ? round.my_play
-        ? `Pari ${myScore} a ${theirScore} e ${tieBreakReason(null, round.my_play, round.modifier)}.`
+        ? results.wall
+          ? `${myScore} a ${theirScore}: con Muro di ${(results.wall === "me" ? mine : theirs)?.name ?? ""} il round è nullo.`
+          : `Pari ${myScore} a ${theirScore} e ${tieBreakReason(null, round.my_play, round.modifier)}.`
         : ""
       : !winnerCard || !loserCard || !winnerPlay || !loserPlay
         ? ""
         : isTie
           ? `Pari ${winnerPlay.score} a ${loserPlay.score}: ${tieBreakReason(winnerPlay, loserPlay, round.modifier, tieWonBy)}.`
-          : wonBehind
+          : results.upset
+            ? `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}: con Ribaltone vince da molto sotto.`
+            : wonBehind
             ? `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}: con Implacabile vince anche sotto di ${wonBehind}.`
             : `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}.`;
   const notices = [

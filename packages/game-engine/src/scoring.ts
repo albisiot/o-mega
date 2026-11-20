@@ -48,9 +48,87 @@ function abilityValue(character: Character, ability: AbilityCode, malus: number)
   return Math.max(0, (character.stats[ability] ?? 0) - malus);
 }
 
-/** Sum of the character's values in the abilities required by the threat, with the value a modifier doubles. */
-export function baseScore(character: Character, threat: Threat, malus = 0): number {
-  const values = threat.abilities.map((ability) => abilityValue(character, ability, malus));
+/** The highest value an ability can have (cards.ability_max): Negativo counts down from it. */
+export const ABILITY_MAX = 10;
+
+/**
+ * A rule a power puts on how the required abilities count (SPEC §4.4), before the
+ * threat's own rule: the card's own (Jolly, Negativo, Una sola forza, Duellante), the
+ * one its side's previous card passed it (Abissi), the opposing card's (Gelo, Tutto o
+ * niente, Il prezzo, Duello). Applied in this order.
+ */
+export type AbilityRule =
+  /** Jolly: the lowest required value rises towards the best ability not required, by `maxGain` at most. */
+  | { kind: "joker"; maxGain: number }
+  /** Negativo: each value counts `max` minus itself. */
+  | { kind: "negative"; max: number }
+  /** Una sola forza: the values of one family all count as the highest of them. */
+  | { kind: "one_force"; families: AbilityFamilies }
+  /** Abissi: the values of `family` count double. */
+  | { kind: "family_double"; family: string; families: AbilityFamilies }
+  /** Duellante (factor 2), Duello (factor 1): only the `count` highest values count, times `factor`. */
+  | { kind: "top"; count: number; factor: number }
+  /** Gelo: no value counts more than `cap`. */
+  | { kind: "cap"; cap: number }
+  /** Tutto o niente: a value under `min` counts 0. */
+  | { kind: "floor_zero"; min: number }
+  /** Il prezzo: a value of `maxValue` or less counts −`malus`. */
+  | { kind: "price"; maxValue: number; malus: number };
+
+/** The required values after the rules of the powers, in the order of the threat's abilities. */
+export function ruledValues(character: Character, threat: Threat, malus = 0, rules: readonly AbilityRule[] = []): number[] {
+  let values = threat.abilities.map((ability) => abilityValue(character, ability, malus));
+  for (const rule of rules) {
+    switch (rule.kind) {
+      case "joker": {
+        const spare = Object.keys(character.stats)
+          .filter((ability) => !threat.abilities.includes(ability))
+          .map((ability) => abilityValue(character, ability, malus));
+        if (values.length === 0 || spare.length === 0) break;
+        const low = Math.min(...values);
+        const best = Math.max(...spare);
+        const at = values.indexOf(low);
+        if (best > low) values = values.map((value, i) => (i === at ? Math.min(best, low + rule.maxGain) : value));
+        break;
+      }
+      case "negative":
+        values = values.map((value) => Math.max(0, rule.max - value));
+        break;
+      case "one_force": {
+        const family = (i: number) => rule.families[threat.abilities[i]] ?? threat.abilities[i];
+        const best: Record<string, number> = {};
+        values.forEach((value, i) => (best[family(i)] = Math.max(best[family(i)] ?? 0, value)));
+        values = values.map((_, i) => best[family(i)]);
+        break;
+      }
+      case "family_double":
+        values = values.map((value, i) => (rule.families[threat.abilities[i]] === rule.family ? value * 2 : value));
+        break;
+      case "top": {
+        const kept = [...values.keys()].sort((x, y) => values[y] - values[x] || x - y).slice(0, rule.count);
+        values = values.map((value, i) => (kept.includes(i) ? value * rule.factor : 0));
+        break;
+      }
+      case "cap":
+        values = values.map((value) => Math.min(value, rule.cap));
+        break;
+      case "floor_zero":
+        values = values.map((value) => (value < rule.min ? 0 : value));
+        break;
+      case "price":
+        values = values.map((value) => (value <= rule.maxValue ? -rule.malus : value));
+        break;
+    }
+  }
+  return values;
+}
+
+/**
+ * Sum of the character's values in the abilities required by the threat, with the value
+ * a modifier doubles; `rules` are those of the powers (abilityRules), applied first.
+ */
+export function baseScore(character: Character, threat: Threat, malus = 0, rules: readonly AbilityRule[] = []): number {
+  const values = ruledValues(character, threat, malus, rules);
   const sum = values.reduce((total, value) => total + value, 0);
   const modifier = threat.modifier;
   switch (modifier?.code) {
@@ -141,6 +219,162 @@ export function wearDownFrom(character: Character | null | undefined): number {
   return character?.power?.code === "attrition" ? numberParam(character, "malus") : 0;
 }
 
+/**
+ * The rules the powers put on a character's abilities in this round, in the order
+ * ruledValues applies them. Under Silenzio della tomba the powers of this round give
+ * none; Abissi, passed from the round before, still counts (like Riscossa).
+ */
+export function abilityRules(character: Character, threat: Threat, context: ScoreContext): AbilityRule[] {
+  const rules: AbilityRule[] = [];
+  const silenced = powersSilenced(threat);
+  const own = silenced ? null : character.power;
+  if (own?.code === "joker") rules.push({ kind: "joker", maxGain: numberParam(character, "max_gain") });
+  if (own?.code === "negative_self") rules.push({ kind: "negative", max: ABILITY_MAX });
+  if (own?.code === "single_force") rules.push({ kind: "one_force", families: context.families });
+  const previous = context.played?.at(-1);
+  if (previous?.power?.code === "abyss_next") {
+    rules.push({ kind: "family_double", family: String(previous.power.params.family), families: context.families });
+  }
+  if (own?.code === "duelist" && threat.level >= numberParam(character, "from_level")) rules.push({ kind: "top", count: 2, factor: 2 });
+  const opponent = silenced ? undefined : context.opponent;
+  switch (opponent?.power?.code) {
+    case "rival_frost":
+      rules.push({ kind: "cap", cap: numberParam(opponent, "cap") });
+      break;
+    case "rival_all_or_nothing":
+      rules.push({ kind: "floor_zero", min: numberParam(opponent, "min_value") });
+      break;
+    case "rival_price":
+      rules.push({ kind: "price", maxValue: numberParam(opponent, "max_value"), malus: numberParam(opponent, "malus") });
+      break;
+    case "rival_duel":
+      rules.push({ kind: "top", count: numberParam(opponent, "count"), factor: 1 });
+      break;
+  }
+  return rules;
+}
+
+/**
+ * The points the ability rules of the powers make in a play, for the screens: the card's
+ * own rule, the one its side's previous card passed it (Abissi), the opposing card's.
+ * The score already holds them; this tells them apart.
+ */
+export function ruleParts(character: Character, threat: Threat, context: ScoreContext): { own: number; passed: number; rival: number } {
+  if (powersSilenced(threat) && character.power) character = { ...character, power: null };
+  const malus = powersSilenced(threat) || immuneToSabotage(character) ? 0 : (context.abilityMalus ?? 0);
+  const values = scoresWithOpponentValues(threat) && context.opponent ? { ...character, stats: context.opponent.stats } : character;
+  const base = (rules: AbilityRule[]) => baseScore(values, threat, malus, rules);
+  const plain = base([]);
+  const own = base(abilityRules(character, threat, { ...context, played: [], opponent: undefined }));
+  const passed = base(abilityRules(character, threat, { ...context, opponent: undefined }));
+  const all = base(abilityRules(character, threat, context));
+  return { own: own - plain, passed: passed - own, rival: all - passed };
+}
+
+/** Powers whose rule acts on the opposing character's abilities (Gelo, Tutto o niente, Il prezzo, Duello). */
+const RIVAL_RULES = new Set(["rival_frost", "rival_all_or_nothing", "rival_price", "rival_duel"]);
+
+export function hitsRivalAbilities(character: Character | null | undefined): boolean {
+  return Boolean(character?.power && RIVAL_RULES.has(character.power.code));
+}
+
+/**
+ * Vampiro, as it plays against `victim`: the required abilities in which it does not
+ * beat the victim's value. It gets +1 for each, the victim −1 (not on the tie-break).
+ */
+export function vampireDrain(vampire: Character | null | undefined, victim: Character | null | undefined, threat: Threat): number {
+  if (vampire?.power?.code !== "vampire" || !victim || powersSilenced(threat)) return 0;
+  return threat.abilities.filter((ability) => (vampire.stats[ability] ?? 0) <= (victim.stats[ability] ?? 0)).length;
+}
+
+/** Calma piatta: in its round the threat has no rule (modifier, place, rare rule), for both sides. Pass the characters as they play. */
+export function calmedThreat<T extends Threat>(threat: T, a: Character | null | undefined, b?: Character | null): T {
+  const calm = a?.power?.code === "calm" || b?.power?.code === "calm";
+  return calm && threat.modifier ? { ...threat, modifier: null } : threat;
+}
+
+/** Imboscata: in the round after, the opponent chooses without seeing the threat's abilities. Pass it as it played. */
+export function ambushesNext(character: Character | null | undefined): boolean {
+  return character?.power?.code === "ambush";
+}
+
+/** Segugio: once played, its side sees the rarity of the characters the opponent has not played yet. */
+export function tracksRarities(character: Character | null | undefined): boolean {
+  return character?.power?.code === "tracker";
+}
+
+/** Fenice: a character that lost its round goes back to the team, once. */
+export function returnsAfterLoss(character: Character | null | undefined): boolean {
+  return character?.power?.code === "phoenix";
+}
+
+/** The distinctive powers (Alfa and Omega, SPEC §4.4): Cacciatore pays against them, the pages give them a cut-in. */
+const DISTINCTIVE = new Set([
+  "comeback",
+  "comeback_long",
+  "comeback_margin",
+  "underdog",
+  "underdog_per_round",
+  "underdog_wall",
+  "underdog_points",
+  "sabotage",
+  "sabotage_big",
+  "sabotage_flat",
+  "foresight",
+  "foresight_short",
+  "momentum",
+  "sacrifice",
+  "pack_leader",
+  "echo",
+  "catalyst",
+  "fog",
+  "attrition",
+  "omen",
+  "oracle",
+  "rival_frost",
+  "single_force",
+  "abyss_next",
+  "duelist",
+  "upset",
+  "rival_all_or_nothing",
+  "rival_duel",
+  "rival_price",
+  "negative_self",
+  "vampire",
+  "thief",
+  "phoenix",
+]);
+
+export function isDistinctivePower(code: string | null | undefined): boolean {
+  return Boolean(code && DISTINCTIVE.has(code));
+}
+
+/**
+ * Ladro: after both plays of a round are scored, it takes the points the opposing
+ * card's power gave that card. Pass the characters as they play (an Annullatore stops it).
+ */
+export function withTheft<T extends PlayScore>(plays: Record<Side, T>, acting: Record<Side, Character | null | undefined>): Record<Side, T> {
+  const result = { ...plays };
+  for (const side of ["a", "b"] as const) {
+    const other = side === "a" ? "b" : "a";
+    const victim = result[other];
+    const taken = Math.max(0, victim.parts?.power ?? 0);
+    if (acting[side]?.power?.code !== "thief" || taken === 0) continue;
+    result[other] = withPowerPoints(victim, -taken);
+    result[side] = withPowerPoints(result[side], taken);
+  }
+  return result;
+}
+
+/** A play with `delta` more points from its power, its total and bonus counted again. */
+function withPowerPoints<T extends PlayScore>(play: T, delta: number): T {
+  if (!play.parts) return play;
+  const parts = { ...play.parts, power: play.parts.power + delta };
+  const raw = play.base + parts.power + parts.carried + parts.pack + (parts.sacrifice ?? 0) + parts.modifier;
+  const total = Math.max(0, raw);
+  return { ...play, total, bonus: total - play.base, parts: { ...parts, floor: total - raw } };
+}
+
 /** Presagio: while in the team and not played yet, its side sees the threat of the next round. */
 export function showsNextThreat(character: Character): boolean {
   return character.power?.code === "omen";
@@ -187,9 +421,13 @@ export function modifierPoints(character: Character, threat: Threat, standing?: 
   return character.power?.code === "adaptable" ? Math.max(0, points) : points;
 }
 
-/** Highest single value among the required abilities (tie-break, no bonuses). */
-export function highestRequired(character: Character, threat: Threat, malus = 0): number {
-  const values = threat.abilities.map((ability) => abilityValue(character, ability, malus));
+/** Highest single value among the required abilities (tie-break, no bonuses). Negativo reverses it, as the rule does. */
+export function highestRequired(character: Character, threat: Threat, malus = 0, rules: readonly AbilityRule[] = []): number {
+  const negative = rules.find((rule) => rule.kind === "negative");
+  const values = threat.abilities.map((ability) => {
+    const value = abilityValue(character, ability, malus);
+    return negative ? Math.max(0, negative.max - value) : value;
+  });
   // Negativo: the values count reversed, the tie-break too.
   const modifier = threat.modifier;
   if (modifier?.code === "negative") return Math.max(0, ...values.map((value) => modifier.max - value));
@@ -330,6 +568,10 @@ const ECHOABLE = new Set([
   "icebreaker",
   "even_score",
   "diminuendo",
+  "patience",
+  "hunter",
+  "rainbow",
+  "steady",
 ]);
 
 /** Riverbero: the power it copies from the side's previous character, as that one played. */
@@ -557,6 +799,20 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
       const copied = echoedPower(context);
       return copied ? powerBonus({ ...character, power: copied }, threat, context) : 0;
     }
+    case "patience":
+      return Math.min(numberParam(character, "max"), Math.max(0, context.round - 1) * numberParam(character, "bonus"));
+    case "hunter":
+      return isDistinctivePower(context.opponent?.power?.code) ? numberParam(character, "bonus") : 0;
+    case "rainbow": {
+      const factions = new Set((context.team ?? []).map((member) => member.faction));
+      return ["heroes", "villains", "neutrals"].every((faction) => factions.has(faction)) ? numberParam(character, "bonus") : 0;
+    }
+    case "steady":
+      return context.previousLevel !== undefined && threat.level === context.previousLevel ? numberParam(character, "bonus") : 0;
+    case "gamble": // and −malus to the next character after a lost round: see carriedBonusAfter
+      return numberParam(character, "bonus");
+    case "vampire":
+      return vampireDrain(character, context.opponent, threat);
     case "reflect": // acts on Sabotatore: see abilityMalusOn
     case "sacrifice": // zeroes its score, then acts on the later characters: see scorePlay and sacrificeBonus
     case "pack_leader": // acts on the later characters: see packBonus
@@ -580,6 +836,22 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
     case "spy": // gives information, not points: see revealsOpponentCharacter
     case "spy_many":
     case "spy_rarest":
+    case "rival_frost": // change how abilities count: see abilityRules
+    case "rival_all_or_nothing":
+    case "rival_price":
+    case "rival_duel":
+    case "single_force":
+    case "abyss_next":
+    case "duelist":
+    case "negative_self":
+    case "joker":
+    case "upset": // acts on the result: see compareScores
+    case "wall":
+    case "calm": // takes the threat's rule away: see calmedThreat
+    case "ambush": // hides the next threat from the opponent: the server and botView
+    case "tracker": // gives information: the server
+    case "thief": // takes the opposing power's points: see withTheft
+    case "phoenix": // goes back to the team after a lost round: see availableCharacters
     case "omen": // gives information while in the team: see showsNextThreat
     case "infiltrator": // gives information at the start: the server draws it
     case "oracle":
@@ -607,8 +879,13 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
   const values = scoresWithOpponentValues(threat) && context.opponent ? { ...character, stats: context.opponent.stats } : character;
   // Sabotatore sul punteggio, and Logoramento from the round before, lower the sum of the
   // values, never below 0 and never the tie-break. Silenzio della tomba stops the first only.
-  const scoreMalus = (powersSilenced(threat) ? 0 : scoreMalusOn(character, context.opponent)) + (context.wornDown ?? 0);
-  const unsabotaged = baseScore(values, threat, malus);
+  // Vampiro takes 1 for every required ability in which it does not beat this one.
+  const scoreMalus =
+    (powersSilenced(threat) ? 0 : scoreMalusOn(character, context.opponent)) +
+    (context.wornDown ?? 0) +
+    vampireDrain(context.opponent, character, threat);
+  const rules = abilityRules(character, threat, context);
+  const unsabotaged = baseScore(values, threat, malus, rules);
   const base = unsabotaged - Math.min(scoreMalus, Math.max(0, unsabotaged));
   // Sacrificio: the character gives up the round, whatever it would have scored, the
   // bonuses it received included.
@@ -632,8 +909,10 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
     base,
     bonus: total - base,
     total,
-    highest: highestRequired(values, threat, malus),
+    highest: highestRequired(values, threat, malus, rules),
     ...relentlessFields(character, threat, context),
+    ...(code === "upset" ? { upset: numberParam(character, "min_gap") } : {}),
+    ...(code === "wall" ? { wall: numberParam(character, "margin") } : {}),
     parts,
   };
 }
@@ -652,6 +931,8 @@ function relentlessFields(character: Character, threat: Threat, context: ScoreCo
  */
 export function carriedBonusAfter(character: Character, outcome: PlayOutcome, margin?: number, distance = 1): number {
   const code = character.power?.code;
+  // Azzardo: after a lost round, a malus for the next character.
+  if (code === "gamble") return outcome === "lost" && distance === 1 ? -numberParam(character, "malus") : 0;
   // Riscossa lunga: the two characters after it, so also the one two plays later.
   if (code === "comeback_long") return outcome === "lost" && distance <= 2 ? numberParam(character, "bonus") : 0;
   if (distance !== 1) return 0;
@@ -688,6 +969,10 @@ export function compareScores(a: PlayScore, b: PlayScore, threat?: Threat | null
   if (a.total !== b.total) {
     const winner = better(a.total, b.total);
     const [ahead, behind] = winner === "a" ? [a, b] : [b, a];
+    const gap = Math.abs(a.total - b.total);
+    // Ribaltone: a round lost by a lot goes to the one behind; Muro: one lost by a little is void. Not against the same power.
+    if (behind.upset !== undefined && ahead.upset === undefined && gap >= behind.upset) return winner === "a" ? "b" : "a";
+    if (behind.wall !== undefined && ahead.wall === undefined && gap <= behind.wall) return null;
     // An Implacabile that may win a round lost by a little, unless the other is Implacabile too.
     if (behind.relentless && !ahead.relentless && Math.abs(a.total - b.total) <= (behind.relentlessMargin ?? 0)) {
       return winner === "a" ? "b" : "a";

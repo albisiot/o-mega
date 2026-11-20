@@ -3,6 +3,7 @@ import {
   asPlayedAgainst,
   immuneToSabotage,
   packBonus,
+  type AbilityFamilies,
   type Character,
   type PlayedBefore,
   type Threat,
@@ -13,14 +14,18 @@ import {
   flipBefore,
   lastingSacrifice,
   outcomeOf,
+  calmedBy,
   playsBefore,
+  resultPowers,
   roundPowerNotes,
+  rulePowerOutcome,
   wornDownBy,
   tieWonByRelentless,
   wasNullified,
   wonBehindByRelentless,
   type PowerNote,
 } from "@/lib/round-powers";
+import { describeThreatModifier } from "@/lib/threat-modifiers";
 import type { TripleContest, TripleRound, TripleView } from "@/lib/triple";
 
 type Side = "me" | "opponent";
@@ -37,7 +42,14 @@ function cardOf(view: TripleView, contest: TripleContest | undefined, side: Side
  * the same threat in the round before. Annotated with the power's family for the page.
  * Capobranco and Sacrificio count the side's cards of the rounds before, on every threat (SPEC §5.13).
  */
-export function contestNotes(view: TripleView, round: TripleRound, contest: TripleContest, side: Side): PowerNote[] {
+export function contestNotes(
+  view: TripleView,
+  round: TripleRound,
+  contest: TripleContest,
+  side: Side,
+  /** For Una sola forza and Abissi, which read the abilities' families. */
+  families: AbilityFamilies = {},
+): PowerNote[] {
   const other: Side = side === "me" ? "opponent" : "me";
   const card = cardOf(view, contest, side);
   const rival = cardOf(view, contest, other);
@@ -89,6 +101,19 @@ export function contestNotes(view: TripleView, round: TripleRound, contest: Trip
     );
   })();
   const rivalActing = rival && !wasNullified(rival, card, threat.modifier, flipBefore(before)) ? toCharacter(rival, "opponent") : null;
+  // Calma piatta on this lane: the threat's rule did not count in this round.
+  const calmed = calmedBy(card, rival, threat.modifier, before);
+  const ruled = { level: threat.level, abilities: threat.abilities, modifier: calmed ? null : threat.modifier };
+  const acting = (c: MatchCard | null, o: MatchCard | null, view?: PlayedBefore) =>
+    c ? (wasNullified(c, o, threat.modifier, view) ? { ...toCharacter(c, c.definition_id), power: null } : toCharacter(c, c.definition_id)) : null;
+  const me = acting(card, rival, before);
+  const them = acting(rival, card, flipBefore(before));
+  const rules = rulePowerOutcome(me, them, { id: "lane", ...ruled }, { families, played: before.own ? [before.own] : [] }, {
+    previous: cardOf(view, previous, side),
+    rival,
+  });
+  const perspective = contest.winner === side ? "me" : contest.winner === other ? "opponent" : (contest.winner ?? null);
+  const results = resultPowers(play, side === "me" ? contest.opponent_play : contest.my_play, card, rival, perspective, ruled.modifier, before);
   const tie = contest.my_play && contest.opponent_play && contest.my_play.score === contest.opponent_play.score;
   const rivalPlay = side === "me" ? contest.opponent_play : contest.my_play;
   const wonBehind =
@@ -105,8 +130,13 @@ export function contestNotes(view: TripleView, round: TripleRound, contest: Trip
   return roundPowerNotes(
     card,
     play,
-    { level: threat.level, abilities: threat.abilities, modifier: threat.modifier },
+    ruled,
     {
+      ...rules,
+      stolenBy: them?.power?.code === "thief" ? rival?.name : undefined,
+      calmedRule: calmed && threat.modifier ? describeThreatModifier(threat.modifier, threat.abilities[0] ?? "").name : undefined,
+      upsetWon: results.upset === "me",
+      wallVoided: results.wall === "me",
       // The server's parts, when it sent them, say exactly what came from where.
       carried: play.parts?.carried ?? carried.points,
       carriedFrom: carried.from,

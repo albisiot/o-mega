@@ -6,6 +6,7 @@
 import type { Rng } from "./rng.ts";
 import {
   abilityMalusFrom,
+  calmedThreat,
   carriedBonusFrom,
   isRelentless,
   lowerWins,
@@ -93,7 +94,9 @@ export function resolveEmergencyPlay(params: {
   /** Levels of the day's threats, in order (Grande prova). */
   threatLevels?: readonly number[];
 }): EmergencyOutcome {
-  const { character, threat, squad, attempts, rules, families, threatLevels } = params;
+  const { character, squad, attempts, rules, families, threatLevels } = params;
+  // Calma piatta: the threat's rule does not count for this play (its target stays).
+  const threat = calmedThreat(params.threat, powersSilenced(params.threat) ? null : character);
   const last = attempts.at(-1);
   const standing = { roundsWon: attempts.filter((a) => a.passed).length, opponentRoundsWon: attempts.filter((a) => !a.passed).length };
   const score = scorePlay(character, threat, {

@@ -9,7 +9,7 @@ import { Silhouette } from "@/components/card-view";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
 import { PlayerAvatar } from "@/components/player-avatar";
-import { SeenCards } from "@/components/seen-cards";
+import { SeenCards, TrackedRarities } from "@/components/seen-cards";
 import { Sheet } from "@/components/sheet";
 import { balance } from "@/config/balance";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
@@ -603,6 +603,7 @@ function ChooseRound({
               played={new Set(view.rounds.flatMap((r) => r.contests.map((c) => c.opponent_play?.definition_id)))}
               className="mt-0.5 text-xs font-bold"
             />
+            <TrackedRarities rarities={view.tracked_rarities} rival={rival} className="mt-0.5 text-xs font-bold" />
           </div>
           <RoundTimer key={deadline} deadline={deadline} offset={offset} />
         </div>

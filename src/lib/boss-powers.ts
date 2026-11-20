@@ -10,13 +10,14 @@ import {
   packBonus,
   sacrificeBonus,
   wearDownFrom,
+  type AbilityFamilies,
   type BossState,
   type Character,
   type Side,
 } from "@o-mega/game-engine";
 import { knownBossState, type BossRound, type BossView } from "@/lib/boss";
 import type { MatchCard } from "@/lib/match";
-import { lastingSacrifice, roundPowerNotes, type PowerNote } from "@/lib/round-powers";
+import { lastingSacrifice, resultPowers, roundPowerNotes, rulePowerOutcome, type PowerNote } from "@/lib/round-powers";
 
 export type BossSide = "me" | "opponent";
 
@@ -67,6 +68,8 @@ export function bossTurnEntries(
   round: BossRound,
   /** Adds each note's power code and source, for the page's visual families (round-powers.ts). */
   annotate = false,
+  /** For Una sola forza and Abissi, which read the abilities' families. */
+  families: AbilityFamilies = {},
 ): Record<BossSide, BossEntry> | null {
   if (!round.resolved || !round.my_play || !round.opponent_play) return null;
   const state = knownBossState(view);
@@ -120,6 +123,22 @@ export function bossTurnEntries(
           sacrificeBonus(spoiledContext.played ?? [])
         : 0;
     const holder = fromSide(record.holders[play.front]);
+    // The rule powers between this character and the one it met (Gelo, Jolly, Abissi, Vampiro…).
+    const rules = rulePowerOutcome(acting, opposing, threat, { families, played: context.played ?? [] }, {
+      previous: lastCard,
+      rival: facing?.card ?? null,
+    });
+    const otherBoss: BossSide = bossSide === "me" ? "opponent" : "me";
+    const results = facing
+      ? resultPowers(
+          { score: play.total },
+          { score: facing.score },
+          card,
+          facing.card,
+          holder === bossSide ? "me" : holder === otherBoss ? "opponent" : "none",
+          null,
+        )
+      : { upset: null, wall: null };
     const nullified = Boolean(card?.power) && acting !== undefined && acting.power === null;
     // The server's parts, when it sent them, say exactly what came from where.
     const parts = (bossSide === "me" ? round.my_play : round.opponent_play)?.parts ?? null;
@@ -152,6 +171,10 @@ export function bossTurnEntries(
               wornDown,
               wornDownFrom,
               opponentSpoiled,
+              ...rules,
+              stolenBy: sameFront && opposing?.power?.code === "thief" ? facing?.card?.name : undefined,
+              upsetWon: results.upset === "me",
+              wallVoided: results.wall === "me",
               parts,
               standing: { roundsWon: context.roundsWon ?? 0, opponentRoundsWon: context.opponentRoundsWon ?? 0 },
               // Spia shows a card only while the other side still has one not played.

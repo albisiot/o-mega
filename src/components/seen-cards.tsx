@@ -3,7 +3,7 @@
 import { Fragment } from "react";
 import { useCardDetail } from "@/components/card-detail";
 import { useCardLooks } from "@/components/card-looks";
-import { spiedBy, type MatchCard } from "@/lib/match";
+import { spiedBy, type MatchCard, type TrackedRarity } from "@/lib/match";
 import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
 
 /**
@@ -11,6 +11,34 @@ import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
  * after it played, or by Infiltrato at the start of the match (round 0, SPEC §4.4), and the
  * line names which. Each name opens the card. Nothing when there is none.
  */
+/** Segugio: the rarities of the opposing characters not played yet, in one line. Nothing without it. */
+export function TrackedRarities({
+  rarities,
+  rival,
+  className = "mt-1.5 text-xs font-bold",
+}: {
+  rarities: readonly TrackedRarity[] | undefined;
+  rival: string;
+  className?: string;
+}) {
+  const left = (rarities ?? []).filter((rarity) => rarity.count > 0);
+  if (left.length === 0) return null;
+  return (
+    <p className={className}>
+      Con Segugio sai: {rival} ha ancora{" "}
+      {left.map((rarity, index) => (
+        <Fragment key={rarity.code}>
+          {index > 0 && (index === left.length - 1 ? " e " : ", ")}
+          <span className="font-extrabold" style={{ color: rarity.color }}>
+            {rarity.count} {rarity.name}
+          </span>
+        </Fragment>
+      ))}
+      .
+    </p>
+  );
+}
+
 export function SeenCards({
   cards,
   rival,

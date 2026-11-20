@@ -11,10 +11,12 @@ import { shuffle, type Rng } from "./rng.ts";
 import {
   abilityMalusOn,
   asPlayedAgainst,
+  calmedThreat,
   carriedBonusFrom,
   compareScores,
   scorePlay,
   wearDownFrom,
+  withTheft,
   type PlayedBefore,
   type PlayOutcome,
   type ScoreContext,
@@ -274,16 +276,19 @@ export function resolveTripleRound(
       a: asPlayedAgainst(chosen.a, chosen.b, threat, triplePlayedBefore(state, number, "a", slot)),
       b: asPlayedAgainst(chosen.b, chosen.a, threat, triplePlayedBefore(state, number, "b", slot)),
     };
-    const scores = {} as Record<Side, PlayScore>;
+    // Calma piatta: this threat's rule does not count on this lane in this round.
+    const ruled = calmedThreat(threat, acting.a, acting.b);
+    let scores = {} as Record<Side, PlayScore>;
     for (const side of SIDES) {
       const opponent = acting[otherSide(side)];
-      scores[side] = scorePlay(acting[side], threat, {
+      scores[side] = scorePlay(acting[side], ruled, {
         ...tripleContext(state, side, slot, families),
-        abilityMalus: abilityMalusOn(acting[side], opponent, threat),
+        abilityMalus: abilityMalusOn(acting[side], opponent, ruled),
         opponent,
       });
     }
-    const winner = compareScores(scores.a, scores.b, threat);
+    scores = withTheft(scores, acting);
+    const winner = compareScores(scores.a, scores.b, ruled);
     winners.push(winner);
     for (const side of SIDES) {
       plays[side].push({

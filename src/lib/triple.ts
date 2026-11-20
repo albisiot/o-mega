@@ -15,7 +15,7 @@ import {
   type TripleState,
 } from "@o-mega/game-engine";
 import { balance } from "@/config/balance";
-import { invokeFunction, remember, toCharacter, type MatchCard, type MatchChallengeInfo, type MatchMode, type MatchPlay } from "@/lib/match";
+import { invokeFunction, remember, toCharacter, type MatchCard, type TrackedRarity, type MatchChallengeInfo, type MatchMode, type MatchPlay } from "@/lib/match";
 import type { OpponentLooks } from "@/lib/cosmetics";
 import type { RankedMatchInfo } from "@/lib/ranked";
 
@@ -85,6 +85,8 @@ export type TripleView = {
   /** The frames and effects of the opposing cards shown, by definition id (SPEC §4.8). */
   opponent_looks?: OpponentLooks;
   spied_cards?: (MatchCard & { round: number })[];
+  /** Segugio: the opposing characters not played yet, by rarity. */
+  tracked_rarities?: TrackedRarity[];
   /** The whole deck, in an order that says nothing about the draw. */
   my_deck: (MatchCard & { instance_id: string; drawn_round: number | null; played: boolean })[];
   rounds: TripleRound[];

@@ -10,7 +10,7 @@ import { useEventPointsFor } from "@/components/event-banner";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
 import { PlayerAvatar } from "@/components/player-avatar";
-import { SeenCards } from "@/components/seen-cards";
+import { SeenCards, TrackedRarities } from "@/components/seen-cards";
 import { Sheet } from "@/components/sheet";
 import { balance } from "@/config/balance";
 import {
@@ -386,6 +386,7 @@ function BossSteps({ initial }: { initial: BossView }) {
           view={view}
           round={shownRound}
           rival={rival}
+          families={families}
           onVerdict={() => settle(shownRound.round)}
           onDone={onRevealDone}
           onContinue={() => {
@@ -536,6 +537,7 @@ function ChooseTurn({
             played={new Set(view.rounds.map((r) => r.opponent_play?.definition_id))}
             className="mt-1 text-xs font-bold"
           />
+          <TrackedRarities rarities={view.tracked_rarities} rival={rival} className="mt-1 text-xs font-bold" />
           {!isBot && (
             <p className="mt-1 text-xs font-bold">{round.opponent_has_chosen ? `${rival} ha scelto.` : `${rival} sta scegliendo…`}</p>
           )}
@@ -758,6 +760,7 @@ function TurnReveal({
   view,
   round,
   rival,
+  families,
   onContinue,
   onVerdict,
   onDone,
@@ -766,6 +769,8 @@ function TurnReveal({
   view: BossView;
   round: BossRound;
   rival: string;
+  /** For Una sola forza and Abissi on the notes. */
+  families: AbilityFamilies;
   onContinue: () => void;
   /** The turn's totals are out: the strip at the top may show them. */
   onVerdict: () => void;
@@ -775,7 +780,7 @@ function TurnReveal({
 }) {
   const detail = useCardDetail();
   const looks = useCardLooks();
-  const entries = useMemo(() => bossTurnEntries(view, round, true), [view, round]);
+  const entries = useMemo(() => bossTurnEntries(view, round, true, families), [view, round, families]);
   if (!entries || !round.my_play || !round.opponent_play) return null;
   const statsOf = (entry: BossEntry) => {
     const abilities = view.fronts[entry.front]?.abilities ?? [];

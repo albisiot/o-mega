@@ -23,7 +23,7 @@ import type { BossEntry, BossSide } from "@/lib/boss-powers";
 import { useBannerHold } from "@/lib/banner-hold";
 import { playSound } from "@/lib/comic-sound";
 import { chargeSource, powerFamily, powerSfx } from "@/lib/effect-families";
-import { tieBreakReason } from "@/lib/round-powers";
+import { signed, tieBreakReason } from "@/lib/round-powers";
 import { TieInfo } from "@/components/tie-info";
 import { LONG_PRESS_CLASS, type LongPressHandlers } from "@/lib/use-long-press";
 
@@ -415,9 +415,17 @@ export function BossComic(props: BossComicProps) {
     const passed = notes.find((n) => n.active && n.timing === "after");
     if (carriedIndex < 0 && !passed) return [];
     const slot = {
-      carried: carriedIndex >= 0 && !spoke.has(carriedIndex) ? `+${notes[carriedIndex].points ?? 0}` : null,
-      // A bonus shows its points; an Annullatore ritardato its STOP for the next opposing card.
-      passed: passed && settledOn(side) ? (powerFamily(passed.code) === "stop" ? "STOP" : (passed.effect?.split(" ")[0] ?? "")) : null,
+      carried: carriedIndex >= 0 && !spoke.has(carriedIndex) ? signed(notes[carriedIndex].points ?? 0) : null,
+      // A bonus shows its points; an Annullatore ritardato its STOP, Imboscata a «?», Fenice its way back.
+      passed: passed && settledOn(side)
+        ? passed.code === "phoenix"
+          ? "↺"
+          : powerFamily(passed.code) === "stop"
+            ? "STOP"
+            : powerFamily(passed.code) === "reveal"
+              ? "?"
+              : (passed.effect?.split(" ")[0] ?? "")
+        : null,
       // Riscossa lunga gives its bonus to the next two turns.
       reach: passed?.code === "comeback_long" ? 2 : 1,
     };

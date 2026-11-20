@@ -15,6 +15,7 @@ import {
   compareScores,
   scorePlay,
   wearDownFrom,
+  withTheft,
   type PlayedBefore,
   type PlayOutcome,
   type ScoreContext,
@@ -355,11 +356,20 @@ export function resolveBossTurn(
   }
 
   const sameFront = choices.a.front === choices.b.front;
-  const scores = {} as Record<Side, PlayScore>;
+  let scores = {} as Record<Side, PlayScore>;
   for (const side of SIDES) {
     const arriving = sameFront ? chosen[otherSide(side)] : undefined;
     const opponent = opponentOnFront(state, side, choices[side].front, arriving);
     scores[side] = arrivalScore(state, side, chosen[side], choices[side].front, opponent, families);
+  }
+  // Ladro: between two characters arriving on the same front; one already there kept its score.
+  if (sameFront) {
+    const turn = bossTurnNumber(state);
+    const front = state.fronts[choices.a.front];
+    scores = withTheft(scores, {
+      a: asPlayedAgainst(chosen.a, chosen.b, front, bossPlayedBefore(state, turn, "a")),
+      b: asPlayedAgainst(chosen.b, chosen.a, front, bossPlayedBefore(state, turn, "b")),
+    });
   }
 
   // The board after the arrivals: every character keeps the score it arrived with.

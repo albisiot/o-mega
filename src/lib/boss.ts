@@ -20,7 +20,7 @@ import {
   invokeFunction,
   remember,
   toCharacter,
-  type MatchCard,
+  type MatchCard, type TrackedRarity,
   type MatchChallengeInfo,
   type MatchMode,
   type MatchPlay,
@@ -84,6 +84,8 @@ export type BossView = {
   /** The frames and effects of the opposing cards shown, by definition id (SPEC §4.8). */
   opponent_looks?: OpponentLooks;
   spied_cards?: (MatchCard & { round: number })[];
+  /** Segugio: the opposing characters not played yet, by rarity. */
+  tracked_rarities?: TrackedRarity[];
   my_team: (MatchCard & { instance_id: string; played_round: number | null })[];
   rounds: BossRound[];
 };

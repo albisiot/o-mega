@@ -129,6 +129,10 @@ export type PlayScore = {
   relentless?: boolean;
   /** A variant of Implacabile: it also wins when this many points behind, or fewer. */
   relentlessMargin?: number;
+  /** Ribaltone: a round it loses by this many points or more, it wins. */
+  upset?: number;
+  /** Muro: a round it loses by this many points or fewer is void. */
+  wall?: number;
   /** Where the bonus comes from; the rules engine always fills it, stored plays may not have it. */
   parts?: ScoreParts;
 };

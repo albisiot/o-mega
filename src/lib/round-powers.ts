@@ -8,9 +8,12 @@ import {
   nullifiesNextPower,
   sabotageActs,
   sacrificeBonus,
+  ruleParts,
   scoreMalusFrom,
+  vampireDrain,
   wearDownFrom,
   type Character,
+  type ScoreContext,
   type PlayedBefore,
   type PlayOutcome,
   type ScoreParts,
@@ -83,6 +86,24 @@ export type RoundOutcome = {
   /** Logoramento: the points the opposing card of the round before took from this card's score, and its name. */
   wornDown?: number;
   wornDownFrom?: string;
+  /**
+   * The rules of the powers on this card's abilities (ruleParts in the engine): its own
+   * (Jolly, Negativo, Una sola forza, Duellante), the one Abissi passed it, the opposing
+   * card's (Gelo, Tutto o niente, Il prezzo, Duello), with who gave the last two.
+   */
+  rules?: { own: number; passed: number; rival: number; passedFrom?: string; rivalFrom?: string; rivalPower?: string; rivalCode?: string };
+  /** What this card's rule took from the opposing card's abilities. */
+  rulesDealt?: number;
+  /** Vampiro: the points the opposing card took from this one, and its name. */
+  drained?: number;
+  drainedFrom?: string;
+  /** Ladro: the opposing card took the points of this card's power (its name). */
+  stolenBy?: string;
+  /** Calma piatta: the threat's rule it took away, by name. */
+  calmedRule?: string;
+  /** Ribaltone won the round from far behind; Muro made a lost round void. */
+  upsetWon?: boolean;
+  wallVoided?: boolean;
   /** Guastafeste: the bonuses of earlier cards (Riscossa, Capobranco…) the opposing card did not get because of this one. */
   opponentSpoiled?: number;
   /**
@@ -207,6 +228,49 @@ export function roundPowerNotes(
       case "attrition":
         notes.push({ name: power.name, effect: `−${power.params.malus} al prossimo rivale`, active: true, timing: "after" });
         break;
+      case "rival_frost":
+      case "rival_all_or_nothing":
+      case "rival_price":
+      case "rival_duel":
+        notes.push(
+          outcome.rulesDealt
+            ? { name: power.name, effect: `−${outcome.rulesDealt} alle abilità rivali`, active: true }
+            : { name: power.name, effect: null, active: false },
+        );
+        break;
+      case "joker":
+      case "negative_self":
+      case "single_force":
+      case "duelist": {
+        const points = outcome.rules?.own ?? 0;
+        notes.push(points ? { name: power.name, effect: signed(points), active: true, points } : { name: power.name, effect: null, active: false });
+        break;
+      }
+      case "abyss_next":
+        notes.push({ name: power.name, effect: "×2 al prossimo", active: true, timing: "after" });
+        break;
+      case "upset":
+        notes.push({ name: power.name, effect: outcome.upsetWon ? "vince da molto sotto" : null, active: Boolean(outcome.upsetWon), timing: "tie" });
+        break;
+      case "wall":
+        notes.push({ name: power.name, effect: outcome.wallVoided ? "round nullo" : null, active: Boolean(outcome.wallVoided), timing: "tie" });
+        break;
+      case "calm":
+        notes.push(
+          outcome.calmedRule
+            ? { name: power.name, effect: `toglie ${outcome.calmedRule}`, active: true }
+            : { name: power.name, effect: null, active: false },
+        );
+        break;
+      case "ambush":
+        notes.push({ name: power.name, effect: "nasconde la prossima Minaccia", active: true, timing: "after" });
+        break;
+      case "tracker":
+        notes.push({ name: power.name, effect: "svela le rarità rivali", active: true });
+        break;
+      case "phoenix":
+        notes.push({ name: power.name, effect: outcome.lost ? "torna in squadra" : null, active: outcome.lost, timing: "after" });
+        break;
       case "spoiler":
         notes.push(
           outcome.opponentSpoiled
@@ -219,11 +283,17 @@ export function roundPowerNotes(
           ? outcome.parts.power
           : play.bonus - outcome.carried - (outcome.pack ?? 0) - (outcome.sacrifice ?? 0) - modifierPoints(character, { id: "round", ...threat }, outcome.standing);
         notes.push(
-          points
-            ? { name: power.name, effect: `${points > 0 ? "+" : "−"}${Math.abs(points)}`, active: true, points }
-            : { name: power.name, effect: null, active: false },
+          outcome.stolenBy && !points
+            ? { name: power.name, effect: `rubato da ${outcome.stolenBy}`, active: false, cancelled: "blocked" }
+            : points
+              ? { name: power.name, effect: signed(points), active: true, points }
+              : { name: power.name, effect: null, active: false },
         );
       }
+    }
+    // Azzardo: after a lost round, a malus for the next card.
+    if (power.code === "gamble" && outcome.lost) {
+      notes.push({ name: power.name, effect: `−${power.params.malus} al prossimo`, active: true, timing: "after", ...(annotate ? { code: power.code, source: "own" as const } : {}) });
     }
   }
   if (annotate && power && notes[0]) {
@@ -234,10 +304,10 @@ export function roundPowerNotes(
       notes[0] = { ...notes[0], effect: "fermato dallo scudo", cancelled: "blocked" };
     }
   }
-  if (outcome.carried > 0) {
+  if (outcome.carried !== 0) {
     notes.push({
       name: outcome.carriedFrom ?? "Riscossa",
-      effect: `+${outcome.carried}`,
+      effect: signed(outcome.carried),
       active: true,
       points: outcome.carried,
       ...(annotate ? { code: outcome.carriedCode ?? "comeback", source: "carried" as const } : {}),
@@ -261,6 +331,34 @@ export function roundPowerNotes(
       ...(annotate ? { code: "sacrifice", source: "pack" as const } : {}),
     });
   }
+  if (outcome.rules?.passed) {
+    notes.push({
+      name: outcome.rules.passedFrom ? `Abissi di ${outcome.rules.passedFrom}` : "Abissi",
+      effect: signed(outcome.rules.passed),
+      active: true,
+      points: outcome.rules.passed,
+      ...(annotate ? { code: "abyss_next", source: "carried" as const } : {}),
+    });
+  }
+  if (outcome.rules?.rival) {
+    const name = outcome.rules.rivalPower ?? "Regola rivale";
+    notes.push({
+      name: outcome.rules.rivalFrom ? `${name} di ${outcome.rules.rivalFrom}` : name,
+      effect: signed(outcome.rules.rival),
+      active: true,
+      points: outcome.rules.rival,
+      ...(annotate ? { code: outcome.rules.rivalCode ?? "rival_frost", source: "worn" as const } : {}),
+    });
+  }
+  if (outcome.drained) {
+    notes.push({
+      name: outcome.drainedFrom ? `Vampiro di ${outcome.drainedFrom}` : "Vampiro",
+      effect: `−${outcome.drained}`,
+      active: true,
+      points: -outcome.drained,
+      ...(annotate ? { code: "vampire", source: "worn" as const } : {}),
+    });
+  }
   if (outcome.wornDown) {
     notes.push({
       name: outcome.wornDownFrom ? `Logoramento di ${outcome.wornDownFrom}` : "Logoramento",
@@ -271,6 +369,78 @@ export function roundPowerNotes(
     });
   }
   return notes;
+}
+
+/** Points with their sign, as the pages write them: +3, −2. */
+export function signed(points: number): string {
+  return `${points > 0 ? "+" : "−"}${Math.abs(points)}`;
+}
+
+/**
+ * What the rule powers did between two cards of a round, from `me`'s side (the engine's
+ * ruleParts, vampireDrain): the points of the rules on its abilities, what its rule took
+ * from the other card, what a Vampiro took from it. Pass the characters as they played.
+ */
+export function rulePowerOutcome(
+  me: Character | null | undefined,
+  them: Character | null | undefined,
+  threat: Threat,
+  context: Pick<ScoreContext, "families" | "played">,
+  names: { previous?: MatchCard | null; rival?: MatchCard | null },
+): Pick<RoundOutcome, "rules" | "rulesDealt" | "drained" | "drainedFrom"> {
+  if (!me) return {};
+  const base: ScoreContext = { roundsWon: 0, opponentRoundsWon: 0, carriedBonus: 0, round: 1, team: [], ...context };
+  const parts = ruleParts(me, threat, { ...base, opponent: them ?? undefined });
+  const dealt = them ? -ruleParts(them, threat, { ...base, played: [], opponent: me }).rival : 0;
+  const drained = vampireDrain(them, me, threat);
+  return {
+    rules: {
+      ...parts,
+      passedFrom: names.previous?.name,
+      rivalFrom: names.rival?.name,
+      rivalPower: names.rival?.power?.name,
+      rivalCode: names.rival?.power?.code,
+    },
+    rulesDealt: dealt,
+    drained,
+    drainedFrom: drained ? names.rival?.name : undefined,
+  };
+}
+
+/** Calma piatta, as played in a round (no Annullatore, no Silenzio della tomba): the rule it took away. */
+export function calmedBy(
+  mine: MatchCard | null | undefined,
+  theirs: MatchCard | null | undefined,
+  modifier: ThreatModifier | null | undefined,
+  before?: PlayedBefore,
+): boolean {
+  if (!modifier) return false;
+  const acts = (card: MatchCard | null | undefined, other: MatchCard | null | undefined, view?: PlayedBefore) =>
+    card?.power?.code === "calm" && !wasNullified(card, other, modifier, view) && !wasSilenced(card, modifier);
+  return acts(mine, theirs, before) || acts(theirs, mine, flipBefore(before));
+}
+
+/** Ribaltone, Muro: whether one of them changed how a round with different totals ended. */
+export function resultPowers(
+  myPlay: { score: number } | null | undefined,
+  theirPlay: { score: number } | null | undefined,
+  mine: MatchCard | null | undefined,
+  theirs: MatchCard | null | undefined,
+  winner: "me" | "opponent" | "none" | null | undefined,
+  modifier: ThreatModifier | null | undefined,
+  before?: PlayedBefore,
+): { upset: "me" | "opponent" | null; wall: "me" | "opponent" | null } {
+  const none = { upset: null, wall: null };
+  if (!myPlay || !theirPlay || myPlay.score === theirPlay.score) return none;
+  const acting = (card: MatchCard | null | undefined, other: MatchCard | null | undefined, view?: PlayedBefore) =>
+    card && !wasNullified(card, other, modifier, view) && !wasSilenced(card, modifier) ? card.power?.code : undefined;
+  const codes = { me: acting(mine, theirs, before), opponent: acting(theirs, mine, flipBefore(before)) };
+  const lower = modifier?.code === "reverse";
+  const ahead: "me" | "opponent" = (myPlay.score > theirPlay.score) !== lower ? "me" : "opponent";
+  const behind = ahead === "me" ? "opponent" : "me";
+  if (winner === behind && codes[behind] === "upset") return { ...none, upset: behind };
+  if (winner === "none" && codes[behind] === "wall") return { ...none, wall: behind };
+  return none;
 }
 
 /**
@@ -484,7 +654,8 @@ export function carriedInto(
     const opponent = source.opponent ? toCharacter(source.opponent, "opponent") : null;
     const character = asPlayedAgainst(toCharacter(source.card, source.card.definition_id), opponent, source.threat);
     const given = carriedBonusAfter(character, source.outcome, source.margin, source.distance);
-    if (given > 0) {
+    // Azzardo passes a malus: it is told like a bonus.
+    if (given !== 0) {
       points += given;
       giver ??= source.card;
     }

@@ -27,6 +27,8 @@ import {
   prefersLowOwnValues,
   scoreMalusFrom,
   scorePlay,
+  ambushesNext,
+  hitsRivalAbilities,
   showsNextThreat,
   showsTopThreat,
   wearDownFrom,
@@ -152,7 +154,8 @@ export function botView(state: MatchState, side: Side, knowledge: BotKnowledge):
     roundsToWin: state.rules.roundsToWin,
     available,
     wornDown: last ? wearDownFrom(playedIn(state, last, opponent)) : 0,
-    currentThreat: visibleThreat(currentThreat(state), knowledge.threatCatalog),
+    // Imboscata played against the bot in the round before: it chooses blind.
+    currentThreat: visibleThreat(currentThreat(state), knowledge.threatCatalog, Boolean(last && ambushesNext(playedIn(state, last, opponent)))),
     futureLevels: state.threats.slice(state.rounds.length + 1).map((threat) => threat.level),
     futureRarities: state.threats.slice(state.rounds.length + 1).map((threat) => threat.rarity ?? null),
     rarePool: (knowledge.rareCatalog ?? []).filter((threat) => !revealed.has(threat.id)),
@@ -169,8 +172,8 @@ export function botView(state: MatchState, side: Side, knowledge: BotKnowledge):
  * The current threat as a player sees it when choosing. Al buio hides its abilities:
  * the bot plays as if it were a usual threat of the same level.
  */
-function visibleThreat(threat: Threat, catalog: readonly Threat[]): Threat {
-  if (!hiddenUntilChosen(threat)) return threat;
+function visibleThreat(threat: Threat, catalog: readonly Threat[], ambushed = false): Threat {
+  if (!hiddenUntilChosen(threat) && !ambushed) return threat;
   const standIn = catalog.find((t) => t.level === threat.level && !t.modifier);
   return standIn ? { ...standIn, id: threat.id } : { ...threat, abilities: [], modifier: null };
 }
@@ -225,6 +228,8 @@ const OPPONENT_POWERS = new Set([
   "nemesis_other",
   "rival",
   "twin",
+  "hunter",
+  "vampire",
   "shielded",
   "giant_slayer",
   "counterpunch",
@@ -246,6 +251,18 @@ function effectiveScore(character: Character, threat: Threat, context: ScoreCont
   if (opponents?.length && code && OPPONENT_POWERS.has(code)) {
     const expected = opponents.reduce((sum, opponent) => sum + scorePlay(character, threat, { ...context, opponent }).total, 0);
     score += expected / opponents.length - own;
+  }
+  // Gelo, Tutto o niente, Il prezzo, Duello, Vampiro: what they take from a typical opponent; Ladro: what it would steal, twice.
+  if (opponents?.length && (hitsRivalAbilities(character) || code === "vampire")) {
+    const taken = opponents.reduce(
+      (sum, opponent) => sum + scorePlay(opponent, threat, context).total - scorePlay(opponent, threat, { ...context, opponent: character }).total,
+      0,
+    );
+    score += taken / opponents.length;
+  }
+  if (opponents?.length && code === "thief") {
+    const stolen = opponents.reduce((sum, opponent) => sum + Math.max(0, scorePlay(opponent, threat, context).parts?.power ?? 0), 0);
+    score += (2 * stolen) / opponents.length;
   }
   if (opponents?.length && code === "nullifier") {
     const denied = opponents.reduce((sum, opponent) => {

@@ -47,6 +47,9 @@ export function spiedBy(cards: readonly { round: number }[]): string {
   return by.filter(Boolean).join(" e ");
 }
 
+/** Segugio: how many characters of a rarity the opponent has not played yet. */
+export type TrackedRarity = { code: string; name: string; rank: number; color: string; count: number };
+
 /** A card as the rules engine reads it, for score previews. */
 export function toCharacter(card: MatchCard, id: string): Character {
   return {
@@ -77,6 +80,8 @@ export type MatchRound = {
   rarity?: ThreatRarity | null;
   /** `hidden`: Al buio, the abilities come only once the round is resolved. */
   threat: { name: string; abilities: string[]; flavor: string; hidden?: boolean };
+  /** Imboscata: the opponent's card of the round before hides this round's abilities until it is resolved. */
+  ambushed?: boolean;
   deadline_at: string;
   resolved: boolean;
   winner: "me" | "opponent" | "none" | null;
@@ -136,6 +141,8 @@ export type MatchView = {
    * Infiltrato: round 0, before the first round.
    */
   spied_cards?: (MatchCard & { round: number })[];
+  /** Segugio: the opposing characters not played yet, by rarity (most rare first). */
+  tracked_rarities?: TrackedRarity[];
   /** Veggente, Presagio, Oracolo: the threats of the following rounds they show. */
   foreseen_threats?: {
     round: number;
@@ -148,7 +155,8 @@ export type MatchView = {
     seen_by?: string;
   }[];
   server_now: string;
-  my_team: (MatchCard & { instance_id: string; played_round: number | null })[];
+  /** `returned`: Fenice, back in the team after a lost round. */
+  my_team: (MatchCard & { instance_id: string; played_round: number | null; returned?: boolean })[];
   rounds: MatchRound[];
   /** Conquest only, once the match is over with a winner. */
   conquest: ConquestState | null;

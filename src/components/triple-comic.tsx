@@ -14,9 +14,11 @@ import { FACTION_LABELS, type AbilityInfo } from "@/lib/catalog";
 import { DISTRICTS, MAP_HEIGHT, MAP_WIDTH, placeThreats } from "@/lib/city-districts";
 import { toCharacter, type MatchCard } from "@/lib/match";
 import {
+  calmedBy,
   decisiveNote,
   flipBefore,
   playsBefore,
+  resultPowers,
   tieBreakReason,
   tieWonByRelentless,
   wasNullified,
@@ -61,19 +63,22 @@ function ContestComic({
   const detail = useCardDetail();
   const looks = useCardLooks();
   const threat = view.threats[contest.slot];
-  const modifier = threat?.modifier ?? null;
+  const laneRule = threat?.modifier ?? null;
   const mine = view.my_deck.find((card) => card.instance_id === contest.my_play?.instance_id) ?? null;
   const theirs = contest.opponent_play;
   const myPlay = contest.my_play;
-  const ruleThreat: Threat = { id: `lane-${contest.slot}`, level: threat?.level ?? 0, abilities: threat?.abilities ?? [], modifier };
+  const laneThreat: Threat = { id: `lane-${contest.slot}`, level: threat?.level ?? 0, abilities: threat?.abilities ?? [], modifier: laneRule };
 
   // What each side placed on this threat in the round before (Annullatore ritardato), the player's view.
   const previousLane = view.rounds.find((r) => r.round === round.round - 1 && r.resolved)?.contests.find((c) => c.slot === contest.slot);
   const before = playsBefore(
     view.my_deck.find((card) => card.instance_id === previousLane?.my_play?.instance_id) ?? null,
     previousLane?.opponent_play ?? null,
-    ruleThreat,
+    laneThreat,
   );
+  // Calma piatta: the lane's rule did not count in this round, so the page tells it without.
+  const modifier = calmedBy(mine, theirs, laneRule, before) ? null : laneRule;
+  const ruleThreat: Threat = { ...laneThreat, modifier };
   const beforeOf = (card: MatchCard | null | undefined) => (card === mine ? before : flipBefore(before));
   // As the cards played: an Annullatore (also one of the round before), or Silenzio della tomba, takes the power away.
   const powerless = (card: MatchCard, other: MatchCard | null) =>
@@ -108,8 +113,10 @@ function ContestComic({
     return { text: `${who} ${points > 0 ? "+" : "−"}${Math.abs(points)}`, points };
   };
 
-  const myNotes = contestNotes(view, round, contest, "me");
-  const theirNotes = contestNotes(view, round, contest, "opponent");
+  const families = Object.fromEntries(abilities.map((a) => [a.code, a.family.code]));
+  const myNotes = contestNotes(view, round, contest, "me", families);
+  const theirNotes = contestNotes(view, round, contest, "opponent", families);
+  const results = resultPowers(myPlay, theirs, mine, theirs, contest.winner, modifier, before);
   const winner = contest.winner ?? "none";
   const myScore = myPlay?.score ?? 0;
   const theirScore = theirs?.score ?? 0;
@@ -128,13 +135,17 @@ function ContestComic({
   const resultLine =
     winner === "none"
       ? myPlay
-        ? `Pari ${myScore} a ${theirScore} e ${tieBreakReason(null, myPlay, modifier)}.`
+        ? results.wall
+          ? `${myScore} a ${theirScore}: con Muro di ${(results.wall === "me" ? mine : theirs)?.name ?? ""} il confronto è nullo.`
+          : `Pari ${myScore} a ${theirScore} e ${tieBreakReason(null, myPlay, modifier)}.`
         : ""
       : !winnerCard || !loserCard || !winnerPlay || !loserPlay
         ? ""
         : isTie
           ? `Pari ${winnerPlay.score} a ${loserPlay.score}: ${tieBreakReason(winnerPlay, loserPlay, modifier, tieWonBy)}.`
-          : wonBehind
+          : results.upset
+            ? `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}: con Ribaltone vince da molto sotto.`
+            : wonBehind
             ? `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}: con Implacabile vince anche sotto di ${wonBehind}.`
             : `${winnerCard.name} batte ${loserCard.name} · ${winnerPlay.score} a ${loserPlay.score}.`;
   const notices = [

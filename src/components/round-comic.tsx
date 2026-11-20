@@ -42,7 +42,7 @@ import {
   ruleSfx,
 } from "@/lib/effect-families";
 import type { MatchCard } from "@/lib/match";
-import type { PowerNote } from "@/lib/round-powers";
+import { signed, type PowerNote } from "@/lib/round-powers";
 import { LONG_PRESS_CLASS, type LongPressHandlers } from "@/lib/use-long-press";
 
 // A round result told as a comic page, read in order (direction D of the clash drafts), with
@@ -120,6 +120,15 @@ type CutBeat = { at: number; kind: "cutin"; side: ComicKey; index: number };
 const SIDES: ComicKey[] = ["me", "opponent"];
 const other = (side: ComicKey): ComicKey => (side === "me" ? "opponent" : "me");
 const MAX_CUT_INS = 2;
+
+/** What a note passed to the next round shows in its slot. */
+function passedMark(note: PowerNote): string {
+  if (note.code === "phoenix") return "↺";
+  const family = powerFamily(note.code);
+  if (family === "stop") return "STOP";
+  if (family === "reveal") return "?";
+  return note.effect?.split(" ")[0] ?? "";
+}
 
 /** Where a note speaks on the page: before the verdict, on a tie, after it. */
 function phase(note: PowerNote): "before" | "tie" | "after" | "idle" {
@@ -542,10 +551,10 @@ export function RoundComic(props: RoundComicProps) {
     const carriedIndex = data.notes.findIndex((note) => note.source === "carried" || note.source === "pack");
     const passedIndex = data.notes.findIndex((note) => note.active && note.timing === "after");
     if (carriedIndex < 0 && passedIndex < 0) return null;
-    const carried = carriedIndex >= 0 && !visible.has(carriedIndex) ? `+${data.notes[carriedIndex].points ?? 0}` : null;
+    const carried = carriedIndex >= 0 && !visible.has(carriedIndex) ? signed(data.notes[carriedIndex].points ?? 0) : null;
     const passedNote = passedIndex >= 0 && visible.has(passedIndex) ? data.notes[passedIndex] : null;
-    // A bonus shows its points; an Annullatore ritardato its STOP for the next opposing card.
-    const passed = passedNote ? (powerFamily(passedNote.code) === "stop" ? "STOP" : (passedNote.effect?.split(" ")[0] ?? "")) : null;
+    // A bonus shows its points; an Annullatore ritardato its STOP, Imboscata a «?», Fenice its way back.
+    const passed = passedNote ? passedMark(passedNote) : null;
     // Riscossa lunga gives its bonus to the next two rounds.
     const reach = passedNote?.code === "comeback_long" ? 2 : 1;
     return { carried, passed, reach };

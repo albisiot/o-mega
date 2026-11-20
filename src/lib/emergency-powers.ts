@@ -8,7 +8,8 @@ import {
 } from "@o-mega/game-engine";
 import type { EmergencyPlay } from "@/lib/emergency";
 import { toCharacter, type MatchCard } from "@/lib/match";
-import { carriedInto, lastingSacrifice, roundPowerNotes, type PowerNote } from "@/lib/round-powers";
+import { carriedInto, lastingSacrifice, roundPowerNotes, rulePowerOutcome, type PowerNote } from "@/lib/round-powers";
+import { describeThreatModifier } from "@/lib/threat-modifiers";
 
 /**
  * A power on an Emergenza result. `threshold` is how much it lowered the score the
@@ -38,6 +39,18 @@ const NEED_OPPONENT = new Set([
   "spoiler",
   "attrition",
   "infiltrator",
+  "hunter",
+  "vampire",
+  "thief",
+  "upset",
+  "wall",
+  "rival_frost",
+  "rival_all_or_nothing",
+  "rival_price",
+  "rival_duel",
+  "ambush",
+  "tracker",
+  "phoenix",
 ]);
 
 /**
@@ -68,11 +81,21 @@ export function emergencyPowerNotes(
   const played = before.map((b) => toCharacter(b.card, b.card.definition_id));
   const sacrifice = lastingSacrifice(played, before.map((b) => b.card));
   const standing = { roundsWon: before.filter((b) => b.passed).length, opponentRoundsWon: before.filter((b) => !b.passed).length };
+  // Calma piatta: the threat's rule did not count for this play.
+  const rule = play.modifier ?? play.threat.modifier ?? null;
   const notes: EmergencyNote[] = roundPowerNotes(
     card,
     { bonus: play.bonus },
     { level: play.level, abilities: play.threat.abilities, modifier: null },
     {
+      ...rulePowerOutcome(
+        toCharacter(card, card.definition_id),
+        null,
+        { id: "emergency", level: play.level, abilities: play.threat.abilities, modifier: null },
+        { families: {}, played },
+        { previous: previous?.card },
+      ),
+      calmedRule: card.power?.code === "calm" && rule ? describeThreatModifier(rule, play.threat.abilities[0] ?? "").name : undefined,
       // The server's parts, when it sent them, say exactly what came from where.
       carried: play.parts?.carried ?? carried.points,
       carriedFrom: carried.from,

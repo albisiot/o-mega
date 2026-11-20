@@ -280,3 +280,34 @@ Proposti e simulati il 20 novembre 2026, scelti dall'utente lo stesso giorno: tr
 | Oracolo | Distintivo | — | non misurabile coi bot |
 
 **Non scelti, restano idee** (stessa simulazione): Gelo (abilità avversarie al massimo 8, +4,6), Duello (contano le 3 abilità avversarie più alte, +2,3), Tutto o niente (abilità avversarie sotto 4 contano 0, +2,5), Il prezzo (abilità avversarie ≤2 contano −2, +2,3), Duellante (dal livello 4 solo le sue 2 abilità più alte, doppie, +3,5), Abissi (le sue abilità di una famiglia contano doppio, +3,9), Una sola forza (le abilità della stessa famiglia contano quanto la più alta, +4,5), Ribaltone (perso di 10 o più, vince, +2,5), Negativo (da misurare su un personaggio costruito apposta), Calma piatta (la Minaccia perde la sua regola nel round), Imboscata (nel round dopo l'avversario sceglie senza vedere le abilità). Scartati: Specchio, Metodico, Equilibrista (Δ nullo o negativo).
+
+## Poteri del 20 novembre 2026, secondo gruppo
+
+Proposti e simulati il 20 novembre 2026 (secondo giro di proposte, più quelli rimasti liberi dal primo), scelti dall'utente lo stesso giorno: ventidue, pronti nel motore e nel database (migrazione `20261120300000_rule_powers.sql`, SPEC §4.4) ma su **nessuna carta**. Stesso metodo della sezione sopra (1.200 partite per riga, Gamma per i semplici, Alfa per i distintivi); i Δ segnati «motore» sono rimisurati con il motore del repository, gli altri vengono dalla copia di prova usata per la proposta.
+
+| Potere | Livello | Parametri | Δ |
+|---|---|---|---|
+| Gelo | Distintivo | tetto 8 | +4,6 (7: +7,1) |
+| Una sola forza | Distintivo | — | +4,5 |
+| Abissi | Distintivo | Potere, sul prossimo personaggio | +3,8 (motore) |
+| Duellante | Distintivo | dal livello 4 | +3,5 |
+| Ribaltone | Distintivo | 10 punti | +2,5 |
+| Tutto o niente | Distintivo | sotto 4 | +2,5 |
+| Duello | Distintivo | 3 abilità | +2,3 |
+| Il prezzo | Distintivo | ≤2, −2 | +2,3 |
+| Negativo | Distintivo | — | da misurare sul personaggio fatto apposta |
+| Calma piatta | Semplice | — | 0 coi bot: vale la scelta del giocatore |
+| Imboscata | Semplice | — | non misurabile coi bot |
+| Pazienza | Semplice | +1 per round, max 4 | +3,8 |
+| Cacciatore | Semplice | +4 | +1,7 |
+| Arcobaleno | Semplice | +2 | +3,1 |
+| Jolly | Semplice | fino a +10 | **+7,6**: sopra la fascia, quanto un Sabotatore (fino a +3: +2,6) |
+| Azzardo | Semplice | +3/−3 | +3,8 |
+| Muro | Semplice | 3 punti | +2,6 |
+| Segugio | Semplice | — | non misurabile coi bot |
+| Vampiro | Distintivo | «in cui non supera» | **+8,8 (motore)**: sopra il Sabotatore (+7,4) |
+| Ladro | Distintivo | — | +3,5 |
+| Fenice | Distintivo | — | +4,8 |
+| Costanza | Semplice | +6 | +2,5 (motore) |
+
+**Da decidere (bilanciamento):** Jolly fino a +10 e Vampiro «in cui non supera» escono sopra la fascia (da +1,5 a circa +5). Proposte: Jolly fino a +3 (+2,6) e Vampiro «in cui lo supera» (+5,4), oppure lasciarli così su personaggi con abilità pensate per tenerli a bada.

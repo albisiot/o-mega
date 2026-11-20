@@ -1,4 +1,4 @@
-import type { ThreatModifier } from "@o-mega/game-engine";
+import { isDistinctivePower, type ThreatModifier } from "@o-mega/game-engine";
 
 // The visual language of the special abilities on a result page: every power and every
 // threat rule belongs to a family, and each family has its own balloon, sound effect word,
@@ -68,6 +68,28 @@ const FAMILY: Record<string, PowerFamily> = {
   icebreaker: "charge",
   even_score: "charge",
   diminuendo: "charge",
+  patience: "charge",
+  hunter: "charge",
+  rainbow: "charge",
+  steady: "charge",
+  gamble: "charge",
+  vampire: "charge",
+  thief: "charge",
+  joker: "charge",
+  negative_self: "charge",
+  single_force: "charge",
+  duelist: "charge",
+  rival_frost: "strike",
+  rival_all_or_nothing: "strike",
+  rival_price: "strike",
+  rival_duel: "strike",
+  upset: "tiebreak",
+  wall: "tiebreak",
+  calm: "stop",
+  abyss_next: "forward",
+  phoenix: "forward",
+  ambush: "reveal",
+  tracker: "reveal",
   sabotage: "strike",
   sabotage_big: "strike",
   sabotage_flat: "strike",
@@ -115,6 +137,8 @@ const SOURCE: Record<string, ChargeSource> = {
   match_point: "round",
   icebreaker: "round",
   even_score: "round",
+  patience: "round",
+  steady: "round",
   nemesis: "rival",
   nemesis_other: "rival",
   rival: "rival",
@@ -122,6 +146,10 @@ const SOURCE: Record<string, ChargeSource> = {
   opportunist: "rival",
   counterpunch: "rival",
   twin: "rival",
+  hunter: "rival",
+  vampire: "rival",
+  thief: "rival",
+  rainbow: "team",
   bond: "team",
   bond_threshold: "team",
   bond_relay: "team",
@@ -182,7 +210,7 @@ const DISTINCTIVE = new Set([
 ]);
 
 export function isDistinctive(code: string | null | undefined): boolean {
-  return Boolean(code && DISTINCTIVE.has(code));
+  return Boolean(code && (DISTINCTIVE.has(code) || isDistinctivePower(code)));
 }
 
 /**
