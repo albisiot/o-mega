@@ -9,11 +9,11 @@ import type { ThreatModifier } from "@o-mega/game-engine";
 export type PowerFamily =
   /** Points for its own card. */
   | "charge"
-  /** Takes something from the opposing card (Sabotatore). */
+  /** Takes something from the opposing card (Sabotatore), or from the next one (Logoramento). */
   | "strike"
   /** Stops a strike (Schermato, Riflesso). */
   | "shield"
-  /** Switches the opposing power off (Annullatore). */
+  /** Switches the opposing power off (Annullatore), or the bonuses it received (Guastafeste). */
   | "stop"
   /** Settles a tie (Implacabile). */
   | "tiebreak"
@@ -24,7 +24,7 @@ export type PowerFamily =
   | "forward"
   /** Copies the power of the card before (Riverbero). */
   | "copy"
-  /** Shows something, gives no points (Veggente, Spia, Nebbia). */
+  /** Shows something, gives no points (Veggente, Spia, Nebbia, Presagio, Infiltrato, Oracolo). */
   | "reveal";
 
 /** What sets a charge off, where its points fly from. */
@@ -60,13 +60,23 @@ const FAMILY: Record<string, PowerFamily> = {
   bond_played: "charge",
   bond_unplayed: "charge",
   lone_wolf: "charge",
+  peak: "charge",
+  euphoria: "charge",
+  away: "charge",
+  twin: "charge",
+  match_point: "charge",
+  icebreaker: "charge",
+  even_score: "charge",
+  diminuendo: "charge",
   sabotage: "strike",
   sabotage_big: "strike",
   sabotage_flat: "strike",
+  attrition: "strike",
   shielded: "shield",
   reflect: "shield",
   nullifier: "stop",
   delayed_nullifier: "stop",
+  spoiler: "stop",
   relentless: "tiebreak",
   relentless_small: "tiebreak",
   relentless_big: "tiebreak",
@@ -85,6 +95,9 @@ const FAMILY: Record<string, PowerFamily> = {
   spy_many: "reveal",
   spy_rarest: "reveal",
   fog: "reveal",
+  omen: "reveal",
+  infiltrator: "reveal",
+  oracle: "reveal",
 };
 
 const SOURCE: Record<string, ChargeSource> = {
@@ -97,12 +110,18 @@ const SOURCE: Record<string, ChargeSource> = {
   underdog_points: "round",
   vendetta: "round",
   crescendo: "round",
+  diminuendo: "round",
+  euphoria: "round",
+  match_point: "round",
+  icebreaker: "round",
+  even_score: "round",
   nemesis: "rival",
   nemesis_other: "rival",
   rival: "rival",
   giant_slayer: "rival",
   opportunist: "rival",
   counterpunch: "rival",
+  twin: "rival",
   bond: "team",
   bond_threshold: "team",
   bond_relay: "team",
@@ -157,6 +176,9 @@ const DISTINCTIVE = new Set([
   "echo",
   "catalyst",
   "fog",
+  "attrition",
+  "omen",
+  "oracle",
 ]);
 
 export function isDistinctive(code: string | null | undefined): boolean {

@@ -1,4 +1,12 @@
-import { abilityMalusFrom, asPlayedAgainst, immuneToSabotage, packBonus, type Character, type Threat } from "@o-mega/game-engine";
+import {
+  abilityMalusFrom,
+  asPlayedAgainst,
+  immuneToSabotage,
+  packBonus,
+  type Character,
+  type PlayedBefore,
+  type Threat,
+} from "@o-mega/game-engine";
 import { toCharacter, type MatchCard } from "@/lib/match";
 import {
   carriedInto,
@@ -7,6 +15,7 @@ import {
   outcomeOf,
   playsBefore,
   roundPowerNotes,
+  wornDownBy,
   tieWonByRelentless,
   wasNullified,
   wonBehindByRelentless,
@@ -42,25 +51,43 @@ export function contestNotes(view: TripleView, round: TripleRound, contest: Trip
   const twoBack = laneIn(round.round - 2);
   const previousThreat: Threat = { id: "lane", level: threat.level, abilities: threat.abilities, modifier: threat.modifier };
   const scoreOf = (c: TripleContest | undefined, s: Side) => (s === "me" ? c?.my_play?.score : c?.opponent_play?.score);
-  const marginOf = (c: TripleContest | undefined) => {
-    const own = scoreOf(c, side);
-    const theirs = scoreOf(c, other);
+  const marginFor = (c: TripleContest | undefined, s: Side) => {
+    const own = scoreOf(c, s);
+    const theirs = scoreOf(c, s === "me" ? "opponent" : "me");
     return own !== undefined && theirs !== undefined ? own - theirs : undefined;
   };
-  const carried = carriedInto(
-    cardOf(view, previous, side),
-    outcomeOf(previous?.winner, side),
-    cardOf(view, previous, other),
-    previousThreat,
-    marginOf(previous),
-    twoBack
-      ? { card: cardOf(view, twoBack, side), outcome: outcomeOf(twoBack.winner, side), opponent: cardOf(view, twoBack, other), threat: previousThreat }
-      : undefined,
-  );
-  const before = playsBefore(cardOf(view, previous, side), cardOf(view, previous, other), previousThreat);
-
-  const earlier = playedInEarlierRounds(view, round.round, side);
-  const sacrifice = lastingSacrifice(earlier.map((e) => e.character), earlier.map((e) => e.card));
+  const marginOf = (c: TripleContest | undefined) => marginFor(c, side);
+  // What a side's card gets from its side's earlier cards: Riscossa and Slancio on its lane,
+  // Capobranco and Sacrificio from every lane.
+  const receivedBy = (s: Side) => {
+    const o: Side = s === "me" ? "opponent" : "me";
+    const carried = carriedInto(
+      cardOf(view, previous, s),
+      outcomeOf(previous?.winner, s),
+      cardOf(view, previous, o),
+      previousThreat,
+      marginFor(previous, s),
+      twoBack
+        ? { card: cardOf(view, twoBack, s), outcome: outcomeOf(twoBack.winner, s), opponent: cardOf(view, twoBack, o), threat: previousThreat }
+        : undefined,
+    );
+    const earlier = playedInEarlierRounds(view, round.round, s);
+    const sacrifice = lastingSacrifice(earlier.map((e) => e.character), earlier.map((e) => e.card));
+    return { carried, earlier, sacrifice };
+  };
+  const { carried, earlier, sacrifice } = receivedBy(side);
+  const before: PlayedBefore = playsBefore(cardOf(view, previous, side), cardOf(view, previous, other), previousThreat);
+  const worn = wornDownBy(before, cardOf(view, previous, other));
+  // Guastafeste: what the rival card would have had from its side's earlier cards.
+  const spoiled = (() => {
+    if (card.power?.code !== "spoiler" || !rival) return 0;
+    const theirs = receivedBy(other);
+    return (
+      theirs.carried.points +
+      packBonus(toCharacter(rival, rival.definition_id), theirs.earlier.map((e) => e.character)) +
+      theirs.sacrifice.points
+    );
+  })();
   const rivalActing = rival && !wasNullified(rival, card, threat.modifier, flipBefore(before)) ? toCharacter(rival, "opponent") : null;
   const tie = contest.my_play && contest.opponent_play && contest.my_play.score === contest.opponent_play.score;
   const rivalPlay = side === "me" ? contest.opponent_play : contest.my_play;
@@ -97,6 +124,9 @@ export function contestNotes(view: TripleView, round: TripleRound, contest: Trip
       pack: play.parts?.pack ?? packBonus(toCharacter(card, card.definition_id), earlier.map((e) => e.character)),
       sacrifice: play.parts ? (play.parts.sacrifice ?? 0) : sacrifice.points,
       sacrificeFrom: sacrifice.from,
+      wornDown: worn.points,
+      wornDownFrom: worn.from,
+      opponentSpoiled: spoiled,
       parts: play.parts,
       spyRevealed,
     },

@@ -9,6 +9,7 @@ import {
   sabotageActs,
   sacrificeBonus,
   scoreMalusFrom,
+  wearDownFrom,
   type Character,
   type PlayedBefore,
   type PlayOutcome,
@@ -37,7 +38,8 @@ export type PowerNote = {
    * card's own power did nothing. Only with `annotate`.
    */
   code?: string;
-  source?: "own" | "carried" | "pack";
+  /** `worn`: the points the opposing card of the round before took (Logoramento). */
+  source?: "own" | "carried" | "pack" | "worn";
   cancelled?: "nullified" | "silenced" | "blocked";
 };
 
@@ -78,6 +80,11 @@ export type RoundOutcome = {
    * has a card not played yet; when not given, it is taken as shown.
    */
   spyRevealed?: boolean;
+  /** Logoramento: the points the opposing card of the round before took from this card's score, and its name. */
+  wornDown?: number;
+  wornDownFrom?: string;
+  /** Guastafeste: the bonuses of earlier cards (Riscossa, Capobranco…) the opposing card did not get because of this one. */
+  opponentSpoiled?: number;
   /**
    * Where the server says the bonus comes from: when given, the power's points are taken
    * from it instead of being worked out from the bonus.
@@ -197,6 +204,16 @@ export function roundPowerNotes(
       case "fog":
         notes.push({ name: power.name, effect: "nasconde chi l'ha giocato", active: true });
         break;
+      case "attrition":
+        notes.push({ name: power.name, effect: `−${power.params.malus} al prossimo rivale`, active: true, timing: "after" });
+        break;
+      case "spoiler":
+        notes.push(
+          outcome.opponentSpoiled
+            ? { name: power.name, effect: `toglie +${outcome.opponentSpoiled} al rivale`, active: true }
+            : { name: power.name, effect: null, active: false },
+        );
+        break;
       default: {
         const points = outcome.parts
           ? outcome.parts.power
@@ -244,7 +261,29 @@ export function roundPowerNotes(
       ...(annotate ? { code: "sacrifice", source: "pack" as const } : {}),
     });
   }
+  if (outcome.wornDown) {
+    notes.push({
+      name: outcome.wornDownFrom ? `Logoramento di ${outcome.wornDownFrom}` : "Logoramento",
+      effect: `−${outcome.wornDown}`,
+      active: true,
+      points: -outcome.wornDown,
+      ...(annotate ? { code: "attrition", source: "worn" as const } : {}),
+    });
+  }
   return notes;
+}
+
+/**
+ * Logoramento: what the opposing card of the round before (`before.opponent`, as it
+ * played: an Annullatore or Silenzio della tomba stopped it then) takes from this card's
+ * score, and that card's name for the note.
+ */
+export function wornDownBy(
+  before: PlayedBefore | undefined,
+  previousOpponent: MatchCard | null | undefined,
+): { points: number; from: string | undefined } {
+  const points = wearDownFrom(before?.opponent);
+  return { points, from: points > 0 ? previousOpponent?.name : undefined };
 }
 
 /**

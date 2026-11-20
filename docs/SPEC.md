@@ -178,6 +178,26 @@ Gli ultimi 14 poteri della tabella vengono da `docs/POWERS-BACKLOG.md` e sono su
 
 Schermato dà il suo bonus contro ogni Sabotatore che agisce nel round. Riverbero copia anche le varianti a punti (Ultimo baluardo, Legame, Nemesi, Sfavorito). Simulazioni, criteri e l'elenco carta per carta sono in `docs/POWERS-BACKLOG.md` («Poteri tutti diversi»).
 
+**Tredici poteri nuovi (20 novembre 2026).** Scelti dall'utente tra quelli proposti e simulati (`docs/POWERS-BACKLOG.md`, «Poteri del 20 novembre 2026»), pronti nel motore e nel database (migrazione `20261120100000_thirteen_new_powers.sql`) ma **ancora su nessuna carta**: andranno su personaggi nuovi creati apposta, al massimo uno per fazione per ogni potere preciso.
+
+| Potere (codice) | Nome | Livello | Effetto |
+|---|---|---|---|
+| `attrition` | Logoramento | Distintivo | Dopo averlo giocato, il prossimo personaggio dell'avversario ha −M al punteggio (−2), mai sotto 0 e non allo spareggio: nella Partita il round dopo, nell'Allarme Triplo sulla stessa Minaccia, nella Grande Minaccia il turno dopo. Non agisce se un Annullatore o Silenzio della tomba l'ha fermato nel suo round; Schermato e Riflesso non lo fermano |
+| `peak` | Fuoriclasse | Semplice | +N se almeno un'abilità richiesta vale 10 (dopo il Sabotatore) |
+| `euphoria` | Euforia | Semplice | +N se il proprio lato ha vinto il round precedente (lo specchio di Vendetta) |
+| `away` | Fuori casa | Semplice | +N contro le Minacce dei luoghi fuori Nuova Megara (§5.4), non contro le Minacce rare con la stessa regola |
+| `twin` | Gemello | Semplice | +N se il personaggio avversario ha la sua stessa rarità |
+| `match_point` | Colpo di grazia | Semplice | +N se il proprio lato ha già vinto K round (2) |
+| `icebreaker` | Rompighiaccio | Semplice | +N finché il proprio lato non ha vinto un round |
+| `even_score` | Testa a testa | Semplice | +N se i round vinti dai due lati sono pari (anche 0 a 0) |
+| `diminuendo` | Diminuendo | Semplice | +N se la Minaccia ha un livello più basso di quella del round prima (lo specchio di Crescendo) |
+| `spoiler` | Guastafeste | Semplice | Nel suo round il personaggio avversario non riceve i bonus delle carte giocate prima: Riscossa, Slancio, Capobranco, Sacrificio. Un Annullatore o Silenzio della tomba lo fermano |
+| `omen` | Presagio | Distintivo | Finché è in squadra e non è stato giocato, il giocatore vede la Minaccia del round dopo. Nessun Annullatore lo ferma: non è giocato |
+| `infiltrator` | Infiltrato | Semplice | All'inizio della partita il giocatore vede un personaggio avversario a caso, estratto dal server (una riga di `spy_reveals` con round 0); lo schermo lo elenca con quelli visti dalla Spia, finché l'avversario non lo gioca, e dice chi li ha mostrati: «Con Infiltrato hai visto: …», «Con Infiltrato e Spia hai visto: …» |
+| `oracle` | Oracolo | Distintivo | Dall'inizio della partita il giocatore vede la Minaccia di livello più alto (se sono più d'una, tutte) |
+
+Le Minacce viste da Presagio e Oracolo arrivano in `foreseen_threats` come quelle del Veggente (`with_short_foresight` nella Partita, `with_emergency_omens` nelle tre Emergenze), ognuna col nome del potere che l'ha mostrata (`seen_by`; senza, è del Veggente): la casella col suo occhio, toccata, dice «prevista con Oracolo», «prevista con Veggente e Presagio»… Nell'Allarme Triplo e nella Grande Minaccia sono già tutte visibili: Presagio e Oracolo lì non servono, come il Veggente. I bot usano Logoramento (sanno quanto toglie e quanto subiscono), Presagio e Oracolo (le Minacce viste), non Infiltrato. Riverbero copia gli otto poteri a punti. Sulle tavole: gli otto a punti sono cariche (dalla Minaccia Fuoriclasse e Fuori casa, dal round Euforia, Colpo di grazia, Rompighiaccio, Testa a testa e Diminuendo, dal rivale Gemello); Logoramento è un colpo che aspetta nella casella del round dopo e lì entra come «Logoramento di …» nel punteggio rivale; Guastafeste è uno stop («toglie +N al rivale») e parla solo se il rivale aveva un bonus da perdere; Presagio, Infiltrato e Oracolo svelano.
+
 ### 4.5 Doppioni
 
 I doppioni restano istanze normali: si possono usare in partita e quindi rischiare in conquista. Il giocatore può anche **convertirli in monete** (valore per rarità in configurazione).
@@ -369,6 +389,7 @@ Modalità in solitaria: si gioca senza avversario e senza mettere in palio carte
 | Specialità, Affinità, Terreno favorevole, Tuttofare, Eclettico, Arte di arrangiarsi, Adattabile | Come in partita: dipendono solo dal personaggio e dalla Minaccia (Adattabile scatta solo sulle Minacce rare con una regola) |
 | Annullatore, Davide, Schermato, Nemesi, Spia, Nebbia, Riflesso, Contrattacco, Opportunista | Nessun effetto: non c'è un avversario. Il risultato dice "senza avversario non agisce" |
 | Le varianti del 16 novembre 2026 (§4.4) | Come il loro potere. Ultimo baluardo nel round indicato: la Minaccia di quel numero. Legame: contato sugli 8, «già giocati» quelli delle Minacce prima. Riscossa lunga: dopo una fallita, le due giocate successive. Riscossa sullo scarto: i punti che mancavano alla soglia, fino al massimo. Sfavorito per round: per ogni fallita in più delle superate; Sfavorito contro chi ha già vinto K round: dopo K fallite. Sabotatore sulle Minacce grandi: abbassa la soglia solo dal suo livello; Sabotatore sul punteggio: soglia −M una volta. Implacabile: un punto in meno della soglia, più lo scarto quando la sua condizione vale (in svantaggio = più fallite che superate). Veggente per i round successivi: le Minacce delle K giocate dopo. Nessun effetto, senza avversario: Nemesi delle altre fazioni e della stessa, Spia di 2 e del più raro, Annullatore ritardato, Sfavorito sui punti |
+| I poteri del 20 novembre 2026 (§4.4) | Come in partita, con le Minacce superate come round vinti e le fallite come round persi: Euforia dopo una superata, Colpo di grazia dopo K superate, Rompighiaccio finché non ne hai superata una, Testa a testa con superate e fallite pari, Diminuendo sul livello della Minaccia prima, Fuoriclasse e Fuori casa sulla Minaccia. Presagio (finché non l'hai giocato) mostra la Minaccia della giocata dopo, Oracolo quelle di livello più alto, anche se Livello ignoto le copriva. Nessun effetto, senza avversario: Gemello, Guastafeste, Logoramento, Infiltrato |
 
 **Soglie:** simulate sul catalogo reale. Con tutta la collezione a disposizione, invece di 8 personaggi, chi ha molte carte supera quasi sempre tutte le Minacce; con la squadra limitata contano di più le scelte. In simulazione lo starter set supera in media 4,3 Minacce e una squadra ben costruita 5,8, con 8 su 8 raro (circa 5%). Misure fatte prima dei budget per rarità (§4.3): lo starter set (tutto Delta) non cambia, le squadre con carte rare ora superano qualche Minaccia in più. Rimisurate il 18 novembre 2026 con `scripts/simulate-emergency.mts` (metodo in §5.16): starter set 4,7, squadra ben costruita 6,1, 8 su 8 il 9%.
 

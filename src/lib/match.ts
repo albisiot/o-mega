@@ -33,6 +33,20 @@ export type MatchCard = {
   hidden?: boolean;
 };
 
+/**
+ * The power that showed a threat ahead (foreseen_threats): the server names Presagio,
+ * Oracolo and the Veggente for the next rounds; a threat without a name is the Veggente's.
+ */
+export function foreseenBy(threat: { seen_by?: string | null }): string {
+  return threat.seen_by || "Veggente";
+}
+
+/** The powers that showed opposing characters (spied_cards): Infiltrato before round 1, Spia after. */
+export function spiedBy(cards: readonly { round: number }[]): string {
+  const by = [cards.some((card) => card.round === 0) && "Infiltrato", cards.some((card) => card.round > 0) && "Spia"];
+  return by.filter(Boolean).join(" e ");
+}
+
 /** A card as the rules engine reads it, for score previews. */
 export function toCharacter(card: MatchCard, id: string): Character {
   return {
@@ -117,9 +131,12 @@ export type MatchView = {
   /** Levels reached with this match and the coins each one paid. */
   level_rewards: { level: number; coins: number }[];
   level_unlocks?: { name: string; level: number }[];
-  /** Veggente: the threats of the following rounds, once the player has played it. */
-  /** Spia: opposing characters it revealed, each with the round the Spia was played in. */
+  /**
+   * Spia: opposing characters it revealed, each with the round the Spia was played in;
+   * Infiltrato: round 0, before the first round.
+   */
   spied_cards?: (MatchCard & { round: number })[];
+  /** Veggente, Presagio, Oracolo: the threats of the following rounds they show. */
   foreseen_threats?: {
     round: number;
     level: number;
@@ -127,6 +144,8 @@ export type MatchView = {
     abilities: string[];
     modifier: ThreatModifier | null;
     rarity?: ThreatRarity | null;
+    /** The power that showed it (foreseenBy). */
+    seen_by?: string;
   }[];
   server_now: string;
   my_team: (MatchCard & { instance_id: string; played_round: number | null })[];

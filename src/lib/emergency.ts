@@ -53,8 +53,8 @@ export type EmergencyRun = {
   plays: EmergencyPlay[];
   /** null once the run is over. */
   current_threat: (EmergencyThreat & { id: string; round: number; level: number }) | null;
-  /** Veggente: the threats after the current one, once the player has played it. */
-  foreseen_threats: { round: number; level: number; name: string; abilities: string[] }[];
+  /** Veggente, Presagio, Oracolo: the threats after the current one they show (seen_by: foreseenBy in match.ts). */
+  foreseen_threats: { round: number; level: number; name: string; abilities: string[]; seen_by?: string }[];
 };
 
 /**

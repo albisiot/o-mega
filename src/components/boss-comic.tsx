@@ -119,8 +119,10 @@ function playBeat(beat: Beat, entries: Record<BossSide, BossEntry>, fx: ComicFx)
   if (beat.kind === "result") {
     const passed = entries[beat.side].notes.find((n) => n.active && n.timing === "after");
     if (passed) {
-      fx.token(`${beat.side}-panel`, `${beat.side}-slot`, passed.effect?.split(" ")[0] ?? "", "forward", { arc: 60, duration: 700 });
-      playSound("whoosh");
+      // Logoramento's hit waits there too, for the character the opponent places next.
+      const hit = powerFamily(passed.code) === "strike";
+      fx.token(`${beat.side}-panel`, `${beat.side}-slot`, passed.effect?.split(" ")[0] ?? "", hit ? "harm" : "forward", { arc: 60, duration: 700 });
+      playSound(hit ? "down" : "whoosh");
     }
     return;
   }
@@ -139,6 +141,12 @@ function playBeat(beat: Beat, entries: Record<BossSide, BossEntry>, fx: ComicFx)
   if (note.source === "carried" || note.source === "pack") {
     fx.token(`${side}-slot`, score, points, "forward", { arc: -10 });
     playSound("whoosh");
+    return;
+  }
+  // Logoramento of the turn before: its points come off this character's score.
+  if (note.source === "worn") {
+    fx.token("fronts", score, points, "harm", { arc: -10 });
+    playSound("down");
     return;
   }
   const family = powerFamily(note.code);

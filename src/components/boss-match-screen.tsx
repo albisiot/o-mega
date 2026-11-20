@@ -10,6 +10,7 @@ import { useEventPointsFor } from "@/components/event-banner";
 import { HandCard } from "@/components/hand-card";
 import { InfoTip } from "@/components/info-tip";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { SeenCards } from "@/components/seen-cards";
 import { Sheet } from "@/components/sheet";
 import { balance } from "@/config/balance";
 import {
@@ -528,6 +529,12 @@ function ChooseTurn({
             <RoundTimer key={deadline} deadline={deadline} offset={offset} />
           </div>
           {carried > 0 && <p className="mt-1 text-xs font-bold">Bonus dal turno prima: +{carried} al personaggio di questo turno.</p>}
+          <SeenCards
+            cards={view.spied_cards ?? []}
+            rival={rival}
+            played={new Set(view.rounds.map((r) => r.opponent_play?.definition_id))}
+            className="mt-1 text-xs font-bold"
+          />
           {!isBot && (
             <p className="mt-1 text-xs font-bold">{round.opponent_has_chosen ? `${rival} ha scelto.` : `${rival} sta scegliendo…`}</p>
           )}

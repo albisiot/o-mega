@@ -36,6 +36,7 @@ import {
   claimVictory,
   DIFFICULTY_LABELS,
   fetchMatchState,
+  foreseenBy,
   forfeitMatch,
   opponentMayBeServer,
   pingMatch,
@@ -70,8 +71,10 @@ import {
   wasNullified,
   wasSilenced,
   wonBehindByRelentless,
+  wornDownBy,
 } from "@/lib/round-powers";
 import { RareThreatAlert } from "@/components/rare-threat-alert";
+import { SeenCards } from "@/components/seen-cards";
 import { ReturnLink } from "@/components/return-link";
 import { matchBeforeRound, useRevealHold, useRevealPause } from "@/lib/reveal-hold";
 import { STORY_PLACE, playedMission } from "@/lib/story-place";
@@ -535,7 +538,7 @@ function LevelTrack({
               : "border-2 border-line text-foreground";
           const label = `Livello ${levelText(level)}${rarity ? `, ${rarityTitle(rarity)}` : ""}${
             played ? `, ${opponentName} ha giocato ${played.name}` : ""
-          }${foreseen ? `, Minaccia prevista: ${foreseen.name}` : ""}${tie ? ", finito a punti pari: tocca per sapere perché" : ""}`;
+          }${foreseen ? `, Minaccia prevista con ${foreseenBy(foreseen)}: ${foreseen.name}` : ""}${tie ? ", finito a punti pari: tocca per sapere perché" : ""}`;
           const cell = `relative flex h-11 w-full -skew-x-8 items-center justify-center font-display text-[21px] ${style}`;
           const marks = (
             <>
@@ -609,7 +612,7 @@ function LevelTrack({
             {openThreat && (
               <p className={openPlay ? "mt-2" : ""}>
                 <span className="block text-[11px] font-extrabold text-black/60">
-                  Round {openThreat.round} · Livello {openThreat.level} · Minaccia prevista
+                  Round {openThreat.round} · Livello {openThreat.level} · prevista con {foreseenBy(openThreat)}
                 </span>
                 <span className="block font-display text-base uppercase">{openThreat.name}</span>
                 {openThreat.abilities.map(abilityName).join(" · ")}
@@ -663,6 +666,7 @@ function ChoosePhase({
 
   const available = view.my_team.filter((card) => card.played_round === null);
   const myPlayed = playedBefore(view.rounds, view.my_team, round.round, "me");
+  const wornDown = wornDownBy(roundPlaysBefore(view.rounds, view.my_team, round.round), previous?.opponent_play).points;
   const previews = available
     .map((card) => ({
       card,
@@ -677,6 +681,8 @@ function ChoosePhase({
         previousOutcome: previous ? outcomeOf(previous.winner, "me") : undefined,
         threatLevels: knownLevels(view.threat_levels),
         played: myPlayed,
+        // Logoramento played against the player in the round before: known, so counted.
+        wornDown,
       }),
     }))
     .sort((a, b) => b.score.total - a.score.total);
@@ -685,9 +691,8 @@ function ChoosePhase({
   const abilityName = (code: string) => abilities.find((a) => a.code === code);
   const previewNote = "Il punteggio è un'anteprima: lo calcola il server quando giochi.";
 
-  // Spia: the revealed characters the opponent still holds.
+  // Spia, Infiltrato: the revealed characters the opponent still holds.
   const opponentPlayedIds = new Set(view.rounds.map((r) => r.opponent_play?.definition_id).filter(Boolean));
-  const spiedLeft = (view.spied_cards ?? []).filter((card) => !opponentPlayedIds.has(card.definition_id));
   const detail = useCardDetail();
   const looks = useCardLooks();
 
@@ -749,27 +754,7 @@ function ChoosePhase({
           )}
           <TimerBar key={deadline} deadline={deadline} offset={offset} />
           {carried > 0 && <p className="mt-1.5 text-xs font-bold">Riscossa: +{carried} al personaggio di questo round.</p>}
-          {spiedLeft.length > 0 && (
-            <p className="mt-1.5 text-xs font-bold">
-              Spia: {opponentName} ha ancora{" "}
-              {spiedLeft.map((card, index) => (
-                <Fragment key={card.definition_id}>
-                  {index > 0 && " e "}
-                  {/* A tap has nothing else to do here: it opens the card's detail too. */}
-                  <button
-                    type="button"
-                    {...detail.press(card, looks(card.definition_id, "opponent"))}
-                    onClick={() => detail.open(card, looks(card.definition_id, "opponent"))}
-                    aria-haspopup="dialog"
-                    className={`font-extrabold underline decoration-dotted underline-offset-2 ${LONG_PRESS_CLASS}`}
-                  >
-                    {card.name}
-                  </button>
-                </Fragment>
-              ))}
-              .
-            </p>
-          )}
+          <SeenCards cards={view.spied_cards ?? []} rival={opponentName} played={opponentPlayedIds} />
           {!isBot && (
             <p className="mt-1.5 text-xs font-bold">
               {round.opponent_has_chosen ? `${opponentName} ha scelto.` : `${opponentName} sta scegliendo…`}
@@ -1035,6 +1020,13 @@ function RoundReveal({
   const earlier = rounds.filter((r) => r.resolved && r.round < round.round);
   const mySacrifice = lastingSacrifice(myBefore, earlier.map((r) => team.find((card) => card.instance_id === r.my_play?.instance_id)));
   const theirSacrifice = lastingSacrifice(theirBefore, earlier.map((r) => r.opponent_play));
+  // Logoramento: the opposing card of the round before takes points from this one.
+  const previousRound = rounds.find((r) => r.round === round.round - 1);
+  const myWorn = wornDownBy(before, previousRound?.opponent_play);
+  const theirWorn = wornDownBy(flipBefore(before), team.find((card) => card.instance_id === previousRound?.my_play?.instance_id));
+  // Guastafeste: what the other card would have had from its side's earlier cards.
+  const theirWouldGet = theirCarried.points + theirPack + theirSacrifice.points;
+  const myWouldGet = myCarried.points + myPack + mySacrifice.points;
   // Spia shows a card only while the other side still has one not played (spy_reveals).
   const myPlayedIds = new Set(rounds.filter((r) => r.round <= round.round).map((r) => r.my_play?.instance_id));
   const myPlayedDefinitions = new Set(team.filter((card) => myPlayedIds.has(card.instance_id)).map((card) => card.definition_id));
@@ -1056,6 +1048,9 @@ function RoundReveal({
           pack: round.my_play.parts?.pack ?? myPack,
           sacrifice: round.my_play.parts ? (round.my_play.parts.sacrifice ?? 0) : mySacrifice.points,
           sacrificeFrom: mySacrifice.from,
+          wornDown: myWorn.points,
+          wornDownFrom: myWorn.from,
+          opponentSpoiled: theirWouldGet,
           parts: round.my_play.parts,
           nullified: wasNullified(mine, theirs, round.modifier, before),
           silenced: wasSilenced(mine, round.modifier),
@@ -1079,6 +1074,9 @@ function RoundReveal({
         pack: theirs.parts?.pack ?? theirPack,
         sacrifice: theirs.parts ? (theirs.parts.sacrifice ?? 0) : theirSacrifice.points,
         sacrificeFrom: theirSacrifice.from,
+        wornDown: theirWorn.points,
+        wornDownFrom: theirWorn.from,
+        opponentSpoiled: myWouldGet,
         parts: theirs.parts,
         nullified: wasNullified(theirs, mine, round.modifier, flipBefore(before)),
         silenced: wasSilenced(theirs, round.modifier),

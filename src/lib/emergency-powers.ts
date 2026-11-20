@@ -34,6 +34,10 @@ const NEED_OPPONENT = new Set([
   "counterpunch",
   "opportunist",
   "underdog_points",
+  "twin",
+  "spoiler",
+  "attrition",
+  "infiltrator",
 ]);
 
 /**

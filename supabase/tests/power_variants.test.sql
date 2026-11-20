@@ -21,7 +21,7 @@ do $$
 declare
   v_plinth public.card_definitions := (select d from public.card_definitions d where d.code = 'P112');
 begin
-  assert (select count(*) from public.power_definitions) = 54, 'the 33 powers and their 21 variants';
+  assert (select count(*) from public.power_definitions) = 67, 'the 33 powers, their 21 variants and the 13 of 20 November';
   assert (
     select count(*) from public.power_definitions
     where (code in ('round_exact', 'bond_threshold', 'bond_relay', 'bond_played', 'bond_unplayed', 'relentless_small',

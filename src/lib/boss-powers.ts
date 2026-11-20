@@ -8,6 +8,8 @@ import {
   isRelentless,
   otherSide,
   packBonus,
+  sacrificeBonus,
+  wearDownFrom,
   type BossState,
   type Character,
   type Side,
@@ -106,6 +108,17 @@ export function bossTurnEntries(
       context.played ?? [],
       before.turns.map((turn) => cardOf(view, side, turn.plays[side].characterId)),
     );
+    // Logoramento: the character the opponent placed in the turn before, as it played.
+    const wornDown = last ? wearDownFrom(bossPlayedIn(state, last, other)) : 0;
+    const wornDownFrom = wornDown > 0 && last ? cardOf(view, other, last.plays[other].characterId)?.name : undefined;
+    // Guastafeste: what the character arriving with it would have had from its side's earlier ones.
+    const spoiledContext = sameFront && facingCharacter ? bossContext(before, other, {}) : null;
+    const opponentSpoiled =
+      spoiledContext && facingCharacter
+        ? (spoiledContext.carriedBonus ?? 0) +
+          packBonus(facingCharacter, spoiledContext.played ?? []) +
+          sacrificeBonus(spoiledContext.played ?? [])
+        : 0;
     const holder = fromSide(record.holders[play.front]);
     const nullified = Boolean(card?.power) && acting !== undefined && acting.power === null;
     // The server's parts, when it sent them, say exactly what came from where.
@@ -136,6 +149,9 @@ export function bossTurnEntries(
               pack: parts?.pack ?? packBonus(acting, context.played ?? []),
               sacrifice: parts ? (parts.sacrifice ?? 0) : sacrifice.points,
               sacrificeFrom: sacrifice.from,
+              wornDown,
+              wornDownFrom,
+              opponentSpoiled,
               parts,
               standing: { roundsWon: context.roundsWon ?? 0, opponentRoundsWon: context.opponentRoundsWon ?? 0 },
               // Spia shows a card only while the other side still has one not played.

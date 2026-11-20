@@ -50,7 +50,7 @@ import {
 } from "@/lib/emergency";
 import { emergencyPowerNotes, type EmergencyNote } from "@/lib/emergency-powers";
 import { describeServerError } from "@/lib/errors";
-import { fetchInstanceDefinitions, fetchOwnedInstances, toCharacter, type MatchCard, type VariantCopy } from "@/lib/match";
+import { fetchInstanceDefinitions, fetchOwnedInstances, foreseenBy, toCharacter, type MatchCard, type VariantCopy } from "@/lib/match";
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { emergencyBeforePlay, useRevealHold } from "@/lib/reveal-hold";
 import { useLockedScreen } from "@/lib/use-locked-screen";
@@ -235,7 +235,7 @@ function LevelTrack({
           const outcome = play ? (play.passed ? ", superata" : ", fallita") : "";
           const rarity = view.threat_rarities?.[i] ?? null;
           const label = `Livello ${levelText(level)}${rarity ? `, ${rarityTitle(rarity)}` : ""}${outcome}${
-            foreseen ? `, Minaccia prevista: ${foreseen.name}` : ""
+            foreseen ? `, Minaccia prevista con ${foreseenBy(foreseen)}: ${foreseen.name}` : ""
           }`;
           const cell = `relative flex w-full -skew-x-8 items-center justify-center font-display ${
             inline ? "h-11 text-lg" : "h-10 text-[20px]"
@@ -274,7 +274,7 @@ function LevelTrack({
             className="absolute right-3 top-full z-30 mt-1 w-60 bg-foreground px-3 py-2 text-xs font-semibold text-black shadow-[4px_4px_0_#000]"
           >
             <span className="block text-[11px] font-extrabold text-black/60">
-              {openThreat.round}ª Minaccia · Livello {openThreat.level} · prevista
+              {openThreat.round}ª Minaccia · Livello {openThreat.level} · prevista con {foreseenBy(openThreat)}
             </span>
             <span className="block font-display text-base uppercase">{openThreat.name}</span>
             {openThreat.abilities.map(abilityName).join(" · ")}

@@ -14,6 +14,7 @@ import {
   carriedBonusFrom,
   compareScores,
   scorePlay,
+  wearDownFrom,
   type PlayedBefore,
   type PlayOutcome,
   type ScoreContext,
@@ -212,6 +213,8 @@ export function tripleContext(state: TripleState, side: Side, slot: number, fami
     previousOutcome: last?.plays[side][slot].outcome,
     threatLevels: state.threats.map((threat) => threat.level),
     played,
+    // Logoramento: the opposing character on this threat in the round before, as it played.
+    wornDown: last ? wearDownFrom(triplePlayedIn(state, last, otherSide(side), slot)) : 0,
   };
 }
 

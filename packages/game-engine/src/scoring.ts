@@ -28,6 +28,8 @@ export type ScoreContext = {
   played?: readonly Character[];
   /** Total score so far, own minus the opponent's (Sfavorito sui punti); none where there is no opponent. */
   scoreLead?: number;
+  /** Logoramento: points the opposing character of the round before takes from this one's score. */
+  wornDown?: number;
 };
 
 /** How a round ended for one side: a void round is neither won nor lost. */
@@ -116,6 +118,42 @@ export function scoresWithOpponentValues(threat: Threat | null | undefined): boo
 /** Silenzio della tomba: in this round no power acts, on either side. */
 export function powersSilenced(threat: Threat | null | undefined): boolean {
   return threat?.modifier?.code === "tomb_silence";
+}
+
+/** The rules of the places beyond Nuova Megara (SPEC §5.4): rare threats can have them too. */
+const PLACE_RULES = new Set(["tomb_silence", "long_count", "abyss", "frost", "duel"]);
+
+/**
+ * A threat of a place beyond Nuova Megara (Fuori casa): its place's rule, and not a rare
+ * threat. On Giza's threats Silenzio della tomba switches the power off anyway.
+ */
+export function isPlaceThreat(threat: Threat | null | undefined): boolean {
+  return Boolean(threat?.modifier && !threat.rarity && PLACE_RULES.has(threat.modifier.code));
+}
+
+/** Guastafeste: the opposing character gets no bonus from the cards played before it. Pass it as it plays. */
+export function spoilsBonuses(opponent: Character | null | undefined): boolean {
+  return opponent?.power?.code === "spoiler";
+}
+
+/** Logoramento: what a character, as it played, takes from the score of the next character the opponent plays. */
+export function wearDownFrom(character: Character | null | undefined): number {
+  return character?.power?.code === "attrition" ? numberParam(character, "malus") : 0;
+}
+
+/** Presagio: while in the team and not played yet, its side sees the threat of the next round. */
+export function showsNextThreat(character: Character): boolean {
+  return character.power?.code === "omen";
+}
+
+/** Oracolo: from the start, its side sees the threats of the match's highest level. */
+export function showsTopThreat(character: Character): boolean {
+  return character.power?.code === "oracle";
+}
+
+/** Infiltrato: at the start of the match its side sees one opposing character, drawn by the server. */
+export function revealsOpponentAtStart(character: Character): boolean {
+  return character.power?.code === "infiltrator";
 }
 
 /** Rounds won so far by a side and by its opponent (Il conto lungo). */
@@ -284,6 +322,14 @@ const ECHOABLE = new Set([
   "opportunist",
   "vendetta",
   "main_event",
+  "peak",
+  "euphoria",
+  "away",
+  "twin",
+  "match_point",
+  "icebreaker",
+  "even_score",
+  "diminuendo",
 ]);
 
 /** Riverbero: the power it copies from the side's previous character, as that one played. */
@@ -483,6 +529,26 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
       return context.opponent && !context.opponent.power ? numberParam(character, "bonus") : 0;
     case "vendetta":
       return context.previousOutcome === "lost" ? numberParam(character, "bonus") : 0;
+    // Euforia: the mirror of Vendetta.
+    case "euphoria":
+      return context.previousOutcome === "won" ? numberParam(character, "bonus") : 0;
+    // Fuoriclasse: one required ability at 10, after Sabotatore.
+    case "peak": {
+      const malus = context.abilityMalus ?? 0;
+      return threat.abilities.some((ability) => abilityValue(character, ability, malus) >= 10) ? numberParam(character, "bonus") : 0;
+    }
+    case "away":
+      return isPlaceThreat(threat) ? numberParam(character, "bonus") : 0;
+    case "twin":
+      return context.opponent && context.opponent.rarityRank === character.rarityRank ? numberParam(character, "bonus") : 0;
+    case "match_point":
+      return context.roundsWon >= numberParam(character, "min_wins") ? numberParam(character, "bonus") : 0;
+    case "icebreaker":
+      return context.roundsWon === 0 ? numberParam(character, "bonus") : 0;
+    case "even_score":
+      return context.roundsWon === context.opponentRoundsWon ? numberParam(character, "bonus") : 0;
+    case "diminuendo":
+      return context.previousLevel !== undefined && threat.level < context.previousLevel ? numberParam(character, "bonus") : 0;
     case "main_event":
       return context.threatLevels?.length && threat.level >= Math.max(...context.threatLevels) ? numberParam(character, "bonus") : 0;
     case "adaptable":
@@ -514,6 +580,11 @@ export function powerBonus(character: Character, threat: Threat, context: ScoreC
     case "spy": // gives information, not points: see revealsOpponentCharacter
     case "spy_many":
     case "spy_rarest":
+    case "omen": // gives information while in the team: see showsNextThreat
+    case "infiltrator": // gives information at the start: the server draws it
+    case "oracle":
+    case "attrition": // acts on the next opposing character: see wearDownFrom
+    case "spoiler": // acts on the opposing character's bonuses: see spoilsBonuses
       return 0;
     default:
       // A power the engine does not implement must never be silently ignored.
@@ -534,8 +605,9 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
   const malus = context.abilityMalus ?? 0;
   // Specchio: the values are the opposing character's; without one (Emergenza, a preview) its own.
   const values = scoresWithOpponentValues(threat) && context.opponent ? { ...character, stats: context.opponent.stats } : character;
-  // Sabotatore sul punteggio lowers the sum of the values, never below 0 and never the tie-break.
-  const scoreMalus = powersSilenced(threat) ? 0 : scoreMalusOn(character, context.opponent);
+  // Sabotatore sul punteggio, and Logoramento from the round before, lower the sum of the
+  // values, never below 0 and never the tie-break. Silenzio della tomba stops the first only.
+  const scoreMalus = (powersSilenced(threat) ? 0 : scoreMalusOn(character, context.opponent)) + (context.wornDown ?? 0);
   const unsabotaged = baseScore(values, threat, malus);
   const base = unsabotaged - Math.min(scoreMalus, Math.max(0, unsabotaged));
   // Sacrificio: the character gives up the round, whatever it would have scored, the
@@ -546,12 +618,15 @@ export function scorePlay(character: Character, threat: Threat, context: ScoreCo
   }
   const power = powerBonus(character, threat, context) * powerMultiplier(context);
   const modifier = modifierPoints(character, threat, context);
-  const pack = packBonus(character, context.played);
-  const sacrifice = sacrificeBonus(context.played);
+  // Guastafeste: the opposing character takes nothing from the cards played before.
+  const spoiled = spoilsBonuses(context.opponent);
+  const pack = spoiled ? 0 : packBonus(character, context.played);
+  const sacrifice = spoiled ? 0 : sacrificeBonus(context.played);
+  const carried = spoiled ? 0 : context.carriedBonus;
   // A malus cannot bring the score below 0: the bonus stays the difference from the base.
-  const raw = base + power + pack + sacrifice + context.carriedBonus + modifier;
+  const raw = base + power + pack + sacrifice + carried + modifier;
   const total = Math.max(0, raw);
-  const parts: ScoreParts = { power, carried: context.carriedBonus, pack, sacrifice, modifier, floor: total - raw };
+  const parts: ScoreParts = { power, carried, pack, sacrifice, modifier, floor: total - raw };
   return {
     characterId: character.id,
     base,

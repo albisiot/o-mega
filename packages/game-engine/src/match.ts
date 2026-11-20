@@ -4,6 +4,7 @@ import {
   carriedBonusFrom,
   compareScores,
   scorePlay,
+  wearDownFrom,
   type PlayOutcome,
   type PlayedBefore,
 } from "./scoring.ts";
@@ -175,6 +176,7 @@ export function resolveRound(
       threatLevels: threatLevels(state),
       played: playedBy(state, side),
       scoreLead: totals[side] - totals[otherSide(side)],
+      wornDown: wearDownFrom(playedBefore(state, number, side).opponent),
     });
     plays[side] = { ...score, autoPlayed: choices[side].autoPlayed };
   }

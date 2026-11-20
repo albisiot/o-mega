@@ -272,6 +272,6 @@ describe("Veggente corto", () => {
     const teamB = [1, 2, 3, 4, 5].map((i) => character(`b${i}`));
     const state = play(newState(teamA, teamB, threats), "v", "b1");
     const view = botView(state, "a", { threatCatalog: catalog, families: FAMILIES, abilityMeans: {}, characters: [...teamA, ...teamB] });
-    expect(view.foreseenThreats?.map((t) => t.id)).toEqual([threats[2].id]);
+    expect(view.foreseenThreats?.map((t) => t?.id)).toEqual([threats[2].id]);
   });
 });

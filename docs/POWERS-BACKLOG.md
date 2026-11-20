@@ -256,3 +256,27 @@ Il potere è già nel motore, nei bot, nelle note del round e in `power_definiti
 Restano come prima, una per fazione: Ultimo baluardo +3 dal round 4 Plinth (E), Gavel (C), Cerbero (N); Apripista +3 entro il round 2 Milewright (E), Rubicon (C), Postmark (N); Legame +1 Sampler (E), Swarf (C), Histrio (N); Riscossa +2 Moth (E), Vetrix (C), Harrow (N); Riscossa +3 Multitude (C), Holdout (N); Sfavorito +3 Absentia (E), Re Tifeo (C), Ordito (N); Implacabile Truss (E), Lamprey (C), Zeta Rax (N); Terreno favorevole +2 (livelli 1-2) Parley (E), Hospes (C), Pentimento (N); Specialità Energia Juncture (E), Cineris (C), Psiche Lullaby (C), Vulgate (N), Intelletto Facsimile (C), Necropsy (N), Magia Gridwitch (E), Escrow (N); Tuttofare Heirloom (E), Dredge (C), Cursor (N); Davide Subsong (E), Lure (N); Crescendo Miliarium (C), Gradus (N); Affinità Mente Regina Ix (C); Affinità Potere Antiphon (C); Nemesi Aerie (E), Contumax (C); Annullatore Codicil (E), Attainder (C), Gauger (N); Schermato Carillon (E), Blackbody (C), Tourniquet (N); Spia Subpoena (E), Custodia (C), Sordina (N); Veggente Novissima (E), Effigy (C), Sibilla (N); Sabotatore Principal (C), Auctor (N); Slancio Impetus (E), Katabatic (C).
 
 **Nelle modalità:** le varianti seguono il loro potere. Nell'Allarme Triplo Riscossa lunga, Riscossa sullo scarto e Annullatore ritardato leggono la stessa Minaccia nei round prima; nella Grande Minaccia il turno prima, e Sfavorito sui punti conta i punti dei fronti. In Emergenza vedi SPEC §5.10. Il server mostra le Minacce del Veggente per i round successivi (`with_short_foresight`, `emergency_state_payload`), i personaggi delle Spie nuove (`reveal_spied_character`, `spy_reveals` ora con più righe per round) e sa quando l'Annullatore ritardato spegne Veggente, Spia e Nebbia (`delayed_nullified`, `nullified_in_round`, `fog_hides`). Il simulatore delle varianti e i risultati grezzi non sono nel repository: erano in una copia temporanea del motore.
+
+## Poteri del 20 novembre 2026
+
+Proposti e simulati il 20 novembre 2026, scelti dall'utente lo stesso giorno: tredici, pronti nel motore e nel database (migrazione `20261120100000_thirteen_new_powers.sql`, SPEC §4.4) ma su **nessuna carta**. Andranno su personaggi nuovi creati apposta, al massimo uno per fazione per ogni potere preciso; i numeri qui sotto sono quelli consigliati.
+
+**Metodo:** `scripts/simulate-powers.mts` su una copia del motore con i candidati, catalogo del 20 novembre (261 personaggi), Difficile contro Difficile, squadre casuali con modificatori e luoghi; ogni partita giocata con e senza il potere sull'ospite (un Gamma a caso per i semplici, un Alfa a caso per i distintivi), 1.200 partite per riga (±1 punto circa). Δ = punti di vittoria in più. Riferimenti con lo stesso metodo: Apripista +3 entro il round 2 +3,9, Ultimo baluardo +3 dal round 4 +2,1 (Gamma); Riscossa +2 +1,8, Sabotatore −1 +7,5 (Alfa).
+
+| Potere | Livello | Parametri consigliati | Δ |
+|---|---|---|---|
+| Logoramento | Distintivo | −2 (`malus`) | +3,8 (−3: +5,2) |
+| Fuoriclasse | Semplice | +3 | +3,2 |
+| Euforia | Semplice | +3 | +2,8 (+2: +1,3) |
+| Fuori casa | Semplice | +4 | +2,5 |
+| Gemello | Semplice | +3 | +2,3 |
+| Colpo di grazia | Semplice | +3, 2 round (`min_wins`) | +1,9 |
+| Rompighiaccio | Semplice | +3 | +1,8 |
+| Testa a testa | Semplice | +2 | +1,7 |
+| Diminuendo | Semplice | +2 | +1,5 |
+| Guastafeste | Semplice | — | +0,5: un contrappeso, come Riflesso |
+| Presagio | Distintivo | — | non misurabile coi bot |
+| Infiltrato | Semplice | — | non misurabile coi bot |
+| Oracolo | Distintivo | — | non misurabile coi bot |
+
+**Non scelti, restano idee** (stessa simulazione): Gelo (abilità avversarie al massimo 8, +4,6), Duello (contano le 3 abilità avversarie più alte, +2,3), Tutto o niente (abilità avversarie sotto 4 contano 0, +2,5), Il prezzo (abilità avversarie ≤2 contano −2, +2,3), Duellante (dal livello 4 solo le sue 2 abilità più alte, doppie, +3,5), Abissi (le sue abilità di una famiglia contano doppio, +3,9), Una sola forza (le abilità della stessa famiglia contano quanto la più alta, +4,5), Ribaltone (perso di 10 o più, vince, +2,5), Negativo (da misurare su un personaggio costruito apposta), Calma piatta (la Minaccia perde la sua regola nel round), Imboscata (nel round dopo l'avversario sceglie senza vedere le abilità). Scartati: Specchio, Metodico, Equilibrista (Δ nullo o negativo).

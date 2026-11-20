@@ -27,6 +27,9 @@ import {
   prefersLowOwnValues,
   scoreMalusFrom,
   scorePlay,
+  showsNextThreat,
+  showsTopThreat,
+  wearDownFrom,
   type CarrySource,
   type ScoreContext,
 } from "./scoring.ts";
@@ -69,8 +72,11 @@ export type BotView = {
   team: Character[];
   /** The opponent's characters already played. */
   opponentSeen: Character[];
-  /** The threats of the following rounds, once Veggente has been played. */
-  foreseenThreats: Threat[] | null;
+  /**
+   * The threats of the following rounds the bot has seen (Veggente, Presagio, Oracolo), in
+   * round order; null where a round is still unknown. Null when it has seen none.
+   */
+  foreseenThreats: (Threat | null)[] | null;
   /** Level of the previous round's threat (Crescendo). */
   previousLevel?: number;
   /** How the bot's previous round ended (Vendetta). */
@@ -79,6 +85,8 @@ export type BotView = {
   threatLevels: number[];
   /** Own characters already played, as they played (Capobranco, Catalizzatore, Riverbero). */
   played: Character[];
+  /** Logoramento: points the opponent's character of the round before takes from the bot's this round. */
+  wornDown?: number;
   /** Rarity tier of the threats of the following rounds, public from the start; null for the usual ones. */
   futureRarities?: (string | null)[];
   /** Rare catalog threats that may still come up. */
@@ -110,14 +118,25 @@ export function botView(state: MatchState, side: Side, knowledge: BotKnowledge):
   const seen = new Set(opponentSeen.map((c) => c.definitionId));
   const totals = totalScores(state);
   // A Veggente reveals only if no Annullatore stopped it: every following round, or the next few.
+  // Presagio, still in the team and not played, shows the next round; Oracolo, in the team,
+  // the threats of the match's highest level.
+  const available = availableCharacters(state, side);
   const foreseenUntil = Math.max(
     0,
     ...state.rounds.map((round) => {
       const played = playedIn(state, round, side);
       return played ? round.round + foresightRounds(played) : 0;
     }),
+    available.some(showsNextThreat) ? currentRoundNumber(state) + 1 : 0,
   );
-  const foresees = foreseenUntil > state.rounds.length + 1;
+  const topLevel = state.teams[side].some(showsTopThreat)
+    ? Math.max(...state.threats.map((threat) => threat.level))
+    : null;
+  const foreseen = state.threats
+    .slice(state.rounds.length + 1)
+    .map((threat, i) => (state.rounds.length + 2 + i <= foreseenUntil || threat.level === topLevel ? threat : null));
+  while (foreseen.length > 0 && foreseen.at(-1) === null) foreseen.pop();
+  const last = state.rounds.at(-1);
   return {
     previousLevel: previousLevel(state),
     previousOutcome: previousOutcome(state, side),
@@ -126,12 +145,13 @@ export function botView(state: MatchState, side: Side, knowledge: BotKnowledge):
     round: currentRoundNumber(state),
     team: state.teams[side],
     opponentSeen,
-    foreseenThreats: foresees ? state.threats.slice(state.rounds.length + 1, foreseenUntil) : null,
+    foreseenThreats: foreseen.length > 0 ? foreseen : null,
     opponentPool: knowledge.characters.filter((character) => !seen.has(character.definitionId)),
     opponentCarriedBonus: carriedBonus(state, opponent),
     scoreLead: totals[side] - totals[opponent],
     roundsToWin: state.rules.roundsToWin,
-    available: availableCharacters(state, side),
+    available,
+    wornDown: last ? wearDownFrom(playedIn(state, last, opponent)) : 0,
     currentThreat: visibleThreat(currentThreat(state), knowledge.threatCatalog),
     futureLevels: state.threats.slice(state.rounds.length + 1).map((threat) => threat.level),
     futureRarities: state.threats.slice(state.rounds.length + 1).map((threat) => threat.rarity ?? null),
@@ -187,16 +207,29 @@ function currentContext(view: BotView): ScoreContext {
     threatLevels: view.threatLevels,
     played: view.played,
     scoreLead: view.scoreLead,
+    wornDown: view.wornDown,
   };
 }
 
-/** What a Sabotatore takes from the opposing character on `threat`, in points. */
+/**
+ * What a Sabotatore takes from the opposing character on `threat`, in points; Logoramento
+ * counts what it will take from the opponent's next character.
+ */
 function sabotagePoints(character: Character, threat: Threat): number {
-  return abilityMalusFrom(character, threat) * threat.level + scoreMalusFrom(character);
+  return abilityMalusFrom(character, threat) * threat.level + scoreMalusFrom(character) + wearDownFrom(character);
 }
 
 /** Powers whose bonus depends on who the opposing character is. */
-const OPPONENT_POWERS = new Set(["nemesis", "shielded", "giant_slayer", "counterpunch", "opportunist"]);
+const OPPONENT_POWERS = new Set([
+  "nemesis",
+  "nemesis_other",
+  "rival",
+  "twin",
+  "shielded",
+  "giant_slayer",
+  "counterpunch",
+  "opportunist",
+]);
 
 /**
  * A character's score plus what Sabotatore would take from the opposing character,
@@ -275,10 +308,15 @@ function sample<T>(rng: Rng, items: readonly T[], count: number): T[] {
  * distinct unrevealed threat per known level.
  */
 function sampleFutureThreats(view: BotView, rng: Rng): Threat[] {
-  const threats: Threat[] = [...(view.foreseenThreats ?? [])];
+  const known = (view.foreseenThreats ?? []).filter((threat): threat is Threat => threat !== null);
+  const threats: Threat[] = [];
   view.futureLevels.forEach((_, i) => {
-    if (i < threats.length) return;
-    const options = futureOptions(view, i).filter((threat) => !threats.some((t) => t.id === threat.id));
+    const seen = view.foreseenThreats?.[i];
+    if (seen) {
+      threats.push(seen);
+      return;
+    }
+    const options = futureOptions(view, i).filter((threat) => ![...known, ...threats].some((t) => t.id === threat.id));
     if (options.length > 0) threats.push(pickOne(rng, options));
   });
   return threats;
@@ -304,6 +342,9 @@ function playOut(view: BotView, first: Character, opponents: Character[], threat
   // The simulated rounds, for what a character passes on (Riscossa lunga reads two of them).
   const ownHistory: CarrySource[] = [];
   const theirHistory: CarrySource[] = [];
+  // Logoramento: what each side's character of the round before takes from the other's next one.
+  let ownWorn = view.wornDown ?? 0;
+  let theirWorn = wearDownFrom(view.played.at(-1));
   const flip = (outcome: PlayOutcome | undefined): PlayOutcome | undefined =>
     outcome === "won" ? "lost" : outcome === "lost" ? "won" : outcome;
 
@@ -318,6 +359,7 @@ function playOut(view: BotView, first: Character, opponents: Character[], threat
       previousOutcome: ownOutcome,
       played: ownPlayed,
       scoreLead: lead,
+      wornDown: ownWorn,
     };
     const theirContext = {
       ...shared,
@@ -328,6 +370,7 @@ function playOut(view: BotView, first: Character, opponents: Character[], threat
       previousOutcome: flip(ownOutcome),
       played: theirPlayed,
       scoreLead: -lead,
+      wornDown: theirWorn,
     };
     const ownCharacter: Character = ownPick ?? takeBest(own, threat, ownContext, rng);
     const theirCharacter = takeBest(theirs, threat, theirContext, rng);
@@ -357,6 +400,8 @@ function playOut(view: BotView, first: Character, opponents: Character[], threat
     theirHistory.push({ character: theirActing, outcome: flip(ownOutcome) ?? "void", margin: -margin });
     ownCarried = carriedBonusFrom(ownHistory);
     theirCarried = carriedBonusFrom(theirHistory);
+    ownWorn = wearDownFrom(theirActing);
+    theirWorn = wearDownFrom(ownActing);
     ownPlayed.push(ownActing);
     theirPlayed.push(theirActing);
     if (won >= view.roundsToWin || lost >= view.roundsToWin) break;

@@ -126,7 +126,7 @@ type RoundScene = {
   /** Points Sabotatore sul punteggio took from each side's score. */
   scoreStruck?: { me?: number; op?: number };
 };
-type Scene = RoundScene | { kind: "boss"; tie?: boolean } | { kind: "emergency"; reverse?: boolean } | { kind: "triple-map" };
+type Scene = RoundScene | { kind: "boss"; tie?: boolean; worn?: boolean } | { kind: "emergency"; reverse?: boolean } | { kind: "triple-map" };
 
 const SCENES: Record<string, Scene> = {
   "tutto-insieme": {
@@ -419,9 +419,39 @@ const SCENES: Record<string, Scene> = {
     winner: "opponent",
     resultLine: "Re Tifeo batte Talos · 27 a 19.",
   },
+  // The powers of 20 November 2026 (SPEC §4.4): Logoramento in its round and in the next one.
+  "nuovi-logoramento": {
+    kind: "round",
+    threat: "Golem di cemento",
+    abilities: GOLEM,
+    me: [mongi, 20, [n("Logoramento", "attrition", "−2 al prossimo rivale", { timing: "after" })]],
+    op: [talos, 22, [n("Testa a testa", "even_score", "+2", { points: 2 })]],
+    winner: "opponent",
+    resultLine: "Talos batte Mongibello · 22 a 20.",
+  },
+  "nuovi-logorato": {
+    kind: "round",
+    threat: "Golem di cemento",
+    abilities: GOLEM,
+    me: [dredge, 24, [n("Rompighiaccio", "icebreaker", "+3", { points: 3 })]],
+    op: [tifeo, 21, [n("Logoramento di Mongibello", "attrition", "−2", { points: -2, source: "worn" })]],
+    winner: "me",
+    resultLine: "Dredge batte Re Tifeo · 24 a 21.",
+  },
+  "nuovi-guastafeste": {
+    kind: "round",
+    threat: "Golem di cemento",
+    abilities: GOLEM,
+    me: [plinth, 19, [n("Guastafeste", "spoiler", "toglie +3 al rivale")]],
+    op: [collateral, 18, [n("Fuoriclasse", "peak", "+3", { points: 3 })]],
+    winner: "me",
+    resultLine: "Plinth batte Collateral · 19 a 18.",
+  },
   "grande-minaccia": { kind: "boss" },
   // Equal scores on a front: the «i» on the card met there.
   "grande-minaccia-pari": { kind: "boss", tie: true },
+  // Logoramento: placed this turn, it waits in the slot; the one of the turn before hits the arrival.
+  "grande-minaccia-logoramento": { kind: "boss", worn: true },
   "triplo-mappa": { kind: "triple-map" },
   "emergenza": { kind: "emergency" },
   // Under Rovescio the target is a maximum: Sabotatore does not move it.
@@ -529,8 +559,12 @@ function SceneView({ id }: { id: string }) {
         holdersAfter={["me", "opponent", "me", "me", "opponent"]}
         rivalName="Bot Difficile"
         entries={{
-          me: bossEntry("me", dredge, 2, scene.tie ? 23 : 27, [n("Tuttofare", "all_rounder", "+3", { points: 3 }), n("Riscossa", "comeback", "+2", { points: 2, source: "carried" }), n("Slancio", "momentum", "+2 al prossimo", { timing: "after" })], talos),
-          opponent: bossEntry("opponent", malleus, 4, 25, [n("Sabotatore", "sabotage", "−1 a ogni abilità rivale"), { name: "Legame", code: "bond", effect: null, active: false, source: "own" }], plinth),
+          me: scene.worn
+            ? bossEntry("me", mongi, 2, 27, [n("Logoramento", "attrition", "−2 al prossimo rivale", { timing: "after" }), n("Euforia", "euphoria", "+3", { points: 3 })], talos)
+            : bossEntry("me", dredge, 2, scene.tie ? 23 : 27, [n("Tuttofare", "all_rounder", "+3", { points: 3 }), n("Riscossa", "comeback", "+2", { points: 2, source: "carried" }), n("Slancio", "momentum", "+2 al prossimo", { timing: "after" })], talos),
+          opponent: scene.worn
+            ? bossEntry("opponent", malleus, 4, 25, [n("Logoramento di Contromano", "attrition", "−2", { points: -2, source: "worn" }), n("Rompighiaccio", "icebreaker", "+3", { points: 3 })], plinth)
+            : bossEntry("opponent", malleus, 4, 25, [n("Sabotatore", "sabotage", "−1 a ogni abilità rivale"), { name: "Legame", code: "bond", effect: null, active: false, source: "own" }], plinth),
         }}
         stats={{ me: "FOR 8 · RES 8 · ENE 7 · TEC 3", opponent: "FOR 10 · RES 8 · VOL 5 · COM 4" }}
         press={{ me: undefined, opponent: undefined }}

@@ -133,7 +133,7 @@ function phase(note: PowerNote): "before" | "tie" | "after" | "idle" {
 /** The order of a note before the verdict: silenced powers, bonus carried in, then by family. */
 function rank(note: PowerNote): number {
   if (note.cancelled === "silenced") return -2;
-  if (note.source === "carried" || note.source === "pack") return -1;
+  if (note.source === "carried" || note.source === "pack" || note.source === "worn") return -1;
   // An Annullatore's victim right after the stop.
   if (note.cancelled === "nullified") return familyOrder("stop") + 0.5;
   // A strike a shield stopped still speaks, as a strike.
@@ -275,6 +275,13 @@ function playNote(side: ComicKey, index: number, props: RoundComicProps, fx: Com
     playSound("whoosh");
     return;
   }
+  // Logoramento of the round before: its points come off this card's score.
+  if (note.source === "worn") {
+    fx.token("round-cap", score, points, "harm", { arc: -10 });
+    fx.shake(`${side}-panel`, 6);
+    playSound("down");
+    return;
+  }
   const family = powerFamily(note.code);
   const help = note.points === undefined || pointsHelp(note.points, props.rule);
   switch (family) {
@@ -290,6 +297,13 @@ function playNote(side: ComicKey, index: number, props: RoundComicProps, fx: Com
       return;
     }
     case "strike":
+      // Logoramento: the hit waits in the slot for the opposing card of the next round.
+      if (note.timing === "after") {
+        fx.word(self, powerSfx(note.code), "harm", { above: true, size: 30, dx: side === "me" ? 50 : -50 });
+        fx.token(self, `${side}-slot`, points, "harm", { arc: 80, duration: 700 });
+        playSound("down");
+        return;
+      }
       // Sabotatore sul punteggio hits the score, its word on the card away from the balloons;
       // the others hit the abilities.
       if (note.code === "sabotage_flat") {
@@ -511,7 +525,8 @@ export function RoundComic(props: RoundComicProps) {
     const rival = props[other(side)];
     const seen = shown(other(side));
     return rival.notes.some(
-      (note, index) => (powerFamily(note.code) === "strike" || note.code === "reflect") && note.active && seen.has(index),
+      (note, index) =>
+        (powerFamily(note.code) === "strike" || note.code === "reflect") && note.timing !== "after" && note.active && seen.has(index),
     );
   };
   const shieldedOn = (side: ComicKey) => {

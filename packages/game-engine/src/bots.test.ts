@@ -215,7 +215,7 @@ describe("bots and the new powers", () => {
       ...state,
       rounds: [{ round: 1, threatId: "t1", plays: { a: pick("seer"), b: pick("b1") }, winner: null }],
     };
-    expect(botView(played, "a", knowledge).foreseenThreats?.map((t) => t.id)).toEqual(["t3"]);
+    expect(botView(played, "a", knowledge).foreseenThreats?.map((t) => t?.id)).toEqual(["t3"]);
     // Seeing the opponent's Veggente played gives the other side nothing.
     expect(botView(played, "b", knowledge).foreseenThreats).toBeNull();
   });

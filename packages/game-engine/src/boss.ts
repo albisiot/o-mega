@@ -14,6 +14,7 @@ import {
   carriedBonusFrom,
   compareScores,
   scorePlay,
+  wearDownFrom,
   type PlayedBefore,
   type PlayOutcome,
   type ScoreContext,
@@ -293,6 +294,8 @@ function arrivalScore(
     ...bossContext(state, side, families),
     abilityMalus: abilityMalusOn(acting, opposing, threat),
     opponent: opposing,
+    // Logoramento: the character the opponent placed in the turn before, wherever it went.
+    wornDown: wearDownFrom(bossPlayedBefore(state, turn, side).opponent),
   });
 }
 
