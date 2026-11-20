@@ -376,14 +376,16 @@ const STYLES: Record<string, NameStyle> = {
     side: ["#8a0b0b", "#2a0303"],
     angle: 90,
   },
-  // Typo: the clumsy apprentice, letters out of place and a misprint.
+  // Typo: the clumsy apprentice, letters out of place and a misprint. The room between the
+  // letters keeps the tilted T from hiding behind the Y in this narrow typeface.
   P024: {
     font: "comic",
     fill: grad("#fff8b0", "#ffe14d 50%", "#ff9f1c"),
     rim: "#241400",
     side: ["#a35a00", "#2a1500"],
     split: ["transparent", "rgb(255 46 108 / 0.75)"],
-    jitter: [[-8, 0.04], [6, -0.05], [-4, 0.06], [10, 0]],
+    tracking: 0.08,
+    jitter: [[-7, 0.04], [6, -0.05], [-4, 0.06], [10, 0]],
   },
 
   // --- Gamma ---
