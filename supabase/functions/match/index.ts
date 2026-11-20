@@ -1471,34 +1471,13 @@ async function resolvePvpRound(userId: string, matchId: string) {
   return stateFor(matchId, side);
 }
 
-/**
- * Whether the opponent of a match between players is the server's (Classificata, SPEC §8.7;
- * Sfida a tema online, §8.8): its choice is known only here. Decided by the database, never
- * by the client, which cannot tell the server's opponent from a person.
- */
-async function againstServerOpponent(matchId: string): Promise<boolean> {
-  const { data, error } = await admin.from("ranked_matches").select("ghost_id").eq("match_id", matchId).maybeSingle();
-  if (error) throw new Error(error.message);
-  return Boolean(data?.ghost_id);
-}
-
-/**
- * After a choice: resolves at once when both sides have chosen. Against the server's opponent
- * the database cannot know that (its choice is played here, once its moment has come), so the
- * round is checked here too: it resolves now if the opponent has already chosen.
- */
-async function afterChoice(userId: string, matchId: string, status: unknown) {
-  if (status === "ready" || (await againstServerOpponent(matchId))) return resolvePvpRound(userId, matchId);
-  return check(await admin.rpc("match_state_for_user", { p_match_id: matchId, p_user: userId }));
-}
-
 /** Allarme Triplo between players: the cards of the round, one per threat, in one choice. */
 async function submitTriple(userId: string, body: Record<string, unknown>) {
   const placement = placementOf(body.card_instance_ids);
   if (typeof body.match_id !== "string" || placement === null || typeof body.round !== "number") {
     throw new GameError("invalid_request");
   }
-  const status = check(
+  check(
     await admin.rpc("match_submit_triple", {
       p_user: userId,
       p_match_id: body.match_id,
@@ -1506,7 +1485,17 @@ async function submitTriple(userId: string, body: Record<string, unknown>) {
       p_card_instance_ids: placement,
     }),
   );
-  return afterChoice(userId, body.match_id, status);
+  return resolveAfterChoice(userId, body.match_id);
+}
+
+/**
+ * After a choice the round is resolved when it is ready: both players have chosen, or the
+ * opponent is the server's (Classificata, Sfide a tema online) and its moment has come. Only
+ * here is that known (`match_round_context`, `match.ghost`), never from the client, which
+ * cannot tell the server's opponent from a person. Otherwise the answer is the state.
+ */
+function resolveAfterChoice(userId: string, matchId: string) {
+  return resolvePvpRound(userId, matchId);
 }
 
 async function submitChoice(userId: string, body: Record<string, unknown>) {
@@ -1515,7 +1504,7 @@ async function submitChoice(userId: string, body: Record<string, unknown>) {
   }
   // Grande Minaccia: the choice also names a front (0-based here, 1-based in the database).
   const front = frontOf(body.front);
-  const status = check(
+  check(
     await admin.rpc("match_submit_play", {
       p_user: userId,
       p_match_id: body.match_id,
@@ -1524,7 +1513,7 @@ async function submitChoice(userId: string, body: Record<string, unknown>) {
       ...(front === null ? {} : { p_front_slot: front + 1 }),
     }),
   );
-  return afterChoice(userId, body.match_id, status);
+  return resolveAfterChoice(userId, body.match_id);
 }
 
 // ---------------------------------------------------------------------------
