@@ -50,6 +50,7 @@ import {
   type MatchRound,
   type MatchView,
 } from "@/lib/match";
+import { rematchHref } from "@/lib/last-play";
 import { RewardChips, hasReward, useMatchReward } from "@/components/match-reward";
 import { RankedResultChips, useOpponentNudge } from "@/components/ranked-parts";
 import { ChallengeResultChip } from "@/components/challenge-parts";
@@ -1448,13 +1449,7 @@ function MatchResult({
         ) : (
           <ReturnLink
             onward
-            href={
-              view.mode === "bot"
-                ? `/squadra/?difficulty=${view.bot_difficulty ?? "easy"}`
-                : view.mode === "ranked"
-                  ? "/squadra/?mode=ranked"
-                  : "/gioca"
-            }
+            href={rematchHref(view)}
             className="btn btn-primary min-w-0 flex-1"
           >
             {view.mode === "bot" ? "Rivincita" : "Gioca ancora"}

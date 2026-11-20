@@ -38,6 +38,7 @@ import {
   pingMatch,
   subscribeToUpdates,
 } from "@/lib/match";
+import { rematchHref } from "@/lib/last-play";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { RankedResultChips, useOpponentNudge } from "@/components/ranked-parts";
 import { ReturnLink } from "@/components/return-link";
@@ -997,13 +998,7 @@ function BossResult({ view, rival }: { view: BossView; rival: string }) {
       <div className="flex shrink-0 gap-2">
         <ReturnLink
           onward
-          href={
-            view.mode === "bot"
-              ? `/squadra/?format=boss&difficulty=${view.bot_difficulty ?? "easy"}`
-              : view.mode === "ranked"
-                ? "/squadra/?mode=ranked&format=boss"
-                : "/gioca"
-          }
+          href={rematchHref(view)}
           className="btn btn-primary min-w-0 flex-1"
         >
           {view.mode === "bot" ? "Rivincita" : "Gioca ancora"}

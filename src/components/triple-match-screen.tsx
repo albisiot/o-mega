@@ -27,6 +27,7 @@ import {
   subscribeToUpdates,
   type MatchCard,
 } from "@/lib/match";
+import { rematchHref } from "@/lib/last-play";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { RankedResultChips, useOpponentNudge } from "@/components/ranked-parts";
 import { ChallengeResultChip } from "@/components/challenge-parts";
@@ -986,13 +987,7 @@ function TripleResult({ view, rival }: { view: TripleView; rival: string }) {
       <div className="flex shrink-0 gap-2">
         <ReturnLink
           onward
-          href={
-            view.mode === "bot"
-              ? `/squadra/?format=triple&difficulty=${view.bot_difficulty ?? "easy"}`
-              : view.mode === "ranked"
-                ? "/squadra/?mode=ranked&format=triple"
-                : "/gioca"
-          }
+          href={rematchHref(view)}
           className="btn btn-primary min-w-0 flex-1"
         >
           {view.mode === "bot" ? "Rivincita" : "Gioca ancora"}

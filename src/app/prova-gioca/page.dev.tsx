@@ -6,7 +6,8 @@
 //   /prova-gioca/?s=nuovo       first visit: «Prima partita», Conquista locked, Emergenza to play
 //   /prova-gioca/?s=ancora      «Gioca ancora» on Quadrante, Emergenza done, Conquista open
 //   /prova-gioca/?s=partita     a match in progress: no «Gioca ancora», the modes blocked
-//   /prova-gioca/?s=premio      an event reward to open, the Conquista limit reached
+//   /prova-gioca/?s=premio      an event reward to open, the Conquista limit reached: «Gioca ancora» on it waits
+//   /prova-gioca/?s=finita      the last play was a Sfida a tema now over: «Gioca ancora» says so and waits
 //   /prova-gioca/?s=senza       no event, Story all done
 //   /prova-gioca/?s=storia      no event, Story in progress: the chapter's missions beside its number
 //   /prova-gioca/?s=carico      while loading
@@ -15,6 +16,7 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { PlayMenuView, type EmergencyThisWeek, type EmergencyToday } from "@/components/play-menu";
+import type { Challenge } from "@/lib/challenges";
 import type { LastPlay } from "@/lib/last-play";
 import type { ActiveMatch, ConquestStatus } from "@/lib/match";
 import type { MyRanked } from "@/lib/ranked";
@@ -97,6 +99,8 @@ type Scene = {
   story: StoryChapter[] | null;
   lastPlay: LastPlay | null;
   event: "on" | "reward" | "off";
+  /** The Sfide a tema running; missing: not known. */
+  challenges?: Challenge[];
 };
 
 // The scenes are on Tuesday 17 November 2026: the week ends on Monday 23 at midnight, Rome.
@@ -152,6 +156,17 @@ const SCENES: Record<string, Scene> = {
     lastPlay: { mode: "conquest", format: "classic" },
     event: "reward",
   },
+  finita: {
+    active: null,
+    conquest: OPEN,
+    ranked: RANKED,
+    emergency: { passed: 6, rank: 12 },
+    emergencyWeek: week(null),
+    story: chapters(false),
+    lastPlay: { mode: "bot", format: "boss", difficulty: "medium", challenge: { id: "c-old", title: "Notte dei Figli" } },
+    event: "off",
+    challenges: [],
+  },
   senza: {
     active: null,
     conquest: OPEN,
@@ -197,6 +212,7 @@ function Scenes() {
         emergencyWeek={scene.emergencyWeek}
         story={scene.story}
         lastPlay={scene.lastPlay}
+        challenges={scene.challenges ?? null}
         event={scene.event === "off" ? null : <FakeEvent reward={scene.event === "reward"} />}
         now={Date.parse("2026-11-17T12:00:00Z")}
         onForfeit={() => {}}

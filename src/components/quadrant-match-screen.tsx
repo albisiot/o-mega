@@ -37,6 +37,7 @@ import {
   subscribeToUpdates,
   type MatchCard,
 } from "@/lib/match";
+import { rematchHref } from "@/lib/last-play";
 import { RewardChips, useMatchReward } from "@/components/match-reward";
 import { RankedResultChips, useOpponentNudge } from "@/components/ranked-parts";
 import { ReturnLink } from "@/components/return-link";
@@ -1517,12 +1518,8 @@ function QuadrantResult({ view, rival }: { view: QuadrantView; rival: string }) 
     : view.controlled.me !== view.controlled.opponent
       ? `Pari sui Sigilli: decidono le carte controllate, ${view.controlled.me} – ${view.controlled.opponent}.`
       : `Pari su tutto: vince chi ha giocato per secondo${view.i_open ? `, ${rival}` : ", cioè tu"}.`;
-  const again =
-    view.mode === "bot"
-      ? `/squadra/?format=${view.format}&difficulty=${view.bot_difficulty ?? "easy"}`
-      : view.mode === "ranked"
-        ? `/squadra/?mode=ranked&format=${view.format}`
-        : "/gioca";
+  // The same play again: mode, grid, opponent and Sfida a tema (src/lib/last-play.ts).
+  const again = rematchHref(view);
 
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">

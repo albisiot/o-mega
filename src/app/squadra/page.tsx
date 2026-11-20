@@ -18,7 +18,7 @@ import { isQuadrantFormat, QUADRANT_GRID_LABELS, startQuadrantBotMatch } from "@
 import { startTripleBotMatch } from "@/lib/triple";
 import { createChallengeLobby, fetchChallenges, fetchLobbyChallenge, hasSuppliedTeam, seenChallenges, type Challenge } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
-import { rememberLastPlay } from "@/lib/last-play";
+import { challengeBlock, conquestBlock, describePlayBlock, rememberLastPlay, type PlayBlock } from "@/lib/last-play";
 import { fetchStory, seenStory, startStoryMission, storyMatchHref, type StoryMission } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import {
@@ -26,6 +26,7 @@ import {
   createLobby,
   DIFFICULTY_LABELS,
   fetchConquestInstances,
+  fetchConquestStatus,
   fetchFormations,
   fetchInstanceDefinitions,
   fetchLobbyFormat,
@@ -155,12 +156,17 @@ function TeamPageContent() {
   const findChallenge = (list: { challenges: Challenge[] } | null) =>
     list?.challenges.find((challenge) => challenge.id === challengeId) ?? null;
   const [challenge, setChallenge] = useState<Challenge | null>(() => (challengeId ? findChallenge(seenChallenges()) : null));
-  const [challengeGone, setChallengeGone] = useState(false);
+  // Why this very play cannot start now (a challenge over or done for today, a Conquista
+  // closed): said here, never swapped for another play (SPEC §11.2).
+  const [challengeBlocked, setChallengeBlocked] = useState<PlayBlock | null>(null);
   // A join learns its format from the code; until then the picker waits.
   const [joinFormat, setJoinFormat] = useState<MatchFormat | null>(null);
   const format = mode.kind === "join" ? (joinFormat ?? "classic") : readFormat(params, mode);
   const joinCode = mode.kind === "join" ? mode.code : null;
   const isConquest = mode.kind === "conquest";
+  // Conquista: whether it is open, before the picker shows (undefined: not known yet; null: open or unknown).
+  const [conquestBlocked, setConquestBlocked] = useState<PlayBlock | null | undefined>(isConquest ? undefined : null);
+  const block = challengeBlocked ?? conquestBlocked ?? null;
   const { session } = useRequireSignedIn();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -193,7 +199,7 @@ function TeamPageContent() {
         if (cancelled) return;
         const found = list.challenges.find((item) => item.id === challengeId) ?? null;
         setChallenge(found);
-        setChallengeGone(found === null || Date.parse(found.ends_at) <= Date.parse(list.now));
+        setChallengeBlocked(challengeBlock(challengeId, list.challenges, Date.parse(list.now)));
       })
       .catch((cause: unknown) => {
         if (!cancelled) setError(describeServerError(cause));
@@ -202,6 +208,22 @@ function TeamPageContent() {
       cancelled = true;
     };
   }, [session, challengeId]);
+
+  useEffect(() => {
+    if (!session || !isConquest) return;
+    let cancelled = false;
+    fetchConquestStatus()
+      .then((status) => {
+        if (!cancelled) setConquestBlocked(conquestBlock(status));
+      })
+      .catch(() => {
+        // Unknown: the server refuses a closed Conquista when the queue starts, with its own message.
+        if (!cancelled) setConquestBlocked(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session, isConquest]);
 
   useEffect(() => {
     if (!session || joinCode === null) return;
@@ -256,6 +278,8 @@ function TeamPageContent() {
   // from it never reopens the picker of a match already under way. The waiting page is put on
   // top of it instead, and steps over it once the match starts (see src/app/attesa).
   async function start(cardInstanceIds: string[]) {
+    // The Sfida a tema goes with the play remembered for «Gioca ancora» and «Rivincita».
+    const remembered = challenge ? { challenge: { id: challenge.id, title: challenge.title } } : {};
     setStarting(true);
     setError(null);
     try {
@@ -270,11 +294,7 @@ function TeamPageContent() {
                 : isQuadrantFormat(format)
                   ? await startQuadrantBotMatch(mode.difficulty, format, cardInstanceIds, sfida)
                   : await startBotMatch(mode.difficulty, cardInstanceIds, sfida);
-          rememberLastPlay(
-            challenge
-              ? { mode: "bot", format, difficulty: mode.difficulty, challenge: { id: challenge.id, title: challenge.title } }
-              : { mode: "bot", format, difficulty: mode.difficulty },
-          );
+          rememberLastPlay({ mode: "bot", format, difficulty: mode.difficulty, ...remembered });
           router.replace(`/partita/?id=${view.id}`);
           break;
         }
@@ -285,20 +305,20 @@ function TeamPageContent() {
         }
         case "join": {
           const view = await joinLobby(mode.code, cardInstanceIds);
+          // Played again, a friend code of the same kind: a new one, made by this player.
+          rememberLastPlay({ mode: "lobby", format, ...remembered });
           router.replace(`/partita/?id=${view.id}`);
           break;
         }
         case "lobby":
           if (challengeId) await createChallengeLobby(challengeId, cardInstanceIds);
           else await createLobby(cardInstanceIds, format);
-          rememberLastPlay({ mode: "lobby", format });
+          rememberLastPlay({ mode: "lobby", format, ...remembered });
           router.push("/attesa/?mode=lobby");
           break;
         case "queue":
           storePendingTeam(cardInstanceIds);
-          rememberLastPlay(
-            challenge ? { mode: "queue", format, challenge: { id: challenge.id, title: challenge.title } } : { mode: "queue", format },
-          );
+          rememberLastPlay({ mode: "queue", format, ...remembered });
           router.push(
             `/attesa/?mode=queue${challengeId ? `&sfida=${challengeId}` : ""}${format === "classic" ? "" : `&format=${format}`}`,
           );
@@ -347,20 +367,20 @@ function TeamPageContent() {
             )}
           </p>
         )}
-        {challengeGone && (
+        {block && (
           <p className="text-sm font-semibold text-comic-magenta">
-            Questa Sfida a tema non è più aperta.{" "}
+            {describePlayBlock(block).long}{" "}
             <ReturnLink href="/gioca" className="underline">
               Torna a Gioca
             </ReturnLink>
           </p>
         )}
-        {challenge && !challengeGone && mode.kind === "bot" && hasSuppliedTeam(challenge) ? (
+        {block !== null ? null : challenge && mode.kind === "bot" && hasSuppliedTeam(challenge) ? (
           // A squad given by the challenge: nothing to choose, nothing of the player's at stake.
           <CardDetailProvider>
             <SuppliedTeam challenge={challenge} startLabel={COPY[mode.kind].start(mode)} starting={starting} onStart={() => void start([])} />
           </CardDetailProvider>
-        ) : loaded && owned && (mode.kind !== "join" || joinFormat !== null) && (!challengeId || challenge) ? (
+        ) : loaded && owned && conquestBlocked !== undefined && (mode.kind !== "join" || joinFormat !== null) && (!challengeId || challenge) ? (
           // A long press on a card shows it whole (CardDetailProvider), with the player's frames and effects.
           <CardLooksProvider>
             <CardDetailProvider>
@@ -379,7 +399,7 @@ function TeamPageContent() {
                 key={`${format}-${challenge?.id ?? ""}`}
                 squadSize={squadSizeOf(format)}
                 storyStars={mission && mission.star_rarities.length > 0 ? { rules: mission, earned: mission.stars } : null}
-                challenge={challengeGone ? null : challenge}
+                challenge={challenge}
                 intro={
                   format === "boss"
                     ? BOSS_INTRO
@@ -393,7 +413,7 @@ function TeamPageContent() {
             </CardDetailProvider>
           </CardLooksProvider>
         ) : (
-          !error && !challengeGone && <LoadingScreen label="Caricamento della collezione…" />
+          !error && !block && <LoadingScreen label="Caricamento della collezione…" />
         )}
       </main>
     </div>

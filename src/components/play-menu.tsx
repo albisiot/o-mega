@@ -10,7 +10,7 @@ import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
 import { challengeEmergencyHref, runningChallenge, type Challenge } from "@/lib/challenges";
 import { daysLeft, daysLeftText, emergencyHref } from "@/lib/emergency";
-import { describeLastPlay, FIRST_PLAY, lastPlayHref, type LastPlay } from "@/lib/last-play";
+import { describeLastPlay, describePlayBlock, FIRST_PLAY, lastPlayHref, playBlock, type LastPlay, type PlayBlock } from "@/lib/last-play";
 import { leaderboardHref, type LeaderboardBoard } from "@/lib/leaderboards";
 import { DIFFICULTY_LABELS, type ActiveMatch, type ConquestStatus, type MatchFormat } from "@/lib/match";
 import { useRememberedState } from "@/lib/place-memory";
@@ -390,16 +390,21 @@ function ModeTile({
 /**
  * «Gioca ancora»: the last match set off on this device, straight to its team screen; before
  * the first one, the suggested start. A shortcut: the team screen and the server check the rest.
+ * A `block` (a Conquista closed, a Sfida a tema over) is said in place of the detail, and the
+ * button waits: it never opens another play instead.
  */
-function PlayAgain({ play, first, disabled }: { play: LastPlay; first: boolean; disabled: boolean }) {
-  const { title, detail } = describeLastPlay(play);
+function PlayAgain({ play, first, disabled, block }: { play: LastPlay; first: boolean; disabled: boolean; block: PlayBlock | null }) {
+  const { title, detail: how } = describeLastPlay(play);
+  const detail = block ? describePlayBlock(block).short : how;
+  const off = disabled || block !== null;
   return (
     <Link
       href={lastPlayHref(play)}
-      aria-disabled={disabled}
+      aria-disabled={off}
+      tabIndex={off ? -1 : undefined}
       aria-label={`${first ? "Prima partita" : "Gioca ancora"}: ${title}, ${detail}`}
       className={`cut-both speed-lines-moving flex min-h-[76px] shrink-0 items-center justify-between gap-3 px-4 py-2 text-black short:min-h-16 ${MODE_COLORS[play.format]} ${
-        disabled ? "pointer-events-none opacity-40" : ""
+        off ? "pointer-events-none opacity-40" : ""
       }`}
     >
       <span className="min-w-0">
@@ -733,19 +738,10 @@ export function PlayMenuView({
   // An Emergenza a tema has no mode tile: it sits beside the week's Emergenza.
   const themedEmergency = runningChallenge(challenges, "emergency", now);
 
-  // A Conquista no longer open falls back to a friendly classic match online.
-  const conquestOpen = conquest !== null && conquest.unlocked && conquest.cards_lost_today < balance.conquest.maxCardsLostPerDay;
-  // A Sfida a tema no longer running falls back to its mode against the same bot.
-  const challengeRuns = (id: string) =>
-    Boolean(challenges?.some((challenge) => challenge.id === id && Date.parse(challenge.starts_at) <= now && now < Date.parse(challenge.ends_at)));
-  const again: LastPlay | null =
-    lastPlay?.mode === "conquest" && !conquestOpen
-      ? { mode: "queue", format: "classic" }
-      : lastPlay?.mode === "bot" && lastPlay.challenge && !challengeRuns(lastPlay.challenge.id)
-        ? { mode: "bot", format: lastPlay.format, difficulty: lastPlay.difficulty }
-        : lastPlay?.mode === "queue" && lastPlay.challenge && !challengeRuns(lastPlay.challenge.id)
-          ? { mode: "queue", format: lastPlay.format }
-          : lastPlay;
+  // The same play, never another one: a Conquista closed or a Sfida a tema over (or done for
+  // today) is said on the button, which waits (SPEC §11.2). Until 20 November 2026 they fell
+  // back to a friendly Classica online and to the mode without the challenge.
+  const againBlock = lastPlay ? playBlock(lastPlay, { now, challenges, conquest }) : null;
 
   return (
     <div className="home-shell">
@@ -771,7 +767,7 @@ export function PlayMenuView({
           </section>
         ) : (
           <>
-            {!active && <PlayAgain play={again ?? FIRST_PLAY} first={!again} disabled={blocked} />}
+            {!active && <PlayAgain play={lastPlay ?? FIRST_PLAY} first={!lastPlay} disabled={blocked} block={againBlock} />}
 
             <ListTitle>Oggi</ListTitle>
             <div className="flex shrink-0 gap-1.5">
