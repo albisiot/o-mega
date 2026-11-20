@@ -472,6 +472,49 @@ Arrivano **fuori dai pacchetti** (`in_packs` falso): nessuna via automatica li d
 | P260 | Omega, Eroi | Nebbia | **Caligine** (Custodi): l'ultima grande maestra della Lama Muta, chi la guarda non ricorda chi ha visto. | FOR 0, COM 0, TEC 1 |
 | P261 | Omega, Cattivi | Catalizzatore | **Interregno** (Figli dell'Ultima): il reggente che da diciannove anni occupa per delega il trono vuoto del Novecielo. | VEL 0, FUR 0, COM 1, TEC 1 |
 
+### Dalle Marche di Arcadia
+
+Da P262 a P291: trenta personaggi dalla Terra di Arcadia, la E-4 del compendio, dove il metodo sperimentale si è applicato alla magia e la materia obbedisce alle parole pronunciate bene: la Trama ha un'interfaccia esposta, le **Sillabe**. Oltre le città di pietra e le gilde ci sono le **Marche**, rimaste in un'età più antica: le foreste della **Gente della Selva**, con la pelle venata come il legno; le montagne dei **Ferrigni**, cavatori dalla pelle di granito; la **Gola**, un passo tenuto da secoli; le colline del **Popolo dei Colli**, gente piccola che non ha mai imparato a leggere le Sillabe; e a oriente la torre di **Nomina**, la Sovrana che scrive in un registro i nomi dei sudditi e li toglie con la cera calda. I suoi **Cancellati** sono quello che resta di chi ha perso il nome.
+
+Sotto il monte, il Terzo Fabbro ha forgiato per un committente senza nome il **Sigillo**: un timbro di ferro che rende vero per sempre ciò che marchia, e che piano piano timbra chi lo tiene. Chi sa leggere non può portarlo senza esserne scritto: lo porta un piccolo del Popolo dei Colli. Il varco di Arcadia si apre con una formula, non con una macchina: la notte dell'Ora Zero la compagnia in fuga l'ha letta ad alta voce ed è uscita nelle cripte del tempio oracolare sotto Nuova Megara, con i servi di Nomina alle spalle. In città la Compagnia Lete vuole comprare il Sigillo, il Banco chiuderlo nel caveau e i Figli dell'Ultima credono che possa timbrare l'ultima ora.
+
+L'ispirazione è l'alta fantasia epica, solo nei temi: compagnie in viaggio, popoli antichi, maghi erranti, eredi in esilio, cavalieri, spettri, alberi che camminano, draghi, creature delle profondità, signori oscuri e un oggetto di potere che corrompe. Nessun nome, luogo, popolo, oggetto o disegno di opere esistenti: niente anelli, niente maghi con barba, cappello a punta e bastone, niente occhi infuocati né cavalieri neri incappucciati, e le parole elfo, nano e orco non si usano. Tempra (TF-593), Concordato (TF-714) e Nomina (TF-674) tengono nome, ruolo, vero nome e frase della loro scheda; Bifora sono i Rifratti di TF-678 con un nome nuovo; gli altri sono nuovi. Tutti hanno il tratto Origine Strappo. Tredici portano, uno ciascuno, i poteri del 20 novembre 2026 (SPEC §4.4) con i numeri consigliati; gli altri sette un potere esistente su un posto ancora libero per la loro fazione. Gli Omega usano effetti esistenti: l'aura per Millenario, il glitch per Apocrifo. Una variante ciascuno con colori propri: gli otto stili nuovi del 20 novembre 2026 (Iride, Cyber, Geometrico, Pulp, Realismo, Ornato, Novanta, Anime) due volte ciascuno, quattordici stili esistenti una.
+
+Arrivano **fuori dai pacchetti** (`in_packs` falso), come i Mille Soli: nessuna via automatica li dà finché un amministratore non li mette nei pacchetti dalla pagina *Carte nei pacchetti* (SPEC §7).
+
+| Carta | Rarità e fazione | Potere | Personaggio | Il difetto nei valori |
+|---|---|---|---|---|
+| P262 | Delta, Eroi |  | **Stoppia** (Lanterne): la cuoca della compagnia del Popolo dei Colli, sfama i profughi nella necropoli. | MAG 0, PSI 0, VEL 1 |
+| P263 | Delta, Eroi |  | **Torrione** (Custodi): scudiero della Gola, ha tenuto il varco del tempio mentre la compagnia fuggiva. | VEL 0, PSI 0, MAG 1 |
+| P264 | Delta, Eroi |  | **Muschio** (Lanterne): battitore della Gente della Selva, legge le tracce nel muschio e ritrova chi si perde. | TEC 0, ENE 1 |
+| P265 | Delta, Cattivi |  | **Ceralacca** (Figli dell'Ultima): soldato di Nomina con un sigillo di cera in fronte: obbedisce a chi tiene il timbro. | VOL 0, INT 1 |
+| P266 | Delta, Cattivi |  | **Macigno** (Compagnia Lete): cavatore dei Ferrigni a cui Nomina ha cancellato il nome; la Compagnia Lete lo affitta per le demolizioni. | INT 0, VEL 1, PSI 1 |
+| P267 | Delta, Cattivi |  | **Anagrafe** (Compagnia Lete): esattore dei nomi della Sovrana, al porto scheda chi arriva dallo strappo. | FOR 1, COM 1 |
+| P268 | Delta, Neutrali |  | **Guado** (Sciolti): barcaiola dei canali sotto la necropoli, si fa pagare in candele. | MAG 0, PSI 0, COM 1 |
+| P269 | Delta, Neutrali |  | **Ortica** (Banco): erborista della Gente della Selva, con la licenza del Banco al mercato. | TEC 0, FOR 1 |
+| P270 | Delta, Neutrali |  | **Postilla** (Sciolti): cancelliere che ha tenuto il Sigillo un anno e se n'è timbrato tutto; segue la compagnia per riaverlo. | VOL 0, PSI 1 |
+| P271 | Delta, Neutrali |  | **Brina** (Sciolti): guida dei passi delle Marche, porta le comitive di notte sul vulcano. | ENE 0, MAG 1, FUR 1 |
+| P272 | Gamma, Eroi | Fuoriclasse (+3) | **Cocca** (Lanterne): arciera della Gente della Selva, trova il tiro perfetto quando serve. | TEC 0, ENE 1 |
+| P273 | Gamma, Eroi | Rompighiaccio (+3) | **Sperone** (Custodi): cavaliera delle pianure, apre sempre la prima carica. | MAG 0, PSI 1, FUR 1 |
+| P274 | Gamma, Eroi | Euforia (+3) | **Vessillo** (Custodi): erede di un regno caduto, interdetta: non può dire il suo nome; fa la guardia con i Custodi. | PSI 1, TEC 1 |
+| P275 | Gamma, Cattivi | Colpo di grazia (+3, 2 round) | **Scure** (Compagnia Lete): boia di Nomina, riscuote i debiti per la Compagnia Lete e arriva a cose quasi fatte. | MAG 0, PSI 0 |
+| P276 | Gamma, Cattivi | Diminuendo (+2) | **Imbrunire** (Figli dell'Ultima): una dei Cancellati di Nomina, l'ultima luce della sera; più forte quando la luce cala. | TEC 0, FOR 1 |
+| P277 | Gamma, Cattivi | Specialità (ENE +3) | **Mantice** (Compagnia Lete): automa delle fucine di Nomina, con i mantici per polmoni, venduto alla Compagnia Lete. | PSI 0, FUR 0 |
+| P278 | Gamma, Neutrali | Infiltrato | **Pertugio** (Sciolti): ladro del Popolo dei Colli, entra per primo nel campo nemico. | MAG 0, PSI 0, FOR 1 |
+| P279 | Gamma, Neutrali | Gemello (+3) | **Bifora** (Banco): gli ultimi due Rifratti (TF-678), popolo diviso in due; il Banco li paga come periti dei duelli fra pari. | COM 1, TEC 1 |
+| P280 | Gamma, Neutrali | Apripista (+3 entro il round 1) | **Picozza** (Sciolti): minatrice dei Ferrigni, apre la prima galleria per chi paga. | MAG 0, FUR 0, PSI 1 |
+| P281 | Beta, Eroi | Fuori casa (+4) | **Gerla** (Lanterne): il portatore del Sigillo: non sa leggere le Sillabe, e il Sigillo non riesce a scriverlo. | MAG 0, PSI 0 |
+| P282 | Beta, Eroi | Testa a testa (+2) | **Concordato** (Custodi): capo dei Ferrigni (TF-714), ogni promessa detta vicino a lui pesa davvero. | FUR 0, VEL 1 |
+| P283 | Beta, Cattivi | Guastafeste | **Rasura** (Figli dell'Ultima): Cancellata di Nomina col viso di pergamena raschiata: chi la incontra dimentica chi l'ha aiutato. | FOR 0, TEC 0, COM 1 |
+| P284 | Beta, Cattivi | Tuttofare (+4, tutte almeno 6) | **Decana** (Compagnia Lete): preside dell'Accademia di Sillabe passata alla Compagnia Lete, vende le formule a rate. | FOR 0, COM 0, VEL 1, FUR 1 |
+| P285 | Beta, Neutrali | Arte di arrangiarsi | **Tempra** (Banco): il Terzo Fabbro (TF-593), zoppo e vecchio di cinquemila anni: ha forgiato il Sigillo. | VEL 0, PSI 1, COM 1, FUR 1 |
+| P286 | Beta, Neutrali | Terreno favorevole (+3, livelli 5-6) | **Cunicolo** (Sciolti): creatura cieca delle gallerie, vive nella metro e si mangia la luce delle lampade. | TEC 0, INT 1 |
+| P287 | Alfa, Eroi | Presagio | **Epigrafe** (Lanterne): maga errante interdetta dall'Accademia: non può parlare e scrive sui muri il pericolo che arriva. | COM 0, FOR 1, FUR 1 |
+| P288 | Alfa, Cattivi | Sacrificio (+3) | **Nomina** (Figli dell'Ultima): la Sovrana (TF-674) che scrive i nomi dei sudditi; per vincere si scrive addosso ai suoi. | COM 0, FUR 0, FOR 1, VEL 1 |
+| P289 | Alfa, Neutrali | Slancio (+3) | **Fumarola** (Banco): vecchio drago delle Marche, nido nelle fumarole del vulcano, il Banco gli paga l'affitto. | PSI 0, TEC 0, FUR 0 |
+| P290 | Omega, Eroi | Oracolo | **Millenario** (Custodi): l'olivo che cammina da duemila anni e sente da lontano la tempesta più grande. | VEL 0, COM 0, TEC 0, FUR 0 |
+| P291 | Omega, Cattivi | Logoramento (−2) | **Apocrifo** (Figli dell'Ultima): il committente senza nome del Sigillo, fatto d'inchiostro, che vuole timbrarsi addosso al mondo. | FOR 0, TEC 0, COM 1 |
+
 ## 6. Minacce
 
 Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richiede Forza e Tecnologia. Molti nomi attuali funzionano già e vanno solo ambientati a Nuova Megara. Il testo di colore può usare il tono di un bollettino del sismografo.
@@ -567,7 +610,7 @@ Gli effetti cambiano solo l'aspetto, mai valori o regole. L'abbinamento è in `s
 | Alfa | Olografico, inclinazione 3D | Olografico |
 | Omega | Olografico, inclinazione 3D, effetto personale | Olografico |
 
-Effetti personali Omega: Holdout l'aura, Absentia le scariche elettriche, Multitude il glitch, Mongibello le braci, Wirepuller i fili da puparo che pendono dall'alto e ogni tanto vengono tirati, Parabellum il mirino di dodici lenti che si sposta sulla carta e aggancia un bersaglio, Ordito i fili come Wirepuller, Mordacchia le braci, Ansa gli anelli d'acqua che si allargano. Tra gli Omega aggiunti dopo, Prosody il glitch, Novenarium, Thicket e Caligine l'aura, Matins gli anelli d'acqua, Interregno le scariche elettriche.
+Effetti personali Omega: Holdout l'aura, Absentia le scariche elettriche, Multitude il glitch, Mongibello le braci, Wirepuller i fili da puparo che pendono dall'alto e ogni tanto vengono tirati, Parabellum il mirino di dodici lenti che si sposta sulla carta e aggancia un bersaglio, Ordito i fili come Wirepuller, Mordacchia le braci, Ansa gli anelli d'acqua che si allargano. Tra gli Omega aggiunti dopo, Prosody il glitch, Novenarium, Thicket e Caligine l'aura, Matins gli anelli d'acqua, Interregno le scariche elettriche, Millenario l'aura, Apocrifo il glitch.
 
 ### Nomi delle carte
 

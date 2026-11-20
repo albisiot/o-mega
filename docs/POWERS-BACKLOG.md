@@ -259,7 +259,7 @@ Restano come prima, una per fazione: Ultimo baluardo +3 dal round 4 Plinth (E), 
 
 ## Poteri del 20 novembre 2026
 
-Proposti e simulati il 20 novembre 2026, scelti dall'utente lo stesso giorno: tredici, pronti nel motore e nel database (migrazione `20261120100000_thirteen_new_powers.sql`, SPEC §4.4) ma su **nessuna carta**. Andranno su personaggi nuovi creati apposta, al massimo uno per fazione per ogni potere preciso; i numeri qui sotto sono quelli consigliati.
+Proposti e simulati il 20 novembre 2026, scelti dall'utente lo stesso giorno: tredici, pronti nel motore e nel database (migrazione `20261120100000_thirteen_new_powers.sql`, SPEC §4.4). Lo stesso giorno sono andati, uno ciascuno e con i numeri consigliati qui sotto, sui trenta personaggi delle Marche di Arcadia creati apposta (P262-P291, docs/WORLD.md «Dalle Marche di Arcadia»), che restano fuori dai pacchetti finché un amministratore non li mette. Per ogni potere preciso restano liberi gli altri posti per fazione.
 
 **Metodo:** `scripts/simulate-powers.mts` su una copia del motore con i candidati, catalogo del 20 novembre (261 personaggi), Difficile contro Difficile, squadre casuali con modificatori e luoghi; ogni partita giocata con e senza il potere sull'ospite (un Gamma a caso per i semplici, un Alfa a caso per i distintivi), 1.200 partite per riga (±1 punto circa). Δ = punti di vittoria in più. Riferimenti con lo stesso metodo: Apripista +3 entro il round 2 +3,9, Ultimo baluardo +3 dal round 4 +2,1 (Gamma); Riscossa +2 +1,8, Sabotatore −1 +7,5 (Alfa).
 
