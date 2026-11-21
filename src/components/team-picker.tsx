@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCardDetail } from "@/components/card-detail";
 import { CardLookLayers, useCardLooks } from "@/components/card-looks";
 import { CardGroupHeading, CardListControls, useCardListReference, useCardListView } from "@/components/card-list-controls";
@@ -34,12 +34,25 @@ import {
 import { rarityFrame, rarityLetter } from "@/lib/rarity-theme";
 import { fitsStarRarities, fitsStarTraits } from "@o-mega/game-engine";
 import { STAR_NAMES, STORY_STARS, starShort, traitCategoryOf, type StarRulesText, type StoryStar } from "@/lib/story-stars";
-import { LONG_PRESS_CLASS } from "@/lib/use-long-press";
+import { removeFromSquad, restoreToSquad } from "@/lib/squad-edit";
+import { LONG_PRESS_CLASS, LONG_PRESS_MS, useLongPress } from "@/lib/use-long-press";
 
 const LAST_TEAM_KEY = "o-mega.last-team";
 /** One order and set of filters for every team picker: the player sorts once for all modes. */
 const VIEW_KEY = "o-mega.team-view";
 const DEFAULT_VIEW = { ...DEFAULT_CARD_LIST_VIEW, sort: "rarity" };
+/** Set once the player has taken a card out of the squad by holding it: the hint is no longer shown. */
+const HOLD_LEARNED_KEY = "o-mega.hint.hold-to-remove";
+/** A quick tap shows no filling at all; the indicator starts only once the press is clearly held. */
+const HOLD_FILL_DELAY_MS = 90;
+
+function loadHoldLearned(): boolean {
+  try {
+    return localStorage.getItem(HOLD_LEARNED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 function loadLastTeam(key: string, owned: Map<string, string>): string[] {
   try {
@@ -131,8 +144,27 @@ export function TeamPicker(props: TeamPickerProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   // The squad slot whose choices (Conquest stake, artwork variant) are open: a definition id.
   const [optionsOf, setOptionsOf] = useState<string | null>(null);
-  // A long press on a card, in the squad or in the list, shows it whole without picking it.
+  // A long press on a card of the list shows it whole without picking it; on a card of the squad it
+  // takes it out (the same card is in the list, to look at it whole).
   const detail = useCardDetail();
+  const holdToRemove = useLongPress();
+  // The squad slot being held, while its indicator fills.
+  const [holding, setHolding] = useState<number | null>(null);
+  // The card just taken out by holding it, which «Annulla» puts back for a few seconds.
+  const [undo, setUndo] = useState<{ id: string; index: number } | null>(null);
+  useEffect(() => {
+    if (!undo) return;
+    const timer = window.setTimeout(() => setUndo(null), balance.formations.undoRemoveMs);
+    return () => window.clearTimeout(timer);
+  }, [undo]);
+  const [holdLearned, setHoldLearned] = useState(loadHoldLearned);
+  // The squad slot whose drawing has just changed, which flashes once.
+  const [flashed, setFlashed] = useState<{ id: string } | null>(null);
+  useEffect(() => {
+    if (!flashed) return;
+    const timer = window.setTimeout(() => setFlashed(null), 650);
+    return () => window.clearTimeout(timer);
+  }, [flashed]);
   // The frame and the effect the player applied to each character (SPEC §4.8).
   const looks = useCardLooks();
 
@@ -298,6 +330,38 @@ export function TeamPicker(props: TeamPickerProps) {
     }
   }
 
+  // Held long enough: the card leaves the squad, and «Annulla» can bring it back for a while.
+  function removeByHold(definitionId: string) {
+    const { selected: rest, index } = removeFromSquad(selected, definitionId);
+    if (index < 0) return;
+    setMessage(null);
+    setSelected(rest);
+    navigator.vibrate?.(15);
+    setUndo({ id: definitionId, index });
+    if (!holdLearned) {
+      setHoldLearned(true);
+      try {
+        localStorage.setItem(HOLD_LEARNED_KEY, "1");
+      } catch {
+        // The hint shows again next time: no harm.
+      }
+    }
+  }
+
+  function undoRemove() {
+    if (!undo) return;
+    setSelected((current) => restoreToSquad(current, undo.id, undo.index, size));
+    setUndo(null);
+  }
+
+  // A choice made in the slot's sheet is applied at once: the sheet closes and the slot flashes.
+  function applyAndClose(definitionId: string, apply?: () => void) {
+    apply?.();
+    setOptionsOf(null);
+    if (!apply) return;
+    setFlashed({ id: definitionId });
+  }
+
   function loadFormation(formation: Formation) {
     const team = teamFromFormation(formation, { owned, variantCopies, atRiskCopies, instanceDefinitions }, size);
     setSelected(team.selected);
@@ -398,7 +462,8 @@ export function TeamPicker(props: TeamPickerProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* The squad. A slot with choices (Conquest stake, artwork variant) opens them; otherwise a tap removes the card. */}
+      {/* The squad. A slot with choices (Conquest stake, artwork variant) opens them; otherwise a tap removes the card.
+          Holding any card takes it out, while a bar fills it. */}
       <section className={`grid gap-1.5 ${squadSize && squadSize % 4 === 0 ? "grid-cols-4" : "grid-cols-5"}`}>
         {Array.from({ length: size }, (_, i) => {
           const card = selected[i] ? byId.get(selected[i]) : null;
@@ -422,10 +487,15 @@ export function TeamPicker(props: TeamPickerProps) {
             <button
               key={i}
               type="button"
-              {...detail.press(shown, looks(card.id, "me"))}
+              {...holdToRemove(
+                () => removeByHold(card.id),
+                (pressing) => setHolding((current) => (pressing ? i : current === i ? null : current)),
+              )}
               onClick={() => (hasOptions ? setOptionsOf(card.id) : toggle(card.id))}
-              aria-label={hasOptions ? `${card.name}: scelte` : `Togli ${card.name}`}
-              className={`@container relative ${height} min-w-0 -skew-x-8 overflow-hidden border-2 bg-panel-raised ${LONG_PRESS_CLASS}`}
+              aria-label={hasOptions ? `${card.name}: scelte (tieni premuto per togliere)` : `Togli ${card.name}`}
+              className={`@container relative ${height} min-w-0 -skew-x-8 overflow-hidden border-2 bg-panel-raised transition-transform duration-150 ${LONG_PRESS_CLASS} ${
+                holding === i ? "scale-[0.94]" : ""
+              } ${flashed?.id === card.id ? "squad-slot-flash" : ""}`}
               style={{ borderColor: card.rarity.color }}
             >
               {shown.art_url && (
@@ -453,14 +523,36 @@ export function TeamPicker(props: TeamPickerProps) {
               <span className="absolute inset-x-0 bottom-0 truncate bg-black/75 px-0.5 text-center font-display text-[10.5px] uppercase leading-[15px]">
                 {card.name}
               </span>
+              {holding === i && (
+                // Fills from the bottom while the card is held; full, the card leaves the squad.
+                <span
+                  aria-hidden
+                  className="hold-fill pointer-events-none absolute inset-0 flex items-center justify-center bg-comic-magenta/75 font-display text-[13px] uppercase text-black"
+                  style={{ animationDuration: `${LONG_PRESS_MS - HOLD_FILL_DELAY_MS}ms`, animationDelay: `${HOLD_FILL_DELAY_MS}ms` }}
+                >
+                  Togli
+                </span>
+              )}
             </button>
           );
         })}
       </section>
-      {squadHasVariants && (
+      {selected.length > 0 && !holdLearned ? (
         <p className="mt-1 truncate text-[11px] font-semibold leading-4 text-muted">
-          <span className="text-comic-yellow">★</span> Tocca un personaggio con la stella per cambiare disegno.
+          <span className="text-comic-magenta">Tieni premuta</span> una carta per toglierla
+          {squadHasVariants && (
+            <>
+              {" · "}
+              <span className="text-comic-yellow">★</span> tocca per il disegno
+            </>
+          )}
         </p>
+      ) : (
+        squadHasVariants && (
+          <p className="mt-1 truncate text-[11px] font-semibold leading-4 text-muted">
+            <span className="text-comic-yellow">★</span> Tocca un personaggio con la stella per cambiare disegno.
+          </p>
+        )
       )}
 
       {fitsStar && storyStars && (
@@ -795,6 +887,19 @@ export function TeamPicker(props: TeamPickerProps) {
           ])}
         </ul>
         <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-8 [background:linear-gradient(to_top,var(--background),transparent)]" />
+        {undo && (
+          <div
+            role="status"
+            className="absolute inset-x-2 bottom-2 z-10 flex items-center gap-2 border-2 border-foreground bg-panel py-1 pl-3 pr-1 shadow-[4px_4px_0_#000]"
+          >
+            <span className="min-w-0 flex-1 truncate text-[13px] font-bold">
+              Tolta: <span className="font-display uppercase">{byId.get(undo.id)?.name}</span>
+            </span>
+            <button type="button" onClick={undoRemove} className="min-h-10 px-3 text-[13px] font-extrabold uppercase text-comic-yellow">
+              Annulla
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="-mx-3 border-t-[3px] border-foreground bg-black px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
@@ -826,7 +931,7 @@ export function TeamPicker(props: TeamPickerProps) {
             {canStake(optionsCard.id) && (
               <button
                 type="button"
-                onClick={() => toggleStake(optionsCard.id)}
+                onClick={() => applyAndClose(optionsCard.id, () => toggleStake(optionsCard.id))}
                 aria-pressed={staked.has(optionsCard.id)}
                 className={`min-h-11 border-2 px-3 text-left text-sm font-bold ${
                   staked.has(optionsCard.id) ? "border-comic-magenta bg-comic-magenta text-black" : "border-line bg-panel-raised"
@@ -837,7 +942,7 @@ export function TeamPicker(props: TeamPickerProps) {
             )}
             {optionsVariants.length > 0 && (
               <div className="flex flex-col gap-1.5">
-                <p className="text-xs font-bold uppercase text-muted">Disegno da schierare</p>
+                <p className="text-xs font-bold uppercase text-muted">Tocca il disegno da schierare</p>
                 <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
                   {[{ copy: null, name: optionsDefault?.name ?? "Base", art: optionsDefault?.art_url ?? optionsCard.art_url }, ...optionsVariants.map((copy) => ({ copy, name: copy.name, art: copy.art_url }))].map(
                     ({ copy, name, art }) => {
@@ -846,7 +951,8 @@ export function TeamPicker(props: TeamPickerProps) {
                         <button
                           key={copy?.id ?? "default"}
                           type="button"
-                          onClick={() => chooseCopy(optionsCard.id, copy)}
+                          // A tap fields the drawing at once and closes; on the drawing already fielded it just closes.
+                          onClick={() => applyAndClose(optionsCard.id, fielded ? undefined : () => chooseCopy(optionsCard.id, copy))}
                           aria-pressed={fielded}
                           aria-label={`Schiera ${copy ? `la variante ${name}` : `il disegno ${name}`}`}
                           className={`relative w-[80px] shrink-0 border-[3px] bg-panel-raised ${
@@ -888,9 +994,12 @@ export function TeamPicker(props: TeamPickerProps) {
                     },
                   )}
                 </div>
-                {conquerable && variantChoice.has(optionsCard.id) && (
+                {conquerable && (
+                  // Said before the choice: the sheet closes as soon as a drawing is tapped.
                   <p className="bg-comic-magenta px-2 py-1 text-xs font-bold text-black">
-                    La variante {chosenStyle(optionsCard.id)} è in palio: se perdi, il vincitore può prenderla.
+                    {variantChoice.has(optionsCard.id)
+                      ? `La variante ${chosenStyle(optionsCard.id)} è in palio: se perdi, il vincitore può prenderla.`
+                      : "Una variante schierata è in palio: se perdi, il vincitore può prenderla."}
                   </p>
                 )}
               </div>
@@ -907,7 +1016,7 @@ export function TeamPicker(props: TeamPickerProps) {
                 Togli dalla squadra
               </button>
               <button type="button" onClick={() => setOptionsOf(null)} className="btn btn-outline px-5">
-                Fatto
+                Chiudi
               </button>
             </div>
           </div>

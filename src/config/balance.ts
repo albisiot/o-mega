@@ -613,6 +613,8 @@ export const balance = {
 
   formations: {
     maxPerPlayer: 10,
+    /** How long «Annulla» stays after a card is taken out of the squad by holding it. */
+    undoRemoveMs: 4000,
   },
 
   /** Purchases with coins: the button must be held, so a stray tap never buys. */
