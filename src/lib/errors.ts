@@ -186,6 +186,19 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   challenge_invalid_supplied_team: "La squadra della sfida va solo nella Classica contro i bot: 5 personaggi diversi, senza carte di livello.",
   challenge_invalid_emergency: "Un'Emergenza a tema ha 8 o 10 Minacce.",
   challenge_composition_impossible: "Con questo budget e questi limiti nessuna squadra rispetta le regole: allarga il budget o i limiti.",
+  // Operazioni (SPEC §5.17)
+  coop_room_not_found: "Questa stanza non c'è più, o il codice è sbagliato.",
+  coop_already_in_room: "Sei già in una stanza delle Operazioni: torna lì, o esci prima.",
+  coop_operation_not_found: "Questa operazione non esiste.",
+  coop_operation_locked: "Questa operazione si apre dopo aver vinto quella prima.",
+  coop_room_full: "La stanza è al completo.",
+  coop_squad_missing: "Scegli prima la tua squadra.",
+  coop_not_host: "Solo chi ha aperto la stanza può iniziare.",
+  coop_not_ready: "Aspetta che tutti abbiano scelto la squadra e premuto Pronto.",
+  coop_too_few_players: "Serve almeno un compagno per iniziare.",
+  coop_already_started: "L'operazione è già iniziata.",
+  coop_invalid_round: "Qualcosa non tornava in questo round: riprova tra poco.",
+  coop_placement_changed: "Un compagno ha appena cambiato le carte: riprovo.",
 };
 
 export function describeServerError(error: unknown): string {

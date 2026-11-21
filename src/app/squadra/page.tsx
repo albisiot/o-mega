@@ -16,6 +16,7 @@ import { startBossBotMatch } from "@/lib/boss";
 import { balance } from "@/config/balance";
 import { isQuadrantFormat, QUADRANT_GRID_LABELS, startQuadrantBotMatch } from "@/lib/quadrant";
 import { startTripleBotMatch } from "@/lib/triple";
+import { coopRoomHref, setCoopReady, setCoopSquad } from "@/lib/coop";
 import { createChallengeLobby, fetchChallenges, fetchLobbyChallenge, hasSuppliedTeam, seenChallenges, type Challenge } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
 import { challengeBlock, conquestBlock, describePlayBlock, rememberLastPlay, type PlayBlock } from "@/lib/last-play";
@@ -49,6 +50,7 @@ const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
 // /squadra/?mode=lobby                          (create a friend code)
 // /squadra/?mode=join&code=ABC234               (join a friend)
 // /squadra/?story=C1M1                          (a story mission)
+// /squadra/?operazione=<room id>                (the squad of 6 for an operation's room, SPEC §5.17)
 // /squadra/?sfida=<id>&difficulty=medium        (a Sfida a tema against a bot; &format=… for its mode)
 // /squadra/?sfida=<id>&mode=queue|lobby         (a Sfida a tema online; a join learns it from the code)
 // &format=boss with difficulty, queue or lobby  (a Grande Minaccia)
@@ -91,11 +93,14 @@ type Mode =
   | { kind: "conquest" }
   | { kind: "lobby" }
   | { kind: "join"; code: string }
-  | { kind: "story"; mission: string };
+  | { kind: "story"; mission: string }
+  | { kind: "coop"; room: string };
 
 function readMode(params: URLSearchParams): Mode {
   const story = params.get("story");
   if (story) return { kind: "story", mission: story };
+  const room = params.get("operazione");
+  if (room) return { kind: "coop", room };
   const mode = params.get("mode");
   if (mode === "queue" || mode === "lobby" || mode === "conquest" || mode === "ranked") return { kind: mode };
   if (mode === "join") return { kind: "join", code: (params.get("code") ?? "").toUpperCase() };
@@ -130,6 +135,8 @@ function squadSizeOf(format: MatchFormat): number | undefined {
   return format === "triple" ? TRIPLE_DECK : isQuadrantFormat(format) ? QUADRANT_DECK : undefined;
 }
 
+const COOP_INTRO = `Scegli ${balance.coop.squadSize} personaggi diversi: delle Minacce conosci solo i livelli, nella stanza. Ogni round in città ne giochi uno, gli ultimi ${balance.coop.bossCards} contro il Boss; i compagni vedono le tue carte e tu le loro. Con una pressione lunga su una carta dell'elenco la vedi intera; su una della squadra la togli.`;
+
 const BOSS_INTRO =
   "Scegli 5 personaggi diversi: il Boss lo scopri dopo. Ogni turno uno di loro entra su un fronte e ci resta fino alla fine, uno per fronte: servono specialisti per i fronti piccoli e generalisti per quelli grandi. Con una pressione lunga su una carta dell'elenco la vedi intera; su una della squadra la togli.";
 
@@ -144,6 +151,7 @@ const COPY: Record<Mode["kind"], { subtitle: (mode: Mode) => string; start: (mod
   lobby: { subtitle: () => "Amichevole con un amico", start: () => "Crea il codice" },
   join: { subtitle: (mode) => `Entri con il codice ${(mode as { code: string }).code}`, start: () => "Entra nella partita" },
   story: { subtitle: () => "Missione della Storia", start: () => "Inizia la missione" },
+  coop: { subtitle: () => "Operazione in squadra", start: () => "Porta questa squadra" },
 };
 
 function TeamPageContent() {
@@ -303,6 +311,13 @@ function TeamPageContent() {
           router.replace(storyMatchHref(view.id));
           break;
         }
+        case "coop": {
+          // Choosing the squad says Pronto too: one tap less, and Pronto can be taken back in the room.
+          await setCoopSquad(mode.room, cardInstanceIds);
+          await setCoopReady(mode.room, true);
+          router.replace(coopRoomHref(mode.room));
+          break;
+        }
         case "join": {
           const view = await joinLobby(mode.code, cardInstanceIds);
           // Played again, a friend code of the same kind: a new one, made by this player.
@@ -343,7 +358,9 @@ function TeamPageContent() {
   return (
     <div className="game-shell">
       <header className="flex items-center gap-2.5 px-3 py-1">
-        <BackLink href={mode.kind === "story" ? "/storia" : mode.kind === "ranked" ? "/classificata" : "/gioca"} />
+        <BackLink
+          href={mode.kind === "story" ? "/storia" : mode.kind === "ranked" ? "/classificata" : mode.kind === "coop" ? coopRoomHref(mode.room) : "/gioca"}
+        />
         <div className="min-w-0">
           <h1 className="font-display text-[22px] uppercase leading-6 text-comic-yellow">
             {format === "triple" || isQuadrantFormat(format) ? "Il tuo mazzo" : "La tua squadra"}
@@ -397,11 +414,13 @@ function TeamPageContent() {
                 starting={starting}
                 onStart={start}
                 key={`${format}-${challenge?.id ?? ""}`}
-                squadSize={squadSizeOf(format)}
+                squadSize={mode.kind === "coop" ? balance.coop.squadSize : squadSizeOf(format)}
                 storyStars={mission && mission.star_rarities.length > 0 ? { rules: mission, earned: mission.stars } : null}
                 challenge={challenge}
                 intro={
-                  format === "boss"
+                  mode.kind === "coop"
+                    ? COOP_INTRO
+                    : format === "boss"
                     ? BOSS_INTRO
                     : format === "triple"
                       ? TRIPLE_INTRO

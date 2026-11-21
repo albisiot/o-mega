@@ -9,6 +9,7 @@ import { StarCount } from "@/components/story-stars";
 import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
 import { challengeEmergencyHref, runningChallenge, type Challenge } from "@/lib/challenges";
+import { coopRoomHref, type CoopCatalog } from "@/lib/coop";
 import { daysLeft, daysLeftText, emergencyHref } from "@/lib/emergency";
 import { describeLastPlay, describePlayBlock, FIRST_PLAY, lastPlayHref, playBlock, type LastPlay, type PlayBlock } from "@/lib/last-play";
 import { leaderboardHref, type LeaderboardBoard } from "@/lib/leaderboards";
@@ -562,6 +563,39 @@ function EmergencyChallengeRow({ challenge }: { challenge: Challenge }) {
 }
 
 /**
+ * The Operazioni (SPEC §5.17) on the week's row: the room the player is in, or how far the
+ * chapter is. Beside the week's Emergenza, so Gioca gains no line.
+ */
+function OperationsTile({ coop, compact = false }: { coop: CoopCatalog | null | undefined; compact?: boolean }) {
+  const room = coop?.room ?? null;
+  const operations = coop?.chapters.flatMap((chapter) => chapter.operations) ?? [];
+  const next = operations.find((operation) => operation.unlocked && !operation.completed);
+  const state = room
+    ? room.status === "active"
+      ? "In corso"
+      : `Stanza ${room.code}`
+    : next
+      ? compact
+        ? `${next.ord}/${operations.length}`
+        : `${next.title} · ${next.ord}/${operations.length}`
+      : operations.length
+        ? "✓ Completate"
+        : "In squadra, dal vivo";
+  return (
+    <Link
+      href={room ? coopRoomHref(room.id) : "/operazioni"}
+      aria-label={`Operazioni in squadra: ${state}`}
+      className={`tile flex min-h-10 min-w-0 flex-col justify-center bg-comic-cyan px-2.5 py-1 text-black short:min-h-9 ${
+        compact ? "flex-1" : "flex-[1.4_1_0]"
+      }`}
+    >
+      <span className="block truncate font-display text-[15px] uppercase leading-5">Operazioni</span>
+      <span className="block truncate text-[12px] font-bold leading-4">{state}</span>
+    </Link>
+  );
+}
+
+/**
  * The Story at the chapter the player is in, with the stars of the whole Story earned so far
  * («★ 15/180», locked missions counted too): the Story opens on its next mission.
  */
@@ -708,6 +742,7 @@ export function PlayMenuView({
   lastPlay,
   event,
   challenges = null,
+  coop,
   now,
   onForfeit,
 }: {
@@ -725,6 +760,8 @@ export function PlayMenuView({
   event: ReactNode;
   /** The Sfide a tema running or to come (SPEC §8.8); null while loading or without any. */
   challenges?: Challenge[] | null;
+  /** The Operazioni (SPEC §5.17): the chapter and the room the player is in; undefined while loading. */
+  coop?: CoopCatalog | null;
   now: number;
   onForfeit: () => void;
 }) {
@@ -775,14 +812,12 @@ export function PlayMenuView({
               <EmergencyTile today={emergency} />
               <StoryTile chapters={story} disabled={blocked} />
             </div>
-            {themedEmergency ? (
-              <div className="flex shrink-0 gap-1.5">
-                <EmergencyWeekRow week={emergencyWeek} now={now} compact />
-                <EmergencyChallengeRow challenge={themedEmergency} />
-              </div>
-            ) : (
-              <EmergencyWeekRow week={emergencyWeek} now={now} />
-            )}
+            {/* The week's Emergenza shares its row: with an Emergenza a tema and with the Operazioni. */}
+            <div className="flex shrink-0 gap-1.5">
+              <EmergencyWeekRow week={emergencyWeek} now={now} compact />
+              {themedEmergency && <EmergencyChallengeRow challenge={themedEmergency} />}
+              <OperationsTile coop={coop} compact={Boolean(themedEmergency)} />
+            </div>
 
             <ListTitle>Modalità</ListTitle>
             <div className="grid min-h-28 flex-[1_1_0] auto-rows-fr grid-cols-2 gap-1.5">

@@ -6,6 +6,7 @@ import { EventBanner } from "@/components/event-banner";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayMenuView, type EmergencyThisWeek, type EmergencyToday } from "@/components/play-menu";
 import { fetchChallenges, seenChallenges, type Challenge } from "@/lib/challenges";
+import { fetchCoop, seenCoop, type CoopCatalog } from "@/lib/coop";
 import {
   fetchEmergencyLeaderboard,
   fetchEmergencyWeekLeaderboard,
@@ -58,6 +59,8 @@ export default function PlayPage() {
   const [story, setStory] = useState<StoryChapter[] | null>(() => seenStory());
   // The Sfide a tema (SPEC §8.8): their ribbons on the modes.
   const [challenges, setChallenges] = useState<Challenge[] | null>(() => seenChallenges()?.challenges ?? null);
+  // The Operazioni (SPEC §5.17): the chapter and the room the player is in.
+  const [coop, setCoop] = useState<CoopCatalog | null | undefined>(() => seenCoop() ?? undefined);
   // On this device only: read once, the page is left to start a match anyway.
   const [lastPlay] = useState<LastPlay | null>(() => readLastPlay());
   const [error, setError] = useState<string | null>(null);
@@ -109,6 +112,14 @@ export default function PlayPage() {
         if (!cancelled) setChallenges(next.challenges);
       })
       .catch((cause: unknown) => console.error("Challenges failed", cause));
+    fetchCoop()
+      .then((next) => {
+        if (!cancelled) setCoop(next);
+      })
+      .catch((cause: unknown) => {
+        console.error("Operations failed", cause);
+        if (!cancelled) setCoop(null);
+      });
     return () => {
       cancelled = true;
     };
@@ -140,6 +151,7 @@ export default function PlayPage() {
         lastPlay={lastPlay}
         event={<EventBanner compact />}
         challenges={challenges}
+        coop={coop}
         now={now}
         onForfeit={() => setConfirmForfeit(true)}
       />
