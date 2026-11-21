@@ -111,11 +111,11 @@ function readFormat(params: URLSearchParams, mode: Mode): MatchFormat {
 
 const TRIPLE_DECK = balance.triple.rounds * balance.triple.threats;
 
-const TRIPLE_INTRO = `Scegli ${TRIPLE_DECK} personaggi diversi: le Minacce le scopri dopo. Ogni round ne peschi ${balance.triple.threats} a caso e li metti uno per Minaccia, quindi conviene un mazzo vario, con specialisti di più abilità. Con una pressione lunga su una carta la vedi intera.`;
+const TRIPLE_INTRO = `Scegli ${TRIPLE_DECK} personaggi diversi: le Minacce le scopri dopo. Ogni round ne peschi ${balance.triple.threats} a caso e li metti uno per Minaccia, quindi conviene un mazzo vario, con specialisti di più abilità. Con una pressione lunga su una carta dell'elenco la vedi intera; su una della squadra la togli.`;
 
 const QUADRANT_DECK = balance.quadrant.deckSize;
 
-const QUADRANT_INTRO = `Scegli ${QUADRANT_DECK} personaggi diversi: le 4 abilità che fanno da lati le scopri dopo. Hai sempre ${balance.quadrant.handSize} carte in mano e ne giochi ${balance.quadrant.cardsPerSide}: conviene un mazzo con picchi alti in abilità diverse. Con una pressione lunga su una carta la vedi intera.`;
+const QUADRANT_INTRO = `Scegli ${QUADRANT_DECK} personaggi diversi: le 4 abilità che fanno da lati le scopri dopo. Hai sempre ${balance.quadrant.handSize} carte in mano e ne giochi ${balance.quadrant.cardsPerSide}: conviene un mazzo con picchi alti in abilità diverse. Con una pressione lunga su una carta dell'elenco la vedi intera; su una della squadra la togli.`;
 
 const FORMAT_LABELS: Record<MatchFormat, string> = {
   classic: "",
@@ -131,7 +131,7 @@ function squadSizeOf(format: MatchFormat): number | undefined {
 }
 
 const BOSS_INTRO =
-  "Scegli 5 personaggi diversi: il Boss lo scopri dopo. Ogni turno uno di loro entra su un fronte e ci resta fino alla fine, uno per fronte: servono specialisti per i fronti piccoli e generalisti per quelli grandi. Con una pressione lunga su una carta la vedi intera.";
+  "Scegli 5 personaggi diversi: il Boss lo scopri dopo. Ogni turno uno di loro entra su un fronte e ci resta fino alla fine, uno per fronte: servono specialisti per i fronti piccoli e generalisti per quelli grandi. Con una pressione lunga su una carta dell'elenco la vedi intera; su una della squadra la togli.";
 
 const COPY: Record<Mode["kind"], { subtitle: (mode: Mode) => string; start: (mode: Mode) => string }> = {
   bot: {
@@ -407,7 +407,7 @@ function TeamPageContent() {
                       ? TRIPLE_INTRO
                       : isQuadrantFormat(format)
                         ? QUADRANT_INTRO
-                        : "Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello basso e i generalisti per quelle alte. Con una pressione lunga su una carta la vedi intera."
+                        : "Scegli 5 personaggi diversi. Ognuno gioca un solo round: tieni gli specialisti per le Minacce di livello basso e i generalisti per quelle alte. Con una pressione lunga su una carta dell'elenco la vedi intera; su una della squadra la togli."
                 }
               />
             </CardDetailProvider>

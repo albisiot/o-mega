@@ -186,7 +186,7 @@ export const TUTORIAL_STEPS = [
     points: [
       `Prima di ogni partita scegli ${match.teamSize} personaggi tutti diversi. L'avversario non li vede: li scopre uno alla volta, quando li giochi.`,
       "Ogni personaggio si usa una sola volta per partita: cinque personaggi per cinque Minacce.",
-      "Puoi ordinare e filtrare le carte per rarità, abilità o tratti, e salvare le squadre migliori come formazioni. Tieni premuta una carta per vederla intera.",
+      "Puoi ordinare e filtrare le carte per rarità, abilità o tratti, e salvare le squadre migliori come formazioni. Tieni premuta una carta dell'elenco per vederla intera, una della squadra per toglierla.",
     ],
   },
   {
