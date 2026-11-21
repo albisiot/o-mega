@@ -8,8 +8,10 @@ import { CoopStarList } from "@/components/coop-room";
 import { StarCount } from "@/components/story-stars";
 import { LoadingScreen } from "@/components/loading-screen";
 import { ReturnLink } from "@/components/return-link";
+import { balance } from "@/config/balance";
 import { describeServerError } from "@/lib/errors";
 import {
+  COOP_QUEUE_HREF,
   coopRoomHref,
   coopStarCount,
   createCoopRoom,
@@ -79,6 +81,7 @@ export default function OperationsPage() {
 
   if (!catalog && !error) return <LoadingScreen label="Apertura delle Operazioni…" />;
   const room = catalog?.room ?? null;
+  const queue = catalog?.queue?.queued ? catalog.queue : null;
   const players =
     catalog && catalog.min_players === catalog.max_players ? `${catalog.max_players} giocatori` : `da ${catalog?.min_players} a ${catalog?.max_players} giocatori`;
 
@@ -95,7 +98,19 @@ export default function OperationsPage() {
       <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
         {error && <p className="shrink-0 text-sm font-semibold text-comic-magenta">{error}</p>}
 
-        {room ? (
+        {queue && !room ? (
+          <ReturnLink
+            href={COOP_QUEUE_HREF}
+            onward
+            className="tile flex min-h-14 shrink-0 items-center justify-between gap-2 bg-comic-yellow px-3 py-1.5 text-black"
+          >
+            <span className="min-w-0">
+              <span className="block font-display text-[17px] uppercase leading-5">Sei in coda</span>
+              <span className="block truncate text-xs font-bold leading-4">{queue.title} · Cerca squadra</span>
+            </span>
+            <span className="shrink-0 -skew-x-8 bg-black px-2.5 py-1 font-display text-base uppercase text-comic-yellow">Vai</span>
+          </ReturnLink>
+        ) : room ? (
           <ReturnLink
             href={coopRoomHref(room.id)}
             onward
@@ -150,6 +165,7 @@ export default function OperationsPage() {
                   open={open === operation.code}
                   busy={busy}
                   inRoom={room !== null}
+                  queued={queue !== null}
                   players={catalog.max_players}
                   onToggle={() => setOpen((shown) => (shown === operation.code ? null : operation.code))}
                   onCreate={() => void create(operation.code)}
@@ -159,7 +175,8 @@ export default function OperationsPage() {
             </section>
           ))}
           <p className="pb-1 text-[11px] font-semibold leading-4 text-faint">
-            Apri una stanza e passa il codice a un amico. Ognuno porta 6 personaggi; ogni round ci sono più Minacce che giocatori: ognuno ne
+            Apri una stanza e passa il codice a un amico, oppure cerca una squadra tra chi è in coda per la stessa operazione:
+            dopo {balance.coop.queueWaitSeconds} secondi si parte con chi c&apos;è e, se sei solo, con un alleato del server. Ognuno porta 6 personaggi; ogni round ci sono più Minacce che giocatori: ognuno ne
             sceglie una, insieme, prima che scada il tempo. Le Minacce lasciate andare alzano il Panico; alla fine c&apos;è il Boss.
           </p>
         </div>
@@ -173,6 +190,7 @@ function OperationRow({
   open,
   busy,
   inRoom,
+  queued,
   players,
   onToggle,
   onCreate,
@@ -181,6 +199,7 @@ function OperationRow({
   open: boolean;
   busy: boolean;
   inRoom: boolean;
+  queued: boolean;
   players: number;
   onToggle: () => void;
   onCreate: () => void;
@@ -221,9 +240,18 @@ function OperationRow({
             Premio alla prima vittoria: {reward}, per ogni giocatore della squadra.
           </p>
           {operation.unlocked ? (
-            <button type="button" onClick={onCreate} disabled={busy || inRoom} className="btn btn-primary w-full">
-              {inRoom ? "Sei già in una stanza" : "Apri una stanza"}
-            </button>
+            inRoom || queued ? (
+              <p className="text-xs font-bold text-faint">{inRoom ? "Sei già in una stanza." : "Sei già in coda per un'operazione."}</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={onCreate} disabled={busy} className="btn btn-primary w-full px-2">
+                  Apri una stanza
+                </button>
+                <ReturnLink href={`/squadra/?coda=${operation.code}`} onward className="btn btn-ghost w-full px-2">
+                  Cerca squadra
+                </ReturnLink>
+              </div>
+            )
           ) : (
             <p className="text-xs font-bold text-faint">
               Si apre vincendo l&apos;operazione prima. Puoi giocarla anche entrando nella stanza di un amico che l&apos;ha aperta.

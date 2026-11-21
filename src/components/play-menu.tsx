@@ -9,7 +9,7 @@ import { StarCount } from "@/components/story-stars";
 import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
 import { challengeEmergencyHref, runningChallenge, type Challenge } from "@/lib/challenges";
-import { coopRoomHref, type CoopCatalog } from "@/lib/coop";
+import { COOP_QUEUE_HREF, coopRoomHref, type CoopCatalog } from "@/lib/coop";
 import { daysLeft, daysLeftText, emergencyHref } from "@/lib/emergency";
 import { describeLastPlay, describePlayBlock, FIRST_PLAY, lastPlayHref, playBlock, type LastPlay, type PlayBlock } from "@/lib/last-play";
 import { leaderboardHref, type LeaderboardBoard } from "@/lib/leaderboards";
@@ -568,22 +568,25 @@ function EmergencyChallengeRow({ challenge }: { challenge: Challenge }) {
  */
 function OperationsTile({ coop, compact = false }: { coop: CoopCatalog | null | undefined; compact?: boolean }) {
   const room = coop?.room ?? null;
+  const queued = !room && Boolean(coop?.queue?.queued);
   const operations = coop?.chapters.flatMap((chapter) => chapter.operations) ?? [];
   const next = operations.find((operation) => operation.unlocked && !operation.completed);
-  const state = room
-    ? room.status === "active"
-      ? "In corso"
-      : `Stanza ${room.code}`
-    : next
-      ? compact
-        ? `${next.ord}/${operations.length}`
-        : `${next.title} · ${next.ord}/${operations.length}`
-      : operations.length
-        ? "✓ Completate"
-        : "In squadra, dal vivo";
+  const state = queued
+    ? "In coda"
+    : room
+      ? room.status === "active"
+        ? "In corso"
+        : `Stanza ${room.code}`
+      : next
+        ? compact
+          ? `${next.ord}/${operations.length}`
+          : `${next.title} · ${next.ord}/${operations.length}`
+        : operations.length
+          ? "✓ Completate"
+          : "In squadra, dal vivo";
   return (
     <Link
-      href={room ? coopRoomHref(room.id) : "/operazioni"}
+      href={room ? coopRoomHref(room.id) : queued ? COOP_QUEUE_HREF : "/operazioni"}
       aria-label={`Operazioni in squadra: ${state}`}
       className={`tile flex min-h-10 min-w-0 flex-col justify-center bg-comic-cyan px-2.5 py-1 text-black short:min-h-9 ${
         compact ? "flex-1" : "flex-[1.4_1_0]"

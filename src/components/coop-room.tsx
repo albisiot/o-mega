@@ -7,6 +7,7 @@ import type { AbilityFamilies } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { CardLooksProvider, useCardLooks } from "@/components/card-looks";
 import { CoopMapReveal } from "@/components/coop-comic";
+import { useEventPointsFor } from "@/components/event-banner";
 import { HandCard } from "@/components/hand-card";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { ReturnLink } from "@/components/return-link";
@@ -27,6 +28,8 @@ import {
   myMember,
   placeCoopCards,
   placedTotals,
+  addCoopAlly,
+  removeCoopAlly,
   resolveCoopRound,
   seenCoop,
   sendCoopSignal,
@@ -46,6 +49,7 @@ import {
   type CoopView,
 } from "@/lib/coop";
 import { describeServerError } from "@/lib/errors";
+import { describeEventPoints } from "@/lib/events";
 import { subscribeToUpdates, type MatchCard } from "@/lib/match";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useExpiry, useNow, useSecondsLeft } from "@/lib/use-now";
@@ -363,31 +367,60 @@ function Lobby({
 
         <ul className="flex flex-col gap-1.5" aria-label="La squadra">
           {view.members.map((member) => (
-            <li key={member.user_id} className="flex items-center gap-2 border-2 border-panel-raised bg-panel px-2 py-1.5">
+            <li key={member.seat} className="flex items-center gap-2 border-2 border-panel-raised bg-panel px-2 py-1.5">
               <PlayerAvatar username={member.username} avatarUrl={member.avatar_url} size="sm" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-extrabold">
                   {member.user_id === view.me ? "Tu" : member.username}
                   {member.user_id === view.host && <span className="ml-1.5 bg-black px-1 text-[10px] font-extrabold uppercase text-comic-yellow">Apre</span>}
+                  {member.bot && <span className="ml-1.5 bg-comic-magenta px-1 text-[10px] font-extrabold uppercase text-black">Server</span>}
                 </span>
                 <span className="block truncate text-[11px] font-bold text-muted">
-                  {member.squad ? `Squadra: ${member.squad.map((c) => c.name).join(", ")}` : "Sceglie la squadra…"}
+                  {member.bot
+                    ? "Alleato del server: gioca per ultimo, dove servono carte"
+                    : member.squad
+                      ? `Squadra: ${member.squad.map((c) => c.name).join(", ")}`
+                      : "Sceglie la squadra…"}
                 </span>
               </span>
-              <span
-                className={`shrink-0 px-1 text-[10px] font-extrabold uppercase leading-[14px] ${
-                  member.ready ? "bg-comic-cyan text-black" : "text-faint"
-                }`}
-              >
-                {member.ready ? "✓ Pronto" : "Non pronto"}
-              </span>
+              {member.bot && isHost ? (
+                <button
+                  type="button"
+                  onClick={() => void act(() => removeCoopAlly(view.id, member.seat))}
+                  disabled={busy}
+                  aria-label={`Togli ${member.username}`}
+                  className="btn btn-ghost h-9 w-9 shrink-0 px-0 text-sm"
+                >
+                  ✕
+                </button>
+              ) : (
+                <span
+                  className={`shrink-0 px-1 text-[10px] font-extrabold uppercase leading-[14px] ${
+                    member.ready ? "bg-comic-cyan text-black" : "text-faint"
+                  }`}
+                >
+                  {member.ready ? "✓ Pronto" : "Non pronto"}
+                </span>
+              )}
             </li>
           ))}
           {view.members.length < balance.coop.maxPlayers && (
-            <li className="border-2 border-dashed border-line px-2 py-2 text-center text-xs font-bold text-faint">
-              {view.members.length < balance.coop.minPlayers
-                ? "In attesa di un compagno…"
-                : `Possono entrare ancora ${balance.coop.maxPlayers - view.members.length}: più siete, più Minacce ci sono ogni round.`}
+            <li className="flex items-center gap-2 border-2 border-dashed border-line px-2 py-1.5 text-xs font-bold text-faint">
+              <span className="min-w-0 flex-1">
+                {view.members.length < balance.coop.minPlayers
+                  ? "In attesa di un compagno, o di un alleato del server…"
+                  : `Possono entrare ancora ${balance.coop.maxPlayers - view.members.length}: più siete, più Minacce ci sono ogni round.`}
+              </span>
+              {isHost && (
+                <button
+                  type="button"
+                  onClick={() => void act(() => addCoopAlly(view.id))}
+                  disabled={busy}
+                  className="btn btn-ghost shrink-0 px-2 text-xs"
+                >
+                  + Alleato del server
+                </button>
+              )}
             </li>
           )}
         </ul>
@@ -599,13 +632,14 @@ function Board({
   const [busy, setBusy] = useState(false);
   const rulesRef = useRef<HTMLDialogElement>(null);
   const allyRef = useRef<HTMLDialogElement>(null);
-  const [ally, setAlly] = useState<string | null>(null);
+  // The ally whose cards are open in the sheet: its seat.
+  const [ally, setAlly] = useState<number | null>(null);
   const detail = useCardDetail();
   const looks = useCardLooks();
 
   const families: AbilityFamilies = useMemo(() => Object.fromEntries(abilities.map((a) => [a.code, a.family.code])), [abilities]);
   const previews = useMemo(() => (abilities.length ? coopPreviews(view, families) : new Map<string, CoopPreview[]>()), [view, families, abilities.length]);
-  const totals = useMemo(() => placedTotals(view, previews, new Map([[me.user_id, mine]])), [view, previews, me.user_id, mine]);
+  const totals = useMemo(() => placedTotals(view, previews, new Map([[me.user_id!, mine]])), [view, previews, me.user_id, mine]);
   const hand = handOf(me);
   const cardOf = useMemo(() => {
     const all = new Map<string, { card: CoopCard; member: CoopMember }>();
@@ -660,8 +694,8 @@ function Board({
         <CoopRules />
         <LeaveButton view={view} label="Esci dall'operazione" onError={onError} />
       </Sheet>
-      <Sheet sheetRef={allyRef} title={ally ? `Le carte di ${view.members.find((m) => m.user_id === ally)?.username ?? ""}` : "Carte"}>
-        {ally && <AllyHand member={view.members.find((m) => m.user_id === ally)!} round={round} previews={previews} />}
+      <Sheet sheetRef={allyRef} title={ally ? `Le carte di ${view.members.find((m) => m.seat === ally)?.username ?? ""}` : "Carte"}>
+        {ally && <AllyHand member={view.members.find((m) => m.seat === ally)!} round={round} previews={previews} />}
       </Sheet>
       {error && <p className="mx-3 text-sm font-semibold text-comic-magenta">{error}</p>}
 
@@ -915,31 +949,33 @@ function RoundTimer({ deadline, offset }: { deadline: number; offset: number }) 
 }
 
 /** The allies: where they are, Pronto, a signal; a tap shows their cards. */
-function Allies({ view, offset, onOpen }: { view: CoopView; offset: number; onOpen: (userId: string) => void }) {
+function Allies({ view, offset, onOpen }: { view: CoopView; offset: number; onOpen: (seat: number) => void }) {
   const now = useNow(1000) + offset;
   const others = view.members.filter((m) => m.user_id !== view.me);
   return (
     <ul className="flex shrink-0 gap-1.5 px-3" aria-label="I compagni">
       {others.map((member) => {
-        const absent = !member.left && now - Date.parse(member.last_seen_at) > ABSENT_MS;
+        const absent = !member.bot && !member.left && now - Date.parse(member.last_seen_at) > ABSENT_MS;
         const signal =
           member.signal && member.signal_at && now - Date.parse(member.signal_at) < balance.coop.signalSeconds * 1000
             ? SIGNAL_LABELS[member.signal]
             : null;
-        const state = member.left
-          ? "Uscito: gioca il server"
-          : absent
-            ? "Non risponde"
-            : member.ready
-              ? "✓ Pronto"
-              : member.placement
-                ? "Ha messo le carte"
-                : "Sta scegliendo…";
+        const state = member.bot
+          ? "Alleato del server: gioca per ultimo"
+          : member.left
+            ? "Uscito: gioca il server"
+            : absent
+              ? "Non risponde"
+              : member.ready
+                ? "✓ Pronto"
+                : member.placement
+                  ? "Ha messo le carte"
+                  : "Sta scegliendo…";
         return (
-          <li key={member.user_id} className="min-w-0 flex-1">
+          <li key={member.seat} className="min-w-0 flex-1">
             <button
               type="button"
-              onClick={() => onOpen(member.user_id)}
+              onClick={() => onOpen(member.seat)}
               className="relative flex w-full items-center gap-1.5 border-2 border-panel-raised bg-panel px-1.5 py-1 text-left"
             >
               <PlayerAvatar username={member.username} avatarUrl={member.avatar_url} size="xs" />
@@ -1098,6 +1134,8 @@ function RoundResult({
 
 function End({ view }: { view: CoopView }) {
   const me = myMember(view);
+  // The running event: the operation and the threats this player stopped (SPEC §8.2).
+  const eventPoints = useEventPointsFor(view.id);
   const won = view.status === "won";
   const broken = brokenFronts(view);
   const reason = won
@@ -1130,6 +1168,9 @@ function End({ view }: { view: CoopView }) {
           {(me?.star_coins ?? 0) > 0 && (
             <span className="bg-comic-yellow px-2 py-0.5 text-sm font-extrabold text-black">+{me?.star_coins} monete delle stelle</span>
           )}
+          {eventPoints && (eventPoints.points > 0 || eventPoints.not_admitted) && (
+            <span className="bg-comic-magenta px-2 py-0.5 text-sm font-extrabold text-white">{describeEventPoints(eventPoints)}</span>
+          )}
         </div>
       )}
       {won && !me?.left && (
@@ -1137,9 +1178,10 @@ function End({ view }: { view: CoopView }) {
       )}
       <ul className="flex flex-col gap-1" aria-label="La squadra">
         {view.members.map((member) => (
-          <li key={member.user_id} className="flex items-center gap-2 text-sm font-bold">
+          <li key={member.seat} className="flex items-center gap-2 text-sm font-bold">
             <PlayerAvatar username={member.username} avatarUrl={member.avatar_url} size="xs" />
             <span className="truncate">{member.user_id === view.me ? "Tu" : member.username}</span>
+            {member.bot && <span className="text-[11px] text-faint">alleato del server</span>}
             {member.left && <span className="text-[11px] text-faint">uscito</span>}
           </li>
         ))}

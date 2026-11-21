@@ -385,6 +385,10 @@ export const balance = {
     lossXp: 10,
     /** How long a signal stays beside a player's name (client only). */
     signalSeconds: 6,
+    /** Public queue «Cerca squadra»: after this wait the room starts with whoever is there and server allies. */
+    queueWaitSeconds: 25,
+    /** Rarest rank a server ally fields (3 = Beta). */
+    allyMaxRank: 3,
   },
 
   /**

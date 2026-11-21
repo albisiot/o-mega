@@ -14,7 +14,11 @@ export type ObjectiveMetric =
   | "duplicates_converted"
   | "cards_conquered"
   | "variants_found"
-  | "variant_wins";
+  | "variant_wins"
+  | "coop_played"
+  | "coop_won"
+  | "coop_threats"
+  | "coop_stars";
 
 export type ObjectiveParams = Record<string, unknown>;
 
@@ -101,6 +105,10 @@ export const OBJECTIVE_KINDS: {
   { key: "threats_delta", label: "Minacce vinte con una carta Delta", metric: "threats_won", params: { max_rarity_rank: 1 }, one: "Vinci una Minaccia con una carta Delta", many: "Vinci {n} Minacce con una carta Delta" },
   { key: "cards_beta", label: "Carte Beta o più rare giocate", metric: "cards_played", params: { min_rarity_rank: 3 }, one: "Gioca una carta Beta o più rara", many: "Gioca {n} carte Beta o più rare" },
   { key: "emergency", label: "Minacce superate in Emergenza", metric: "emergency_passed", params: {}, one: "Supera una Minaccia in Emergenza", many: "Supera {n} Minacce in Emergenza" },
+  { key: "coop_played", label: "Operazioni completate", metric: "coop_played", params: {}, one: "Completa un'Operazione", many: "Completa {n} Operazioni" },
+  { key: "coop_won", label: "Operazioni vinte", metric: "coop_won", params: {}, one: "Vinci un'Operazione", many: "Vinci {n} Operazioni" },
+  { key: "coop_threats", label: "Minacce fermate nelle Operazioni", metric: "coop_threats", params: {}, one: "Ferma una Minaccia in un'Operazione", many: "Ferma {n} Minacce nelle Operazioni" },
+  { key: "coop_stars", label: "Stelle ottenute nelle Operazioni", metric: "coop_stars", params: {}, one: "Ottieni una stella in un'Operazione", many: "Ottieni {n} stelle nelle Operazioni" },
   { key: "packs", label: "Pacchetti aperti", metric: "packs_opened", params: {}, one: "Apri un pacchetto", many: "Apri {n} pacchetti" },
   { key: "variants_found", label: "Varianti trovate nei pacchetti", metric: "variants_found", params: {}, one: "Trova una variante in un pacchetto", many: "Trova {n} varianti nei pacchetti" },
   { key: "variant_wins", label: "Partite vinte con una variante in squadra", metric: "variant_wins", params: {}, one: "Vinci una partita con una variante in squadra", many: "Vinci {n} partite con una variante in squadra" },

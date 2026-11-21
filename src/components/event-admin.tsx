@@ -30,7 +30,15 @@ import {
   type AdminEvents,
 } from "@/lib/event-admin";
 import { describeServerError } from "@/lib/errors";
-import { EVENT_KINDS, addHoursToInput, describeTierReward, formatRomeDateTime, toRomeInput, type EventPoints } from "@/lib/events";
+import {
+  EVENT_KINDS,
+  addHoursToInput,
+  coopEventPoints,
+  describeTierReward,
+  formatRomeDateTime,
+  toRomeInput,
+  type EventPoints,
+} from "@/lib/events";
 import { describeRandomVariants, ruleInfo, ruleToSend, type RandomVariantsRule } from "@/lib/random-variants";
 import { MAX_SHARD_REWARD, shardsInput } from "@/lib/shard-rewards";
 import type { TraitCategory } from "@/lib/traits";
@@ -60,7 +68,10 @@ type TierForm = {
   cards: string[];
   random: RandomVariantsRule | null;
 };
-type PointsForm = Record<MatchKind, Record<"win" | "draw" | "loss", string>> & { emergency: { passed: string } };
+type PointsForm = Record<MatchKind, Record<"win" | "draw" | "loss", string>> & {
+  emergency: { passed: string };
+  coop: Record<"win" | "loss" | "passed", string>;
+};
 
 type FormState = {
   id?: string;
@@ -86,7 +97,11 @@ type FormState = {
 };
 
 function pointsForm(points: EventPoints): PointsForm {
-  const form = { emergency: { passed: String(points.emergency.passed) } } as PointsForm;
+  const coop = coopEventPoints(points);
+  const form = {
+    emergency: { passed: String(points.emergency.passed) },
+    coop: { win: String(coop.win), loss: String(coop.loss), passed: String(coop.passed) },
+  } as PointsForm;
   for (const kind of MATCH_KINDS) {
     form[kind.key] = {
       win: String(points[kind.key].win),
@@ -325,6 +340,11 @@ function EventForm({
       ...current,
       points: { ...current.points, [kind]: { ...current.points[kind], [outcome]: value } },
     }));
+  const setCoopPoint = (outcome: "win" | "loss" | "passed", value: string) =>
+    setForm((current) => ({
+      ...current,
+      points: { ...current.points, coop: { ...current.points.coop, [outcome]: value } },
+    }));
   const shownTier = Math.min(tierIndex, form.tiers.length - 1);
   const reference = useAdminCardReference();
   const rarities = payloadRarities ?? reference?.rarities ?? [];
@@ -338,7 +358,10 @@ function EventForm({
     setSaving(true);
     setError(null);
     const number = (value: string) => (value.trim() === "" ? 0 : Number(value));
-    const points = { emergency: { passed: number(form.points.emergency.passed) } } as EventPoints;
+    const points = {
+      emergency: { passed: number(form.points.emergency.passed) },
+      coop: { win: number(form.points.coop.win), loss: number(form.points.coop.loss), passed: number(form.points.coop.passed) },
+    } as EventPoints;
     for (const kind of MATCH_KINDS) {
       const row = form.points[kind.key];
       points[kind.key] = { win: number(row.win), draw: number(row.draw), loss: number(row.loss) };
@@ -509,7 +532,7 @@ function EventForm({
               >
                 {!ruleOn
                   ? "Nessuna regola: tutti i personaggi danno punti."
-                  : `Solo ${describeAdminCardFilter(rule, rarities, catalog)}: ${admitted} personaggi. Una partita dà punti solo se tutta la squadra è di questi personaggi (in Emergenza tutti e 8). Nello stesso gruppo basta una scelta, tra gruppi diversi servono tutte.${
+                  : `Solo ${describeAdminCardFilter(rule, rarities, catalog)}: ${admitted} personaggi. Una partita dà punti solo se tutta la squadra è di questi personaggi (in Emergenza tutti e 8, nelle Operazioni tutti e 6). Nello stesso gruppo basta una scelta, tra gruppi diversi servono tutte.${
                       admitted < minAdmitted
                         ? ` Ne servono almeno ${minAdmitted}.`
                         : admitted < 15
@@ -562,6 +585,43 @@ function EventForm({
                 className={SMALL_INPUT}
               />
               <span className="col-span-2 text-xs font-medium text-muted">per Minaccia superata</span>
+              <PointsRow label="Operazioni">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={1000}
+                  aria-label="Operazioni, Vittoria"
+                  value={form.points.coop.win}
+                  onChange={(event) => setCoopPoint("win", event.target.value)}
+                  className={SMALL_INPUT}
+                />
+                <span className="text-center text-muted" aria-hidden>
+                  –
+                </span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={1000}
+                  aria-label="Operazioni, Sconfitta"
+                  value={form.points.coop.loss}
+                  onChange={(event) => setCoopPoint("loss", event.target.value)}
+                  className={SMALL_INPUT}
+                />
+              </PointsRow>
+              <span className="text-sm">Operazioni</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={1000}
+                aria-label="Operazioni, per Minaccia fermata"
+                value={form.points.coop.passed}
+                onChange={(event) => setCoopPoint("passed", event.target.value)}
+                className={SMALL_INPUT}
+              />
+              <span className="col-span-2 text-xs font-medium text-muted">per Minaccia fermata</span>
             </div>
             <label className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)] items-center gap-1.5 text-sm font-bold">
               Tetto al giorno
@@ -640,7 +700,7 @@ function EventForm({
             </label>
             <p id="variant-bonus-help" className="text-xs font-medium leading-4 text-muted">
               Da 1 a 100. Ogni variante tra le carte schierate aggiunge questa parte dei punti della partita (o della Minaccia
-              in Emergenza): con 20%, 2 varianti danno il 40% in più. Vuoto: nessun bonus.
+              in Emergenza e nelle Operazioni): con 20%, 2 varianti danno il 40% in più. Vuoto: nessun bonus.
             </p>
           </fieldset>
         )}

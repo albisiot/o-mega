@@ -10,6 +10,8 @@
 //   /prova-operazioni/?s=quattro    round 2 with four players: five threats on two rows, a Veggente has shown rounds 3 and 4
 //   /prova-operazioni/?s=vinta      the end, won (first win: coins, XP and two stars)
 //   /prova-operazioni/?s=persa      the end, lost to the Panic
+//   /prova-operazioni/?s=alleato    the room before the start with a server ally (host view: ✕ and + Alleato del server)
+//   /prova-operazioni/?s=alleato-round  round 2 with a server ally, always ready, playing last
 //   /prova-operazioni/?s=editor     the operations editor (admins), on made-up data: tap Modifica
 
 import { useSearchParams } from "next/navigation";
@@ -131,6 +133,11 @@ function roundOne(deadline: string): CoopRound {
   };
 }
 
+/** A server ally (SPEC §5.17): no account, always ready, its cards put down by the server. */
+function serverAlly(extra: Partial<CoopMember> = {}): CoopMember {
+  return { ...member(ALLY, "Reggente Valli", ALLIES, { ready: true, bot: true, ...extra }), user_id: null };
+}
+
 function scene(name: string): { view: CoopView; revealing: number | null } {
   const now = Date.now();
   const at = (seconds: number) => new Date(now + seconds * 1000).toISOString();
@@ -193,6 +200,30 @@ function scene(name: string): { view: CoopView; revealing: number | null } {
           panic: 0,
           members: [member(ME, "Alice_Reggente", MINE, { ready: true }), member(ALLY, "bruno_b", ALLIES, { squad: null })],
           rounds: [1, 2, 3, 4, 5].map(unplayed),
+        },
+        revealing: null,
+      };
+    case "alleato":
+      return {
+        view: {
+          ...base,
+          status: "lobby",
+          current_round: 0,
+          panic: 0,
+          members: [member(ME, "Alice_Reggente", MINE, { ready: true }), serverAlly()],
+          rounds: [1, 2, 3, 4, 5].map(unplayed),
+        },
+        revealing: null,
+      };
+    case "alleato-round":
+      return {
+        view: {
+          ...base,
+          status: "active",
+          current_round: 2,
+          panic: 4,
+          members: [member(ME, "Alice_Reggente", MINE, { used: ["P028-copy"] }), serverAlly({ used: ["P101-copy"] })],
+          rounds: [roundOne(at(-30)), live(2, at(38)), unplayed(3), unplayed(4), unplayed(5)],
         },
         revealing: null,
       };

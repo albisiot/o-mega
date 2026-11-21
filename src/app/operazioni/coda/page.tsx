@@ -1,0 +1,109 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRequireSignedIn } from "@/components/auth-provider";
+import { BackLink } from "@/components/comic-parts";
+import { LoadingScreen } from "@/components/loading-screen";
+import { coopRoomHref, leaveCoopQueue, pollCoopQueue, type CoopQueueStatus } from "@/lib/coop";
+import { describeServerError } from "@/lib/errors";
+import { useLockedScreen } from "@/lib/use-locked-screen";
+import { useNow } from "@/lib/use-now";
+
+/** How often the wait asks the server (which also makes the room when it is time). */
+const POLL_MS = 3_000;
+
+/**
+ * The wait in the public queue «Cerca squadra» (SPEC §5.17): how long, how many wait for the same
+ * operation; as soon as a full room is there, or after the wait with whoever is there (and server
+ * allies when alone), the room starts and this page gives way to it.
+ */
+export default function CoopQueuePage() {
+  const router = useRouter();
+  const { session } = useRequireSignedIn();
+  const [status, setStatus] = useState<CoopQueueStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [offset, setOffset] = useState(0);
+  const leaving = useRef(false);
+  useLockedScreen(true);
+
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    const ask = async () => {
+      try {
+        const next = await pollCoopQueue();
+        if (cancelled || leaving.current) return;
+        setOffset(Date.parse(next.server_now) - Date.now());
+        if (next.room) {
+          router.replace(coopRoomHref(next.room));
+          return;
+        }
+        if (!next.queued) {
+          router.replace("/operazioni");
+          return;
+        }
+        setStatus(next);
+      } catch (cause) {
+        if (!cancelled) setError(describeServerError(cause));
+      }
+    };
+    const first = setTimeout(() => void ask(), 0);
+    const timer = setInterval(() => void ask(), POLL_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(first);
+      clearInterval(timer);
+    };
+  }, [session, router]);
+
+  const now = useNow(1000) + offset;
+  async function cancel() {
+    leaving.current = true;
+    try {
+      await leaveCoopQueue();
+    } catch {
+      // Out of the queue anyway once the page is left: the server forgets a queue nobody asks about.
+    }
+    router.replace("/operazioni");
+  }
+
+  if (!status && !error) return <LoadingScreen label="In coda…" />;
+  const waited = status?.joined_at ? Math.max(0, Math.floor((now - Date.parse(status.joined_at)) / 1000)) : 0;
+  const left = status ? Math.max(0, status.wait_seconds - waited) : 0;
+
+  return (
+    <div className="game-shell">
+      <header className="flex items-center gap-2.5 px-3 py-1">
+        <BackLink href="/operazioni" />
+        <div className="min-w-0">
+          <h1 className="font-display text-[22px] uppercase leading-6 text-comic-yellow">Cerca squadra</h1>
+          <p className="truncate text-[11px] font-bold text-muted">{status?.title ?? "Operazioni"}</p>
+        </div>
+      </header>
+      <main className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 px-6 pb-[calc(env(safe-area-inset-bottom)+16px)] text-center">
+        {error && <p className="text-sm font-semibold text-comic-magenta">{error}</p>}
+        {status && (
+          <>
+            <p className="font-display text-[56px] leading-none text-comic-cyan" aria-live="polite">
+              {waited}s
+            </p>
+            <p className="text-sm font-bold">
+              {status.waiting > 1
+                ? `In coda per questa operazione: ${status.waiting} giocatori.`
+                : "Per ora in coda ci sei solo tu."}
+            </p>
+            <p className="text-xs font-semibold leading-4 text-muted">
+              {left > 0
+                ? `Se tra ${left} secondi la stanza non è piena (${status.max_players} giocatori), si parte con chi c'è; se sei solo, con un alleato del server.`
+                : "Sto preparando la stanza…"}
+            </p>
+            <button type="button" onClick={() => void cancel()} className="btn btn-ghost">
+              Esci dalla coda
+            </button>
+          </>
+        )}
+      </main>
+    </div>
+  );
+}

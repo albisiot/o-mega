@@ -15,10 +15,20 @@ export const EVENT_KINDS = [
 export type EventKind = (typeof EVENT_KINDS)[number]["key"];
 export type MatchOutcome = "win" | "draw" | "loss";
 
+/** Operazioni: an operation finished (won or lost) and each threat the player stopped. */
+export type CoopEventPoints = { win: number; loss: number; passed: number };
+
 /** Points per kind and outcome; Emergenza pays per threat passed. */
 export type EventPoints = Record<Exclude<EventKind, "emergency">, Record<MatchOutcome, number>> & {
   emergency: { passed: number };
+  /** Missing from events saved before the operations counted: none. */
+  coop?: CoopEventPoints;
 };
+
+/** The points of the operations, 0 for an event saved before they counted. */
+export function coopEventPoints(points: EventPoints): CoopEventPoints {
+  return points.coop ?? { win: 0, loss: 0, passed: 0 };
+}
 
 export type EventRewardCard = {
   code: string;

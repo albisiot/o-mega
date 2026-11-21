@@ -16,7 +16,7 @@ import { startBossBotMatch } from "@/lib/boss";
 import { balance } from "@/config/balance";
 import { isQuadrantFormat, QUADRANT_GRID_LABELS, startQuadrantBotMatch } from "@/lib/quadrant";
 import { startTripleBotMatch } from "@/lib/triple";
-import { coopRoomHref, coopStarCondition, fetchCoopRoom, setCoopReady, setCoopSquad } from "@/lib/coop";
+import { COOP_QUEUE_HREF, coopRoomHref, coopStarCondition, fetchCoopRoom, joinCoopQueue, setCoopReady, setCoopSquad } from "@/lib/coop";
 import { createChallengeLobby, fetchChallenges, fetchLobbyChallenge, hasSuppliedTeam, seenChallenges, type Challenge } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
 import { challengeBlock, conquestBlock, describePlayBlock, rememberLastPlay, type PlayBlock } from "@/lib/last-play";
@@ -51,6 +51,7 @@ const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
 // /squadra/?mode=join&code=ABC234               (join a friend)
 // /squadra/?story=C1M1                          (a story mission)
 // /squadra/?operazione=<room id>                (the squad of 6 for an operation's room, SPEC §5.17)
+// /squadra/?coda=O1M1                           (the squad of 6 for the public queue of an operation)
 // /squadra/?sfida=<id>&difficulty=medium        (a Sfida a tema against a bot; &format=… for its mode)
 // /squadra/?sfida=<id>&mode=queue|lobby         (a Sfida a tema online; a join learns it from the code)
 // &format=boss with difficulty, queue or lobby  (a Grande Minaccia)
@@ -94,13 +95,16 @@ type Mode =
   | { kind: "lobby" }
   | { kind: "join"; code: string }
   | { kind: "story"; mission: string }
-  | { kind: "coop"; room: string };
+  | { kind: "coop"; room: string }
+  | { kind: "coopQueue"; operation: string };
 
 function readMode(params: URLSearchParams): Mode {
   const story = params.get("story");
   if (story) return { kind: "story", mission: story };
   const room = params.get("operazione");
   if (room) return { kind: "coop", room };
+  const queue = params.get("coda");
+  if (queue) return { kind: "coopQueue", operation: queue };
   const mode = params.get("mode");
   if (mode === "queue" || mode === "lobby" || mode === "conquest" || mode === "ranked") return { kind: mode };
   if (mode === "join") return { kind: "join", code: (params.get("code") ?? "").toUpperCase() };
@@ -152,6 +156,7 @@ const COPY: Record<Mode["kind"], { subtitle: (mode: Mode) => string; start: (mod
   join: { subtitle: (mode) => `Entri con il codice ${(mode as { code: string }).code}`, start: () => "Entra nella partita" },
   story: { subtitle: () => "Missione della Storia", start: () => "Inizia la missione" },
   coop: { subtitle: () => "Operazione in squadra", start: () => "Porta questa squadra" },
+  coopQueue: { subtitle: () => "Operazione · Cerca squadra", start: () => "Cerca una squadra" },
 };
 
 function TeamPageContent() {
@@ -328,6 +333,11 @@ function TeamPageContent() {
           router.replace(storyMatchHref(view.id));
           break;
         }
+        case "coopQueue": {
+          const status = await joinCoopQueue(mode.operation, cardInstanceIds);
+          router.replace(status.room ? coopRoomHref(status.room) : COOP_QUEUE_HREF);
+          break;
+        }
         case "coop": {
           // Choosing the squad says Pronto too: one tap less, and Pronto can be taken back in the room.
           await setCoopSquad(mode.room, cardInstanceIds);
@@ -376,7 +386,17 @@ function TeamPageContent() {
     <div className="game-shell">
       <header className="flex items-center gap-2.5 px-3 py-1">
         <BackLink
-          href={mode.kind === "story" ? "/storia" : mode.kind === "ranked" ? "/classificata" : mode.kind === "coop" ? coopRoomHref(mode.room) : "/gioca"}
+          href={
+            mode.kind === "story"
+              ? "/storia"
+              : mode.kind === "ranked"
+                ? "/classificata"
+                : mode.kind === "coop"
+                  ? coopRoomHref(mode.room)
+                  : mode.kind === "coopQueue"
+                    ? "/operazioni"
+                    : "/gioca"
+          }
         />
         <div className="min-w-0">
           <h1 className="font-display text-[22px] uppercase leading-6 text-comic-yellow">
@@ -431,11 +451,11 @@ function TeamPageContent() {
                 starting={starting}
                 onStart={start}
                 key={`${format}-${challenge?.id ?? ""}`}
-                squadSize={mode.kind === "coop" ? balance.coop.squadSize : squadSizeOf(format)}
+                squadSize={mode.kind === "coop" || mode.kind === "coopQueue" ? balance.coop.squadSize : squadSizeOf(format)}
                 storyStars={mission && mission.star_rarities.length > 0 ? { rules: mission, earned: mission.stars } : null}
                 challenge={challenge}
                 intro={
-                  mode.kind === "coop"
+                  mode.kind === "coop" || mode.kind === "coopQueue"
                     ? `${COOP_INTRO}${coopStar ? ` Per la stella della squadra: ${coopStar.charAt(0).toLowerCase()}${coopStar.slice(1)}.` : ""}`
                     : format === "boss"
                     ? BOSS_INTRO

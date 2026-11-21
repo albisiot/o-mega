@@ -90,6 +90,8 @@ export type CoopCatalog = {
   max_players: number;
   /** The room the player is in, waiting or playing. */
   room: { id: string; code: string; status: "lobby" | "active"; operation: string; title: string } | null;
+  /** The public queue the player waits in, if any. */
+  queue?: CoopQueueStatus | null;
   chapters: CoopChapter[];
 };
 
@@ -107,7 +109,10 @@ export const SIGNALS: { code: CoopSignal; label: string }[] = [
 export const SIGNAL_LABELS = Object.fromEntries(SIGNALS.map((s) => [s.code, s.label])) as Record<CoopSignal, string>;
 
 export type CoopMember = {
-  user_id: string;
+  /** null for a server ally (SPEC §5.17): a member without an account. */
+  user_id: string | null;
+  /** A server ally, always declared: it puts its cards down last, where the team needs them. */
+  bot?: boolean;
   seat: number;
   username: string;
   avatar_url: string | null;
@@ -147,7 +152,9 @@ export type CoopThreat = {
 export type CoopResult = { slot: number; stopped: boolean; total: number; required: number | null; panic: number };
 
 export type CoopPlay = {
-  user_id: string;
+  /** null for a server ally; the seat says whose play it is. */
+  user_id: string | null;
+  seat?: number;
   instance_id: string;
   definition_id: string;
   slot: number;
@@ -208,6 +215,9 @@ export type CoopView = {
   rounds: CoopRound[];
 };
 
+/** The wait in the public queue «Cerca squadra». */
+export const COOP_QUEUE_HREF = "/operazioni/coda/";
+
 /** Where a room opens: its id in the query string (no dynamic routes in the static export). */
 export function coopRoomHref(id: string): string {
   return `/operazioni/stanza/?id=${id}`;
@@ -223,7 +233,12 @@ type CoopFunction =
   | "coop_set_ready"
   | "coop_start"
   | "coop_place"
-  | "coop_signal";
+  | "coop_signal"
+  | "coop_add_ally"
+  | "coop_remove_ally"
+  | "coop_queue_join"
+  | "coop_queue_poll"
+  | "coop_queue_leave";
 
 async function rpc<T>(name: CoopFunction, params?: Record<string, unknown>): Promise<T> {
   // The generated database types may not list the coop functions yet: the call is the same.
@@ -274,6 +289,44 @@ export function placeCoopCards(roomId: string, round: number, cards: { card: str
   return rpc("coop_place", { p_room: roomId, p_round: round, p_cards: cards, p_ready: ready });
 }
 
+/** The host adds a server ally to the waiting room, or takes one away. */
+export async function addCoopAlly(roomId: string): Promise<void> {
+  await rpc("coop_add_ally", { p_room: roomId });
+}
+
+export async function removeCoopAlly(roomId: string, seat: number): Promise<void> {
+  await rpc("coop_remove_ally", { p_room: roomId, p_seat: seat });
+}
+
+/** Where the player is in the public queue «Cerca squadra»; `room` once the queue made one. */
+export type CoopQueueStatus = {
+  queued: boolean;
+  operation: string | null;
+  title: string | null;
+  joined_at: string | null;
+  /** Players waiting for this operation, the player included. */
+  waiting: number;
+  wait_seconds: number;
+  max_players: number;
+  room: string | null;
+  server_now: string;
+};
+
+export async function joinCoopQueue(operation: string, cardInstanceIds: string[]): Promise<CoopQueueStatus> {
+  forget("coop");
+  return rpc("coop_queue_join", { p_operation: operation, p_card_instance_ids: cardInstanceIds });
+}
+
+/** Asks where the player is in the queue; the server also makes the room when it is time. */
+export function pollCoopQueue(): Promise<CoopQueueStatus> {
+  return rpc("coop_queue_poll");
+}
+
+export async function leaveCoopQueue(): Promise<void> {
+  forget("coop");
+  await rpc("coop_queue_leave");
+}
+
 export async function sendCoopSignal(roomId: string, signal: CoopSignal): Promise<void> {
   await rpc("coop_signal", { p_room: roomId, p_signal: signal });
 }
@@ -286,6 +339,11 @@ export function resolveCoopRound(roomId: string): Promise<{ resolved: boolean; s
 // ---------------------------------------------------------------------------
 // Reading the room
 // ---------------------------------------------------------------------------
+
+/** How the engine names a member: the user id, or "bot-<seat>" for a server ally (coop_member_key). */
+export function memberKey(member: Pick<CoopMember, "user_id" | "seat">): string {
+  return member.user_id ?? `bot-${member.seat}`;
+}
 
 export function myMember(view: CoopView): CoopMember | undefined {
   return view.members.find((m) => m.user_id === view.me);
@@ -338,7 +396,7 @@ export function knownCoopState(view: CoopView): CoopState {
       round: r.round,
       plays: (r.plays ?? []).map((p) => ({
         characterId: p.instance_id,
-        player: p.user_id,
+        player: p.user_id ?? `bot-${p.seat}`,
         slot: p.slot,
         role: p.role,
         base: p.base,
@@ -366,7 +424,7 @@ export function knownCoopState(view: CoopView): CoopState {
       panicReinforced: balance.coop.panicReinforced,
     },
     players: view.members.map((m) => ({
-      id: m.user_id,
+      id: memberKey(m),
       squad: (m.squad ?? []).map((card) => toCharacter(card, card.instance_id)),
     })),
     rival: ecos.map((eco) => toCharacter(eco, `eco:${eco.definition_id}`)),
@@ -393,14 +451,14 @@ export function coopPreviews(view: CoopView, families: AbilityFamilies): Map<str
     return previews;
   }
   for (const member of view.members) {
-    const player = state.players.find((p) => p.id === member.user_id);
+    const player = state.players.find((p) => p.id === memberKey(member));
     for (const card of handOf(member)) {
       const character = player?.squad.find((c) => c.id === card.instance_id);
       if (!character) continue;
       try {
         previews.set(
           card.instance_id,
-          round.threats.map((t) => previewCoopPlay(state, member.user_id, character, t.slot, families)),
+          round.threats.map((t) => previewCoopPlay(state, memberKey(member), character, t.slot, families)),
         );
       } catch {
         // A power the preview cannot read: the server still scores it.
@@ -427,7 +485,7 @@ export function placedTotals(
   for (const threat of round.threats) {
     const here: CoopPreview[] = [];
     for (const member of view.members) {
-      const placed = placements.has(member.user_id) ? placements.get(member.user_id) : member.placement;
+      const placed = member.user_id && placements.has(member.user_id) ? placements.get(member.user_id) : member.placement;
       for (const card of placed ?? []) {
         const preview = card.slot === threat.slot ? previews.get(card.card)?.[threat.slot] : undefined;
         if (preview) here.push(preview);

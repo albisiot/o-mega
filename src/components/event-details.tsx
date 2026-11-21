@@ -14,6 +14,7 @@ import type { AbilityInfo } from "@/lib/catalog";
 import { completionLine, completionPlace, isEventCompleted, lockedLine, type EventLeaderboard } from "@/lib/event-leaderboard";
 import {
   EVENT_KINDS,
+  coopEventPoints,
   describeTierReward,
   eventPhase,
   formatEventCountdown,
@@ -81,6 +82,7 @@ export function EventDetails({
   const [tab, setTab] = useRememberedState<Tab>("tab", "rewards");
   const [zoomed, setZoomed] = useState<EventRewardCard | null>(null);
   const completed = isEventCompleted(event);
+  const coop = coopEventPoints(event.points);
   // Before the start: the final leaderboard of the event before, if the player unlocked it.
   // Otherwise this event's, asked for once completed (the place) or when its tab opens.
   const asked = useEventLeaderboard(
@@ -262,15 +264,31 @@ export function EventDetails({
                     {event.points.emergency.passed} per Minaccia superata
                   </td>
                 </tr>
+                {(coop.win > 0 || coop.loss > 0) && (
+                  <tr className="border-t border-white/10 font-semibold">
+                    <td className="py-1.5">Operazioni</td>
+                    <td className="py-1.5 text-right">{coop.win}</td>
+                    <td className="py-1.5 text-right text-muted">–</td>
+                    <td className="py-1.5 text-right">{coop.loss}</td>
+                  </tr>
+                )}
+                {coop.passed > 0 && (
+                  <tr className="border-t border-white/10 font-semibold">
+                    <td className="py-1.5">Operazioni</td>
+                    <td colSpan={3} className="py-1.5 text-right">
+                      {coop.passed} per Minaccia fermata
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
             <p className="shrink-0 text-xs font-medium leading-4 text-muted">
               Contano le partite iniziate e finite durante l&apos;evento. Le partite abbandonate non danno punti a nessuno
-              dei due.
+              dei due.{coop.win + coop.loss + coop.passed > 0 && " Nelle Operazioni contano quelle finite restando nella stanza; una Minaccia è tua se l'hai fermata con la carta principale scelta da te."}
               {(event.admitted ?? []).length > 0 &&
                 ` Danno punti solo le squadre di personaggi ${describeAdmitted(event.admitted ?? [])}${
                   event.admitted_characters ? ` (${event.admitted_characters} in tutto)` : ""
-                }: in Emergenza tutti e 8.`} Contro lo stesso giocatore danno punti al massimo {balance.events.sameOpponentMatches} partite ogni{" "}
+                }: in Emergenza tutti e 8, nelle Operazioni tutti e 6.`} Contro lo stesso giocatore danno punti al massimo {balance.events.sameOpponentMatches} partite ogni{" "}
               {balance.events.sameOpponentWindowHours} ore.
             </p>
           </>

@@ -31,6 +31,10 @@ export type AchievementMetric =
   | "emergency_perfect_runs"
   | "story_missions"
   | "rare_threats_seen"
+  | "coop_played"
+  | "coop_won"
+  | "coop_threats"
+  | "coop_stars"
   | "daily_objectives_completed"
   | "coins_earned"
   | "level"
@@ -203,6 +207,10 @@ export const METRICS: MetricInfo[] = [
   { metric: "emergency_perfect_runs", group: "Emergenza e Storia", label: "Emergenze superate tutte", fields: [{ key: "min_passed", kind: "number", label: "Minacce superate almeno (vuoto: tutte)", min: 1, max: 20 }], unit: "giorni", hasDates: true },
   { metric: "story_missions", group: "Emergenza e Storia", label: "Missioni della Storia completate", fields: [{ key: "season", kind: "season", label: "Stagione" }, { key: "chapter", kind: "chapter", label: "Capitolo" }, { key: "all", kind: "flag", label: "Tutte (stagione o capitolo completo)" }], unit: "missioni", hasDates: false },
   { metric: "rare_threats_seen", group: "Emergenza e Storia", label: "Minacce rare avvistate", fields: [{ key: "all", kind: "flag", label: "Tutte (Bestiario completo)" }], unit: "Minacce rare", hasDates: true },
+  { metric: "coop_played", group: "Operazioni", label: "Operazioni completate (vinte o perse)", fields: [], unit: "Operazioni", hasDates: true },
+  { metric: "coop_won", group: "Operazioni", label: "Operazioni vinte", fields: [], unit: "Operazioni", hasDates: true },
+  { metric: "coop_threats", group: "Operazioni", label: "Minacce fermate nelle Operazioni (come carta principale)", fields: [], unit: "Minacce", hasDates: true },
+  { metric: "coop_stars", group: "Operazioni", label: "Stelle delle Operazioni ottenute", fields: [], unit: "stelle (3 per Operazione)", hasDates: true },
   { metric: "daily_objectives_completed", group: "Altro", label: "Obiettivi del giorno completati", fields: [], unit: "obiettivi", hasDates: true },
   { metric: "coins_earned", group: "Altro", label: "Monete guadagnate in tutto", fields: [], unit: "monete", hasDates: true },
   { metric: "level", group: "Altro", label: "Livello raggiunto", fields: [], unit: "livello", hasDates: false },
@@ -367,6 +375,14 @@ export function describeCondition(
     }
     case "rare_threats_seen":
       return params.all ? "Hai avvistato tutte le Minacce rare." : n === 1 ? "Hai avvistato una Minaccia rara." : `Hai avvistato ${n} Minacce rare.`;
+    case "coop_played":
+      return n === 1 ? "Hai completato un'Operazione." : `Hai completato ${n} Operazioni.`;
+    case "coop_won":
+      return n === 1 ? "Hai vinto un'Operazione." : `Hai vinto ${n} Operazioni.`;
+    case "coop_threats":
+      return `Hai fermato ${n === 1 ? "una Minaccia" : `${n} Minacce`} nelle Operazioni.`;
+    case "coop_stars":
+      return n === 1 ? "Hai ottenuto una stella in un'Operazione." : `Hai ottenuto ${n} stelle nelle Operazioni.`;
     case "daily_objectives_completed":
       return n === 1 ? "Hai completato un obiettivo del giorno." : `Hai completato ${n} obiettivi del giorno.`;
     case "coins_earned":

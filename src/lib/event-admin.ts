@@ -147,6 +147,7 @@ export const DEFAULT_EVENT_POINTS: EventPoints = {
   bot: { win: 10, draw: 5, loss: 3 },
   story: { win: 10, draw: 5, loss: 3 },
   emergency: { passed: 5 },
+  coop: { win: 30, loss: 10, passed: 2 },
 };
 
 export type AdminEventState = "Programmato" | "In corso" | "Concluso" | "Disattivato";
