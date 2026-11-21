@@ -9,6 +9,8 @@ import {
   buildBotTeam,
   buildChallengeBotTeam,
   computeAbilityMeans,
+  cutCoopRounds,
+  playCoopRound,
   drawChallengeThreats,
   parseChallengeRules,
   parseMatchRules,
@@ -41,6 +43,10 @@ import {
   type Character,
   type ChallengeMatchRules,
   type ChallengeRules,
+  type CoopCardPlacement,
+  type CoopRoundRecord,
+  type CoopRules,
+  type CoopState,
   type ModifierNumbers,
   type PlacedThreat,
   type EmergencyAttempt,
@@ -128,6 +134,8 @@ const CLIENT_ERRORS = new Set([
   "challenge_emergency_not_started",
   "invalid_bot_team",
   "not_admin",
+  // Operazioni (SPEC §5.17)
+  "coop_room_not_found",
 ]);
 
 class GameError extends Error {}
@@ -176,6 +184,8 @@ type Loaded = {
   boss: BossRules;
   triple: TripleRules;
   quadrant: QuadrantRules;
+  /** Operazioni (SPEC §5.17); null until the database has its keys. */
+  coop: CoopRules | null;
   /** Fixed grid with border threats: the seals a card loses to a higher threat (SPEC §5.14). */
   quadrantBorders: { bite: number };
   graceSeconds: number;
@@ -375,6 +385,20 @@ async function load(): Promise<Loaded> {
     quadrantBorders: {
       bite: value("quadrant.fixed_grid_threats.bite"),
     },
+    coop: values.has("coop.panic_limit")
+      ? {
+          cityRounds: value("coop.city_rounds"),
+          squadSize: value("coop.squad_size"),
+          bossCards: value("coop.boss_cards"),
+          targets: Object.fromEntries([1, 2, 3, 4, 5, 6].map((level) => [level, value(`coop.targets.level${level}`)])),
+          bossTargets: Object.fromEntries([1, 2, 3, 4, 5, 6].map((level) => [level, value(`coop.boss_targets.level${level}`)])),
+          panicLimit: value("coop.panic_limit"),
+          panicLow: value("coop.panic_low"),
+          panicHigh: value("coop.panic_high"),
+          panicHighFromLevel: value("coop.panic_high_from_level"),
+          panicReinforced: value("coop.panic_reinforced"),
+        }
+      : null,
     graceSeconds: value("match.timeout_grace_seconds"),
     rankedLadder,
     catalog: {
@@ -1685,6 +1709,79 @@ async function playEmergency(userId: string, body: Record<string, unknown>, kind
 }
 
 // ---------------------------------------------------------------------------
+// Operazioni (SPEC §5.17): every member may ask to resolve the round being played, once
+// everyone is ready or the time is up. The engine scores it, the database re-checks it.
+// The answer says only whether it was resolved: members read the room with coop_state.
+// ---------------------------------------------------------------------------
+
+type CoopContext = {
+  room: { id: string; status: string; players: number | null; current_round: number } | null;
+  member: boolean;
+  deadline_at: string | null;
+  ready: boolean;
+  members: { user_id: string; card_instance_ids: string[] | null; definition_ids: string[] | null; placement: { card: string; slot: number }[] | null }[];
+  rival_definition_ids: string[];
+  written: { threat_ids: string[]; reinforced: number }[];
+  records: (Omit<CoopRoundRecord, "threats" | "eco"> & { results: CoopRoundRecord["threats"]; eco: CoopRoundRecord["eco"] })[];
+};
+
+async function resolveCoopRoundFor(userId: string, body: Record<string, unknown>) {
+  if (typeof body.room_id !== "string") throw new GameError("invalid_request");
+  const [loaded, context] = await Promise.all([load(), admin.rpc("coop_round_context", { p_user: userId, p_room: body.room_id })]);
+  const ctx = check(context) as CoopContext;
+  if (!ctx.room || !ctx.member) throw new GameError("coop_room_not_found");
+  if (ctx.room.status !== "active" || !ctx.deadline_at || !ctx.room.players) return { resolved: false, status: ctx.room.status };
+  if (!loaded.coop) throw new Error("missing game_config key: coop.panic_limit");
+  const expired = Date.now() > Date.parse(ctx.deadline_at) + loaded.graceSeconds * 1000;
+  if (!ctx.ready && !expired) return { resolved: false, status: "active" };
+
+  const character = (definitionId: string, id = definitionId) => {
+    const definition = loaded.definitions.get(definitionId);
+    if (!definition) throw new Error(`Unknown card definition ${definitionId}`);
+    return toCharacter(definition, id);
+  };
+  const threat = (id: string) => {
+    const found = loaded.threats.get(id);
+    if (!found) throw new Error("Unknown threat of the operation");
+    return found;
+  };
+  const state: CoopState = {
+    rules: loaded.coop,
+    players: ctx.members.map((m) => ({
+      id: m.user_id,
+      squad: (m.definition_ids ?? []).map((definitionId, i) => character(definitionId, m.card_instance_ids![i])),
+    })),
+    rival: ctx.rival_definition_ids.map((id) => character(id)),
+    rounds: cutCoopRounds(
+      ctx.written.map((w) => ({ threats: w.threat_ids.map(threat), reinforced: w.reinforced })),
+      ctx.room.players,
+    ),
+    records: ctx.records.map(({ results, ...record }) => ({ ...record, threats: results })),
+  };
+  // A placement counts as sent, Pronto or not (SPEC §5.17); the server puts down only the missing ones.
+  const choices: Record<string, CoopCardPlacement[] | null> = Object.fromEntries(
+    ctx.members.map((m) => [m.user_id, m.placement ? m.placement.map((p) => ({ characterId: p.card, slot: p.slot })) : null]),
+  );
+  const played = playCoopRound({ state, choices, families: loaded.catalog.families, rng });
+  const { error } = await admin.rpc("coop_record_round", {
+    p_room: ctx.room.id,
+    p_round: ctx.room.current_round,
+    p_record: {
+      plays: played.record.plays,
+      results: played.record.threats,
+      eco: played.record.eco,
+      panic: played.record.panic,
+    },
+  });
+  if (!error) return { resolved: true, status: played.result === null ? "active" : played.result };
+  // Someone else resolved it first, a placement changed meanwhile, or our clock ran ahead: fine.
+  if (["round_already_resolved", "match_not_active", "round_not_expired", "coop_placement_changed"].includes(error.message)) {
+    return { resolved: false, status: "active" };
+  }
+  throw new Error(error.message);
+}
+
+// ---------------------------------------------------------------------------
 // The simulator of the Sfide a tema (SPEC §8.8): admins only, a draft of the Editor
 // ---------------------------------------------------------------------------
 
@@ -1814,6 +1911,8 @@ Deno.serve(async (req) => {
         return json(await playEmergency(userId, body, await challengeEmergencyKind(userId, body.challenge_id)));
       case "challenge_simulate":
         return json(await simulateChallengeFor(userId, body));
+      case "coop_resolve":
+        return json(await resolveCoopRoundFor(userId, body));
       default:
         throw new GameError("invalid_request");
     }

@@ -337,6 +337,56 @@ export const balance = {
   },
 
   /**
+   * Operazioni (SPEC §5.17): 2 to 4 players together against a rival Reggente and a Boss.
+   * Every city round one threat more than the players; a threat nobody stops raises the
+   * Panic. Tuned with scripts/simulate-coop.mts.
+   */
+  coop: {
+    cityRounds: 4,
+    /** Characters each player brings: one per city round, then bossCards for the Boss. */
+    squadSize: 6,
+    bossCards: 2,
+    minPlayers: 2,
+    /** Raised to 4 with the second stage, once the screen and the numbers are ready for it. */
+    maxPlayers: 2,
+    /** Score that stops a threat of each level in the city: the Emergenza's. */
+    targets: {
+      level1: 7,
+      level2: 13,
+      level3: 18,
+      level4: 23,
+      level5: 28,
+      level6: 32,
+    },
+    /** Score that breaks a front of the Boss: the weekly Emergenza's. */
+    bossTargets: {
+      level1: 9,
+      level2: 15,
+      level3: 20,
+      level4: 25,
+      level5: 30,
+      level6: 34,
+    },
+    /** Panic that fails the operation, and what a threat nobody stopped adds. */
+    panicLimit: 12,
+    panicLow: 1,
+    panicHigh: 2,
+    panicHighFromLevel: 4,
+    /** More Panic when the threat nobody stopped was the rival's. */
+    panicReinforced: 1,
+    roundSeconds: 45,
+    bossRoundSeconds: 60,
+    /** From the second round on, time to read the result before the timer starts. */
+    revealPauseSeconds: 20,
+    /** A room nobody touches for this long closes. */
+    lobbyMinutes: 30,
+    winXp: 30,
+    lossXp: 10,
+    /** How long a signal stays beside a player's name (client only). */
+    signalSeconds: 6,
+  },
+
+  /**
    * Quadrante (SPEC §5.14): a size × size grid filled in turns, with four abilities drawn
    * as the sides of every card. Seals go on the cards a side beats; the most seals win.
    */
