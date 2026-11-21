@@ -4,11 +4,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { BackLink } from "@/components/comic-parts";
+import { CoopStarList } from "@/components/coop-room";
+import { StarCount } from "@/components/story-stars";
 import { LoadingScreen } from "@/components/loading-screen";
 import { ReturnLink } from "@/components/return-link";
 import { describeServerError } from "@/lib/errors";
 import {
   coopRoomHref,
+  coopStarCount,
   createCoopRoom,
   fetchCoop,
   joinCoopRoom,
@@ -132,8 +135,11 @@ export default function OperationsPage() {
           {catalog?.chapters.map((chapter) => (
             <section key={chapter.chapter} className="flex flex-col gap-1.5">
               <div>
-                <h2 className="font-display text-lg uppercase leading-6">
-                  Capitolo {chapter.chapter} · {chapter.title}
+                <h2 className="flex items-center justify-between gap-2 font-display text-lg uppercase leading-6">
+                  <span className="min-w-0 truncate">
+                    Capitolo {chapter.chapter} · {chapter.title}
+                  </span>
+                  <StarCount {...coopStarCount(chapter.operations)} className="shrink-0 font-sans text-xs font-extrabold" />
                 </h2>
                 <p className="text-xs font-semibold leading-4 text-muted">{chapter.intro}</p>
               </div>
@@ -196,6 +202,7 @@ function OperationRow({
             {operation.rival_name} · {operation.boss_name}
           </span>
         </span>
+        {operation.completed && <StarCount earned={operation.stars.length} total={3} className="shrink-0 text-[11px] font-extrabold" />}
         <span
           className={`shrink-0 whitespace-nowrap px-1 text-[10px] font-extrabold uppercase leading-[14px] ${
             operation.completed ? "bg-comic-cyan text-black" : operation.unlocked ? "bg-comic-yellow text-black" : "text-faint"
@@ -209,6 +216,7 @@ function OperationRow({
           <p className="text-xs font-semibold leading-4">{operation.intro}</p>
           {operation.outro && <p className="text-xs font-semibold italic leading-4 text-muted">{operation.outro}</p>}
           <OperationLevels operation={operation} players={players} />
+          <CoopStarList rules={operation} earned={operation.stars} />
           <p className="text-[11px] font-bold leading-4 text-muted">
             Premio alla prima vittoria: {reward}, per ogni giocatore della squadra.
           </p>

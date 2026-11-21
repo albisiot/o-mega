@@ -16,7 +16,7 @@ import { startBossBotMatch } from "@/lib/boss";
 import { balance } from "@/config/balance";
 import { isQuadrantFormat, QUADRANT_GRID_LABELS, startQuadrantBotMatch } from "@/lib/quadrant";
 import { startTripleBotMatch } from "@/lib/triple";
-import { coopRoomHref, setCoopReady, setCoopSquad } from "@/lib/coop";
+import { coopRoomHref, coopStarCondition, fetchCoopRoom, setCoopReady, setCoopSquad } from "@/lib/coop";
 import { createChallengeLobby, fetchChallenges, fetchLobbyChallenge, hasSuppliedTeam, seenChallenges, type Challenge } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
 import { challengeBlock, conquestBlock, describePlayBlock, rememberLastPlay, type PlayBlock } from "@/lib/last-play";
@@ -182,6 +182,23 @@ function TeamPageContent() {
   const storyCode = mode.kind === "story" ? mode.mission : null;
   // A story mission: its star rules and the stars earned, from the Storia page just left, then fresh.
   const [mission, setMission] = useState<StoryMission | null>(() => (storyCode ? findMission(seenStory(), storyCode) : null));
+  // An operation: its squad star, told under the intro (SPEC §5.17).
+  const coopRoom = mode.kind === "coop" ? mode.room : null;
+  const [coopStar, setCoopStar] = useState<string | null>(null);
+  useEffect(() => {
+    if (!session || !coopRoom) return;
+    let cancelled = false;
+    fetchCoopRoom(coopRoom)
+      .then((room) => {
+        if (!cancelled) setCoopStar(coopStarCondition("squad", room.operation));
+      })
+      .catch(() => {
+        // The intro stays without the star.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session, coopRoom]);
   // The page fits the screen: only the card grid scrolls, inside the team picker.
   useLockedScreen(true);
 
@@ -419,7 +436,7 @@ function TeamPageContent() {
                 challenge={challenge}
                 intro={
                   mode.kind === "coop"
-                    ? COOP_INTRO
+                    ? `${COOP_INTRO}${coopStar ? ` Per la stella della squadra: ${coopStar.charAt(0).toLowerCase()}${coopStar.slice(1)}.` : ""}`
                     : format === "boss"
                     ? BOSS_INTRO
                     : format === "triple"

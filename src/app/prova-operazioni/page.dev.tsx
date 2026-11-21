@@ -6,15 +6,19 @@
 //   /prova-operazioni/?s=attesa     the room before the start: the code, the team, one squad missing
 //   /prova-operazioni/?s=round      round 2: the ally has placed and is ready, the player not yet
 //   /prova-operazioni/?s=boss       the Boss: two cards each, the player has placed both
-//   /prova-operazioni/?s=risultato  the result of round 1
-//   /prova-operazioni/?s=vinta      the end, won (first win: coins and XP)
+//   /prova-operazioni/?s=risultato  the result of round 1, on the map with its comic pages, then the recap
+//   /prova-operazioni/?s=quattro    round 2 with four players: five threats on two rows, a Veggente has shown rounds 3 and 4
+//   /prova-operazioni/?s=vinta      the end, won (first win: coins, XP and two stars)
 //   /prova-operazioni/?s=persa      the end, lost to the Panic
+//   /prova-operazioni/?s=editor     the operations editor (admins), on made-up data: tap Modifica
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { CardDetailProvider } from "@/components/card-detail";
 import { CardLooksProvider } from "@/components/card-looks";
+import { CoopAdminView } from "@/components/coop-admin";
 import { CoopRoomScreen } from "@/components/coop-room";
+import type { CoopAdmin } from "@/lib/coop-admin";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import type { CoopCard, CoopMember, CoopRound, CoopView } from "@/lib/coop";
 
@@ -94,6 +98,8 @@ function member(userId: string, name: string, squad: CoopCard[], extra: Partial<
     xp: null,
     coins: null,
     reward_card: null,
+    stars: null,
+    star_coins: null,
     ...extra,
   };
 }
@@ -148,6 +154,13 @@ function scene(name: string): { view: CoopView; revealing: number | null } {
       reward_coins: 40,
       reward_card: null,
       completed: false,
+      stars: ["boss"],
+      star_panic: 4,
+      star_coins: 20,
+      star_rarities: ["delta", "gamma"],
+      star_rarity_names: ["Delta", "Gamma"],
+      star_traits: [],
+      star_traits_text: [],
     },
   };
   const unplayed = (round: number): CoopRound => ({
@@ -226,6 +239,37 @@ function scene(name: string): { view: CoopView; revealing: number | null } {
         revealing: null,
       };
     }
+    case "quattro": {
+      const extra = (code: string, name: string, base: number, peaks: Record<string, number>) => card(code, name, base, peaks, 2);
+      const third = [extra("P030", "Milewright", 4, { VEL: 8 }), extra("P033", "Cathode", 4, { ENE: 8 }), extra("P035", "Ambit", 5, {}), extra("P038", "Nightward", 4, { FUR: 8 }), extra("P040", "Gridwitch", 4, { TEC: 8 }), extra("P069", "Noctiluca", 4, { MAG: 8 })];
+      const fourth = [extra("P097", "Sextant", 4, { PER: 8 }), extra("P099", "Zeta Rax", 5, {}), extra("P109", "Parallasse", 4, { INT: 8 }), extra("P110", "Cursor", 5, {}), extra("P117", "Subsong", 4, { PSI: 8 }), extra("P119", "Gradus", 4, { RES: 8 })];
+      const five = [...ROUND_THREATS[1], threat(3, "Spettro del museo", ["MAG", "PSI"], 13, 1), threat(4, "Ladro fantasma", ["FUR", "VEL", "PER"], 18, 1)];
+      const seen = (round: number) =>
+        ROUND_THREATS[round - 1].map((t) => ({ slot: t.slot, name: t.name, level: t.level, abilities: t.abilities, seen_by: "Veggente" }));
+      return {
+        view: {
+          ...base,
+          players: 4,
+          status: "active",
+          current_round: 2,
+          panic: 3,
+          members: [
+            member(ME, "Alice_Reggente", MINE, { used: ["P028-copy"], placement: [{ card: MINE[3].instance_id, slot: 0 }] }),
+            member(ALLY, "bruno_b", ALLIES, { used: ["P101-copy"], ready: true, placement: [{ card: ALLIES[2].instance_id, slot: 0 }], signal: "help", signal_at: new Date(now).toISOString() }),
+            { ...member("c3", "Chiara_Vitali", third, { used: [third[0].instance_id], placement: [{ card: third[4].instance_id, slot: 3 }] }), seat: 3 },
+            { ...member("d4", "LaFenice", fourth, { used: [fourth[0].instance_id] }), seat: 4 },
+          ],
+          rounds: [
+            roundOne(at(-30)),
+            { ...live(2, at(41)), threats: five, levels: five.map((t) => t.level) },
+            { ...unplayed(3), foreseen: seen(3) },
+            { ...unplayed(4), foreseen: seen(4) },
+            unplayed(5),
+          ],
+        },
+        revealing: null,
+      };
+    }
     case "risultato":
     case "round": {
       const view: CoopView = {
@@ -257,9 +301,9 @@ function scene(name: string): { view: CoopView; revealing: number | null } {
           status: won ? "won" : "lost",
           current_round: won ? 5 : 3,
           panic: won ? 7 : 13,
-          operation: { ...base.operation, outro: won ? "Le Fosse reggono. Il Reggente della Compagnia se ne va a mani vuote, ma prende nota delle vostre facce." : null },
+          operation: { ...base.operation, stars: won ? ["boss", "calm", "squad"] : ["boss"], outro: won ? "Le Fosse reggono. Il Reggente della Compagnia se ne va a mani vuote, ma prende nota delle vostre facce." : null },
           members: [
-            member(ME, "Alice_Reggente", MINE, { xp: won ? 30 : 10, coins: won ? 40 : 0 }),
+            member(ME, "Alice_Reggente", MINE, { xp: won ? 30 : 10, coins: won ? 40 : 0, stars: won ? ["calm", "squad"] : null, star_coins: won ? 20 : 0 }),
             member(ALLY, "bruno_b", ALLIES, { xp: won ? 30 : 10, coins: won ? 40 : 0 }),
           ],
           rounds: [
@@ -286,8 +330,38 @@ export default function CoopProofPage() {
   );
 }
 
+/** Made-up data for the editor: chapter 1 as the seed writes it, with codes only. */
+const ADMIN: CoopAdmin = {
+  rounds: 5,
+  panic_limit: 12,
+  chapters: [{ chapter: 1, title: "Allarme generale", intro: "Il sismografo segna scosse che nessun Reggente può reggere da solo.", outro: "Le scosse si calmano." }],
+  operations: [
+    {
+      code: "O1M1", chapter: 1, ord: 1, title: "Scosse alle Fosse", intro: "Le Fosse tremano e mezzo quartiere scende in strada.", outro: "Le Fosse reggono.",
+      rival_name: "Il Reggente della Compagnia", boss_name: "La faglia sotto le Fosse", rival: ["P021", "P065", "P031", "P071", "P041"],
+      reward_coins: 40, reward_card: null, star_panic: 4, star_rarities: ["delta", "gamma"], star_traits: [], star_coins: 20,
+      rounds: [
+        { threats: ["T101", "T301", "T506", "T204", "T401"], reinforced: 1 },
+        { threats: ["T405", "T202", "T601", "T104", "T309"], reinforced: 0 },
+        { threats: ["T508", "T110", "T304", "T206", "T406"], reinforced: 2 },
+        { threats: ["T201", "T605", "T402", "T107", "T501"], reinforced: 1 },
+        { threats: ["T102", "T403", "T603", "T210", "T503"], reinforced: 2 },
+      ],
+      rooms: 12, wins: 7, in_play: true,
+    },
+  ],
+  threats: [1, 2, 3, 4, 5, 6].flatMap((level) =>
+    Array.from({ length: 10 }, (_, i) => ({ code: `T${level}${String(i + 1).padStart(2, "0")}`, name: `Minaccia ${level}.${i + 1}`, level, abilities: ["FOR"] })),
+  ),
+};
+
 function CoopProof() {
   const name = useSearchParams().get("s") ?? "round";
+  if (name === "editor") return <CoopAdminView initial={ADMIN} />;
+  return <CoopScene name={name} />;
+}
+
+function CoopScene({ name }: { name: string }) {
   const [{ view, revealing }, setScene] = useState(() => scene(name));
   const [abilities, setAbilities] = useState<AbilityInfo[]>([]);
   useEffect(() => {

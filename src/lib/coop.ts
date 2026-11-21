@@ -13,9 +13,22 @@ import {
 import { balance } from "@/config/balance";
 import { invokeFunction, toCharacter, type MatchCard } from "@/lib/match";
 import { forget, keepSeen, lastSeen } from "@/lib/last-seen";
+import { describeStarTraits, joinOr, type StarRulesText } from "@/lib/story-stars";
 import { getSupabase } from "@/lib/supabase/client";
 
-export type CoopOperation = {
+/** The three stars of an operation (SPEC §5.17): any win earns them, each paid once. */
+export const COOP_STARS = ["calm", "boss", "squad"] as const;
+export type CoopStar = (typeof COOP_STARS)[number];
+
+/** What an operation says about its stars. */
+export type CoopStarRules = StarRulesText & {
+  /** The calm star: Panic at the end at most this. */
+  star_panic: number;
+  /** Coins each star pays the first time. */
+  star_coins: number;
+};
+
+export type CoopOperation = CoopStarRules & {
   code: string;
   ord: number;
   title: string;
@@ -28,9 +41,47 @@ export type CoopOperation = {
   reward_card: MatchCard | null;
   unlocked: boolean;
   completed: boolean;
+  /** The stars the player has. */
+  stars: CoopStar[];
   /** The levels of the five threats written for each round; the first players + 1 are in play. */
   rounds: { round: number; levels: number[] }[];
 };
+
+/** The squad star in words: "Delta o Gamma", "Delta o Gamma · Custodi". */
+function squadRule(rules: StarRulesText): string {
+  return [rules.star_rarity_names.length ? joinOr(rules.star_rarity_names) : null, rules.star_traits.length ? describeStarTraits(rules.star_traits_text) : null]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** What a star asks: "Finisci con il Panico al massimo a 4". */
+export function coopStarCondition(star: CoopStar, rules: CoopStarRules): string {
+  switch (star) {
+    case "calm":
+      return `Vinci con il Panico al massimo a ${rules.star_panic}`;
+    case "boss":
+      return "Vinci sfondando tutti i fronti del Boss";
+    case "squad":
+      return `Vinci con solo ${squadRule(rules)} nella squadra di ognuno`;
+  }
+}
+
+/** The short form, on the chips: "Panico ≤ 4", "Tutti i fronti", "Solo Delta o Gamma". */
+export function coopStarShort(star: CoopStar, rules: CoopStarRules): string {
+  switch (star) {
+    case "calm":
+      return `Panico ≤ ${rules.star_panic}`;
+    case "boss":
+      return "Tutti i fronti";
+    case "squad":
+      return `Solo ${squadRule(rules)}`;
+  }
+}
+
+/** Stars earned in a chapter (or all), out of the stars there are: "4/9". */
+export function coopStarCount(operations: readonly { stars: readonly CoopStar[] }[]): { earned: number; total: number } {
+  return { earned: operations.reduce((sum, o) => sum + o.stars.length, 0), total: operations.length * COOP_STARS.length };
+}
 
 export type CoopChapter = { chapter: number; title: string; intro: string; outro: string | null; operations: CoopOperation[] };
 
@@ -72,10 +123,12 @@ export type CoopMember = {
   used: string[];
   /** Where the member is putting the cards of the round being played (0-based slots). */
   placement: { card: string; slot: number }[] | null;
-  /** What the end paid. */
+  /** What the end paid: XP, the operation's coins and card, the stars met and the coins of the new ones. */
   xp: number | null;
   coins: number | null;
   reward_card: MatchCard | null;
+  stars: CoopStar[] | null;
+  star_coins: number | null;
 };
 
 export type CoopThreat = {
@@ -115,6 +168,8 @@ export type CoopRound = {
   reinforced_slot: number | null;
   /** Only once the round is reached. */
   threats: CoopThreat[] | null;
+  /** Before then, the threats the team's Veggente, Presagio or Oracolo show, and which power showed them. */
+  foreseen?: { slot: number; name: string; level: number; abilities: string[]; seen_by: string }[] | null;
   resolved: boolean;
   results: CoopResult[] | null;
   panic: number | null;
@@ -126,7 +181,9 @@ export type CoopView = {
   id: string;
   code: string;
   status: "lobby" | "active" | "won" | "lost" | "closed";
+  /** At the start, the members; before, at least the players needed to start. */
   players: number;
+  max_players?: number;
   current_round: number;
   panic: number;
   panic_limit: number;
@@ -134,7 +191,7 @@ export type CoopView = {
   me: string;
   host: string;
   all_ready: boolean;
-  operation: {
+  operation: CoopStarRules & {
     code: string;
     title: string;
     intro: string;
@@ -144,6 +201,8 @@ export type CoopView = {
     reward_coins: number;
     reward_card: MatchCard | null;
     completed: boolean;
+    /** The stars the player already has. */
+    stars: CoopStar[];
   };
   members: CoopMember[];
   rounds: CoopRound[];

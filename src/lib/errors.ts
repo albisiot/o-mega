@@ -199,6 +199,14 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   coop_already_started: "L'operazione è già iniziata.",
   coop_invalid_round: "Qualcosa non tornava in questo round: riprova tra poco.",
   coop_placement_changed: "Un compagno ha appena cambiato le carte: riprovo.",
+  coop_invalid_text: "Controlla i testi: titolo da 2 a 40 caratteri, introduzione e finale da 10 a 600, rivale e Boss da 2 a 60.",
+  coop_invalid_rival: "Il rivale ha 5 Echi diversi, personaggi attivi.",
+  coop_invalid_rounds: "Ogni round ha 5 Minacce diverse, normali di Nuova Megara, e quella del rivale tra le prime tre.",
+  coop_invalid_reward: "Il premio: monete da 0 a 10000 e, se c'è, una carta attiva che non sia Omega.",
+  coop_invalid_stars: "Le stelle: Panico sotto il limite, monete da 0 a 1000, almeno una rarità o un tratto validi.",
+  coop_operation_in_play: "Una stanza di questa operazione è aperta: rivale e round si cambiano quando è finita.",
+  coop_operation_in_use: "Questa operazione è già stata giocata: non si può eliminare.",
+  coop_chapter_not_found: "Questo capitolo non esiste.",
 };
 
 export function describeServerError(error: unknown): string {

@@ -6,9 +6,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AbilityFamilies } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { CardLooksProvider, useCardLooks } from "@/components/card-looks";
+import { CoopMapReveal } from "@/components/coop-comic";
 import { HandCard } from "@/components/hand-card";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { ReturnLink } from "@/components/return-link";
+import { StarIcon } from "@/components/story-stars";
 import { Sheet } from "@/components/sheet";
 import { balance } from "@/config/balance";
 import { fetchAbilities, seenAbilities, type AbilityInfo } from "@/lib/catalog";
@@ -32,11 +34,15 @@ import {
   SIGNAL_LABELS,
   SIGNALS,
   startCoopRoom,
+  COOP_STARS,
+  coopStarCondition,
   type CoopCard,
   type CoopCatalog,
   type CoopMember,
   type CoopPreview,
   type CoopRound,
+  type CoopStar,
+  type CoopStarRules,
   type CoopView,
 } from "@/lib/coop";
 import { describeServerError } from "@/lib/errors";
@@ -223,6 +229,8 @@ export function CoopRoomScreen({
 }) {
   const current = currentRound(view);
   const shownRound = revealing === null ? null : (view.rounds.find((r) => r.round === revealing) ?? null);
+  // A round's result: first on the map with its comic pages, then the recap.
+  const [mapSeen, setMapSeen] = useState<number | null>(null);
   return (
     <div className="game-shell">
       {view.status === "lobby" ? (
@@ -236,7 +244,14 @@ export function CoopRoomScreen({
           </ReturnLink>
         </main>
       ) : shownRound ? (
-        <RoundResult view={view} round={shownRound} abilities={abilities} offset={offset} onDone={onRevealDone} />
+        mapSeen === shownRound.round ? (
+          <RoundResult view={view} round={shownRound} abilities={abilities} offset={offset} onDone={onRevealDone} />
+        ) : (
+          <>
+            <RevealTimer view={view} offset={offset} onOver={onRevealDone} />
+            <CoopMapReveal key={shownRound.round} view={view} round={shownRound} onContinue={() => setMapSeen(shownRound.round)} />
+          </>
+        )
       ) : view.status === "active" && myMember(view)?.left ? (
         <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
           <p className="font-display text-2xl uppercase text-comic-yellow">Sei uscito</p>
@@ -344,6 +359,7 @@ function Lobby({
 
         <p className="text-xs font-semibold leading-4">{view.operation.intro}</p>
         <RoundLevels view={view} />
+        <CoopStarList rules={view.operation} earned={view.operation.stars} />
 
         <ul className="flex flex-col gap-1.5" aria-label="La squadra">
           {view.members.map((member) => (
@@ -369,7 +385,9 @@ function Lobby({
           ))}
           {view.members.length < balance.coop.maxPlayers && (
             <li className="border-2 border-dashed border-line px-2 py-2 text-center text-xs font-bold text-faint">
-              In attesa di un compagno…
+              {view.members.length < balance.coop.minPlayers
+                ? "In attesa di un compagno…"
+                : `Possono entrare ancora ${balance.coop.maxPlayers - view.members.length}: più siete, più Minacce ci sono ogni round.`}
             </li>
           )}
         </ul>
@@ -401,6 +419,43 @@ function Lobby({
         </div>
       </main>
     </>
+  );
+}
+
+/**
+ * The three stars of an operation, one per line: what each asks and whether the player has it.
+ * `met`: on the result, the stars this operation met; `fresh`, those paid now for the first time.
+ */
+export function CoopStarList({
+  rules,
+  earned,
+  met = null,
+  fresh = false,
+}: {
+  rules: CoopStarRules;
+  earned: readonly CoopStar[];
+  met?: readonly CoopStar[] | null;
+  /** The stars met were paid now (the member's star_coins is above 0): the ones not had before are new. */
+  fresh?: boolean;
+}) {
+  return (
+    <ul className="flex shrink-0 flex-col gap-0.5" aria-label="Le stelle dell'operazione">
+      {COOP_STARS.map((star) => {
+        const metNow = Boolean(met?.includes(star));
+        const have = earned.includes(star) || metNow;
+        return (
+          <li key={star} className={`flex items-center gap-1.5 text-xs font-bold ${have ? "" : "text-muted"}`}>
+            <StarIcon filled={have} className="h-4 w-4" />
+            <span className="min-w-0 flex-1">{coopStarCondition(star, rules)}</span>
+            {metNow && fresh ? (
+              <span className="shrink-0 bg-comic-yellow px-1 text-[10px] font-extrabold text-black">Presa</span>
+            ) : !have ? (
+              <span className="shrink-0 text-[10px] font-extrabold text-faint">{rules.star_coins} monete</span>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -558,6 +613,7 @@ function Board({
     return all;
   }, [view.members]);
   const threats = round.threats ?? [];
+  const many = threats.length > 3;
   const ready = me.ready && me.placement !== null;
 
   /** Sends the player's cards: the allies see them at once. Pronto goes with them only when asked. */
@@ -614,7 +670,10 @@ function Board({
         allyRef.current?.showModal();
       }} />
 
-      <div className={`grid min-h-0 flex-1 gap-1.5 px-3 pt-1.5 ${threats.length <= 3 ? "grid-cols-3" : threats.length === 4 ? "grid-cols-4" : "grid-cols-5"}`}>
+      <Foreseen view={view} abilities={abilities} />
+
+      {/* Three threats side by side; four or five (three or four players) on two rows. */}
+      <div className={`grid min-h-0 flex-1 grid-cols-3 gap-1.5 px-3 pt-1.5 ${many ? "grid-rows-2" : ""}`}>
         {threats.map((threat) => {
           const reinforced = threat.slot === round.reinforced_slot;
           const team = totals.get(threat.slot);
@@ -652,14 +711,25 @@ function Board({
                   Rivale
                 </span>
               )}
-              <span className="line-clamp-2 break-words font-display text-[14px] uppercase leading-4 [hyphens:auto]" lang="it">
+              <span
+                className={`line-clamp-2 break-words font-display uppercase [hyphens:auto] ${many ? "text-[12px] leading-[13px]" : "text-[14px] leading-4"}`}
+                lang="it"
+              >
                 {threat.name}
               </span>
-              <span className="mt-0.5 line-clamp-2 text-[9px] font-bold leading-3 text-muted">
+              <span className={`mt-0.5 text-[9px] font-bold leading-3 text-muted ${many ? "line-clamp-1" : "line-clamp-2"}`}>
                 {threat.abilities.map((code) => abilityName(abilities, code)).join(" · ")}
               </span>
               <span className="mt-auto flex flex-col gap-0.5 pt-1">
-                {placedHere.map(({ member, card }, i) => (
+                {/* On a crowded table, more cards on one threat show as faces only. */}
+                {many && placedHere.length > 1 ? (
+                  <span className="flex flex-wrap gap-0.5" aria-label={placedHere.map(({ member, card }) => `${member.username}: ${card?.name ?? "?"}`).join(", ")}>
+                    {placedHere.map(({ member, card }, i) => (
+                      <PlayerAvatar key={`${member.user_id}-${card?.instance_id ?? i}`} username={member.username} avatarUrl={member.avatar_url} size="2xs" />
+                    ))}
+                  </span>
+                ) : null}
+                {!(many && placedHere.length > 1) && placedHere.map(({ member, card }, i) => (
                   <span
                     key={`${member.user_id}-${card?.instance_id ?? i}`}
                     className={`flex min-w-0 items-center gap-1 text-[10px] font-extrabold leading-3 ${member.user_id === me.user_id ? "text-comic-yellow" : "text-comic-cyan"}`}
@@ -740,6 +810,52 @@ function Board({
                 : "Metti una carta su una Minaccia"}
         </button>
       </div>
+    </>
+  );
+}
+
+/**
+ * The threats of the rounds to come that the team's Veggente, Presagio or Oracolo show (SPEC
+ * §5.17): one line under the allies, and the list in a sheet. Nothing when none is shown.
+ */
+function Foreseen({ view, abilities }: { view: CoopView; abilities: AbilityInfo[] }) {
+  const sheet = useRef<HTMLDialogElement>(null);
+  const rounds = view.rounds.filter((round) => round.foreseen && round.foreseen.length > 0);
+  if (rounds.length === 0) return null;
+  const by = [...new Set(rounds.flatMap((round) => round.foreseen!.flatMap((t) => t.seen_by.split(" e "))))].join(", ");
+  const label = (round: CoopRound) => (round.boss ? "Boss" : `R${round.round}`);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => sheet.current?.showModal()}
+        className="mx-3 mt-1 flex shrink-0 items-center gap-1.5 bg-comic-magenta px-2 py-0.5 text-left text-[11px] font-extrabold text-black"
+      >
+        <span aria-hidden>👁</span>
+        <span className="min-w-0 flex-1 truncate">
+          {by}: {rounds.map(label).join(", ")}
+        </span>
+        <span aria-hidden>›</span>
+      </button>
+      <Sheet sheetRef={sheet} title="Viste in anticipo">
+        <ul className="flex flex-col gap-2">
+          {rounds.map((round) => (
+            <li key={round.round}>
+              <p className="font-display text-lg uppercase text-comic-yellow">{round.boss ? "Il Boss" : `Round ${round.round}`}</p>
+              <ul className="flex flex-col gap-1">
+                {round.foreseen!.map((threat) => (
+                  <li key={threat.slot} className="border-2 border-panel-raised bg-panel px-2 py-1 text-sm font-bold">
+                    {threat.name} · Lv {threat.level}
+                    <span className="block text-xs text-muted">
+                      {threat.abilities.map((code) => abilityName(abilities, code)).join(" · ")} · visto da {threat.seen_by}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      </Sheet>
     </>
   );
 }
@@ -879,6 +995,18 @@ function AllyHand({ member, round, previews }: { member: CoopMember; round: Coop
 // A round's result, and the end
 // ---------------------------------------------------------------------------
 
+/** The result leaves by itself when the pause before the next round is over (the next timer is running). */
+function RevealTimer({ view, offset, onOver }: { view: CoopView; offset: number; onOver: () => void }) {
+  const next = currentRound(view);
+  const nextDeadline = next?.deadline_at ? Date.parse(next.deadline_at) : null;
+  const now = useNow(500) + offset;
+  const over = nextDeadline !== null && nextDeadline - now <= (next?.boss ? balance.coop.bossRoundSeconds : balance.coop.roundSeconds) * 1000;
+  useEffect(() => {
+    if (over) onOver();
+  }, [over, onOver]);
+  return null;
+}
+
 function RoundResult({
   view,
   round,
@@ -999,7 +1127,13 @@ function End({ view }: { view: CoopView }) {
           {won && (me?.coins ?? 0) === 0 && !me?.reward_card && (
             <span className="text-xs font-bold text-muted">Il premio dell&apos;operazione l&apos;avevi già preso.</span>
           )}
+          {(me?.star_coins ?? 0) > 0 && (
+            <span className="bg-comic-yellow px-2 py-0.5 text-sm font-extrabold text-black">+{me?.star_coins} monete delle stelle</span>
+          )}
         </div>
+      )}
+      {won && !me?.left && (
+        <CoopStarList rules={view.operation} earned={view.operation.stars} met={me?.stars ?? []} fresh={(me?.star_coins ?? 0) > 0} />
       )}
       <ul className="flex flex-col gap-1" aria-label="La squadra">
         {view.members.map((member) => (

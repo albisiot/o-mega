@@ -53,6 +53,13 @@ export const ADMIN_TOOLS: AdminTool[] = [
     icon: "M4 5a2 2 0 012-2h5v17H6a2 2 0 01-2-2zM20 5a2 2 0 00-2-2h-5v17h5a2 2 0 002-2zM16.5 7.5l.8 1.6 1.7.3-1.2 1.2.3 1.7-1.6-.8-1.6.8.3-1.7-1.2-1.2 1.7-.3z",
   },
   {
+    href: "/gestione-operazioni",
+    name: "Operazioni",
+    description: "Capitoli, rivali, round e stelle in squadra",
+    group: "contents",
+    icon: "M8 11a3 3 0 100-6 3 3 0 000 6zM16 11a3 3 0 100-6 3 3 0 000 6zM2 20c0-3 3-5 6-5s6 2 6 5M12 20c0-3 2-5 4-5s6 2 6 5",
+  },
+  {
     href: "/gestione-codici",
     name: "Codici bonus",
     description: "Codici da riscattare",
