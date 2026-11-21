@@ -10,11 +10,14 @@
 begin;
 
 -- Every mission: rules that exist and leave at least a squad, the coins of its chapter.
+-- Seasons 1 and 2 keep the starting formula; season 3 sets its own coins in each
+-- mission (docs/STORY.md §7.9): 30 a star in chapters 13-16 and 40 in 17-18, where
+-- the formula would give 40 and 50.
 do $$
 declare
   v_mission public.story_missions;
 begin
-  assert (select count(*) from public.story_missions) = 60, 'sixty missions';
+  assert (select count(*) from public.story_missions) = 65, 'sixty-five missions';
   for v_mission in select * from public.story_missions loop
     assert cardinality(v_mission.star_rarities) >= 1 and cardinality(v_mission.star_traits) >= 1,
       format('%s has no star rules', v_mission.code);
@@ -22,12 +25,14 @@ begin
       format('%s: under 15 characters of its rarities', v_mission.code);
     assert public.trait_admitted_count(v_mission.star_traits) >= 15,
       format('%s: under 15 characters with its traits', v_mission.code);
-    assert v_mission.star_coins = public.story_default_star_coins(v_mission.chapter),
+    assert v_mission.star_coins = case when v_mission.chapter <= 12 then public.story_default_star_coins(v_mission.chapter)
+                                       when v_mission.chapter <= 16 then 30
+                                       else 40 end,
       format('%s: star coins', v_mission.code);
   end loop;
   assert public.story_default_star_coins(1) = 10 and public.story_default_star_coins(4) = 10
      and public.story_default_star_coins(5) = 20 and public.story_default_star_coins(9) = 30
-     and public.story_default_star_coins(12) = 30, 'star coins by chapter';
+     and public.story_default_star_coins(12) = 30 and public.story_default_star_coins(13) = 40, 'star coins by chapter';
 end $$;
 
 -- A mission added with SQL gets the coins of its chapter, and bad rules are refused.
@@ -229,8 +234,8 @@ declare
   v_mission jsonb;
   v_before public.story_missions;
 begin
-  assert jsonb_array_length(v_admin -> 'missions') = 60 and jsonb_array_length(v_admin -> 'chapters') = 12
-     and jsonb_array_length(v_admin -> 'seasons') = 2, 'admin payload';
+  assert jsonb_array_length(v_admin -> 'missions') = 65 and jsonb_array_length(v_admin -> 'chapters') = 13
+     and jsonb_array_length(v_admin -> 'seasons') = 3, 'admin payload';
   assert jsonb_array_length(v_admin -> 'characters') >= 200, 'characters to count';
   v_mission := (select m from jsonb_array_elements(v_admin -> 'missions') m where m ->> 'code' = 'C1M1');
   assert (v_mission -> 'stars_earned' ->> 'flawless')::integer >= 1, 'stars earned in the payload';

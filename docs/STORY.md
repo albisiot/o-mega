@@ -538,12 +538,12 @@ Valgono i default finché non si decide altrimenti.
 | Spanò | Perde per la prima volta nel Capitolo 3 |
 | Holdout | Parla una volta sola, nel finale |
 | Personaggi nuovi fuori dalle carte | Nessuno |
-| Nel database | Fatto con il Capitolo 1 (migrazione `20261113160000_season_two_chapter_one_story.sql`): i capitoli si leggono da 1 in ogni stagione (`story_chapters.number`), ma nell'ordine di tutta la storia sono 7-12 e le missioni hanno i codici C7M1-C12M5 (SPEC §5.11). La Stagione 2 è in `story_seasons`; il messaggio di fine della Stagione 1 ora dice «Hai finito la Stagione 1, Il Rintocco. Ti aspetta la Stagione 2, La marea.», e quello della Stagione 2, finché la stagione non è stata completa, «Il prossimo capitolo della Stagione 2, La marea, arriva presto.». Il Capitolo 6 (migrazione `20261116140000_season_two_chapter_six_story.sql`) ha chiuso la stagione: ora il messaggio dice «Hai finito la Stagione 2, La marea. La prossima stagione arriva presto.» |
+| Nel database | Fatto con il Capitolo 1 (migrazione `20261113160000_season_two_chapter_one_story.sql`): i capitoli si leggono da 1 in ogni stagione (`story_chapters.number`), ma nell'ordine di tutta la storia sono 7-12 e le missioni hanno i codici C7M1-C12M5 (SPEC §5.11). La Stagione 2 è in `story_seasons`; il messaggio di fine della Stagione 1 ora dice «Hai finito la Stagione 1, Il Rintocco. Ti aspetta la Stagione 2, La marea.», e quello della Stagione 2, finché la stagione non è stata completa, «Il prossimo capitolo della Stagione 2, La marea, arriva presto.». Il Capitolo 6 (migrazione `20261116140000_season_two_chapter_six_story.sql`) ha chiuso la stagione con il messaggio «Hai finito la Stagione 2, La marea. La prossima stagione arriva presto.», e il Capitolo 1 della Stagione 3 (migrazione `20261121200000_season_three_chapter_one_story.sql`) l'ha cambiato in «Hai finito la Stagione 2, La marea. Ti aspetta la Stagione 3, La montagna.» |
 | Albi | Uno per capitolo, come nella Stagione 1; *Absentia* (Capitolo 4) e *Cariddi* (Capitolo 6) sono i due principali. Da aggiungere a WORLD §7 quando si scrivono |
 
 ## 7. Stagione 3: *La montagna*
 
-*Scritta, da costruire nel database: i capitoli si costruiscono uno alla volta, come quelli delle prime due stagioni (capitoli 13-18 nell'ordine di tutta la storia, missioni C13M1-C18M5). Le carte principali delle missioni sono il cuore delle squadre, da completare e tarare con la simulazione (SPEC §5.11).*
+*Scritta, in costruzione nel database: i capitoli si costruiscono uno alla volta, come quelli delle prime due stagioni (capitoli 13-18 nell'ordine di tutta la storia, missioni C13M1-C18M5). Il Capitolo 1 è nel database e giocabile. Le carte principali delle missioni sono il cuore delle squadre, da completare e tarare con la simulazione (SPEC §5.11).*
 
 ### 7.1 Premessa
 
@@ -603,7 +603,7 @@ Come in §5.1 e §6.5: le carte indicate per ogni missione sono il cuore della s
 
 #### Capitolo 1 — La mano
 
-*Atto I. Da costruire (capitolo 13 nell'ordine di tutta la storia, missioni C13M1-C13M5).*
+*Atto I. Testi nel database (migrazione `20261121200000_season_three_chapter_one_story.sql`, capitolo 13 nell'ordine di tutta la storia, missioni C13M1-C13M5); squadre e Minacce tarate con la simulazione (SPEC §5.11).*
 
 - **In una riga:** di notte le Fosse si alzano di un palmo, e il Comune, invece di chiedersi perché, le dichiara zona rossa.
 - **La cosa strana:** Re Tifeo, il gigante che dorme sotto il vulcano, con la mano destra sotto le Fosse.
@@ -613,10 +613,10 @@ Come in §5.1 e §6.5: le carte indicate per ogni missione sono il cuore della s
 - **Conflitto interno:** Recesso, l'ufficiale dello sgombero, abita alle Fosse anche lui: l'ordinanza non l'ha scritta, gliel'hanno intestata. Stentore legge l'avviso a tutto volume e poi vorrebbe chiedere scusa sottovoce, ma non sa parlare piano.
 - **Carte presentate:** Re Tifeo, Stentore, Recesso.
 - **Boss:** Recesso (P224, Beta), schierato dal Reggente del Comune per eseguire lo sgombero. Premio: la carta Recesso.
-- **Rivelazione:** nella necropoli il pavimento delle tombe è caldo e batte. Strata assaggia la pietra e dice che non è pietra: è osso, ha tremila anni, ed è il palmo di una mano grande come il quartiere. È Re Tifeo, il gigante che dorme sotto il vulcano: i Greci gli costruirono le tombe sulla mano perché il peso dei morti la tenesse ferma. Sibilla spiega perché si sveglia: chiusa la spaccatura sotto il mare, l'energia è tornata sotto il vulcano e il suo calore lo sveglia; se si alza, la montagna si apre e la scossa fa cedere Holdout. Per rimetterlo a dormire serve il secondo terzo del sigillo, dalla iota alla pi, in ordine. Vinta la sfida, lo sgombero è sospeso: le Fosse restano abitate finché la mano non si muove di nuovo.
+- **Rivelazione:** nella necropoli il pavimento delle tombe è caldo e batte. Strata assaggia la pietra e dice che non è pietra: è osso, ha tremila anni, ed è il palmo di una mano grande come il quartiere. È Re Tifeo, il gigante che dorme sotto il vulcano: i Greci gli costruirono le tombe sulla mano perché il peso dei morti la tenesse ferma. Sibilla spiega perché si sveglia: chiusa la spaccatura sotto il mare, l'energia è tornata sotto il vulcano e il suo calore lo sveglia; se si alza, la montagna si apre e la scossa fa cedere Holdout. Per rimetterlo a dormire serve il secondo terzo del sigillo, dalla iota alla pi, in ordine. Vinta la sfida, lo sgombero è sospeso: le Fosse restano abitate finché la mano non si muove di nuovo, e il primo a disfare gli scatoloni è Recesso.
 - **Gancio:** la iota e la kappa le hanno i Figli, e solo una persona può sentire dove: Nicola, in una cella dei Custodi. Intanto il Banco ha già comprato le prime case della zona rossa.
 
-| # | Missione | Situazione | Carte principali |
+| # | Missione | Situazione | Squadra avversaria (definitiva) |
 |---|---|---|---|
 | 1 | Sotto le macerie | Nella notte le Fosse si sono alzate e mezzo palazzo della tua via è venuto giù: la Compagnia tira fuori la gente con i suoi soccorritori, e a ciascuno manda il conto | Billable, Indemnity, Huckster, Cullet, Typo |
 | 2 | L'avviso | Stentore legge col megafono di bronzo l'avviso del Comune: le Fosse sono zona rossa, tutti fuori in quarantotto ore, e i Custodi cominciano dalla tua via | Stentore, Macadam, Azimuth, Censor, Bulwark |
@@ -752,7 +752,7 @@ Come in §5.1 e §6.5: le carte indicate per ogni missione sono il cuore della s
 
 ### 7.7 Il registro delle lettere
 
-Da aggiornare capitolo per capitolo mentre i capitoli entrano nel database, come in §6.7. **Previsto a fine stagione:** dalla alfa alla pi, sedici lettere, sono nel sigillo; la spaccatura sotto il vulcano è chiusa e Re Tifeo dorme; le ultime sette, dalla rho alla psi, non sono sotto la città; l'omega è tra le mani di Holdout.
+Da aggiornare capitolo per capitolo mentre i capitoli entrano nel database, come in §6.7. **Stato attuale** (Capitolo 1 nel database): nel capitolo non si muove nessuna lettera. Dalla alfa alla theta sono nel sigillo, e ora si sa a cosa servono le otto dopo: rimesse nell'anello dalla iota alla pi chiudono la spaccatura sotto il vulcano e rimettono a dormire Re Tifeo. La iota e la kappa le hanno i Figli, e dove lo può sentire solo Nicola, in una cella dei Custodi. **Previsto a fine stagione:** dalla alfa alla pi, sedici lettere, sono nel sigillo; la spaccatura sotto il vulcano è chiusa e Re Tifeo dorme; le ultime sette, dalla rho alla psi, non sono sotto la città; l'omega è tra le mani di Holdout.
 
 | Lettere | A fine Stagione 2 | Nella Stagione 3 | A fine Stagione 3 |
 |---|---|---|---|
@@ -801,7 +801,7 @@ Valgono i default finché non si decide altrimenti.
 | Mongibello | Nel finale lascia andare l'eruzione, piano, nel cratere; la sua carta non cambia |
 | Personaggi nuovi fuori dalle carte | Nessuno |
 | Monete delle stelle | 30 monete a stella nei capitoli 13-16 e 40 nei capitoli 17-18: 3.000 monete per le 90 stelle della stagione, cioè 20 pacchetti a 150 monete. Le stelle hanno pagato 1.200 monete nella Stagione 1 (10 e 20 a stella) e 2.400 nella Stagione 2 (20 e 30). La formula di partenza (`balance.ts` `story`, SPEC §5.11) darebbe 40 e 50, cioè 3.900: troppo per un salto solo, perché il prezzo dei pacchetti non cresce con la storia. Ogni capitolo mette quindi `star_coins` nelle sue missioni invece di lasciare il valore della formula; gli admin possono cambiarle da `/gestione-storia` |
-| Nel database | Niente da preparare prima: stagioni, sblocco a cavallo di stagione («Completa la Stagione 2 per sbloccarlo»), messaggio di fine stagione, stelle della stagione e monete delle stelle funzionano già per una stagione nuova (verificato il 21 novembre 2026). Il Capitolo 1 (capitolo 13, missioni C13M1-C13M5) inserisce in `story_seasons` la riga della Stagione 3 (*La montagna*, con il messaggio «Il prossimo capitolo della Stagione 3, La montagna, arriva presto.»), cambia quello della Stagione 2 in «Hai finito la Stagione 2, La marea. Ti aspetta la Stagione 3, La montagna.», dà a ogni missione rarità e tratti delle stelle (obbligatori) ed estende `supabase/tests/story.test.sql`, che oggi si aspetta dodici capitoli. Il Capitolo 6 chiude la stagione: «Hai finito la Stagione 3, La montagna. La prossima stagione arriva presto.» |
+| Nel database | Fatto con il Capitolo 1 (migrazione `20261121200000_season_three_chapter_one_story.sql`, capitolo 13, missioni C13M1-C13M5), senza cambiare il codice: stagioni, sblocco a cavallo di stagione («Completa la Stagione 2 per sbloccarlo»), messaggio di fine stagione, stelle della stagione e monete delle stelle funzionavano già per una stagione nuova. La Stagione 3 è in `story_seasons` (*La montagna*, con il messaggio «Il prossimo capitolo della Stagione 3, La montagna, arriva presto.»), quello della Stagione 2 ora dice «Hai finito la Stagione 2, La marea. Ti aspetta la Stagione 3, La montagna.», e ogni missione ha rarità e tratti delle stelle e 30 monete a stella. `supabase/tests/story.test.sql` controlla tredici capitoli e `story_stars.test.sql` le monete della Stagione 3. Il Capitolo 6 chiude la stagione: «Hai finito la Stagione 3, La montagna. La prossima stagione arriva presto.» |
 | Albi | Uno per capitolo; *Il turno di notte* (Capitolo 4) e *Tifeo* (Capitolo 6) sono i due principali. Da aggiungere a WORLD §7 quando si scrivono |
 
 ## 8. Regole di scrittura della storia
