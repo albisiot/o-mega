@@ -1,6 +1,13 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "21 novembre 2026",
+    changes: [
+      "Rompere una variante doppia ora si vede. La carta si scioglie dall'alto in una polvere di puntini del suo disegno, che prendono il colore della rarità e si raccolgono in un cristallo con le Schegge che hai preso; il cristallo vola nel contatore, che sale al saldo nuovo. Più la variante è rara, più il cristallo brilla: Omega è arcobaleno. Se rompi più copie insieme, si sciolgono tutte. Tocca per saltare alla fine, tocca ancora per tornare alla carta.",
+      "Comprare una cornice o un effetto con le Schegge ora è uno sbustamento. Le Schegge che spendi escono dal contatore e diventano un sigillo di cristallo, che si crepa ed esplode: dentro c'è la tua carta più rara, e una linea di luce le disegna intorno la cornice nuova (o una lama di luce le stende sopra l'effetto). Ti piace? Tieni premuto «Applica» e resta su quel personaggio; con «Un'altra carta» la scegli dalla Collezione, con «Più tardi» la ritrovi tra quelle da applicare. Con il suono acceso, le Schegge tintinnano; se sul telefono hai attivato «Riduci movimento», vedi subito il risultato.",
+    ],
+  },
+  {
     date: "20 novembre 2026",
     changes: [
       "Nel Bestiario ora puoi guardare il diorama delle Minacce che hai già incontrato: tocca la loro casella (quella con «Diorama ▸») e la scena si apre a tutto schermo, come in partita, con il nome, il livello, le abilità e la regola sotto. Trascinala per girarla; con «Chiudi» torni all'elenco nello stesso punto. Le Minacce che non hai ancora incontrato restano coperte. Il Sismografo impazzito, che cambia livello a ogni partita, si vede alla sua grandezza massima.",
