@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, type MouseEvent, type PointerEvent } from "react";
+import { createLongPress, type LongPressController } from "@/lib/long-press";
 
 /** How long a finger or the mouse button stays down before a press counts as long. */
 export const LONG_PRESS_MS = 450;
@@ -47,44 +48,40 @@ export function swallowReleaseClick() {
  * A long press on touch, pen or mouse. Returns a binder: `bind(action)` gives the pointer
  * handlers to spread on an element, so one hook serves every card of a list. A short tap
  * keeps doing what the element's own onClick does; moving the pointer cancels the press.
+ * `onPressChange` hears when a press begins and ends, to draw an indicator that fills meanwhile.
  */
-export function useLongPress(): (onLongPress: () => void) => LongPressHandlers {
-  const press = useRef<{ pointerId: number; x: number; y: number; timer: number; stop: () => void } | null>(null);
-
-  const cancel = useCallback(() => {
-    if (press.current) {
-      window.clearTimeout(press.current.timer);
-      press.current.stop();
-    }
-    press.current = null;
-  }, []);
+export function useLongPress(): (onLongPress: () => void, onPressChange?: (pressing: boolean) => void) => LongPressHandlers {
+  const controller = useRef<LongPressController | null>(null);
+  controller.current ??= createLongPress({
+    delayMs: LONG_PRESS_MS,
+    tolerancePx: MOVE_TOLERANCE_PX,
+    setTimer: (run, ms) => window.setTimeout(run, ms),
+    clearTimer: (id) => window.clearTimeout(id),
+  });
 
   // The pointer drifting anywhere, even off the element (a card being dragged), is not a press.
-  const drifted = useCallback(
-    (event: { pointerId: number; clientX: number; clientY: number }) => {
-      const current = press.current;
-      if (!current || current.pointerId !== event.pointerId) return;
-      if (Math.hypot(event.clientX - current.x, event.clientY - current.y) > MOVE_TOLERANCE_PX) cancel();
-    },
-    [cancel],
-  );
+  const drifted = useCallback((event: { pointerId: number; clientX: number; clientY: number }) => {
+    controller.current?.move(event);
+  }, []);
+  const cancel = useCallback(() => controller.current?.cancel(), []);
 
   useEffect(() => cancel, [cancel]);
 
   return useCallback(
-    (onLongPress: () => void): LongPressHandlers => ({
+    (onLongPress: () => void, onPressChange?: (pressing: boolean) => void): LongPressHandlers => ({
       onPointerDown(event) {
-        // The main button only: a right click keeps its own meaning.
-        if (event.button !== 0) return;
-        cancel();
-        const timer = window.setTimeout(() => {
-          cancel();
-          swallowReleaseClick();
-          onLongPress();
-        }, LONG_PRESS_MS);
-        window.addEventListener("pointermove", drifted);
-        const stop = () => window.removeEventListener("pointermove", drifted);
-        press.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, timer, stop };
+        const started = controller.current?.down(
+          event,
+          () => {
+            swallowReleaseClick();
+            onLongPress();
+          },
+          (pressing) => {
+            if (!pressing) window.removeEventListener("pointermove", drifted);
+            onPressChange?.(pressing);
+          },
+        );
+        if (started) window.addEventListener("pointermove", drifted);
       },
       onPointerMove: drifted,
       onPointerUp: cancel,
