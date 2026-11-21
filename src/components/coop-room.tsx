@@ -17,6 +17,7 @@ import {
   cardsPerRound,
   coopPreviews,
   currentRound,
+  fetchCoop,
   fetchCoopRoom,
   handOf,
   lastResolvedRound,
@@ -25,12 +26,14 @@ import {
   placeCoopCards,
   placedTotals,
   resolveCoopRound,
+  seenCoop,
   sendCoopSignal,
   setCoopReady,
   SIGNAL_LABELS,
   SIGNALS,
   startCoopRoom,
   type CoopCard,
+  type CoopCatalog,
   type CoopMember,
   type CoopPreview,
   type CoopRound,
@@ -401,18 +404,42 @@ function Lobby({
   );
 }
 
-/** The levels of every round in play (the Boss last): all a squad is chosen on. */
+/**
+ * The levels of every round in play (the Boss last): all a squad is chosen on. Before the start
+ * the room may still be waiting for a friend: the levels shown are those of a room with at least
+ * the players needed to start, read from the chapter (the room knows only those of its members).
+ */
 function RoundLevels({ view }: { view: CoopView }) {
+  const [catalog, setCatalog] = useState<CoopCatalog | null>(() => seenCoop());
+  const players = view.status === "lobby" ? Math.max(view.members.length, balance.coop.minPlayers) : view.players;
+  const short = view.rounds.some((round) => round.levels.length < players + 1);
+  useEffect(() => {
+    if (!short) return;
+    let cancelled = false;
+    fetchCoop()
+      .then((next) => {
+        if (!cancelled) setCatalog(next);
+      })
+      .catch(() => {
+        // The room's own levels stay on screen.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [short]);
+  const written = catalog?.chapters.flatMap((chapter) => chapter.operations).find((o) => o.code === view.operation.code);
+  const levelsOf = (round: CoopRound) =>
+    short && written ? (written.rounds.find((r) => r.round === round.round)?.levels.slice(0, players + 1) ?? round.levels) : round.levels;
   return (
     <ol className="flex shrink-0 gap-1" aria-label="I livelli delle Minacce, round per round">
       {view.rounds.map((round) => (
         <li
           key={round.round}
-          aria-label={`${round.boss ? "Boss" : `Round ${round.round}`}: livelli ${round.levels.join(", ")}`}
+          aria-label={`${round.boss ? "Boss" : `Round ${round.round}`}: livelli ${levelsOf(round).join(", ")}`}
           className={`flex min-w-0 flex-1 flex-col items-center px-0.5 py-0.5 ${round.boss ? "bg-comic-magenta text-black" : "bg-black"}`}
         >
           <span className="text-[9px] font-extrabold uppercase leading-3">{round.boss ? "Boss" : `R${round.round}`}</span>
-          <span className="font-display text-[15px] leading-5">{round.levels.join("·")}</span>
+          <span className="font-display text-[15px] leading-5">{levelsOf(round).join("·")}</span>
         </li>
       ))}
     </ol>
