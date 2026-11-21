@@ -4,12 +4,20 @@ import Link from "next/link";
 import { useState } from "react";
 import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
 import { useOpenPackReveal } from "@/components/pack-reveal-link";
+import { CosmeticSeal, type SealScene } from "@/components/shard-scenes";
+import { fetchCatalog, fetchCollection, ownedArt } from "@/lib/collection";
+import { previewCharacter } from "@/lib/cosmetic-preview";
 import {
   COSMETIC_INFO,
   EFFECT_CODES,
   FRAME_CODES,
+  appliedTo,
   buyWithShards,
+  isEffectCode,
+  isFrameCode,
   ownedCosmetics,
+  shownCosmetics,
+  type CosmeticKind,
   type CosmeticsState,
   type FrameCode,
   type ShardItem,
@@ -19,6 +27,15 @@ import { keepCosmetics, useCosmetics } from "@/lib/use-cosmetics";
 
 const RARITY_ORDER = ["delta", "gamma", "beta", "alfa", "omega"];
 const RARITY_NAMES: Record<string, string> = { delta: "Delta", gamma: "Gamma", beta: "Beta", alfa: "Alfa", omega: "Omega" };
+
+/** The character a frame or effect just bought is tried on in the seal scene, with its look now. */
+async function previewFor(state: CosmeticsState, kind: CosmeticKind): Promise<SealScene["preview"]> {
+  const [catalog, owned] = await Promise.all([fetchCatalog(), fetchCollection()]);
+  const card = previewCharacter(catalog, owned, state.applied, kind);
+  if (!card) return null;
+  const mine = owned.get(card.id);
+  return { card: mine ? { ...card, ...ownedArt(card, mine) } : card, look: shownCosmetics(appliedTo(state, card.id)) };
+}
 
 /**
  * The shop's Schegge tab (SPEC §4.8): the balance, what Schegge buy, the frames and effects
@@ -30,8 +47,11 @@ export function ShardShop({ preview = null }: { preview?: CosmeticsState | null 
   const openReveal = useOpenPackReveal();
   const [busy, setBusy] = useState<ShardItem | null>(null);
   const [message, setMessage] = useState<{ text: string; note?: string; isError: boolean } | null>(null);
+  // A frame or an effect just bought, opening in the seal scene.
+  const [scene, setScene] = useState<SealScene | null>(null);
 
   if (!state) return <p className="text-sm font-medium text-muted">Caricamento delle Schegge…</p>;
+  const balanceBefore = state.shard_balance;
 
   async function buy(item: ShardItem) {
     setBusy(item);
@@ -44,12 +64,22 @@ export function ShardShop({ preview = null }: { preview?: CosmeticsState | null 
         return;
       }
       if (purchase.item) {
-        const kind = purchase.item.kind === "frame" ? "la cornice" : "l'effetto";
+        const got = purchase.item;
+        const frame = got.kind === "frame";
         setMessage({
-          text: `Hai ottenuto ${kind} ${purchase.item.name}!`,
-          note: `${COSMETIC_INFO[purchase.item.code as FrameCode]?.note ?? ""} Applicala dalla pagina di una carta, in Collezione.`,
+          text: `Hai ottenuto ${frame ? "la cornice" : "l'effetto"} ${got.name}!`,
+          note: `${COSMETIC_INFO[got.code as FrameCode]?.note ?? ""} Applical${frame ? "a" : "o"} dalla pagina di una carta, in Collezione.`,
           isError: false,
         });
+        if (isFrameCode(got.code) || isEffectCode(got.code)) {
+          const preview = await previewFor(purchase.cosmetics, got.kind).catch(() => null);
+          setScene({
+            item: { code: got.code, kind: got.kind, name: got.name, serial: got.serial },
+            cost: Math.max(0, balanceBefore - purchase.cosmetics.shard_balance),
+            balance: purchase.cosmetics.shard_balance,
+            preview,
+          });
+        }
       }
     } catch (cause) {
       setMessage({ text: describeServerError(cause), isError: true });
@@ -78,6 +108,18 @@ export function ShardShop({ preview = null }: { preview?: CosmeticsState | null 
 
   return (
     <>
+      {scene && (
+        <CosmeticSeal
+          scene={scene}
+          onClose={() => setScene(null)}
+          onApplied={(name) =>
+            setMessage({
+              text: `${scene.item.kind === "frame" ? "Cornice" : "Effetto"} ${scene.item.name} applicat${scene.item.kind === "frame" ? "a" : "o"} a ${name}.`,
+              isError: false,
+            })
+          }
+        />
+      )}
       <section className="flex shrink-0 items-center justify-between gap-3 bg-black px-3 py-2">
         <div className="min-w-0">
           <h2 className="font-display text-base uppercase text-comic-yellow">Le tue Schegge</h2>

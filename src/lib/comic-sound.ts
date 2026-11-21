@@ -7,7 +7,25 @@ import { useSyncExternalStore } from "react";
 // sound only after a tap, which a result page always had. With the iPhone on silent
 // they may not be heard.
 
-export type ComicSound = "up" | "down" | "shield" | "stop" | "hit" | "whoosh" | "reveal" | "threat" | "win" | "lose" | "void" | "cutin";
+export type ComicSound =
+  | "up"
+  | "down"
+  | "shield"
+  | "stop"
+  | "hit"
+  | "whoosh"
+  | "reveal"
+  | "threat"
+  | "win"
+  | "lose"
+  | "void"
+  | "cutin"
+  // The Schegge scenes (shard-scenes.tsx): a crack, glass breaking, a crystal arriving, dust.
+  | "tink"
+  | "shatter"
+  | "tick"
+  | "dust"
+  | "pop";
 
 const STORAGE_KEY = "o-mega.sound";
 const listeners = new Set<() => void>();
@@ -48,7 +66,8 @@ export function useSoundOn(): boolean {
 
 let context: AudioContext | null = null;
 
-export function playSound(kind: ComicSound) {
+/** `step` raises the pitch of a "tick", so crystals arriving one after another climb. */
+export function playSound(kind: ComicSound, step = 0) {
   if (!read() || typeof window === "undefined") return;
   try {
     const Context = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -139,6 +158,30 @@ export function playSound(kind: ComicSound) {
       case "lose":
         envelope(0.11, 0.5);
         tone("sawtooth", 300, 110, 0.45);
+        break;
+      case "tink":
+        envelope(0.08, 0.18);
+        tone("sine", 2900, 2700, 0.12);
+        tone("sine", 4100, 3900, 0.08, 0.02);
+        break;
+      case "shatter":
+        envelope(0.2, 0.5);
+        noise(0.45, "highpass", 1500, 6000);
+        tone("sine", 3200, 2600, 0.1, 0.03);
+        tone("sine", 4400, 3800, 0.08, 0.09);
+        tone("sine", 2500, 2300, 0.1, 0.16);
+        break;
+      case "tick":
+        envelope(0.05, 0.08);
+        tone("sine", 1300 + step * 90, 1400 + step * 90, 0.05);
+        break;
+      case "dust":
+        envelope(0.07, 0.7);
+        noise(0.65, "bandpass", 3000, 900);
+        break;
+      case "pop":
+        envelope(0.12, 0.16);
+        tone("triangle", 280, 620, 0.1);
         break;
       default:
         envelope(0.07, 0.2);

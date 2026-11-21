@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Silhouette } from "@/components/card-view";
 import { HoldToConfirmButton } from "@/components/hold-to-confirm-button";
+import { ShardDust, type ShardBreakScene } from "@/components/shard-scenes";
 import { Sheet } from "@/components/sheet";
 import { convertDuplicates, foundVariantCount, type CatalogCard, type OwnedSummary } from "@/lib/collection";
 import { breakableCopies, breakVariantDuplicates, type CosmeticsState } from "@/lib/cosmetics";
@@ -124,8 +125,19 @@ export function VariantBreakPanel({
   const cosmetics = useCosmetics();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
+  // The variant turning to Schegge, once the server broke it; the page reloads when it closes.
+  const [scene, setScene] = useState<ShardBreakScene | null>(null);
   const rows = variantRows(owned, cosmetics);
-  if (rows.length === 0 || !cosmetics) return null;
+  const dust = scene && (
+    <ShardDust
+      scene={scene}
+      onClose={() => {
+        setScene(null);
+        onBroken();
+      }}
+    />
+  );
+  if (rows.length === 0 || !cosmetics) return dust;
   const value = cosmetics.values[card.rarity.code] ?? 0;
 
   async function shatter(variantId: string, count: number) {
@@ -138,7 +150,13 @@ export function VariantBreakPanel({
         text: `${result.broken === 1 ? "Rotta 1 copia" : `Rotte ${result.broken} copie`}: +${result.shards} Schegge (ora ${result.cosmetics.shard_balance}).`,
         isError: false,
       });
-      onBroken();
+      const variant = owned.variants.find((entry) => entry.variant_id === variantId);
+      setScene({
+        card: { ...card, art_url: variant?.art_url ?? card.art_url, variant: variant ? { name: variant.name } : null },
+        copies: result.broken,
+        shards: result.shards,
+        balance: result.cosmetics.shard_balance,
+      });
     } catch (cause) {
       setMessage({ text: describeServerError(cause), isError: true });
     } finally {
@@ -192,6 +210,7 @@ export function VariantBreakPanel({
           {message.text}
         </p>
       )}
+      {dust}
     </section>
   );
 }

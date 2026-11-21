@@ -1763,3 +1763,40 @@ html.screen-locked body {
     display: none;
   }
 }
+
+/* The Schegge scenes (src/components/shard-scenes.tsx): a duplicate variant that turns to dust
+   and a crystal, a seal of crystal that opens on a frame or an effect. Moved by Web Animations
+   from the component; with reduced motion the component shows the end at once. */
+.sx-counter-icon { width: 13px; height: 18px; background: linear-gradient(135deg, #fff 0 22%, #000 23% 100%); clip-path: polygon(50% 0, 100% 38%, 50% 100%, 0 38%); }
+.sx-crystal { position: absolute; left: 0; top: 0; z-index: 7; pointer-events: none; filter: drop-shadow(0 0 5px var(--sx-color)) drop-shadow(0 0 1px #fff); }
+.sx-crystal i { display: block; width: 100%; height: 100%; clip-path: polygon(50% 0, 100% 38%, 50% 100%, 0 38%); background: linear-gradient(135deg, #fff 0 18%, var(--sx-color) 42%, color-mix(in srgb, var(--sx-color) 50%, #000) 100%); }
+.sx-crystal.sx-foil i { background: linear-gradient(135deg, #fff 0 16%, transparent 17%), conic-gradient(from 20deg, #ffd60a, #ff2e6c, #16c8ff, #2fd06e, #ffd60a); }
+.sx-big { filter: drop-shadow(0 0 14px var(--sx-color)) drop-shadow(0 0 2px #fff); }
+.sx-plus { position: absolute; top: 100%; left: 50%; translate: -50% 6px; font: 30px/1 var(--display-font); color: var(--foreground); text-shadow: 2px 2px 0 #000, 0 0 10px var(--sx-color); white-space: nowrap; }
+.sx-scan { position: absolute; left: -14px; right: -14px; top: 0; z-index: 5; height: 4px; border-radius: 4px; pointer-events: none; background: linear-gradient(90deg, transparent, #fff 20%, #fff 80%, transparent); box-shadow: 0 0 12px 4px var(--sx-color); }
+.sx-burst { position: absolute; z-index: 1; width: 150px; height: 150px; border-radius: 50%; translate: -50% -50%; pointer-events: none; }
+.sx-minus { position: absolute; z-index: 30; font: 22px/1 var(--display-font); color: var(--comic-magenta); text-shadow: 2px 2px 0 #000; pointer-events: none; }
+.sx-glow { position: absolute; z-index: 5; width: 240px; height: 240px; translate: -50% -50%; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgb(255 255 255 / 0.9) 0 12%, rgb(255 46 108 / 0.55) 32%, transparent 66%); }
+.sx-seal-wrap { position: absolute; z-index: 6; width: 132px; height: 132px; translate: -50% -50%; pointer-events: none; }
+.sx-seal-wrap svg { position: absolute; inset: 0; overflow: visible; }
+.sx-seal-wrap path { fill: none; stroke: #fff; stroke-width: 3; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 4px #fff); }
+.sx-seal { position: absolute; inset: 0; clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%);
+  background:
+    linear-gradient(60deg, transparent 0 49%, rgb(255 255 255 / 0.35) 49% 51%, transparent 51%),
+    linear-gradient(-60deg, transparent 0 49%, rgb(0 0 0 / 0.25) 49% 51%, transparent 51%),
+    linear-gradient(0deg, transparent 0 49%, rgb(255 255 255 / 0.25) 49% 51%, transparent 51%),
+    radial-gradient(circle at 34% 26%, #fff 0 7%, transparent 8%),
+    conic-gradient(from 0deg, #ff2e6c, #ff8fae, #b45cff, #16c8ff, #7ff0ff, #ff2e6c); }
+.sx-drawn { position: absolute; z-index: 8; pointer-events: none; overflow: visible; }
+.sx-drawn rect { fill: none; stroke: #fff; stroke-width: 3; stroke-dasharray: 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 4px var(--sx-color)) drop-shadow(0 0 8px var(--sx-color)); }
+.sx-sweep { position: absolute; z-index: 8; overflow: hidden; pointer-events: none; border-radius: 14px; }
+.sx-sweep i { position: absolute; top: -20%; bottom: -20%; left: 0; width: 45%; background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.95) 45%, rgb(255 255 255 / 0.95) 55%, transparent); }
+.animate-sx-stamp { animation: sx-stamp 0.32s cubic-bezier(0.2, 1.2, 0.4, 1) both; }
+@keyframes sx-stamp {
+  0% { scale: 2.2; opacity: 0; }
+  65% { scale: 0.94; opacity: 1; }
+  100% { scale: 1; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-sx-stamp { animation: none; }
+}

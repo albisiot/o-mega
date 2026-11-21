@@ -14,9 +14,11 @@
 //   /prova-schegge/?s=squadra        the team picker of every mode (tap a card to put it in the squad)
 //   /prova-schegge/?s=mano           the hand of a match: every frame, an effect on most
 //   /prova-schegge/?s=pacchetto      a pack opening with characters that have a frame or an effect
+//   /prova-schegge/?s=rottura        a duplicate variant turning to Schegge (&r=omega a rarity, &n=3 copies, &c=P001)
+//   /prova-schegge/?s=sigillo        a frame or effect bought with Schegge (&o=neon the one bought; «Applica» asks the server)
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Fragment, Suspense, useEffect, useState, type ReactNode } from "react";
 import { Album } from "@/components/album";
 import { DressedArt } from "@/components/art-viewer";
 import { CardDetailProvider } from "@/components/card-detail";
@@ -25,6 +27,7 @@ import { CardScreen } from "@/components/card-screen";
 import { CardView } from "@/components/card-view";
 import { HandCard } from "@/components/hand-card";
 import { PackReveal } from "@/components/pack-reveal";
+import { CosmeticSeal, ShardDust } from "@/components/shard-scenes";
 import { ShardShop } from "@/components/shard-shop";
 import { TeamPicker } from "@/components/team-picker";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
@@ -33,7 +36,11 @@ import {
   COSMETIC_INFO,
   EFFECT_CODES,
   FRAME_CODES,
+  appliedTo,
   cosmeticsByCharacter,
+  isEffectCode,
+  isFrameCode,
+  shownCosmetics,
   type AppliedCosmetics,
   type CosmeticsState,
   type EffectCode,
@@ -42,12 +49,13 @@ import {
 import type { VariantCopy } from "@/lib/match";
 import type { PackOpening } from "@/lib/packs";
 import { fullArtUrl } from "@/lib/art";
+import { previewCharacter } from "@/lib/cosmetic-preview";
 import { withBasePath } from "@/lib/base-path";
 import { getSupabase } from "@/lib/supabase/client";
 import { keepCosmetics } from "@/lib/use-cosmetics";
 
 type VariantRow = { id: string; definition_id: string; style: string; style_name: string; art_url: string };
-type Loaded = { catalog: CatalogCard[]; abilities: AbilityInfo[]; owned: Map<string, OwnedSummary>; state: CosmeticsState };
+type Loaded = { catalog: CatalogCard[]; abilities: AbilityInfo[]; owned: Map<string, OwnedSummary>; state: CosmeticsState; variants: VariantRow[] };
 
 /** The characters owned in the scenes, by album position: frame, effect, and copies of the first variant. */
 const LOOKS: [FrameCode | null, EffectCode | null, number][] = [
@@ -135,7 +143,7 @@ async function load(): Promise<Loaded> {
     breakable,
     missing_variants: 180,
   };
-  return { catalog, abilities, owned, state };
+  return { catalog, abilities, owned, state, variants: rows };
 }
 
 export default function ShardsPreviewPage() {
@@ -257,6 +265,45 @@ function Scene() {
     };
     return <PackReveal opening={opening} />;
   }
+  if (scene === "rottura") {
+    // A character of the rarity asked with a drawing variant, or the one asked by code.
+    const rarity = params.get("r") ?? "beta";
+    const withVariant = (entry: CatalogCard) => loaded.variants.some((row) => row.definition_id === entry.id);
+    const broken =
+      loaded.catalog.find((entry) => entry.code === params.get("c") && withVariant(entry)) ??
+      loaded.catalog.find((entry) => entry.rarity.code === rarity && withVariant(entry)) ??
+      loaded.catalog.find(withVariant)!;
+    const variant = loaded.variants.find((row) => row.definition_id === broken.id)!;
+    const copies = Math.max(1, Number(params.get("n")) || 1);
+    const shards = (loaded.state.values[broken.rarity.code] ?? 1) * copies;
+    return (
+      <Replay label="Rompi di nuovo">
+        {(close) => (
+          <ShardDust
+            scene={{ card: { ...broken, art_url: variant.art_url, variant: { name: variant.style_name } }, copies, shards, balance: 7 + shards }}
+            onClose={close}
+          />
+        )}
+      </Replay>
+    );
+  }
+  if (scene === "sigillo") {
+    const code = params.get("o") ?? "gold";
+    if (!isFrameCode(code) && !isEffectCode(code)) return <p className="p-4 text-comic-magenta">Cornice o effetto sconosciuto: {code}</p>;
+    const kind = isFrameCode(code) ? "frame" : "effect";
+    const shown = previewCharacter(loaded.catalog, loaded.owned, loaded.state.applied, kind);
+    const preview = shown ? { card: shown, look: shownCosmetics(appliedTo(loaded.state, shown.id)) } : null;
+    return (
+      <Replay label="Apri di nuovo">
+        {(close) => (
+          <CosmeticSeal
+            scene={{ item: { code, kind, name: COSMETIC_INFO[code].name, serial: 37 }, cost: 2, balance: 5, preview }}
+            onClose={close}
+          />
+        )}
+      </Replay>
+    );
+  }
   if (scene === "negozio") {
     return (
       <main className="flex flex-1 flex-col gap-2 px-3 py-3">
@@ -306,6 +353,27 @@ function Scene() {
           <figcaption className="font-display text-lg uppercase text-comic-yellow">{item.name}</figcaption>
         </figure>
       ))}
+    </main>
+  );
+}
+
+/** A scene that opens at once, and again from a button once closed. */
+function Replay({ label, children }: { label: string; children: (close: () => void) => ReactNode }) {
+  const [round, setRound] = useState(1);
+  const [open, setOpen] = useState(true);
+  return (
+    <main className="flex flex-1 flex-col items-center justify-center gap-3 p-6">
+      <button
+        type="button"
+        className="btn btn-primary"
+        onClick={() => {
+          setRound((value) => value + 1);
+          setOpen(true);
+        }}
+      >
+        {label}
+      </button>
+      {open && <Fragment key={round}>{children(() => setOpen(false))}</Fragment>}
     </main>
   );
 }
