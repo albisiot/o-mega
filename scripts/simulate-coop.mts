@@ -14,7 +14,7 @@
 //
 // The dump: npx supabase db query --linked -f scripts/emergency-catalog.sql > emergency-raw.json
 // Usage: node scripts/simulate-coop.mts <emergency-raw.json> [--runs 2000] [--players 2,3,4]
-//   [--profiles starter,buona,grande,tutto] [--seed 1] [--panic 8] [--targets 7,13,18,23,28,32]
+//   [--profiles starter,buona,grande,tutto] [--seed 1] [--panic 12] [--panic-crowd 10] [--targets 7,13,18,23,28,32]
 //   [--boss 9,15,20,25,30,34] [--squad 6] [--authored]
 
 import { readFileSync } from "node:fs";
@@ -84,12 +84,15 @@ const RULES: CoopRules = {
   bossCards: 2,
   targets: levels(option("targets"), [1, 2, 3, 4, 5, 6].map((l) => cfg(`emergency.targets.level${l}`))),
   bossTargets: levels(option("boss"), [1, 2, 3, 4, 5, 6].map((l) => cfg(`emergency.targets.level${l}`) + 2)),
-  panicLimit: Number(option("panic") ?? 8),
+  panicLimit: Number(option("panic") ?? 12),
   panicLow: 1,
   panicHigh: 2,
   panicHighFromLevel: 4,
   panicReinforced: Number(option("panic-reinforced") ?? 1),
 };
+
+/** The Panic limit of a room: --panic in two, --panic-crowd from three players on (coop_panic_limit). */
+const panicLimitFor = (players: number) => (players > 2 && option("panic-crowd") ? Number(option("panic-crowd")) : RULES.panicLimit);
 
 const toCharacter = (c: Card): Character => ({
   id: c.id,
@@ -286,7 +289,7 @@ type Outcome = { won: boolean; panicOut: boolean; panic: number; fronts: number;
 
 function playOperation(rng: Rng, written: Written, rival: Character[], players: number, profile: string): Outcome {
   const state0: CoopState = {
-    rules: RULES,
+    rules: { ...RULES, panicLimit: panicLimitFor(players) },
     players: Array.from({ length: players }, (_, p) => {
       const squad = fieldSquad(collectionFor(rng, profile), written, players);
       // Each copy is its own card: two players may field the same character.
@@ -301,7 +304,7 @@ function playOperation(rng: Rng, written: Written, rival: Character[], players: 
   const city = state.records.filter((r) => !state.rounds[r.round - 1].boss);
   return {
     won: coopResult(state) === "won",
-    panicOut: coopPanic(state) >= RULES.panicLimit,
+    panicOut: coopPanic(state) >= state.rules.panicLimit,
     panic: coopPanic(state),
     fronts: coopBrokenFronts(state),
     stopped: city.reduce((sum, r) => sum + r.threats.filter((t) => t.stopped).length, 0) / Math.max(1, city.length),

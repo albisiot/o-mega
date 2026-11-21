@@ -347,8 +347,8 @@ export const balance = {
     squadSize: 6,
     bossCards: 2,
     minPlayers: 2,
-    /** Raised to 4 with the second stage, once the screen and the numbers are ready for it. */
-    maxPlayers: 2,
+    /** Up to 4 since the second stage (SPEC §5.17). */
+    maxPlayers: 4,
     /** Score that stops a threat of each level in the city: the Emergenza's. */
     targets: {
       level1: 7,
@@ -367,8 +367,9 @@ export const balance = {
       level5: 30,
       level6: 34,
     },
-    /** Panic that fails the operation, and what a threat nobody stopped adds. */
+    /** Panic that fails the operation in a room of two, from three players on (more threats covered), and what a threat nobody stopped adds. */
     panicLimit: 12,
+    panicLimitCrowd: 10,
     panicLow: 1,
     panicHigh: 2,
     panicHighFromLevel: 4,
@@ -376,8 +377,8 @@ export const balance = {
     panicReinforced: 1,
     roundSeconds: 45,
     bossRoundSeconds: 60,
-    /** From the second round on, time to read the result before the timer starts. */
-    revealPauseSeconds: 20,
+    /** From the second round on, time for the result on the map (its comic pages) before the timer starts. */
+    revealPauseSeconds: 40,
     /** A room nobody touches for this long closes. */
     lobbyMinutes: 30,
     winXp: 30,

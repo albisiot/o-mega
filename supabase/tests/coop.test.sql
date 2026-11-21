@@ -300,7 +300,7 @@ begin
   perform public.coop_set_ready(v_room_id, true);
   perform pg_temp.as_user(v_a);
   perform public.coop_start(v_room_id);
-  select coalesce(sum(amount), 0) into v_coins_before from public.coin_ledger where user_id = v_b;
+  select coalesce(sum(amount), 0) into v_coins_before from public.coin_ledger where user_id = v_b and reason = 'coop_reward';
   select xp into v_xp_before from public.profiles where id = v_b;
   for v_round in 1 .. 4 loop
     update public.coop_rounds set deadline_at = now() - interval '1 hour' where room_id = v_room_id and round = v_round;
@@ -323,7 +323,7 @@ begin
   v_state := public.coop_state(v_room_id);
   assert v_state ->> 'status' = 'won', format('status %s', v_state ->> 'status');
   assert (v_state -> 'members' -> 1 ->> 'coins')::integer = 40, 'first-win coins';
-  assert (select coalesce(sum(amount), 0) from public.coin_ledger where user_id = v_b) = v_coins_before + 40, 'coins in the ledger';
+  assert (select coalesce(sum(amount), 0) from public.coin_ledger where user_id = v_b and reason = 'coop_reward') = v_coins_before + 40, 'coins in the ledger';
   assert (select xp from public.profiles where id = v_b) >= v_xp_before + 30, 'win XP';
   assert (v_state -> 'rounds' -> 4 ->> 'panic')::integer = 0, 'the Boss adds no Panic';
   perform pg_temp.as_user(v_b);

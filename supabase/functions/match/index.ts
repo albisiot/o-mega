@@ -184,8 +184,10 @@ type Loaded = {
   boss: BossRules;
   triple: TripleRules;
   quadrant: QuadrantRules;
-  /** Operazioni (SPEC §5.17); null until the database has its keys. */
+  /** Operazioni (SPEC §5.17); null until the database has its keys. The Panic limit is a room of two's. */
   coop: CoopRules | null;
+  /** The Panic limit from three players on (the room of two's until the database has the key). */
+  coopPanicCrowd: number | null;
   /** Fixed grid with border threats: the seals a card loses to a higher threat (SPEC §5.14). */
   quadrantBorders: { bite: number };
   graceSeconds: number;
@@ -399,6 +401,7 @@ async function load(): Promise<Loaded> {
           panicReinforced: value("coop.panic_reinforced"),
         }
       : null,
+    coopPanicCrowd: values.has("coop.panic_limit_crowd") ? value("coop.panic_limit_crowd") : null,
     graceSeconds: value("match.timeout_grace_seconds"),
     rankedLadder,
     catalog: {
@@ -1745,8 +1748,10 @@ async function resolveCoopRoundFor(userId: string, body: Record<string, unknown>
     if (!found) throw new Error("Unknown threat of the operation");
     return found;
   };
+  const players = ctx.room.players;
   const state: CoopState = {
-    rules: loaded.coop,
+    // The room's Panic limit: lower from three players on (coop_panic_limit in the database).
+    rules: { ...loaded.coop, panicLimit: players > 2 && loaded.coopPanicCrowd !== null ? loaded.coopPanicCrowd : loaded.coop.panicLimit },
     players: ctx.members.map((m) => ({
       id: m.user_id,
       squad: (m.definition_ids ?? []).map((definitionId, i) => character(definitionId, m.card_instance_ids![i])),
