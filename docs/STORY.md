@@ -6,15 +6,17 @@
 
 *v0.3: il file è diviso per stagioni. La Stagione 1 è tutta in §5 (le schede dei capitoli, che le migrazioni citano come §6, ora sono in §5.1); la Stagione 2, scritta ma ancora da costruire nel database, è in §6. Il testo della Stagione 1 non è cambiato.*
 
+*v0.4: la Stagione 3, La montagna, è scritta in §7, ancora da costruire nel database; le regole di scrittura e le decisioni aperte generali sono passate a §8 e §9. Niente di quello che è pubblicato nelle Stagioni 1 e 2 è cambiato.*
+
 ---
 
 ## 1. Come si usa questo file
 
 - Ogni capitolo della modalità Storia (SPEC §5.11) è anche un albo da leggere (WORLD §7): stessa trama, due formati.
-- Si scrive dall'alto verso il basso: il segreto (§2), chi vuole cosa (§3), il cast (§4), poi una stagione dopo l'altra (§5, §6), ognuna con il suo arco, le schede dei capitoli e la mappa delle rivelazioni. Un testo di missione che contraddice un livello più alto va corretto, non affiancato.
-- Il giocatore scopre le cose nell'ordine della mappa delle rivelazioni della stagione (§5.2, §6.6). Un testo non anticipa niente che la mappa non abbia già concesso.
-- Prima di scrivere, rileggere le regole di §7: una sola cosa strana per capitolo, la posta in gioco sempre detta, una minaccia grande per stagione.
-- Una stagione nuova si apre dai ganci lasciati dalla precedente (§5.3 per la Stagione 1, §6.8 per la Stagione 2) e non cambia niente di quello che è già pubblicato.
+- Si scrive dall'alto verso il basso: il segreto (§2), chi vuole cosa (§3), il cast (§4), poi una stagione dopo l'altra (§5, §6, §7), ognuna con il suo arco, le schede dei capitoli e la mappa delle rivelazioni. Un testo di missione che contraddice un livello più alto va corretto, non affiancato.
+- Il giocatore scopre le cose nell'ordine della mappa delle rivelazioni della stagione (§5.2, §6.6, §7.6). Un testo non anticipa niente che la mappa non abbia già concesso.
+- Prima di scrivere, rileggere le regole di §8: una sola cosa strana per capitolo, la posta in gioco sempre detta, una minaccia grande per stagione.
+- Una stagione nuova si apre dai ganci lasciati dalla precedente (§5.3 per la Stagione 1, §6.8 per la Stagione 2, §7.8 per la Stagione 3) e non cambia niente di quello che è già pubblicato.
 - Il compendio *THE FRACTURE* è un altro universo (Terra Zero, ORPHEUS, la Frattura del 1999): da lì si prendono nomi, idee e modelli di scheda, mai fatti. Il canone è Nuova Megara.
 
 ## 2. Il segreto
@@ -46,7 +48,7 @@ L'esplosione è ancora lì, nella camera del tempio: una palla di luce con i det
 
 ### Il registro delle lettere
 
-Da tenere aggiornato capitolo per capitolo. La Stagione 1 è completa (Capitolo 6 nel database): la colonna di destra è lo stato a fine stagione. La Stagione 2 e lo stato a fine stagione sono in §6.7.
+Da tenere aggiornato capitolo per capitolo. La Stagione 1 è completa (Capitolo 6 nel database): la colonna di destra è lo stato a fine stagione. La Stagione 2 e lo stato a fine stagione sono in §6.7, la Stagione 3 in §7.7.
 
 | Lettere | A inizio serie | A fine Stagione 1 |
 |---|---|---|
@@ -62,7 +64,7 @@ Le lettere della storia non sono rarità nuove. Se un'espansione aggiungerà una
 
 ## 3. Chi vuole cosa
 
-Com'è all'inizio della serie e per tutta la Stagione 1. Cosa vuole ognuno nella Stagione 2 è in §6.3.
+Com'è all'inizio della serie e per tutta la Stagione 1. Cosa vuole ognuno nella Stagione 2 è in §6.3, nella Stagione 3 in §7.3.
 
 | Gruppo | Cosa sa | Cosa vuole | Il suo segreto |
 |---|---|---|---|
@@ -124,7 +126,7 @@ Gli albi di WORLD §7 confluiscono qui: *Il Reggente* e *Rissa al porto* nel Cap
 
 ### 5.1 I capitoli
 
-Squadre avversarie, Minacce e difficoltà si tarano con la simulazione, come nel Capitolo 1 (SPEC §5.11). Le carte indicate per ogni missione sono il cuore della squadra, non la squadra intera. **La cosa strana** di ogni capitolo è l'unico elemento fuori dal normale che il capitolo introduce (§7).
+Squadre avversarie, Minacce e difficoltà si tarano con la simulazione, come nel Capitolo 1 (SPEC §5.11). Le carte indicate per ogni missione sono il cuore della squadra, non la squadra intera. **La cosa strana** di ogni capitolo è l'unico elemento fuori dal normale che il capitolo introduce (§8).
 
 #### Capitolo 1 — Il porto
 
@@ -334,7 +336,7 @@ Sei capitoli in tre atti, come la Stagione 1: ogni capitolo ha un luogo, una faz
 
 ### 6.5 I capitoli
 
-Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, da completare e tarare con la simulazione quando il capitolo si costruisce. **Cosa rischi** è la posta in gioco che l'introduzione del capitolo deve dire (§7).
+Come in §5.1: le carte indicate per ogni missione sono il cuore della squadra, da completare e tarare con la simulazione quando il capitolo si costruisce. **Cosa rischi** è la posta in gioco che l'introduzione del capitolo deve dire (§8).
 
 **Il filo della stagione: la regola delle scosse.** Quando una lettera si muove, anche per tornare al suo posto, la città trema dove c'è la successiva (§2). La Stagione 2 la usa per far avanzare la storia senza aggiungere stranezze: è così che Longwave scopre che qualcuno tira fuori le lettere dall'altra parte (Capitolo 2), che la eta vera cammina (Capitolo 3), dov'è nascosto Xenolith (Capitolo 5) e dov'è la Θ (fine del Capitolo 5).
 
@@ -515,6 +517,8 @@ Da non chiudere prima del tempo. Una minaccia alla volta.
 - **Absentia.** Un'armatura vuota seduta in mezzo a una strada delle Fosse, che le Lanterne tengono pulita. Il capoturno della trivella aveva un nome.
 - **Più avanti:** Aion.
 
+*La Stagione 3 parte da qui: come usa questi ganci è in §7.1-§7.3; quelli che restano aperti dopo sono in §7.8.*
+
 ### 6.9 Decisioni aperte della Stagione 2
 
 Valgono i default finché non si decide altrimenti.
@@ -537,10 +541,273 @@ Valgono i default finché non si decide altrimenti.
 | Nel database | Fatto con il Capitolo 1 (migrazione `20261113160000_season_two_chapter_one_story.sql`): i capitoli si leggono da 1 in ogni stagione (`story_chapters.number`), ma nell'ordine di tutta la storia sono 7-12 e le missioni hanno i codici C7M1-C12M5 (SPEC §5.11). La Stagione 2 è in `story_seasons`; il messaggio di fine della Stagione 1 ora dice «Hai finito la Stagione 1, Il Rintocco. Ti aspetta la Stagione 2, La marea.», e quello della Stagione 2, finché la stagione non è stata completa, «Il prossimo capitolo della Stagione 2, La marea, arriva presto.». Il Capitolo 6 (migrazione `20261116140000_season_two_chapter_six_story.sql`) ha chiuso la stagione: ora il messaggio dice «Hai finito la Stagione 2, La marea. La prossima stagione arriva presto.» |
 | Albi | Uno per capitolo, come nella Stagione 1; *Absentia* (Capitolo 4) e *Cariddi* (Capitolo 6) sono i due principali. Da aggiungere a WORLD §7 quando si scrivono |
 
-## 7. Regole di scrittura della storia
+## 7. Stagione 3: *La montagna*
 
-- **Una sola cosa strana per capitolo.** Ogni capitolo introduce un solo elemento fuori dal normale (la sua "cosa strana", §6); il resto è cronaca di quartiere: furti, debiti, ricatti, sfratti, guasti. Le carte bizzarre (una muffa che cammina, un cane a tre teste) si presentano come fatti normali per chi vive a Nuova Megara, senza aggiungere altre stranezze attorno.
-- **Una minaccia grande per stagione.** Re Tifeo, Cariddi e Aion (§5.3) arrivano uno per stagione, mai insieme: la Stagione 2 usa Cariddi. Ogni stagione si apre da un gancio lasciato dalla precedente.
+*Scritta, da costruire nel database: i capitoli si costruiscono uno alla volta, come quelli delle prime due stagioni (capitoli 13-18 nell'ordine di tutta la storia, missioni C13M1-C18M5). Le carte principali delle missioni sono il cuore delle squadre, da completare e tarare con la simulazione (SPEC §5.11).*
+
+### 7.1 Premessa
+
+Chiusa la spaccatura sotto il mare, l'energia che usciva da Cariddi torna da dove era venuta: sotto il vulcano. Lì però non può sfogarsi, perché dalla notte dell'eruzione mancata Mongibello se la tiene dentro (Stagione 1, Capitolo 6), e allora si spande nella roccia, calda. Sotto la montagna, da tremila anni, dorme Re Tifeo, il gigante del mito su cui fu messa la montagna, e quel calore lo sta svegliando. È così grande che sta sotto tutta la città: la testa sotto il cratere, la mano destra sotto le Fosse. I Greci costruirono la necropoli sul suo palmo, perché il peso dei morti la tenesse ferma. Ogni volta che si gira nel sonno la città trema, e le Fosse si alzano e si crepano.
+
+Sibilla ha fatto il conto. Per rimetterlo a dormire bisogna togliergli il calore, cioè chiudere la spaccatura sotto il vulcano, e serve il secondo terzo del sigillo: altre otto lettere, dalla iota alla pi. La cerniera è quella della Stagione 2: una lettera tiene solo se quella prima è al suo posto. E ogni lettera, di nuovo, va tolta a qualcuno.
+
+### 7.2 La domanda e la posta in gioco
+
+- **La domanda:** riuscirai a rimettere nel sigillo le lettere dalla iota alla pi prima che Re Tifeo si svegli del tutto e si alzi?
+- **La domanda sotto:** Holdout ha detto che, quando le lettere saranno tutte e ventiquattro, potrà lasciare (Stagione 2, Capitolo 6). Ogni lettera che rimetti avvicina la sua fine: chi decide al suo posto? A metà stagione la domanda si allarga: cosa c'è, oltre a Holdout, dentro l'esplosione?
+- **La posta in gioco:** le Fosse stanno sulla mano del gigante. A ogni giro si alzano e si crepano, e il Comune, invece di cercare le lettere, le dichiara zona rossa e vuole sgomberarle, casa tua compresa. Se Tifeo si alza, la montagna si apre, l'eruzione che Mongibello trattiene esce tutta insieme e la scossa fa cedere Holdout: Nuova Megara salta in aria, e le Fosse per prime, perché la mano si alza per prima.
+- **Il tema:** chi porta il peso. Holdout porta la chiave di volta, Mongibello un'eruzione, Mainstay una montagna, Moth un segreto, le famiglie del turno di notte un lutto che per la legge non esiste. Nessuno può portare un peso per sempre, e chi lo posa deve sapere chi lo raccoglie. È la terza faccia del tema: far saltare tutto è facile (Stagione 1), rimettere a posto costa a qualcun altro (Stagione 2), e chi tiene in piedi tutto ha diritto di smettere (Stagione 3).
+
+### 7.3 Chi vuole cosa in questa stagione
+
+| Gruppo | Cosa vuole | Cosa fa | Il suo segreto |
+|---|---|---|---|
+| **Comune** | Che il gigante torni a dormire senza spendere | Dichiara le Fosse zona rossa e ordina lo sgombero; poi è tentato dal pozzo di sfogo che la Compagnia gli offre sul vulcano. Renata rimette le lettere nell'anello, i Custodi tengono Nicola in cella | Nel piano regolatore le Fosse sono da cinquant'anni «zona di espansione futura»: lo sgombero era già scritto, aspettava solo una scusa |
+| **Compagnia Lete** | Evitare il processo a Eudaemon e non perdere altra energia: con la spaccatura sotto il vulcano chiusa, la centrale pesca ancora meno | Offre al Comune di trivellare un pozzo di sfogo sul vulcano, cioè di rifare quello che fece l'Ora Zero; offre alle famiglie del turno di notte di togliere loro il dolore, se ritirano la denuncia | Nel caveau del porto ha la lambda e la mu, comprate dagli Sciolti. E dopo l'Ora Zero fece leggere ad Attainder un decreto sui quarantun operai del turno di notte: da allora nessuno riesce più a dire i loro nomi, e per la legge quella notte non è sparito nessuno |
+| **Figli dell'Ultima** | Che Tifeo si alzi: è la scossa più forte di tutte, e la Θ non serve più | Li guida Tenant. Tengono la iota e la kappa a Vall'Oscura, cercano la pi nel cratere, aspettano che Mongibello ceda | Molti di loro sono le famiglie del turno di notte. Tenant promette che, quando il gigante si alzerà, i loro torneranno: «Il ritorno è compreso nel prezzo» |
+| **Il Banco** | Rifarsi della volta che ha perso (Stagione 2, Capitolo 3) | Compra a un decimo del prezzo le case della zona rossa; prova a pagare la cauzione di Nicola, che sente le lettere, per farlo lavorare per sé; presta al tribunale la Statera, che pesa i risarcimenti | Nessuno: lo fa alla luce del sole. A fine stagione possiede quaranta case delle Fosse, e lo sgombero non c'è più |
+| **Lanterne** | Che le Fosse restino abitate | Aiutano chi non vuole andarsene; ma sono divise su Holdout, e la metà che sta con Moth non vuole che il sigillo si chiuda | Moth tiene la nu da anni. E al buio vede quello che c'è dentro la luce dell'esplosione |
+| **Custodi** | L'ordine | Eseguono lo sgombero; sorvegliano Nicola; sulla montagna difendono il paese di Mainstay | Quelli del paese giurano che Mainstay li protegge dalle frane, e non sanno perché stia lì davvero (Capitolo 5) |
+| **Sciolti** | Lavorare | I contadini della Piana non fanno passare nessuno; i cacciatori di colossi aspettano che Mainstay si sposti | — |
+
+**Le persone in questa stagione.** Nessun personaggio nuovo fuori dalle carte: bastano quelli di §4.
+
+- **Renata Abbate** rimette ogni lettera nell'anello. Ha sempre pensato all'Ora Zero come a una centrale esplosa; nel Capitolo 3 scopre che il permesso che firmò mandò sulla trivella quarantadue persone, e che quarantuno non sono tornate. **Arco:** dalla fretta di rimediare alla paura di cosa farà l'ultima lettera.
+- **Ottavia Lenti** fa da scorta al fratello e non si fida: al primo banco di nebbia, dice, scappa. Non scappa. Nel Capitolo 3 capisce perché si era messo a capo dei Figli: erano le famiglie dei suoi compagni di turno. **Arco:** dalla diffidenza alla fiducia.
+- **Nicola Lenti** esce di cella con la scorta, perché è l'unico che sente dove sono le lettere. Quella notte era l'operaio più giovane del turno di notte, ed è l'unico che ne è uscito. Aiuta perché l'esplosione deve finire «in un modo o nell'altro», ed è sicuro che, chiuso il sigillo, i suoi compagni torneranno. **Arco:** da prigioniero a guida.
+- **Il dottor Spanò** si prende la rivincita: compra le Fosse mentre non valgono niente. *"Il Banco non perde due volte."*
+- **Eudaemon** va a processo per l'ordine di trivellare (Capitolo 3), ed è condannato.
+- **Tenant** guida i Figli senza Nicola: il ritorno, promette, è compreso nel prezzo.
+- **Moth** porta da mangiare a Holdout da anni e vede quello che c'è nella luce. **Arco:** da custode del segreto ad alleata (Capitolo 4).
+- **Mongibello** trattiene l'eruzione sul cratere dalla notte in cui è salito lassù, senza dormire. Nel finale la lascia andare.
+- **Holdout** parla una volta, nel finale: *"Prima loro."*
+
+### 7.4 L'arco
+
+Sei capitoli in tre atti, come le prime due stagioni: ogni capitolo ha un luogo, una fazione avversaria, un boss la cui carta è il premio (mai Omega, mai una carta con sblocco a livello, mai un boss già premiato) e una rivelazione che sposta la domanda successiva.
+
+| Atto | Cap. | Titolo | Luogo | Avversari | Boss e premio | Lettere | Rivelazione |
+|---|---|---|---|---|---|---|---|
+| I · Il sonno | 1 | La mano | Le Fosse, la necropoli | Compagnia, Comune e Custodi, Figli, Banco | Recesso (P224, Beta) | Ι Κ ai Figli | Sotto le Fosse c'è la mano di Re Tifeo, che si sta svegliando; lo rimettono a dormire le otto lettere dalla iota alla pi |
+| I · Il sonno | 2 | Vall'Oscura | Il carcere dei Custodi, il bosco di Vall'Oscura | Custodi, Banco, Figli | Tenant (P210, Beta) | Ι Κ nel sigillo | Funziona: la mano si ferma. Nicola aiuta, e sa dove sono le altre |
+| II · I nomi | 3 | Il processo | Tribunale, consiglio comunale, caveau della Compagnia | Compagnia Lete | Attainder (P116, Beta) | Λ Μ nel sigillo | Sulla trivella c'era il turno di notte: quarantadue operai, quarantuno spariti, i nomi cancellati da un decreto. Nicola è l'unico uscito |
+| II · I nomi | 4 | Il turno di notte | Le Fosse di notte, il corridoio del tempio | Lanterne, Figli | Moth (P053, Alfa) | Ν nel sigillo | I quarantuno sono dentro la luce, fermi a metà di un passo. Nessuno sa cosa farà loro la chiusura |
+| III · La montagna | 5 | Quello che sta | La Piana, la strada del vulcano, il paese di Mainstay | Sciolti, Figli, Custodi del paese | Mainstay (P183, Alfa) | Ξ Ο nel sigillo | Mainstay tiene giù da quattro generazioni il ginocchio di Tifeo, e sotto i suoi piedi c'erano due lettere |
+| III · La montagna | 6 | Tifeo | Quartieri alti, il cratere | Figli dell'Ultima | Groma (P180, Alfa) | Π nel sigillo | La spaccatura sotto il vulcano si chiude e Tifeo torna a dormire. Holdout non lascerà prima dei quarantuno |
+
+### 7.5 I capitoli
+
+Come in §5.1 e §6.5: le carte indicate per ogni missione sono il cuore della squadra, da completare e tarare con la simulazione quando il capitolo si costruisce; **Cosa rischi** è la posta in gioco che l'introduzione del capitolo deve dire (§8). Le carte principali sono scelte soprattutto tra i personaggi mai comparsi nelle prime due stagioni, che sono quasi tutti eroi di Custodi e Lanterne: per questo in questa stagione i buoni ti stanno spesso contro.
+
+**Il filo della stagione: la regola delle scosse e lo sgombero.** Quando una lettera si muove, la città trema dove c'è la successiva (§2). Rimessa la kappa, trema il caveau della Compagnia al porto, dove c'è la lambda (Capitolo 2); rimessa la mu, la scossa arriva sotto le Fosse e di notte si sposta, lungo il giro di Moth (Capitolo 3); rimessa la nu, Mainstay ondeggia per la prima volta in quattro generazioni (Capitolo 4); rimessa la omicron, trema il cratere, dove i Figli hanno la pi (Capitolo 5); rimessa la pi, trema qualcosa di lontano, fuori dalla città (Capitolo 6). Intanto lo sgombero delle Fosse, sospeso nel Capitolo 1, vale solo finché la mano non si muove di nuovo: ogni lettera rimessa è una notte in più a casa.
+
+#### Capitolo 1 — La mano
+
+*Atto I. Da costruire (capitolo 13 nell'ordine di tutta la storia, missioni C13M1-C13M5).*
+
+- **In una riga:** di notte le Fosse si alzano di un palmo, e il Comune, invece di chiedersi perché, le dichiara zona rossa.
+- **La cosa strana:** Re Tifeo, il gigante che dorme sotto il vulcano, con la mano destra sotto le Fosse.
+- **Cosa rischi:** casa tua. Se lo sgombero passa le Fosse si svuotano e il Banco se le compra; e ogni volta che la mano si muove, un altro palazzo si crepa.
+- **Luogo:** le Fosse dopo la prima scossa, con mezza via puntellata; la necropoli sotto la linea della metropolitana, dove Strata ti porta a vedere il pavimento.
+- **Avversari:** la Compagnia, che manda soccorritori a pagamento; il Comune e i Custodi, che eseguono lo sgombero; i Figli, che scavano nella necropoli; il Banco, che compra le case a un decimo del prezzo.
+- **Conflitto interno:** Recesso, l'ufficiale dello sgombero, abita alle Fosse anche lui: l'ordinanza non l'ha scritta, gliel'hanno intestata. Stentore legge l'avviso a tutto volume e poi vorrebbe chiedere scusa sottovoce, ma non sa parlare piano.
+- **Carte presentate:** Re Tifeo, Stentore, Recesso.
+- **Boss:** Recesso (P224, Beta), schierato dal Reggente del Comune per eseguire lo sgombero. Premio: la carta Recesso.
+- **Rivelazione:** nella necropoli il pavimento delle tombe è caldo e batte. Strata assaggia la pietra e dice che non è pietra: è osso, ha tremila anni, ed è il palmo di una mano grande come il quartiere. È Re Tifeo, il gigante che dorme sotto il vulcano: i Greci gli costruirono le tombe sulla mano perché il peso dei morti la tenesse ferma. Sibilla spiega perché si sveglia: chiusa la spaccatura sotto il mare, l'energia è tornata sotto il vulcano e il suo calore lo sveglia; se si alza, la montagna si apre e la scossa fa cedere Holdout. Per rimetterlo a dormire serve il secondo terzo del sigillo, dalla iota alla pi, in ordine. Vinta la sfida, lo sgombero è sospeso: le Fosse restano abitate finché la mano non si muove di nuovo.
+- **Gancio:** la iota e la kappa le hanno i Figli, e solo una persona può sentire dove: Nicola, in una cella dei Custodi. Intanto il Banco ha già comprato le prime case della zona rossa.
+
+| # | Missione | Situazione | Carte principali |
+|---|---|---|---|
+| 1 | Sotto le macerie | Nella notte le Fosse si sono alzate e mezzo palazzo della tua via è venuto giù: la Compagnia tira fuori la gente con i suoi soccorritori, e a ciascuno manda il conto | Billable, Indemnity, Huckster, Cullet, Typo |
+| 2 | L'avviso | Stentore legge col megafono di bronzo l'avviso del Comune: le Fosse sono zona rossa, tutti fuori in quarantotto ore, e i Custodi cominciano dalla tua via | Stentore, Macadam, Azimuth, Censor, Bulwark |
+| 3 | Il pavimento | Strata ti porta nella necropoli: il pavimento delle tombe è caldo e batte come un polso, e i Figli ci scavano già | Belladonna, Credo, Hecatomb, Quicklime, Theriarch |
+| 4 | Compro casa | Il dottor Spanò gira le Fosse con i periti del Banco e compra le case della zona rossa a un decimo del prezzo, in contanti | Gymnasiarch, Futures, Actuary, Custos, Escrow |
+| 5 | Zona rossa | Il Reggente del Comune schiera Recesso, l'ufficiale a cui l'ordinanza è intestata d'ufficio: se perdi, domattina le Fosse si svuotano | Recesso, Palladium, Truss, Noctiluca, Aerie |
+
+#### Capitolo 2 — Vall'Oscura
+
+*Atto I. Da costruire (capitolo 14 nell'ordine di tutta la storia, missioni C14M1-C14M5).*
+
+- **In una riga:** per trovare la iota e la kappa serve Nicola, e Nicola ti porta dai Figli, nel bosco di nebbia sopra la città, dove adesso lo chiamano traditore.
+- **La cosa strana:** Vall'Oscura, il bosco sul fianco del vulcano che è un animale solo: radici, bestie e nebbia per nove chilometri quadrati, e chi ci entra non sa più chi ha accanto.
+- **Cosa rischi:** senza la iota e la kappa la cerniera non parte, e alla prossima scossa lo sgombero delle Fosse riparte. Se Nicola sparisce nella nebbia, il Comune perde l'unico che sa dove sono le altre lettere.
+- **Luogo:** il carcere dei Custodi; la strada che sale sul fianco del vulcano; Vall'Oscura, e la radura dove i Figli si sono accampati.
+- **Avversari:** i Custodi, che non vogliono far uscire il capo dei Figli; il Banco, che vuole pagargli la cauzione; i Figli di Tenant, per cui Nicola, che ha dato la Θ alla sorella, è un traditore.
+- **Conflitto interno:** tra i Figli c'è chi è ancora fedele a Nicola e chi crede solo a Tenant. Ottavia è convinta che il fratello scapperà al primo banco di nebbia; Nicola non scappa.
+- **Carte presentate:** Thicket, Praecursor, Tenant.
+- **Boss:** Tenant (P210, Beta), schierato dal Reggente dei Figli nella radura. Premio: la carta Tenant.
+- **Rivelazione:** nella radura, in una cassetta da munizioni, i Figli tenevano la iota e la kappa. Vinta la sfida, Renata le rimette nell'anello dopo la theta, e quella notte la mano sotto le Fosse non si muove. Sulla strada del ritorno Ottavia chiede al fratello perché aiuta; lui risponde che l'esplosione deve finire, in un modo o nell'altro, e così almeno la città resta in piedi. Poi dice dove sono le altre: la lambda e la mu nel caveau della Compagnia, la nu vicino al tempio, le ultime tre sulla montagna.
+- **Gancio:** quando la kappa torna al suo posto la città trema al porto, sotto il caveau della Compagnia, dove c'è la lambda. La mattina dopo la Compagnia offre al Comune di trivellare un pozzo di sfogo sul vulcano, e sul contratto c'è la firma di Eudaemon, che domani va a processo.
+
+| # | Missione | Situazione | Carte principali |
+|---|---|---|---|
+| 1 | Il colloquio | Nicola è in una cella dei Custodi, e i Custodi non vogliono farlo uscire: è il capo dei Figli, e il processo non è ancora cominciato | Praecursor, Interpres, Scion, Precinct, Dogwatch |
+| 2 | La cauzione | Il dottor Spanò vuole pagare la cauzione di Nicola: chi sente le lettere vale più di qualunque lettera | Residuo, Regina Ix, Herma, Escrow, Clepsydra |
+| 3 | La nebbia | A Vall'Oscura non sai più chi hai accanto, e le sentinelle dei Figli conoscono il bosco | Thicket, Lullaby, Tacet, Patina, Epigone |
+| 4 | Il vecchio capo | I Figli rimasti fedeli a Nicola gli chiedono di tornare con loro: se resta, la scorta torna giù senza di lui | Credo, Belladonna, Miliarium, Hospes, Cineris |
+| 5 | Il campo | Nella radura il Reggente dei Figli schiera Tenant, che ha la iota e la kappa: se perdi, restano ai Figli | Tenant, Emendatio, Dittograph, Noophage, Kiln |
+
+#### Capitolo 3 — Il processo
+
+*Atto II. Da costruire (capitolo 15 nell'ordine di tutta la storia, missioni C15M1-C15M5).*
+
+- **In una riga:** Eudaemon va a processo per l'ordine di trivellare, e la Compagnia offre al Comune la soluzione: trivellare di nuovo.
+- **La cosa strana:** il decreto di Attainder: quarantun nomi che dall'Ora Zero nessuno riesce più a pronunciare.
+- **Cosa rischi:** se il processo cade, la Compagnia ottiene il pozzo di sfogo e trivella accanto a un gigante che si sveglia, come la notte dell'Ora Zero; e la lambda e la mu restano nel suo caveau, con la cerniera ferma alla kappa e le Fosse in zona rossa.
+- **Luogo:** il tribunale, in centro; la sala del consiglio comunale, dove si vota il pozzo; il caveau della Compagnia al porto.
+- **Avversari:** la Compagnia Lete al completo: i suoi avvocati, la sua televisione, i suoi giardinieri del dolore, le guardie del caveau. Il Banco presta alla Compagnia la Statera e registra la sentenza.
+- **Conflitto interno:** la difesa della Compagnia è semplice: nei registri quella notte non manca nessuno, quindi non c'è reato. Le famiglie del turno di notte sono in aula, ma i nomi dei loro non riescono a dirli. La Compagnia offre un accordo: la lambda e la mu al Comune, in cambio del processo. Renata vorrebbe accettare; Ottavia no.
+- **Carte presentate:** Attainder, Statera, Isonomy.
+- **Boss:** Attainder (P116, Beta), schierato dal Reggente della Compagnia in aula. Premio: la carta Attainder.
+- **Rivelazione:** vinta la sfida il decreto cade, e le famiglie dicono i nomi uno dopo l'altro. Quella notte sulla trivella c'era il turno di notte: quarantadue operai, quasi tutti delle Fosse. Quarantuno sono spariti nell'Ora Zero; il quarantaduesimo, il più giovane, ne è uscito con un Segno, ed è Nicola. Tra i quarantuno c'è Holdout. La Statera, che adesso li trova nel registro, pesa il risarcimento; il tribunale condanna Eudaemon e la Compagnia, il contratto del pozzo è nullo e il caveau del porto è sequestrato. Renata rimette nell'anello la lambda e la mu, e Ottavia capisce perché suo fratello si era messo a capo dei Figli: erano le famiglie dei suoi compagni.
+- **Gancio:** quando la mu torna al suo posto la città trema dove c'è la nu, e la scossa non sta ferma: di notte si sposta per le Fosse, sempre lungo la stessa strada, fino alla porta del tempio. È il giro di Moth.
+
+| # | Missione | Situazione | Carte principali |
+|---|---|---|---|
+| 1 | L'udienza | Gli avvocati della Compagnia chiedono di escludere la scatola nera di Absentia, registrazione ottenuta senza licenza: se il giudice li ascolta, il processo finisce prima di cominciare | Understudy, Signatory, Byline, Semaphore, Facsimile |
+| 2 | Pozzo di sfogo | In consiglio comunale si vota il pozzo della Compagnia, e da una settimana la televisione dice che salverà le Fosse: se passa, si trivella accanto al gigante | Erasure, Matins, Affissione, Contumax, Swarf |
+| 3 | Il dolore | Eudaemon offre alle famiglie del turno di notte di togliere loro il dolore, gratis, se ritirano la denuncia; Isonomy, col megafono, chiede che i loro siano pesati come chiunque altro | Almoner, Custodia, Indemnity, Ademption, Lamprey |
+| 4 | Il sequestro | La notte prima della sentenza le guardie della Compagnia svuotano il caveau del porto: se la lambda e la mu escono, il tribunale sequestrerà una stanza vuota | Monopsony, Blackbody, Gavel, Reus, Pyrrhic |
+| 5 | Quarantun nomi | In aula il Reggente della Compagnia schiera Attainder: finché il suo decreto regge, i nomi non si dicono e per la legge non è sparito nessuno | Attainder, Eudaemon, Statera, Errata, Mekana |
+
+#### Capitolo 4 — Il turno di notte
+
+*Atto II, metà stagione. Albo* Il turno di notte. *Da costruire (capitolo 16 nell'ordine di tutta la storia, missioni C16M1-C16M5).*
+
+- **In una riga:** la nu non è sepolta: ce l'ha Moth, che porta da mangiare a Holdout da anni e non vuole che il sigillo si chiuda.
+- **La cosa strana:** dentro la luce dell'esplosione, tra i detriti, ci sono i quarantuno del turno di notte, fermi a metà di un passo. Al buio Moth li vede.
+- **Cosa rischi:** senza la nu la cerniera si ferma alla mu, la mano continua a girarsi e alla prossima scossa lo sgombero delle Fosse riparte. E le Lanterne sono divise: se le spacchi, le Fosse perdono chi le protegge.
+- **Luogo:** le Fosse di notte: la clinica delle Lanterne, la scala dove Wick accende la sua lanterna, la strada che Moth fa ogni notte; il corridoio del tempio che porta alla camera.
+- **Avversari:** le Lanterne che stanno con Moth; i Figli, che sanno anche loro dove porta la scossa e aspettano Moth sul suo giro.
+- **Conflitto interno:** le Lanterne si spaccano. Longwave e chi abita sulla mano vogliono il sigillo chiuso; la metà che sta con Moth vuole che Holdout resti in vita. Moth porta da mangiare a Holdout da anni, e per lei Holdout è di famiglia.
+- **Carte presentate:** Moth, Novenarium, Wick.
+- **Boss:** Moth (P053, Alfa), schierata dal Reggente delle Lanterne nel corridoio del tempio. Premio: la carta Moth.
+- **Rivelazione:** Moth ti dice perché ha tenuto la nu. Al buio vede la luce che le cose emettono, e dentro la luce dell'esplosione ha visto i quarantuno, tra i detriti, fermi a metà di un passo come i detriti. Non sono morti: per loro l'Ora Zero non è ancora finita. Holdout è la sola persona che si muove, perché tiene la chiave di volta. Poi dà la nu a Renata, perché il gigante ucciderebbe tutti, loro compresi. Con tredici lettere la luce arretra ancora, e per la prima volta la vedono tutti: un operaio con la tuta arancione e la targhetta da capoturno, quello di Absentia, con un piede alzato. Nicola lo chiama per nome.
+- **Gancio:** Sibilla non sa dire cosa succederà ai quarantuno quando il sigillo sarà chiuso: o finiscono il passo e tornano, o finisce l'esplosione e loro con lei. Nicola è sicuro che torneranno; Tenant dice ai Figli che il Comune li sta uccidendo. E quando la nu torna al suo posto, sul fianco del vulcano, per la prima volta in quattro generazioni, Mainstay ondeggia.
+
+| # | Missione | Situazione | Carte principali |
+|---|---|---|---|
+| 1 | La clinica | Alla clinica delle Lanterne sanno dov'è Moth e non te lo dicono: fuori c'è la zona rossa, e loro curano chi non se n'è andato | Suture, Febrifuge, Abdicant, Impound, Milewright |
+| 2 | La lanterna | Le Lanterne di Moth si riuniscono sulla scala di Wick, dove i poteri non lasciano tracce: chi ci entra non lo trova nessuno | Wick, Juncture, Gridwitch, Ambit, Cicatrix |
+| 3 | Il giro di Moth | I Figli aspettano Moth sulla strada che fa ogni notte verso il tempio: se le prendono la nu, la cerniera si ferma per sempre alla mu | Novenarium, Hospes, Theriarch, Falx, Cineris |
+| 4 | Il corridoio | Nel corridoio del tempio le Lanterne di Moth fanno muro davanti alla camera, e Renata non può passare | Tribune, Viaticum, Cathode, Undercroft, Tether |
+| 5 | Ogni notte | Il Reggente delle Lanterne schiera Moth, che porta da mangiare a Holdout ogni notte da anni: se perdi, la nu resta con lei | Moth, Afterimage, Collegium, Sampler, Raster |
+
+#### Capitolo 5 — Quello che sta
+
+*Atto III. Da costruire (capitolo 17 nell'ordine di tutta la storia, missioni C17M1-C17M5).*
+
+- **In una riga:** sul fianco del vulcano un colosso sta fermo da quattro generazioni sopra un paese, e le prossime due lettere sono sotto i suoi piedi.
+- **La cosa strana:** Mainstay, il colosso di centoquaranta metri che i paesani chiamano «Quello che sta».
+- **Cosa rischi:** se Mainstay si sposta prima del tempo, il paese finisce sotto la frana; se resta dov'è, la xi e la omicron restano sotto i suoi piedi, e la mano sotto le Fosse riprende a girarsi.
+- **Luogo:** la Piana ai piedi del vulcano; la strada di montagna, chiusa dalle frane; il paese di Mainstay, a metà del fianco.
+- **Avversari:** i contadini della Piana, che da quando passano i camion della Compagnia non fanno passare più nessuno; i Figli, che vogliono far franare la montagna; i Custodi del paese, che non vogliono che il colosso si muova; i cacciatori di colossi pagati dalla Compagnia, che aspettano di venderne le ossa.
+- **Conflitto interno:** il paese vive all'ombra di Mainstay da quattro generazioni e non sa perché lui stia lì; lui non l'ha mai detto, perché nessuno gliel'ha mai chiesto. I Custodi del paese giurano che li protegge dalle frane.
+- **Carte presentate:** Mainstay, Bubalus, Ropework.
+- **Boss:** Mainstay (P183, Alfa), schierato dal Reggente del paese. Premio: la carta Mainstay.
+- **Rivelazione:** vinta la sfida, Mainstay fa un passo di lato, e il paese capisce perché stava lì: sotto le case c'è il ginocchio di Tifeo, e da quattro generazioni il colosso lo tiene giù col suo peso. Sotto i suoi piedi, schiacciate nella roccia, ci sono la xi e la omicron, cadute lì la notte dell'Ora Zero. Il ginocchio si alza di un metro e il paese trema, ma con tredici lettere al loro posto il gigante si scalda meno: le case reggono. Renata rimette nell'anello anche queste due, e Mainstay torna al suo posto.
+- **Gancio:** quando la omicron torna al suo posto trema il cratere: la pi è lassù, nelle tende dei Figli. E lassù c'è Mongibello, che trattiene l'eruzione da mesi senza dormire, ed è allo stremo.
+
+| # | Missione | Situazione | Carte principali |
+|---|---|---|---|
+| 1 | La Piana | Da quando passano i camion della Compagnia, Bubalus carica tutto quello che ha le ruote e i contadini della Piana non fanno salire nessuno: se non passi prima di notte, la prossima frana chiude la strada | Bubalus, Harrow, Dowser, Wardmother, Tourniquet |
+| 2 | La frana | I Figli minano la strada sopra il paese: se la montagna frana sulle case, Mainstay si sposta per salvarle, e il ginocchio si alza prima del tempo | Kiln, Hecatomb, Quicklime, Cineris, Miliarium |
+| 3 | Il paese | I Custodi del paese non fanno avvicinare nessuno al colosso: dicono che li protegge dalle frane, e da quattro generazioni nessuno ha mai chiesto altro | Ropework, Aerie, Noctiluca, Portitor, Quarantine |
+| 4 | Le ossa | I cacciatori di colossi di Hollowbone, pagati dalla Compagnia, aspettano che Mainstay si sposti per farlo cadere: se cade, le lettere sotto i suoi piedi sono loro | Hollowbone, Praesidium, Warren, Contromano, Mischance |
+| 5 | Un metro | Il Reggente del paese schiera Mainstay, che un metro fuori dal suo raggio non protegge nessuno: se perdi, non si sposta | Mainstay, Plinth, Talos, Impetus, Codicil |
+
+#### Capitolo 6 — Tifeo
+
+*Atto III, finale di stagione. Albo* Tifeo. *Da costruire (capitolo 18 nell'ordine di tutta la storia, missioni C18M1-C18M5).*
+
+- **In una riga:** sul cratere i Figli hanno l'ultima lettera e aspettano che Mongibello ceda: se lascia andare l'eruzione, il gigante si sveglia del tutto.
+- **La cosa strana:** Re Tifeo che si sveglia: dal fondo del cratere affiora la sua fronte, e la montagna comincia ad aprirsi come un guscio.
+- **Cosa rischi:** se Tifeo si alza, la mano si alza per prima e le Fosse con lei; la montagna si apre, la scossa fa cedere Holdout e Nuova Megara salta in aria.
+- **Luogo:** i quartieri alti, evacuati di nuovo; la stazione dell'ultimo treno; la strada che sale e il cratere.
+- **Avversari:** i Figli dell'Ultima al completo, guidati da Tenant, con le famiglie del turno di notte che hanno creduto alla promessa del ritorno.
+- **Conflitto interno:** Groma ha trovato sull'orlo del cratere il cippo con cui i Greci segnarono la testa del gigante, e sa dove scavare. Tra i Figli, però, c'è chi ha sentito i nomi in tribunale e ha visto il capoturno nella luce, e comincia a chiedersi se il gigante riporterà qualcuno o li brucerà tutti. Mongibello non dorme da mesi.
+- **Carte presentate:** Groma, Overdue.
+- **Boss:** Groma (P180, Alfa), schierata dal Reggente dei Figli sull'orlo del cratere; nella sua squadra c'è Re Tifeo, che non è il premio. Premio: la carta Groma.
+- **Rivelazione:** vinta la sfida, per legge la pi è tua, e Renata la rimette nell'anello dopo la omicron: sedici lettere, la spaccatura sotto il vulcano si chiude e l'energia smette di scaldare il gigante. Mongibello, per la prima volta da quando è salito sul cratere, apre le mani: l'eruzione esce piano dal cratere, una colonna di fuoco che la città guarda dai tetti, e lui si addormenta lì dove sta. La fronte del gigante torna sotto la roccia, la mano sotto le Fosse si posa e lo sgombero è revocato. Nella camera la luce ormai è grande come una stanza: Holdout stacca una mano dalla chiave di volta, per la prima volta dall'Ora Zero, e indica i quarantuno. *"Prima loro."*
+- **Gancio di stagione:** quando la pi torna al suo posto la città non trema: il sismografo registra una scossa lontana, fuori da Nuova Megara. Nicola non sente più le lettere: le ultime sette non sono sotto la città. E alle Fosse, revocato lo sgombero, quaranta case hanno un padrone nuovo, il Banco, compreso il palazzo dove abiti.
+
+| # | Missione | Situazione | Carte principali |
+|---|---|---|---|
+| 1 | L'ultimo treno | Overdue porta giù gli sfollati dei quartieri alti con l'ultimo treno a vapore della notte, e i Figli lo fermano in stazione per portare su le famiglie del turno di notte: lassù, promettono, i loro torneranno | Lullaby, Belladonna, Epigone, Patina, Tacet |
+| 2 | Il catasto | Groma ha trovato sull'orlo del cratere il cippo greco che segna la testa del gigante, e i Figli scavano dove dice lei | Groma, Miliarium, Theriarch, Credo, Falx |
+| 3 | Chi tiene | Mongibello trattiene l'eruzione da mesi senza dormire, e i Figli salgono a sfinirlo: se cede adesso, il gigante si sveglia | Mordacchia, Noophage, Dittograph, Hecatomb, Cineris |
+| 4 | La fronte | Dal fondo del cratere affiora la fronte del gigante, e Tenant aspetta lì con la pi in mano | Tenant, Emendatio, Hospes, Thicket, Kiln |
+| 5 | Il risveglio | Sull'orlo del cratere il Reggente dei Figli schiera Groma, con l'Eco di Re Tifeo in squadra: se perdi, il gigante si alza | Groma, Re Tifeo, Tenant, Effigy, Credo |
+
+### 7.6 Mappa delle rivelazioni
+
+| Dopo il capitolo | Il giocatore sa | Ancora nascosto |
+|---|---|---|
+| 1 | Sotto la città dorme Re Tifeo, con la mano sotto le Fosse; si sveglia perché l'energia è tornata sotto il vulcano, e se si alza Holdout cede; lo rimettono a dormire le otto lettere dalla iota alla pi, in ordine; la iota e la kappa le hanno i Figli | Dove sono le altre; se Nicola aiuterà |
+| 2 | Funziona: con la iota e la kappa la mano si ferma; Nicola aiuta e sa dove sono le altre; la lambda e la mu sono nel caveau della Compagnia | Cosa successe davvero sulla trivella; perché Nicola guidava i Figli |
+| 3 | Sulla trivella c'era il turno di notte, quarantadue operai delle Fosse: quarantuno spariti, Nicola l'unico uscito, Holdout tra loro; la Compagnia ne ha cancellato i nomi; Eudaemon è condannato | Dove sono i quarantuno |
+| 4 | I quarantuno sono dentro la luce, fermi a metà di un passo, e Moth li vedeva; nessuno sa se chiudere il sigillo li riporterà o li finirà | Perché Mainstay sta fermo dov'è |
+| 5 | Mainstay tiene giù il ginocchio di Tifeo; sotto i suoi piedi c'erano la xi e la omicron; la pi è nel cratere con i Figli, e Mongibello è allo stremo | Se Mongibello reggerà |
+| 6 | Sedici lettere chiudono la spaccatura sotto il vulcano: Tifeo dorme, Mongibello si svuota, lo sgombero è revocato; Holdout non lascerà prima dei quarantuno; le ultime sette lettere non sono sotto la città | Dove sono le ultime sette; cosa farà ai quarantuno la chiusura del sigillo |
+
+### 7.7 Il registro delle lettere
+
+Da aggiornare capitolo per capitolo mentre i capitoli entrano nel database, come in §6.7. **Previsto a fine stagione:** dalla alfa alla pi, sedici lettere, sono nel sigillo; la spaccatura sotto il vulcano è chiusa e Re Tifeo dorme; le ultime sette, dalla rho alla psi, non sono sotto la città; l'omega è tra le mani di Holdout.
+
+| Lettere | A fine Stagione 2 | Nella Stagione 3 | A fine Stagione 3 |
+|---|---|---|---|
+| Α … Θ | Nel sigillo | — | Nel sigillo |
+| Ι Κ | Ai Figli | Tenute dai Figli nella radura di Vall'Oscura, riprese con Nicola (Capitolo 2) | Nel sigillo |
+| Λ Μ | Nel caveau della Compagnia al porto, comprate dagli Sciolti (§3 e gancio di §6.8; il registro di §6.7 non le contava a parte) | Sequestrate dal tribunale con la condanna di Eudaemon (Capitolo 3) | Nel sigillo |
+| Ν | Si credeva sepolta | Da anni la tiene Moth, che l'ha trovata in un corridoio del tempio; la dà a Renata (Capitolo 4) | Nel sigillo |
+| Ξ Ο | Sepolte | Schiacciate nella roccia sotto i piedi di Mainstay (Capitolo 5) | Nel sigillo |
+| Π | Sepolta | I Figli la trovano nel cratere; ripresa sull'orlo (Capitolo 6) | Nel sigillo |
+| Ρ … Ψ | Sepolte o ai Figli | Nicola non le sente: non sono sotto la città | Lontano: rimessa la pi, il sismografo registra una scossa fuori da Nuova Megara |
+| Ω | Tra le mani di Holdout | — | Tra le mani di Holdout, che ne stacca una per indicare i quarantuno |
+
+### 7.8 Ganci per la Stagione 4
+
+Da non chiudere prima del tempo. Una minaccia alla volta.
+
+- **Le ultime sette.** Dalla rho alla psi le lettere non sono sotto Nuova Megara: la scossa della pi è arrivata da lontano. È il ponte con le scosse «oltre Nuova Megara» (WORLD §6), dove il Banco affitta già i Reggenti: Giza, lo Yucatán, Atlantide, l'Artico, il Giappone, il Novecielo.
+- **I quarantuno.** Sono dentro la luce, fermi a metà di un passo. Chiudere il sigillo li riporterà o li finirà? Sibilla non sa fare il conto, Nicola è sicuro che torneranno, Tenant dice che li state uccidendo.
+- **Holdout** vuole lasciare, ma dopo di loro: *"Prima loro."*
+- **Il Banco padrone di casa.** Quaranta case delle Fosse sono del Banco, compreso il palazzo dove abiti: l'affitto lo decide Spanò.
+- **La Compagnia condannata.** Con due terzi del sigillo chiusi la centrale pesca poca energia, e la Compagnia ha già detto chi pagherà la differenza: le bollette.
+- **Nicola** ha visto i suoi compagni nella luce, e chiede a Renata di farlo entrare nella camera.
+- **Più avanti:** Aion, che arriva dal punto in cui è già tutto finito. È il candidato per la minaccia della Stagione 4, quella dell'ultimo terzo del sigillo.
+
+### 7.9 Decisioni aperte della Stagione 3
+
+Valgono i default finché non si decide altrimenti.
+
+| Decisione | Default |
+|---|---|
+| Titolo della stagione | *La montagna* |
+| Minaccia della stagione | Re Tifeo (P080, Omega: mai premio; è nella squadra del boss del Capitolo 6, come Wirepuller in quella di Clementia). Cariddi è stata usata nella Stagione 2; Aion è il candidato per la Stagione 4 |
+| Le seconde otto lettere | Regola della storia, non del gioco, come in §6.9: la cerniera continua dalla theta, e le lettere dalla iota alla pi chiudono la spaccatura sotto il vulcano. Il sigillo si chiude a terzi: il mare (Stagione 2), il vulcano (Stagione 3), l'ultimo terzo con l'omega |
+| Effetto sul Rintocco | Nessuno. Il Rintocco, gli Echi e i pacchetti restano come sono |
+| Re Tifeo | Un gigante vero, sepolto dai Greci sotto il vulcano: la testa sotto il cratere, la mano destra sotto le Fosse, un ginocchio sotto il paese di Mainstay. Si gira nel sonno da sempre e si sveglia per il calore dell'energia. Alla fine torna a dormire: non muore e non se ne va |
+| Il turno di notte | Quarantadue operai sulla trivella: quarantuno nella luce, tra cui Holdout e il capoturno di Absentia; Nicola l'unico uscito. I loro nomi si dicono nel Capitolo 3, ma i testi non li elencano. Novenarium (P217) è la loro carta: la sua frase, «Camera Tre, siamo pronti», è l'ultima chiamata del turno alla radio |
+| Cosa succede ai quarantuno | Non si sa: è la domanda della Stagione 4, e la Stagione 3 non la scioglie |
+| Il nome del capoturno | Nicola lo chiama per nome nel Capitolo 4: nome e cognome, segnaposto, si scelgono quando il capitolo si scrive |
+| Holdout nel catalogo | La carta (P057) ha come vero nome Bonaria Puddu, al femminile, mentre i testi pubblicati delle prime due stagioni parlano di Holdout al maschile. La Stagione 3 è scritta senza dire se Holdout è un uomo o una donna, e i suoi testi non dicono il vero nome. Da decidere prima del Capitolo 3: cambiare il vero nome della carta, oppure accordare i testi alla carta |
+| Lo sgombero delle Fosse | Sospeso nel Capitolo 1 finché la mano non si muove, revocato nel Capitolo 6. Il Banco si tiene le case che ha comprato |
+| Premi dei capitoli | La carta del boss: Recesso, Tenant e Attainder (Beta), Moth, Mainstay e Groma (Alfa). Tre e tre, i Beta all'inizio e gli Alfa alla fine, come nella Stagione 2. Nessuno è già stato premiato, nessuno ha lo sblocco a livello, tutti sono nei pacchetti. Da verificare con l'economia (SPEC §8) |
+| Carte scelte | Soprattutto personaggi mai comparsi nelle prime due stagioni: quasi tutti eroi di Custodi e Lanterne, che per questo ti stanno spesso contro, e i neutrali Bubalus, Statera, Residuo, Gymnasiarch, Contromano e Tourniquet. I sessanta personaggi dei Mille Soli e delle Marche di Arcadia (P232-P291) restano fuori: non sono nei pacchetti (WORLD §5), e le carte da cercare devono esserci. Le quattro carte con sblocco a livello (Nadir, Nimbus, Tempestas, Novissima) restano fuori anche dalle squadre. Restano libere per la Stagione 4, tra le altre, Kelvin, Maroon, Parallasse, Refector, Subpoena, Penates, Normal e gli Omega Ordito, Ansa e Prosody |
+| Nicola | Esce di cella con la scorta e collabora; a fine stagione resta in custodia del Comune |
+| Ottavia | Alleata; fa da scorta al fratello |
+| Holdout | Parla una volta sola, nel finale |
+| Mongibello | Nel finale lascia andare l'eruzione, piano, nel cratere; la sua carta non cambia |
+| Personaggi nuovi fuori dalle carte | Nessuno |
+| Monete delle stelle | La formula di partenza (`balance.ts` `story`, SPEC §5.11) dà 40 monete a stella nei capitoli 13-16 e 50 nei capitoli 17-18: 3.900 monete per le 90 stelle della stagione, contro le 2.400 della Stagione 2. Da verificare con l'economia (SPEC §8) prima del Capitolo 1; si cambia da `game_config` oppure missione per missione da `/gestione-storia` |
+| Nel database | Niente da preparare prima: stagioni, sblocco a cavallo di stagione («Completa la Stagione 2 per sbloccarlo»), messaggio di fine stagione, stelle della stagione e monete delle stelle funzionano già per una stagione nuova (verificato il 21 novembre 2026). Il Capitolo 1 (capitolo 13, missioni C13M1-C13M5) inserisce in `story_seasons` la riga della Stagione 3 (*La montagna*, con il messaggio «Il prossimo capitolo della Stagione 3, La montagna, arriva presto.»), cambia quello della Stagione 2 in «Hai finito la Stagione 2, La marea. Ti aspetta la Stagione 3, La montagna.», dà a ogni missione rarità e tratti delle stelle (obbligatori) ed estende `supabase/tests/story.test.sql`, che oggi si aspetta dodici capitoli. Il Capitolo 6 chiude la stagione: «Hai finito la Stagione 3, La montagna. La prossima stagione arriva presto.» |
+| Albi | Uno per capitolo; *Il turno di notte* (Capitolo 4) e *Tifeo* (Capitolo 6) sono i due principali. Da aggiungere a WORLD §7 quando si scrivono |
+
+## 8. Regole di scrittura della storia
+
+- **Una sola cosa strana per capitolo.** Ogni capitolo introduce un solo elemento fuori dal normale (la sua "cosa strana", §5.1, §6.5, §7.5); il resto è cronaca di quartiere: furti, debiti, ricatti, sfratti, guasti. Le carte bizzarre (una muffa che cammina, un cane a tre teste) si presentano come fatti normali per chi vive a Nuova Megara, senza aggiungere altre stranezze attorno.
+- **Una minaccia grande per stagione.** Re Tifeo, Cariddi e Aion (§5.3) arrivano uno per stagione, mai insieme: la Stagione 2 usa Cariddi, la Stagione 3 Re Tifeo, e Aion resta per dopo. Ogni stagione si apre da un gancio lasciato dalla precedente.
 - **La posta in gioco si dice sempre.** Ogni introduzione dice cosa succede se perdi: un palazzo che si crepa, un debito, una persona portata via.
 - **Il motivo è anche tuo.** Le scosse colpiscono le Fosse, dove abiti: ogni capitolo dovrebbe ricordarlo almeno una volta.
 - **Spiegare, non accennare.** Il finale di capitolo dice in parole semplici cosa hai scoperto. Il mistero sta in cosa succederà, non in cosa è appena successo.
@@ -553,9 +820,9 @@ Valgono i default finché non si decide altrimenti.
 - **Nessuna regola nuova:** se una scena ha bisogno di una regola che il gioco non ha, si cambia la scena.
 - **Le lastre:** in partita si affrontano Echi, non persone (§4). Le persone vere agiscono nelle scene.
 
-## 8. Decisioni aperte
+## 9. Decisioni aperte
 
-Generali e della Stagione 1; quelle della Stagione 2 sono in §6.9. Valgono i default finché non si decide altrimenti.
+Generali e della Stagione 1; quelle della Stagione 2 sono in §6.9, quelle della Stagione 3 in §7.9. Valgono i default finché non si decide altrimenti.
 
 | Decisione | Default |
 |---|---|
