@@ -9,13 +9,14 @@ const namesIn = (file: string, code = /T\d{3}/) =>
 const catalogNames = [
   ...namesIn("20261030090100_threats.sql"),
   ...namesIn("20261109180000_world_threats.sql"),
+  ...namesIn("20261121100000_novecielo.sql"),
   // The rare threats (SPEC §5.15): RA01, EP01, LE01, MI01, AP01, UN01...
   ...namesIn("20261112230000_rare_threats.sql", /(?:RA|EP|LE|MI|AP|UN)\d{2}/),
 ];
 
 describe("threatScene", () => {
   it("covers exactly the threats in the catalog", () => {
-    expect(catalogNames).toHaveLength(104);
+    expect(catalogNames).toHaveLength(107);
     expect(sceneThreatNames().sort()).toEqual([...catalogNames].sort());
   });
 
@@ -24,6 +25,7 @@ describe("threatScene", () => {
     expect(threatScene("Contrabbando al porto")).toEqual({ environment: "port" });
     expect(threatScene("Strega della palude")).toEqual({ environment: "swamp", actor: "witch" });
     expect(threatScene("Risveglio della Sfinge")).toEqual({ environment: "desert", actor: "sphinx" });
+    expect(threatScene("La corazzata del Novecielo")).toEqual({ environment: "ninesky", actor: "dreadnought" });
   });
 
   it("leaves unknown threats on the plain panel", () => {

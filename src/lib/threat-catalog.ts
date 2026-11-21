@@ -12,6 +12,7 @@ export const REGION_LABELS: Record<string, string> = {
   atlantis: "Atlantide",
   arctic: "Artico",
   japan: "Giappone",
+  novecielo: "Novecielo",
 };
 
 export type BestiaryThreat = {

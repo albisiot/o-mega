@@ -61,6 +61,11 @@ const TOWER_SLOTS = [
   [-2.35, -1.25],
   [2.35, -1.25],
 ];
+const MAGENTA = 0xff2e6c;
+const BRASS = 0xb08d3c;
+const VOID = 0x120c24;
+const DOCK = 0x5a5470;
+const PYLON = 0x6a5f86;
 const LAVA = 0xff5a1f;
 const NIGHT = 0x12142a;
 const VIOLET = 0x9b5cff;
@@ -502,6 +507,9 @@ export function mountThreatDiorama(
     if (actor === "swordsman") swordsman(delay);
     if (actor === "fox") fox(delay);
     if (actor === "kaiju") kaiju(delay);
+    if (actor === "beacon") beacon(delay);
+    if (actor === "probes") probes(delay);
+    if (actor === "dreadnought") dreadnought(delay);
     if (actor === "brokenmirrors") brokenMirrors(delay);
     if (actor === "swarm") swarm(delay);
     if (actor === "blackout") blackout(delay);
@@ -1343,6 +1351,212 @@ export function mountThreatDiorama(
     }
     // The bitten train car, in its jaws.
     box(0.75, 0.3, 0.34, CYAN, x - 0.55, 1.7, z + 0.62, { delay: delay + 0.55, rotation: [0, 0.3, 0.35] });
+  }
+
+  // Novecielo -----------------------------------------------------------------
+  // Beyond the tear: a stone and brass dock of the dying empire, hanging in the void.
+
+  function buildNinesky() {
+    ground(0x15122a);
+    // The same sky for the three threats of the place.
+    const random = seededRandom("Novecielo");
+    const sky = box(6.4, 4.2, 0.08, VOID, 0, 0, -2.15, { delay: 0.04, flat: true });
+    decorate(
+      sky,
+      new OctahedronGeometry(0.035),
+      CREAM,
+      Array.from({ length: 22 }, () => [-3 + random() * 6, 0.9 + random() * 3.2, 0.06] as [number, number, number]),
+    );
+    // The empire's sun, red and half set: the empire at sunset.
+    const sun = new SphereGeometry(1, 24, 16);
+    sun.scale(1, 1, 0.04);
+    add(sun, 0xd8432a, -1.85, -0.5, -2.05, { delay: 0.08, flat: true, noInk: true });
+    const core = new SphereGeometry(0.62, 24, 16);
+    core.scale(1, 1, 0.04);
+    add(core, ORANGE, -1.85, -0.12, -2.01, { delay: 0.12, flat: true, noInk: true });
+    // The tear in the sky, and through it the golf of Nuova Megara with a crane of the port.
+    const rim = new OctahedronGeometry(1);
+    rim.scale(0.42, 1.5, 0.02);
+    light(add(rim, CYAN, 0.95, 0.55, -2.07, { delay: 0.2, flat: true, noInk: true }));
+    const slit = new OctahedronGeometry(1);
+    slit.scale(0.3, 1.32, 0.02);
+    const through = add(slit, 0x0f6e96, 0.95, 0.73, -2.04, { delay: 0.26, flat: true, noInk: true });
+    stroke(through, -0.16, 0.72, 0.16, 0.72, 0.03, 0x0a3a52, 0.03);
+    stroke(through, -0.05, 0.72, -0.05, 1.75, 0.045, YELLOW, 0.03);
+    stroke(through, -0.19, 1.75, 0.19, 1.75, 0.045, YELLOW, 0.03);
+    stroke(through, 0.12, 1.75, 0.12, 1.45, 0.015, 0x000000, 0.03);
+    // The dock, its brass edge and the mooring posts.
+    box(4.8, 0.2, 2.6, DOCK, 0, 0, 0.35, { delay: 0.1 });
+    box(4.9, 0.07, 0.1, BRASS, 0, 0.2, 1.65, { delay: 0.16, noInk: true });
+    [-2.1, -1.05, 1.05, 2.1].forEach((x, i) => cylinder(0.07, 0.09, 0.28, BRASS, x, 0.2, 1.5, { delay: 0.22 + i * 0.04 }));
+    // Two pylons with the empire's banners; one leans, like the empire.
+    [
+      [-2.25, -0.75, 0],
+      [2.3, -0.55, -0.12],
+    ].forEach(([x, z, tilt], i) => {
+      cylinder(0.09, 0.12, 2.2, PYLON, x, 0.2, z, { delay: 0.3 + i * 0.06, rotation: [0, 0, tilt] });
+      // The banner hangs on the inner side of its pylon.
+      const lean = Math.sin(-tilt) * 1.6;
+      const banner = box(0.46, 0.95, 0.03, MAGENTA, x - Math.sign(x) * 0.24 + lean, 1.05, z + 0.1, { delay: 0.4 + i * 0.06, rotation: [0, 0, tilt] });
+      [0.07, 0.12, 0.17].forEach((radius) => decorate(banner, new TorusGeometry(radius, 0.012, 6, 28), BRASS, [[0, 0.6, 0.02]]));
+    });
+    drift(18 + level * 2, 0xd9d2ff, 0.022, { vx: -0.1, vy: 0.03, bottom: 0.3, top: 3.4, delay: 0.9 });
+    addActor(1, 0.55);
+  }
+
+  /** Il faro della Trama: a lighthouse of the empire, its magenta beam sweeping towards the tear. */
+  function beacon(delay: number) {
+    const x = 0.15;
+    const z = 0.45;
+    const y = 0.2;
+    box(0.95, 0.18, 0.95, shade(DOCK, 0.8), x, y, z, { delay });
+    box(0.7, 0.16, 0.7, DOCK, x, y + 0.18, z, { delay: delay + 0.05 });
+    cylinder(0.15, 0.24, 1.6, PYLON, x, y + 0.34, z, { delay: delay + 0.1 });
+    [
+      [0.55, 0.215],
+      [1.15, 0.185],
+    ].forEach(([h, radius], i) => cylinder(radius, radius, 0.07, BRASS, x, y + 0.34 + h, z, { delay: delay + 0.16 + i * 0.03, noInk: true }));
+    box(0.42, 0.08, 0.42, BRASS, x, y + 1.94, z, { delay: delay + 0.22 });
+    const top = y + 2.02;
+    // The flame, inside nine brass rings that turn around it.
+    light(ball(0.16, MAGENTA, x, top + 0.22, z, { delay: delay + 0.3, flat: true }));
+    const ringGeometry = new TorusGeometry(0.34, 0.009, 6, 32);
+    const cage = add(ringGeometry, BRASS, x, top + 0.031, z, { delay: delay + 0.36, flat: true, noInk: true });
+    const turning = centre(cage, 0.349);
+    for (let i = 1; i < 9; i++) {
+      const extra = new Mesh(ringGeometry, flatMaterial(BRASS));
+      extra.position.y = -0.349;
+      extra.rotation.y = (i * Math.PI) / 9;
+      turning.add(extra);
+    }
+    spinning.push(turning);
+    // The beam: a long cone from the flame, sweeping between the open void and the tear.
+    const length = 2.3;
+    const radius = 0.2;
+    const ray = new ConeGeometry(radius, length, 12);
+    ray.rotateZ(Math.PI / 2);
+    ray.translate(length / 2, 0, 0);
+    const sweep = inner(add(ray, shade(MAGENTA, 1.4), x, top + 0.38 - radius, z, { delay: delay + 0.45, flat: true, noInk: true }));
+    tickers.push((t) => {
+      sweep.rotation.y = 0.8 + Math.sin(t * 0.7) * 0.5;
+    });
+  }
+
+  /** Le sonde che ascoltano: black glass spheres gliding under a gallery of arches, listening. */
+  function probes(delay: number) {
+    [1.1, -0.45].forEach((z, i) => {
+      const wait = delay + i * 0.1;
+      [-0.65, 1.05].forEach((x) => box(0.2, 1.45, 0.24, PYLON, x, 0.2, z, { delay: wait }));
+      add(new TorusGeometry(0.85, 0.11, 8, 24, Math.PI), PYLON, 0.2, 1.54, z, {
+        delay: wait + 0.08,
+        outline: new TorusGeometry(0.85, 0.15, 8, 24, Math.PI),
+      });
+    });
+    const eyeGeometry = new CylinderGeometry(0.075, 0.075, 0.03, 14);
+    eyeGeometry.rotateX(Math.PI / 2);
+    geometries.push(eyeGeometry);
+    const band = new TorusGeometry(0.205, 0.015, 6, 24);
+    band.rotateX(Math.PI / 2);
+    geometries.push(band);
+    [
+      [0.2, 0.85, 1.35],
+      [-0.4, 1.45, 0.35],
+      [0.7, 0.75, -0.05],
+      [1.75, 1.2, 0.8],
+    ].forEach(([x, y, z], i) => {
+      const probe = ball(0.2, 0x1b1830, x, y, z, { delay: delay + 0.3 + i * 0.07 });
+      const ring = new Mesh(band, flatMaterial(BRASS));
+      ring.position.y = 0.2;
+      const eye = new Mesh(eyeGeometry, flatMaterial(CYAN));
+      eye.position.set(0, 0.2, 0.19);
+      probe.add(ring, eye);
+      bob(probe, 0.1, 0.0016 + i * 0.0004);
+      if (i === 0) {
+        // The nearest one turns its eye towards whoever is looking, and blinks.
+        const head = centre(probe, 0.2);
+        blinking.push(eye);
+        tickers.push((t) => {
+          head.rotation.y = Math.sin(t * 0.5) * 0.9;
+        });
+      }
+      if (i % 2 === 1) ripple(x, y + 0.2, z, 0.45, CYAN, 1.8, delay + 0.8 + i * 0.3);
+    });
+  }
+
+  /**
+   * La corazzata del Novecielo: a ribbed hull like a cathedral's nave turned upside down,
+   * the nine rings lit on its stern castle, its guns on the tear, two tiny tugs holding it by cables.
+   */
+  function dreadnought(delay: number) {
+    // Long as the dock: a step back, so it fits a phone held upright.
+    view.distance = 10.8;
+    view.lookY = 1.35;
+    const y = 1.25;
+    const z = 0.1;
+    const hullColor = 0x3d3556;
+    const first = parts.length;
+    const keel = new CylinderGeometry(1, 1, 3.4, 3);
+    keel.rotateX(Math.PI / 2);
+    keel.rotateY(Math.PI / 2);
+    keel.scale(1, 0.5, 0.5);
+    add(keel, hullColor, 0, y, z, { delay });
+    const hull = box(3.3, 0.4, 0.86, shade(hullColor, 1.2), 0, y + 0.75, z, { delay: delay + 0.06 });
+    decorate(
+      hull,
+      new BoxGeometry(0.09, 0.07, 0.02),
+      YELLOW,
+      Array.from({ length: 9 }, (_, i) => [-1.36 + i * 0.34, 0.2, 0.44] as [number, number, number]),
+    );
+    // The prow, a ram.
+    cone(0.3, 0.6, hullColor, 1.65, y + 0.95, z, { delay: delay + 0.1, rotation: [0, 0, -Math.PI / 2] });
+    // The ribs, arching over the deck like flying buttresses.
+    const rib = new TorusGeometry(0.46, 0.035, 6, 16, Math.PI);
+    rib.rotateY(Math.PI / 2);
+    for (let i = 0; i < 5; i++) {
+      add(rib.clone(), BRASS, -0.6 + i * 0.5, y + 0.92, z, { delay: delay + 0.16 + i * 0.03, noInk: true });
+    }
+    geometries.push(rib);
+    // The stern castle with its spires, and on its face the nine rings of the empire as a
+    // rose window, lighting up from the inside out.
+    box(0.62, 0.95, 0.9, shade(hullColor, 1.35), -1.2, y + 1.15, z, { delay: delay + 0.3 });
+    cone(0.07, 0.45, DARK, -1.38, y + 2.1, z, { delay: delay + 0.36 });
+    cone(0.07, 0.35, DARK, -1.02, y + 2.1, z, { delay: delay + 0.38 });
+    const rings: Group[] = [];
+    for (let k = 0; k < 9; k++) {
+      const r = 0.045 + k * 0.027;
+      rings.push(
+        add(new TorusGeometry(r, 0.009, 6, 32), k % 2 ? ORANGE : MAGENTA, -1.2, y + 1.65 - r - 0.009, z + 0.46, {
+          delay: delay + 0.4 + k * 0.03,
+          flat: true,
+          noInk: true,
+        }),
+      );
+    }
+    tickers.push((t) => {
+      const lit = Math.floor(t * 6) % 12;
+      rings.forEach((ring, k) => (ring.visible = lit >= k));
+    });
+    // The guns, on turrets, aimed at the tear.
+    [-0.35, 0.65].forEach((x, i) => {
+      box(0.3, 0.16, 0.3, STEEL, x, y + 1.15, z, { delay: delay + 0.42 + i * 0.04 });
+      [-0.08, 0.08].forEach((dz) =>
+        cylinder(0.035, 0.045, 0.65, DARK, x + 0.1, y + 1.24, z + dz, { delay: delay + 0.46 + i * 0.04, rotation: [0, 0, -Math.PI / 2 + 0.18] }),
+      );
+    });
+    // Two tugs of the Gilda delle Rotte, trying to hold it with their cables.
+    [
+      [-0.6, 0.55, 1.1],
+      [0.8, 0.45, 1.2],
+    ].forEach(([tx, ty, tz], i) => {
+      const wait = delay + 0.7 + i * 0.08;
+      box(0.42, 0.16, 0.24, ORANGE, tx, ty, tz, { delay: wait });
+      box(0.16, 0.12, 0.18, CREAM, tx - 0.08, ty + 0.16, tz, { delay: wait + 0.04 });
+      light(box(0.05, 0.05, 0.05, CYAN, tx + 0.17, ty + 0.18, tz, { delay: wait + 0.08, flat: true, noInk: true }));
+      const dy = y + 0.25 - (ty + 0.16);
+      const dz = z + 0.25 - tz;
+      box(0.025, Math.hypot(dy, dz), 0.025, DARK, tx, ty + 0.16, tz, { delay: wait + 0.12, noInk: true, rotation: [Math.atan2(dz, dy), 0, 0] });
+    });
+    heave(first, 0.08, 0.0011);
   }
 
   // ---------------------------------------------------------------------------
@@ -3070,6 +3284,7 @@ export function mountThreatDiorama(
     sunken: buildSunken,
     ice: buildIce,
     japan: buildJapan,
+    ninesky: buildNinesky,
     volcano: buildVolcano,
     belltower: buildBelltower,
     market: buildMarket,

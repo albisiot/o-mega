@@ -276,6 +276,7 @@ export const CHALLENGE_PLACE_NAMES: Record<string, string> = {
   atlantis: "Atlantide",
   arctic: "Artico",
   japan: "Giappone",
+  novecielo: "Novecielo",
 };
 
 /** "1-3", "2, 4 e 6": the levels of a rule. */

@@ -45,6 +45,10 @@ describe("the powers that add points", () => {
     expect(powerBonus(away, { ...frost, rarity: "epic" }, context)).toBe(0);
     expect(powerBonus(away, { ...t, modifier: { code: "focus" } }, context)).toBe(0);
     expect(powerBonus(away, t, context)).toBe(0);
+    // The Novecielo's rule is a rare threats' rule: on a usual threat it is a place.
+    const novecielo: Threat = { ...t, modifier: { code: "one_force", abilities: ["ENE", "PSI"] } };
+    expect(powerBonus(away, novecielo, context)).toBe(4);
+    expect(powerBonus(away, { ...novecielo, rarity: "legendary" }, context)).toBe(0);
   });
 
   it("Gemello: against the same rarity", () => {

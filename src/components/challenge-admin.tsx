@@ -1155,7 +1155,7 @@ function ChallengeForm({
 const THREAT_CHOICES = [
   { key: "", label: "Come sempre" },
   { key: "megara", label: "Solo Nuova Megara" },
-  ...["giza", "yucatan", "atlantis", "arctic", "japan"].map((place) => ({ key: place, label: CHALLENGE_PLACE_NAMES[place] })),
+  ...["giza", "yucatan", "atlantis", "arctic", "japan", "novecielo"].map((place) => ({ key: place, label: CHALLENGE_PLACE_NAMES[place] })),
   { key: "levels", label: "Solo alcuni livelli" },
 ];
 

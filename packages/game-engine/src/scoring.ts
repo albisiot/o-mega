@@ -198,8 +198,11 @@ export function powersSilenced(threat: Threat | null | undefined): boolean {
   return threat?.modifier?.code === "tomb_silence";
 }
 
-/** The rules of the places beyond Nuova Megara (SPEC §5.4): rare threats can have them too. */
-const PLACE_RULES = new Set(["tomb_silence", "long_count", "abyss", "frost", "duel"]);
+/**
+ * The rules of the places beyond Nuova Megara (SPEC §5.4): rare threats can have them too.
+ * The Novecielo's is Una sola forza, a rare threats' rule: on a usual threat it marks the place.
+ */
+const PLACE_RULES = new Set(["tomb_silence", "long_count", "abyss", "frost", "duel", "one_force"]);
 
 /**
  * A threat of a place beyond Nuova Megara (Fuori casa): its place's rule, and not a rare

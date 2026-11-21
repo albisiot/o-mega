@@ -6,11 +6,12 @@
 
 begin;
 
--- The catalog: five places, three threats each, every one with its place's rule.
+-- The catalog: six places (the Novecielo since 20261121100000), three threats each, every
+-- one with its place's rule.
 do $$
 begin
-  assert (select count(*) from public.threat_definitions where region <> 'megara' and is_active) = 15,
-    'fifteen threats beyond Nuova Megara';
+  assert (select count(*) from public.threat_definitions where region <> 'megara' and is_active) = 18,
+    'eighteen threats beyond Nuova Megara';
   assert not exists (
     select region from public.threat_definitions where region <> 'megara'
     group by region having count(*) <> 3 or count(distinct modifier_code) <> 1

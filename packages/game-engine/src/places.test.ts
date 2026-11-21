@@ -26,6 +26,26 @@ describe("Abissi", () => {
   });
 });
 
+describe("Novecielo: Una sola forza on Energia and Psiche", () => {
+  const trama: ThreatModifier = { code: "one_force", abilities: ["ENE", "PSI"] };
+
+  it("counts the higher of the two as many times as they are required", () => {
+    const mystic = character("m", { ENE: 8, PSI: 2, FUR: 5, TEC: 3 });
+    expect(scorePlay(mystic, at(["PSI", "ENE", "FUR", "TEC"], trama), context)).toMatchObject({ base: 24, total: 24 });
+    expect(scorePlay(mystic, at(["PSI", "ENE"], trama), context).total).toBe(16);
+  });
+
+  it("leaves Magia and the other abilities as they are", () => {
+    const mage = character("g", { ENE: 1, PSI: 7, MAG: 9 });
+    expect(scorePlay(mage, at(["ENE", "PSI"], trama), context).total).toBe(14);
+    expect(scorePlay(mage, at(["MAG", "PSI"], trama), context).total).toBe(16);
+  });
+
+  it("is built from the threat's own list", () => {
+    expect(placeModifier("one_force", { abilities: ["ENE", "PSI"] }, { longCountBonus: 3, frostCap: 6, duelCount: 2 })).toEqual(trama);
+  });
+});
+
 describe("Gelo", () => {
   const frost: ThreatModifier = { code: "frost", cap: 6 };
 

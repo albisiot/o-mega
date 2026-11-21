@@ -60,6 +60,22 @@ const BESTIARY: Bestiary = {
     threat("T601", "Titano di metallo", 6, ["FOR", "RES", "TEC", "ENE", "COM", "VOL"], { times: 12 }),
     threat("G301", "Risveglio della Sfinge", 3, ["INT", "MAG", "PER"], { region: "giza", modifier: { code: "tomb_silence" } }),
     unseen("G302", 3, { region: "giza" }),
+    // The Novecielo, beyond the tear (proposal of 21 November 2026).
+    threat("T213", "Il faro della Trama", 2, ["ENE", "PSI"], {
+      region: "novecielo",
+      modifier: { code: "one_force", abilities: ["ENE", "PSI"] },
+      flavor: "Dall'altra parte dello strappo un faro imperiale chiama la flotta verso il golfo. Va spento prima che qualcuno risponda.",
+    }),
+    threat("T414", "Le sonde che ascoltano", 4, ["PSI", "ENE", "FUR", "TEC"], {
+      region: "novecielo",
+      modifier: { code: "one_force", abilities: ["ENE", "PSI"] },
+      flavor: "Sfere di vetro nero scivolano nei corridoi della stazione imperiale e ascoltano i pensieri. Si passa solo senza farsi sentire.",
+    }),
+    threat("T613", "La corazzata del Novecielo", 6, ["TEC", "VOL", "COM", "FUR", "ENE", "PSI"], {
+      region: "novecielo",
+      modifier: { code: "one_force", abilities: ["ENE", "PSI"] },
+      flavor: "L'ultima corazzata dell'impero ha perso l'ammiraglio ma non l'ultimo ordine: tornare a casa. Per lei, adesso, casa è il golfo.",
+    }),
     threat("RA01", "Il Vulcano si sveglia", 7, ["FOR", "RES", "ENE", "VEL", "VOL", "PER", "COM"], {
       rarity_code: "rare",
       modifier: { code: "frost", cap: 8 },

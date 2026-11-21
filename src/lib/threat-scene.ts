@@ -1,8 +1,8 @@
-// The places beyond Nuova Megara start at "desert"; the very rare threats' own
-// places of Nuova Megara start at "volcano".
+// The places beyond Nuova Megara start at "desert" ("ninesky" is the Novecielo, beyond
+// the tear); the very rare threats' own places of Nuova Megara start at "volcano".
 export const THREAT_ENVIRONMENTS = [
   "city", "port", "control", "lab", "ritual", "mind", "museum", "sky", "rail", "sewer", "swamp", "prison", "battlefield", "rift",
-  "desert", "jungle", "sunken", "ice", "japan",
+  "desert", "jungle", "sunken", "ice", "japan", "ninesky",
   "volcano", "belltower", "market", "sea", "labyrinth", "upside", "dig", "townhall", "ringroad", "oracle", "plant", "vault", "noon",
   "flood", "night", "apocalypse", "seismo", "twin",
 ] as const;
@@ -12,6 +12,7 @@ export const THREAT_ACTORS = [
   "trap", "mummy", "sphinx", "ballgame", "calendar", "serpent", "song", "guardian", "temple", "hut", "base", "beast", "swordsman", "fox", "kaiju",
   "brokenmirrors", "swarm", "blackout", "boxing", "tide", "colossus", "giant", "minotaur", "letter", "alphabet", "echoes", "ship", "flock",
   "zero", "thirteen",
+  "beacon", "probes", "dreadnought",
 ] as const;
 export type ThreatActor = (typeof THREAT_ACTORS)[number];
 export type ThreatScene = { environment: ThreatEnvironment; actor?: ThreatActor };
@@ -99,6 +100,10 @@ const SCENES: Record<string, ThreatScene> = {
   "Spadaccino del ponte": { environment: "japan", actor: "swordsman" },
   "Volpe a nove code": { environment: "japan", actor: "fox" },
   "Kaiju nella baia": { environment: "japan", actor: "kaiju" },
+  // Novecielo
+  "Il faro della Trama": { environment: "ninesky", actor: "beacon" },
+  "Le sonde che ascoltano": { environment: "ninesky", actor: "probes" },
+  "La corazzata del Novecielo": { environment: "ninesky", actor: "dreadnought" },
   // The very rare threats (levels up to 12)
   "Il Vulcano si sveglia": { environment: "volcano" },
   "Notte senza Rintocco": { environment: "belltower" },

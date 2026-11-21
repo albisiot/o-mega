@@ -19,7 +19,7 @@ export type ChallengeModifierCode = "focus" | "weak_link" | "hostile_ground" | "
 export const CHALLENGE_MODIFIERS: readonly ChallengeModifierCode[] = ["focus", "weak_link", "hostile_ground", "underdogs"];
 
 /** The places of the threats (threat_definitions.region); "megara" is Nuova Megara. */
-export const CHALLENGE_PLACES = ["megara", "giza", "yucatan", "atlantis", "arctic", "japan"] as const;
+export const CHALLENGE_PLACES = ["megara", "giza", "yucatan", "atlantis", "arctic", "japan", "novecielo"] as const;
 
 /**
  * The match rules of a challenge (Classica only).

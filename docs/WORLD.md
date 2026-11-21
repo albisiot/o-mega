@@ -527,7 +527,7 @@ Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richi
 
 ### Oltre Nuova Megara
 
-Il sismografo comincia a registrare scosse lontane: altre pietre dell'Alfabeto affiorano nel resto del mondo, e quello che dormiva accanto a loro si sveglia. Il Banco affitta i Reggenti all'estero, si tiene la provvigione e li fa viaggiare in economy. Nessuna cultura o religione reale fa da cattivo: le Minacce sono meccanismi e creature risvegliati dall'Ora Zero. Ogni luogo ha una regola che si spiega nella storia:
+Il sismografo comincia a registrare scosse lontane: altre pietre dell'Alfabeto affiorano nel resto del mondo, e quello che dormiva accanto a loro si sveglia. Il Banco affitta i Reggenti all'estero, si tiene la provvigione e li fa viaggiare in economy. Nessuna cultura o religione reale fa da cattivo: le Minacce sono meccanismi e creature risvegliati dall'Ora Zero. Dal 21 novembre il Banco li affitta anche oltre lo strappo, nel **Novecielo**, l'impero al tramonto dei Mille Soli: il varco si passa solo volando, al traino dei rimorchiatori della Gilda delle Rotte, a tariffa piena. Ogni luogo ha una regola che si spiega nella storia:
 
 | Luogo | Regola | Perché |
 |---|---|---|
@@ -536,6 +536,7 @@ Il sismografo comincia a registrare scosse lontane: altre pietre dell'Alfabeto a
 | Atlantide | Abissi | Sott'acqua contano le forze antiche: Energia, Magia, Psiche |
 | Artico | Gelo | Il freddo smussa ogni talento |
 | Giappone | Duello | Uno contro uno: vince il colpo migliore |
+| Novecielo | Una sola forza | Oltre lo strappo la Trama è scoperta: Energia e Psiche sono la stessa forza |
 
 Le regole e le Minacce sono in `docs/SPEC.md` §5.4.
 
