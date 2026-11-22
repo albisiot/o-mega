@@ -17,7 +17,7 @@ do $$
 declare
   v_mission public.story_missions;
 begin
-  assert (select count(*) from public.story_missions) = 65, 'sixty-five missions';
+  assert (select count(*) from public.story_missions) = 70, 'seventy missions';
   for v_mission in select * from public.story_missions loop
     assert cardinality(v_mission.star_rarities) >= 1 and cardinality(v_mission.star_traits) >= 1,
       format('%s has no star rules', v_mission.code);
@@ -234,7 +234,7 @@ declare
   v_mission jsonb;
   v_before public.story_missions;
 begin
-  assert jsonb_array_length(v_admin -> 'missions') = 65 and jsonb_array_length(v_admin -> 'chapters') = 13
+  assert jsonb_array_length(v_admin -> 'missions') = 70 and jsonb_array_length(v_admin -> 'chapters') = 14
      and jsonb_array_length(v_admin -> 'seasons') = 3, 'admin payload';
   assert jsonb_array_length(v_admin -> 'characters') >= 200, 'characters to count';
   v_mission := (select m from jsonb_array_elements(v_admin -> 'missions') m where m ->> 'code' = 'C1M1');

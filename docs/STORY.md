@@ -543,7 +543,7 @@ Valgono i default finché non si decide altrimenti.
 
 ## 7. Stagione 3: *La montagna*
 
-*Scritta, in costruzione nel database: i capitoli si costruiscono uno alla volta, come quelli delle prime due stagioni (capitoli 13-18 nell'ordine di tutta la storia, missioni C13M1-C18M5). Il Capitolo 1 è nel database e giocabile. Le carte principali delle missioni sono il cuore delle squadre, da completare e tarare con la simulazione (SPEC §5.11).*
+*Scritta, in costruzione nel database: i capitoli si costruiscono uno alla volta, come quelli delle prime due stagioni (capitoli 13-18 nell'ordine di tutta la storia, missioni C13M1-C18M5). I Capitoli 1 e 2 sono nel database e giocabili. Le carte principali delle missioni sono il cuore delle squadre, da completare e tarare con la simulazione (SPEC §5.11).*
 
 ### 7.1 Premessa
 
@@ -626,7 +626,7 @@ Come in §5.1 e §6.5: le carte indicate per ogni missione sono il cuore della s
 
 #### Capitolo 2 — Vall'Oscura
 
-*Atto I. Da costruire (capitolo 14 nell'ordine di tutta la storia, missioni C14M1-C14M5).*
+*Atto I. Testi nel database (migrazione `20261121270000_season_three_chapter_two_story.sql`, capitolo 14 nell'ordine di tutta la storia, missioni C14M1-C14M5); squadre e Minacce tarate con la simulazione (SPEC §5.11).*
 
 - **In una riga:** per trovare la iota e la kappa serve Nicola, e Nicola ti porta dai Figli, nel bosco di nebbia sopra la città, dove adesso lo chiamano traditore.
 - **La cosa strana:** Vall'Oscura, il bosco sul fianco del vulcano che è un animale solo: radici, bestie e nebbia per nove chilometri quadrati, e chi ci entra non sa più chi ha accanto.
@@ -639,7 +639,7 @@ Come in §5.1 e §6.5: le carte indicate per ogni missione sono il cuore della s
 - **Rivelazione:** nella radura, in una cassetta da munizioni, i Figli tenevano la iota e la kappa. Vinta la sfida, Renata le rimette nell'anello dopo la theta, e quella notte la mano sotto le Fosse non si muove. Sulla strada del ritorno Ottavia chiede al fratello perché aiuta; lui risponde che l'esplosione deve finire, in un modo o nell'altro, e così almeno la città resta in piedi. Poi dice dove sono le altre: la lambda e la mu nel caveau della Compagnia, la nu vicino al tempio, le ultime tre sulla montagna.
 - **Gancio:** quando la kappa torna al suo posto la città trema al porto, sotto il caveau della Compagnia, dove c'è la lambda. La mattina dopo la Compagnia offre al Comune di trivellare un pozzo di sfogo sul vulcano, e sul contratto c'è la firma di Eudaemon, che domani va a processo.
 
-| # | Missione | Situazione | Carte principali |
+| # | Missione | Situazione | Squadra avversaria (definitiva) |
 |---|---|---|---|
 | 1 | Il colloquio | Nicola è in una cella dei Custodi, e i Custodi non vogliono farlo uscire: è il capo dei Figli, e il processo non è ancora cominciato | Praecursor, Interpres, Scion, Precinct, Dogwatch |
 | 2 | La cauzione | Il dottor Spanò vuole pagare la cauzione di Nicola: chi sente le lettere vale più di qualunque lettera | Residuo, Regina Ix, Herma, Escrow, Clepsydra |
@@ -752,12 +752,12 @@ Come in §5.1 e §6.5: le carte indicate per ogni missione sono il cuore della s
 
 ### 7.7 Il registro delle lettere
 
-Da aggiornare capitolo per capitolo mentre i capitoli entrano nel database, come in §6.7. **Stato attuale** (Capitolo 1 nel database): nel capitolo non si muove nessuna lettera. Dalla alfa alla theta sono nel sigillo, e ora si sa a cosa servono le otto dopo: rimesse nell'anello dalla iota alla pi chiudono la spaccatura sotto il vulcano e rimettono a dormire Re Tifeo. La iota e la kappa le hanno i Figli, e dove lo può sentire solo Nicola, in una cella dei Custodi. **Previsto a fine stagione:** dalla alfa alla pi, sedici lettere, sono nel sigillo; la spaccatura sotto il vulcano è chiusa e Re Tifeo dorme; le ultime sette, dalla rho alla psi, non sono sotto la città; l'omega è tra le mani di Holdout.
+Da aggiornare capitolo per capitolo mentre i capitoli entrano nel database, come in §6.7. **Stato attuale** (Capitoli 1 e 2 nel database): nel Capitolo 1 non si muove nessuna lettera, ma si sa a cosa servono le otto dopo la theta: rimesse nell'anello dalla iota alla pi chiudono la spaccatura sotto il vulcano e rimettono a dormire Re Tifeo. Nel Capitolo 2 Nicola esce di cella e porta la scorta a Vall'Oscura, dove i Figli tenevano la iota e la kappa in una cassetta da munizioni, nella radura; battuto Tenant, Renata le rimette nell'anello dopo la theta e quella notte la mano sotto le Fosse non si muove. Dalla alfa alla kappa, dieci lettere, sono nel sigillo. Rimessa la kappa la città trema al porto, sotto il caveau della Compagnia, dove ci sono la lambda e la mu; Nicola sa dove sono le altre: la nu vicino al tempio, le ultime tre sulla montagna. **Previsto a fine stagione:** dalla alfa alla pi, sedici lettere, sono nel sigillo; la spaccatura sotto il vulcano è chiusa e Re Tifeo dorme; le ultime sette, dalla rho alla psi, non sono sotto la città; l'omega è tra le mani di Holdout.
 
 | Lettere | A fine Stagione 2 | Nella Stagione 3 | A fine Stagione 3 |
 |---|---|---|---|
 | Α … Θ | Nel sigillo | — | Nel sigillo |
-| Ι Κ | Ai Figli | Tenute dai Figli nella radura di Vall'Oscura, riprese con Nicola (Capitolo 2) | Nel sigillo |
+| Ι Κ | Ai Figli | Tenute dai Figli in una cassetta da munizioni nella radura di Vall'Oscura, riprese con Nicola e rimesse nell'anello dopo la theta (Capitolo 2, nel database) | Nel sigillo |
 | Λ Μ | Nel caveau della Compagnia al porto, comprate dagli Sciolti (§3 e gancio di §6.8; il registro di §6.7 non le contava a parte) | Sequestrate dal tribunale con la condanna di Eudaemon (Capitolo 3) | Nel sigillo |
 | Ν | Si credeva sepolta | Da anni la tiene Moth, che l'ha trovata in un corridoio del tempio; la dà a Renata (Capitolo 4) | Nel sigillo |
 | Ξ Ο | Sepolte | Schiacciate nella roccia sotto i piedi di Mainstay (Capitolo 5) | Nel sigillo |
@@ -801,7 +801,7 @@ Valgono i default finché non si decide altrimenti.
 | Mongibello | Nel finale lascia andare l'eruzione, piano, nel cratere; la sua carta non cambia |
 | Personaggi nuovi fuori dalle carte | Nessuno |
 | Monete delle stelle | 30 monete a stella nei capitoli 13-16 e 40 nei capitoli 17-18: 3.000 monete per le 90 stelle della stagione, cioè 20 pacchetti a 150 monete. Le stelle hanno pagato 1.200 monete nella Stagione 1 (10 e 20 a stella) e 2.400 nella Stagione 2 (20 e 30). La formula di partenza (`balance.ts` `story`, SPEC §5.11) darebbe 40 e 50, cioè 3.900: troppo per un salto solo, perché il prezzo dei pacchetti non cresce con la storia. Ogni capitolo mette quindi `star_coins` nelle sue missioni invece di lasciare il valore della formula; gli admin possono cambiarle da `/gestione-storia` |
-| Nel database | Fatto con il Capitolo 1 (migrazione `20261121200000_season_three_chapter_one_story.sql`, capitolo 13, missioni C13M1-C13M5), senza cambiare il codice: stagioni, sblocco a cavallo di stagione («Completa la Stagione 2 per sbloccarlo»), messaggio di fine stagione, stelle della stagione e monete delle stelle funzionavano già per una stagione nuova. La Stagione 3 è in `story_seasons` (*La montagna*, con il messaggio «Il prossimo capitolo della Stagione 3, La montagna, arriva presto.»), quello della Stagione 2 ora dice «Hai finito la Stagione 2, La marea. Ti aspetta la Stagione 3, La montagna.», e ogni missione ha rarità e tratti delle stelle e 30 monete a stella. `supabase/tests/story.test.sql` controlla tredici capitoli e `story_stars.test.sql` le monete della Stagione 3. Il Capitolo 6 chiude la stagione: «Hai finito la Stagione 3, La montagna. La prossima stagione arriva presto.» |
+| Nel database | Fatto con il Capitolo 1 (migrazione `20261121200000_season_three_chapter_one_story.sql`, capitolo 13, missioni C13M1-C13M5), senza cambiare il codice: stagioni, sblocco a cavallo di stagione («Completa la Stagione 2 per sbloccarlo»), messaggio di fine stagione, stelle della stagione e monete delle stelle funzionavano già per una stagione nuova. La Stagione 3 è in `story_seasons` (*La montagna*, con il messaggio «Il prossimo capitolo della Stagione 3, La montagna, arriva presto.»), quello della Stagione 2 ora dice «Hai finito la Stagione 2, La marea. Ti aspetta la Stagione 3, La montagna.», e ogni missione ha rarità e tratti delle stelle e 30 monete a stella. Il Capitolo 2 (migrazione `20261121270000_season_three_chapter_two_story.sql`, capitolo 14, missioni C14M1-C14M5) aggiunge solo capitolo e missioni: il messaggio della Stagione 3 resta «Il prossimo capitolo della Stagione 3, La montagna, arriva presto.». `supabase/tests/story.test.sql` controlla quattordici capitoli e `story_stars.test.sql` le monete della Stagione 3. Il Capitolo 6 chiude la stagione: «Hai finito la Stagione 3, La montagna. La prossima stagione arriva presto.» |
 | Albi | Uno per capitolo; *Il turno di notte* (Capitolo 4) e *Tifeo* (Capitolo 6) sono i due principali. Da aggiungere a WORLD §7 quando si scrivono |
 
 ## 8. Regole di scrittura della storia
