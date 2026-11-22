@@ -81,6 +81,13 @@ export const ADMIN_TOOLS: AdminTool[] = [
     icon: "M12 2l3 7-3 13-3-13zM4 9h16M8 9l4-7 4 7",
   },
   {
+    href: "/gestione-modalita",
+    name: "Modalità di gioco",
+    description: "Quando sono attive, e l'etichetta",
+    group: "events",
+    icon: "M6 9h12a4 4 0 014 4v2a3 3 0 01-5.4 1.8L15 15H9l-1.6 1.8A3 3 0 012 15v-2a4 4 0 014-4zM7 11v3M5.5 12.5h3M16 12h.01M18 14h.01",
+  },
+  {
     href: "/gestione-eventi",
     name: "Eventi",
     description: "Eventi a tempo e i loro premi",
