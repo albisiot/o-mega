@@ -20,7 +20,7 @@ import {
   type ChallengeExclusion,
 } from "@/lib/challenges";
 import { withBasePath } from "@/lib/base-path";
-import { applyCardListView, DEFAULT_CARD_LIST_VIEW, groupCardList, sortAbilityOf } from "@/lib/card-list";
+import { applyCardListView, DEFAULT_CARD_LIST_VIEW, groupCardList, sortAbilitiesOf } from "@/lib/card-list";
 import type { CatalogCard } from "@/lib/collection";
 import { describeServerError } from "@/lib/errors";
 import {
@@ -216,7 +216,7 @@ export function TeamPicker(props: TeamPickerProps) {
     () => [...new Map(cards.map((card) => [card.rarity.rank, card.rarity])).values()].sort((a, b) => a.rank - b.rank),
     [cards],
   );
-  const sortAbility = sortAbilityOf(view.sort);
+  const sortAbilities = sortAbilitiesOf(view.sort);
   const byId = useMemo(() => new Map(catalog.map((card) => [card.id, card])), [catalog]);
   // What the composition rules look at in a card, and the cheapest rank that can fill the squad.
   const compositionOf = (card: CatalogCard) => ({ rarity: card.rarity.code, faction: card.faction, rarityRank: card.rarity.rank });
@@ -764,6 +764,7 @@ export function TeamPicker(props: TeamPickerProps) {
           abilities={abilities}
           traits={traits}
           rarities={rarities}
+          defaultSort={DEFAULT_VIEW.sort}
           layout="compact"
         />
       </div>
@@ -789,9 +790,13 @@ export function TeamPicker(props: TeamPickerProps) {
               const excluded = excludedWhy ? excludedWhy(card) : null;
               // How many drawings the player can field this character with.
               const drawings = variantOptions(card.id).length + 1;
-              // The ability the list is sorted by comes first, then the card's best ones.
+              // The abilities the list is sorted by come first, in their order, then the card's best ones.
+              const rank = (code: string) => {
+                const position = sortAbilities.indexOf(code);
+                return position < 0 ? Number.POSITIVE_INFINITY : position;
+              };
               const top = Object.entries(card.stats)
-                .sort((a, b) => Number(b[0] === sortAbility) - Number(a[0] === sortAbility) || b[1] - a[1])
+                .sort((a, b) => rank(a[0]) - rank(b[0]) || b[1] - a[1])
                 .slice(0, 3);
               return (
                 <li key={card.id} className="min-w-0">

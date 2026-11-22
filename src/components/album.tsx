@@ -23,7 +23,7 @@ import {
   savedAlbumScroll,
 } from "@/lib/album-scroll";
 import { cardEffects } from "@/lib/card-effects";
-import { applyCardListView, groupCardList, sortAbilityOf } from "@/lib/card-list";
+import { applyCardListView, groupCardList, sortAbilitiesOf } from "@/lib/card-list";
 import type { AbilityInfo } from "@/lib/catalog";
 import {
   albumCatalog,
@@ -132,7 +132,8 @@ export function Album({
     }
   }
 
-  const sortAbility = sortAbilityOf(view.sort);
+  // The tiles show the first ability the list is sorted by.
+  const sortAbility = sortAbilitiesOf(view.sort)[0] ?? null;
 
   const groups = useMemo(() => {
     const shown = (card: CatalogCard) => {
