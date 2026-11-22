@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { BackLink } from "@/components/comic-parts";
 import { ModeGate } from "@/components/mode-gate";
 import { describeServerError } from "@/lib/errors";
-import { formatRomeDateTime, toRomeInput } from "@/lib/events";
+import { toRomeInput } from "@/lib/events";
 import {
   draftAsRow,
   GAME_MODES,
@@ -45,11 +45,25 @@ const STATES: { key: ModeState; label: string }[] = [
   { key: "off", label: "Spenta" },
 ];
 
+const romeShort = new Intl.DateTimeFormat("it-IT", {
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "Europe/Rome",
+});
+
+/** "3 dic 18:00", Rome time. */
+function shortRome(iso: string): string {
+  return romeShort.format(new Date(iso)).replace(",", "").replace(".", "");
+}
+
 /** The state in a few words, for the list. */
 function describeState(row: ModeAvailability | undefined): string {
   if (!row || row.state === "on") return "Sempre attiva";
   if (row.state === "off") return "Spenta";
-  return row.starts_at && row.ends_at ? `${formatRomeDateTime(row.starts_at)} → ${formatRomeDateTime(row.ends_at)}` : "Da data a data";
+  return row.starts_at && row.ends_at ? `${shortRome(row.starts_at)} → ${shortRome(row.ends_at)}` : "Da data a data";
 }
 
 function draftOf(key: GameModeKey, row: ModeAvailability | undefined): ModeDraft {
@@ -137,10 +151,7 @@ export function ModeAdmin({ initial }: { initial: AdminModes }) {
                     >
                       <ButtonPreview name={item.name} look={MODE_LOOKS[item.key]} row={row} now={now} />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-extrabold leading-5">
-                          {item.parent ? "↳ " : ""}
-                          {describeState(row)}
-                        </span>
+                        <span className="block truncate text-sm font-extrabold leading-5">{describeState(row)}</span>
                         <span className={`block truncate text-xs font-bold leading-4 ${status.open ? "text-comic-cyan" : "text-comic-magenta"}`}>
                           {status.open ? "Si gioca ora" : "Chiusa ora"}
                           {row?.label ? ` · «${row.label}»` : ""}
