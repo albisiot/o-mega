@@ -136,6 +136,8 @@ const CLIENT_ERRORS = new Set([
   "not_admin",
   // Operazioni (SPEC §5.17)
   "coop_room_not_found",
+  // A mode switched off from the EDITOR, or outside its dates (raised by the database on start).
+  "mode_unavailable",
 ]);
 
 class GameError extends Error {}

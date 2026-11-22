@@ -207,6 +207,12 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   coop_operation_in_play: "Una stanza di questa operazione è aperta: rivale e round si cambiano quando è finita.",
   coop_operation_in_use: "Questa operazione è già stata giocata: non si può eliminare.",
   coop_chapter_not_found: "Questo capitolo non esiste.",
+  // Modalità di gioco (EDITOR)
+  mode_unavailable: "Questa modalità non è disponibile ora.",
+  invalid_mode_state: "Scegli: sempre attiva, da data a data, o spenta.",
+  invalid_mode_window: "Metti l'inizio e la fine, con la fine dopo l'inizio.",
+  invalid_mode_label: "L'etichetta ha al massimo 16 caratteri.",
+  invalid_mode_key: "Questa modalità non esiste.",
 };
 
 export function describeServerError(error: unknown): string {
