@@ -7,6 +7,9 @@
 
 begin;
 
+-- Whatever an admin set in the real database: the Quadrante and its moving grid are open.
+update public.mode_availability set state = 'on' where key in ('quadrant', 'quadrant_shifting');
+
 insert into auth.users (id, aud, role, email, raw_user_meta_data, created_at, updated_at) values
   ('00000000-0000-4000-8000-0000000000e6', 'authenticated', 'authenticated', 'quadrant-target@example.test',
    '{"full_name": "Quadrante Traguardo"}', now(), now()),

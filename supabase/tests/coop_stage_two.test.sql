@@ -5,6 +5,9 @@
 
 begin;
 
+-- Whatever an admin set in the real database: the Operazioni are open.
+update public.mode_availability set state = 'on' where key = 'coop';
+
 update public.game_config c set value = to_jsonb(d.value)
 from (values
   ('coop.max_players', 4), ('coop.min_players', 2), ('coop.boss_cards', 2), ('coop.squad_size', 6),
