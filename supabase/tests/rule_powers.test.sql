@@ -1,7 +1,7 @@
 -- Test for 20261120300000_rule_powers.sql: the twenty-two powers of 20 November 2026
--- (second batch) in the catalog with their texts, on no card yet, and what the server
--- does for Fenice, Imboscata and Segugio in a classic match. Runs inside a rolled-back
--- transaction:
+-- (second batch) in the catalog with their texts, each on one of the Segnati made for them
+-- (20261122240000_segnati_characters.sql) but Vampiro, and what the server does for Fenice,
+-- Imboscata and Segugio in a classic match. Runs inside a rolled-back transaction:
 --   npm run test:db
 
 begin;
@@ -14,7 +14,7 @@ select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-000000
 select public.bootstrap_player();
 reset role;
 
--- The catalog: names, tiers, texts; on no card yet.
+-- The catalog: names, tiers, texts; one Segnato each, Vampiro on none.
 do $$
 begin
   assert (
@@ -24,12 +24,18 @@ begin
        or (code in ('rival_frost', 'single_force', 'abyss_next', 'duelist', 'upset', 'rival_all_or_nothing', 'rival_duel',
                     'rival_price', 'negative_self', 'vampire', 'thief', 'phoenix') and tier = 'distinctive')
   ) = 22, 'the twenty-two powers and their tier';
-  assert not exists (
-    select 1 from public.card_definitions
+  assert (
+    select jsonb_object_agg(code, power_code order by code) from public.card_definitions
     where power_code in ('calm', 'ambush', 'patience', 'hunter', 'rainbow', 'joker', 'gamble', 'wall', 'tracker', 'steady',
                          'rival_frost', 'single_force', 'abyss_next', 'duelist', 'upset', 'rival_all_or_nothing',
                          'rival_duel', 'rival_price', 'negative_self', 'vampire', 'thief', 'phoenix')
-  ), 'no card has them yet: they wait for characters made for them';
+  ) = '{"P311": "ambush", "P312": "wall", "P313": "patience", "P317": "hunter", "P323": "calm", "P324": "joker",
+        "P328": "tracker", "P329": "rainbow", "P332": "gamble", "P334": "steady", "P340": "duelist", "P341": "abyss_next",
+        "P342": "rival_frost", "P343": "rival_all_or_nothing", "P344": "rival_price", "P345": "rival_duel",
+        "P346": "upset", "P348": "single_force", "P349": "phoenix", "P350": "thief", "P351": "negative_self"}'::jsonb,
+    'one Segnato each, made for it; Vampiro waits';
+  assert (select power_params from public.card_definitions where code = 'P324') = '{"max_gain": 3}'::jsonb,
+    'Jolly up to +3, inside the strength band (POWERS-BACKLOG.md)';
 
   assert public.power_text('rival_price', '{"max_value": 2, "malus": 2}')
     = 'Nel round le abilità del personaggio avversario che valgono 2 o meno contano -2', 'Il prezzo text';
@@ -58,10 +64,12 @@ declare
   v_play jsonb := jsonb_build_object('base', 5, 'bonus', 0, 'score', 5, 'highest', 5, 'auto_played', false);
   v_card jsonb;
 begin
+  -- Villains: Favilla (Fenice), Brusio (Segugio) and Filigrana (Imboscata) hold the heroes'
+  -- places, and an exact power goes on one card per faction.
   insert into public.card_definitions (code, name, faction, rarity_code, stats, power_code, power_params) values
-    ('TEST_PHX', 'Fenice', v_plinth.faction, v_plinth.rarity_code, v_plinth.stats, 'phoenix', '{}'),
-    ('TEST_TRK', 'Segugio', v_plinth.faction, v_plinth.rarity_code, v_plinth.stats, 'tracker', '{}'),
-    ('TEST_AMB', 'Imboscata', v_plinth.faction, v_plinth.rarity_code, v_plinth.stats, 'ambush', '{}');
+    ('TEST_PHX', 'Fenice', 'villains', v_plinth.rarity_code, v_plinth.stats, 'phoenix', '{}'),
+    ('TEST_TRK', 'Segugio', 'villains', v_plinth.rarity_code, v_plinth.stats, 'tracker', '{}'),
+    ('TEST_AMB', 'Imboscata', 'villains', v_plinth.rarity_code, v_plinth.stats, 'ambush', '{}');
   v_phoenix := (select id from public.card_definitions where code = 'TEST_PHX');
   v_tracker := (select id from public.card_definitions where code = 'TEST_TRK');
   v_ambush := (select id from public.card_definitions where code = 'TEST_AMB');

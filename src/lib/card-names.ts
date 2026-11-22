@@ -2610,6 +2610,509 @@ const STYLES: Record<string, NameStyle> = {
     split: ["rgb(20 20 25 / 0.45)", "rgb(240 230 200 / 0.3)"],
     jitter: [[2, 0], [-3, 0.03], [1, -0.02], [-2, 0]],
   },
+  // The Segnati in costume (P292-P351): Nuova Megara's own superheroes and supervillains.
+  // Volata: the delivery rider, orange and teal smeared by speed.
+  P292: {
+    font: "speed",
+    fill: layers(speedLines("rgb(255 255 255 / 0.45)"), grad("#fff4e0", "#ff9a2e 50%", "#0e7a80")),
+    rim: "#050302",
+    side: ["#0e5a60", "#050302"],
+    slant: 10,
+    depth: 9,
+  },
+  // Ventosa: the window cleaner, sky blue glass and round grip pads.
+  P293: {
+    font: "bubble",
+    fill: layers(dots("rgb(255 255 255 / 0.4)", 0.22), grad("#ffffff", "#9fd8ff 50%", "#2a6aa8")),
+    rim: "#03060a",
+    side: ["#e0c020", "#03060a"],
+    depth: 10,
+  },
+  // Trasloco: the removal man, quilted moving blankets and brown cardboard.
+  P294: {
+    font: "block",
+    fill: layers(stitches("rgb(70 40 20 / 0.45)"), grad("#fff6e6", "#c89a62 50%", "#6a4424")),
+    rim: "#070402",
+    side: ["#8a5a2a", "#070402"],
+    depth: 14,
+  },
+  // Aliante: the gliding teacher, mint and dawn white.
+  P295: {
+    font: "elegant",
+    fill: grad("#ffffff", "#d4fbe8 45%", "#5ac8a0"),
+    rim: "#030806",
+    side: ["#ff9a5a", "#030806"],
+    slant: -6,
+    glow: "rgb(255 190 140 / 0.35)",
+  },
+  // Acuto: the chorus tenor, burgundy velvet and gold braid.
+  P296: {
+    font: "elegant",
+    fill: layers(waves("rgb(255 220 120 / 0.5)"), grad("#fff0f0", "#c43a4a 50%", "#5a0e1a")),
+    rim: "#080203",
+    side: ["#c8962a", "#080203"],
+    depth: 10,
+  },
+  // Tensione: the lineman, yellow rubber and blue-white arcs.
+  P297: {
+    font: "anton",
+    fill: layers(zigzag("rgb(190 230 255 / 0.9)"), grad("#fffbe0", "#ffe14a 50%", "#9a7a06")),
+    rim: "#040404",
+    side: ["#1a3a8a", "#040404"],
+    glow: "rgb(140 200 255 / 0.45)",
+  },
+  // Molla: the boy with spring legs, green and yellow coils.
+  P298: {
+    font: "comic",
+    fill: layers(stripes("rgb(255 240 80 / 0.55)", 160, 0.06), grad("#f4ffe8", "#5ad04a 50%", "#1e6a1a")),
+    rim: "#030603",
+    side: ["#c8b020", "#030603"],
+    jitter: [[-4, 0.04], [3, -0.03], [-2, 0.02], [4, -0.04]],
+  },
+  // Vernice: the writer of the last hour, acid green paint dripping.
+  P299: {
+    font: "horror",
+    fill: layers(drips("rgb(180 255 40 / 0.85)"), grad("#f8ffe8", "#a8ff3a 50%", "#2a5a0a")),
+    rim: "#030502",
+    side: ["#ff3a9a", "#030502"],
+    split: ["rgb(255 60 160 / 0.4)", "rgb(60 255 200 / 0.3)"],
+  },
+  // Zolfo: the fire-eater, sulphur yellow and smoke.
+  P300: {
+    font: "gothic",
+    fill: layers(cracks("rgb(255 120 20 / 0.9)", "1.6em 0.8em"), grad("#fffbd8", "#e8d23a 50%", "#6a5a10")),
+    rim: "#050402",
+    side: ["#a83a10", "#050402"],
+    glow: "rgb(255 150 40 / 0.45)",
+  },
+  // Fuliggine: the chimney thief, soot that drifts off the letters.
+  P301: {
+    font: "stencil",
+    fill: layers(grain("rgb(0 0 0 / 0.5)"), grad("#d8d8dc", "#5a5a62 50%", "#141418")),
+    rim: "#000000",
+    side: ["#2a2a30", "#000000"],
+    haze: true,
+    split: ["rgb(20 20 25 / 0.5)", "rgb(255 120 40 / 0.25)"],
+  },
+  // Pulce: the flea-legged snatcher, purple and neon orange.
+  P302: {
+    font: "bubble",
+    fill: layers(dots("rgb(255 140 40 / 0.6)", 0.18), grad("#fbeaff", "#a64ae0 50%", "#3a0a60")),
+    rim: "#050208",
+    side: ["#ff7a1a", "#050208"],
+    jitter: [[0, -0.06], [0, 0.04], [0, -0.03], [0, 0.05]],
+  },
+  // Imbonitore: the hypnotic barker, mustard checks and spirals.
+  P303: {
+    font: "slab",
+    fill: layers(spiral("rgb(140 40 160 / 0.35)", "transparent"), grad("#fff8dc", "#e0b42a 50%", "#7a5a0a")),
+    rim: "#060402",
+    side: ["#7a2a8a", "#060402"],
+    depth: 11,
+  },
+  // Trivella: the drill worker, orange steel shaking.
+  P304: {
+    font: "stencil",
+    fill: layers(stripes("rgb(30 30 30 / 0.5)", 45, 0.1), metal("#fff0e0", "#ff8a2a", "#8a3a0a", "#b8561a", "#ffb070")),
+    rim: "#050302",
+    side: ["#5a5a5e", "#050302"],
+    jitter: [[1, 0.02], [-1, -0.02], [1, -0.01], [-1, 0.02]],
+  },
+  // Scavalco: the parkour courier, red and grey jumping the letters.
+  P305: {
+    font: "speed",
+    fill: layers(speedLines("rgb(255 255 255 / 0.35)"), grad("#ffffff", "#ff4a4a 50%", "#5a5a60")),
+    rim: "#040404",
+    side: ["#8a1a1a", "#040404"],
+    slant: 12,
+  },
+  // Cascata: the stuntwoman, tan leather and broken glass.
+  P306: {
+    font: "anton",
+    fill: layers(facets("rgb(255 255 255 / 0.35)", "transparent", "rgb(0 0 0 / 0.4)"), grad("#fff2e0", "#c88a52 50%", "#4a2a14")),
+    rim: "#050302",
+    side: ["#2a1a10", "#050302"],
+    depth: 12,
+  },
+  // Saldatrice: the junkyard welder, scrap iron and a blue torch flame.
+  P307: {
+    font: "block",
+    fill: layers(bricks("rgb(40 30 20 / 0.45)"), metal("#e8f0ff", "#8a9aa8", "#3a4048", "#5a646e", "#a8b4c0")),
+    rim: "#030405",
+    side: ["#2a6aff", "#030405"],
+    line: "#ffb040",
+  },
+  // Dado: the lucky gambler, green felt and a white pip.
+  P308: {
+    font: "elegant",
+    fill: layers(dots("rgb(255 255 255 / 0.5)", 0.3), grad("#e8fff0", "#2aa06a 50%", "#0a3a22")),
+    rim: "#020604",
+    side: ["#c8a03a", "#020604"],
+    depth: 9,
+  },
+  // Buttafuori: the bouncer heavy as lead, grey metal on black.
+  P309: {
+    font: "block",
+    fill: metal("#f0f0f2", "#9a9aa2", "#3a3a40", "#5a5a62", "#b0b0b8"),
+    rim: "#000000",
+    side: ["#ff2a3a", "#000000"],
+    depth: 16,
+    angle: 90,
+  },
+  // Guinzaglio: the dog sitter, rain-jacket yellow and paw-like dots.
+  P310: {
+    font: "comic",
+    fill: layers(dots("rgb(120 70 20 / 0.45)", 0.26), grad("#fffbe0", "#ffd23a 50%", "#9a6a0a")),
+    rim: "#060402",
+    side: ["#3a2a1a", "#060402"],
+    tracking: 0.02,
+  },
+  // Filigrana: the see-through mint worker, silver with a faint watermark.
+  P311: {
+    font: "elegant",
+    fill: layers(waves("rgb(255 255 255 / 0.4)"), grad("rgb(255 255 255 / 0.95)", "rgb(200 205 215 / 0.7) 50%", "rgb(120 125 140 / 0.6)")),
+    rim: "#0a0a10",
+    side: ["#c8a050", "#0a0a10"],
+    haze: true,
+    split: ["rgb(255 255 255 / 0.3)", "rgb(200 210 230 / 0.25)"],
+  },
+  // Paratia: the shield welder, hexagons of light on safety orange.
+  P312: {
+    font: "block",
+    fill: layers(honeycomb("rgb(120 240 255 / 0.6)"), grad("#fff4e8", "#ff8a2a 50%", "#7a3a0a")),
+    rim: "#040302",
+    side: ["#5a6068", "#040302"],
+    glow: "rgb(120 240 255 / 0.35)",
+    depth: 13,
+  },
+  // Rammendo: the night nurse, teal scrubs and stitches of light.
+  P313: {
+    font: "slab",
+    fill: layers(stitches("rgb(255 230 160 / 0.8)"), grad("#eafffb", "#3ac0b0 50%", "#0a4a44")),
+    rim: "#020605",
+    side: ["#0a3a36", "#020605"],
+    glow: "rgb(255 220 150 / 0.3)",
+  },
+  // Doppione: the split boxer, blue and white twice over.
+  P314: {
+    font: "anton",
+    fill: grad("#ffffff", "#7ab0ff 50%", "#1a3a9a"),
+    rim: "#020308",
+    side: ["#d82a3a", "#020308"],
+    split: ["rgb(80 140 255 / 0.55)", "rgb(255 255 255 / 0.4)"],
+  },
+  // Briciola: the tiny pastry chef, pink icing and sugar sprinkles.
+  P315: {
+    font: "bubble",
+    fill: layers(dots("rgb(255 255 255 / 0.7)", 0.12), grad("#fff0f6", "#ff8ac0 50%", "#a03a6a")),
+    rim: "#080306",
+    side: ["#e0b060", "#080306"],
+    depth: 6,
+  },
+  // Recapito: the teleporting postman, navy and post yellow.
+  P316: {
+    font: "slab",
+    fill: layers(stripes("rgb(255 220 40 / 0.5)", 90, 0.05), grad("#e8eeff", "#3a5ad0 50%", "#0a1a5a")),
+    rim: "#020308",
+    side: ["#ffd02a", "#020308"],
+    split: ["rgb(255 220 40 / 0.35)", "rgb(80 120 255 / 0.3)"],
+  },
+  // Trappola: the hunter of Segnati, olive drab and a wire net.
+  P317: {
+    font: "stencil",
+    fill: layers(blueprint("rgb(20 30 10 / 0.5)"), grad("#f0f4e0", "#8a9a4a 50%", "#2a3410")),
+    rim: "#030402",
+    side: ["#a01a1a", "#030402"],
+    depth: 11,
+  },
+  // Dardo: the javelin thrower, violet and steel points.
+  P318: {
+    font: "anton",
+    fill: layers(claws("rgb(230 235 245 / 0.6)"), grad("#f6eaff", "#8a4ae0 50%", "#2a0a5a")),
+    rim: "#040208",
+    side: ["#b0b8c8", "#040208"],
+    slant: 14,
+  },
+  // Ovazione: the sponsored wrestler, gold sequins under spotlights.
+  P319: {
+    font: "comic",
+    fill: layers(stars("rgb(255 255 255 / 0.8)"), metal("#fffbe0", "#ffd24a", "#a0700a", "#c8901a", "#ffe08a")),
+    rim: "#060402",
+    side: ["#c81a2a", "#060402"],
+    glow: "rgb(255 220 100 / 0.45)",
+    depth: 12,
+  },
+  // Bolide: the straight-line charger, red leather and impact.
+  P320: {
+    font: "speed",
+    fill: layers(stripes("rgb(0 0 0 / 0.4)", 100, 0.07), grad("#ffe8e8", "#e02a2a 50%", "#4a0606")),
+    rim: "#050101",
+    side: ["#1a1a1e", "#050101"],
+    slant: 16,
+    depth: 14,
+  },
+  // Bilico: the acrobat on the edge, teal and silver, letters tilting.
+  P321: {
+    font: "elegant",
+    fill: grad("#eafffe", "#3ab0b8 50%", "#0a3a40"),
+    rim: "#020506",
+    side: ["#c0c8d0", "#020506"],
+    jitter: [[6, -0.04], [-6, 0.04], [5, -0.03], [-5, 0.03]],
+  },
+  // Calco: the face thief, clay grey melting into a borrowed blue.
+  P322: {
+    font: "horror",
+    fill: layers(drips("rgb(140 135 130 / 0.8)"), grad("#f0f0f2", "#9a9aa0 45%", "#2a3a8a")),
+    rim: "#030304",
+    side: ["#5a5a64", "#030304"],
+    split: ["rgb(60 90 200 / 0.4)", "rgb(180 175 170 / 0.35)"],
+  },
+  // Fischio: the referee, black and white stripes and a silver whistle.
+  P323: {
+    font: "block",
+    fill: layers(stripes("rgb(10 10 10 / 0.85)", 90, 0.09), grad("#ffffff", "#e8e8e8 50%", "#b0b0b0")),
+    rim: "#000000",
+    side: ["#c8c8d0", "#000000"],
+    line: "#ff2a2a",
+  },
+  // Trucco: the street magician, midnight blue and a golden scarf.
+  P324: {
+    font: "elegant",
+    fill: layers(stars("rgb(255 210 90 / 0.7)"), grad("#e8ecff", "#3a4ab0 50%", "#0a0e3a")),
+    rim: "#02030a",
+    side: ["#c8962a", "#02030a"],
+    glow: "rgb(255 210 90 / 0.35)",
+  },
+  // Diretta: the streamer, pink and blue screen glow with scanlines.
+  P325: {
+    font: "pixel",
+    fill: layers(scanlines("rgb(0 0 0 / 0.3)"), grad("#fff0fb", "#ff5ac0 45%", "#3a7aff")),
+    rim: "#05020a",
+    side: ["#1a2a7a", "#05020a"],
+    split: ["rgb(255 60 180 / 0.45)", "rgb(60 140 255 / 0.45)"],
+  },
+  // Bussola: the relic hunter, sand canvas and a brass compass.
+  P326: {
+    font: "slab",
+    fill: layers(blueprint("rgb(90 60 20 / 0.35)"), grad("#fff8ea", "#d8b070 50%", "#7a5a2a")),
+    rim: "#060402",
+    side: ["#b08a2a", "#060402"],
+    depth: 10,
+  },
+  // Esca: the Segnati fisher, yellow oilskin and a glowing lure.
+  P327: {
+    font: "comic",
+    fill: layers(waves("rgb(20 60 120 / 0.45)"), grad("#fffbe0", "#ffd02a 50%", "#8a6a0a")),
+    rim: "#040302",
+    side: ["#1a3a6a", "#040302"],
+    glow: "rgb(255 190 60 / 0.45)",
+  },
+  // Brusio: the telephone operator, amber switchboard lights on dark green.
+  P328: {
+    font: "elegant",
+    fill: layers(circuit("rgb(255 190 60 / 0.6)"), grad("#f0fff4", "#4a8a5a 50%", "#0a2a14")),
+    rim: "#020402",
+    side: ["#c8962a", "#020402"],
+    glow: "rgb(255 200 90 / 0.35)",
+    tracking: 0.03,
+  },
+  // Caleido: the glassmaker, the seven colours broken in facets.
+  P329: {
+    font: "myth",
+    fill: layers(facets("rgb(255 255 255 / 0.45)", "transparent", "rgb(0 0 0 / 0.25)"), "linear-gradient(90deg, #ff4a4a, #ffa02a, #ffe14a, #4ad04a, #3ab0ff, #6a4aff, #c04aff)"),
+    rim: "#030303",
+    side: ["#e8e8f0", "#030303"],
+    glow: "rgb(255 255 255 / 0.35)",
+  },
+  // Antidoto: the guard who switches Segni off, slate grey and dead sparks.
+  P330: {
+    font: "stencil",
+    fill: layers(scanlines("rgb(0 0 0 / 0.25)"), grad("#f2f4f6", "#7a8490 50%", "#2a3038")),
+    rim: "#020304",
+    side: ["#d0b83a", "#020304"],
+    depth: 12,
+  },
+  // Argano: the dock-worker, navy and safety yellow hazard stripes.
+  P331: {
+    font: "block",
+    fill: layers(stripes("rgb(255 210 20 / 0.75)", 135, 0.09), grad("#e8eeff", "#2a3a7a 50%", "#0a1230")),
+    rim: "#010205",
+    side: ["#d8b010", "#010205"],
+    depth: 16,
+  },
+  // Siero: the chemist turned brute, amber veins swelling.
+  P332: {
+    font: "horror",
+    fill: layers(veins("rgb(255 170 30 / 0.85)"), grad("#fff4e0", "#c86a3a 50%", "#4a1a0a")),
+    rim: "#050201",
+    side: ["#ffb02a", "#050201"],
+    glow: "rgb(255 160 40 / 0.4)",
+    depth: 13,
+  },
+  // Varco: the rift preacher, violet tear in black.
+  P333: {
+    font: "gothic",
+    fill: layers(vortex("rgb(160 60 255 / 0.4)", "transparent"), grad("#f6eaff", "#7a2ad0 50%", "#14041e")),
+    rim: "#030105",
+    side: ["#2a0a3a", "#030105"],
+    glow: "rgb(170 80 255 / 0.45)",
+  },
+  // Pressa: the hydraulic exoskeleton, teal steel and black.
+  P334: {
+    font: "stencil",
+    fill: layers(bricks("rgb(0 0 0 / 0.35)"), metal("#eafffe", "#4ab8b0", "#0a4a48", "#1a6a66", "#8ad8d0")),
+    rim: "#000303",
+    side: ["#ff8a2a", "#000303"],
+    depth: 16,
+    angle: 100,
+  },
+  // Seppia: the cuttlefish saboteur, shifting skin patterns.
+  P335: {
+    font: "horror",
+    fill: layers(dots("rgb(255 120 60 / 0.6)", 0.2), grad("#f0e8ff", "#8a5aa0 50%", "#2a1a3a")),
+    rim: "#030204",
+    side: ["#c84a2a", "#030204"],
+    split: ["rgb(255 120 60 / 0.35)", "rgb(120 90 200 / 0.35)"],
+  },
+  // Lattice: the rubber smuggler, stretched copper and green.
+  P336: {
+    font: "bubble",
+    fill: grad("#f0fff0", "#3aa04a 45%", "#0a3a14"),
+    rim: "#020502",
+    side: ["#c87a3a", "#020502"],
+    tracking: 0.08,
+    depth: 8,
+  },
+  // Baricentro: the gravity collector, charcoal pressed down by gold.
+  P337: {
+    font: "slab",
+    fill: grad("#fff8e0", "#c8a24a 30%", "#3a3a40 70%", "#141418"),
+    rim: "#020202",
+    side: ["#5a4a1a", "#020202"],
+    depth: 16,
+    angle: 90,
+  },
+  // Limatura: the scrap dealer who moves iron, rust and filings.
+  P338: {
+    font: "gothic",
+    fill: layers(grain("rgb(30 20 10 / 0.5)"), metal("#ffeadc", "#c86a3a", "#5a2a10", "#7a3a18", "#e0a070")),
+    rim: "#050201",
+    side: ["#3a3a3e", "#050201"],
+    depth: 11,
+  },
+  // Bianchetto: the eraser thief, white-out over black ink.
+  P339: {
+    font: "anton",
+    fill: layers(drips("rgb(255 255 255 / 0.95)"), grad("#3a3a40", "#141418 60%", "#000000")),
+    rim: "#000000",
+    side: ["#e8e8e8", "#000000"],
+    line: "#ffffff",
+  },
+  // Stoccata: the old fencing master, white jacket and a blue sash.
+  P340: {
+    font: "elegant",
+    fill: layers(stripes("rgb(30 50 140 / 0.45)", 120, 0.04), grad("#ffffff", "#e8ecf4 50%", "#9aa4b8")),
+    rim: "#02030a",
+    side: ["#1a2a7a", "#02030a"],
+    slant: 8,
+    tracking: 0.04,
+  },
+  // Batiscafo: the diver of the abyss, brass helmet and deep blue light.
+  P341: {
+    font: "myth",
+    fill: layers(waves("rgb(80 180 255 / 0.55)"), metal("#fff2dc", "#d8a24a", "#6a4a14", "#8a6020", "#e8c080")),
+    rim: "#040302",
+    side: ["#0a3a8a", "#040302"],
+    glow: "rgb(80 170 255 / 0.4)",
+    depth: 13,
+  },
+  // Galaverna: the priestess of the last cold, frost on grey-blue.
+  P342: {
+    font: "gothic",
+    fill: layers(cracks("rgb(255 255 255 / 0.85)", "1.4em 0.7em"), grad("#ffffff", "#bcd8f0 50%", "#3a5a7a")),
+    rim: "#020406",
+    side: ["#8ab8e0", "#020406"],
+    glow: "rgb(200 230 255 / 0.5)",
+  },
+  // Falla: the head of security, black with glowing cracks.
+  P343: {
+    font: "stencil",
+    fill: layers(cracks("rgb(255 220 60 / 0.95)", "1.9em 0.9em"), grad("#5a5a62", "#26262c 50%", "#0a0a0c")),
+    rim: "#000000",
+    side: ["#c8a02a", "#000000"],
+    depth: 13,
+  },
+  // Mora: the collector, plum and a chain of gold coins.
+  P344: {
+    font: "elegant",
+    fill: layers(scales("rgb(255 210 90 / 0.6)"), grad("#fbeaf6", "#8a2a6a 50%", "#2a0620")),
+    rim: "#050104",
+    side: ["#d8a83a", "#050104"],
+    line: "#ffd24a",
+    depth: 10,
+  },
+  // Cintura: the arena champion, black and gold like a title belt.
+  P345: {
+    font: "anton",
+    fill: layers(stars("rgb(255 240 180 / 0.7)"), metal("#fffbe8", "#ffd24a", "#8a6a0a", "#b8901a", "#ffe8a0")),
+    rim: "#000000",
+    side: ["#1a1a1e", "#000000"],
+    glow: "rgb(255 210 80 / 0.4)",
+    depth: 14,
+  },
+  // Rimonta: the old judo master, white jacket and a faded black belt.
+  P346: {
+    font: "slab",
+    fill: grad("#ffffff", "#f0ece4 45%", "#a8a090"),
+    rim: "#050403",
+    side: ["#141414", "#050403"],
+    angle: 225,
+    depth: 12,
+  },
+  // Preavviso: the getaway driver, burgundy and the ghost of the next move.
+  P347: {
+    font: "speed",
+    fill: grad("#fff0f0", "#b02a3a 50%", "#3a0610"),
+    rim: "#040102",
+    side: ["#5a0a14", "#040102"],
+    split: ["rgb(255 80 100 / 0.15)", "rgb(255 200 210 / 0.5)"],
+    slant: 10,
+  },
+  // Boato: the shockwave tram driver, green uniform cracked with white light.
+  P348: {
+    font: "block",
+    fill: layers(cracks("rgb(255 250 220 / 0.95)", "2em 1em"), grad("#eafff0", "#3a6a4a 50%", "#0a1e12")),
+    rim: "#010302",
+    side: ["#c8a23a", "#010302"],
+    glow: "rgb(255 245 200 / 0.55)",
+    depth: 18,
+  },
+  // Favilla: the firefighter rebuilt from embers, charcoal and reflective yellow.
+  P349: {
+    font: "anton",
+    fill: layers(cracks("rgb(255 130 30 / 0.95)", "1.7em 0.85em"), grad("#d8d8dc", "#4a4a52 50%", "#141416")),
+    rim: "#020202",
+    side: ["#e0c020", "#020202"],
+    glow: "rgb(255 120 30 / 0.5)",
+    depth: 13,
+  },
+  // Prelievo: the thief of Segni, lab white with stolen colours under the skin.
+  P350: {
+    font: "elegant",
+    fill: layers(veins("rgb(255 60 200 / 0.6)"), veins("rgb(60 220 255 / 0.5)"), grad("#ffffff", "#e8e8ee 50%", "#9a9aa8")),
+    rim: "#020203",
+    side: ["#5a1a5a", "#020203"],
+    glow: "rgb(220 120 255 / 0.4)",
+  },
+  // Controluce: the woman in negative, black letters with a white glow.
+  P351: {
+    font: "myth",
+    fill: grad("#000000", "#1a1a1e 50%", "#3a3a40"),
+    rim: "#ffffff",
+    side: ["#e8e8f0", "#ffffff"],
+    glow: "rgb(255 255 255 / 0.6)",
+    line: "#ffffff",
+  },
 };
 
 const FACTION_LOOK: Record<string, Pick<NameStyle, "fill" | "side">> = {

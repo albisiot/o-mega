@@ -13,12 +13,13 @@ insert into auth.users (id, aud, role, email, raw_user_meta_data, created_at, up
   ('00000000-0000-4000-8000-0000000004a2', 'authenticated', 'authenticated', 'random-player@example.test',
    '{"full_name": "Random Player"}', now(), now());
 
--- A style with three variants or more, and the rarity of one of them.
+-- A style with three variants or more among the characters packs can give (the held-back
+-- ones are never drawn, 20261119240000_held_back_cards.sql), and the rarity of one of them.
 do $$
 begin
   perform set_config('test.style', (
     select v.style from public.card_variants v join public.card_definitions d on d.id = v.definition_id
-    where v.is_active and d.is_active and d.unlock_level is null
+    where v.is_active and d.is_active and d.unlock_level is null and public.is_pack_card(d)
     group by v.style having count(*) >= 3 order by v.style limit 1), false);
 end $$;
 
@@ -79,12 +80,14 @@ insert into public.card_instances (definition_id, owner_id, acquired_via, varian
 select v.definition_id, '00000000-0000-4000-8000-0000000004a2', 'pack', v.id
 from public.card_variants v join public.card_definitions d on d.id = v.definition_id
 where v.style = current_setting('test.style') and v.is_active and d.is_active and d.unlock_level is null
+  and public.is_pack_card(d)
 order by v.id offset 1;
 do $$
 declare
   v_missing uuid := (
     select v.id from public.card_variants v join public.card_definitions d on d.id = v.definition_id
     where v.style = current_setting('test.style') and v.is_active and d.is_active and d.unlock_level is null
+      and public.is_pack_card(d)
     order by v.id limit 1);
   v_given uuid;
   v_ids uuid[];

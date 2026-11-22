@@ -52,6 +52,10 @@ const SIGNATURE_EFFECTS: Record<string, CardEffect> = {
   P261: "bolts",
   P290: "aura",
   P291: "glitch",
+  P348: "ripples",
+  P349: "embers",
+  P350: "aura",
+  P351: "glitch",
 };
 
 export function cardEffects(card: { code?: string; rarity: { rank: number } }, size: "lg" | "sm"): CardEffect[] {

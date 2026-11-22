@@ -1,5 +1,6 @@
 -- Test for 20261120100000_thirteen_new_powers.sql: the thirteen powers of 20 November 2026
--- in the catalog with their texts, each on one character of the Marches (P262-P291), and what the server shows for
+-- in the catalog with their texts, each on one character of the Marches (P262-P291) and on
+-- the free places of the other factions among the Segnati (P292-P351), and what the server shows for
 -- Infiltrato, Presagio and Oracolo, in a match and in an Emergenza. Runs inside a
 -- rolled-back transaction:
 --   npm run test:db
@@ -29,10 +30,19 @@ begin
     select jsonb_object_agg(code, power_code order by code) from public.card_definitions
     where power_code in ('attrition', 'peak', 'euphoria', 'away', 'twin', 'match_point', 'icebreaker', 'even_score',
                          'diminuendo', 'spoiler', 'omen', 'infiltrator', 'oracle')
+      and code < 'P292'
   ) = '{"P272": "peak", "P273": "icebreaker", "P274": "euphoria", "P275": "match_point", "P276": "diminuendo",
         "P278": "infiltrator", "P279": "twin", "P281": "away", "P282": "even_score", "P283": "spoiler",
         "P287": "omen", "P290": "oracle", "P291": "attrition"}'::jsonb,
     'one character each, made for it (20261120200000_marches_characters.sql)';
+  -- The Segnati took nineteen of the places left in the other factions, with the same numbers
+  -- (20261122240000_segnati_characters.sql).
+  assert (
+    select count(*) from public.card_definitions
+    where power_code in ('attrition', 'peak', 'euphoria', 'away', 'twin', 'match_point', 'icebreaker', 'even_score',
+                         'diminuendo', 'spoiler', 'omen', 'infiltrator', 'oracle')
+      and code between 'P292' and 'P351'
+  ) = 19, 'nineteen Segnati with one of the thirteen';
 
   assert public.power_text('attrition', '{"malus": 2}')
     = 'Dopo averlo giocato, il prossimo personaggio dell''avversario ha -2 al punteggio (non allo spareggio)', 'Logoramento text';
@@ -48,8 +58,9 @@ begin
   exception when others then
     if sqlerrm like 'ASSERT%' then raise; end if;
   end;
-  insert into public.card_definitions (code, name, faction, rarity_code, stats, power_code, power_params)
-  values ('TEST_SPOIL', 'Prova', v_plinth.faction, v_plinth.rarity_code, v_plinth.stats, 'spoiler', '{}');
+  -- Guastafeste needs no params: Rasura, Antidoto and Bianchetto hold it with none.
+  assert (select count(*) from public.card_definitions where power_code = 'spoiler' and power_params = '{}'::jsonb) = 3,
+    'Guastafeste without params';
 end $$;
 
 -- In a match: Infiltrato at the start, Presagio while unplayed, Oracolo all along.
@@ -69,14 +80,13 @@ declare
   v_play jsonb;
 begin
   -- Villains: Epigrafe (Presagio) and Millenario (Oracolo) hold the heroes' places, and an
-  -- exact power goes on one card per faction.
+  -- exact power goes on one card per faction. Infiltrato has no place left: Pertugio's.
   insert into public.card_definitions (code, name, faction, rarity_code, stats, power_code, power_params) values
     ('TEST_OMEN', 'Presagio', 'villains', v_plinth.rarity_code, v_plinth.stats, 'omen', '{}'),
-    ('TEST_ORACLE', 'Oracolo', 'villains', v_plinth.rarity_code, v_plinth.stats, 'oracle', '{}'),
-    ('TEST_INFIL', 'Infiltrato', 'villains', v_plinth.rarity_code, v_plinth.stats, 'infiltrator', '{}');
+    ('TEST_ORACLE', 'Oracolo', 'villains', v_plinth.rarity_code, v_plinth.stats, 'oracle', '{}');
   v_omen := (select id from public.card_definitions where code = 'TEST_OMEN');
   v_oracle := (select id from public.card_definitions where code = 'TEST_ORACLE');
-  v_infiltrator := (select id from public.card_definitions where code = 'TEST_INFIL');
+  v_infiltrator := (select id from public.card_definitions where code = 'P278');
 
   insert into public.card_instances (definition_id, owner_id, acquired_via)
   select d, v_user, 'pack' from unnest(array[v_omen, v_oracle, v_infiltrator]) as d;
