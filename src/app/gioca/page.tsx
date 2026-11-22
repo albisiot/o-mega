@@ -152,7 +152,7 @@ export default function PlayPage() {
         emergencyWeek={emergencyWeek}
         story={story}
         lastPlay={lastPlay}
-        event={<EventBanner compact />}
+        event={<EventBanner compact narrow />}
         challenges={challenges}
         coop={coop}
         modes={modes}

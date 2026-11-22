@@ -188,7 +188,7 @@ function GiocaScene({ few }: { few: boolean }) {
       event={
         <span className="flex min-h-12 min-w-0 flex-[1.6_1_0] flex-col justify-center gap-0.5 bg-comic-yellow px-3 py-1 text-black short:min-h-11">
           <span className="block truncate font-display text-[15px] uppercase leading-5">Settimana dei Figli</span>
-          <span className="block truncate text-[12px] font-extrabold leading-4">160/250 punti · 4g 4h</span>
+          <span className="block truncate text-[12px] font-extrabold leading-4">160/250 · 4g 4h</span>
         </span>
       }
       challenges={[classic, TRIPLE, BOSS, EMERGENCY]}

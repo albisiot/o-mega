@@ -73,20 +73,20 @@ function chapters(allDone: boolean): StoryChapter[] {
   }));
 }
 
-/** The event tiles as EventBanner compact draws them, with fixed numbers. */
+/** The event tiles as EventBanner compact narrow draws them, with fixed numbers. */
 function FakeEvent({ reward }: { reward: boolean }) {
   if (reward) {
     return (
       <button type="button" className="flex min-h-12 min-w-0 flex-[1.6_1_0] flex-col justify-center bg-comic-yellow px-3 py-1 text-left text-black short:min-h-11">
         <span className="block truncate font-display text-[15px] uppercase leading-5">Premio evento!</span>
-        <span className="block truncate text-[12px] font-bold leading-4">Tocca per aprirlo</span>
+        <span className="block truncate text-[12px] font-bold leading-4">Tocca e apri</span>
       </button>
     );
   }
   return (
     <span className="flex min-h-12 min-w-0 flex-[1.6_1_0] flex-col justify-center gap-0.5 bg-comic-yellow px-3 py-1 text-black short:min-h-11">
       <span className="block truncate font-display text-[15px] uppercase leading-5">Notte dei Cattivi</span>
-      <span className="block truncate text-[12px] font-extrabold leading-4">90/200 punti · 2g 5h</span>
+      <span className="block truncate text-[12px] font-extrabold leading-4">90/200 · 2g 5h</span>
       <span className="h-1 bg-black/25" aria-hidden>
         <span className="block h-full w-[45%] bg-black" />
       </span>

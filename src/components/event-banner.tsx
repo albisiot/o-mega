@@ -89,8 +89,9 @@ export function useOpenEventRewards(): { open: (event: GameEvent) => void; openi
 /**
  * `compact`: the home's tile, beside the objectives' in one row (name, countdown and points, a
  * thin bar); the full banner, with the progress line and the admitted characters, elsewhere.
+ * `narrow`: the compact tile in a third of a row (Gioca), with shorter lines.
  */
-export function EventBanner({ compact = false }: { compact?: boolean }) {
+export function EventBanner({ compact = false, narrow = false }: { compact?: boolean; narrow?: boolean }) {
   const { status, offset } = useEventStatus();
   const now = useNow(30_000) + offset;
   const { open, opening } = useOpenEventRewards();
@@ -112,7 +113,7 @@ export function EventBanner({ compact = false }: { compact?: boolean }) {
         className="tile flex min-h-12 min-w-0 flex-[1.6_1_0] flex-col justify-center bg-comic-yellow px-3 py-1 text-left text-black short:min-h-11"
       >
         <span className="block truncate font-display text-[15px] uppercase leading-5">Premio evento!</span>
-        <span className="block truncate text-[12px] font-bold leading-4">{opening ? "…" : "Tocca per aprirlo"}</span>
+        <span className="block truncate text-[12px] font-bold leading-4">{opening ? "…" : narrow ? "Tocca e apri" : "Tocca per aprirlo"}</span>
       </button>
     );
   }
@@ -183,7 +184,7 @@ export function EventBanner({ compact = false }: { compact?: boolean }) {
       >
         <span className="block truncate font-display text-[15px] uppercase leading-5">{event.title}</span>
         <span className="block truncate text-[12px] font-extrabold leading-4">
-          {progress.next ? `${event.my_points}/${progress.next.points} punti` : "Completato"} ·{" "}
+          {progress.next ? `${event.my_points}/${progress.next.points}${narrow ? "" : " punti"}` : "Completato"} ·{" "}
           {formatEventCountdown(Date.parse(event.ends_at) - now)}
         </span>
         <span className="h-1 bg-black/25" aria-hidden>

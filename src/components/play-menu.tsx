@@ -458,6 +458,12 @@ function PlayAgain({ play, first, disabled, block }: { play: LastPlay; first: bo
   );
 }
 
+/**
+ * A row of the day's tiles: equal columns, as many as the tiles drawn (the event's draws nothing
+ * when there is no event), and equal heights. The tiles' own flex sizes do not count here.
+ */
+const TODAY_ROW = "grid shrink-0 grid-flow-col auto-cols-[minmax(0,1fr)] gap-1.5";
+
 /** One of the day's tiles beside the event: a name, a line and its state. */
 function TodayTile({
   href,
@@ -494,7 +500,7 @@ function TodayTile({
       onClosed={onClosed}
       compact
       label={`${title}: ${detail}${said ? `, ${said}` : ""}`}
-      className={`tile flex min-h-12 min-w-0 flex-[1_1_0] flex-col justify-center px-2.5 py-1 text-black short:min-h-11 ${className} ${
+      className={`tile flex min-h-12 min-w-0 flex-col justify-center px-2.5 py-1 text-black short:min-h-11 ${className} ${
         disabled ? "pointer-events-none opacity-40" : ""
       }`}
     >
@@ -560,7 +566,7 @@ function EmergencyWeekRow({ week, now, compact = false, gate }: { week: Emergenc
         onClosed={gate.onClosed}
         compact
         label={`Emergenza della settimana: ${days}${state ? `, ${state}` : ""}`}
-        className="tile flex min-h-10 min-w-0 flex-1 flex-col justify-center bg-foreground px-2.5 py-1 text-black short:min-h-9"
+        className="tile flex min-h-10 min-w-0 flex-col justify-center bg-foreground px-2.5 py-1 text-black short:min-h-9"
       >
         <span className="block truncate font-display text-[15px] uppercase leading-5">Settimana</span>
         <span className="block truncate text-[12px] font-bold leading-4">{state ?? days}</span>
@@ -600,6 +606,8 @@ function EmergencyChallengeRow({ challenge, gate }: { challenge: Challenge; gate
   const run = challenge.my_run ?? null;
   const threats = challenge.emergency_threats ?? challenge.team_size;
   const state = !run ? `Da fare · ${threats} Minacce` : run.status === "active" ? `In corso · ${run.passed}/${threats}` : `✓ ${run.passed}/${threats}`;
+  // A third of the row: the short line, the whole one for screen readers.
+  const shown = !run ? "Da fare" : run.status === "active" ? `In corso ${run.passed}/${threats}` : state;
   return (
     <GateLink
       href={challengeEmergencyHref(challenge)}
@@ -607,13 +615,13 @@ function EmergencyChallengeRow({ challenge, gate }: { challenge: Challenge; gate
       onClosed={gate.onClosed}
       compact
       label={`Emergenza a tema ${challenge.title}: ${state}`}
-      className="tile flex min-h-10 min-w-0 flex-[1.4_1_0] items-center gap-1.5 px-2 py-1 text-black short:min-h-9"
+      className="tile flex min-h-10 min-w-0 items-center gap-1 px-2 py-1 text-black short:min-h-9"
       style={{ background: challenge.color }}
     >
-      <span className="shrink-0 -rotate-2 border-2 border-black px-1 font-sfx text-[12px] leading-[14px] tracking-wide">★</span>
+      <span className="shrink-0 -rotate-2 border-2 border-black px-0.5 font-sfx text-[12px] leading-[14px] tracking-wide">★</span>
       <span className="min-w-0 flex-1">
         <span className="block truncate font-display text-[15px] uppercase leading-5">{challenge.title}</span>
-        <span className="block truncate text-[12px] font-bold leading-4">{state}</span>
+        <span className="block truncate text-[12px] font-bold leading-4">{shown}</span>
       </span>
     </GateLink>
   );
@@ -640,7 +648,9 @@ function OperationsTile({ coop, compact = false, gate }: { coop: CoopCatalog | n
           : `${next.title} · ${next.ord}/${operations.length}`
         : operations.length
           ? "✓ Completate"
-          : "In squadra, dal vivo";
+          : compact
+            ? "Dal vivo"
+            : "In squadra, dal vivo";
   // A room or a place in the queue stays reachable: what started goes on to the end.
   return (
     <GateLink
@@ -649,9 +659,7 @@ function OperationsTile({ coop, compact = false, gate }: { coop: CoopCatalog | n
       onClosed={gate.onClosed}
       compact
       label={`Operazioni in squadra: ${state}`}
-      className={`tile flex min-h-10 min-w-0 flex-col justify-center bg-comic-cyan px-2.5 py-1 text-black short:min-h-9 ${
-        compact ? "flex-1" : "flex-[1.4_1_0]"
-      }`}
+      className="tile flex min-h-10 min-w-0 flex-col justify-center bg-comic-cyan px-2.5 py-1 text-black short:min-h-9"
     >
       <span className="block truncate font-display text-[15px] uppercase leading-5">Operazioni</span>
       <span className="block truncate text-[12px] font-bold leading-4">{state}</span>
@@ -914,13 +922,14 @@ export function PlayMenuView({
             {!active && <PlayAgain play={lastPlay ?? FIRST_PLAY} first={!lastPlay} disabled={blocked} block={againBlock} />}
 
             <ListTitle>Oggi</ListTitle>
-            <div className="flex shrink-0 gap-1.5">
+            {/* Every tile of a row is as wide as the others: one column each, however many there are. */}
+            <div className={TODAY_ROW}>
               {event}
               <EmergencyTile today={emergency} gate={gate("emergency")} />
               <StoryTile chapters={story} disabled={blocked} gate={gate("story")} />
             </div>
             {/* The week's Emergenza shares its row: with an Emergenza a tema and with the Operazioni. */}
-            <div className="flex shrink-0 gap-1.5">
+            <div className={TODAY_ROW}>
               <EmergencyWeekRow week={emergencyWeek} now={now} compact gate={gate("emergency_week")} />
               {themedEmergency && <EmergencyChallengeRow challenge={themedEmergency} gate={gate("emergency")} />}
               <OperationsTile coop={coop} compact={Boolean(themedEmergency)} gate={gate("coop")} />
