@@ -2,6 +2,7 @@ import type { BotDifficulty } from "@o-mega/game-engine";
 import { balance } from "@/config/balance";
 import type { Challenge } from "@/lib/challenges";
 import type { ConquestStatus, MatchFormat, MatchMode } from "@/lib/match";
+import { combinedStatus, startKeys, type GameModeKey, type ModeAvailabilityMap } from "@/lib/mode-availability";
 
 /**
  * The last match the player set off from the team screen, kept on this device: Gioca's
@@ -137,21 +138,30 @@ export function rematchOf(match: PlayedMatch, remembered: LastPlay | null): Last
 
 /** Why a play cannot be set off again now. */
 export type PlayBlock =
+  /** The mode is off, or outside its dates (EDITOR → Modalità di gioco); `label` its button's. */
+  | { kind: "mode_closed"; label: string | null }
   | { kind: "challenge_over" }
   | { kind: "challenge_daily_limit"; limit: number }
   | { kind: "conquest_locked"; completed: number }
   | { kind: "conquest_limit" };
 
 /**
- * What stops a play now, or null when nothing known does: a Sfida a tema over, or with today's
- * matches used up; a Conquista still locked, or closed after today's lost cards. Unknown facts
- * (null: still loading) stop nothing: the team screen and the server check again. The play is
- * never swapped for another one: the player is told why (SPEC §11.2).
+ * What stops a play now, or null when nothing known does: its mode off or outside its dates; a
+ * Sfida a tema over, or with today's matches used up; a Conquista still locked, or closed after
+ * today's lost cards. Unknown facts (null: still loading) stop nothing: the team screen and the
+ * server check again. The play is never swapped for another one: the player is told why (SPEC §11.2).
  */
 export function playBlock(
   play: LastPlay,
-  known: { now: number; challenges: readonly ChallengeFacts[] | null; conquest: ConquestStatus | null },
+  known: {
+    now: number;
+    challenges: readonly ChallengeFacts[] | null;
+    conquest: ConquestStatus | null;
+    modes?: ModeAvailabilityMap | null;
+  },
 ): PlayBlock | null {
+  const closed = known.modes ? modeBlock(playModeKeys(play), known.modes, known.now) : null;
+  if (closed) return closed;
   if (play.mode === "conquest") return known.conquest ? conquestBlock(known.conquest) : null;
   if (play.mode === "ranked" || !play.challenge || !known.challenges) return null;
   return challengeBlock(play.challenge.id, known.challenges, known.now);
@@ -173,6 +183,17 @@ export function challengeBlock(id: string, challenges: readonly ChallengeFacts[]
     : null;
 }
 
+/** The modes a play needs (see startKeys). */
+export function playModeKeys(play: LastPlay): GameModeKey[] {
+  return startKeys(play.format, play.mode === "ranked" || play.mode === "conquest" ? play.mode : null);
+}
+
+/** A play whose modes are not all open now. */
+export function modeBlock(keys: readonly GameModeKey[], modes: ModeAvailabilityMap, now: number): PlayBlock | null {
+  const status = combinedStatus(modes, keys, now);
+  return status.open ? null : { kind: "mode_closed", label: status.label };
+}
+
 /** A Conquista still locked, or closed for the day after the most cards lost. */
 export function conquestBlock(conquest: ConquestStatus): PlayBlock | null {
   if (!conquest.unlocked) return { kind: "conquest_locked", completed: conquest.completed_matches };
@@ -183,6 +204,11 @@ export function conquestBlock(conquest: ConquestStatus): PlayBlock | null {
 export function describePlayBlock(block: PlayBlock): { short: string; long: string } {
   const { unlockAfterMatches, unlockAtLevel, maxCardsLostPerDay } = balance.conquest;
   switch (block.kind) {
+    case "mode_closed":
+      return {
+        short: block.label ? `Non disponibile ora · ${block.label}` : "Non disponibile ora",
+        long: block.label ? `Questa modalità non è disponibile ora (${block.label}).` : "Questa modalità non è disponibile ora.",
+      };
     case "challenge_over":
       return { short: "Sfida a tema finita", long: "Questa Sfida a tema non è più aperta." };
     case "challenge_daily_limit":

@@ -1295,6 +1295,574 @@ export type Database = {
           },
         ]
       }
+      coop_chapters: {
+        Row: {
+          chapter: number
+          intro: string
+          outro: string
+          title: string
+        }
+        Insert: {
+          chapter: number
+          intro: string
+          outro: string
+          title: string
+        }
+        Update: {
+          chapter?: number
+          intro?: string
+          outro?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      coop_members: {
+        Row: {
+          bot_avatar_definition_id: string | null
+          bot_name: string | null
+          card_instance_ids: string[] | null
+          coins: number | null
+          definition_ids: string[] | null
+          joined_at: string
+          last_seen_at: string
+          left_at: string | null
+          placed_round: number | null
+          placement: Json | null
+          ready: boolean
+          reward_card_instance_id: string | null
+          room_id: string
+          seat: number
+          signal: string | null
+          signal_at: string | null
+          star_coins: number | null
+          stars: string[] | null
+          user_id: string | null
+          xp: number | null
+        }
+        Insert: {
+          bot_avatar_definition_id?: string | null
+          bot_name?: string | null
+          card_instance_ids?: string[] | null
+          coins?: number | null
+          definition_ids?: string[] | null
+          joined_at?: string
+          last_seen_at?: string
+          left_at?: string | null
+          placed_round?: number | null
+          placement?: Json | null
+          ready?: boolean
+          reward_card_instance_id?: string | null
+          room_id: string
+          seat: number
+          signal?: string | null
+          signal_at?: string | null
+          star_coins?: number | null
+          stars?: string[] | null
+          user_id?: string | null
+          xp?: number | null
+        }
+        Update: {
+          bot_avatar_definition_id?: string | null
+          bot_name?: string | null
+          card_instance_ids?: string[] | null
+          coins?: number | null
+          definition_ids?: string[] | null
+          joined_at?: string
+          last_seen_at?: string
+          left_at?: string | null
+          placed_round?: number | null
+          placement?: Json | null
+          ready?: boolean
+          reward_card_instance_id?: string | null
+          room_id?: string
+          seat?: number
+          signal?: string | null
+          signal_at?: string | null
+          star_coins?: number | null
+          stars?: string[] | null
+          user_id?: string | null
+          xp?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coop_members_bot_avatar_definition_id_fkey"
+            columns: ["bot_avatar_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coop_members_bot_avatar_definition_id_fkey"
+            columns: ["bot_avatar_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coop_members_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "coop_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coop_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coop_operation_rounds: {
+        Row: {
+          operation_id: string
+          reinforced_slot: number
+          round: number
+          threat_ids: string[]
+        }
+        Insert: {
+          operation_id: string
+          reinforced_slot: number
+          round: number
+          threat_ids: string[]
+        }
+        Update: {
+          operation_id?: string
+          reinforced_slot?: number
+          round?: number
+          threat_ids?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coop_operation_rounds_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "coop_operations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coop_operations: {
+        Row: {
+          boss_name: string
+          chapter: number
+          code: string
+          id: string
+          intro: string
+          ord: number
+          outro: string
+          reward_coins: number
+          reward_definition_id: string | null
+          rival_definition_ids: string[]
+          rival_name: string
+          star_coins: number
+          star_panic: number
+          star_rarities: string[]
+          star_traits: string[]
+          title: string
+        }
+        Insert: {
+          boss_name: string
+          chapter: number
+          code: string
+          id?: string
+          intro: string
+          ord: number
+          outro: string
+          reward_coins: number
+          reward_definition_id?: string | null
+          rival_definition_ids: string[]
+          rival_name: string
+          star_coins?: number
+          star_panic?: number
+          star_rarities?: string[]
+          star_traits?: string[]
+          title: string
+        }
+        Update: {
+          boss_name?: string
+          chapter?: number
+          code?: string
+          id?: string
+          intro?: string
+          ord?: number
+          outro?: string
+          reward_coins?: number
+          reward_definition_id?: string | null
+          rival_definition_ids?: string[]
+          rival_name?: string
+          star_coins?: number
+          star_panic?: number
+          star_rarities?: string[]
+          star_traits?: string[]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coop_operations_chapter_fkey"
+            columns: ["chapter"]
+            isOneToOne: false
+            referencedRelation: "coop_chapters"
+            referencedColumns: ["chapter"]
+          },
+          {
+            foreignKeyName: "coop_operations_reward_definition_id_fkey"
+            columns: ["reward_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coop_operations_reward_definition_id_fkey"
+            columns: ["reward_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coop_plays: {
+        Row: {
+          auto_played: boolean
+          base_score: number
+          bonus: number
+          card_instance_id: string
+          definition_id: string
+          highest_value: number
+          parts: Json | null
+          role: string
+          room_id: string
+          round: number
+          score: number
+          seat: number
+          slot: number
+          user_id: string | null
+        }
+        Insert: {
+          auto_played: boolean
+          base_score: number
+          bonus: number
+          card_instance_id: string
+          definition_id: string
+          highest_value: number
+          parts?: Json | null
+          role: string
+          room_id: string
+          round: number
+          score: number
+          seat: number
+          slot: number
+          user_id?: string | null
+        }
+        Update: {
+          auto_played?: boolean
+          base_score?: number
+          bonus?: number
+          card_instance_id?: string
+          definition_id?: string
+          highest_value?: number
+          parts?: Json | null
+          role?: string
+          room_id?: string
+          round?: number
+          score?: number
+          seat?: number
+          slot?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coop_plays_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coop_plays_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coop_plays_room_id_round_fkey"
+            columns: ["room_id", "round"]
+            isOneToOne: false
+            referencedRelation: "coop_rounds"
+            referencedColumns: ["room_id", "round"]
+          },
+          {
+            foreignKeyName: "coop_plays_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coop_progress: {
+        Row: {
+          completed_at: string
+          operation_id: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          operation_id: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          operation_id?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coop_progress_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "coop_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coop_progress_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "coop_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coop_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coop_queue: {
+        Row: {
+          card_instance_ids: string[]
+          definition_ids: string[]
+          joined_at: string
+          operation_id: string
+          polled_at: string
+          user_id: string
+        }
+        Insert: {
+          card_instance_ids: string[]
+          definition_ids: string[]
+          joined_at?: string
+          operation_id: string
+          polled_at?: string
+          user_id: string
+        }
+        Update: {
+          card_instance_ids?: string[]
+          definition_ids?: string[]
+          joined_at?: string
+          operation_id?: string
+          polled_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coop_queue_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "coop_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coop_queue_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coop_rooms: {
+        Row: {
+          code: string
+          created_at: string
+          current_round: number
+          finished_at: string | null
+          host: string
+          id: string
+          operation_id: string
+          panic: number
+          players: number | null
+          started_at: string | null
+          status: string
+          touched_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          current_round?: number
+          finished_at?: string | null
+          host: string
+          id?: string
+          operation_id: string
+          panic?: number
+          players?: number | null
+          started_at?: string | null
+          status?: string
+          touched_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          current_round?: number
+          finished_at?: string | null
+          host?: string
+          id?: string
+          operation_id?: string
+          panic?: number
+          players?: number | null
+          started_at?: string | null
+          status?: string
+          touched_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coop_rooms_host_fkey"
+            columns: ["host"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coop_rooms_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "coop_operations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coop_rounds: {
+        Row: {
+          boss: boolean
+          deadline_at: string
+          eco_definition_id: string | null
+          eco_score: Json | null
+          panic: number | null
+          reinforced_slot: number
+          resolved_at: string | null
+          results: Json | null
+          room_id: string
+          round: number
+          threat_ids: string[]
+          threat_levels: number[]
+        }
+        Insert: {
+          boss: boolean
+          deadline_at: string
+          eco_definition_id?: string | null
+          eco_score?: Json | null
+          panic?: number | null
+          reinforced_slot: number
+          resolved_at?: string | null
+          results?: Json | null
+          room_id: string
+          round: number
+          threat_ids: string[]
+          threat_levels: number[]
+        }
+        Update: {
+          boss?: boolean
+          deadline_at?: string
+          eco_definition_id?: string | null
+          eco_score?: Json | null
+          panic?: number | null
+          reinforced_slot?: number
+          resolved_at?: string | null
+          results?: Json | null
+          room_id?: string
+          round?: number
+          threat_ids?: string[]
+          threat_levels?: number[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coop_rounds_eco_definition_id_fkey"
+            columns: ["eco_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coop_rounds_eco_definition_id_fkey"
+            columns: ["eco_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coop_rounds_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "coop_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coop_stars: {
+        Row: {
+          coins: number
+          earned_at: string
+          operation_id: string
+          room_id: string
+          star: string
+          user_id: string
+        }
+        Insert: {
+          coins?: number
+          earned_at?: string
+          operation_id: string
+          room_id: string
+          star: string
+          user_id: string
+        }
+        Update: {
+          coins?: number
+          earned_at?: string
+          operation_id?: string
+          room_id?: string
+          star?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coop_stars_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "coop_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coop_stars_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "coop_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coop_stars_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cosmetic_items: {
         Row: {
           acquired_at: string
@@ -2995,6 +3563,44 @@ export type Database = {
           },
         ]
       }
+      mode_availability: {
+        Row: {
+          ends_at: string | null
+          key: string
+          label: string | null
+          starts_at: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          ends_at?: string | null
+          key: string
+          label?: string | null
+          starts_at?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          ends_at?: string | null
+          key?: string
+          label?: string | null
+          starts_at?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mode_availability_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pack_openings: {
         Row: {
           card_instance_ids: string[]
@@ -4547,6 +5153,7 @@ export type Database = {
       admin_bonus_codes_payload: { Args: never; Returns: Json }
       admin_boss_table_payload: { Args: never; Returns: Json }
       admin_challenges_payload: { Args: never; Returns: Json }
+      admin_coop_payload: { Args: never; Returns: Json }
       admin_create_bonus_code: {
         Args: {
           p_card_codes?: string[]
@@ -4564,11 +5171,13 @@ export type Database = {
       admin_daily_objectives_payload: { Args: never; Returns: Json }
       admin_delete_achievement: { Args: { p_id: string }; Returns: Json }
       admin_delete_challenge: { Args: { p_id: string }; Returns: Json }
+      admin_delete_coop_operation: { Args: { p_code: string }; Returns: Json }
       admin_delete_daily_objective: { Args: { p_code: string }; Returns: Json }
       admin_delete_event: { Args: { p_id: string }; Returns: Json }
       admin_delete_special_pack: { Args: { p_id: string }; Returns: Json }
       admin_events_payload: { Args: never; Returns: Json }
       admin_get_boss_table: { Args: never; Returns: Json }
+      admin_get_coop: { Args: never; Returns: Json }
       admin_get_shard_settings: { Args: never; Returns: Json }
       admin_get_story: { Args: never; Returns: Json }
       admin_grant_achievement: {
@@ -4629,6 +5238,16 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_save_coop_chapter: {
+        Args: {
+          p_chapter: number
+          p_intro: string
+          p_outro: string
+          p_title: string
+        }
+        Returns: Json
+      }
+      admin_save_coop_operation: { Args: { p_operation: Json }; Returns: Json }
       admin_save_daily_objective: {
         Args: {
           p_card_codes?: string[]
@@ -4666,6 +5285,16 @@ export type Database = {
       }
       admin_save_match_rewards: {
         Args: { p_rules: Json; p_settings: Json }
+        Returns: Json
+      }
+      admin_save_mode_availability: {
+        Args: {
+          p_ends_at?: string
+          p_key: string
+          p_label?: string
+          p_starts_at?: string
+          p_state: string
+        }
         Returns: Json
       }
       admin_save_shard_settings: {
@@ -4784,6 +5413,7 @@ export type Database = {
         Args: { p_code: string; p_definition_id: string }
         Returns: Json
       }
+      assert_modes_open: { Args: { p_keys: string[] }; Returns: undefined }
       award_event_points: {
         Args: {
           p_kind: string
@@ -5021,6 +5651,10 @@ export type Database = {
         Args: { p_challenge_id: string; p_user: string }
         Returns: Json
       }
+      challenge_emergency_state_payload_foreseen: {
+        Args: { p_challenge_id: string; p_user: string }
+        Returns: Json
+      }
       challenge_formats: { Args: never; Returns: string[] }
       challenge_ghost_wait: {
         Args: { p_since: string; p_user: string }
@@ -5212,6 +5846,106 @@ export type Database = {
         Args: { p_count?: number; p_definition_id: string }
         Returns: Json
       }
+      coop_add_ally: { Args: { p_room: string }; Returns: undefined }
+      coop_ally_squad: { Args: never; Returns: string[] }
+      coop_close_stale: { Args: never; Returns: undefined }
+      coop_create_room: { Args: { p_operation: string }; Returns: Json }
+      coop_foreseen: { Args: { p_room: string }; Returns: Json }
+      coop_join_room: { Args: { p_code: string }; Returns: Json }
+      coop_leave_room: { Args: { p_room: string }; Returns: undefined }
+      coop_member_key: {
+        Args: { p_seat: number; p_user: string }
+        Returns: string
+      }
+      coop_member_stars: {
+        Args: { p_room: string; p_user: string }
+        Returns: string[]
+      }
+      coop_notify: {
+        Args: { p_kind: string; p_room: string }
+        Returns: undefined
+      }
+      coop_open_room: { Args: { p_user: string }; Returns: string }
+      coop_open_round: {
+        Args: { p_room: string; p_round: number }
+        Returns: undefined
+      }
+      coop_panic_limit: { Args: { p_players: number }; Returns: number }
+      coop_place: {
+        Args: {
+          p_cards: Json
+          p_ready: boolean
+          p_room: string
+          p_round: number
+        }
+        Returns: Json
+      }
+      coop_queue_join: {
+        Args: { p_card_instance_ids: string[]; p_operation: string }
+        Returns: Json
+      }
+      coop_queue_leave: { Args: never; Returns: undefined }
+      coop_queue_match: { Args: { p_operation: string }; Returns: string }
+      coop_queue_poll: { Args: never; Returns: Json }
+      coop_queue_status: { Args: { p_user: string }; Returns: Json }
+      coop_record_round: {
+        Args: { p_record: Json; p_room: string; p_round: number }
+        Returns: Json
+      }
+      coop_remove_ally: {
+        Args: { p_room: string; p_seat: number }
+        Returns: undefined
+      }
+      coop_round_context: {
+        Args: { p_room: string; p_user: string }
+        Returns: Json
+      }
+      coop_seat_ally: { Args: { p_room: string }; Returns: number }
+      coop_set_ready: {
+        Args: { p_ready: boolean; p_room: string }
+        Returns: undefined
+      }
+      coop_set_squad: {
+        Args: { p_card_instance_ids: string[]; p_room: string }
+        Returns: undefined
+      }
+      coop_signal: {
+        Args: { p_room: string; p_signal: string }
+        Returns: undefined
+      }
+      coop_squad_definitions: {
+        Args: { p_card_instance_ids: string[]; p_user: string }
+        Returns: string[]
+      }
+      coop_star_rules_payload: {
+        Args: {
+          p_operation: Database["public"]["Tables"]["coop_operations"]["Row"]
+        }
+        Returns: Json
+      }
+      coop_start: { Args: { p_room: string }; Returns: undefined }
+      coop_state: { Args: { p_room: string }; Returns: Json }
+      coop_target: {
+        Args: { p_boss: boolean; p_level: number }
+        Returns: number
+      }
+      coop_threat_panic: {
+        Args: { p_boss: boolean; p_level: number; p_reinforced: boolean }
+        Returns: number
+      }
+      coop_threats_stopped: {
+        Args: { p_room: string; p_user: string }
+        Returns: {
+          resolved_at: string
+          room_id: string
+          round: number
+          slot: number
+        }[]
+      }
+      coop_unlocked: {
+        Args: { p_operation: string; p_user: string }
+        Returns: boolean
+      }
       cosmetics_payload: { Args: { p_user: string }; Returns: Json }
       create_bonus_code: {
         Args: {
@@ -5375,6 +6109,10 @@ export type Database = {
       }
       emergency_state_payload: { Args: { p_user: string }; Returns: Json }
       emergency_state_payload_base: { Args: { p_user: string }; Returns: Json }
+      emergency_state_payload_foreseen: {
+        Args: { p_user: string }
+        Returns: Json
+      }
       emergency_week_close: { Args: never; Returns: undefined }
       emergency_week_current: { Args: never; Returns: string }
       emergency_week_ends_at: { Args: { p_week: string }; Returns: string }
@@ -5425,6 +6163,10 @@ export type Database = {
         Returns: string
       }
       emergency_week_state_payload: { Args: { p_user: string }; Returns: Json }
+      emergency_week_state_payload_foreseen: {
+        Args: { p_user: string }
+        Returns: Json
+      }
       end_notice_challenge: {
         Args: { p_challenge_id: string; p_user: string }
         Returns: Json
@@ -5541,6 +6283,7 @@ export type Database = {
       }
       get_conquest_history: { Args: never; Returns: Json }
       get_conquest_status: { Args: never; Returns: Json }
+      get_coop: { Args: never; Returns: Json }
       get_cosmetics: { Args: never; Returns: Json }
       get_daily_objectives: { Args: never; Returns: Json }
       get_emergency_leaderboard: { Args: never; Returns: Json }
@@ -6044,6 +6787,12 @@ export type Database = {
         }
         Returns: string
       }
+      mode_availability_payload: { Args: never; Returns: Json }
+      mode_keys_for: {
+        Args: { p_format: string; p_mode: string; p_story: boolean }
+        Returns: string[]
+      }
+      mode_open: { Args: { p_at?: string; p_key: string }; Returns: boolean }
       next_reset_at: { Args: { p_at?: string }; Returns: string }
       notify_achievements: {
         Args: { p_ids: string[]; p_user: string }
@@ -6086,6 +6835,10 @@ export type Database = {
         Returns: undefined
       }
       pack_opening_payload: { Args: { p_opening_id: string }; Returns: Json }
+      phoenix_back: {
+        Args: { p_definition_id: string; p_match_id: string; p_side: string }
+        Returns: boolean
+      }
       place_modifier: {
         Args: { p_code: string; p_params: Json }
         Returns: Json
@@ -6543,6 +7296,17 @@ export type Database = {
         Args: { p_match_id: string; p_payload: Json; p_side: string }
         Returns: Json
       }
+      with_emergency_omens: {
+        Args: {
+          p_definition_ids: string[]
+          p_levels: number[]
+          p_modifiers: Json
+          p_payload: Json
+          p_played: string[]
+          p_threat_ids: string[]
+        }
+        Returns: Json
+      }
       with_fog: {
         Args: { p_match_id: string; p_payload: Json; p_side: string }
         Returns: Json
@@ -6572,6 +7336,10 @@ export type Database = {
       with_rare_threats: { Args: { p_threat_ids: string[] }; Returns: string[] }
       with_rare_triple_rules: {
         Args: { p_match_id: string; p_payload: Json }
+        Returns: Json
+      }
+      with_rule_powers: {
+        Args: { p_match_id: string; p_payload: Json; p_side: string }
         Returns: Json
       }
       with_short_foresight: {
