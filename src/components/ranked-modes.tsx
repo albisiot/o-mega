@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { TrophyIcon } from "@/components/leaderboard-places";
+import { GateLink, useModeNotice } from "@/components/mode-gate";
 import { FamaProgress, LeagueBadge, PrizeLine } from "@/components/ranked-parts";
 import { balance } from "@/config/balance";
 import type { ActiveMatch, MatchFormat } from "@/lib/match";
+import { combinedStatus, startKeys, type ModeAvailabilityMap } from "@/lib/mode-availability";
 import { seasonPrizes, type MyRanked } from "@/lib/ranked";
 
 /** The modes of the Classificata, each with its own queue (both Quadrante grids too). */
@@ -46,14 +48,20 @@ export function RankedModesView({
   active,
   error,
   onPrizeClaimed,
+  modes = null,
+  now = 0,
 }: {
   ranked: MyRanked | null;
   /** A match in progress blocks the modes, as in Gioca; undefined while loading. */
   active: ActiveMatch | null | undefined;
   error: string | null;
   onPrizeClaimed: () => void;
+  /** When each mode is open (EDITOR → Modalità di gioco); null: all open. */
+  modes?: ModeAvailabilityMap | null;
+  now?: number;
 }) {
   const blocked = Boolean(active) || (active === undefined && !error);
+  const { notice, show } = useModeNotice();
   const prize = ranked?.prizes[0] ?? null;
   return (
     <div className="home-shell">
@@ -96,11 +104,12 @@ export function RankedModesView({
         {/* The tiles take the room a taller phone leaves; on a short one they keep their height. */}
         <div className={`grid min-h-0 flex-1 auto-rows-fr grid-cols-2 gap-1.5 ${blocked ? "pointer-events-none opacity-40" : ""}`}>
           {RANKED_MODES.map((mode) => (
-            <Link
+            <GateLink
               key={mode.format}
               href={rankedHref(mode.format)}
-              aria-disabled={blocked}
-              aria-label={`Classificata: ${mode.label}, ${mode.detail}`}
+              status={combinedStatus(modes, startKeys(mode.format, "ranked"), now)}
+              onClosed={show}
+              label={`Classificata: ${mode.label}, ${mode.detail}`}
               className={`cut-both flex min-h-[52px] min-w-0 items-center justify-between gap-2 px-3 py-1 text-black ${mode.color} ${
                 mode.wide ? "col-span-2" : ""
               }`}
@@ -119,7 +128,7 @@ export function RankedModesView({
                   →
                 </span>
               )}
-            </Link>
+            </GateLink>
           ))}
         </div>
 
@@ -139,6 +148,7 @@ export function RankedModesView({
           </ul>
         </section>
       </main>
+      {notice}
     </div>
   );
 }

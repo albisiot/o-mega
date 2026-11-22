@@ -17,6 +17,7 @@ import {
 } from "@/lib/emergency";
 import { describeServerError } from "@/lib/errors";
 import { readLastPlay, type LastPlay } from "@/lib/last-play";
+import { useModeAvailability } from "@/lib/mode-availability";
 import {
   fetchActiveMatch,
   fetchConquestStatus,
@@ -63,6 +64,8 @@ export default function PlayPage() {
   const [coop, setCoop] = useState<CoopCatalog | null | undefined>(() => seenCoop() ?? undefined);
   // On this device only: read once, the page is left to start a match anyway.
   const [lastPlay] = useState<LastPlay | null>(() => readLastPlay());
+  // When each mode is open (EDITOR): a closed one stays, under its veil.
+  const modes = useModeAvailability(Boolean(session));
   const [error, setError] = useState<string | null>(null);
   const [confirmForfeit, setConfirmForfeit] = useState(false);
   // For the «Nuovo» badges: a minute is precise enough.
@@ -152,6 +155,7 @@ export default function PlayPage() {
         event={<EventBanner compact />}
         challenges={challenges}
         coop={coop}
+        modes={modes}
         now={now}
         onForfeit={() => setConfirmForfeit(true)}
       />

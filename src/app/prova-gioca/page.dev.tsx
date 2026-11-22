@@ -11,6 +11,9 @@
 //   /prova-gioca/?s=senza       no event, Story all done
 //   /prova-gioca/?s=storia      no event, Story in progress: the chapter's missions beside its number
 //   /prova-gioca/?s=carico      while loading
+//   /prova-gioca/?s=modi        modes from the EDITOR: Allarme Triplo off «Prossimamente», Grande Minaccia from
+//                               3 December, Quadrante «Nuova», moving grid off, Storia and Conquista off,
+//                               the week's Emergenza over; «Gioca ancora» on the Grande Minaccia waits
 // The Emergenza della settimana: to play (nuovo, senza), in progress (partita), done (ancora, premio).
 
 import { useSearchParams } from "next/navigation";
@@ -19,6 +22,7 @@ import { PlayMenuView, type EmergencyThisWeek, type EmergencyToday } from "@/com
 import type { Challenge } from "@/lib/challenges";
 import type { LastPlay } from "@/lib/last-play";
 import type { ActiveMatch, ConquestStatus } from "@/lib/match";
+import { toModeMap, type ModeAvailability, type ModeAvailabilityMap } from "@/lib/mode-availability";
 import type { MyRanked } from "@/lib/ranked";
 import type { StoryChapter } from "@/lib/story";
 import type { StoryStar } from "@/lib/story-stars";
@@ -101,7 +105,18 @@ type Scene = {
   event: "on" | "reward" | "off";
   /** The Sfide a tema running; missing: not known. */
   challenges?: Challenge[];
+  /** When each mode is open (EDITOR); missing: all open. */
+  modes?: ModeAvailabilityMap;
 };
+
+const mode = (key: ModeAvailability["key"], patch: Partial<ModeAvailability>): ModeAvailability => ({
+  key,
+  state: "on",
+  starts_at: null,
+  ends_at: null,
+  label: null,
+  ...patch,
+});
 
 // The scenes are on Tuesday 17 November 2026: the week ends on Monday 23 at midnight, Rome.
 const WEEK_ENDS = "2026-11-22T23:00:00Z";
@@ -187,6 +202,25 @@ const SCENES: Record<string, Scene> = {
     lastPlay: { mode: "bot", format: "classic", difficulty: "medium" },
     event: "off",
   },
+  modi: {
+    active: null,
+    conquest: OPEN,
+    ranked: RANKED,
+    emergency: null,
+    emergencyWeek: week(null),
+    story: chapters(false),
+    lastPlay: { mode: "bot", format: "boss", difficulty: "medium" },
+    event: "on",
+    modes: toModeMap([
+      mode("triple", { state: "off", label: "Prossimamente" }),
+      mode("boss", { state: "window", starts_at: "2026-12-03T17:00:00Z", ends_at: "2026-12-10T22:59:00Z" }),
+      mode("quadrant", { label: "Nuova" }),
+      mode("quadrant_shifting", { state: "off" }),
+      mode("story", { state: "off", label: "In pausa" }),
+      mode("conquest", { state: "off" }),
+      mode("emergency_week", { state: "window", starts_at: "2026-11-01T00:00:00Z", ends_at: "2026-11-15T00:00:00Z" }),
+    ]),
+  },
   carico: {
     active: undefined,
     conquest: null,
@@ -213,6 +247,7 @@ function Scenes() {
         story={scene.story}
         lastPlay={scene.lastPlay}
         challenges={scene.challenges ?? null}
+        modes={scene.modes ?? null}
         event={scene.event === "off" ? null : <FakeEvent reward={scene.event === "reward"} />}
         now={Date.parse("2026-11-17T12:00:00Z")}
         onForfeit={() => {}}

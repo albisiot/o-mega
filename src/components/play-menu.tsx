@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { ChallengeCard, ChallengeRibbon } from "@/components/challenge-parts";
+import { GateLink, gateSaid, ModeGate, useModeNotice } from "@/components/mode-gate";
 import { TrophyIcon } from "@/components/leaderboard-places";
 import { StarCount } from "@/components/story-stars";
 import { TutorialButton } from "@/components/tutorial";
@@ -16,6 +17,7 @@ import { leaderboardHref, type LeaderboardBoard } from "@/lib/leaderboards";
 import { DIFFICULTY_LABELS, type ActiveMatch, type ConquestStatus, type MatchFormat } from "@/lib/match";
 import { useRememberedState } from "@/lib/place-memory";
 import { isQuadrantFormat, QUADRANT_FORMATS, QUADRANT_GRID_LABELS, type QuadrantFormat } from "@/lib/quadrant";
+import { combinedStatus, startKeys, statusOf, type ModeAvailabilityMap, type ModeStatus } from "@/lib/mode-availability";
 import { leagueInfo, type MyRanked } from "@/lib/ranked";
 import { chapterUnlocked, type StoryChapter } from "@/lib/story";
 import { storyStarCount } from "@/lib/story-stars";
@@ -246,7 +248,20 @@ const OPPONENT_TABS: { key: Opponent; label: string; detail: string }[] = [
  * (online), one at a time, and the mode's leaderboard at the bottom. While a Sfida a tema
  * runs on the mode (SPEC §8.8) a third tab, «★ A tema», shows it, and the sheet opens on it.
  */
-function ModeSheet({ mode, disabled, challenge, now }: { mode: Mode; disabled: boolean; challenge: Challenge | null; now: number }) {
+function ModeSheet({
+  mode,
+  disabled,
+  challenge,
+  now,
+  modes,
+}: {
+  mode: Mode;
+  disabled: boolean;
+  challenge: Challenge | null;
+  now: number;
+  /** When each mode is open (EDITOR): here, the Quadrante's grids. */
+  modes: ModeAvailabilityMap | null;
+}) {
   const [grid, setGrid] = useRememberedState<QuadrantFormat>("quadrant-grid", "quadrant");
   const [chosen, setOpponent] = useRememberedState<Opponent>("opponent", challenge ? "challenge" : "bot");
   const opponent: Opponent = chosen === "challenge" && !challenge ? "bot" : chosen;
@@ -261,6 +276,8 @@ function ModeSheet({ mode, disabled, challenge, now }: { mode: Mode; disabled: b
   const format: MatchFormat = mode.key === "quadrant" ? grid : mode.key;
   const query = format === "classic" ? "" : `format=${format}&`;
   const { board, title } = MODE_BOARDS[mode.key];
+  // A grid switched off stays on the list, under its veil, and its matches wait.
+  const gridClosed = !combinedStatus(modes, startKeys(format), now).open;
 
   return (
     <>
@@ -269,21 +286,26 @@ function ModeSheet({ mode, disabled, challenge, now }: { mode: Mode; disabled: b
       <Needs items={mode.needs} />
       {mode.key === "quadrant" && (
         <div role="radiogroup" aria-label="La griglia" className="grid grid-cols-2 gap-1.5">
-          {QUADRANT_FORMATS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={grid === option}
-              onClick={() => setGrid(option)}
-              className={`flex min-h-10 flex-col items-start justify-center px-2.5 py-0.5 text-left ${
-                grid === option ? "bg-foreground text-black" : "bg-panel text-foreground"
-              }`}
-            >
-              <span className="font-display text-lg uppercase leading-5">{QUADRANT_GRID_LABELS[option]}</span>
-              <span className="text-[11px] font-semibold leading-4 opacity-80">{QUADRANT_GRID_DETAILS[option]}</span>
-            </button>
-          ))}
+          {QUADRANT_FORMATS.map((option) => {
+            const status = combinedStatus(modes, startKeys(option), now);
+            return (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={grid === option}
+                aria-label={`${QUADRANT_GRID_LABELS[option]}: ${QUADRANT_GRID_DETAILS[option]}${gateSaid(status)}`}
+                onClick={() => setGrid(option)}
+                className={`relative flex min-h-10 flex-col items-start justify-center px-2.5 py-0.5 text-left ${
+                  grid === option ? "bg-foreground text-black" : "bg-panel text-foreground"
+                }`}
+              >
+                <span className="font-display text-lg uppercase leading-5">{QUADRANT_GRID_LABELS[option]}</span>
+                <span className="text-[11px] font-semibold leading-4 opacity-80">{QUADRANT_GRID_DETAILS[option]}</span>
+                <ModeGate status={status} compact />
+              </button>
+            );
+          })}
         </div>
       )}
       <div role="tablist" aria-label="Contro chi" className={`grid gap-1.5 pt-0.5 ${tabs.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
@@ -308,9 +330,13 @@ function ModeSheet({ mode, disabled, challenge, now }: { mode: Mode; disabled: b
           );
         })}
       </div>
-      <div role="tabpanel" className={`flex flex-col gap-1.5 ${disabled && opponent !== "challenge" ? "pointer-events-none opacity-40" : ""}`}>
+      {gridClosed && <p className="text-[13px] font-bold leading-4 text-comic-magenta">Questa griglia non è disponibile ora.</p>}
+      <div
+        role="tabpanel"
+        className={`flex flex-col gap-1.5 ${(disabled && opponent !== "challenge") || gridClosed ? "pointer-events-none opacity-40" : ""}`}
+      >
         {opponent === "challenge" && challenge ? (
-          <ChallengeCard challenge={challenge} now={now} disabled={disabled} />
+          <ChallengeCard challenge={challenge} now={now} disabled={disabled || gridClosed} />
         ) : opponent === "bot" ? (
           <BotGrid query={query} texts={BOTS[mode.key]} />
         ) : (
@@ -343,6 +369,8 @@ function ModeTile({
   onToggle,
   now,
   challenge = null,
+  status = null,
+  onClosed,
 }: {
   mode: Mode;
   open: boolean;
@@ -350,18 +378,25 @@ function ModeTile({
   now: number;
   /** A Sfida a tema running on the mode: its ribbon takes the place of «Nuovo». */
   challenge?: Challenge | null;
+  /** When the mode is open (EDITOR): a closed one stays, under its veil, and only says why. */
+  status?: ModeStatus | null;
+  onClosed?: () => void;
 }) {
-  const isNew = "newUntil" in mode && now < Date.parse(`${mode.newUntil}T00:00:00+01:00`);
+  // The admin's label (or the reason it is closed) takes the place of «Nuovo».
+  const gated = !open && status !== null && (!status.open || status.label !== null);
+  const closed = !open && status !== null && !status.open;
+  const isNew = !gated && "newUntil" in mode && now < Date.parse(`${mode.newUntil}T00:00:00+01:00`);
   return (
     <button
       type="button"
-      aria-expanded={open}
+      aria-expanded={closed ? undefined : open}
+      aria-disabled={closed || undefined}
       aria-label={
         open
           ? `${mode.label}: chiudi`
-          : `${mode.label}: ${mode.needs.join(", ")}${challenge ? `. Sfida a tema: ${challenge.title}` : isNew ? ". Nuova" : ""}`
+          : `${mode.label}: ${mode.needs.join(", ")}${challenge ? `. Sfida a tema: ${challenge.title}` : isNew ? ". Nuova" : ""}${gateSaid(gated ? status : null)}`
       }
-      onClick={onToggle}
+      onClick={closed ? onClosed : onToggle}
       className={`cut-both speed-lines relative flex w-full min-w-0 items-center justify-between gap-2 text-left text-black ${mode.color} ${
         open ? "shrink-0 px-4 py-1.5" : "h-full px-3 py-1.5"
       }`}
@@ -384,6 +419,7 @@ function ModeTile({
           </span>
         )
       )}
+      {gated && <ModeGate status={status} />}
     </button>
   );
 }
@@ -432,6 +468,8 @@ function TodayTile({
   stateLabel,
   className,
   disabled = false,
+  gate = null,
+  onClosed = () => {},
 }: {
   href: string;
   title: string;
@@ -444,13 +482,18 @@ function TodayTile({
   stateLabel?: string;
   className: string;
   disabled?: boolean;
+  /** When its mode is open (EDITOR). */
+  gate?: ModeStatus | null;
+  onClosed?: () => void;
 }) {
   const said = stateLabel ?? (typeof state === "string" ? state : undefined);
   return (
-    <Link
+    <GateLink
       href={href}
-      aria-disabled={disabled}
-      aria-label={`${title}: ${detail}${said ? `, ${said}` : ""}`}
+      status={gate}
+      onClosed={onClosed}
+      compact
+      label={`${title}: ${detail}${said ? `, ${said}` : ""}`}
       className={`tile flex min-h-12 min-w-0 flex-[1_1_0] flex-col justify-center px-2.5 py-1 text-black short:min-h-11 ${className} ${
         disabled ? "pointer-events-none opacity-40" : ""
       }`}
@@ -470,11 +513,14 @@ function TodayTile({
           {state}
         </span>
       )}
-    </Link>
+    </GateLink>
   );
 }
 
-function EmergencyTile({ today }: { today: EmergencyToday }) {
+/** The gate of a tile: its mode's state, and what a tap says while it is closed. */
+type Gate = { status: ModeStatus | null; onClosed: () => void };
+
+function EmergencyTile({ today, gate }: { today: EmergencyToday; gate: Gate }) {
   const { threatsPerRun } = balance.emergency;
   return (
     <TodayTile
@@ -483,6 +529,8 @@ function EmergencyTile({ today }: { today: EmergencyToday }) {
       detail={today ? `${today.passed}/${threatsPerRun} · ${today.rank}° oggi` : "1 tentativo"}
       state={today === undefined ? undefined : today ? "✓ Fatta" : "Da fare"}
       className="bg-foreground"
+      gate={gate.status}
+      onClosed={gate.onClosed}
     />
   );
 }
@@ -491,7 +539,7 @@ function EmergencyTile({ today }: { today: EmergencyToday }) {
  * This week's Emergenza on one slim row under the day's tiles, drawn like the Emergenza tile:
  * the days left and where the player is (to play, in progress, done with the threats passed).
  */
-function EmergencyWeekRow({ week, now, compact = false }: { week: EmergencyThisWeek; now: number; compact?: boolean }) {
+function EmergencyWeekRow({ week, now, compact = false, gate }: { week: EmergencyThisWeek; now: number; compact?: boolean; gate: Gate }) {
   if (week === null) return null;
   const run = week?.run ?? null;
   const days = week ? daysLeftText(daysLeft(week.endsAt, now)) : "Una sfida più dura";
@@ -506,20 +554,26 @@ function EmergencyWeekRow({ week, now, compact = false }: { week: EmergencyThisW
   if (compact) {
     // Half the row, beside an Emergenza a tema: the name and where the player is.
     return (
-      <Link
+      <GateLink
         href={emergencyHref("week")}
-        aria-label={`Emergenza della settimana: ${days}${state ? `, ${state}` : ""}`}
+        status={gate.status}
+        onClosed={gate.onClosed}
+        compact
+        label={`Emergenza della settimana: ${days}${state ? `, ${state}` : ""}`}
         className="tile flex min-h-10 min-w-0 flex-1 flex-col justify-center bg-foreground px-2.5 py-1 text-black short:min-h-9"
       >
         <span className="block truncate font-display text-[15px] uppercase leading-5">Settimana</span>
         <span className="block truncate text-[12px] font-bold leading-4">{state ?? days}</span>
-      </Link>
+      </GateLink>
     );
   }
   return (
-    <Link
+    <GateLink
       href={emergencyHref("week")}
-      aria-label={`Emergenza della settimana: ${days}${state ? `, ${state}` : ""}`}
+      status={gate.status}
+      onClosed={gate.onClosed}
+      compact
+      label={`Emergenza della settimana: ${days}${state ? `, ${state}` : ""}`}
       className="tile flex min-h-10 shrink-0 items-center gap-2 bg-foreground px-2.5 py-1 text-black short:min-h-9"
     >
       <span className="shrink-0 -skew-x-8 bg-black px-1.5 font-sfx text-[13px] leading-5 tracking-wide text-comic-yellow">
@@ -534,7 +588,7 @@ function EmergencyWeekRow({ week, now, compact = false }: { week: EmergencyThisW
           {state}
         </span>
       )}
-    </Link>
+    </GateLink>
   );
 }
 
@@ -542,14 +596,17 @@ function EmergencyWeekRow({ week, now, compact = false }: { week: EmergencyThisW
  * An Emergenza a tema (SPEC §8.8) beside the week's, on the same slim row: no line more in Gioca.
  * Its name, and where the player is: to play, in progress, done with the threats passed.
  */
-function EmergencyChallengeRow({ challenge }: { challenge: Challenge }) {
+function EmergencyChallengeRow({ challenge, gate }: { challenge: Challenge; gate: Gate }) {
   const run = challenge.my_run ?? null;
   const threats = challenge.emergency_threats ?? challenge.team_size;
   const state = !run ? `Da fare · ${threats} Minacce` : run.status === "active" ? `In corso · ${run.passed}/${threats}` : `✓ ${run.passed}/${threats}`;
   return (
-    <Link
+    <GateLink
       href={challengeEmergencyHref(challenge)}
-      aria-label={`Emergenza a tema ${challenge.title}: ${state}`}
+      status={gate.status}
+      onClosed={gate.onClosed}
+      compact
+      label={`Emergenza a tema ${challenge.title}: ${state}`}
       className="tile flex min-h-10 min-w-0 flex-[1.4_1_0] items-center gap-1.5 px-2 py-1 text-black short:min-h-9"
       style={{ background: challenge.color }}
     >
@@ -558,7 +615,7 @@ function EmergencyChallengeRow({ challenge }: { challenge: Challenge }) {
         <span className="block truncate font-display text-[15px] uppercase leading-5">{challenge.title}</span>
         <span className="block truncate text-[12px] font-bold leading-4">{state}</span>
       </span>
-    </Link>
+    </GateLink>
   );
 }
 
@@ -566,7 +623,7 @@ function EmergencyChallengeRow({ challenge }: { challenge: Challenge }) {
  * The Operazioni (SPEC §5.17) on the week's row: the room the player is in, or how far the
  * chapter is. Beside the week's Emergenza, so Gioca gains no line.
  */
-function OperationsTile({ coop, compact = false }: { coop: CoopCatalog | null | undefined; compact?: boolean }) {
+function OperationsTile({ coop, compact = false, gate }: { coop: CoopCatalog | null | undefined; compact?: boolean; gate: Gate }) {
   const room = coop?.room ?? null;
   const queued = !room && Boolean(coop?.queue?.queued);
   const operations = coop?.chapters.flatMap((chapter) => chapter.operations) ?? [];
@@ -584,17 +641,21 @@ function OperationsTile({ coop, compact = false }: { coop: CoopCatalog | null | 
         : operations.length
           ? "✓ Completate"
           : "In squadra, dal vivo";
+  // A room or a place in the queue stays reachable: what started goes on to the end.
   return (
-    <Link
+    <GateLink
       href={room ? coopRoomHref(room.id) : queued ? COOP_QUEUE_HREF : "/operazioni"}
-      aria-label={`Operazioni in squadra: ${state}`}
+      status={room || queued ? null : gate.status}
+      onClosed={gate.onClosed}
+      compact
+      label={`Operazioni in squadra: ${state}`}
       className={`tile flex min-h-10 min-w-0 flex-col justify-center bg-comic-cyan px-2.5 py-1 text-black short:min-h-9 ${
         compact ? "flex-1" : "flex-[1.4_1_0]"
       }`}
     >
       <span className="block truncate font-display text-[15px] uppercase leading-5">Operazioni</span>
       <span className="block truncate text-[12px] font-bold leading-4">{state}</span>
-    </Link>
+    </GateLink>
   );
 }
 
@@ -602,7 +663,7 @@ function OperationsTile({ coop, compact = false }: { coop: CoopCatalog | null | 
  * The Story at the chapter the player is in, with the stars of the whole Story earned so far
  * («★ 15/180», locked missions counted too): the Story opens on its next mission.
  */
-function StoryTile({ chapters, disabled }: { chapters: StoryChapter[] | null; disabled: boolean }) {
+function StoryTile({ chapters, disabled, gate }: { chapters: StoryChapter[] | null; disabled: boolean; gate: Gate }) {
   const playing = chapters?.find((chapter) => chapterUnlocked(chapter) && chapter.missions.some((m) => !m.completed));
   const done = playing?.missions.filter((m) => m.completed).length ?? 0;
   const stars = chapters && storyStarCount(chapters);
@@ -619,6 +680,8 @@ function StoryTile({ chapters, disabled }: { chapters: StoryChapter[] | null; di
         stateLabel={`${missions ? `${missions} missioni, ` : ""}${stars.earned} stelle su ${stars.total}`}
         className="rays-gold"
         disabled={disabled}
+        gate={gate.status}
+        onClosed={gate.onClosed}
       />
     );
   }
@@ -630,16 +693,33 @@ function StoryTile({ chapters, disabled }: { chapters: StoryChapter[] | null; di
       state={missions ? `${missions} missioni` : undefined}
       className="rays-gold"
       disabled={disabled}
+      gate={gate.status}
+      onClosed={gate.onClosed}
     />
   );
 }
 
 /** What is at stake: the Fama of the Classificata (its page), the cards of the Conquista. */
-function StakesRow({ ranked, conquest, blocked }: { ranked: MyRanked | null; conquest: ConquestStatus | null; blocked: boolean }) {
+function StakesRow({
+  ranked,
+  conquest,
+  blocked,
+  rankedGate,
+  conquestGate,
+}: {
+  ranked: MyRanked | null;
+  conquest: ConquestStatus | null;
+  blocked: boolean;
+  rankedGate: Gate;
+  conquestGate: Gate;
+}) {
   const { maxCardsLostPerDay, unlockAfterMatches, unlockAtLevel } = balance.conquest;
   const limitReached = conquest !== null && conquest.cards_lost_today >= maxCardsLostPerDay;
   const locked = conquest !== null && !conquest.unlocked;
   const available = conquest !== null && !locked && !limitReached && !blocked;
+  // A prize of the Classificata waits on its page: closed or not, the page opens to give it.
+  const rankedStatus = ranked?.prizes.length ? null : rankedGate.status;
+  const conquestClosed = conquestGate.status !== null && !conquestGate.status.open;
   const conquestDetail = locked
     ? `${conquest.completed_matches}/${unlockAfterMatches} partite o liv. ${unlockAtLevel}`
     : limitReached
@@ -648,16 +728,30 @@ function StakesRow({ ranked, conquest, blocked }: { ranked: MyRanked | null; con
 
   return (
     <div className="grid shrink-0 grid-cols-2 gap-1.5">
-      <Link
+      <GateLink
         href="/classificata"
-        aria-label={ranked ? `Classificata: ${ranked.fama} Fama, ${leagueInfo(ranked.league).name}` : "Classificata: la Fama in gioco"}
+        status={rankedStatus}
+        onClosed={rankedGate.onClosed}
+        label={ranked ? `Classificata: ${ranked.fama} Fama, ${leagueInfo(ranked.league).name}` : "Classificata: la Fama in gioco"}
         className="cut-both rays-gold flex min-h-14 min-w-0 flex-col justify-center px-3 py-1 text-black short:min-h-12"
       >
         <span className="block -skew-x-8 truncate font-display text-xl uppercase leading-6">Classificata</span>
         <span className="block truncate text-[12px] font-extrabold leading-4">
           {ranked ? `${ranked.fama} Fama · ${leagueInfo(ranked.league).name}` : "La Fama in gioco"}
         </span>
-      </Link>
+      </GateLink>
+      {conquestClosed ? (
+        <GateLink
+          href="/squadra/?mode=conquest"
+          status={conquestGate.status}
+          onClosed={conquestGate.onClosed}
+          label="Conquista: chi vince prende una carta dell'altro"
+          className="cut-both speed-lines flex min-h-14 min-w-0 flex-col justify-center bg-comic-magenta px-3 py-1 text-black short:min-h-12"
+        >
+          <span className="block -skew-x-8 truncate font-display text-xl uppercase leading-6">Conquista</span>
+          <span className="block truncate text-[12px] font-extrabold leading-4">Le carte in palio</span>
+        </GateLink>
+      ) : (
       <Link
         href={available ? "/squadra/?mode=conquest" : "#"}
         aria-disabled={!available}
@@ -674,12 +768,15 @@ function StakesRow({ ranked, conquest, blocked }: { ranked: MyRanked | null; con
       >
         <span className="block -skew-x-8 truncate font-display text-xl uppercase leading-6">Conquista</span>
         <span className="block truncate text-[12px] font-extrabold leading-4">{conquestDetail}</span>
-        {locked && (
+        {locked ? (
           <span className="absolute right-1.5 top-1 bg-black px-1 font-sfx text-[13px] leading-4 tracking-wide text-comic-magenta" aria-hidden>
             🔒 Liv. {unlockAtLevel}
           </span>
+        ) : (
+          <ModeGate status={conquestGate.status} />
         )}
       </Link>
+      )}
     </div>
   );
 }
@@ -746,6 +843,7 @@ export function PlayMenuView({
   event,
   challenges = null,
   coop,
+  modes = null,
   now,
   onForfeit,
 }: {
@@ -765,15 +863,21 @@ export function PlayMenuView({
   challenges?: Challenge[] | null;
   /** The Operazioni (SPEC §5.17): the chapter and the room the player is in; undefined while loading. */
   coop?: CoopCatalog | null;
+  /** When each mode is open (EDITOR → Modalità di gioco); null while loading: all open. */
+  modes?: ModeAvailabilityMap | null;
   now: number;
   onForfeit: () => void;
 }) {
+  // A closed mode stays visible: a tap says it is not available now.
+  const { notice, show: showClosed } = useModeNotice();
+  const gate = (key: Parameters<typeof statusOf>[1]): Gate => ({ status: statusOf(modes, key, now), onClosed: showClosed });
   // Back from a match setup, the same mode is open where it was.
   const [openMode, setOpenMode] = useRememberedState<string | null>("mode", null);
   // The modes wait for the answer: a match in progress would block them anyway.
   const blocked = Boolean(active) || (active === undefined && !error);
   const openKey = (openMode && MOVED_MODES[openMode]) ?? openMode;
-  const opened = MODES.find((mode) => mode.key === openKey) ?? null;
+  // A mode remembered open but closed since stays on the list.
+  const opened = MODES.find((mode) => mode.key === openKey && statusOf(modes, mode.key, now).open) ?? null;
   const challengeOf = (key: ModeKey) => runningChallenge(challenges, key, now);
   // An Emergenza a tema has no mode tile: it sits beside the week's Emergenza.
   const themedEmergency = runningChallenge(challenges, "emergency", now);
@@ -781,7 +885,7 @@ export function PlayMenuView({
   // The same play, never another one: a Conquista closed or a Sfida a tema over (or done for
   // today) is said on the button, which waits (SPEC §11.2). Until 20 November 2026 they fell
   // back to a friendly Classica online and to the mode without the challenge.
-  const againBlock = lastPlay ? playBlock(lastPlay, { now, challenges, conquest }) : null;
+  const againBlock = playBlock(lastPlay ?? FIRST_PLAY, { now, challenges, conquest, modes });
 
   return (
     <div className="home-shell">
@@ -803,7 +907,7 @@ export function PlayMenuView({
         {opened ? (
           <section className="flex min-h-0 flex-1 flex-col gap-1.5">
             <ModeTile mode={opened} open now={now} onToggle={() => setOpenMode(null)} />
-            <ModeSheet key={opened.key} mode={opened} disabled={blocked} challenge={challengeOf(opened.key)} now={now} />
+            <ModeSheet key={opened.key} mode={opened} disabled={blocked} challenge={challengeOf(opened.key)} now={now} modes={modes} />
           </section>
         ) : (
           <>
@@ -812,14 +916,14 @@ export function PlayMenuView({
             <ListTitle>Oggi</ListTitle>
             <div className="flex shrink-0 gap-1.5">
               {event}
-              <EmergencyTile today={emergency} />
-              <StoryTile chapters={story} disabled={blocked} />
+              <EmergencyTile today={emergency} gate={gate("emergency")} />
+              <StoryTile chapters={story} disabled={blocked} gate={gate("story")} />
             </div>
             {/* The week's Emergenza shares its row: with an Emergenza a tema and with the Operazioni. */}
             <div className="flex shrink-0 gap-1.5">
-              <EmergencyWeekRow week={emergencyWeek} now={now} compact />
-              {themedEmergency && <EmergencyChallengeRow challenge={themedEmergency} />}
-              <OperationsTile coop={coop} compact={Boolean(themedEmergency)} />
+              <EmergencyWeekRow week={emergencyWeek} now={now} compact gate={gate("emergency_week")} />
+              {themedEmergency && <EmergencyChallengeRow challenge={themedEmergency} gate={gate("emergency")} />}
+              <OperationsTile coop={coop} compact={Boolean(themedEmergency)} gate={gate("coop")} />
             </div>
 
             <ListTitle>Modalità</ListTitle>
@@ -831,16 +935,25 @@ export function PlayMenuView({
                   open={false}
                   now={now}
                   challenge={challengeOf(mode.key)}
+                  status={statusOf(modes, mode.key, now)}
+                  onClosed={showClosed}
                   onToggle={() => setOpenMode(mode.key)}
                 />
               ))}
             </div>
 
             <ListTitle>In palio</ListTitle>
-            <StakesRow ranked={ranked} conquest={conquest} blocked={blocked} />
+            <StakesRow
+              ranked={ranked}
+              conquest={conquest}
+              blocked={blocked}
+              rankedGate={gate("ranked")}
+              conquestGate={{ status: combinedStatus(modes, startKeys("classic", "conquest").reverse(), now), onClosed: showClosed }}
+            />
           </>
         )}
       </main>
+      {notice}
     </div>
   );
 }

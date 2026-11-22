@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { GateLink, useModeNotice } from "@/components/mode-gate";
 import { LeagueBadge } from "@/components/ranked-parts";
+import type { ModeStatus } from "@/lib/mode-availability";
 import { leagueInfo, type MyRanked } from "@/lib/ranked";
 
 /**
@@ -12,11 +14,15 @@ import { leagueInfo, type MyRanked } from "@/lib/ranked";
 export function HomePlayButtons({
   ranked,
   challenge = null,
+  rankedStatus = null,
 }: {
   ranked: MyRanked | null;
   /** A Sfida a tema running (SPEC §8.8): its name takes the place of «Tutte le modalità». */
   challenge?: { title: string; color: string } | null;
+  /** When the Classificata is open (EDITOR); a prize waiting on its page opens it anyway. */
+  rankedStatus?: ModeStatus | null;
 }) {
+  const { notice, show } = useModeNotice();
   return (
     <div className="flex min-h-21 flex-[1_1_0] gap-2 short:min-h-18">
       <Link
@@ -37,9 +43,11 @@ export function HomePlayButtons({
           <p className="mt-0.5 truncate text-[13px] font-extrabold leading-4">Tutte le modalità</p>
         )}
       </Link>
-      <Link
+      <GateLink
         href="/classificata"
-        aria-label={ranked ? `Classificata: ${ranked.fama} Fama, ${leagueInfo(ranked.league).name}` : "Classificata"}
+        status={ranked?.prizes.length ? null : rankedStatus}
+        onClosed={show}
+        label={ranked ? `Classificata: ${ranked.fama} Fama, ${leagueInfo(ranked.league).name}` : "Classificata"}
         className="cut-both rays-gold flex min-w-0 flex-[9_1_0] flex-col justify-center gap-1 px-3 py-1.5 text-black [container-type:size]"
       >
         <p className="-skew-x-8 font-display text-[length:clamp(17px,min(24cqh,15cqw),40px)] uppercase leading-none">
@@ -56,7 +64,8 @@ export function HomePlayButtons({
         ) : (
           <p className="text-[13px] font-extrabold leading-4">La Fama in gioco</p>
         )}
-      </Link>
+      </GateLink>
+      {notice}
     </div>
   );
 }

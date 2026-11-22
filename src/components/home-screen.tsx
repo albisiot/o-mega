@@ -21,6 +21,7 @@ import {
   seenEmergencyWeekLeaderboard,
 } from "@/lib/emergency";
 import { fetchActiveMatch, fetchConquestStatus, seenActiveMatch, seenConquestStatus, type ActiveMatch } from "@/lib/match";
+import { statusOf, useModeAvailability } from "@/lib/mode-availability";
 import {
   fetchOpenedPackCount,
   fetchPackOdds,
@@ -70,6 +71,8 @@ export function HomeScreen({ profile }: { profile: Profile }) {
   const [challenges, setChallenges] = useState<Challenge[] | null>(() => seenChallenges()?.challenges ?? null);
   // A minute is precise enough for a challenge starting or ending.
   const now = useNow(60_000);
+  // When the Classificata is open (EDITOR → Modalità di gioco).
+  const modes = useModeAvailability();
   const [Tutorial, setTutorial] = useState<ComponentType | null>(null);
 
   // Only a player who has not seen the tutorial downloads it, while the world intro is still up.
@@ -171,6 +174,7 @@ export function HomeScreen({ profile }: { profile: Profile }) {
 
         <HomePlayButtons
           ranked={ranked}
+          rankedStatus={statusOf(modes, "ranked", now)}
           challenge={
             challenges?.find(
               (challenge) => Date.parse(challenge.starts_at) <= now && now < Date.parse(challenge.ends_at),

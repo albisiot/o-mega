@@ -19,9 +19,11 @@ import { startTripleBotMatch } from "@/lib/triple";
 import { COOP_QUEUE_HREF, coopRoomHref, coopStarCondition, fetchCoopRoom, joinCoopQueue, setCoopReady, setCoopSquad } from "@/lib/coop";
 import { createChallengeLobby, fetchChallenges, fetchLobbyChallenge, hasSuppliedTeam, seenChallenges, type Challenge } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
-import { challengeBlock, conquestBlock, describePlayBlock, rememberLastPlay, type PlayBlock } from "@/lib/last-play";
+import { challengeBlock, conquestBlock, describePlayBlock, modeBlock, rememberLastPlay, type PlayBlock } from "@/lib/last-play";
+import { startKeys, useModeAvailability, type GameModeKey } from "@/lib/mode-availability";
 import { fetchStory, seenStory, startStoryMission, storyMatchHref, type StoryMission } from "@/lib/story";
 import { useLockedScreen } from "@/lib/use-locked-screen";
+import { useNow } from "@/lib/use-now";
 import {
   asMatchFormat,
   createLobby,
@@ -134,6 +136,23 @@ const FORMAT_LABELS: Record<MatchFormat, string> = {
   quadrant_shifting: `Quadrante, ${QUADRANT_GRID_LABELS.quadrant_shifting.toLowerCase()} · `,
 };
 
+/** The modes a team's start needs (EDITOR → Modalità di gioco), as the server checks them. */
+function teamModeKeys(mode: Mode, format: MatchFormat): GameModeKey[] {
+  switch (mode.kind) {
+    case "story":
+      return ["story"];
+    case "coop":
+    case "coopQueue":
+      return ["coop"];
+    case "conquest":
+      return ["conquest", "classic"];
+    case "ranked":
+      return startKeys(format, "ranked");
+    default:
+      return startKeys(format);
+  }
+}
+
 /** Characters a team of a format has. */
 function squadSizeOf(format: MatchFormat): number | undefined {
   return format === "triple" ? TRIPLE_DECK : isQuadrantFormat(format) ? QUADRANT_DECK : undefined;
@@ -179,8 +198,12 @@ function TeamPageContent() {
   const isConquest = mode.kind === "conquest";
   // Conquista: whether it is open, before the picker shows (undefined: not known yet; null: open or unknown).
   const [conquestBlocked, setConquestBlocked] = useState<PlayBlock | null | undefined>(isConquest ? undefined : null);
-  const block = challengeBlocked ?? conquestBlocked ?? null;
   const { session } = useRequireSignedIn();
+  // A mode switched off from the EDITOR, or outside its dates: said here, before the team.
+  const modes = useModeAvailability(Boolean(session));
+  const now = useNow(60_000);
+  const modeBlocked = modes && (mode.kind !== "join" || joinFormat !== null) ? modeBlock(teamModeKeys(mode, format), modes, now) : null;
+  const block = modeBlocked ?? challengeBlocked ?? conquestBlocked ?? null;
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
