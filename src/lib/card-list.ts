@@ -5,15 +5,21 @@ import { matchesTraits, type TraitCategory } from "@/lib/traits";
  * album and the pickers order and filter exactly alike.
  */
 export type CardListView = {
-  /** "number", "rarity", "name", "ability:<code>", "trait:<category code>", or a key of the list's extra sorts. */
+  /**
+   * "number", "rarity", "name", "trait:<category code>", a key of the list's extra sorts, or
+   * "ability:<code>,<code>…": the abilities in the order the player tapped them, the first one
+   * deciding and each next one breaking the ties of those before it.
+   */
   sort: string;
-  rarity: number | null;
-  faction: string | null;
+  /** Rarity ranks: a card of any of them. Empty: every rarity. */
+  rarities: number[];
+  /** Faction codes: a card of any of them. Empty: every faction. */
+  factions: string[];
   /** Trait codes: within a category any of them, across categories all (like the events). */
   traits: string[];
 };
 
-export const DEFAULT_CARD_LIST_VIEW: CardListView = { sort: "number", rarity: null, faction: null, traits: [] };
+export const DEFAULT_CARD_LIST_VIEW: CardListView = { sort: "number", rarities: [], factions: [], traits: [] };
 
 /** The traits of every character and the trait catalog, as the client reads them. */
 export type TraitIndex = { catalog: TraitCategory[]; byCard: Map<string, string[]> };
@@ -40,8 +46,24 @@ const collator = new Intl.Collator("it", { sensitivity: "base", numeric: true })
 const byNumber = (a: ListCard, b: ListCard) => collator.compare(a.code, b.code);
 const byRarity = (a: ListCard, b: ListCard) => b.rarity.rank - a.rarity.rank || byNumber(a, b);
 
-export function sortAbilityOf(sort: string): string | null {
-  return sort.startsWith("ability:") ? sort.slice("ability:".length) : null;
+/** The abilities a list is sorted by, in the order they were tapped; none for any other order. */
+export function sortAbilitiesOf(sort: string): string[] {
+  return sort.startsWith("ability:") ? sort.slice("ability:".length).split(",").filter(Boolean) : [];
+}
+
+/**
+ * The order after a tap on an ability: a new one goes last in the sequence, a chosen one leaves it
+ * and the others move up. Without abilities left the list goes back to `fallback`.
+ */
+export function toggleSortAbility(sort: string, code: string, fallback: string): string {
+  const chosen = sortAbilitiesOf(sort);
+  const next = chosen.includes(code) ? chosen.filter((entry) => entry !== code) : [...chosen, code];
+  return next.length > 0 ? `ability:${next.join(",")}` : fallback;
+}
+
+/** The value or code with one more, or one less: the filters' chips. */
+export function toggleValue<T>(chosen: readonly T[], value: T): T[] {
+  return chosen.includes(value) ? chosen.filter((entry) => entry !== value) : [...chosen, value];
 }
 
 export function sortTraitCategoryOf(sort: string): string | null {
@@ -70,17 +92,24 @@ export function applyCardListView<T extends ListCard>(
 ): T[] {
   const kept = cards.filter(
     (card) =>
-      (view.rarity === null || card.rarity.rank === view.rarity) &&
-      (view.faction === null || card.faction === view.faction) &&
+      (view.rarities.length === 0 || view.rarities.includes(card.rarity.rank)) &&
+      (view.factions.length === 0 || view.factions.includes(card.faction)) &&
       (view.traits.length === 0 ||
         !traits ||
         matchesTraits(traits.byCard.get(card.id) ?? [], view.traits, traits.catalog)),
   );
-  const ability = sortAbilityOf(view.sort);
+  const abilities = sortAbilitiesOf(view.sort);
   const categoryCode = sortTraitCategoryOf(view.sort);
   const category = traits?.catalog.find((entry) => entry.code === categoryCode);
   let sorter: CardSorter<T>;
-  if (ability) sorter = (a, b) => (b.stats[ability] ?? 0) - (a.stats[ability] ?? 0) || byRarity(a, b);
+  if (abilities.length > 0)
+    sorter = (a, b) => {
+      for (const ability of abilities) {
+        const difference = (b.stats[ability] ?? 0) - (a.stats[ability] ?? 0);
+        if (difference !== 0) return difference;
+      }
+      return byRarity(a, b);
+    };
   else if (categoryCode)
     sorter = (a, b) => traitPosition(a, category, traits) - traitPosition(b, category, traits) || byRarity(a, b);
   else if (extraSorts[view.sort]) sorter = extraSorts[view.sort];
@@ -113,17 +142,29 @@ export function groupCardList<T extends ListCard>(cards: readonly T[], sort: str
 
 /** How many filters the view narrows by: shown on the filters button. */
 export function activeFilterCount(view: CardListView): number {
-  return (view.rarity === null ? 0 : 1) + (view.faction === null ? 0 : 1) + view.traits.length;
+  return view.rarities.length + view.factions.length + view.traits.length;
 }
 
-/** A saved view, from storage: anything unreadable falls back to the defaults. */
+/** The entries of a saved list that have the right type; a single old value becomes a list of one. */
+function savedList<T>(value: unknown, single: unknown, isEntry: (entry: unknown) => entry is T): T[] {
+  if (Array.isArray(value)) return value.filter(isEntry);
+  return isEntry(single) ? [single] : [];
+}
+
+const isNumber = (entry: unknown): entry is number => typeof entry === "number";
+const isString = (entry: unknown): entry is string => typeof entry === "string";
+
+/**
+ * A saved view, from storage: anything unreadable falls back to the defaults. Views saved before
+ * the filters took several values (`rarity`, `faction`) keep their one choice.
+ */
 export function readCardListView(saved: unknown, fallback: CardListView = DEFAULT_CARD_LIST_VIEW): CardListView {
   if (!saved || typeof saved !== "object") return fallback;
-  const value = saved as Partial<Record<keyof CardListView, unknown>>;
+  const value = saved as Partial<Record<keyof CardListView | "rarity" | "faction", unknown>>;
   return {
-    sort: typeof value.sort === "string" ? value.sort : fallback.sort,
-    rarity: typeof value.rarity === "number" ? value.rarity : null,
-    faction: typeof value.faction === "string" ? value.faction : null,
-    traits: Array.isArray(value.traits) ? value.traits.filter((code): code is string => typeof code === "string") : [],
+    sort: typeof value.sort === "string" && value.sort !== "ability:" ? value.sort : fallback.sort,
+    rarities: savedList(value.rarities, value.rarity, isNumber),
+    factions: savedList(value.factions, value.faction, isString),
+    traits: savedList(value.traits, undefined, isString),
   };
 }
