@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "22 novembre 2026",
+    changes: [
+      "A Nuova Megara si sono fatti vedere sessanta Segnati in costume, i supereroi e i supercattivi della città: la squadra del Faro registrata con i Custodi, le Lanterne che lavorano senza permesso, gli «eroi» sponsorizzati e gli esoscheletri della Compagnia Lete, la congrega dei Figli dell'Ultima, l'arena e gli esattori del Banco, i mercenari Sciolti. Ognuno è disegnato in azione, in una posa tutta sua, e ha la sua variante. Ventuno di loro portano per la prima volta i poteri che aspettavano un personaggio: Gelo, Fenice, Ladro, Negativo, Una sola forza, Abissi, Duellante, Ribaltone, Tutto o niente, Duello, Il prezzo, Imboscata, Muro, Pazienza, Cacciatore, Arcobaleno, Jolly, Azzardo, Segugio, Costanza e Calma piatta. Come i Mille Soli e le Marche di Arcadia, per ora non escono dai pacchetti: arriveranno più avanti, e fino ad allora non li trovi nell'album, nello starter set, nelle varianti a caso né nelle squadre dei bot.",
+    ],
+  },
+  {
     date: "21 novembre 2026",
     changes: [
       "Nelle Operazioni non serve più avere un amico a portata di mano. Su ogni operazione c'è «Cerca squadra»: scegli i tuoi 6 personaggi e aspetti chi cerca la stessa operazione. Appena siete in quattro si parte; dopo 25 secondi si parte con chi c'è, e se sei solo ti accompagna un alleato del server. Gli alleati del server sono sempre dichiarati: hanno un nome da Reggente e la scritta «Server», sono sempre pronti e mettono le carte per ultimi, dove servono alla squadra. Chi apre una stanza può aggiungerli anche lui, dal posto libero, e toglierli prima di iniziare; non prendono premi né stelle. Le Operazioni ora contano anche negli eventi (con punti per la vittoria, la sconfitta e ogni Minaccia che fermi tu), negli obiettivi del giorno e nelle imprese: valgono quelle finite restando nella stanza. Tra gli obiettivi del giorno possono uscire «Completa un'Operazione», «Vinci un'Operazione», «Ferma 4 Minacce nelle Operazioni» e «Ottieni 3 stelle nelle Operazioni», e nella bacheca ci sono sette imprese nuove da scoprire giocando in squadra.",

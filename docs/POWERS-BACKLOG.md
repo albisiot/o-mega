@@ -259,7 +259,7 @@ Restano come prima, una per fazione: Ultimo baluardo +3 dal round 4 Plinth (E), 
 
 ## Poteri del 20 novembre 2026
 
-Proposti e simulati il 20 novembre 2026, scelti dall'utente lo stesso giorno: tredici, pronti nel motore e nel database (migrazione `20261120100000_thirteen_new_powers.sql`, SPEC §4.4). Lo stesso giorno sono andati, uno ciascuno e con i numeri consigliati qui sotto, sui trenta personaggi delle Marche di Arcadia creati apposta (P262-P291, docs/WORLD.md «Dalle Marche di Arcadia»), che restano fuori dai pacchetti finché un amministratore non li mette. Per ogni potere preciso restano liberi gli altri posti per fazione.
+Proposti e simulati il 20 novembre 2026, scelti dall'utente lo stesso giorno: tredici, pronti nel motore e nel database (migrazione `20261120100000_thirteen_new_powers.sql`, SPEC §4.4). Lo stesso giorno sono andati, uno ciascuno e con i numeri consigliati qui sotto, sui trenta personaggi delle Marche di Arcadia creati apposta (P262-P291, docs/WORLD.md «Dalle Marche di Arcadia»), che restano fuori dai pacchetti finché un amministratore non li mette. Il 22 novembre 2026 i Segnati in costume (P292-P351, docs/WORLD.md «I Segnati in costume») hanno preso diciannove dei posti rimasti, con gli stessi numeri; restano liberi Gemello e Diminuendo tra i Neutrali, Presagio e Oracolo tra i Cattivi, Logoramento tra Eroi e Neutrali.
 
 **Metodo:** `scripts/simulate-powers.mts` su una copia del motore con i candidati, catalogo del 20 novembre (261 personaggi), Difficile contro Difficile, squadre casuali con modificatori e luoghi; ogni partita giocata con e senza il potere sull'ospite (un Gamma a caso per i semplici, un Alfa a caso per i distintivi), 1.200 partite per riga (±1 punto circa). Δ = punti di vittoria in più. Riferimenti con lo stesso metodo: Apripista +3 entro il round 2 +3,9, Ultimo baluardo +3 dal round 4 +2,1 (Gamma); Riscossa +2 +1,8, Sabotatore −1 +7,5 (Alfa).
 
@@ -283,7 +283,7 @@ Proposti e simulati il 20 novembre 2026, scelti dall'utente lo stesso giorno: tr
 
 ## Poteri del 20 novembre 2026, secondo gruppo
 
-Proposti e simulati il 20 novembre 2026 (secondo giro di proposte, più quelli rimasti liberi dal primo), scelti dall'utente lo stesso giorno: ventidue, pronti nel motore e nel database (migrazione `20261120300000_rule_powers.sql`, SPEC §4.4) ma su **nessuna carta**. Stesso metodo della sezione sopra (1.200 partite per riga, Gamma per i semplici, Alfa per i distintivi); i Δ segnati «motore» sono rimisurati con il motore del repository, gli altri vengono dalla copia di prova usata per la proposta.
+Proposti e simulati il 20 novembre 2026 (secondo giro di proposte, più quelli rimasti liberi dal primo), scelti dall'utente lo stesso giorno: ventidue, pronti nel motore e nel database (migrazione `20261120300000_rule_powers.sql`, SPEC §4.4). Il 22 novembre 2026 ventuno sono andati, uno ciascuno e con i parametri qui sotto, sui sessanta Segnati in costume creati apposta (P292-P351, docs/WORLD.md «I Segnati in costume»), che restano fuori dai pacchetti finché un amministratore non li mette; Jolly con il tetto proposto, fino a +3. **Vampiro** resta su nessuna carta, in attesa della decisione qui sotto. Stesso metodo della sezione sopra (1.200 partite per riga, Gamma per i semplici, Alfa per i distintivi); i Δ segnati «motore» sono rimisurati con il motore del repository, gli altri vengono dalla copia di prova usata per la proposta.
 
 | Potere | Livello | Parametri | Δ |
 |---|---|---|---|

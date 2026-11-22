@@ -515,6 +515,83 @@ Arrivano **fuori dai pacchetti** (`in_packs` falso), come i Mille Soli: nessuna 
 | P290 | Omega, Eroi | Oracolo | **Millenario** (Custodi): l'olivo che cammina da duemila anni e sente da lontano la tempesta più grande. | VEL 0, COM 0, TEC 0, FUR 0 |
 | P291 | Omega, Cattivi | Logoramento (−2) | **Apocrifo** (Figli dell'Ultima): il committente senza nome del Sigillo, fatto d'inchiostro, che vuole timbrarsi addosso al mondo. | FOR 0, TEC 0, COM 1 |
 
+### I Segnati in costume
+
+Da P292 a P351: sessanta supereroi e supercattivi di Nuova Megara stessa, non di un'altra Terra. Il genere dei fumetti di supereroi è già la premessa della città: l'Ora Zero è l'incidente da cui nascono i poteri, i **Segni** sono i poteri, la Compagnia Lete è l'azienda che li vende e i Figli dell'Ultima la congrega che li vuole usare per la fine. Da quando il Comune ha aperto il **registro dei Segni**, chi si registra riceve un nome di battaglia, una licenza del Banco e il permesso di intervenire, e Telemegara lo segue dai tetti; chi non si registra lavora di notte con le Lanterne, oppure si vende. Così i Segnati si sono messi in costume, e la città si è divisa:
+
+- **La squadra del Faro** (Custodi): i Segnati registrati, con la base nel vecchio faro del porto: il tranviere che ha dentro l'onda d'urto dell'Ora Zero, il vigile del fuoco che si ricompone dalle braci, la scaricatrice che lancia le auto, la vetraia che scompone la luce, la centralinista che sente i pensieri della città.
+- **Le Lanterne di strada:** chi non si è registrato e protegge le Fosse senza permesso: un vecchio maestro di scherma, un palombaro sceso nella spaccatura sotto il golfo, un'infermiera che si ricuce da sola, una pasticciera grande come una briciola, rider, lavavetri e facchini con un Segno.
+- **La Compagnia Lete** sponsorizza i suoi «eroi» per la televisione, costruisce esoscheletri e caccia i Segnati più forti; il suo direttore della ricerca toglie i Segni agli altri e se li tiene.
+- **I Figli dell'Ultima** reclutano chi nessuno vuole: incendiari, equilibristi, ladri di comignoli e una sacerdotessa che porta il freddo della fine.
+- **Il Banco** gestisce l'arena, gli arbitri, gli esattori e la pesca dei Segnati per il registro; gli **Sciolti** vendono il loro Segno, o il loro mestiere, al migliore offerente.
+
+L'ispirazione è il genere dei supereroi, solo nei temi e nei poteri: super forza, velocità, volo, raggi, elettricità, ghiaccio, fuoco, telepatia, allungamento, invisibilità, metamorfosi, teletrasporto, controllo del metallo e della gravità, armature. Nessun nome, costume, simbolo o volto di fumetti, film o attori esistenti: niente ragnatele, scudi con la stella, martelli, artigli, armature rosse e oro con la luce sul petto, mantelli con il simbolo, giganti verdi, e nessun simbolo sul petto. Ogni disegno, carta base e variante, mostra il personaggio in azione, in una posa che non si ripete. Ventuno di loro portano, uno ciascuno, i poteri del secondo gruppo del 20 novembre 2026 (SPEC §4.4), finora su nessuna carta; diciannove un posto libero dei tredici poteri dello stesso giorno, una Adattabile. Gli Omega usano effetti esistenti: gli anelli d'acqua per l'onda d'urto di Boato, le braci per Favilla, l'aura per Prelievo, il glitch per Controluce. Una variante ciascuno con colori propri: gli otto stili del 20 novembre 2026 quattro volte ciascuno, Zombie due, ventisei stili esistenti una.
+
+Arrivano **fuori dai pacchetti** (`in_packs` falso), come i Mille Soli e le Marche di Arcadia: nessuna via automatica li dà finché un amministratore non li mette nei pacchetti dalla pagina *Carte nei pacchetti* (SPEC §7).
+
+| Carta | Rarità e fazione | Potere | Personaggio | Il difetto nei valori |
+|---|---|---|---|---|
+| P292 | Delta, Eroi |  | **Volata** (Lanterne): rider delle consegne a domicilio: corre più del suo scooter, ma non sa frenare e non vede gli ostacoli. | PER 1, MAG 0, PSI 0 |
+| P293 | Delta, Eroi |  | **Ventosa** (Lanterne): lavavetri dei grattacieli dei quartieri alti: i palmi le si attaccano a qualunque superficie. | ENE 1, MAG 0 |
+| P294 | Delta, Eroi |  | **Trasloco** (Lanterne): facchino dei traslochi: ferma un furgone con la spalla, ma prende alla lettera ogni istruzione. | INT 1, MAG 0, PSI 0 |
+| P295 | Delta, Eroi |  | **Aliante** (Custodi): insegnante di educazione fisica in pattuglia coi Custodi: vola quando è calma e cade quando si agita. | FOR 1, FUR 1 |
+| P296 | Delta, Eroi |  | **Acuto** (Lanterne): corista del teatro lirico: il suo do di petto spacca i vetri; zitto non sa stare. | COM 1, FUR 0 |
+| P297 | Delta, Eroi |  | **Tensione** (Custodi): elettricista del Comune che porta la corrente nel corpo: brucia ogni apparecchio che tocca. | MAG 1, PSI 0, TEC 0 |
+| P298 | Delta, Eroi |  | **Molla** (Lanterne): giovane delle Fosse con le gambe a molla: salta i palazzi, e non riesce a stare fermo. | VOL 1, MAG 0 |
+| P299 | Delta, Cattivi |  | **Vernice** (Figli dell'Ultima): writer dei Figli dell'Ultima: la vernice che spruzza diventa solida e scrive l'ultima ora sui muri. | MAG 1, PSI 0 |
+| P300 | Delta, Cattivi |  | **Zolfo** (Figli dell'Ultima): mangiafuoco del circo diventato incendiario: vuole accendere l'ultima ora, e non pensa alle conseguenze. | INT 1, PSI 0 |
+| P301 | Delta, Cattivi |  | **Fuliggine** (Figli dell'Ultima): ladro dei comignoli che si fa fuliggine: entra da ogni camino, e non riesce a sollevare niente di pesante. | FOR 1, TEC 1 |
+| P302 | Delta, Cattivi |  | **Pulce** (Figli dell'Ultima): scippatrice che salta altissima: ruba per i Figli le pietre dell'Alfabeto dai banchi dei ricettatori. | MAG 0, PSI 1 |
+| P303 | Delta, Cattivi |  | **Imbonitore** (Figli dell'Ultima): banditore del mercato che con la voce ipnotizza: vende la fine del mondo a rate, e alle mani non ci arriva mai. | ENE 1, COM 0 |
+| P304 | Delta, Cattivi |  | **Trivella** (Compagnia Lete): operaio della trivella che toccò il tempio: da quella notte le braccia gli vibrano come un martello pneumatico. | MAG 0, PSI 0, FUR 1 |
+| P305 | Delta, Neutrali |  | **Scavalco** (Sciolti): corriera di parkour senza Segno: porta pacchi che nessuno deve aprire, saltando da un tetto all'altro. | ENE 1, MAG 0, PSI 0 |
+| P306 | Delta, Neutrali |  | **Cascata** (Sciolti): stuntwoman degli studi cinematografici del porto, senza Segno: si fa pagare per cadere al posto dei Segnati in tv. | ENE 1, MAG 0, PSI 0 |
+| P307 | Delta, Neutrali |  | **Saldatrice** (Sciolti): ragazza dello sfasciacarrozze che si è saldata un robot di rottami: lo affitta a chi paga. | MAG 0, PSI 1, FUR 1 |
+| P308 | Delta, Neutrali |  | **Dado** (Banco): giocatore del casinò del Banco con un Segno di fortuna: tutto gli va bene, finché non ci pensa. | INT 1, TEC 1 |
+| P309 | Delta, Neutrali |  | **Buttafuori** (Banco): buttafuori del casinò del Banco che diventa pesante come il piombo: non lo sposta nessuno, nemmeno lui. | VEL 1, MAG 0, PSI 1 |
+| P310 | Delta, Neutrali |  | **Guinzaglio** (Sciolti): dogsitter che guida col pensiero i randagi del porto: li presta a chi paga, e non sa usare un telefono. | COM 1, TEC 0 |
+| P311 | Gamma, Eroi | Imboscata | **Filigrana** (Lanterne): operaia della zecca del Banco che diventa trasparente come una filigrana: colpisce e non la vedi arrivare. | MAG 1, TEC 1 |
+| P312 | Gamma, Eroi | Muro (3 punti) | **Paratia** (Custodi): saldatrice del bacino di carenaggio in un esoscheletro da cantiere che alza muri di luce. | VEL 1, MAG 0, PSI 0 |
+| P313 | Gamma, Eroi | Pazienza (+1 per round, fino a +4) | **Rammendo** (Lanterne): infermiera del turno di notte al pronto soccorso: le ferite le si ricuciono da sole, e più dura la notte più è forte. | TEC 1, FUR 1 |
+| P314 | Gamma, Eroi | Gemello (+3) | **Doppione** (Lanterne): pugile delle Fosse che si sdoppia: al Banco lo scambiano sempre per una lastra doppia, e con se stesso non è mai d'accordo. | VOL 1, MAG 0 |
+| P315 | Gamma, Eroi | Diminuendo (+2) | **Briciola** (Lanterne): pasticciera che si rimpicciolisce fino a una briciola: più la minaccia scende, più lei passa dove nessuno passa. | FOR 1, TEC 0 |
+| P316 | Gamma, Eroi | Infiltrato | **Recapito** (Custodi): postino che si teletrasporta a pochi metri: arriva prima della lettera, e sempre con un botto. | MAG 1, FUR 1 |
+| P317 | Gamma, Cattivi | Cacciatore (+4) | **Trappola** (Compagnia Lete): cacciatore della Compagnia Lete: cattura i Segnati più forti con reti di filo che spegne i Segni. | ENE 1, MAG 0, PSI 0 |
+| P318 | Gamma, Cattivi | Fuoriclasse (+3) | **Dardo** (Figli dell'Ultima): ex campionessa di giavellotto al soldo dei Figli: non ha un Segno, ma non sbaglia mai un lancio. | ENE 1, MAG 0 |
+| P319 | Gamma, Cattivi | Euforia (+3) | **Ovazione** (Compagnia Lete): lottatore sponsorizzato dalla Compagnia Lete come «eroe»: cresce con gli applausi, e dopo una vittoria è inarrestabile. | INT 1, MAG 1, FUR 1 |
+| P320 | Gamma, Cattivi | Rompighiaccio (+3) | **Bolide** (Figli dell'Ultima): carica in linea retta come un bolide e sfonda qualunque cosa: apre la strada ai Figli, poi non sa girare. | PER 1, MAG 1, PSI 0 |
+| P321 | Gamma, Cattivi | Testa a testa (+2) | **Bilico** (Figli dell'Ultima): equilibrista dei Figli: sta in piedi su qualunque bordo, e dà il meglio quando la partita è in bilico. | PSI 1, TEC 0 |
+| P322 | Gamma, Cattivi | Infiltrato | **Calco** (Compagnia Lete): infiltrata della Compagnia Lete che prende la faccia degli altri; la sua non se la ricorda più. | VOL 1, TEC 0 |
+| P323 | Gamma, Neutrali | Calma piatta | **Fischio** (Banco): arbitra delle sfide del Banco: al suo fischio si fermano tutti, anche le regole. | MAG 1, TEC 1, FUR 0 |
+| P324 | Gamma, Neutrali | Jolly (fino a +3) | **Trucco** (Sciolti): prestigiatore di strada: la sua magia è vera e la usa per le truffe; cambia le carte in tavola. | FOR 1, COM 1, TEC 1 |
+| P325 | Gamma, Neutrali | Euforia (+3) | **Diretta** (Sciolti): streamer che insegue i Segnati coi suoi droni: i like le danno forza, e dopo una vittoria è alle stelle. | MAG 0, COM 1, FUR 0 |
+| P326 | Gamma, Neutrali | Fuori casa (+4) | **Bussola** (Banco): cacciatrice di reperti del Banco: fuori città rende il doppio. | ENE 1, PSI 0 |
+| P327 | Gamma, Neutrali | Rompighiaccio (+3) | **Esca** (Banco): pescatrice di Segnati per il registro del Banco: la sua esca luminosa attira chiunque, e lei per prima. | PSI 1, TEC 1, FUR 0 |
+| P328 | Beta, Eroi | Segugio | **Brusio** (Custodi): ex centralinista dei telefoni con la cuffia sempre in testa: sente il brusio dei pensieri di tutta la città. | FOR 1, COM 1 |
+| P329 | Beta, Eroi | Arcobaleno (+2) | **Caleido** (Custodi): vetraia della squadra del Faro che scompone la luce: i suoi raggi hanno tutti i colori, e lei non si può nascondere. | TEC 1, FUR 0 |
+| P330 | Beta, Eroi | Guastafeste | **Antidoto** (Custodi): agente dei Custodi che spegne i Segni intorno a sé: con lui vicino nessuno, amico o nemico, si gode i vantaggi. | ENE 0, MAG 0, PSI 1 |
+| P331 | Beta, Eroi | Colpo di grazia (+3, 2 round) | **Argano** (Custodi): scaricatrice del porto, la più forte della squadra del Faro: arriva per ultima e chiude lo scontro. | MAG 0, PSI 1, FUR 1 |
+| P332 | Beta, Cattivi | Azzardo (+3, poi −3) | **Siero** (Compagnia Lete): chimico della Compagnia Lete che beve il suo siero: per pochi minuti è un bruto gonfio dalle vene ambrate, poi crolla. | VOL 1, MAG 0, FUR 0 |
+| P333 | Beta, Cattivi | Fuori casa (+4) | **Varco** (Figli dell'Ultima): predicatrice dei Figli che apre strappi verso gli altri luoghi e li saccheggia: fuori città è più forte. | COM 1, TEC 0 |
+| P334 | Beta, Cattivi | Costanza (+6) | **Pressa** (Compagnia Lete): ex operaio delle fonderie in un esoscheletro idraulico della Lete, a gabbia aperta: stesso passo, stessa forza, sempre. | VEL 1, MAG 0, FUR 0 |
+| P335 | Beta, Cattivi | Adattabile (+4) | **Seppia** (Compagnia Lete): sabotatrice della Lete con la pelle di seppia: prende il colore e la grana di qualunque posto. | COM 1, TEC 0 |
+| P336 | Beta, Neutrali | Fuoriclasse (+3) | **Lattice** (Sciolti): contrabbandiera elastica: passa nei tubi e sotto le porte, e tiene la merce nascosta dove nessuno guarda. | MAG 0, PSI 1 |
+| P337 | Beta, Neutrali | Testa a testa (+2) | **Baricentro** (Banco): esattrice del Banco che piega la gravità: rimette in pari i conti, e i debitori, pesandoli. | COM 1, TEC 1, FUR 0 |
+| P338 | Beta, Neutrali | Colpo di grazia (+3, 2 round) | **Limatura** (Sciolti): rottamaia che comanda il ferro: nuvole di limatura e travi piegate; vende al migliore offerente. | MAG 1, PSI 0, FUR 0 |
+| P339 | Beta, Neutrali | Guastafeste | **Bianchetto** (Sciolti): ladro che cancella con la mano: quello che tocca diventa carta bianca, vantaggi degli altri compresi. | ENE 1, COM 0, TEC 0 |
+| P340 | Alfa, Eroi | Duellante (dal livello 4) | **Stoccata** (Lanterne): vecchio maestro di scherma della palestra delle Fosse, senza Segno: contro i pericoli grandi gli bastano due colpi. | ENE 1, MAG 1 |
+| P341 | Alfa, Eroi | Abissi (Potere) | **Batiscafo** (Lanterne): vecchio palombaro del porto, l'unico sceso nella spaccatura sotto il golfo: risale con una luce che carica chi viene dopo. | VEL 1, TEC 1, FUR 0 |
+| P342 | Alfa, Cattivi | Gelo (tetto 8) | **Galaverna** (Figli dell'Ultima): sacerdotessa dei Figli che porta il freddo dell'ultima ora: vicino a lei nessuno rende al massimo. | PSI 1, COM 1, TEC 0, FUR 0 |
+| P343 | Alfa, Cattivi | Tutto o niente (sotto 4) | **Falla** (Compagnia Lete): capo della sicurezza della Lete: vede le crepe in ogni cosa e in ogni persona, e colpisce lì. | ENE 1, MAG 0, PSI 0, TEC 1 |
+| P344 | Alfa, Cattivi | Il prezzo (≤2, −2) | **Mora** (Compagnia Lete): esattrice della Compagnia Lete: ogni tua debolezza diventa un debito, e lei incassa gli interessi. | ENE 1, COM 0, TEC 1, FUR 1 |
+| P345 | Alfa, Neutrali | Duello (3 abilità) | **Cintura** (Banco): campionessa imbattuta dell'arena del Banco, senza Segno: vuole solo duelli alla pari, e fuori dal ring non sa fare altro. | ENE 0, MAG 0, PSI 0, TEC 1, FUR 0 |
+| P346 | Alfa, Neutrali | Ribaltone (10 punti) | **Rimonta** (Sciolti): vecchio maestro di judo delle Fosse: più l'avversario è forte, più forte lo ribalta. | ENE 0, MAG 1, TEC 0, FUR 0 |
+| P347 | Alfa, Neutrali | Presagio | **Preavviso** (Sciolti): autista di fuga che vede il prossimo pericolo un attimo prima: si fa pagare per arrivarci prima degli altri. | COM 1, FUR 0 |
+| P348 | Omega, Eroi | Una sola forza | **Boato** (Custodi): tranviere della linea sotto il tempio: all'Ora Zero l'onda d'urto gli è entrata dentro, e quando esce è una forza sola. | COM 1, TEC 0, FUR 0 |
+| P349 | Omega, Eroi | Fenice | **Favilla** (Custodi): vigile del fuoco morto la notte dell'Ora Zero: ogni volta che cade si ricompone dalle braci. | MAG 1, PSI 0, TEC 1, FUR 0 |
+| P350 | Omega, Cattivi | Ladro | **Prelievo** (Compagnia Lete): direttore della ricerca della Lete, magro e coi capelli grigi: toglie i Segni agli altri col palmo e se li tiene sotto la pelle come cicatrici di luce. | FOR 1, MAG 0, COM 0, FUR 1 |
+| P351 | Omega, Neutrali | Negativo | **Controluce** (Banco): fotografa degli scavi uscita dall'Ora Zero in negativo, ombra bianca e contorno di luce nera: è forte dove sembra debole; il Banco la tiene in cassaforte. | FOR 1, VOL 0, PSI 1, TEC 0 |
+
 ## 6. Minacce
 
 Il nome deve far capire perché servono quelle abilità: "Robot impazzito" richiede Forza e Tecnologia. Molti nomi attuali funzionano già e vanno solo ambientati a Nuova Megara. Il testo di colore può usare il tono di un bollettino del sismografo.
@@ -611,7 +688,7 @@ Gli effetti cambiano solo l'aspetto, mai valori o regole. L'abbinamento è in `s
 | Alfa | Olografico, inclinazione 3D | Olografico |
 | Omega | Olografico, inclinazione 3D, effetto personale | Olografico |
 
-Effetti personali Omega: Holdout l'aura, Absentia le scariche elettriche, Multitude il glitch, Mongibello le braci, Wirepuller i fili da puparo che pendono dall'alto e ogni tanto vengono tirati, Parabellum il mirino di dodici lenti che si sposta sulla carta e aggancia un bersaglio, Ordito i fili come Wirepuller, Mordacchia le braci, Ansa gli anelli d'acqua che si allargano. Tra gli Omega aggiunti dopo, Prosody il glitch, Novenarium, Thicket e Caligine l'aura, Matins gli anelli d'acqua, Interregno le scariche elettriche, Millenario l'aura, Apocrifo il glitch.
+Effetti personali Omega: Holdout l'aura, Absentia le scariche elettriche, Multitude il glitch, Mongibello le braci, Wirepuller i fili da puparo che pendono dall'alto e ogni tanto vengono tirati, Parabellum il mirino di dodici lenti che si sposta sulla carta e aggancia un bersaglio, Ordito i fili come Wirepuller, Mordacchia le braci, Ansa gli anelli d'acqua che si allargano. Tra gli Omega aggiunti dopo, Prosody il glitch, Novenarium, Thicket e Caligine l'aura, Matins gli anelli d'acqua, Interregno le scariche elettriche, Millenario l'aura, Apocrifo il glitch, Boato gli anelli d'acqua, Favilla le braci, Prelievo l'aura, Controluce il glitch.
 
 ### Nomi delle carte
 
