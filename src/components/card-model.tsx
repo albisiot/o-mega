@@ -6,7 +6,7 @@ import { withBasePath } from "@/lib/base-path";
 /** Cards that have a 3D model in public/models. */
 const CARD_MODELS = new Set(["P001", "P030", "P060"]);
 /** Cards whose 3D view is a diorama built from shapes in src/lib/card-diorama.ts: no model to download. */
-const CARD_DIORAMAS = new Set(["P001", "P013", "P028", "P030", "P055", "P058", "P059", "P060"]);
+const CARD_DIORAMAS = new Set(["P001", "P004", "P013", "P025", "P028", "P030", "P042", "P044", "P048", "P051", "P052", "P053", "P054", "P055", "P056", "P057", "P058", "P059", "P060"]);
 
 /** Three.js and the viewer: downloaded only by players who ask for a model. */
 const loadViewer = () => import("@/lib/card-model");
@@ -48,7 +48,9 @@ export function CardModelButton({ code, name, className = "w-full max-w-sm" }: {
         type="button"
         aria-haspopup="dialog"
         // The press comes a moment before the tap: enough to start fetching the viewer's code.
-        onPointerDown={() => void (shown === "diorama" ? loadDiorama() : loadViewer()).catch(() => {})}
+        onPointerDown={() =>
+          void (shown === "diorama" ? loadDiorama().then(({ loadCardDiorama }) => loadCardDiorama(code)) : loadViewer()).catch(() => {})
+        }
         onClick={() => {
           setOpen(true);
           sheet.current?.showModal();
@@ -108,10 +110,12 @@ function DioramaStage({ code }: { code: string }) {
     if (!canvas) return;
     let cancelled = false;
     let unmount: (() => void) | undefined;
+    // The viewer and this card's own diorama, both downloaded once the player asks for them.
     loadDiorama()
-      .then(({ mountCardDiorama }) => {
+      .then(async ({ loadCardDiorama, mountCardDiorama }) => {
+        const build = await loadCardDiorama(code);
         if (cancelled) return;
-        unmount = mountCardDiorama(canvas, code, () => setStatus("failed"));
+        unmount = mountCardDiorama(canvas, build, () => setStatus("failed"));
         setStatus("ready");
       })
       .catch((cause: unknown) => {

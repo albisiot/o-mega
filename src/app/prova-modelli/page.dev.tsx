@@ -3,7 +3,7 @@
 // The cards that can be looked at in 3D, to try the models and the dioramas without a server
 // or an account. A development-only page: next.config.ts serves *.dev.tsx pages in `next dev`
 // only, so it is never part of the published site.
-//   /prova-modelli/   one "Guarda in 3D" per card: models (P001, P030, P060) and dioramas (P001, P013, P028, P030, P055, P058, P059, P060)
+//   /prova-modelli/   one "Guarda in 3D" per card: models (P001, P030, P060) and dioramas (P001, P004, P013, P025, P028, P030, P042, P044, P048, P051, P052, P053, P054, P055, P056, P057, P058, P059, P060)
 
 import { CardModelButton } from "@/components/card-model";
 import { PageHeader } from "@/components/comic-parts";
@@ -15,6 +15,17 @@ const CARDS = [
   { code: "P013", name: "Hawser", kind: "Diorama" },
   { code: "P059", name: "Multitude", kind: "Diorama" },
   { code: "P058", name: "Absentia", kind: "Diorama" },
+  { code: "P057", name: "Holdout", kind: "Diorama" },
+  { code: "P051", name: "Vetrix", kind: "Diorama" },
+  { code: "P052", name: "Auctor", kind: "Diorama" },
+  { code: "P053", name: "Moth", kind: "Diorama" },
+  { code: "P054", name: "Vera Kross", kind: "Diorama" },
+  { code: "P056", name: "Mekana", kind: "Diorama" },
+  { code: "P044", name: "Kiln", kind: "Diorama" },
+  { code: "P042", name: "Postmark", kind: "Diorama" },
+  { code: "P025", name: "Bulwark", kind: "Diorama" },
+  { code: "P048", name: "Hapax", kind: "Diorama" },
+  { code: "P004", name: "Wardmother", kind: "Diorama" },
   { code: "P001", name: "Gantry", kind: "Diorama e modello" },
   { code: "P030", name: "Milewright", kind: "Diorama e modello" },
   { code: "P060", name: "Mongibello", kind: "Diorama e modello" },
@@ -25,7 +36,7 @@ export default function ModelsTrialPage() {
     <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 pb-10 pt-4">
       <PageHeader title="Prova modelli 3D" />
       {CARDS.map((card) => (
-        <div key={card.code} className="flex items-center gap-3">
+        <div key={card.code} data-code={card.code} className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={withBasePath(`/cards/${card.code}.webp`)} alt="" className="h-20 w-15 shrink-0 rounded object-cover" />
           <div className="min-w-0 flex-1">
