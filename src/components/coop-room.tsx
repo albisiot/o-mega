@@ -7,6 +7,7 @@ import type { AbilityFamilies } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { CardLooksProvider, useCardLooks } from "@/components/card-looks";
 import { CoopMapReveal } from "@/components/coop-comic";
+import { DragGhost } from "@/components/drag-ghost";
 import { useEventPointsFor } from "@/components/event-banner";
 import { HandCard } from "@/components/hand-card";
 import { PlayerAvatar } from "@/components/player-avatar";
@@ -51,6 +52,7 @@ import {
 import { describeServerError } from "@/lib/errors";
 import { describeEventPoints } from "@/lib/events";
 import { subscribeToUpdates, type MatchCard } from "@/lib/match";
+import { useCardDrag } from "@/lib/use-card-drag";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useExpiry, useNow, useSecondsLeft } from "@/lib/use-now";
 
@@ -558,9 +560,11 @@ function LeaveButton({ view, label, onError }: { view: CoopView; label: string; 
   return (
     <div className="flex items-center gap-2 bg-comic-magenta p-2 text-black">
       <p className="min-w-0 flex-1 text-xs font-bold">
-        {view.status === "active"
-          ? "Esci dall'operazione: i compagni continuano, le tue carte le gioca il server e non ricevi premi."
-          : "Sicuro?"}
+        {view.status !== "active"
+          ? "Sicuro?"
+          : view.members.some((m) => !m.bot && !m.left && m.user_id !== view.me)
+            ? "Esci dall'operazione: i compagni continuano, le tue carte le gioca il server e non ricevi premi."
+            : "Sei l'ultima persona della squadra: l'operazione finisce persa e non ricevi premi."}
       </p>
       <button type="button" onClick={() => void leave()} disabled={busy} className="btn shrink-0 bg-black px-3 text-sm font-bold text-comic-yellow">
         Esci
@@ -592,13 +596,16 @@ function CoopRules() {
       </p>
       <p>
         <b>Panico:</b> ogni Minaccia lasciata andare lo alza: +{coop.panicLow} fino al livello {coop.panicHighFromLevel - 1}, +{coop.panicHigh} dal
-        livello {coop.panicHighFromLevel}, +{coop.panicReinforced} in più se era del rivale. A {coop.panicLimit} l&apos;operazione fallisce.
+        livello {coop.panicHighFromLevel}, +{coop.panicReinforced} in più se era del rivale. A {coop.panicLimit} in due, a {coop.panicLimitCrowd} da tre in su, l&apos;operazione fallisce.
       </p>
       <p>
         <b>Il Boss:</b> alla fine ognuno gioca le sue ultime {coop.bossCards} carte sui fronti del Boss, uno in più dei giocatori, con soglie più
         alte. Vincete se ne sfondate almeno uno a testa.
       </p>
-      <p>Allo scadere del tempo il server mette le carte di chi non ha scelto, dove aiutano di più.</p>
+      <p>
+        <b>Le carte:</b> trascinane una sulla Minaccia, o toccala e poi tocca la Minaccia; riportala giù per riprenderla. Allo scadere del
+        tempo il server mette le carte di chi non ha scelto, e quelle degli alleati del server, dove aiutano di più.
+      </p>
     </div>
   );
 }
@@ -675,7 +682,12 @@ function Board({
       void send(next, false);
       return;
     }
-    let next = [...mine.filter((p) => p.card !== selected), { card: selected, slot }];
+    placeOn(selected, slot);
+  }
+
+  /** Puts one of the player's cards on a threat, moving it if it was on another. */
+  function placeOn(card: string, slot: number) {
+    let next = [...mine.filter((p) => p.card !== card), { card, slot }];
     // Only as many cards as the round takes: the oldest goes back to the hand.
     if (next.length > needed) next = next.slice(next.length - needed);
     setMine(next);
@@ -683,9 +695,23 @@ function Board({
     void send(next, false);
   }
 
+  // A card dragged onto a threat goes there; dropped back on the hand it leaves the table.
+  const { drag, start, ghostRef } = useCardDrag((id, zone) => {
+    if (zone === "hand") {
+      if (!mine.some((p) => p.card === id)) return;
+      const next = mine.filter((p) => p.card !== id);
+      setMine(next);
+      setSelected(null);
+      void send(next, false);
+    } else if (zone !== null) {
+      placeOn(id, Number(zone));
+    }
+  }, busy);
+
   const complete = mine.length === needed;
   const placedIds = new Set(mine.map((p) => p.card));
-  const active = selected ?? hand.find((card) => !placedIds.has(card.instance_id))?.instance_id ?? null;
+  // The card being placed: the one dragged, the one tapped, or the first still in the hand.
+  const active = drag?.id ?? selected ?? hand.find((card) => !placedIds.has(card.instance_id))?.instance_id ?? null;
 
   return (
     <>
@@ -719,17 +745,28 @@ function Board({
               .map((p) => ({ member, card: cardOf.get(p.card)?.card })),
           );
           const reaches = team && !reinforced && team.total >= need;
+          const myLast = mine.filter((p) => p.slot === threat.slot).at(-1);
+          const hovered = drag?.over === String(threat.slot);
           return (
             <button
               key={threat.slot}
               type="button"
+              data-drop={threat.slot}
               onClick={() => put(threat.slot)}
+              onPointerDown={myLast ? start(myLast.card) : undefined}
+              onDragStart={(event) => event.preventDefault()}
               disabled={busy}
               aria-label={`${threat.name}, livello ${threat.level}${reinforced ? ", del rivale" : `, serve ${need}`}${
                 team ? `: la squadra fa ${team.total}` : ": nessuno"
               }`}
-              className={`flex min-h-0 min-w-0 flex-col border-[3px] px-1.5 pb-1.5 pt-1 text-left ${
-                reinforced ? "border-comic-magenta bg-panel" : placedHere.length ? "border-comic-yellow bg-panel" : "border-dashed border-line bg-panel"
+              className={`flex min-h-0 min-w-0 touch-none select-none flex-col border-[3px] px-1.5 pb-1.5 pt-1 text-left ${
+                hovered
+                  ? "border-comic-cyan bg-panel-raised shadow-[3px_3px_0_var(--comic-cyan)]"
+                  : reinforced
+                    ? "border-comic-magenta bg-panel"
+                    : placedHere.length
+                      ? "border-comic-yellow bg-panel"
+                      : "border-dashed border-line bg-panel"
               }`}
             >
               <span className="flex items-center justify-between gap-1">
@@ -780,7 +817,7 @@ function Board({
                   {team ? team.total : "–"}
                   <span className="text-[12px]">{reinforced ? " vs Eco" : ` / ${need}`}</span>
                 </span>
-                {incoming && !placedIds.has(active ?? "") && (
+                {incoming && (drag ? mine.find((p) => p.card === drag.id)?.slot !== threat.slot : !placedIds.has(active ?? "")) && (
                   <span className="text-center text-[10px] font-extrabold text-comic-cyan">metti: {incoming.score.total}</span>
                 )}
               </span>
@@ -789,15 +826,20 @@ function Board({
         })}
       </div>
 
-      {/* The hand: tap a card, then a threat. A tap on a threat with your card takes it back. */}
-      <div role="group" aria-label="Le tue carte" className="flex justify-center gap-1.5 px-3 pb-1 pt-2.5">
+      {/* The hand: drag a card onto a threat, or tap it and then the threat. Dragged back here, or tapped on its threat, it comes back. */}
+      <div role="group" aria-label="Le tue carte" data-drop="hand" className="flex justify-center gap-1.5 px-3 pb-1 pt-2.5">
         {hand.map((card) => {
           const scores = previews.get(card.instance_id) ?? [];
           const at = mine.find((p) => p.card === card.instance_id);
           const best = scores.length ? Math.max(...scores.map((s) => s.score.total)) : 0;
           const shown = at ? scores[at.slot] : undefined;
           return (
-            <div key={card.instance_id} className="w-[calc((100%-2.5rem)/6)] max-w-24">
+            <div
+              key={card.instance_id}
+              onPointerDown={start(card.instance_id)}
+              onDragStart={(event) => event.preventDefault()}
+              className={`w-[calc((100%-2.5rem)/6)] max-w-24 touch-none ${drag?.id === card.instance_id ? "opacity-50" : ""}`}
+            >
               <HandCard
                 card={card}
                 score={shown?.score.total ?? best}
@@ -840,10 +882,11 @@ function Board({
             : complete
               ? "Pronto"
               : needed > 1
-                ? `Metti ${needed - mine.length} ${needed - mine.length === 1 ? "carta" : "carte"} sui fronti`
-                : "Metti una carta su una Minaccia"}
+                ? `Trascina ${needed - mine.length} ${needed - mine.length === 1 ? "carta" : "carte"} sui fronti`
+                : "Trascina una carta"}
         </button>
       </div>
+      {drag && <DragGhost ref={ghostRef} card={cardOf.get(drag.id)?.card} look={looks(cardOf.get(drag.id)?.card.definition_id, "me")} />}
     </>
   );
 }

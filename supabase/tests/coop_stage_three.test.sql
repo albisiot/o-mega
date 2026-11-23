@@ -377,6 +377,16 @@ begin
   begin perform public.coop_queue_join('O1M1', v_sq);
   exception when others then v_failed := sqlerrm = 'card_not_owned'; end;
   assert v_failed, 'somebody else''s cards';
+
+  -- The end of an operation says «Squadra non ammessa» only in an event that pays the operations.
+  v_room_id := (select room_id from public.coop_members where user_id = pg_temp.u(4) order by joined_at desc limit 1);
+  update public.events set points = public.event_points_rules('{"bot": {"win": 10}}'), rarities = array['omega']
+  where id = '00000000-0000-4000-8000-0000000006f1';
+  perform pg_temp.as_user(pg_temp.u(4));
+  assert public.get_event_points_for(v_room_id) is null, 'no notice when the event pays no operations';
+  update public.events set points = public.event_points_rules('{"coop": {"win": 30}}')
+  where id = '00000000-0000-4000-8000-0000000006f1';
+  assert (public.get_event_points_for(v_room_id) ->> 'not_admitted')::boolean, 'not admitted when the event pays them';
 end $$;
 
 rollback;

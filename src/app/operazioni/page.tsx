@@ -21,7 +21,9 @@ import {
   type CoopCatalog,
   type CoopOperation,
 } from "@/lib/coop";
+import { statusOf, useModeAvailability } from "@/lib/mode-availability";
 import { useLockedScreen } from "@/lib/use-locked-screen";
+import { useNow } from "@/lib/use-now";
 
 /** The Operazioni (SPEC §5.17): the chapter, its operations, a friend's code, the room the player is in. */
 export default function OperationsPage() {
@@ -34,6 +36,9 @@ export default function OperationsPage() {
   const [error, setError] = useState<string | null>(null);
   // Only the list of operations scrolls.
   useLockedScreen(true);
+  // Closed from the EDITOR (Modalità di gioco): the server refuses new rooms and the queue, so the page says so first.
+  const modes = useModeAvailability(Boolean(session));
+  const now = useNow(60_000);
 
   useEffect(() => {
     if (!session) return;
@@ -82,6 +87,8 @@ export default function OperationsPage() {
   if (!catalog && !error) return <LoadingScreen label="Apertura delle Operazioni…" />;
   const room = catalog?.room ?? null;
   const queue = catalog?.queue?.queued ? catalog.queue : null;
+  const coopStatus = statusOf(modes, "coop", now);
+  const closed = coopStatus.open ? null : `Le Operazioni non sono disponibili ora${coopStatus.label ? ` · ${coopStatus.label}` : ""}.`;
   const players =
     catalog && catalog.min_players === catalog.max_players ? `${catalog.max_players} giocatori` : `da ${catalog?.min_players} a ${catalog?.max_players} giocatori`;
 
@@ -126,6 +133,8 @@ export default function OperationsPage() {
             </span>
             <span className="shrink-0 -skew-x-8 bg-black px-2.5 py-1 font-display text-base uppercase text-comic-yellow">Entra</span>
           </ReturnLink>
+        ) : closed ? (
+          <p className="shrink-0 border-[3px] border-black bg-comic-yellow px-3 py-2 text-sm font-extrabold text-black">{closed}</p>
         ) : (
           <form onSubmit={join} className="flex shrink-0 items-center gap-2">
             <label className="min-w-0 flex-1">
@@ -166,6 +175,7 @@ export default function OperationsPage() {
                   busy={busy}
                   inRoom={room !== null}
                   queued={queue !== null}
+                  closed={closed}
                   players={catalog.max_players}
                   onToggle={() => setOpen((shown) => (shown === operation.code ? null : operation.code))}
                   onCreate={() => void create(operation.code)}
@@ -191,6 +201,7 @@ function OperationRow({
   busy,
   inRoom,
   queued,
+  closed,
   players,
   onToggle,
   onCreate,
@@ -200,6 +211,8 @@ function OperationRow({
   busy: boolean;
   inRoom: boolean;
   queued: boolean;
+  /** Why no room can open now (the mode is closed), or null. */
+  closed: string | null;
   players: number;
   onToggle: () => void;
   onCreate: () => void;
@@ -240,14 +253,14 @@ function OperationRow({
             Premio alla prima vittoria: {reward}, per ogni giocatore della squadra.
           </p>
           {operation.unlocked ? (
-            inRoom || queued ? (
-              <p className="text-xs font-bold text-faint">{inRoom ? "Sei già in una stanza." : "Sei già in coda per un'operazione."}</p>
+            inRoom || queued || closed ? (
+              <p className="text-xs font-bold text-faint">{inRoom ? "Sei già in una stanza." : queued ? "Sei già in coda per un'operazione." : closed}</p>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={onCreate} disabled={busy} className="btn btn-primary w-full px-2">
+                <button type="button" onClick={onCreate} disabled={busy} className="btn btn-primary min-h-14 w-full px-2 text-[17px] leading-5">
                   Apri una stanza
                 </button>
-                <ReturnLink href={`/squadra/?coda=${operation.code}`} onward className="btn btn-ghost w-full px-2">
+                <ReturnLink href={`/squadra/?coda=${operation.code}`} onward className="btn btn-ghost min-h-14 w-full px-2">
                   Cerca squadra
                 </ReturnLink>
               </div>

@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "23 novembre 2026",
+    changes: [
+      "Nelle Operazioni le carte ora si trascinano: prendi una carta dalla mano e lasciala sulla Minaccia, che si accende mentre ci passi sopra. Puoi spostarla su un'altra Minaccia o riportarla nella mano per riprenderla; il tocco, carta e poi Minaccia, funziona ancora. Quando le Operazioni sono chiuse, la loro pagina lo dice subito invece di farti scegliere la squadra. A fine operazione non compare più «Squadra non ammessa all'evento» se l'evento non dà punti alle Operazioni, e se esci quando nella stanza restano solo alleati del server ti avvisiamo che l'operazione finisce persa.",
+    ],
+  },
+  {
     date: "22 novembre 2026",
     changes: [
       "A Nuova Megara si sono fatti vedere sessanta Segnati in costume, i supereroi e i supercattivi della città: la squadra del Faro registrata con i Custodi, le Lanterne che lavorano senza permesso, gli «eroi» sponsorizzati e gli esoscheletri della Compagnia Lete, la congrega dei Figli dell'Ultima, l'arena e gli esattori del Banco, i mercenari Sciolti. Ognuno è disegnato in azione, in una posa tutta sua, e ha la sua variante. Ventuno di loro portano per la prima volta i poteri che aspettavano un personaggio: Gelo, Fenice, Ladro, Negativo, Una sola forza, Abissi, Duellante, Ribaltone, Tutto o niente, Duello, Il prezzo, Imboscata, Muro, Pazienza, Cacciatore, Arcobaleno, Jolly, Azzardo, Segugio, Costanza e Calma piatta. Come i Mille Soli e le Marche di Arcadia, per ora non escono dai pacchetti: arriveranno più avanti, e fino ad allora non li trovi nell'album, nello starter set, nelle varianti a caso né nelle squadre dei bot.",
