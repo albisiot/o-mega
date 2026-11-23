@@ -19,18 +19,37 @@ import {
   type ScoreContext,
   type Standing,
 } from "./scoring.ts";
-import type { AbilityFamilies, Character, PlayScore, Threat } from "./types.ts";
+import type { AbilityFamilies, Character, PlayScore, Threat, ThreatModifier } from "./types.ts";
 
 /**
  * The Boss's moves: none (an Attacco semplice), Colpo pesante (two Defences if the team does
  * not hold), Corazza (damage halved), Punto scoperto (damage doubled), Rigenerazione (back
- * some Life when it takes no damage), Bersaglio (the highest card counts half).
+ * some Life when it takes no damage), Bersaglio (the highest card counts half); and, from the
+ * second stage, the four modifiers of §5.4 announced instead of drawn: Colpo mirato, Anello
+ * debole, Territorio ostile, Sottovalutati, which change how the cards score on the threat.
  */
-export const RAID_MOVES = ["plain", "heavy", "armor", "exposed", "regen", "target"] as const;
+export const RAID_MOVES = [
+  "plain",
+  "heavy",
+  "armor",
+  "exposed",
+  "regen",
+  "target",
+  "focus",
+  "weak_link",
+  "hostile_ground",
+  "underdogs",
+] as const;
 export type RaidMove = (typeof RAID_MOVES)[number];
 
 /** The moves against the team: an Annullatore cancels them. Punto scoperto is a chance, not a threat. */
 export const HOSTILE_RAID_MOVES: readonly RaidMove[] = ["heavy", "armor", "regen", "target"];
+
+/**
+ * The moves that are a threat modifier (SPEC §5.4) on the round's threat: they help some cards
+ * and hinder others, so no Annullatore cancels them. Anello debole needs two abilities at least.
+ */
+export const MODIFIER_RAID_MOVES: readonly RaidMove[] = ["focus", "weak_link", "hostile_ground", "underdogs"];
 
 /** The numbers of the mode (balance.ts `raid`, game_config `raid.*`). */
 export type RaidRules = {
@@ -420,9 +439,18 @@ export function playRaidRound(params: {
 // The Boss's moves
 // ---------------------------------------------------------------------------
 
-/** Whether a sequence keeps the rules: Punto scoperto and Colpo pesante capped, no two Colpo pesante in a row, no Rigenerazione first. */
-export function isValidRaidMoveSequence(moves: readonly RaidMove[], rules: Pick<RaidRules, "exposedMax" | "heavyMax">): boolean {
+/**
+ * Whether a sequence keeps the rules: Punto scoperto and Colpo pesante capped, no two Colpo
+ * pesante in a row, no Rigenerazione first, no Anello debole on a threat of one ability
+ * (when the levels are given).
+ */
+export function isValidRaidMoveSequence(
+  moves: readonly RaidMove[],
+  rules: Pick<RaidRules, "exposedMax" | "heavyMax">,
+  levels?: readonly number[],
+): boolean {
   if (moves[0] === "regen") return false;
+  if (levels && moves.some((m, i) => m === "weak_link" && (levels[i] ?? 0) < 2)) return false;
   if (moves.filter((m) => m === "exposed").length > rules.exposedMax) return false;
   if (moves.filter((m) => m === "heavy").length > rules.heavyMax) return false;
   return !moves.some((m, i) => m === "heavy" && moves[i - 1] === "heavy");
@@ -432,12 +460,57 @@ export function isValidRaidMoveSequence(moves: readonly RaidMove[], rules: Pick<
  * The Boss's moves for a hunt: each round one of its repertoire or an Attacco semplice, at
  * random among those the rules still allow (raid_draw_moves draws them the same way).
  */
-export function drawRaidMoves(rng: Rng, repertoire: readonly RaidMove[], rounds: number, rules: Pick<RaidRules, "exposedMax" | "heavyMax">): RaidMove[] {
+export function drawRaidMoves(
+  rng: Rng,
+  repertoire: readonly RaidMove[],
+  rounds: number,
+  rules: Pick<RaidRules, "exposedMax" | "heavyMax">,
+  levels?: readonly number[],
+): RaidMove[] {
   const moves: RaidMove[] = [];
   const pool: RaidMove[] = ["plain", ...repertoire.filter((m) => m !== "plain")];
   for (let i = 0; i < rounds; i++) {
-    const allowed = pool.filter((m) => isValidRaidMoveSequence([...moves, m], rules));
+    const allowed = pool.filter((m) => isValidRaidMoveSequence([...moves, m], rules, levels));
     moves.push(allowed[Math.floor(rng() * allowed.length)]);
   }
   return moves;
+}
+
+/** The numbers of the modifiers (game_config `threat_modifiers.*`), as a match draws them. */
+export type RaidModifierNumbers = {
+  hostileBonus: number;
+  hostileMalus: number;
+  underdogBonus: number;
+  underdogMalus: number;
+  underdogCommonMaxRank: number;
+  underdogEliteMinRank: number;
+};
+
+const FACTIONS = ["heroes", "villains", "neutrals"];
+
+/**
+ * The modifier a move puts on its round's threat, or null for the other moves: Territorio ostile
+ * draws its two factions now (raid_create_room does the same when the room opens).
+ */
+export function raidMoveModifier(move: RaidMove, rng: Rng, numbers: RaidModifierNumbers): ThreatModifier | null {
+  switch (move) {
+    case "focus":
+      return { code: "focus" };
+    case "weak_link":
+      return { code: "weak_link" };
+    case "hostile_ground": {
+      const [favored, hindered] = shuffle(rng, FACTIONS);
+      return { code: "hostile_ground", favored, hindered, bonus: numbers.hostileBonus, malus: numbers.hostileMalus };
+    }
+    case "underdogs":
+      return {
+        code: "underdogs",
+        commonMaxRank: numbers.underdogCommonMaxRank,
+        eliteMinRank: numbers.underdogEliteMinRank,
+        bonus: numbers.underdogBonus,
+        malus: numbers.underdogMalus,
+      };
+    default:
+      return null;
+  }
 }

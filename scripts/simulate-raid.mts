@@ -16,7 +16,7 @@
 // Usage: node scripts/simulate-raid.mts <emergency-raw.json> [--runs 400] [--players 2,3,4]
 //   [--profiles starter,buona,grande] [--seed 1] [--bosses B05,B01] [--forza 92,96,100,104,108]
 //   [--factor 200,300,405] [--vita-factor 200,290,370] [--vita-base 14] [--targets 7,13,18,23,28,32] [--future 0.6] [--defence 8]
-//   [--grid 80,90,100,110,120] [--plain]
+//   [--grid 80,90,100,110,120] [--plain] [--vita-of B05:140,B03:110]
 //
 // --grid: for each Boss and number of players, the wins at each Strength in the list (instead of
 // the Magnitude's), to read the curve. --plain: the Bosses make no moves.
@@ -33,6 +33,7 @@ import {
   raidDiscounts,
   raidHand,
   raidMoveCancelled,
+  raidMoveModifier,
   raidRegen,
   raidResult,
   raidVita,
@@ -106,8 +107,23 @@ const RULES: RaidRules = {
   heavyMax: 2,
 };
 
+/** The modifiers' numbers, as the database draws them (threat_modifiers.*). */
+const MODIFIER_NUMBERS = {
+  hostileBonus: Number(data.config["threat_modifiers.hostile_bonus"] ?? 3),
+  hostileMalus: Number(data.config["threat_modifiers.hostile_malus"] ?? 2),
+  underdogBonus: Number(data.config["threat_modifiers.underdog_bonus"] ?? 3),
+  underdogMalus: Number(data.config["threat_modifiers.underdog_malus"] ?? 3),
+  underdogCommonMaxRank: Number(data.config["threat_modifiers.underdog_common_max_rank"] ?? 1),
+  underdogEliteMinRank: Number(data.config["threat_modifiers.underdog_elite_min_rank"] ?? 4),
+};
+
 const ALL_BOSSES: Boss[] = JSON.parse(readFileSync(new URL("./raid-bosses.json", import.meta.url), "utf8"));
-const bosses = option("bosses") ? ALL_BOSSES.filter((b) => option("bosses")!.split(",").includes(b.code)) : ALL_BOSSES;
+// --vita-of B05:140,B03:110 tries another Life for some Bosses.
+const vitaOf = new Map((option("vita-of") ?? "").split(",").filter(Boolean).map((pair) => [pair.split(":")[0], Number(pair.split(":")[1])]));
+const bosses = (option("bosses") ? ALL_BOSSES.filter((b) => option("bosses")!.split(",").includes(b.code)) : ALL_BOSSES).map((b) => ({
+  ...b,
+  vita: vitaOf.get(b.code) ?? b.vita,
+}));
 
 const toCharacter = (c: Card): Character => ({
   id: c.id,
@@ -255,8 +271,11 @@ function teamChoice(state: RaidState): Record<string, RaidPlacement> {
 type Outcome = { won: boolean; rounds: number; vitaLeft: number; defensesLost: number; byDefences: boolean; damage: number };
 
 function hunt(rng: Rng, boss: Boss, players: number, profile: string, forza: number): Outcome {
-  const threats = drawThreats(rng, boss.district);
-  const levels = threats.map((t) => t.level);
+  const drawn = drawThreats(rng, boss.district);
+  const levels = drawn.map((t) => t.level);
+  const moves = flag("plain") ? drawn.map((): RaidMove => "plain") : drawRaidMoves(rng, boss.moves, RULES.rounds, RULES, levels);
+  // A modifier move puts its modifier on the round's threat.
+  const threats = drawn.map((t, i) => ({ ...t, modifier: raidMoveModifier(moves[i], rng, MODIFIER_NUMBERS) }));
   let state: RaidState = {
     rules: RULES,
     boss: { forzaPercent: forza, vitaPercent: boss.vita },
@@ -266,7 +285,7 @@ function hunt(rng: Rng, boss: Boss, players: number, profile: string, forza: num
       return { id: `p${p}`, squad: squad.map((c) => ({ ...c, id: `p${p}:${c.id}` })) };
     }),
     threats,
-    moves: flag("plain") ? ["plain", "plain", "plain", "plain", "plain"] : drawRaidMoves(rng, boss.moves, RULES.rounds, RULES),
+    moves,
     records: [],
   };
   const vitaMax = raidVitaMaxOf(state);

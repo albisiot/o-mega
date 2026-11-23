@@ -10,12 +10,16 @@
 //   /prova-caccia/?s=colpo      the result of round 2: not held under a Colpo pesante, two Defences
 //   /prova-caccia/?s=vinta      the end, won (first win: coins and XP)
 //   /prova-caccia/?s=persa      the end, lost: the Defences gone
+//   /prova-caccia/?s=editor     the editor of the Bosses (admins), on made-up data: tap Modifica
+// The quattro scene plays round 3 under Territorio ostile; risultato and colpo open on the map.
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { CardDetailProvider } from "@/components/card-detail";
 import { CardLooksProvider } from "@/components/card-looks";
+import { BossAdminView } from "@/components/boss-admin";
 import { RaidRoomScreen } from "@/components/raid-room";
+import type { BossAdmin } from "@/lib/boss-admin";
 import { fetchAbilities, type AbilityInfo } from "@/lib/catalog";
 import type { RaidCard, RaidMember, RaidMove, RaidRound, RaidView } from "@/lib/raid";
 
@@ -168,6 +172,10 @@ function scene(name: string): { view: RaidView; revealing: number | null } {
       first_win_coins: 60,
       win_xp: 30,
       beaten: false,
+      stars: ["quick"],
+      star_rarities: ["delta", "gamma"],
+      quick_round: 4,
+      star_coins: 20,
     },
     members: [member(ME, 1, "Albi", MINE), member(FRIEND, 2, "Marta", FRIENDS)],
     rounds: rounds(2, 1),
@@ -203,7 +211,16 @@ function scene(name: string): { view: RaidView; revealing: number | null } {
             ally(4, "Reggente Bruni"),
           ],
           rounds: r.map((round, i) =>
-            i < 2 ? { ...round, resolved: true, result: { total: 90, effective_attack: 73, required: 73, held: true, cancelled: false, damage: 10, defenses_lost: 0, healed: 0, vita: 31, defenses: 2 }, plays: [] } : i === 2 ? { ...round, deadline_at: at(24) } : round,
+            i < 2
+              ? { ...round, resolved: true, result: { total: 90, effective_attack: 73, required: 73, held: true, cancelled: false, damage: 10, defenses_lost: 0, healed: 0, vita: 31, defenses: 2 }, plays: [] }
+              : i === 2
+                ? {
+                    ...round,
+                    move: "hostile_ground",
+                    modifier: { code: "hostile_ground", favored: "heroes", hindered: "villains", bonus: 3, malus: 2 },
+                    deadline_at: at(24),
+                  }
+                : round,
           ),
         },
         revealing: null,
@@ -251,7 +268,13 @@ function scene(name: string): { view: RaidView; revealing: number | null } {
           vita: won ? 0 : 19,
           defenses: won ? 2 : 0,
           members: [
-            member(ME, 1, "Albi", MINE, { used: ["P055-copy", "P028-copy", "P043-copy"], xp: won ? 30 : 10, coins: won ? 60 : 0 }),
+            member(ME, 1, "Albi", MINE, {
+              used: ["P055-copy", "P028-copy", "P043-copy"],
+              xp: won ? 30 : 10,
+              coins: won ? 60 : 0,
+              stars: won ? ["flawless", "quick", "squad"] : null,
+              star_coins: won ? 40 : null,
+            }),
             member(FRIEND, 2, "Marta", FRIENDS, { used: ["P053-copy", "P020-copy", "P101-copy"], xp: won ? 30 : 10, coins: won ? 60 : 0 }),
           ],
           rounds: r.map((round, i) =>
@@ -299,8 +322,41 @@ export default function RaidProofPage() {
   );
 }
 
+/** Made-up data for the editor: two Bosses, a handful of threats. */
+const ADMIN: BossAdmin = {
+  bosses: [
+    {
+      code: "B03", name: "La Mente Madre", flavor: "Mezza città sogna la stessa cosa da tre notti.", scene: "mind:shadow", gm_active: true,
+      fronts: ["T104", "T209", "T305", "T406", "T505"], raid_active: true, raid_district: "alti", raid_magnitude: 3,
+      raid_moves: ["target", "armor", "exposed", "underdogs", "focus"], raid_vita_percent: 120, raid_star_rarities: ["delta", "gamma"],
+      gm_matches: 41, gm_in_play: false, raid_results: { "2": { rooms: 12, wins: 7 }, "3": { rooms: 4, wins: 2 } }, raid_in_play: true, in_use: true,
+    },
+    {
+      code: "B07", name: "Il Leviatano", flavor: "Il porto si svuota in una notte: qualcosa beve il mare.", scene: "port:golem", gm_active: false,
+      fronts: ["T104", "T209", "T305", "T406", "T505"], raid_active: false, raid_district: "porto", raid_magnitude: 4,
+      raid_moves: ["heavy"], raid_vita_percent: 100, raid_star_rarities: ["delta"],
+      gm_matches: 0, gm_in_play: false, raid_results: {}, raid_in_play: false, in_use: false,
+    },
+  ],
+  threats: [
+    { code: "T104", name: "Scippatore", level: 1, abilities: ["VEL"], district: "popolari" },
+    { code: "T209", name: "Robot impazzito", level: 2, abilities: ["FOR", "TEC"], district: "alti" },
+    { code: "T305", name: "Rapina al treno blindato", level: 3, abilities: ["FOR", "VEL", "COM"], district: "alti" },
+    { code: "T406", name: "Rivolta in carcere", level: 4, abilities: ["COM", "VOL", "FOR", "PER"], district: "alti" },
+    { code: "T505", name: "Guerra tra bande", level: 5, abilities: ["COM", "FOR", "VEL", "FUR", "PER"], district: "alti" },
+  ],
+  rarities: RARITY.slice(1).map((code) => ({ code, name: code[0].toUpperCase() + code.slice(1) })),
+  magnitudes: [92, 96, 100, 104, 108].map((forza, i) => ({ magnitude: i + 1, forza_percent: forza, reward_percent: [50, 75, 100, 150, 250][i] })),
+  levels: { one_at_most: 2, one_at_least: 5, min_sum: 14, max_sum: 20 },
+};
+
 function RaidProof() {
   const name = useSearchParams().get("s") ?? "round";
+  if (name === "editor") return <BossAdminView initial={ADMIN} />;
+  return <RaidScene name={name} />;
+}
+
+function RaidScene({ name }: { name: string }) {
   const [{ view, revealing }, setScene] = useState(() => scene(name));
   const [abilities, setAbilities] = useState<AbilityInfo[]>([]);
   useEffect(() => {

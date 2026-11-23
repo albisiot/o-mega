@@ -9,8 +9,10 @@ import { CardLooksProvider, useCardLooks } from "@/components/card-looks";
 import { DragGhost } from "@/components/drag-ghost";
 import { HandCard } from "@/components/hand-card";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { RaidMapReveal } from "@/components/raid-comic";
 import { ReturnLink } from "@/components/return-link";
 import { Sheet } from "@/components/sheet";
+import { StarIcon } from "@/components/story-stars";
 import { balance } from "@/config/balance";
 import { fetchAbilities, seenAbilities, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
@@ -18,6 +20,7 @@ import { subscribeToUpdates } from "@/lib/match";
 import {
   addRaidAlly,
   currentRaidRound,
+  describeRaidMove,
   DISTRICT_NAMES,
   fetchRaidRoom,
   lastResolvedRaidRound,
@@ -31,8 +34,11 @@ import {
   raidPreview,
   removeRaidAlly,
   resolveRaidRound,
+  MODIFIER_MOVES,
   RAID_MOVES,
   RAID_SIGNAL_LABELS,
+  RAID_STARS,
+  raidStarCondition,
   RAID_SIGNALS,
   sendRaidSignal,
   setRaidReady,
@@ -41,6 +47,8 @@ import {
   type RaidMember,
   type RaidMove,
   type RaidRound,
+  type RaidStar,
+  type RaidStarRules,
   type RaidView,
 } from "@/lib/raid";
 import { useCardDrag } from "@/lib/use-card-drag";
@@ -224,6 +232,8 @@ export function RaidRoomScreen({
 }) {
   const current = currentRaidRound(view);
   const shownRound = revealing === null ? null : (view.rounds.find((r) => r.round === revealing && r.resolved) ?? null);
+  // A round's result: first on the map with its comic page, then the recap.
+  const [mapSeen, setMapSeen] = useState<number | null>(null);
   return (
     <div className="game-shell">
       {view.status === "lobby" ? (
@@ -237,7 +247,14 @@ export function RaidRoomScreen({
           </ReturnLink>
         </main>
       ) : shownRound ? (
-        <RoundResult view={view} round={shownRound} abilities={abilities} offset={offset} onDone={onRevealDone} />
+        mapSeen === shownRound.round ? (
+          <RoundResult view={view} round={shownRound} abilities={abilities} offset={offset} onDone={onRevealDone} />
+        ) : (
+          <>
+            <RevealTimer view={view} offset={offset} onOver={onRevealDone} />
+            <RaidMapReveal key={shownRound.round} view={view} round={shownRound} onContinue={() => setMapSeen(shownRound.round)} />
+          </>
+        )
       ) : view.status === "active" && myRaidMember(view)?.left ? (
         <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
           <p className="font-display text-2xl uppercase text-comic-yellow">Sei uscito</p>
@@ -262,6 +279,49 @@ export function magnitudeLabel(magnitude: number): string {
   return `Magnitudo ${magnitude} · ${MAGNITUDE_NAMES[magnitude] ?? ""}`;
 }
 
+/** A move's colours: magenta against the team, yellow a modifier, cyan a chance, black nothing. */
+export function moveLook(move: RaidMove): string {
+  if (RAID_MOVES[move].hostile) return "bg-comic-magenta text-black";
+  if (MODIFIER_MOVES.includes(move)) return "bg-comic-yellow text-black";
+  return move === "plain" ? "bg-black text-foreground" : "bg-comic-cyan text-black";
+}
+
+/**
+ * The three stars of a Boss, one per line: what each asks and whether the player has it.
+ * `met`: on the result, the stars this hunt met; `fresh`: those paid now for the first time.
+ */
+export function RaidStarList({
+  rules,
+  earned,
+  met = null,
+  fresh = false,
+}: {
+  rules: RaidStarRules;
+  earned: readonly RaidStar[];
+  met?: readonly RaidStar[] | null;
+  fresh?: boolean;
+}) {
+  return (
+    <ul className="flex shrink-0 flex-col gap-0.5" aria-label="Le stelle del Boss">
+      {RAID_STARS.map((star) => {
+        const metNow = Boolean(met?.includes(star));
+        const have = earned.includes(star) || metNow;
+        return (
+          <li key={star} className={`flex items-center gap-1.5 text-xs font-bold ${have ? "" : "text-muted"}`}>
+            <StarIcon filled={have} className="h-4 w-4" />
+            <span className="min-w-0 flex-1">{raidStarCondition(star, rules)}</span>
+            {metNow && fresh ? (
+              <span className="shrink-0 bg-comic-yellow px-1 text-[10px] font-extrabold text-black">Presa</span>
+            ) : !have ? (
+              <span className="shrink-0 text-[10px] font-extrabold text-faint">{rules.star_coins} monete</span>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 /** The Boss's repertoire as chips; a tap on «?» explains them in the rules. */
 export function MoveChips({ moves, className = "" }: { moves: readonly RaidMove[]; className?: string }) {
   return (
@@ -270,9 +330,7 @@ export function MoveChips({ moves, className = "" }: { moves: readonly RaidMove[
         <li
           key={move}
           title={RAID_MOVES[move].text}
-          className={`-skew-x-8 px-1.5 text-[10px] font-extrabold uppercase leading-4 ${
-            RAID_MOVES[move].hostile ? "bg-comic-magenta text-black" : "bg-comic-cyan text-black"
-          }`}
+          className={`-skew-x-8 px-1.5 text-[10px] font-extrabold uppercase leading-4 ${moveLook(move)}`}
         >
           {RAID_MOVES[move].name}
         </li>
@@ -377,6 +435,7 @@ function Lobby({
           Vittoria: +{view.boss.win_xp} esperienza
           {view.boss.beaten ? " · l'hai già abbattuto" : ` · la prima volta +${view.boss.first_win_coins} monete`}
         </p>
+        <RaidStarList rules={view.boss} earned={view.boss.stars ?? []} />
 
         <ul className="flex flex-col gap-1.5" aria-label="La squadra">
           {view.members.map((member) => (
@@ -693,6 +752,14 @@ function Board({
         <span className="text-[11px] font-bold leading-4 text-muted">
           {(threat?.abilities ?? []).map((code) => abilityName(abilities, code)).join(" · ")}
         </span>
+        {round.modifier && (
+          <span className="mt-0.5 self-start -skew-x-8 bg-comic-yellow px-1.5 text-[11px] font-extrabold leading-4 text-black">
+            {(() => {
+              const move = describeRaidMove(round.move ?? "plain", round.modifier, abilityName(abilities, threat?.abilities[0] ?? ""));
+              return `${move.name}: ${move.text}`;
+            })()}
+          </span>
+        )}
         <span className="mt-auto flex flex-col gap-1 pt-1.5">
           <span className="flex flex-wrap gap-x-2 gap-y-0.5">
             {view.members.map((member) => {
@@ -850,17 +917,13 @@ function MovesRow({ view, round, cancelled, onOpen }: { view: RaidView; round: R
   return (
     <button type="button" onClick={onOpen} className="mx-3 flex shrink-0 items-center gap-1.5 text-left" aria-label="Le mosse del Boss">
       <span className="shrink-0 text-[10px] font-extrabold uppercase text-muted">Ora</span>
-      <span
-        className={`-skew-x-8 px-1.5 text-[11px] font-extrabold uppercase leading-5 ${
-          cancelled ? "bg-panel-raised text-faint line-through" : RAID_MOVES[now].hostile ? "bg-comic-magenta text-black" : now === "plain" ? "bg-black text-foreground" : "bg-comic-cyan text-black"
-        }`}
-      >
-        {RAID_MOVES[now].name}
+      <span className={`-skew-x-8 px-1.5 text-[11px] font-extrabold uppercase leading-5 ${cancelled ? "bg-panel-raised text-faint line-through" : moveLook(now)}`}>
+        {describeRaidMove(now, round.modifier).name}
       </span>
       {later.map((r) => (
         <span key={r.round} className="flex min-w-0 items-center gap-1 text-[10px] font-extrabold text-muted">
           R{r.round}
-          <span className="truncate text-foreground">{RAID_MOVES[r.move!].name}</span>
+          <span className="truncate text-foreground">{describeRaidMove(r.move!, r.modifier).name}</span>
         </span>
       ))}
       {foreseen && <span aria-hidden>👁</span>}
@@ -882,7 +945,12 @@ function MovesSheet({ view, abilities }: { view: RaidView; abilities: AbilityInf
               {r.resolved && <span className="text-muted"> · fatto</span>}
             </p>
             <p className="text-xs font-bold text-muted">
-              {r.move ? `${RAID_MOVES[r.move].name}: ${RAID_MOVES[r.move].text}` : "Mossa ancora nascosta"}
+              {r.move
+                ? (() => {
+                    const move = describeRaidMove(r.move, r.modifier, r.threat ? abilityName(abilities, r.threat.abilities[0]) : undefined);
+                    return `${move.name}: ${move.text}`;
+                  })()
+                : "Mossa ancora nascosta"}
             </p>
             {r.foreseen && (
               <p className="text-xs font-bold text-comic-magenta">
@@ -955,6 +1023,18 @@ function Allies({
 // A round's result, and the end
 // ---------------------------------------------------------------------------
 
+/** The map leaves by itself when the pause before the next round is over (the next timer is running). */
+function RevealTimer({ view, offset, onOver }: { view: RaidView; offset: number; onOver: () => void }) {
+  const next = currentRaidRound(view);
+  const nextDeadline = next?.deadline_at ? Date.parse(next.deadline_at) : null;
+  const now = useNow(500) + offset;
+  const over = nextDeadline !== null && nextDeadline - now <= balance.raid.roundSeconds * 1000;
+  useEffect(() => {
+    if (over) onOver();
+  }, [over, onOver]);
+  return null;
+}
+
 function RoundResult({
   view,
   round,
@@ -996,8 +1076,12 @@ function RoundResult({
           Lv {round.level} · {(round.threat?.abilities ?? []).map((code) => abilityName(abilities, code)).join(" · ")}
         </p>
         <p className="mt-0.5 text-[11px] font-extrabold">
-          Mossa: {RAID_MOVES[move].name}
-          {result.cancelled ? " · annullata da un Annullatore" : move !== "plain" ? ` · ${RAID_MOVES[move].text}` : ""}
+          Mossa: {describeRaidMove(move, round.modifier, abilityName(abilities, round.threat?.abilities[0] ?? "")).name}
+          {result.cancelled
+            ? " · annullata da un Annullatore"
+            : move !== "plain"
+              ? ` · ${describeRaidMove(move, round.modifier, abilityName(abilities, round.threat?.abilities[0] ?? "")).text}`
+              : ""}
         </p>
       </section>
       <ul className="mt-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto" aria-label="Le carte del round">
@@ -1068,8 +1152,19 @@ function End({ view }: { view: RaidView }) {
           {won && (me?.xp ?? 0) > 0 && (me?.coins ?? 0) === 0 && (
             <span className="text-xs font-bold text-muted">Le monete della prima vittoria su questo Boss le avevi già prese.</span>
           )}
+          {(me?.star_coins ?? 0) > 0 && (
+            <span className="bg-comic-yellow px-2 py-0.5 text-sm font-extrabold text-black">+{me?.star_coins} monete delle stelle</span>
+          )}
           {me?.xp === 0 && <span className="text-xs font-bold text-muted">Nessun premio: hai scelto meno della metà delle tue carte.</span>}
         </div>
+      )}
+      {won && !me?.left && (
+        <RaidStarList
+          rules={view.boss}
+          earned={view.boss.stars ?? []}
+          met={me?.stars ?? []}
+          fresh={(me?.star_coins ?? 0) > 0}
+        />
       )}
       <ul className="flex flex-col gap-1" aria-label="La squadra">
         {view.members.map((member) => (

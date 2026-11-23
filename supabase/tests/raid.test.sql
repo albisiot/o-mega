@@ -137,7 +137,7 @@ begin
         where t.id = any (v_ids) and (t.region <> 'megara' or t.rarity_code is not null or t.modifier_code is not null)
       ), 'usual threats of Nuova Megara';
 
-      v_moves := public.raid_draw_moves(v_boss.id);
+      v_moves := public.raid_draw_moves(v_boss.id, v_levels);
       assert cardinality(v_moves) = 5 and v_moves[1] <> 'regen', format('moves %s', v_moves);
       assert (select count(*) from unnest(v_moves) m where m = 'exposed') <= 1
         and (select count(*) from unnest(v_moves) m where m = 'heavy') <= 2, format('moves %s', v_moves);
@@ -188,7 +188,7 @@ begin
   v_room := public.raid_create_room('B03');
   v_room_id := (v_room ->> 'id')::uuid;
   select * into v_raid from public.raid_rooms where id = v_room_id;
-  assert v_raid.magnitude = 3 and v_raid.forza_percent = 100 and v_raid.vita_percent = 85 and v_raid.reward_percent = 100,
+  assert v_raid.magnitude = 3 and v_raid.forza_percent = 100 and v_raid.vita_percent = (select raid_vita_percent from public.boss_definitions where code = 'B03') and v_raid.reward_percent = 100,
     'the Magnitude copied';
 
   -- In a hunt: no room of the Operazioni, nor their queue, nor a second hunt.
@@ -232,7 +232,7 @@ begin
   perform pg_temp.as_user(v_a);
   perform public.raid_start(v_room_id);
   select * into v_raid from public.raid_rooms where id = v_room_id;
-  assert v_raid.status = 'active' and v_raid.players = 2 and v_raid.vita_max = 24 and v_raid.vita = 24 and v_raid.defenses = 3,
+  assert v_raid.status = 'active' and v_raid.players = 2 and v_raid.vita_max = public.raid_vita_max(2, 100, v_raid.vita_percent) and v_raid.vita = v_raid.vita_max and v_raid.defenses = 3,
     format('started: %s', row_to_json(v_raid));
 
   -- In play: the threat and move of round 1, the next move, nothing more.
@@ -277,7 +277,7 @@ begin
   assert v_failed, 'an Attack above the round''s';
   perform public.raid_record_round(v_room_id, 1, v_record);
   select * into v_raid from public.raid_rooms where id = v_room_id;
-  assert v_raid.current_round = 2 and v_raid.vita = 23 and v_raid.defenses = 3, format('round 1: %s', row_to_json(v_raid));
+  assert v_raid.current_round = 2 and v_raid.vita = v_raid.vita_max - 1 and v_raid.defenses = 3, format('round 1: %s', row_to_json(v_raid));
   assert (select held and damage = 1 and total = v_attack + 1 from public.raid_rounds where room_id = v_room_id and round = 1), 'round 1 stored';
 
   -- ---------------------------------------------------------------------

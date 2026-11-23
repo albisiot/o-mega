@@ -1826,6 +1826,8 @@ type RaidContext = {
   members: { key: string; card_instance_ids: string[] | null; definition_ids: string[] | null; placement: string | null }[];
   threat_ids: string[];
   moves: RaidMove[];
+  /** The modifier a modifier move puts on its round's threat (second stage), or null. */
+  modifiers?: (ThreatModifier | null)[];
   records: RaidRoundRecord[];
 };
 
@@ -1851,11 +1853,12 @@ async function resolveRaidRoundFor(userId: string, body: Record<string, unknown>
       id: m.key,
       squad: (m.definition_ids ?? []).map((definitionId, i) => character(definitionId, m.card_instance_ids![i])),
     })),
-    threats: ctx.threat_ids.map((id) => {
+    threats: ctx.threat_ids.map((id, i) => {
       const found = loaded.threats.get(id);
       if (!found) throw new Error("Unknown threat of the hunt");
-      // The hunt's threats are usual ones of Nuova Megara: no rule, no modifier.
-      return { id: found.id, level: found.level, abilities: found.abilities };
+      // The hunt's threats are usual ones of Nuova Megara, without a rule of their own; a
+      // modifier move puts its modifier on its round's threat.
+      return { id: found.id, level: found.level, abilities: found.abilities, modifier: ctx.modifiers?.[i] ?? null };
     }),
     moves: ctx.moves,
     records: ctx.records,

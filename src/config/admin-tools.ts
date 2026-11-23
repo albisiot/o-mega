@@ -46,6 +46,13 @@ export const ADMIN_TOOLS: AdminTool[] = [
     icon: "M5 20V9l3 3 4-7 4 7 3-3v11zM9 16h6",
   },
   {
+    href: "/gestione-boss",
+    name: "Boss",
+    description: "Grande Minaccia e Caccia grossa: fronti, Magnitudo, mosse",
+    group: "contents",
+    icon: "M4 19l3-10 5 4 5-4 3 10zM8 6a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM16 6a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM12 15v2",
+  },
+  {
     href: "/gestione-storia",
     name: "Storia",
     description: "Testi, premi e stelle delle missioni",

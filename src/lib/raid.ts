@@ -11,11 +11,13 @@ import {
   type RaidState,
   type ScoreParts,
   type Threat,
+  type ThreatModifier,
 } from "@o-mega/game-engine";
 import { balance } from "@/config/balance";
 import { forget, keepSeen, lastSeen } from "@/lib/last-seen";
 import { invokeFunction, toCharacter, type MatchCard } from "@/lib/match";
 import { getSupabase } from "@/lib/supabase/client";
+import { describeThreatModifier } from "@/lib/threat-modifiers";
 
 export type { RaidMove };
 
@@ -27,7 +29,48 @@ export const RAID_MOVES: Record<RaidMove, { name: string; text: string; hostile:
   exposed: { name: "Punto scoperto", text: "Il danno di questo round conta doppio.", hostile: false },
   regen: { name: "Rigenerazione", text: "Se in questo round non lo ferite, il Boss recupera Vita.", hostile: true },
   target: { name: "Bersaglio", text: "La carta più alta della squadra conta la metà.", hostile: true },
+  // The modifiers of §5.4 as moves (second stage): they help some cards and hinder others.
+  focus: { name: "Colpo mirato", text: "La prima abilità richiesta conta doppio.", hostile: false },
+  weak_link: { name: "Anello debole", text: "Il valore più basso tra le abilità richieste conta doppio.", hostile: false },
+  hostile_ground: { name: "Territorio ostile", text: "Una fazione ha un bonus, un'altra un malus.", hostile: false },
+  underdogs: { name: "Sottovalutati", text: "Le carte Delta hanno un bonus, Alfa e Omega un malus.", hostile: false },
 };
+
+/** A modifier move: it changes how the cards score on the threat. */
+export const MODIFIER_MOVES: readonly RaidMove[] = ["focus", "weak_link", "hostile_ground", "underdogs"];
+
+/** A move as the player reads it on its round: with the factions of Territorio ostile, the first ability of Colpo mirato. */
+export function describeRaidMove(move: RaidMove, modifier: ThreatModifier | null | undefined, firstAbility?: string): { name: string; text: string } {
+  if (modifier) return describeThreatModifier(modifier, firstAbility ?? "La prima abilità richiesta");
+  return { name: RAID_MOVES[move].name, text: RAID_MOVES[move].text };
+}
+
+/** The three stars of a Boss (SPEC §5.18): any win earns them, each paid once. */
+export const RAID_STARS = ["flawless", "quick", "squad"] as const;
+export type RaidStar = (typeof RAID_STARS)[number];
+
+/** What the stars of a Boss ask and pay. */
+export type RaidStarRules = { star_rarities: string[]; quick_round: number; star_coins: number };
+
+const RARITY_NAMES: Record<string, string> = { delta: "Delta", gamma: "Gamma", beta: "Beta", alfa: "Alfa", omega: "Omega" };
+
+/** «Delta o Gamma». */
+function rarityList(codes: readonly string[]): string {
+  const names = codes.map((code) => RARITY_NAMES[code] ?? code);
+  return names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} o ${names.at(-1)}`;
+}
+
+/** What a star asks, as a line. */
+export function raidStarCondition(star: RaidStar, rules: RaidStarRules): string {
+  switch (star) {
+    case "flawless":
+      return "Senza graffi: vinci senza perdere Difese";
+    case "quick":
+      return `Colpo rapido: abbattilo entro il round ${rules.quick_round}`;
+    case "squad":
+      return `Squadra: vinci con una squadra solo ${rarityList(rules.star_rarities)}`;
+  }
+}
 
 /** The Magnitudes (provisional names, from the seismograph): 1 the weakest. */
 export const MAGNITUDE_NAMES: Record<number, string> = { 1: "Scossa", 2: "Allarme", 3: "Pericolo", 4: "Disastro", 5: "Catastrofe" };
@@ -58,7 +101,9 @@ export type RaidBoss = {
   first_win_coins: number;
   win_xp: number;
   beaten: boolean;
-};
+  /** The stars the player has, and what they ask (second stage). */
+  stars: RaidStar[];
+} & RaidStarRules;
 
 export type RaidCatalog = {
   min_players: number;
@@ -102,6 +147,9 @@ export type RaidMember = {
   /** What the end paid. */
   xp: number | null;
   coins: number | null;
+  /** The stars this hunt met for the member, and the coins of the new ones. */
+  stars?: RaidStar[] | null;
+  star_coins?: number | null;
 };
 
 export type RaidThreat = { name: string; level: number; abilities: string[]; flavor?: string; district?: string | null };
@@ -141,6 +189,8 @@ export type RaidRound = {
   deadline_at: string | null;
   /** The move: of a round reached, of the next one, and of those a Spia or a Veggente shows; else null. */
   move: RaidMove | null;
+  /** The modifier of a modifier move, whenever its move is shown. */
+  modifier?: ThreatModifier | null;
   /** Only once the round is reached. */
   threat: RaidThreat | null;
   /** Before then, the threat the team's Veggente, Presagio or Oracolo shows. */
@@ -171,7 +221,8 @@ export type RaidView = {
   me: string;
   host: string;
   all_ready: boolean;
-  boss: Pick<RaidBoss, "code" | "name" | "flavor" | "scene" | "district" | "moves" | "first_win_coins" | "win_xp" | "beaten">;
+  boss: Pick<RaidBoss, "code" | "name" | "flavor" | "scene" | "district" | "moves" | "first_win_coins" | "win_xp" | "beaten" | "stars"> &
+    RaidStarRules;
   members: RaidMember[];
   rounds: RaidRound[];
 };
@@ -350,7 +401,7 @@ export function knownRaidState(view: RaidView): RaidState {
       id: raidMemberKey(m),
       squad: (m.squad ?? []).map((card) => toCharacter(card, card.instance_id)),
     })),
-    threats: view.rounds.map((r): Threat => ({ id: `r${r.round}`, level: r.level, abilities: r.threat?.abilities ?? [] })),
+    threats: view.rounds.map((r): Threat => ({ id: `r${r.round}`, level: r.level, abilities: r.threat?.abilities ?? [], modifier: r.modifier ?? null })),
     moves: view.rounds.map((r) => r.move ?? "plain"),
     records,
   };

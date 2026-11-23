@@ -5,11 +5,12 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { BackLink } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
-import { magnitudeLabel, MoveChips } from "@/components/raid-room";
+import { magnitudeLabel, MoveChips, RaidStarList } from "@/components/raid-room";
+import { StarCount } from "@/components/story-stars";
 import { ReturnLink } from "@/components/return-link";
 import { describeServerError } from "@/lib/errors";
 import { statusOf, useModeAvailability } from "@/lib/mode-availability";
-import { createRaidRoom, DISTRICT_NAMES, fetchRaid, joinRaidRoom, raidRoomHref, seenRaid, type RaidCatalog } from "@/lib/raid";
+import { createRaidRoom, DISTRICT_NAMES, fetchRaid, joinRaidRoom, RAID_STARS, raidRoomHref, seenRaid, type RaidCatalog } from "@/lib/raid";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow } from "@/lib/use-now";
 
@@ -166,7 +167,10 @@ export default function HuntPage() {
                       {magnitudeLabel(boss.magnitude)} · {DISTRICT_NAMES[boss.district] ?? boss.district}
                     </span>
                   </span>
-                  {boss.beaten && <span className="shrink-0 bg-comic-cyan px-1 text-[10px] font-extrabold uppercase text-black">Abbattuto</span>}
+                  <span className="flex shrink-0 flex-col items-end gap-0.5">
+                    <StarCount earned={boss.stars?.length ?? 0} total={RAID_STARS.length} className="text-[11px] font-extrabold" />
+                    {boss.beaten && <span className="bg-comic-cyan px-1 text-[10px] font-extrabold uppercase text-black">Abbattuto</span>}
+                  </span>
                 </button>
                 {expanded && (
                   <div className="flex flex-col gap-1.5 px-2 pb-2">
@@ -175,6 +179,7 @@ export default function HuntPage() {
                     <p className="text-[11px] font-bold text-muted">
                       Vittoria: +{boss.win_xp} esperienza{boss.beaten ? "" : ` · la prima volta +${boss.first_win_coins} monete`}
                     </p>
+                    <RaidStarList rules={boss} earned={boss.stars ?? []} />
                     {!room && !closed && (
                       <button type="button" onClick={() => void create(boss.code)} disabled={busy} className="btn btn-primary w-full">
                         Apri una stanza

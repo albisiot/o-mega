@@ -212,6 +212,15 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   raid_boss_not_found: "Questo Boss non si può cacciare ora.",
   raid_invalid_round: "Qualcosa non tornava in questo round: riprova tra poco.",
   raid_no_threats: "Non ci sono abbastanza Minacce per questa caccia: riprova.",
+  // The editor of the Bosses (SPEC §5.18)
+  boss_invalid_text: "Controlla i testi: nome da 2 a 60 caratteri, testo da 10 a 400.",
+  boss_invalid_scene: "Scegli l'ambiente (e la figura) della scena.",
+  boss_invalid_fronts: "I fronti sono 5 Minacce diverse, normali di Nuova Megara, con i livelli di una partita.",
+  boss_invalid_raid: "Caccia grossa: servono quartiere e Magnitudo (da 1 a 5), mosse valide, Vita dal 10% al 1000% e almeno una rarità per la stella.",
+  boss_in_play: "Una Grande Minaccia su questo Boss è in corso: i fronti si cambiano quando è finita.",
+  boss_in_use: "Questo Boss è già stato affrontato: non si può eliminare. Puoi spegnerlo.",
+  boss_unknown: "Questo Boss non esiste.",
+  boss_too_many: "I codici dei Boss sono finiti (B01–B99).",
   // Modalità di gioco (EDITOR)
   mode_unavailable: "Questa modalità non è disponibile ora.",
   invalid_mode_state: "Scegli: sempre attiva, da data a data, o spenta.",

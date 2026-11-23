@@ -446,8 +446,8 @@ export const balance = {
     /** Threats drawn from the Boss's district, when it has enough. */
     fromDistrict: 2,
     roundSeconds: 30,
-    /** From the second round on, time for the result before the timer starts. */
-    revealPauseSeconds: 15,
+    /** From the second round on, time for the result (on the map, with its comic page) before the timer starts. */
+    revealPauseSeconds: 20,
     /** A room nobody touches for this long closes. */
     lobbyMinutes: 30,
     /** XP of a win (times the Magnitude's rewardPercent) and of a loss (the same at every Magnitude). */
@@ -459,6 +459,9 @@ export const balance = {
     selfChosenPercent: 50,
     /** Rarest rank a server ally fields (3 = Beta). */
     allyMaxRank: 3,
+    /** The stars (second stage): Colpo rapido asks the Boss down by this round; each star's coins, times the Magnitude's rewardPercent. */
+    quickRound: 4,
+    starCoins: 20,
     /** How long a signal stays beside a player's name (client only). */
     signalSeconds: 6,
   },

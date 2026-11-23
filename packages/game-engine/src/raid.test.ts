@@ -12,6 +12,7 @@ import {
   raidCurrentRound,
   raidDefenses,
   raidHand,
+  raidMoveModifier,
   raidResult,
   raidRoundOutcome,
   raidVita,
@@ -291,5 +292,47 @@ describe("Caccia grossa: the Boss's moves", () => {
       expect(moves.every((m) => m === "plain" || repertoire.includes(m))).toBe(true);
     }
     expect(drawRaidMoves(rng, [], 5, RULES)).toEqual(["plain", "plain", "plain", "plain", "plain"]);
+  });
+});
+
+describe("Caccia grossa: the modifiers as moves", () => {
+  const NUMBERS = { hostileBonus: 3, hostileMalus: 2, underdogBonus: 3, underdogMalus: 3, underdogCommonMaxRank: 1, underdogEliteMinRank: 4 };
+
+  it("puts the modifier on the round's threat, and the cards score with it", () => {
+    const threats = THREATS.map((t, i) => (i === 1 ? { ...t, modifier: raidMoveModifier("focus", mulberry32(1), NUMBERS) } : t));
+    let state = newRaid(squad("a", 7), squad("b", 7), ["plain", "focus", "plain", "plain", "plain"], threats);
+    state = resolveRaidRound(state, { A: play("a0"), B: play("b0") }, FAMILIES).state;
+    // Level 2 (VEL, RES), Colpo mirato: 7 + 7 + 7 for each card, 42 against 26.
+    const { record } = resolveRaidRound(state, { A: play("a1"), B: play("b1") }, FAMILIES);
+    expect(record).toMatchObject({ total: 42, damage: 16 });
+  });
+
+  it("draws Territorio ostile's two factions, and gives Sottovalutati its numbers", () => {
+    const hostile = raidMoveModifier("hostile_ground", mulberry32(3), NUMBERS);
+    expect(hostile).toMatchObject({ code: "hostile_ground", bonus: 3, malus: 2 });
+    if (hostile?.code === "hostile_ground") expect(hostile.favored).not.toBe(hostile.hindered);
+    expect(raidMoveModifier("underdogs", mulberry32(3), NUMBERS)).toEqual({ code: "underdogs", commonMaxRank: 1, eliteMinRank: 4, bonus: 3, malus: 3 });
+    expect(raidMoveModifier("armor", mulberry32(3), NUMBERS)).toBeNull();
+  });
+
+  it("no Annullatore cancels a modifier", () => {
+    const a = squad("a", 10);
+    a[0] = character("a0", {}, power("nullifier"), 10);
+    const threats = THREATS.map((t, i) => (i === 0 ? { ...t, modifier: { code: "hostile_ground" as const, favored: "heroes", hindered: "neutrals", bonus: 3, malus: 2 } } : t));
+    const { record } = resolveRaidRound(newRaid(a, squad("b", 9), ["hostile_ground", "plain", "plain", "plain", "plain"], threats), { A: play("a0"), B: play("b0") }, FAMILIES);
+    // Both cards are neutrals: −2 each.
+    expect(record).toMatchObject({ cancelled: false, total: 15 });
+  });
+
+  it("never draws Anello debole on a threat of one ability", () => {
+    const rng = mulberry32(11);
+    const levels = [1, 2, 3, 1, 5];
+    for (let i = 0; i < 300; i++) {
+      const moves = drawRaidMoves(rng, ["weak_link", "focus"], 5, RULES, levels);
+      expect(moves[0]).not.toBe("weak_link");
+      expect(moves[3]).not.toBe("weak_link");
+      expect(isValidRaidMoveSequence(moves, RULES, levels)).toBe(true);
+    }
+    expect(isValidRaidMoveSequence(["weak_link"], RULES, [1])).toBe(false);
   });
 });
