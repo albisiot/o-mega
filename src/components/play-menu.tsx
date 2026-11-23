@@ -11,6 +11,7 @@ import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
 import { challengeEmergencyHref, runningChallenge, type Challenge } from "@/lib/challenges";
 import { COOP_QUEUE_HREF, coopRoomHref, type CoopCatalog } from "@/lib/coop";
+import { raidRoomHref, type RaidCatalog } from "@/lib/raid";
 import { daysLeft, daysLeftText, emergencyHref } from "@/lib/emergency";
 import { describeLastPlay, describePlayBlock, FIRST_PLAY, lastPlayHref, playBlock, type LastPlay, type PlayBlock } from "@/lib/last-play";
 import { leaderboardHref, type LeaderboardBoard } from "@/lib/leaderboards";
@@ -628,40 +629,50 @@ function EmergencyChallengeRow({ challenge, gate }: { challenge: Challenge; gate
 }
 
 /**
- * The Operazioni (SPEC §5.17) on the week's row: the room the player is in, or how far the
- * chapter is. Beside the week's Emergenza, so Gioca gains no line.
+ * «Insieme» on the week's row: the two cooperative modes, the Operazioni (SPEC §5.17) and the
+ * Caccia grossa (§5.18). The room the player is in, of either, or the place in the queue; else
+ * the page with both. Beside the week's Emergenza, so Gioca gains no line. Closed only when both
+ * modes are.
  */
-function OperationsTile({ coop, compact = false, gate }: { coop: CoopCatalog | null | undefined; compact?: boolean; gate: Gate }) {
-  const room = coop?.room ?? null;
-  const queued = !room && Boolean(coop?.queue?.queued);
-  const operations = coop?.chapters.flatMap((chapter) => chapter.operations) ?? [];
-  const next = operations.find((operation) => operation.unlocked && !operation.completed);
+function TogetherTile({
+  coop,
+  raid,
+  compact = false,
+  gate,
+}: {
+  coop: CoopCatalog | null | undefined;
+  raid: RaidCatalog | null | undefined;
+  compact?: boolean;
+  gate: Gate;
+}) {
+  const coopRoom = coop?.room ?? null;
+  const queued = !coopRoom && Boolean(coop?.queue?.queued);
+  const raidRoom = raid?.room ?? null;
   const state = queued
     ? "In coda"
-    : room
-      ? room.status === "active"
-        ? "In corso"
-        : `Stanza ${room.code}`
-      : next
-        ? compact
-          ? `${next.ord}/${operations.length}`
-          : `${next.title} · ${next.ord}/${operations.length}`
-        : operations.length
-          ? "✓ Completate"
-          : compact
-            ? "Dal vivo"
-            : "In squadra, dal vivo";
+    : coopRoom
+      ? coopRoom.status === "active"
+        ? "Operazione"
+        : `Stanza ${coopRoom.code}`
+      : raidRoom
+        ? raidRoom.status === "active"
+          ? "Caccia in corso"
+          : `Stanza ${raidRoom.code}`
+        : compact
+          ? "Dal vivo"
+          : "Operazioni · Caccia";
+  const inside = Boolean(coopRoom || queued || raidRoom);
   // A room or a place in the queue stays reachable: what started goes on to the end.
   return (
     <GateLink
-      href={room ? coopRoomHref(room.id) : queued ? COOP_QUEUE_HREF : "/operazioni"}
-      status={room || queued ? null : gate.status}
+      href={coopRoom ? coopRoomHref(coopRoom.id) : queued ? COOP_QUEUE_HREF : raidRoom ? raidRoomHref(raidRoom.id) : "/insieme"}
+      status={inside ? null : gate.status}
       onClosed={gate.onClosed}
       compact
-      label={`Operazioni in squadra: ${state}`}
+      label={`Insieme, in squadra: ${state}`}
       className="tile flex min-h-10 min-w-0 flex-col justify-center bg-comic-cyan px-2.5 py-1 text-black short:min-h-9"
     >
-      <span className="block truncate font-display text-[15px] uppercase leading-5">Operazioni</span>
+      <span className="block truncate font-display text-[15px] uppercase leading-5">Insieme</span>
       <span className="block truncate text-[12px] font-bold leading-4">{state}</span>
     </GateLink>
   );
@@ -851,6 +862,7 @@ export function PlayMenuView({
   event,
   challenges = null,
   coop,
+  raid,
   modes = null,
   now,
   onForfeit,
@@ -871,6 +883,8 @@ export function PlayMenuView({
   challenges?: Challenge[] | null;
   /** The Operazioni (SPEC §5.17): the chapter and the room the player is in; undefined while loading. */
   coop?: CoopCatalog | null;
+  /** The Caccia grossa (SPEC §5.18): the Bosses and the room the player is in; undefined while loading. */
+  raid?: RaidCatalog | null;
   /** When each mode is open (EDITOR → Modalità di gioco); null while loading: all open. */
   modes?: ModeAvailabilityMap | null;
   now: number;
@@ -879,6 +893,10 @@ export function PlayMenuView({
   // A closed mode stays visible: a tap says it is not available now.
   const { notice, show: showClosed } = useModeNotice();
   const gate = (key: Parameters<typeof statusOf>[1]): Gate => ({ status: statusOf(modes, key, now), onClosed: showClosed });
+  // «Insieme» is open while either of its two modes is.
+  const coopGate = gate("coop");
+  const raidGate = gate("raid");
+  const togetherGate = coopGate.status?.open || !raidGate.status?.open ? coopGate : raidGate;
   // Back from a match setup, the same mode is open where it was.
   const [openMode, setOpenMode] = useRememberedState<string | null>("mode", null);
   // The modes wait for the answer: a match in progress would block them anyway.
@@ -928,11 +946,11 @@ export function PlayMenuView({
               <EmergencyTile today={emergency} gate={gate("emergency")} />
               <StoryTile chapters={story} disabled={blocked} gate={gate("story")} />
             </div>
-            {/* The week's Emergenza shares its row: with an Emergenza a tema and with the Operazioni. */}
+            {/* The week's Emergenza shares its row: with an Emergenza a tema and with «Insieme» (Operazioni, Caccia grossa). */}
             <div className={TODAY_ROW}>
               <EmergencyWeekRow week={emergencyWeek} now={now} compact gate={gate("emergency_week")} />
               {themedEmergency && <EmergencyChallengeRow challenge={themedEmergency} gate={gate("emergency")} />}
-              <OperationsTile coop={coop} compact={Boolean(themedEmergency)} gate={gate("coop")} />
+              <TogetherTile coop={coop} raid={raid} compact={Boolean(themedEmergency)} gate={togetherGate} />
             </div>
 
             <ListTitle>Modalità</ListTitle>

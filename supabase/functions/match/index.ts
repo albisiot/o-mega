@@ -34,6 +34,7 @@ import {
   playTripleBotRound,
   playTriplePvpRound,
   planRankedGhost,
+  playRaidRound,
   resolveEmergencyPlay,
   type BossRules,
   type BossState,
@@ -59,6 +60,10 @@ import {
   type QuadrantPlacement,
   type QuadrantRules,
   type QuadrantState,
+  type RaidMove,
+  type RaidRoundRecord,
+  type RaidRules,
+  type RaidState,
   type RankedLadderStep,
   type RareThreat,
   type Rng,
@@ -136,6 +141,8 @@ const CLIENT_ERRORS = new Set([
   "not_admin",
   // Operazioni (SPEC §5.17)
   "coop_room_not_found",
+  // Caccia grossa (SPEC §5.18)
+  "raid_room_not_found",
   // A mode switched off from the EDITOR, or outside its dates (raised by the database on start).
   "mode_unavailable",
 ]);
@@ -190,6 +197,8 @@ type Loaded = {
   coop: CoopRules | null;
   /** The Panic limit from three players on (the room of two's until the database has the key). */
   coopPanicCrowd: number | null;
+  /** Caccia grossa (SPEC §5.18); null until the database has its keys. */
+  raid: RaidRules | null;
   /** Fixed grid with border threats: the seals a card loses to a higher threat (SPEC §5.14). */
   quadrantBorders: { bite: number };
   graceSeconds: number;
@@ -404,6 +413,21 @@ async function load(): Promise<Loaded> {
         }
       : null,
     coopPanicCrowd: values.has("coop.panic_limit_crowd") ? value("coop.panic_limit_crowd") : null,
+    raid: values.has("raid.defenses")
+      ? {
+          rounds: value("raid.rounds"),
+          squadSize: value("raid.squad_size"),
+          defenses: value("raid.defenses"),
+          targets: Object.fromEntries([1, 2, 3, 4, 5, 6].map((level) => [level, value(`raid.targets.level${level}`)])),
+          attackFactor: Object.fromEntries([2, 3, 4].map((players) => [players, value(`raid.attack_factor.players${players}`)])),
+          vitaFactor: Object.fromEntries([2, 3, 4].map((players) => [players, value(`raid.vita_factor.players${players}`)])),
+          vitaBase: value("raid.vita_base"),
+          heavyDefenses: value("raid.heavy_defenses"),
+          regenPercent: value("raid.regen_percent"),
+          exposedMax: value("raid.exposed_max"),
+          heavyMax: value("raid.heavy_max"),
+        }
+      : null,
     graceSeconds: value("match.timeout_grace_seconds"),
     rankedLadder,
     catalog: {
@@ -1789,6 +1813,69 @@ async function resolveCoopRoundFor(userId: string, body: Record<string, unknown>
 }
 
 // ---------------------------------------------------------------------------
+// Caccia grossa (SPEC §5.18): every member may ask to resolve the round being played, once
+// everyone is ready or the time is up. The engine scores it and puts down the missing cards
+// (and the allies'), the database re-checks it and works out the damage and the end itself.
+// ---------------------------------------------------------------------------
+
+type RaidContext = {
+  room: { id: string; status: string; players: number | null; current_round: number; forza_percent: number; vita_percent: number } | null;
+  member: boolean;
+  deadline_at: string | null;
+  ready: boolean;
+  members: { key: string; card_instance_ids: string[] | null; definition_ids: string[] | null; placement: string | null }[];
+  threat_ids: string[];
+  moves: RaidMove[];
+  records: RaidRoundRecord[];
+};
+
+async function resolveRaidRoundFor(userId: string, body: Record<string, unknown>) {
+  if (typeof body.room_id !== "string") throw new GameError("invalid_request");
+  const [loaded, context] = await Promise.all([load(), admin.rpc("raid_round_context", { p_user: userId, p_room: body.room_id })]);
+  const ctx = check(context) as RaidContext;
+  if (!ctx.room || !ctx.member) throw new GameError("raid_room_not_found");
+  if (ctx.room.status !== "active" || !ctx.deadline_at || !ctx.room.players) return { resolved: false, status: ctx.room.status };
+  if (!loaded.raid) throw new Error("missing game_config key: raid.defenses");
+  const expired = Date.now() > Date.parse(ctx.deadline_at) + loaded.graceSeconds * 1000;
+  if (!ctx.ready && !expired) return { resolved: false, status: "active" };
+
+  const character = (definitionId: string, id: string) => {
+    const definition = loaded.definitions.get(definitionId);
+    if (!definition) throw new Error(`Unknown card definition ${definitionId}`);
+    return toCharacter(definition, id);
+  };
+  const state: RaidState = {
+    rules: loaded.raid,
+    boss: { forzaPercent: ctx.room.forza_percent, vitaPercent: ctx.room.vita_percent },
+    players: ctx.members.map((m) => ({
+      id: m.key,
+      squad: (m.definition_ids ?? []).map((definitionId, i) => character(definitionId, m.card_instance_ids![i])),
+    })),
+    threats: ctx.threat_ids.map((id) => {
+      const found = loaded.threats.get(id);
+      if (!found) throw new Error("Unknown threat of the hunt");
+      // The hunt's threats are usual ones of Nuova Megara: no rule, no modifier.
+      return { id: found.id, level: found.level, abilities: found.abilities };
+    }),
+    moves: ctx.moves,
+    records: ctx.records,
+  };
+  // A card placed counts as sent, Pronto or not; the server puts down the missing ones and the allies'.
+  const choices = Object.fromEntries(ctx.members.map((m) => [m.key, m.placement]));
+  const played = playRaidRound({ state, choices, families: loaded.catalog.families, rng });
+  const { error } = await admin.rpc("raid_record_round", {
+    p_room: ctx.room.id,
+    p_round: ctx.room.current_round,
+    p_record: played.record,
+  });
+  if (!error) return { resolved: true, status: played.result === null ? "active" : played.result };
+  if (["round_already_resolved", "match_not_active", "round_not_expired", "coop_placement_changed"].includes(error.message)) {
+    return { resolved: false, status: "active" };
+  }
+  throw new Error(error.message);
+}
+
+// ---------------------------------------------------------------------------
 // The simulator of the Sfide a tema (SPEC §8.8): admins only, a draft of the Editor
 // ---------------------------------------------------------------------------
 
@@ -1920,6 +2007,8 @@ Deno.serve(async (req) => {
         return json(await simulateChallengeFor(userId, body));
       case "coop_resolve":
         return json(await resolveCoopRoundFor(userId, body));
+      case "raid_resolve":
+        return json(await resolveRaidRoundFor(userId, body));
       default:
         throw new GameError("invalid_request");
     }

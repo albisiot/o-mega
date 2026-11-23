@@ -17,6 +17,7 @@ import { balance } from "@/config/balance";
 import { isQuadrantFormat, QUADRANT_GRID_LABELS, startQuadrantBotMatch } from "@/lib/quadrant";
 import { startTripleBotMatch } from "@/lib/triple";
 import { COOP_QUEUE_HREF, coopRoomHref, coopStarCondition, fetchCoopRoom, joinCoopQueue, setCoopReady, setCoopSquad } from "@/lib/coop";
+import { raidRoomHref, setRaidReady, setRaidSquad } from "@/lib/raid";
 import { createChallengeLobby, fetchChallenges, fetchLobbyChallenge, hasSuppliedTeam, seenChallenges, type Challenge } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
 import { challengeBlock, conquestBlock, describePlayBlock, modeBlock, rememberLastPlay, type PlayBlock } from "@/lib/last-play";
@@ -54,6 +55,7 @@ const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
 // /squadra/?story=C1M1                          (a story mission)
 // /squadra/?operazione=<room id>                (the squad of 6 for an operation's room, SPEC §5.17)
 // /squadra/?coda=O1M1                           (the squad of 6 for the public queue of an operation)
+// /squadra/?caccia=<room id>                    (the squad of 6 for a hunt of the Caccia grossa, SPEC §5.18)
 // /squadra/?sfida=<id>&difficulty=medium        (a Sfida a tema against a bot; &format=… for its mode)
 // /squadra/?sfida=<id>&mode=queue|lobby         (a Sfida a tema online; a join learns it from the code)
 // &format=boss with difficulty, queue or lobby  (a Grande Minaccia)
@@ -98,7 +100,8 @@ type Mode =
   | { kind: "join"; code: string }
   | { kind: "story"; mission: string }
   | { kind: "coop"; room: string }
-  | { kind: "coopQueue"; operation: string };
+  | { kind: "coopQueue"; operation: string }
+  | { kind: "raid"; room: string };
 
 function readMode(params: URLSearchParams): Mode {
   const story = params.get("story");
@@ -107,6 +110,8 @@ function readMode(params: URLSearchParams): Mode {
   if (room) return { kind: "coop", room };
   const queue = params.get("coda");
   if (queue) return { kind: "coopQueue", operation: queue };
+  const hunt = params.get("caccia");
+  if (hunt) return { kind: "raid", room: hunt };
   const mode = params.get("mode");
   if (mode === "queue" || mode === "lobby" || mode === "conquest" || mode === "ranked") return { kind: mode };
   if (mode === "join") return { kind: "join", code: (params.get("code") ?? "").toUpperCase() };
@@ -144,6 +149,8 @@ function teamModeKeys(mode: Mode, format: MatchFormat): GameModeKey[] {
     case "coop":
     case "coopQueue":
       return ["coop"];
+    case "raid":
+      return ["raid"];
     case "conquest":
       return ["conquest", "classic"];
     case "ranked":
@@ -159,6 +166,8 @@ function squadSizeOf(format: MatchFormat): number | undefined {
 }
 
 const COOP_INTRO = `Scegli ${balance.coop.squadSize} personaggi diversi: delle Minacce conosci solo i livelli, nella stanza. Ogni round in città ne giochi uno, gli ultimi ${balance.coop.bossCards} contro il Boss; i compagni vedono le tue carte e tu le loro. Con una pressione lunga su una carta dell'elenco la vedi intera; su una della squadra la togli.`;
+
+const RAID_INTRO = `Scegli ${balance.raid.squadSize} personaggi diversi: delle Minacce del Boss conosci solo i livelli, nella stanza. Ogni round ne giochi uno e i punteggi della squadra si sommano: servono specialisti per i livelli piccoli e generalisti per quelli grandi. Con una pressione lunga su una carta dell'elenco la vedi intera; su una della squadra la togli.`;
 
 const BOSS_INTRO =
   "Scegli 5 personaggi diversi: il Boss lo scopri dopo. Ogni turno uno di loro entra su un fronte e ci resta fino alla fine, uno per fronte: servono specialisti per i fronti piccoli e generalisti per quelli grandi. Con una pressione lunga su una carta dell'elenco la vedi intera; su una della squadra la togli.";
@@ -176,6 +185,7 @@ const COPY: Record<Mode["kind"], { subtitle: (mode: Mode) => string; start: (mod
   story: { subtitle: () => "Missione della Storia", start: () => "Inizia la missione" },
   coop: { subtitle: () => "Operazione in squadra", start: () => "Porta questa squadra" },
   coopQueue: { subtitle: () => "Operazione · Cerca squadra", start: () => "Cerca una squadra" },
+  raid: { subtitle: () => "Caccia grossa in squadra", start: () => "Porta questa squadra" },
 };
 
 function TeamPageContent() {
@@ -368,6 +378,13 @@ function TeamPageContent() {
           router.replace(coopRoomHref(mode.room));
           break;
         }
+        case "raid": {
+          // As in an operation: choosing the squad says Pronto too.
+          await setRaidSquad(mode.room, cardInstanceIds);
+          await setRaidReady(mode.room, true);
+          router.replace(raidRoomHref(mode.room));
+          break;
+        }
         case "join": {
           const view = await joinLobby(mode.code, cardInstanceIds);
           // Played again, a friend code of the same kind: a new one, made by this player.
@@ -418,7 +435,9 @@ function TeamPageContent() {
                   ? coopRoomHref(mode.room)
                   : mode.kind === "coopQueue"
                     ? "/operazioni"
-                    : "/gioca"
+                    : mode.kind === "raid"
+                      ? raidRoomHref(mode.room)
+                      : "/gioca"
           }
         />
         <div className="min-w-0">
@@ -474,12 +493,20 @@ function TeamPageContent() {
                 starting={starting}
                 onStart={start}
                 key={`${format}-${challenge?.id ?? ""}`}
-                squadSize={mode.kind === "coop" || mode.kind === "coopQueue" ? balance.coop.squadSize : squadSizeOf(format)}
+                squadSize={
+                  mode.kind === "coop" || mode.kind === "coopQueue"
+                    ? balance.coop.squadSize
+                    : mode.kind === "raid"
+                      ? balance.raid.squadSize
+                      : squadSizeOf(format)
+                }
                 storyStars={mission && mission.star_rarities.length > 0 ? { rules: mission, earned: mission.stars } : null}
                 challenge={challenge}
                 intro={
                   mode.kind === "coop" || mode.kind === "coopQueue"
                     ? `${COOP_INTRO}${coopStar ? ` Per la stella della squadra: ${coopStar.charAt(0).toLowerCase()}${coopStar.slice(1)}.` : ""}`
+                    : mode.kind === "raid"
+                    ? RAID_INTRO
                     : format === "boss"
                     ? BOSS_INTRO
                     : format === "triple"

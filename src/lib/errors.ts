@@ -188,7 +188,7 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   challenge_composition_impossible: "Con questo budget e questi limiti nessuna squadra rispetta le regole: allarga il budget o i limiti.",
   // Operazioni (SPEC §5.17)
   coop_room_not_found: "Questa stanza non c'è più, o il codice è sbagliato.",
-  coop_already_in_room: "Sei già in una stanza delle Operazioni: torna lì, o esci prima.",
+  coop_already_in_room: "Sei già in una stanza, delle Operazioni o della Caccia grossa: torna lì, o esci prima.",
   coop_operation_not_found: "Questa operazione non esiste.",
   coop_operation_locked: "Questa operazione si apre dopo aver vinto quella prima.",
   coop_room_full: "La stanza è al completo.",
@@ -196,7 +196,7 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   coop_not_host: "Solo chi ha aperto la stanza può iniziare.",
   coop_not_ready: "Aspetta che tutti abbiano scelto la squadra e premuto Pronto.",
   coop_too_few_players: "Serve almeno un compagno per iniziare.",
-  coop_already_started: "L'operazione è già iniziata.",
+  coop_already_started: "In questa stanza si sta già giocando.",
   coop_invalid_round: "Qualcosa non tornava in questo round: riprova tra poco.",
   coop_placement_changed: "Un compagno ha appena cambiato le carte: riprovo.",
   coop_invalid_text: "Controlla i testi: titolo da 2 a 40 caratteri, introduzione e finale da 10 a 600, rivale e Boss da 2 a 60.",
@@ -207,6 +207,11 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   coop_operation_in_play: "Una stanza di questa operazione è aperta: rivale e round si cambiano quando è finita.",
   coop_operation_in_use: "Questa operazione è già stata giocata: non si può eliminare.",
   coop_chapter_not_found: "Questo capitolo non esiste.",
+  // Caccia grossa (SPEC §5.18)
+  raid_room_not_found: "Questa stanza della Caccia grossa non c'è più, o il codice è sbagliato.",
+  raid_boss_not_found: "Questo Boss non si può cacciare ora.",
+  raid_invalid_round: "Qualcosa non tornava in questo round: riprova tra poco.",
+  raid_no_threats: "Non ci sono abbastanza Minacce per questa caccia: riprova.",
   // Modalità di gioco (EDITOR)
   mode_unavailable: "Questa modalità non è disponibile ora.",
   invalid_mode_state: "Scegli: sempre attiva, da data a data, o spenta.",

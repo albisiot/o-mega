@@ -18,6 +18,7 @@ import {
 import { describeServerError } from "@/lib/errors";
 import { readLastPlay, type LastPlay } from "@/lib/last-play";
 import { useModeAvailability } from "@/lib/mode-availability";
+import { fetchRaid, seenRaid, type RaidCatalog } from "@/lib/raid";
 import {
   fetchActiveMatch,
   fetchConquestStatus,
@@ -62,6 +63,8 @@ export default function PlayPage() {
   const [challenges, setChallenges] = useState<Challenge[] | null>(() => seenChallenges()?.challenges ?? null);
   // The Operazioni (SPEC §5.17): the chapter and the room the player is in.
   const [coop, setCoop] = useState<CoopCatalog | null | undefined>(() => seenCoop() ?? undefined);
+  // The Caccia grossa (SPEC §5.18): the room the player is in, on the same tile «Insieme».
+  const [raid, setRaid] = useState<RaidCatalog | null | undefined>(() => seenRaid() ?? undefined);
   // On this device only: read once, the page is left to start a match anyway.
   const [lastPlay] = useState<LastPlay | null>(() => readLastPlay());
   // When each mode is open (EDITOR): a closed one stays, under its veil.
@@ -123,6 +126,14 @@ export default function PlayPage() {
         console.error("Operations failed", cause);
         if (!cancelled) setCoop(null);
       });
+    fetchRaid()
+      .then((next) => {
+        if (!cancelled) setRaid(next);
+      })
+      .catch((cause: unknown) => {
+        console.error("Hunt failed", cause);
+        if (!cancelled) setRaid(null);
+      });
     return () => {
       cancelled = true;
     };
@@ -155,6 +166,7 @@ export default function PlayPage() {
         event={<EventBanner compact narrow />}
         challenges={challenges}
         coop={coop}
+        raid={raid}
         modes={modes}
         now={now}
         onForfeit={() => setConfirmForfeit(true)}

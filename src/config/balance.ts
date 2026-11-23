@@ -392,6 +392,78 @@ export const balance = {
   },
 
   /**
+   * Caccia grossa (SPEC §5.18): 2 to 4 players against a Boss, one threat a round, one card
+   * each, the scores summed. Below the Attack the team loses a Defence; above it, the rest
+   * is damage to the Boss's Life. Tuned with scripts/simulate-raid.mts.
+   */
+  raid: {
+    rounds: 5,
+    squadSize: 6,
+    minPlayers: 2,
+    maxPlayers: 4,
+    defenses: 3,
+    /** One player's share of a threat's Attack, by level: the Emergenza's targets. */
+    targets: {
+      level1: 7,
+      level2: 13,
+      level3: 18,
+      level4: 23,
+      level5: 28,
+      level6: 32,
+    },
+    /**
+     * The Attack by players, in hundredths of one player's share: a little more than the players,
+     * because more cards sum more evenly (simulated: the team then holds as often in 2, 3 and 4).
+     */
+    attackFactor: {
+      players2: 200,
+      players3: 300,
+      players4: 405,
+    },
+    /** The Boss's Life by players, in hundredths: what a team of that size deals, so that a Boss is as hard in 2, 3 and 4. */
+    vitaFactor: {
+      players2: 200,
+      players3: 290,
+      players4: 370,
+    },
+    /** The Boss's Life for one player's share, before the players, the Strength and its own Life. */
+    vitaBase: 14,
+    /**
+     * Each Magnitude: the Boss's Strength (Attack and Life) and what a win pays, in hundredths.
+     * With a good squad the simulator wins about 80%, 65%, 50%, 35% and 20%: the curve is steep.
+     */
+    magnitude1: { forzaPercent: 92, rewardPercent: 50 },
+    magnitude2: { forzaPercent: 96, rewardPercent: 75 },
+    magnitude3: { forzaPercent: 100, rewardPercent: 100 },
+    magnitude4: { forzaPercent: 104, rewardPercent: 150 },
+    magnitude5: { forzaPercent: 108, rewardPercent: 250 },
+    /** The moves: Defences a Colpo pesante takes, the share of the Life a Rigenerazione gives back. */
+    heavyDefenses: 2,
+    regenPercent: 10,
+    /** At most this many Punto scoperto and Colpo pesante in a hunt (never two Colpo pesante in a row). */
+    exposedMax: 1,
+    heavyMax: 2,
+    /** Threats drawn from the Boss's district, when it has enough. */
+    fromDistrict: 2,
+    roundSeconds: 30,
+    /** From the second round on, time for the result before the timer starts. */
+    revealPauseSeconds: 15,
+    /** A room nobody touches for this long closes. */
+    lobbyMinutes: 30,
+    /** XP of a win (times the Magnitude's rewardPercent) and of a loss (the same at every Magnitude). */
+    winXp: 30,
+    lossXp: 10,
+    /** Coins of a player's first win on a Boss, times the Magnitude's rewardPercent. */
+    firstWinCoins: 60,
+    /** Prizes only to who chose at least this share of the cards played, in hundredths. */
+    selfChosenPercent: 50,
+    /** Rarest rank a server ally fields (3 = Beta). */
+    allyMaxRank: 3,
+    /** How long a signal stays beside a player's name (client only). */
+    signalSeconds: 6,
+  },
+
+  /**
    * Quadrante (SPEC §5.14): a size × size grid filled in turns, with four abilities drawn
    * as the sides of every card. Seals go on the cards a side beats; the most seals win.
    */

@@ -19,7 +19,8 @@ select jsonb_build_object(
     select jsonb_agg(jsonb_build_object(
       'id', t.id, 'code', t.code, 'level', t.level, 'abilities', t.required_abilities,
       'active', t.is_active, 'region', t.region, 'modifier_code', t.modifier_code,
-      'modifier_params', t.modifier_params, 'rarity', t.rarity_code, 'target', t.emergency_target
+      'modifier_params', t.modifier_params, 'rarity', t.rarity_code, 'target', t.emergency_target,
+      'district', t.district
     ) order by t.code)
     from public.threat_definitions t
   ),

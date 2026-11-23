@@ -1,0 +1,8 @@
+[
+  { "code": "B05", "name": "Il Gigante sotto Megara", "magnitude": 1, "district": "popolari", "moves": ["armor", "exposed"], "vita": 115 },
+  { "code": "B01", "name": "Il Colosso del porto", "magnitude": 2, "district": "porto", "moves": ["armor", "heavy", "exposed"], "vita": 110 },
+  { "code": "B02", "name": "La Signora dell'Eclissi", "magnitude": 3, "district": "necropoli", "moves": ["exposed", "heavy", "target"], "vita": 85 },
+  { "code": "B03", "name": "La Mente Madre", "magnitude": 3, "district": "alti", "moves": ["target", "armor", "exposed"], "vita": 85 },
+  { "code": "B06", "name": "L'Ombra nella rete", "magnitude": 4, "district": "stazione", "moves": ["target", "regen", "heavy", "exposed"], "vita": 100 },
+  { "code": "B04", "name": "La Fortezza nel cielo", "magnitude": 5, "district": "lungomare", "moves": ["armor", "heavy", "regen", "target", "exposed"], "vita": 85 }
+]
