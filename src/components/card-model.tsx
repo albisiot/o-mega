@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import { withBasePath } from "@/lib/base-path";
 
 /** Cards that have a 3D model in public/models. */
 const CARD_MODELS = new Set(["P001", "P030", "P060"]);
+/** Cards whose 3D view is a diorama built from shapes in src/lib/card-diorama.ts: no model to download. */
+const CARD_DIORAMAS = new Set(["P055"]);
 
 /** Three.js and the viewer: downloaded only by players who ask for a model. */
 const loadViewer = () => import("@/lib/card-model");
+const loadDiorama = () => import("@/lib/card-diorama");
 
 /** The model's bytes, reporting the share received so far when the size is known. */
 async function downloadModel(url: string, signal: AbortSignal, onProgress: (share: number) => void): Promise<ArrayBuffer> {
@@ -33,14 +36,15 @@ export function CardModelButton({ code, name, className = "w-full max-w-sm" }: {
   const sheet = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
 
-  if (!CARD_MODELS.has(code)) return null;
+  const diorama = CARD_DIORAMAS.has(code);
+  if (!diorama && !CARD_MODELS.has(code)) return null;
   return (
     <>
       <button
         type="button"
         aria-haspopup="dialog"
         // The press comes a moment before the tap: enough to start fetching the viewer's code.
-        onPointerDown={() => void loadViewer().catch(() => {})}
+        onPointerDown={() => void (diorama ? loadDiorama() : loadViewer()).catch(() => {})}
         onClick={() => {
           setOpen(true);
           sheet.current?.showModal();
@@ -66,11 +70,40 @@ export function CardModelButton({ code, name, className = "w-full max-w-sm" }: {
               Chiudi
             </button>
           </div>
-          {open && <ModelStage code={code} />}
+          {open && (diorama ? <DioramaStage code={code} /> : <ModelStage code={code} />)}
         </div>
       </dialog>
     </>
   );
+}
+
+function DioramaStage({ code }: { code: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "failed">("loading");
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let cancelled = false;
+    let unmount: (() => void) | undefined;
+    loadDiorama()
+      .then(({ mountCardDiorama }) => {
+        if (cancelled) return;
+        unmount = mountCardDiorama(canvas, code, () => setStatus("failed"));
+        setStatus("ready");
+      })
+      .catch((cause: unknown) => {
+        if (cancelled) return;
+        console.error("Card diorama failed", cause);
+        setStatus("failed");
+      });
+    return () => {
+      cancelled = true;
+      unmount?.();
+    };
+  }, [code]);
+
+  return <StageFrame canvasRef={canvasRef} status={status} progress={null} />;
 }
 
 function ModelStage({ code }: { code: string }) {
@@ -112,6 +145,19 @@ function ModelStage({ code }: { code: string }) {
     };
   }, [code]);
 
+  return <StageFrame canvasRef={canvasRef} status={status} progress={progress} />;
+}
+
+/** The canvas of a 3D view, with its loading and failure messages. Without `progress` there is no bar. */
+function StageFrame({
+  canvasRef,
+  status,
+  progress,
+}: {
+  canvasRef: RefObject<HTMLCanvasElement | null>;
+  status: "loading" | "ready" | "failed";
+  progress: number | null;
+}) {
   return (
     <div className="relative">
       <canvas ref={canvasRef} aria-hidden className="block h-[62svh] w-full cursor-grab touch-pan-y" />
@@ -123,9 +169,11 @@ function ModelStage({ code }: { code: string }) {
       {status === "loading" && (
         <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-10">
           <p className="text-sm font-semibold text-muted">Caricamento del modello…</p>
-          <div className="h-1 w-full max-w-48 bg-panel-raised" aria-hidden>
-            <div className="h-full bg-comic-magenta transition-[width] duration-200" style={{ width: `${progress * 100}%` }} />
-          </div>
+          {progress !== null && (
+            <div className="h-1 w-full max-w-48 bg-panel-raised" aria-hidden>
+              <div className="h-full bg-comic-magenta transition-[width] duration-200" style={{ width: `${progress * 100}%` }} />
+            </div>
+          )}
         </div>
       )}
       <p className="text-center text-xs font-semibold text-muted">Trascina per girarlo</p>
