@@ -6,7 +6,7 @@ import { withBasePath } from "@/lib/base-path";
 /** Cards that have a 3D model in public/models. */
 const CARD_MODELS = new Set(["P001", "P030", "P060"]);
 /** Cards whose 3D view is a diorama built from shapes in src/lib/card-diorama.ts: no model to download. */
-const CARD_DIORAMAS = new Set(["P001", "P013", "P028", "P055", "P060"]);
+const CARD_DIORAMAS = new Set(["P001", "P013", "P028", "P030", "P055", "P060"]);
 
 /** Three.js and the viewer: downloaded only by players who ask for a model. */
 const loadViewer = () => import("@/lib/card-model");
