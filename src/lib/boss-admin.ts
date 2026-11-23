@@ -31,6 +31,20 @@ export type BossAdminBoss = {
 
 export type BossAdminThreat = { code: string; name: string; level: number; abilities: string[]; district: string | null };
 
+/** A week of the Caccia grossa (its Monday) and its Boss: from the rotation, or chosen by an admin. */
+export type BossAdminWeek = { week: string; boss: string | null; chosen: boolean };
+
+/** An event to come or running, with its community Boss if it has one. */
+export type BossAdminEvent = {
+  id: string;
+  title: string;
+  starts_at: string;
+  ends_at: string;
+  /** Started: its community Boss no longer changes. */
+  started: boolean;
+  community: { vita: number; coins: number; packs: number; shards: number; damage: number; fallen: boolean; rewarded: number } | null;
+};
+
 export type BossAdmin = {
   bosses: BossAdminBoss[];
   /** The threats a Boss may use as fronts: the usual ones of Nuova Megara. */
@@ -39,6 +53,9 @@ export type BossAdmin = {
   magnitudes: { magnitude: number; forza_percent: number; reward_percent: number }[];
   /** The level rules of the fronts (SPEC §5.4). */
   levels: { one_at_most: number; one_at_least: number; min_sum: number; max_sum: number };
+  /** This week and the next three. */
+  weeks: BossAdminWeek[];
+  events: BossAdminEvent[];
 };
 
 /** What the form edits: a Boss without what only the server knows. */
@@ -49,7 +66,7 @@ export type BossDraft = Omit<BossAdminBoss, "code" | "gm_matches" | "gm_in_play"
 /** The wins each Magnitude aims at with a good squad (SPEC §5.18, the simulator), in hundredths. */
 export const MAGNITUDE_TARGETS: Record<number, number> = { 1: 80, 2: 65, 3: 50, 4: 35, 5: 20 };
 
-type AdminFunction = "admin_get_bosses" | "admin_save_boss" | "admin_delete_boss";
+type AdminFunction = "admin_get_bosses" | "admin_save_boss" | "admin_delete_boss" | "admin_set_raid_week" | "admin_set_raid_community";
 
 async function rpc(name: AdminFunction, params?: Record<string, unknown>): Promise<BossAdmin> {
   const { data, error } = await getSupabase().rpc(name as never, params as never);
@@ -67,6 +84,25 @@ export function saveBoss(draft: BossDraft): Promise<BossAdmin> {
 
 export function deleteBoss(code: string): Promise<BossAdmin> {
   return rpc("admin_delete_boss", { p_code: code });
+}
+
+/** The Boss of a week (its Monday, "YYYY-MM-DD"), in place of the rotation. */
+export function setRaidWeek(week: string, boss: string): Promise<BossAdmin> {
+  return rpc("admin_set_raid_week", { p_week: week, p_boss: boss });
+}
+
+/** An event's community Boss: its Life and the reward to whoever took part; null Life takes it away. */
+export function setRaidCommunity(
+  event: string,
+  community: { vita: number; coins: number; packs: number; shards: number } | null,
+): Promise<BossAdmin> {
+  return rpc("admin_set_raid_community", {
+    p_event: event,
+    p_vita: community?.vita ?? null,
+    p_coins: community?.coins ?? 0,
+    p_packs: community?.packs ?? 0,
+    p_shards: community?.shards ?? 0,
+  });
 }
 
 export function bossDraft(boss: BossAdminBoss): BossDraft {

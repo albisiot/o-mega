@@ -221,6 +221,9 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   boss_in_use: "Questo Boss è già stato affrontato: non si può eliminare. Puoi spegnerlo.",
   boss_unknown: "Questo Boss non esiste.",
   boss_too_many: "I codici dei Boss sono finiti (B01–B99).",
+  raid_week_past: "Il Boss di una settimana passata non si cambia più.",
+  raid_community_started: "L'evento è già iniziato: il Boss della comunità si decide prima.",
+  raid_community_invalid: "Boss della comunità: Vita da 1 a 100.000.000 e almeno un premio (monete fino a 100.000, pacchetti fino a 5, Schegge fino a 100).",
   // Modalità di gioco (EDITOR)
   mode_unavailable: "Questa modalità non è disponibile ora.",
   invalid_mode_state: "Scegli: sempre attiva, da data a data, o spenta.",

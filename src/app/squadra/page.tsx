@@ -17,7 +17,7 @@ import { balance } from "@/config/balance";
 import { isQuadrantFormat, QUADRANT_GRID_LABELS, startQuadrantBotMatch } from "@/lib/quadrant";
 import { startTripleBotMatch } from "@/lib/triple";
 import { COOP_QUEUE_HREF, coopRoomHref, coopStarCondition, fetchCoopRoom, joinCoopQueue, setCoopReady, setCoopSquad } from "@/lib/coop";
-import { raidRoomHref, setRaidReady, setRaidSquad } from "@/lib/raid";
+import { joinRaidQueue, RAID_QUEUE_HREF, raidRoomHref, setRaidReady, setRaidSquad } from "@/lib/raid";
 import { createChallengeLobby, fetchChallenges, fetchLobbyChallenge, hasSuppliedTeam, seenChallenges, type Challenge } from "@/lib/challenges";
 import { describeServerError } from "@/lib/errors";
 import { challengeBlock, conquestBlock, describePlayBlock, modeBlock, rememberLastPlay, type PlayBlock } from "@/lib/last-play";
@@ -56,6 +56,7 @@ const DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard", "super_pro"];
 // /squadra/?operazione=<room id>                (the squad of 6 for an operation's room, SPEC §5.17)
 // /squadra/?coda=O1M1                           (the squad of 6 for the public queue of an operation)
 // /squadra/?caccia=<room id>                    (the squad of 6 for a hunt of the Caccia grossa, SPEC §5.18)
+// /squadra/?coda-caccia=B03                     (the squad of 6 for the public queue of a Boss)
 // /squadra/?sfida=<id>&difficulty=medium        (a Sfida a tema against a bot; &format=… for its mode)
 // /squadra/?sfida=<id>&mode=queue|lobby         (a Sfida a tema online; a join learns it from the code)
 // &format=boss with difficulty, queue or lobby  (a Grande Minaccia)
@@ -101,7 +102,8 @@ type Mode =
   | { kind: "story"; mission: string }
   | { kind: "coop"; room: string }
   | { kind: "coopQueue"; operation: string }
-  | { kind: "raid"; room: string };
+  | { kind: "raid"; room: string }
+  | { kind: "raidQueue"; boss: string };
 
 function readMode(params: URLSearchParams): Mode {
   const story = params.get("story");
@@ -112,6 +114,8 @@ function readMode(params: URLSearchParams): Mode {
   if (queue) return { kind: "coopQueue", operation: queue };
   const hunt = params.get("caccia");
   if (hunt) return { kind: "raid", room: hunt };
+  const huntQueue = params.get("coda-caccia");
+  if (huntQueue) return { kind: "raidQueue", boss: huntQueue };
   const mode = params.get("mode");
   if (mode === "queue" || mode === "lobby" || mode === "conquest" || mode === "ranked") return { kind: mode };
   if (mode === "join") return { kind: "join", code: (params.get("code") ?? "").toUpperCase() };
@@ -150,6 +154,7 @@ function teamModeKeys(mode: Mode, format: MatchFormat): GameModeKey[] {
     case "coopQueue":
       return ["coop"];
     case "raid":
+    case "raidQueue":
       return ["raid"];
     case "conquest":
       return ["conquest", "classic"];
@@ -186,6 +191,7 @@ const COPY: Record<Mode["kind"], { subtitle: (mode: Mode) => string; start: (mod
   coop: { subtitle: () => "Operazione in squadra", start: () => "Porta questa squadra" },
   coopQueue: { subtitle: () => "Operazione · Cerca squadra", start: () => "Cerca una squadra" },
   raid: { subtitle: () => "Caccia grossa in squadra", start: () => "Porta questa squadra" },
+  raidQueue: { subtitle: () => "Caccia grossa · Cerca squadra", start: () => "Cerca una squadra" },
 };
 
 function TeamPageContent() {
@@ -378,6 +384,11 @@ function TeamPageContent() {
           router.replace(coopRoomHref(mode.room));
           break;
         }
+        case "raidQueue": {
+          const status = await joinRaidQueue(mode.boss, cardInstanceIds);
+          router.replace(status.room ? raidRoomHref(status.room) : RAID_QUEUE_HREF);
+          break;
+        }
         case "raid": {
           // As in an operation: choosing the squad says Pronto too.
           await setRaidSquad(mode.room, cardInstanceIds);
@@ -437,7 +448,9 @@ function TeamPageContent() {
                     ? "/operazioni"
                     : mode.kind === "raid"
                       ? raidRoomHref(mode.room)
-                      : "/gioca"
+                      : mode.kind === "raidQueue"
+                        ? "/caccia"
+                        : "/gioca"
           }
         />
         <div className="min-w-0">
@@ -496,7 +509,7 @@ function TeamPageContent() {
                 squadSize={
                   mode.kind === "coop" || mode.kind === "coopQueue"
                     ? balance.coop.squadSize
-                    : mode.kind === "raid"
+                    : mode.kind === "raid" || mode.kind === "raidQueue"
                       ? balance.raid.squadSize
                       : squadSizeOf(format)
                 }
@@ -505,7 +518,7 @@ function TeamPageContent() {
                 intro={
                   mode.kind === "coop" || mode.kind === "coopQueue"
                     ? `${COOP_INTRO}${coopStar ? ` Per la stella della squadra: ${coopStar.charAt(0).toLowerCase()}${coopStar.slice(1)}.` : ""}`
-                    : mode.kind === "raid"
+                    : mode.kind === "raid" || mode.kind === "raidQueue"
                     ? RAID_INTRO
                     : format === "boss"
                     ? BOSS_INTRO

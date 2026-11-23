@@ -2,9 +2,22 @@
 
 import { useState, type ReactNode } from "react";
 import { BackLink, TabBar } from "@/components/comic-parts";
-import { bossDraft, bossProblem, deleteBoss, MAGNITUDE_TARGETS, newBossDraft, saveBoss, type BossAdmin, type BossDraft } from "@/lib/boss-admin";
+import {
+  bossDraft,
+  bossProblem,
+  deleteBoss,
+  MAGNITUDE_TARGETS,
+  newBossDraft,
+  saveBoss,
+  setRaidCommunity,
+  setRaidWeek,
+  type BossAdmin,
+  type BossAdminEvent,
+  type BossDraft,
+} from "@/lib/boss-admin";
 import { describeServerError } from "@/lib/errors";
-import { DISTRICT_NAMES, MAGNITUDE_NAMES, RAID_MOVES, type RaidMove } from "@/lib/raid";
+import { formatRomeDateTime } from "@/lib/events";
+import { describeCommunityPrize, DISTRICT_NAMES, MAGNITUDE_NAMES, RAID_MOVES, type RaidMove } from "@/lib/raid";
 import { THREAT_ACTORS, THREAT_ENVIRONMENTS } from "@/lib/threat-scene";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
@@ -16,7 +29,7 @@ const CHIP = "flex min-h-10 shrink-0 items-center border-2 px-3 text-sm font-bol
 /** The moves a Boss may have besides an Attacco semplice. */
 const REPERTOIRE = (Object.keys(RAID_MOVES) as RaidMove[]).filter((move) => move !== "plain");
 
-type Tab = "bosses" | "edit";
+type Tab = "bosses" | "edit" | "weeks" | "community";
 
 /** «12 cacce, 7 vinte (58%)», by players. */
 function resultsLine(results: Record<string, { rooms: number; wins: number }>): string {
@@ -29,7 +42,8 @@ function resultsLine(results: Record<string, { rooms: number; wins: number }>): 
 /**
  * The Bosses for admins (SPEC §5.18): every Boss with how it fares in both modes, and a form for
  * each. Everything is checked again on the server; while a Grande Minaccia on a Boss is being
- * played, its fronts stay as they are. A hunt copies its numbers when the room opens.
+ * played, its fronts stay as they are. A hunt copies its numbers when the room opens. The Boss
+ * of the week (the rotation, or an admin's pick) and each event's community Boss, before it starts.
  */
 export function BossAdminView({ initial }: { initial: BossAdmin }) {
   useLockedScreen(true);
@@ -46,14 +60,17 @@ export function BossAdminView({ initial }: { initial: BossAdmin }) {
     setError(null);
     setTab("edit");
   };
-  async function run(action: () => Promise<BossAdmin>, message: string) {
+  async function run(action: () => Promise<BossAdmin>, message: string, back = true) {
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
       setData(await action());
       setNotice(message);
-      setDraft(null);
-      setTab("bosses");
+      if (back) {
+        setDraft(null);
+        setTab("bosses");
+      }
     } catch (cause) {
       setError(describeServerError(cause));
     } finally {
@@ -75,11 +92,14 @@ export function BossAdminView({ initial }: { initial: BossAdmin }) {
           tabs={[
             { key: "bosses", label: "Boss" },
             { key: "edit", label: "Modifica" },
+            { key: "weeks", label: "Settimana" },
+            { key: "community", label: "Comunità" },
           ]}
           current={tab}
           onPick={(next) => {
             setTab(next);
             setNotice(null);
+            setError(null);
           }}
           label="Gestione dei Boss"
         />
@@ -141,8 +161,197 @@ export function BossAdminView({ initial }: { initial: BossAdmin }) {
               }
             />
           ))}
+
+        {tab === "weeks" && (
+          <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+            <p className="text-xs font-semibold leading-4 text-muted">
+              Ogni lunedì un Boss della Caccia grossa diventa il Boss della settimana: la prima vittoria della settimana paga monete in più.
+              Di solito ruotano da soli (mai due di Magnitudo 5 di fila); qui ne scegli uno tu.
+            </p>
+            <ul className="flex flex-col gap-1.5">
+              {data.weeks.map((week, i) => (
+                <WeekRow
+                  key={`${week.week}:${week.boss}`}
+                  week={week.week}
+                  current={i === 0}
+                  boss={week.boss}
+                  chosen={week.chosen}
+                  bosses={data.bosses.filter((b) => b.raid_active)}
+                  busy={busy}
+                  onPick={(boss) => void run(() => setRaidWeek(week.week, boss), "Boss della settimana salvato.", false)}
+                />
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {tab === "community" && (
+          <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+            <p className="text-xs font-semibold leading-4 text-muted">
+              Durante un evento, i danni di tutte le squadre a tutti i Boss si sommano su un Boss della comunità. Quando cade, chi ha finito
+              almeno una caccia durante l&apos;evento riceve il premio (anche chi la finisce dopo, fino alla fine dell&apos;evento). Si decide
+              prima che l&apos;evento inizi.
+            </p>
+            {data.events.length === 0 ? (
+              <p className="text-sm font-bold text-muted">Nessun evento in programma o in corso.</p>
+            ) : (
+              <ul className="flex flex-col gap-1.5">
+                {data.events.map((event) => (
+                  <CommunityRow
+                    key={`${event.id}:${event.community?.vita ?? 0}`}
+                    event={event}
+                    busy={busy}
+                    onSave={(community) =>
+                      void run(
+                        () => setRaidCommunity(event.id, community),
+                        community ? "Boss della comunità salvato." : "Boss della comunità tolto.",
+                        false,
+                      )
+                    }
+                  />
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </main>
     </div>
+  );
+}
+
+/** «lunedì 23/11», the Monday of a week. */
+function weekLabel(week: string): string {
+  const [, month, day] = week.split("-");
+  return `lunedì ${day}/${month}`;
+}
+
+function WeekRow({
+  week,
+  current,
+  boss,
+  chosen,
+  bosses,
+  busy,
+  onPick,
+}: {
+  week: string;
+  current: boolean;
+  boss: string | null;
+  chosen: boolean;
+  bosses: BossAdmin["bosses"];
+  busy: boolean;
+  onPick: (boss: string) => void;
+}) {
+  const [picked, setPicked] = useState(boss ?? "");
+  const shown = bosses.find((b) => b.code === boss);
+  return (
+    <li className="flex flex-col gap-1.5 border-2 border-panel-raised bg-panel px-2.5 py-2">
+      <span className="text-sm font-extrabold">
+        {current ? "Questa settimana" : `Dal ${weekLabel(week)}`}
+        <span className="block text-[11px] font-bold text-muted">
+          {shown ? `${shown.name} · Magnitudo ${shown.raid_magnitude}` : "nessun Boss"} · {chosen ? "scelto da un admin" : "a rotazione"}
+        </span>
+      </span>
+      <span className="flex gap-2">
+        <select
+          value={picked}
+          onChange={(event) => setPicked(event.target.value)}
+          aria-label={`Boss della settimana dal ${weekLabel(week)}`}
+          className={SELECT}
+        >
+          {!picked && <option value="">Scegli un Boss</option>}
+          {bosses.map((b) => (
+            <option key={b.code} value={b.code}>
+              {b.name} · Magnitudo {b.raid_magnitude}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          disabled={busy || !picked || (picked === boss && chosen)}
+          onClick={() => onPick(picked)}
+          className="btn btn-primary shrink-0 px-4 text-sm"
+        >
+          Salva
+        </button>
+      </span>
+    </li>
+  );
+}
+
+type CommunityDraft = { vita: string; coins: string; packs: string; shards: string };
+
+function CommunityRow({
+  event,
+  busy,
+  onSave,
+}: {
+  event: BossAdminEvent;
+  busy: boolean;
+  onSave: (community: { vita: number; coins: number; packs: number; shards: number } | null) => void;
+}) {
+  const c = event.community;
+  const [form, setForm] = useState<CommunityDraft>({
+    vita: c ? String(c.vita) : "5000",
+    coins: c ? String(c.coins) : "100",
+    packs: c ? String(c.packs) : "1",
+    shards: c ? String(c.shards) : "0",
+  });
+  const number = (value: string) => (value.trim() === "" ? 0 : Math.trunc(Number(value)));
+  const field = (key: keyof CommunityDraft, label: string, max: number) => (
+    <Field label={label}>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        max={max}
+        value={form[key]}
+        onChange={(e) => setForm((current) => ({ ...current, [key]: e.target.value }))}
+        className={SELECT}
+      />
+    </Field>
+  );
+  return (
+    <li className="flex flex-col gap-1.5 border-2 border-panel-raised bg-panel px-2.5 py-2">
+      <span className="text-sm font-extrabold">
+        {event.title}
+        <span className="block text-[11px] font-bold text-muted">
+          {event.started ? "In corso" : `Dal ${formatRomeDateTime(event.starts_at)}`} · fino al {formatRomeDateTime(event.ends_at)}
+        </span>
+      </span>
+      {c && event.started ? (
+        <span className="text-xs font-bold leading-4">
+          {c.damage.toLocaleString("it-IT")} danni su {c.vita.toLocaleString("it-IT")}
+          {c.fallen ? ` · abbattuto, premiati ${c.rewarded}` : ""} · premio: {describeCommunityPrize(c)}
+        </span>
+      ) : event.started ? (
+        <span className="text-xs font-bold text-muted">Nessun Boss della comunità: l&apos;evento è già iniziato.</span>
+      ) : (
+        <>
+          <span className="grid grid-cols-2 gap-1.5">
+            {field("vita", "Vita (danni totali)", 100_000_000)}
+            {field("coins", "Monete", 100_000)}
+            {field("packs", "Pacchetti", 5)}
+            {field("shards", "Schegge", 100)}
+          </span>
+          <span className="flex gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onSave({ vita: number(form.vita), coins: number(form.coins), packs: number(form.packs), shards: number(form.shards) })}
+              className="btn btn-primary flex-1 text-sm"
+            >
+              {c ? "Salva" : "Aggiungi il Boss della comunità"}
+            </button>
+            {c && (
+              <button type="button" disabled={busy} onClick={() => onSave(null)} className="btn btn-ghost shrink-0 px-3 text-sm">
+                Togli
+              </button>
+            )}
+          </span>
+        </>
+      )}
+    </li>
   );
 }
 

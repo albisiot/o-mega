@@ -6,7 +6,7 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { BackLink } from "@/components/comic-parts";
 import { COOP_QUEUE_HREF, coopRoomHref, fetchCoop, seenCoop, type CoopCatalog } from "@/lib/coop";
 import { statusOf, useModeAvailability, type ModeStatus } from "@/lib/mode-availability";
-import { fetchRaid, raidRoomHref, seenRaid, type RaidCatalog } from "@/lib/raid";
+import { fetchRaid, RAID_QUEUE_HREF, raidRoomHref, seenRaid, type RaidCatalog } from "@/lib/raid";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow } from "@/lib/use-now";
 
@@ -46,6 +46,7 @@ export default function TogetherPage() {
   const operations = coop?.chapters.flatMap((chapter) => chapter.operations) ?? [];
   const next = operations.find((operation) => operation.unlocked && !operation.completed);
   const raidRoom = raid?.room ?? null;
+  const raidQueued = !raidRoom && Boolean(raid?.queue?.queued);
   const beaten = raid?.bosses.filter((b) => b.beaten).length ?? 0;
 
   return (
@@ -79,7 +80,7 @@ export default function TogetherPage() {
           status={coopRoom || queued ? null : statusOf(modes, "coop", now)}
         />
         <ModeCard
-          href={raidRoom ? raidRoomHref(raidRoom.id) : "/caccia"}
+          href={raidRoom ? raidRoomHref(raidRoom.id) : raidQueued ? RAID_QUEUE_HREF : "/caccia"}
           title="Caccia grossa"
           text="Un Boss, una Minaccia per round: tutti ci mettono una carta e i punteggi si sommano. Abbattetelo prima di perdere le Difese."
           state={
@@ -87,12 +88,14 @@ export default function TogetherPage() {
               ? raidRoom.status === "active"
                 ? "Caccia in corso"
                 : `Stanza ${raidRoom.code}`
-              : raid
-                ? `${beaten}/${raid.bosses.length} Boss abbattuti`
-                : null
+              : raidQueued
+                ? "Sei in coda"
+                : raid
+                  ? `${beaten}/${raid.bosses.length} Boss abbattuti${raid.week ? ` · della settimana: ${raid.week.name}` : ""}`
+                  : null
           }
           className="bg-comic-orange"
-          status={raidRoom ? null : statusOf(modes, "raid", now)}
+          status={raidRoom || raidQueued ? null : statusOf(modes, "raid", now)}
         />
       </main>
     </div>

@@ -103,7 +103,50 @@ export type RaidBoss = {
   beaten: boolean;
   /** The stars the player has, and what they ask (second stage). */
   stars: RaidStar[];
+  /** The Boss of this week (third stage): its first win of the week pays more. */
+  weekly?: boolean;
 } & RaidStarRules;
+
+/** Where the player is in the public queue «Cerca squadra»; `room` once the queue made one. */
+export type RaidQueueStatus = {
+  queued: boolean;
+  boss: string | null;
+  name: string | null;
+  joined_at: string | null;
+  /** Players waiting for this Boss, the player included. */
+  waiting: number;
+  wait_seconds: number;
+  max_players: number;
+  room: string | null;
+  server_now: string;
+};
+
+/** The Boss of this week: its first win of the week pays `coins`; `won` once the player has. */
+export type RaidWeek = { week: string; ends_at: string; boss: string; name: string; coins: number; won: boolean };
+
+/** The running event's community Boss: the damage of every team toward one Life, a reward for all who took part. */
+export type RaidCommunity = {
+  event: string;
+  ends_at: string;
+  vita: number;
+  damage: number;
+  fallen: boolean;
+  coins: number;
+  packs: number;
+  shards: number;
+  received: boolean;
+};
+
+/** «100 monete, 1 pacchetto», the parts of a community reward that are there. */
+export function describeCommunityPrize(prize: { coins: number; packs: number; shards: number }): string {
+  return [
+    prize.coins ? `${prize.coins} monete` : "",
+    prize.packs ? `${prize.packs} ${prize.packs === 1 ? "pacchetto" : "pacchetti"}` : "",
+    prize.shards ? `${prize.shards} Schegge` : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
 
 export type RaidCatalog = {
   min_players: number;
@@ -111,6 +154,10 @@ export type RaidCatalog = {
   /** The room the player is in, waiting or playing. */
   room: { id: string; code: string; status: "lobby" | "active"; boss: string; name: string } | null;
   bosses: RaidBoss[];
+  /** Third stage: the public queue, the Boss of the week, the community's Boss (null without an event that has one). */
+  queue?: RaidQueueStatus;
+  week?: RaidWeek | null;
+  community?: RaidCommunity | null;
 };
 
 export type RaidCard = MatchCard & { instance_id: string };
@@ -150,6 +197,9 @@ export type RaidMember = {
   /** The stars this hunt met for the member, and the coins of the new ones. */
   stars?: RaidStar[] | null;
   star_coins?: number | null;
+  /** The coins of the first win of the week on the Boss of the week; whether the community's reward came with this hunt. */
+  weekly_coins?: number | null;
+  community?: boolean | null;
 };
 
 export type RaidThreat = { name: string; level: number; abilities: string[]; flavor?: string; district?: string | null };
@@ -222,10 +272,13 @@ export type RaidView = {
   host: string;
   all_ready: boolean;
   boss: Pick<RaidBoss, "code" | "name" | "flavor" | "scene" | "district" | "moves" | "first_win_coins" | "win_xp" | "beaten" | "stars"> &
-    RaidStarRules;
+    RaidStarRules & { weekly?: boolean; weekly_coins?: number };
   members: RaidMember[];
   rounds: RaidRound[];
 };
+
+/** The wait in the public queue «Cerca squadra». */
+export const RAID_QUEUE_HREF = "/caccia/coda/";
 
 /** Where a hunt's room opens: its id in the query string (no dynamic routes in the static export). */
 export function raidRoomHref(id: string): string {
@@ -244,7 +297,10 @@ type RaidFunction =
   | "raid_remove_ally"
   | "raid_start"
   | "raid_place"
-  | "raid_signal";
+  | "raid_signal"
+  | "raid_queue_join"
+  | "raid_queue_poll"
+  | "raid_queue_leave";
 
 async function rpc<T>(name: RaidFunction, params?: Record<string, unknown>): Promise<T> {
   // The generated database types may not list these functions yet: the call is the same.
@@ -302,6 +358,21 @@ export async function startRaidRoom(roomId: string): Promise<void> {
 /** The player's card this round (null takes it back): the allies see it at once. Pronto goes with it only when asked. */
 export function placeRaidCard(roomId: string, round: number, card: string | null, ready: boolean): Promise<RaidView> {
   return rpc<RaidView>("raid_place", { p_room: roomId, p_round: round, p_card: card, p_ready: ready });
+}
+
+export async function joinRaidQueue(boss: string, cardInstanceIds: string[]): Promise<RaidQueueStatus> {
+  forget("raid");
+  return rpc("raid_queue_join", { p_boss: boss, p_card_instance_ids: cardInstanceIds });
+}
+
+/** Asks where the player is in the queue; the server also makes the room when it is time. */
+export function pollRaidQueue(): Promise<RaidQueueStatus> {
+  return rpc("raid_queue_poll");
+}
+
+export async function leaveRaidQueue(): Promise<void> {
+  forget("raid");
+  await rpc("raid_queue_leave");
 }
 
 export async function sendRaidSignal(roomId: string, signal: RaidSignal): Promise<void> {

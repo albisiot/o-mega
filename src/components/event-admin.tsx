@@ -35,6 +35,7 @@ import {
   addHoursToInput,
   coopEventPoints,
   describeTierReward,
+  raidEventPoints,
   formatRomeDateTime,
   toRomeInput,
   type EventPoints,
@@ -71,6 +72,7 @@ type TierForm = {
 type PointsForm = Record<MatchKind, Record<"win" | "draw" | "loss", string>> & {
   emergency: { passed: string };
   coop: Record<"win" | "loss" | "passed", string>;
+  raid: Record<"win" | "loss" | "passed", string>;
 };
 
 type FormState = {
@@ -98,9 +100,11 @@ type FormState = {
 
 function pointsForm(points: EventPoints): PointsForm {
   const coop = coopEventPoints(points);
+  const raid = raidEventPoints(points);
   const form = {
     emergency: { passed: String(points.emergency.passed) },
     coop: { win: String(coop.win), loss: String(coop.loss), passed: String(coop.passed) },
+    raid: { win: String(raid.win), loss: String(raid.loss), passed: String(raid.passed) },
   } as PointsForm;
   for (const kind of MATCH_KINDS) {
     form[kind.key] = {
@@ -345,6 +349,11 @@ function EventForm({
       ...current,
       points: { ...current.points, coop: { ...current.points.coop, [outcome]: value } },
     }));
+  const setRaidPoint = (outcome: "win" | "loss" | "passed", value: string) =>
+    setForm((current) => ({
+      ...current,
+      points: { ...current.points, raid: { ...current.points.raid, [outcome]: value } },
+    }));
   const shownTier = Math.min(tierIndex, form.tiers.length - 1);
   const reference = useAdminCardReference();
   const rarities = payloadRarities ?? reference?.rarities ?? [];
@@ -361,6 +370,7 @@ function EventForm({
     const points = {
       emergency: { passed: number(form.points.emergency.passed) },
       coop: { win: number(form.points.coop.win), loss: number(form.points.coop.loss), passed: number(form.points.coop.passed) },
+      raid: { win: number(form.points.raid.win), loss: number(form.points.raid.loss), passed: number(form.points.raid.passed) },
     } as EventPoints;
     for (const kind of MATCH_KINDS) {
       const row = form.points[kind.key];
@@ -622,6 +632,43 @@ function EventForm({
                 className={SMALL_INPUT}
               />
               <span className="col-span-2 text-xs font-medium text-muted">per Minaccia fermata</span>
+              <PointsRow label="Caccia grossa">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={1000}
+                  aria-label="Caccia grossa, Boss abbattuto"
+                  value={form.points.raid.win}
+                  onChange={(event) => setRaidPoint("win", event.target.value)}
+                  className={SMALL_INPUT}
+                />
+                <span className="text-center text-muted" aria-hidden>
+                  –
+                </span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={1000}
+                  aria-label="Caccia grossa, Boss non abbattuto"
+                  value={form.points.raid.loss}
+                  onChange={(event) => setRaidPoint("loss", event.target.value)}
+                  className={SMALL_INPUT}
+                />
+              </PointsRow>
+              <span className="text-sm">Caccia grossa</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={1000}
+                aria-label="Caccia grossa, per round tenuto"
+                value={form.points.raid.passed}
+                onChange={(event) => setRaidPoint("passed", event.target.value)}
+                className={SMALL_INPUT}
+              />
+              <span className="col-span-2 text-xs font-medium text-muted">per round senza perdere Difese</span>
             </div>
             <label className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)] items-center gap-1.5 text-sm font-bold">
               Tetto al giorno

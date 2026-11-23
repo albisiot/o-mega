@@ -35,6 +35,12 @@ export type AchievementMetric =
   | "coop_won"
   | "coop_threats"
   | "coop_stars"
+  | "raid_played"
+  | "raid_won"
+  | "raid_damage"
+  | "raid_stars"
+  | "raid_bosses"
+  | "raid_weekly"
   | "daily_objectives_completed"
   | "coins_earned"
   | "level"
@@ -211,6 +217,12 @@ export const METRICS: MetricInfo[] = [
   { metric: "coop_won", group: "Operazioni", label: "Operazioni vinte", fields: [], unit: "Operazioni", hasDates: true },
   { metric: "coop_threats", group: "Operazioni", label: "Minacce fermate nelle Operazioni (come carta principale)", fields: [], unit: "Minacce", hasDates: true },
   { metric: "coop_stars", group: "Operazioni", label: "Stelle delle Operazioni ottenute", fields: [], unit: "stelle (3 per Operazione)", hasDates: true },
+  { metric: "raid_played", group: "Caccia grossa", label: "Cacce finite (vinte o perse)", fields: [], unit: "cacce", hasDates: true },
+  { metric: "raid_won", group: "Caccia grossa", label: "Boss abbattuti (anche lo stesso più volte)", fields: [], unit: "Boss", hasDates: true },
+  { metric: "raid_damage", group: "Caccia grossa", label: "Danni della squadra ai Boss", fields: [], unit: "danni", hasDates: true },
+  { metric: "raid_stars", group: "Caccia grossa", label: "Stelle della Caccia grossa ottenute", fields: [], unit: "stelle (3 per Boss)", hasDates: true },
+  { metric: "raid_bosses", group: "Caccia grossa", label: "Boss diversi abbattuti", fields: [], unit: "Boss", hasDates: true },
+  { metric: "raid_weekly", group: "Caccia grossa", label: "Boss della settimana abbattuti", fields: [], unit: "settimane", hasDates: true },
   { metric: "daily_objectives_completed", group: "Altro", label: "Obiettivi del giorno completati", fields: [], unit: "obiettivi", hasDates: true },
   { metric: "coins_earned", group: "Altro", label: "Monete guadagnate in tutto", fields: [], unit: "monete", hasDates: true },
   { metric: "level", group: "Altro", label: "Livello raggiunto", fields: [], unit: "livello", hasDates: false },
@@ -383,6 +395,18 @@ export function describeCondition(
       return `Hai fermato ${n === 1 ? "una Minaccia" : `${n} Minacce`} nelle Operazioni.`;
     case "coop_stars":
       return n === 1 ? "Hai ottenuto una stella in un'Operazione." : `Hai ottenuto ${n} stelle nelle Operazioni.`;
+    case "raid_played":
+      return n === 1 ? "Hai finito una caccia della Caccia grossa." : `Hai finito ${n} cacce della Caccia grossa.`;
+    case "raid_won":
+      return n === 1 ? "Hai abbattuto un Boss nella Caccia grossa." : `Hai abbattuto ${n} Boss nella Caccia grossa.`;
+    case "raid_damage":
+      return `La tua squadra ha inflitto ${n === 1 ? "un danno" : `${n} danni`} ai Boss.`;
+    case "raid_stars":
+      return n === 1 ? "Hai ottenuto una stella nella Caccia grossa." : `Hai ottenuto ${n} stelle nella Caccia grossa.`;
+    case "raid_bosses":
+      return n === 1 ? "Hai abbattuto un Boss." : `Hai abbattuto ${n} Boss diversi.`;
+    case "raid_weekly":
+      return n === 1 ? "Hai abbattuto il Boss della settimana." : `Hai abbattuto il Boss della settimana ${n} volte.`;
     case "daily_objectives_completed":
       return n === 1 ? "Hai completato un obiettivo del giorno." : `Hai completato ${n} obiettivi del giorno.`;
     case "coins_earned":

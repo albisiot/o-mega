@@ -18,7 +18,11 @@ export type ObjectiveMetric =
   | "coop_played"
   | "coop_won"
   | "coop_threats"
-  | "coop_stars";
+  | "coop_stars"
+  | "raid_played"
+  | "raid_won"
+  | "raid_damage"
+  | "raid_stars";
 
 export type ObjectiveParams = Record<string, unknown>;
 
@@ -109,6 +113,10 @@ export const OBJECTIVE_KINDS: {
   { key: "coop_won", label: "Operazioni vinte", metric: "coop_won", params: {}, one: "Vinci un'Operazione", many: "Vinci {n} Operazioni" },
   { key: "coop_threats", label: "Minacce fermate nelle Operazioni", metric: "coop_threats", params: {}, one: "Ferma una Minaccia in un'Operazione", many: "Ferma {n} Minacce nelle Operazioni" },
   { key: "coop_stars", label: "Stelle ottenute nelle Operazioni", metric: "coop_stars", params: {}, one: "Ottieni una stella in un'Operazione", many: "Ottieni {n} stelle nelle Operazioni" },
+  { key: "raid_played", label: "Boss affrontati nella Caccia grossa", metric: "raid_played", params: {}, one: "Affronta un Boss nella Caccia grossa", many: "Affronta {n} Boss nella Caccia grossa" },
+  { key: "raid_won", label: "Boss abbattuti nella Caccia grossa", metric: "raid_won", params: {}, one: "Abbatti un Boss nella Caccia grossa", many: "Abbatti {n} Boss nella Caccia grossa" },
+  { key: "raid_damage", label: "Danni della squadra ai Boss", metric: "raid_damage", params: {}, one: "Infliggi un danno a un Boss", many: "Infliggi {n} danni ai Boss" },
+  { key: "raid_stars", label: "Stelle ottenute nella Caccia grossa", metric: "raid_stars", params: {}, one: "Ottieni una stella nella Caccia grossa", many: "Ottieni {n} stelle nella Caccia grossa" },
   { key: "packs", label: "Pacchetti aperti", metric: "packs_opened", params: {}, one: "Apri un pacchetto", many: "Apri {n} pacchetti" },
   { key: "variants_found", label: "Varianti trovate nei pacchetti", metric: "variants_found", params: {}, one: "Trova una variante in un pacchetto", many: "Trova {n} varianti nei pacchetti" },
   { key: "variant_wins", label: "Partite vinte con una variante in squadra", metric: "variant_wins", params: {}, one: "Vinci una partita con una variante in squadra", many: "Vinci {n} partite con una variante in squadra" },

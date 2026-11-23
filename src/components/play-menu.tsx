@@ -11,7 +11,7 @@ import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
 import { challengeEmergencyHref, runningChallenge, type Challenge } from "@/lib/challenges";
 import { COOP_QUEUE_HREF, coopRoomHref, type CoopCatalog } from "@/lib/coop";
-import { raidRoomHref, type RaidCatalog } from "@/lib/raid";
+import { RAID_QUEUE_HREF, raidRoomHref, type RaidCatalog } from "@/lib/raid";
 import { daysLeft, daysLeftText, emergencyHref } from "@/lib/emergency";
 import { describeLastPlay, describePlayBlock, FIRST_PLAY, lastPlayHref, playBlock, type LastPlay, type PlayBlock } from "@/lib/last-play";
 import { leaderboardHref, type LeaderboardBoard } from "@/lib/leaderboards";
@@ -648,7 +648,8 @@ function TogetherTile({
   const coopRoom = coop?.room ?? null;
   const queued = !coopRoom && Boolean(coop?.queue?.queued);
   const raidRoom = raid?.room ?? null;
-  const state = queued
+  const raidQueued = !coopRoom && !queued && !raidRoom && Boolean(raid?.queue?.queued);
+  const state = queued || raidQueued
     ? "In coda"
     : coopRoom
       ? coopRoom.status === "active"
@@ -661,11 +662,13 @@ function TogetherTile({
         : compact
           ? "Dal vivo"
           : "Operazioni · Caccia";
-  const inside = Boolean(coopRoom || queued || raidRoom);
+  const inside = Boolean(coopRoom || queued || raidRoom || raidQueued);
   // A room or a place in the queue stays reachable: what started goes on to the end.
   return (
     <GateLink
-      href={coopRoom ? coopRoomHref(coopRoom.id) : queued ? COOP_QUEUE_HREF : raidRoom ? raidRoomHref(raidRoom.id) : "/insieme"}
+      href={
+        coopRoom ? coopRoomHref(coopRoom.id) : queued ? COOP_QUEUE_HREF : raidRoom ? raidRoomHref(raidRoom.id) : raidQueued ? RAID_QUEUE_HREF : "/insieme"
+      }
       status={inside ? null : gate.status}
       onClosed={gate.onClosed}
       compact

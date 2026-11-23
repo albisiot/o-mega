@@ -462,6 +462,10 @@ export const balance = {
     /** The stars (second stage): Colpo rapido asks the Boss down by this round; each star's coins, times the Magnitude's rewardPercent. */
     quickRound: 4,
     starCoins: 20,
+    /** Public queue «Cerca squadra» (third stage): after this wait the room starts with whoever is there and server allies. */
+    queueWaitSeconds: 25,
+    /** The Boss of the week: coins of its first win of the week, times the Magnitude's rewardPercent. */
+    weeklyCoins: 60,
     /** How long a signal stays beside a player's name (client only). */
     signalSeconds: 6,
   },

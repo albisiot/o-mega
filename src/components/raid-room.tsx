@@ -7,6 +7,7 @@ import type { AbilityFamilies } from "@o-mega/game-engine";
 import { CardDetailProvider, useCardDetail } from "@/components/card-detail";
 import { CardLooksProvider, useCardLooks } from "@/components/card-looks";
 import { DragGhost } from "@/components/drag-ghost";
+import { useEventPointsFor } from "@/components/event-banner";
 import { HandCard } from "@/components/hand-card";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { RaidMapReveal } from "@/components/raid-comic";
@@ -16,6 +17,7 @@ import { StarIcon } from "@/components/story-stars";
 import { balance } from "@/config/balance";
 import { fetchAbilities, seenAbilities, type AbilityInfo } from "@/lib/catalog";
 import { describeServerError } from "@/lib/errors";
+import { describeEventPoints } from "@/lib/events";
 import { subscribeToUpdates } from "@/lib/match";
 import {
   addRaidAlly,
@@ -431,6 +433,11 @@ function Lobby({
           <span className="shrink-0 text-[11px] font-extrabold text-muted">Mosse:</span>
           <MoveChips moves={view.boss.moves} />
         </div>
+        {view.boss.weekly && (
+          <p className="shrink-0 text-[11px] font-extrabold text-comic-orange">
+            Boss della settimana: la prima vittoria della settimana paga +{view.boss.weekly_coins} monete.
+          </p>
+        )}
         <p className="shrink-0 text-[11px] font-bold text-muted">
           Vittoria: +{view.boss.win_xp} esperienza
           {view.boss.beaten ? " · l'hai già abbattuto" : ` · la prima volta +${view.boss.first_win_coins} monete`}
@@ -1122,6 +1129,8 @@ function RoundResult({
 
 function End({ view }: { view: RaidView }) {
   const me = myRaidMember(view);
+  // The running event: the hunt and the rounds the team held (SPEC §8.2).
+  const eventPoints = useEventPointsFor(view.id);
   const won = view.status === "won";
   const played = view.rounds.filter((r) => r.resolved);
   const last = played.at(-1);
@@ -1154,6 +1163,15 @@ function End({ view }: { view: RaidView }) {
           )}
           {(me?.star_coins ?? 0) > 0 && (
             <span className="bg-comic-yellow px-2 py-0.5 text-sm font-extrabold text-black">+{me?.star_coins} monete delle stelle</span>
+          )}
+          {(me?.weekly_coins ?? 0) > 0 && (
+            <span className="bg-comic-orange px-2 py-0.5 text-sm font-extrabold text-black">+{me?.weekly_coins} monete del Boss della settimana</span>
+          )}
+          {me?.community && (
+            <span className="bg-comic-magenta px-2 py-0.5 text-sm font-extrabold text-black">Boss della comunità abbattuto: premio ricevuto</span>
+          )}
+          {eventPoints && (eventPoints.points > 0 || eventPoints.not_admitted) && (
+            <span className="bg-comic-magenta px-2 py-0.5 text-sm font-extrabold text-white">{describeEventPoints(eventPoints)}</span>
           )}
           {me?.xp === 0 && <span className="text-xs font-bold text-muted">Nessun premio: hai scelto meno della metà delle tue carte.</span>}
         </div>

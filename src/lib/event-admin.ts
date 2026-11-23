@@ -148,6 +148,7 @@ export const DEFAULT_EVENT_POINTS: EventPoints = {
   story: { win: 10, draw: 5, loss: 3 },
   emergency: { passed: 5 },
   coop: { win: 30, loss: 10, passed: 2 },
+  raid: { win: 30, loss: 10, passed: 2 },
 };
 
 export type AdminEventState = "Programmato" | "In corso" | "Concluso" | "Disattivato";

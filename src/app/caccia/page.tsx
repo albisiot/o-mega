@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRequireSignedIn } from "@/components/auth-provider";
@@ -10,7 +11,18 @@ import { StarCount } from "@/components/story-stars";
 import { ReturnLink } from "@/components/return-link";
 import { describeServerError } from "@/lib/errors";
 import { statusOf, useModeAvailability } from "@/lib/mode-availability";
-import { createRaidRoom, DISTRICT_NAMES, fetchRaid, joinRaidRoom, RAID_STARS, raidRoomHref, seenRaid, type RaidCatalog } from "@/lib/raid";
+import {
+  createRaidRoom,
+  describeCommunityPrize,
+  DISTRICT_NAMES,
+  fetchRaid,
+  joinRaidRoom,
+  RAID_QUEUE_HREF,
+  RAID_STARS,
+  raidRoomHref,
+  seenRaid,
+  type RaidCatalog,
+} from "@/lib/raid";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow } from "@/lib/use-now";
 
@@ -84,6 +96,9 @@ export default function HuntPage() {
 
   if (!catalog && !error) return <LoadingScreen label="Apertura della Caccia grossa…" />;
   const room = catalog?.room ?? null;
+  const queue = catalog?.queue?.queued ? catalog.queue : null;
+  const week = catalog?.week ?? null;
+  const community = catalog?.community ?? null;
   const status = statusOf(modes, "raid", now);
   const closed = status.open ? null : `La Caccia grossa non è disponibile ora${status.label ? ` · ${status.label}` : ""}.`;
 
@@ -102,7 +117,15 @@ export default function HuntPage() {
       <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
         {error && <p className="shrink-0 text-sm font-semibold text-comic-magenta">{error}</p>}
 
-        {room ? (
+        {queue && !room ? (
+          <ReturnLink href={RAID_QUEUE_HREF} onward className="tile flex min-h-14 shrink-0 items-center justify-between gap-2 bg-comic-yellow px-3 py-1.5 text-black">
+            <span className="min-w-0">
+              <span className="block font-display text-[17px] uppercase leading-5">Sei in coda</span>
+              <span className="block truncate text-xs font-bold leading-4">{queue.name} · Cerca squadra</span>
+            </span>
+            <span className="shrink-0 -skew-x-8 bg-black px-2.5 py-1 font-display text-base uppercase text-comic-yellow">Vai</span>
+          </ReturnLink>
+        ) : room ? (
           <ReturnLink
             href={raidRoomHref(room.id)}
             onward
@@ -138,6 +161,30 @@ export default function HuntPage() {
           </form>
         )}
 
+        {week && (
+          <p className="shrink-0 border-2 border-comic-orange px-2 py-1 text-xs font-bold leading-4">
+            <span className="mr-1 bg-comic-orange px-1 font-extrabold uppercase text-black">Boss della settimana</span>
+            {week.name}:{" "}
+            {week.won ? "l'hai già abbattuto questa settimana." : `la prima vittoria della settimana paga +${week.coins} monete.`}
+          </p>
+        )}
+        {community && (
+          <section className="shrink-0 border-2 border-comic-magenta px-2 py-1" aria-label="Il Boss della comunità">
+            <p className="text-xs font-extrabold leading-4">
+              Boss della comunità · {community.event}
+              {community.fallen ? " · abbattuto!" : ""}
+            </p>
+            <span className="relative mt-1 block h-2.5 -skew-x-8 bg-panel-raised" role="meter" aria-label="Danni di tutte le squadre" aria-valuenow={community.damage} aria-valuemin={0} aria-valuemax={community.vita}>
+              <span className="absolute inset-y-0 left-0 bg-comic-magenta" style={{ width: `${Math.min(100, (100 * community.damage) / community.vita)}%` }} />
+            </span>
+            <p className="mt-0.5 text-[11px] font-bold leading-4 text-muted">
+              {community.damage.toLocaleString("it-IT")} danni su {community.vita.toLocaleString("it-IT")}, da tutte le squadre.{" "}
+              {community.received
+                ? "Il premio l'hai già ricevuto."
+                : `Premio a chi ha partecipato: ${describeCommunityPrize(community)}.`}
+            </p>
+          </section>
+        )}
         <p className="shrink-0 text-xs font-semibold leading-4 text-muted">
           Una Minaccia per round, una carta a testa: i punteggi si sommano. Sotto l&apos;Attacco perdete una Difesa, sopra fate danno al Boss.
           Più è alta la Magnitudo, più il Boss è duro e più paga la vittoria.
@@ -169,7 +216,11 @@ export default function HuntPage() {
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-0.5">
                     <StarCount earned={boss.stars?.length ?? 0} total={RAID_STARS.length} className="text-[11px] font-extrabold" />
-                    {boss.beaten && <span className="bg-comic-cyan px-1 text-[10px] font-extrabold uppercase text-black">Abbattuto</span>}
+                    {boss.weekly ? (
+                      <span className="bg-comic-orange px-1 text-[10px] font-extrabold uppercase text-black">Settimana</span>
+                    ) : (
+                      boss.beaten && <span className="bg-comic-cyan px-1 text-[10px] font-extrabold uppercase text-black">Abbattuto</span>
+                    )}
                   </span>
                 </button>
                 {expanded && (
@@ -180,10 +231,15 @@ export default function HuntPage() {
                       Vittoria: +{boss.win_xp} esperienza{boss.beaten ? "" : ` · la prima volta +${boss.first_win_coins} monete`}
                     </p>
                     <RaidStarList rules={boss} earned={boss.stars ?? []} />
-                    {!room && !closed && (
-                      <button type="button" onClick={() => void create(boss.code)} disabled={busy} className="btn btn-primary w-full">
-                        Apri una stanza
-                      </button>
+                    {!room && !queue && !closed && (
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => void create(boss.code)} disabled={busy} className="btn btn-primary flex-1">
+                          Apri una stanza
+                        </button>
+                        <Link href={`/squadra/?coda-caccia=${boss.code}`} className="btn btn-outline flex-1">
+                          Cerca squadra
+                        </Link>
+                      </div>
                     )}
                   </div>
                 )}

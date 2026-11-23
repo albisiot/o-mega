@@ -16,6 +16,7 @@ import {
   EVENT_KINDS,
   coopEventPoints,
   describeTierReward,
+  raidEventPoints,
   eventPhase,
   formatEventCountdown,
   formatRomeDateTime,
@@ -83,6 +84,7 @@ export function EventDetails({
   const [zoomed, setZoomed] = useState<EventRewardCard | null>(null);
   const completed = isEventCompleted(event);
   const coop = coopEventPoints(event.points);
+  const raid = raidEventPoints(event.points);
   // Before the start: the final leaderboard of the event before, if the player unlocked it.
   // Otherwise this event's, asked for once completed (the place) or when its tab opens.
   const asked = useEventLeaderboard(
@@ -280,11 +282,29 @@ export function EventDetails({
                     </td>
                   </tr>
                 )}
+                {(raid.win > 0 || raid.loss > 0) && (
+                  <tr className="border-t border-white/10 font-semibold">
+                    <td className="py-1.5">Caccia grossa</td>
+                    <td className="py-1.5 text-right">{raid.win}</td>
+                    <td className="py-1.5 text-right text-muted">–</td>
+                    <td className="py-1.5 text-right">{raid.loss}</td>
+                  </tr>
+                )}
+                {raid.passed > 0 && (
+                  <tr className="border-t border-white/10 font-semibold">
+                    <td className="py-1.5">Caccia grossa</td>
+                    <td colSpan={3} className="py-1.5 text-right">
+                      {raid.passed} per round senza perdere Difese
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
             <p className="shrink-0 text-xs font-medium leading-4 text-muted">
               Contano le partite iniziate e finite durante l&apos;evento. Le partite abbandonate non danno punti a nessuno
               dei due.{coop.win + coop.loss + coop.passed > 0 && " Nelle Operazioni contano quelle finite restando nella stanza; una Minaccia è tua se l'hai fermata con la carta principale scelta da te."}
+              {raid.win + raid.loss + raid.passed > 0 &&
+                " Nella Caccia grossa contano le cacce finite restando nella stanza, se almeno metà delle tue carte l'hai scelta tu."}
               {(event.admitted ?? []).length > 0 &&
                 ` Danno punti solo le squadre di personaggi ${describeAdmitted(event.admitted ?? [])}${
                   event.admitted_characters ? ` (${event.admitted_characters} in tutto)` : ""

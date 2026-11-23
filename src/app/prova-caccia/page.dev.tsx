@@ -145,7 +145,7 @@ function scene(name: string): { view: RaidView; revealing: number | null } {
   const now = Date.now();
   const at = (seconds: number) => new Date(now + seconds * 1000).toISOString();
   const base: RaidView = {
-    id: "prova",
+    id: "00000000-0000-4000-8000-000000000000",
     code: "H4NT3R",
     status: "active",
     players: 2,
@@ -265,6 +265,7 @@ function scene(name: string): { view: RaidView; revealing: number | null } {
           ...base,
           status: won ? "won" : "lost",
           current_round: 3,
+          boss: { ...base.boss, weekly: true, weekly_coins: 60 },
           vita: won ? 0 : 19,
           defenses: won ? 2 : 0,
           members: [
@@ -274,6 +275,8 @@ function scene(name: string): { view: RaidView; revealing: number | null } {
               coins: won ? 60 : 0,
               stars: won ? ["flawless", "quick", "squad"] : null,
               star_coins: won ? 40 : null,
+              weekly_coins: won ? 60 : null,
+              community: won,
             }),
             member(FRIEND, 2, "Marta", FRIENDS, { used: ["P053-copy", "P020-copy", "P101-copy"], xp: won ? 30 : 10, coins: won ? 60 : 0 }),
           ],
@@ -348,6 +351,19 @@ const ADMIN: BossAdmin = {
   rarities: RARITY.slice(1).map((code) => ({ code, name: code[0].toUpperCase() + code.slice(1) })),
   magnitudes: [92, 96, 100, 104, 108].map((forza, i) => ({ magnitude: i + 1, forza_percent: forza, reward_percent: [50, 75, 100, 150, 250][i] })),
   levels: { one_at_most: 2, one_at_least: 5, min_sum: 14, max_sum: 20 },
+  weeks: [
+    { week: "2026-11-23", boss: "B03", chosen: false },
+    { week: "2026-11-30", boss: "B03", chosen: true },
+    { week: "2026-12-07", boss: "B03", chosen: false },
+    { week: "2026-12-14", boss: "B03", chosen: false },
+  ],
+  events: [
+    {
+      id: "e1", title: "La notte dei Boss", starts_at: "2026-11-20T08:00:00Z", ends_at: "2026-11-27T22:00:00Z", started: true,
+      community: { vita: 5000, coins: 100, packs: 1, shards: 0, damage: 3120, fallen: false, rewarded: 0 },
+    },
+    { id: "e2", title: "Caccia d'inverno", starts_at: "2026-12-04T08:00:00Z", ends_at: "2026-12-11T22:00:00Z", started: false, community: null },
+  ],
 };
 
 function RaidProof() {
