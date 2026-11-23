@@ -6,7 +6,7 @@ import { withBasePath } from "@/lib/base-path";
 /** Cards that have a 3D model in public/models. */
 const CARD_MODELS = new Set(["P001", "P030", "P060"]);
 /** Cards whose 3D view is a diorama built from shapes in src/lib/card-diorama.ts: no model to download. */
-const CARD_DIORAMAS = new Set(["P013", "P028", "P055"]);
+const CARD_DIORAMAS = new Set(["P013", "P028", "P055", "P060"]);
 
 /** Three.js and the viewer: downloaded only by players who ask for a model. */
 const loadViewer = () => import("@/lib/card-model");
@@ -35,16 +35,20 @@ async function downloadModel(url: string, signal: AbortSignal, onProgress: (shar
 export function CardModelButton({ code, name, className = "w-full max-w-sm" }: { code: string; name: string; className?: string }) {
   const sheet = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
+  // A card with both a model and a diorama opens on the diorama, with a switch between the two.
+  const [view, setView] = useState<"diorama" | "model">("diorama");
 
   const diorama = CARD_DIORAMAS.has(code);
-  if (!diorama && !CARD_MODELS.has(code)) return null;
+  const model = CARD_MODELS.has(code);
+  if (!diorama && !model) return null;
+  const shown = diorama && (!model || view === "diorama") ? "diorama" : "model";
   return (
     <>
       <button
         type="button"
         aria-haspopup="dialog"
         // The press comes a moment before the tap: enough to start fetching the viewer's code.
-        onPointerDown={() => void (diorama ? loadDiorama() : loadViewer()).catch(() => {})}
+        onPointerDown={() => void (shown === "diorama" ? loadDiorama() : loadViewer()).catch(() => {})}
         onClick={() => {
           setOpen(true);
           sheet.current?.showModal();
@@ -70,7 +74,25 @@ export function CardModelButton({ code, name, className = "w-full max-w-sm" }: {
               Chiudi
             </button>
           </div>
-          {open && (diorama ? <DioramaStage code={code} /> : <ModelStage code={code} />)}
+          {open && diorama && model && (
+            <div role="tablist" aria-label="Vista in 3D" className="grid grid-cols-2 gap-1">
+              {(["diorama", "model"] as const).map((entry) => (
+                <button
+                  key={entry}
+                  type="button"
+                  role="tab"
+                  aria-selected={view === entry}
+                  onClick={() => setView(entry)}
+                  className={`min-h-11 border-2 text-sm font-extrabold uppercase ${
+                    view === entry ? "border-comic-yellow bg-comic-yellow text-black" : "border-line text-foreground"
+                  }`}
+                >
+                  {entry === "diorama" ? "Diorama" : "Modello"}
+                </button>
+              ))}
+            </div>
+          )}
+          {open && (shown === "diorama" ? <DioramaStage key="diorama" code={code} /> : <ModelStage key="model" code={code} />)}
         </div>
       </dialog>
     </>

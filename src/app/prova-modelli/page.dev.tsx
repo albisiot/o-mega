@@ -3,7 +3,7 @@
 // The cards that can be looked at in 3D, to try the models and the dioramas without a server
 // or an account. A development-only page: next.config.ts serves *.dev.tsx pages in `next dev`
 // only, so it is never part of the published site.
-//   /prova-modelli/   one "Guarda in 3D" per card: models (P001, P030, P060) and dioramas (P013, P028, P055)
+//   /prova-modelli/   one "Guarda in 3D" per card: models (P001, P030, P060) and dioramas (P013, P028, P055, P060)
 
 import { CardModelButton } from "@/components/card-model";
 import { PageHeader } from "@/components/comic-parts";
@@ -15,7 +15,7 @@ const CARDS = [
   { code: "P013", name: "Hawser", kind: "Diorama" },
   { code: "P001", name: "Gantry", kind: "Modello" },
   { code: "P030", name: "Milewright", kind: "Modello" },
-  { code: "P060", name: "Mongibello", kind: "Modello" },
+  { code: "P060", name: "Mongibello", kind: "Diorama e modello" },
 ];
 
 export default function ModelsTrialPage() {
