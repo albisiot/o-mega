@@ -8,11 +8,14 @@
 //   cards     the wins of each character in random teams, and how they follow each ability;
 //   field     how often the team with more points in the field threat's abilities wins, with
 //             the field and without it (the same battles);
-//   repeat    the same battles twice from the same seed give the same log.
+//   repeat    the same battles twice from the same seed give the same log;
+//   roles     the wins of the characters of each role of the generic kits (stage 2);
+//   strategies each strategy against the balanced one, the same teams, sides swapped, and what its
+//             side does in a battle: damage, healing, shields, debuffs and buffs put, supremes.
 //
 // The dump: npx supabase db query --linked -f scripts/emergency-catalog.sql > emergency-raw.json
 // Usage: node scripts/simulate-combat.mts <emergency-raw.json> [--battles 10000] [--pairs 2000]
-//   [--seed 1] [--report duration,points,rarity,cards,field,repeat] [--pool all|pack]
+//   [--seed 1] [--report duration,points,rarity,cards,field,repeat,roles,strategies] [--pool all|pack]
 //   [--field-levels 2,3,4|none] [--set speed.perPoint.vel=1.5,vita.base=250]
 //
 // --set changes the numbers of balance.ts `combat` for this run only (dotted paths).
@@ -20,7 +23,9 @@
 import { readFileSync } from "node:fs";
 import { balance } from "../src/config/balance.ts";
 import {
+  COMBAT_STRATEGIES,
   autoCombatFormation,
+  combatRoleOf,
   combatStats,
   genericCombatKit,
   mulberry32,
@@ -32,6 +37,7 @@ import {
   type CombatFighterInput,
   type CombatRules,
   type CombatSetup,
+  type CombatStrategy,
   type Rng,
 } from "../packages/game-engine/src/index.ts";
 
@@ -58,7 +64,7 @@ const data: Dump = raw.rows ? raw.rows[0].data : (raw as Dump);
 const battles = Number(option("battles") ?? 10000);
 const pairs = Number(option("pairs") ?? 2000);
 const seed = Number(option("seed") ?? 1);
-const reports = (option("report") ?? "duration,points,rarity,cards,field,repeat").split(",");
+const reports = (option("report") ?? "duration,points,rarity,cards,field,repeat,roles,strategies").split(",");
 
 // The numbers: balance.ts, with the --set changes.
 const rules = structuredClone(balance.combat) as unknown as CombatRules;
@@ -111,7 +117,7 @@ console.log(`Scontro a squadre · ${pool.length} personaggi · seme ${seed} · c
 if (option("set")) console.log(`numeri cambiati: ${option("set")}`);
 
 // One run of random battles feeds duration, cards and field.
-if (reports.some((r) => ["duration", "cards", "field"].includes(r))) {
+if (reports.some((r) => ["duration", "cards", "field", "roles"].includes(r))) {
   const rng = mulberry32(seed);
   const actions: number[] = [];
   let limits = 0;
@@ -186,6 +192,19 @@ if (reports.some((r) => ["duration", "cards", "field"].includes(r))) {
     console.log(`  i più forti: ${rate.slice(0, 8).map(show).join(" · ")}`);
     console.log(`  i più deboli: ${rate.slice(-8).map(show).join(" · ")}`);
   }
+  if (reports.includes("roles")) {
+    const byRole = new Map<string, { played: number; won: number; cards: number }>();
+    for (const card of pool) {
+      if (!played.has(card.code)) continue;
+      const role = combatRoleOf(combatStats(card.stats, budgetOf(card), rules), families);
+      const entry = byRole.get(role) ?? { played: 0, won: 0, cards: 0 };
+      entry.played += played.get(card.code)!;
+      entry.won += won.get(card.code)!;
+      entry.cards += 1;
+      byRole.set(role, entry);
+    }
+    console.log(`\nRuoli dei kit generici: ${[...byRole].map(([role, e]) => `${role} ${percent(e.won / e.played)} (${e.cards})`).join(" · ")}`);
+  }
   if (reports.includes("field") && fields.length) {
     console.log(`\nCampo: con almeno 5 punti in più nelle abilità della Minaccia (${fieldLead} scontri) si vince ${percent(fieldLeadWins / fieldLead)} con il campo, ${percent(fieldLeadWinsWithout / fieldLead)} senza`);
   }
@@ -231,6 +250,43 @@ if (reports.includes("rarity")) {
     line.push(`${high} su ${low} ${percent(wins / (2 * pairs))}`);
   }
   console.log(`\nRarità (${pairs} coppie, lati scambiati): ${line.join(" · ")}`);
+}
+
+if (reports.includes("strategies")) {
+  const line: string[] = [];
+  const behaviour: string[] = [];
+  for (const strategy of Object.keys(COMBAT_STRATEGIES) as CombatStrategy[]) {
+    const rng = mulberry32(seed + 404);
+    let wins = 0;
+    const done = { damage: 0, heal: 0, shield: 0, debuffs: 0, buffs: 0, supremes: 0 };
+    const count = (events: CombatEvent[], side: "a" | "b") => {
+      for (const e of events) {
+        if (!("actor" in e) || !e.actor.startsWith(side)) continue;
+        if (e.kind === "damage") done.damage += e.amount;
+        else if (e.kind === "heal") done.heal += e.amount;
+        else if (e.kind === "shield") done.shield += e.amount;
+        else if (e.kind === "status") done[["weaken", "vulnerable", "stun", "burn"].includes(e.status) ? "debuffs" : "buffs"] += 1;
+        else if (e.kind === "move" && e.slot === "supreme") done.supremes += 1;
+      }
+    };
+    for (let i = 0; i < pairs; i += 1) {
+      const a = draw(rng, pool).map((c) => fighter(c));
+      const b = draw(rng, pool).map((c) => fighter(c));
+      const field = fieldOf(rng);
+      const battleSeed = Math.floor(rng() * 2 ** 31);
+      const plan = { strategy, priority: null, orders: {} };
+      const first = runCombat(setup(a, b, field), ctx, mulberry32(battleSeed), { tactics: { a: plan } });
+      const second = runCombat(setup(b, a, field), ctx, mulberry32(battleSeed), { tactics: { b: plan } });
+      wins += winsOf(first.state.result!.winner, "a") + winsOf(second.state.result!.winner, "b");
+      count(first.events, "a");
+      count(second.events, "b");
+    }
+    const per = (x: number) => (x / (2 * pairs)).toFixed(x / (2 * pairs) < 10 ? 1 : 0);
+    if (strategy !== "balanced") line.push(`${strategy} ${percent(wins / (2 * pairs))}`);
+    behaviour.push(`  ${strategy}: danni ${per(done.damage)}, cure ${per(done.heal)}, scudi ${per(done.shield)}, effetti sui nemici ${per(done.debuffs)}, sugli alleati ${per(done.buffs)}, supreme ${per(done.supremes)}`);
+  }
+  console.log(`\nStrategie contro l'equilibrata (${pairs} coppie, stesse squadre, lati scambiati): ${line.join(" · ")}`);
+  console.log(`  in uno scontro, il lato con la strategia fa in media:\n${behaviour.join("\n")}`);
 }
 
 if (reports.includes("repeat")) {

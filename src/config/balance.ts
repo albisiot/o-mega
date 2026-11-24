@@ -472,7 +472,7 @@ export const balance = {
 
   /**
    * Scontro a squadre (SPEC §5.19, docs/COMBAT.md): 5 against 5 on two lines, turn meters and
-   * moves. Version 0.1, tuned with scripts/simulate-combat.mts (docs/COMBAT.md); not in game_config yet (stage 4).
+   * moves. Version 0.2 (stage 2), tuned with scripts/simulate-combat.mts (docs/COMBAT.md); not in game_config yet (stage 4).
    * Ability codes are lower case here, as game_config keys; the engine reads them as the cards' codes.
    */
   combat: {
@@ -483,9 +483,9 @@ export const balance = {
     referenceBudget: 54,
     /**
      * ...this far, in percent. All the way (100) makes the rarer cards weaker, because their extra
-     * points sit on their peaks: at 60 each rarity beats the one below 44-57% of the time.
+     * points sit on their peaks: at 80, with the stage 2 kits, each rarity beats the one below 45-58% of the time.
      */
-    rarityScalePercent: 60,
+    rarityScalePercent: 80,
     /** Life and Speed: a base plus points for each ability point. */
     vita: { base: 260, perPoint: { res: 6, vol: 3 } },
     speed: { base: 100, perPoint: { vel: 1 } },
@@ -516,6 +516,13 @@ export const balance = {
     maxActions: 100,
     /** Power bonus of a move using the field threat's abilities, in proportion to their weight. */
     fieldBonusPercent: 20,
+    /**
+     * The statuses (stage 2), in percent: more damage, more defence, more Speed; less damage, less
+     * defence; the share of the Life a burn takes at the start of each turn. No status lasts more than maxTurns.
+     */
+    statuses: { empowerPercent: 25, fortifyPercent: 50, hastePercent: 20, weakenPercent: 20, vulnerablePercent: 30, burnPercent: 6, maxTurns: 3 },
+    /** Chance of a debuff in percent: its base plus perPoint × (user's ability − target's mean in that family), within the limits. */
+    effectChance: { perPoint: 3, minPercent: 10, maxPercent: 90 },
   },
 
   /**

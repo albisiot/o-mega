@@ -49,6 +49,8 @@ const RULES: CombatRules = {
   shieldMaxPercent: 30,
   maxActions: 100,
   fieldBonusPercent: 20,
+  statuses: { empowerPercent: 25, fortifyPercent: 50, hastePercent: 20, weakenPercent: 20, vulnerablePercent: 30, burnPercent: 6, maxTurns: 3 },
+  effectChance: { perPoint: 3, minPercent: 10, maxPercent: 90 },
 };
 const FAMILIES = { FOR: "body", VEL: "body", RES: "body", INT: "mind", VOL: "mind", PER: "mind", ENE: "power", MAG: "power", PSI: "power", COM: "craft", TEC: "craft", FUR: "craft" };
 const CODES = Object.keys(FAMILIES);
