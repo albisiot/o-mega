@@ -11,17 +11,21 @@
 //   repeat    the same battles twice from the same seed give the same log;
 //   roles     the wins of the characters of each role of the generic kits (stage 2);
 //   strategies each strategy against the balanced one, the same teams, sides swapped, and what its
-//             side does in a battle: damage, healing, shields, debuffs and buffs put, supremes.
+//             side does in a battle: damage, healing, shields, debuffs and buffs put, supremes;
+//   pilots    (stage 3) each pilot of src/lib/combat-pilot.ts with its real kit in a random team,
+//             against the same team with its generic kit; and the pilots' two teams against each other.
+//             With --pilots the pilots use their real kits in every report.
 //
 // The dump: npx supabase db query --linked -f scripts/emergency-catalog.sql > emergency-raw.json
 // Usage: node scripts/simulate-combat.mts <emergency-raw.json> [--battles 10000] [--pairs 2000]
 //   [--seed 1] [--report duration,points,rarity,cards,field,repeat,roles,strategies] [--pool all|pack]
-//   [--field-levels 2,3,4|none] [--set speed.perPoint.vel=1.5,vita.base=250]
+//   [--field-levels 2,3,4|none] [--set speed.perPoint.vel=1.5,vita.base=250] [--pilots]
 //
 // --set changes the numbers of balance.ts `combat` for this run only (dotted paths).
 
 import { readFileSync } from "node:fs";
 import { balance } from "../src/config/balance.ts";
+import { COMBAT_PILOTS } from "../src/lib/combat-pilot.ts";
 import {
   COMBAT_STRATEGIES,
   autoCombatFormation,
@@ -64,7 +68,7 @@ const data: Dump = raw.rows ? raw.rows[0].data : (raw as Dump);
 const battles = Number(option("battles") ?? 10000);
 const pairs = Number(option("pairs") ?? 2000);
 const seed = Number(option("seed") ?? 1);
-const reports = (option("report") ?? "duration,points,rarity,cards,field,repeat,roles,strategies").split(",");
+const reports = (option("report") ?? "duration,points,rarity,cards,field,repeat,roles,strategies,pilots").split(",");
 
 // The numbers: balance.ts, with the --set changes.
 const rules = structuredClone(balance.combat) as unknown as CombatRules;
@@ -92,13 +96,15 @@ const fields: CombatField[] = data.threats
   .filter((t) => t.active && t.region === "megara" && !t.rarity && fieldLevels.includes(t.level))
   .map((t) => ({ name: t.code, abilities: t.abilities }));
 
-const fighter = (card: Card, stats = card.stats): CombatFighterInput => ({
+const pilotKits = new Map(COMBAT_PILOTS.map((p) => [p.code, p.kit]));
+const usePilots = args.includes("--pilots");
+const fighter = (card: Card, stats = card.stats, pilotKit = usePilots): CombatFighterInput => ({
   id: card.id,
   definitionId: card.id,
   name: card.code,
   stats,
   budget: budgetOf(card),
-  kit: genericCombatKit(card.code, stats, families),
+  kit: (pilotKit && pilotKits.get(card.code)) || genericCombatKit(card.code, stats, families),
 });
 function draw(rng: Rng, from: Card[], n = 5): Card[] {
   const left = [...from];
@@ -287,6 +293,41 @@ if (reports.includes("strategies")) {
   }
   console.log(`\nStrategie contro l'equilibrata (${pairs} coppie, stesse squadre, lati scambiati): ${line.join(" · ")}`);
   console.log(`  in uno scontro, il lato con la strategia fa in media:\n${behaviour.join("\n")}`);
+}
+
+if (reports.includes("pilots")) {
+  const rows: string[] = [];
+  for (const pilot of COMBAT_PILOTS) {
+    const card = pool.find((c) => c.code === pilot.code);
+    if (!card) continue;
+    const others = pool.filter((c) => c.code !== pilot.code);
+    const rng = mulberry32(seed + 505);
+    let real = 0;
+    let generic = 0;
+    for (let i = 0; i < pairs; i += 1) {
+      const mates = draw(rng, others, 4);
+      const foes = draw(rng, others.filter((c) => !mates.includes(c)), 5).map((c) => fighter(c, c.stats, false));
+      const field = fieldOf(rng);
+      const battleSeed = Math.floor(rng() * 2 ** 31);
+      const team = (withKit: boolean) => [fighter(card, card.stats, withKit), ...mates.map((c) => fighter(c, c.stats, false))];
+      for (const [withKit, add] of [[true, (x: number) => (real += x)], [false, (x: number) => (generic += x)]] as const) {
+        add(winsOf(runCombat(setup(team(withKit), foes, field), ctx, mulberry32(battleSeed)).state.result!.winner, "a"));
+        add(winsOf(runCombat(setup(foes, team(withKit), field), ctx, mulberry32(battleSeed)).state.result!.winner, "b"));
+      }
+    }
+    rows.push(`  ${pilot.name} (${pilot.rarity}): con il suo kit ${percent(real / (2 * pairs))}, con quello generico ${percent(generic / (2 * pairs))}`);
+  }
+  const team = (name: string) => COMBAT_PILOTS.filter((p) => p.team === name).map((p) => fighter(pool.find((c) => c.code === p.code)!, undefined, true));
+  const rng = mulberry32(seed + 606);
+  let porto = 0;
+  for (let i = 0; i < pairs; i += 1) {
+    const field = fieldOf(rng);
+    const battleSeed = Math.floor(rng() * 2 ** 31);
+    porto += winsOf(runCombat(setup(team("porto"), team("rivali"), field), ctx, mulberry32(battleSeed)).state.result!.winner, "a");
+    porto += winsOf(runCombat(setup(team("rivali"), team("porto"), field), ctx, mulberry32(battleSeed)).state.result!.winner, "b");
+  }
+  console.log(`\nPiloti in una squadra a caso contro una squadra a caso (${pairs} coppie, lati scambiati):\n${rows.join("\n")}`);
+  console.log(`  Porto contro Rivali: ${percent(porto / (2 * pairs))}`);
 }
 
 if (reports.includes("repeat")) {

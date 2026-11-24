@@ -12,6 +12,7 @@ import {
   combatSpeed,
   combatStats,
   combatTargets,
+  combatUpcoming,
   combatVita,
   createCombat,
   legalCombatActions,
@@ -204,6 +205,14 @@ describe("turns", () => {
       order.push(state.current);
     }
     expect(order).toEqual(["b0", "b1", "b2", "b3", "b4", "a0", "a1", "a2", "a3", "a4"]);
+  });
+
+  it("previews the next turns without touching the state", () => {
+    const { state } = start();
+    const before = JSON.stringify(state);
+    // a0 (Speed 120) acts first; at time 10 the others, side a first; then a0 again.
+    expect(combatUpcoming(state, STILL.rules, 10)).toEqual(["a1", "a2", "a3", "a4", "b0", "b1", "b2", "b3", "b4", "a0"]);
+    expect(JSON.stringify(state)).toBe(before);
   });
 
   it("lets a faster fighter act more often, keeping what is left of its meter", () => {

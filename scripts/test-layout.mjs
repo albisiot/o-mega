@@ -1,11 +1,13 @@
-// Layout check of the result pages: plays the fixed scenes of /prova-tavole (a page that exists
-// in `next dev` only) in Chrome, at a phone's size and at a short phone's size, and reports any
-// text that covers other text for half a second or more while the page plays and once it is
-// over. Short overlaps (a sound effect word stamping in) are allowed.
+// Layout check of the result pages: plays the fixed scenes of /prova-tavole and of /prova-scontro
+// (the Scontro a squadre, SPEC §5.19; pages that exist in `next dev` only) in Chrome, at a phone's
+// size and at a short phone's size, and reports any text that covers other text for half a second
+// or more while the page plays and once it is over. Short overlaps (a sound effect word stamping
+// in) are allowed. Each page lists its scenes in window.__SCENES and sets data-done when one is over.
 //
 //   npm run test:layout                 starts `next dev` on port 3210 and stops it at the end
 //   LAYOUT_URL=http://localhost:3000 npm run test:layout     uses a dev server already running
 //   npm run test:layout -- tre-fumetti  only the scenes whose name contains "tre-fumetti"
+//   npm run test:layout -- scontro      only the scenes of /prova-scontro
 //
 // Uses the Chrome (or Edge) installed on the computer through playwright-core: nothing is
 // downloaded. Exit code 1 when something overlaps.
@@ -22,6 +24,11 @@ const MIN_SAMPLES = 5;
 /** Share of the smaller text box that must be covered. */
 const MIN_SHARE = 0.2;
 const filter = process.argv[2] ?? "";
+/** The pages with fixed scenes, and the prefix of their scenes' names in the report. */
+const PAGES = [
+  { path: "/prova-tavole/", prefix: "" },
+  { path: "/prova-scontro/", prefix: "scontro:" },
+];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -149,23 +156,29 @@ const browser = await (async () => {
   }
 })();
 try {
-  const probe = await browser.newPage();
-  await probe.goto(`${base}/prova-tavole/`);
-  await probe.waitForFunction(() => Array.isArray(window.__SCENES), null, { timeout: 120000 });
-  const scenes = (await probe.evaluate(() => window.__SCENES)).filter((scene) => scene.includes(filter));
-  await probe.close();
+  const scenes = [];
+  for (const page of PAGES) {
+    const probe = await browser.newPage();
+    await probe.goto(`${base}${page.path}`);
+    await probe.waitForFunction(() => Array.isArray(window.__SCENES), null, { timeout: 240000 });
+    for (const scene of await probe.evaluate(() => window.__SCENES)) {
+      const name = page.prefix + scene;
+      if (name.includes(filter)) scenes.push({ path: page.path, scene, name });
+    }
+    await probe.close();
+  }
 
   for (const viewport of VIEWPORTS) {
     const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, deviceScaleFactor: 2 });
     const page = await context.newPage();
     console.log(`\n${viewport.name}`);
-    for (const scene of scenes) {
-      await page.goto(`${base}/prova-tavole/?s=${scene}`);
+    for (const { path, scene, name } of scenes) {
+      await page.goto(`${base}${path}?s=${scene}`);
       await page.waitForFunction(() => document.body.innerText.length > 0, null, { timeout: 60000 });
       const result = await page.evaluate(sample, { minShare: MIN_SHARE });
       const bad = result.pairs.filter((pair) => pair.run >= MIN_SAMPLES);
       failures += bad.length + (result.done ? 0 : 1);
-      console.log(`${bad.length === 0 && result.done ? "ok  " : "FAIL"}  ${scene}${result.done ? "" : " (non è arrivata alla fine)"}`);
+      console.log(`${bad.length === 0 && result.done ? "ok  " : "FAIL"}  ${name}${result.done ? "" : " (non è arrivata alla fine)"}`);
       for (const pair of bad) {
         console.log(`        ${pair.key}: ${(pair.run / 10).toFixed(1)} s, ${Math.round(pair.share * 100)}%`);
       }

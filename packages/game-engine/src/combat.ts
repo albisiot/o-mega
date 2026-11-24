@@ -658,6 +658,20 @@ function advance(state: CombatState, rules: CombatRules, events: CombatEvent[]):
   return next;
 }
 
+/**
+ * Who acts next, in order, for the next `count` turns from now (after the fighter whose turn it
+ * is), at today's speeds: a preview for the screen. Statuses that end or come meanwhile, stuns
+ * and knockouts can change it; the state is not touched.
+ */
+export function combatUpcoming(state: CombatState, rules: CombatRules, count: number): string[] {
+  const live = state.fighters.filter((f) => f.vita > 0);
+  if (live.length === 0 || state.result) return [];
+  const sim = { ...state, fighters: live.map((f) => ({ ...f, statuses: f.statuses.map((s) => ({ ...s })) })) };
+  const order: string[] = [];
+  for (let i = 0; i < count; i += 1) order.push(advance(sim, rules, []).key);
+  return order;
+}
+
 function cloneState(state: CombatState): CombatState {
   return { ...state, fighters: state.fighters.map((f) => ({ ...f, statuses: f.statuses.map((s) => ({ ...s })) })) };
 }

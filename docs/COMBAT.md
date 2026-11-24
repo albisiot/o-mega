@@ -162,6 +162,7 @@ Ogni scontro ha un **seme** e un registro di eventi: inizio, turno, mossa, manca
 - **campo:** quanto conta avere punti nelle abilità della Minaccia;
 - **ripetibilità:** lo stesso scontro due volte con lo stesso seme;
 - **ruoli:** vittorie dei personaggi di ogni ruolo dei kit generici;
+- **piloti** (tappa 3): ogni personaggio della prova con il suo kit in una squadra a caso, contro la stessa squadra con il suo kit generico, e le due squadre della prova una contro l'altra (`--pilots` usa i kit veri anche negli altri conteggi);
 - **strategie:** ogni strategia contro l'equilibrata sulle stesse squadre, e cosa fa il suo lato in uno scontro (danni, cure, scudi, effetti, supreme).
 
 I risultati sono nella sezione seguente, aggiornati a ogni taratura.
@@ -189,7 +190,7 @@ Vedi «Risultati della tappa 1» in fondo.
 |---|---|---|---|
 | 1 (fatta) | Motore (valori, turni, bersagli, copertura, Carica, ricarica, danno, cure, scudi, fine, registro), IA avida, simulatore | Decisioni del 24 novembre | Test superati; 10.000 scontri senza errori; stesso seme = stesso registro; valore di un punto e rarità misurati e vicini all'obiettivo |
 | 2 (fatta) | Effetti di stato, passive, IA con strategie e ordini tattici | 1 | Le mosse sbagliate sono rifiutate; l'IA fa solo mosse permesse; strategie diverse danno risultati misurabilmente diversi |
-| 3 | 10 personaggi veri con il loro kit; pagina di prova in locale (manuale e automatico, registro, replay) | 2 | Uno scontro si gioca su iPhone in 2-4 minuti; `npm run test:layout` senza testi coperti |
+| 3 (fatta) | 10 personaggi veri con il loro kit; pagina di prova in locale (manuale e automatico, registro, replay) | 2 | Uno scontro si gioca su iPhone in 2-4 minuti; `npm run test:layout` senza testi coperti |
 | 4 | Tabelle, Edge Function, scontri contro il computer con premi, editor delle mosse solo per gli admin | 3 | Test del database: proprietà delle carte, seme nascosto, `not_admin`; nessun risultato deciso dal telefono |
 | 5 | Kit per tutti i personaggi, a gruppi di 20-30 | 2, 4 | Ogni gruppo simulato sulla sua carta e approvato dall'utente |
 | 6 | Sfide asincrone, classifiche, obiettivi | 4, 5 | |
@@ -262,3 +263,50 @@ Il documento parte da Marvel Strike Force: squadre da 5, barra del turno, base, 
 - **Strategie contro l'equilibrata** (stesse squadre): aggressiva 47,4%, difensiva 48,1%, controllo 48,4%, assassinio 47,5%. Nessuna strategia batte l'equilibrata, che resta la più solida, e nessuna perde nettamente. Giocano in modo diverso: in uno scontro il lato aggressivo cura 105 e dà 106 di scudi, 2,0 effetti ai compagni, 2,5 supreme; il difensivo cura 198, dà 168 di scudi, 5,6 effetti ai compagni, 3,3 supreme. Gli effetti sui nemici restano uguali (7,6): con i kit generici stanno sulle mosse di danno, quindi la strategia non li sposta.
 
 **Da tenere d'occhio nella tappa 3:** il controllore e le carte di Intelletto e Tecnologia; i kit veri cambieranno questi numeri, quindi ogni gruppo di kit va simulato di nuovo, sulla sua carta.
+
+## I dieci personaggi della prova (tappa 3)
+
+I kit veri dei primi dieci personaggi sono in `src/lib/combat-pilot.ts`, scritti dalla loro scheda (abilità, Poteri, testo di colore). Abilità e rarità sono copiate dal catalogo del 24 novembre 2026; dalla tappa 4 i kit vanno nel database e le abilità si leggono dalle carte. Due squadre: **Porto** (la squadra del porto della Storia, Delta e Gamma) e **Rivali** (da Beta a Omega).
+
+| Personaggio | Rarità | Base | Speciale | Suprema | Passiva |
+|---|---|---|---|---|---|
+| Gantry | Delta | Spallata | Carico pesante (bersaglio e vicini) | Container in caduta (tutti, indebolisce) | Uomo del porto: scudo a inizio scontro |
+| Lagan | Delta | Presa (indebolisce) | Fondale (scudo e provocazione) | Risacca (colpo pesante, stordisce) | Non molla niente: +1 Carica quando lo colpiscono (3 volte) |
+| Deadweight | Gamma | Bilancia truccata | Senza peso (colpisce e accelera sé) | Cassa vuota (accelera e protegge la squadra) | La bilancia non mente: precisione e critico |
+| Higgler | Delta | Mercanzia | Aria di casa (cura e fortifica un compagno) | Il carro (cura e fortifica la squadra) | Sette giorni: cura la squadra quando cade un compagno (2 volte) |
+| Busker | Delta | Strimpellata (indebolisce) | La canzone giusta (tutti, indebolisce) | Ninna nanna (tutti, stordisce) | Una canzone sola: effetti più probabili |
+| Fathom | Beta | Rumore di fondo | Pensiero letto (vulnerabilità) | Tutte le voci (tutti) | Prima di te: precisione e critico |
+| Kiln | Beta | Mani roventi (brucia) | Serratura fusa (brucia) | Stanza gelata (tutti, stordisce) | Il primo fuoco: più danni a chi brucia |
+| Sordina | Gamma | Lama silenziosa (dietro le linee) | Fascicolo (vulnerabilità) | Chi paga di più (colpo pesante dietro le linee) | La lealtà si vende a parte: accelera dopo un KO; critico |
+| Unbidden | Alfa | Braccio di scarto | Quaranta braccia (scudo alla squadra) | Nessuno me l'ha chiesto (scudo, provocazione, fortificazione su di sé) | Solo ciò che è di scarto: scudo alla squadra quando cade un compagno (1 volta) |
+| Aion | Omega | Eco della fine | Tempo fermo (stordisce) | È già finito (tutti) | Si annoia: +1 Carica a inizio turno (3 volte) |
+
+Nessuna passiva è uguale a un'altra, quindi la regola «una passiva identica al massimo su un Eroe, un Cattivo e un Neutrale» è rispettata (`src/lib/combat-pilot.test.ts`).
+
+**Ogni kit simulato sulla sua carta** (`--report pilots`, 1500 coppie, lati scambiati): il personaggio con il suo kit in una squadra a caso, contro la stessa squadra con il suo kit generico. Prima prova: Deadweight 42%, Kiln 43%, Sordina 41% (troppo deboli), Higgler 58%. Ritoccati (Deadweight colpisce e si accelera, Cassa vuota protegge di più; Kiln brucia di più; Sordina colpisce di più e ha critico; Higgler cura un po' meno; Aion un po' più forte):
+
+| Personaggio | Con il suo kit | Con il kit generico |
+|---|---|---|
+| Gantry | 55,0% | 55,6% |
+| Lagan | 48,7% | 54,0% |
+| Deadweight | 47,3% | 46,0% |
+| Higgler | 55,9% | 60,2% |
+| Busker | 51,1% | 59,5% |
+| Fathom | 53,6% | 50,3% |
+| Kiln | 48,2% | 45,0% |
+| Sordina | 45,7% | 46,6% |
+| Unbidden | 50,1% | 50,9% |
+| Aion | 45,8% | 40,1% |
+
+Tutti tra il 46% e il 56%. Porto contro Rivali: 55,1% (la squadra di Delta e Gamma un po' avanti: la rarità non decide).
+
+**Durata** con le due squadre della prova (400 scontri): 50 azioni (dal 10% al 90%: 42-60), di cui 24 scelte del giocatore. A ×1 ogni azione resta 1,1 secondi: con 3 secondi per scelta lo scontro dura 2,1 minuti, con 5 secondi 3,0, con 8 secondi 4,2; tutto in automatico 0,9 minuti a ×1. È una stima fatta con il motore, non uno scontro cronometrato su un iPhone vero.
+
+## La pagina di prova (tappa 3)
+
+`/prova-scontro`, solo in `next dev` (`src/app/prova-scontro/page.dev.tsx`); lo schermo è `src/components/combat-screen.tsx`, le parole in `src/lib/combat-text.ts`. Lo scontro gira tutto nel browser con il motore: niente viene salvato né pagato.
+
+- **Squadra:** si scelgono cinque dei dieci e si mettono ai posti (F1, F2 davanti; R1, R2, R3 dietro); gli altri cinque sono gli avversari, messi dal computer. Il campo si cambia con un tocco; manuale o automatico; la strategia del proprio lato.
+- **Scontro:** i nemici in alto (seconda linea più lontana), i propri in basso; ogni casella ha disegno, nome, Vita (verde) con lo scudo (azzurro), la Carica (sei puntini) e fino a quattro effetti (sigle di tre lettere sul disegno). In mezzo i prossimi turni. Nel proprio turno, tre pulsanti: la mossa, poi un tocco sul bersaglio evidenziato; sotto, una riga che dice cosa fa la mossa. Automatico, velocità ×1 ×2 ×3, Salta (finisce lo scontro in automatico) e Registro (ogni evento in italiano, una vista a sé).
+- **Fine:** Vittoria, Sconfitta o Pareggio, in quante azioni, chi è in piedi e chi ha fatto più danni; Rivedi (il replay passo per passo), Di nuovo, Squadra.
+- **Scene** per `npm run test:layout` (che ora controlla anche questa pagina): squadra, manuale, bersaglio, effetti, auto, fine, replay, registro. Tutte senza testi coperti, a 375×812 e a 375×667.
