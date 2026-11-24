@@ -202,6 +202,17 @@ function ScontroProof() {
       tactics={{ a: { strategy: battle.strategy, priority: null, orders: {} } }}
       artOf={artOf}
       auto={battle.auto}
+      // The same top row as /scontro: back, and give up while the battle is on.
+      leading={
+        <button type="button" onClick={() => setBattle(null)} aria-label="Torna alla squadra" className="btn btn-ghost h-8 w-8 shrink-0 px-0 text-[15px]">
+          ←
+        </button>
+      }
+      trailing={
+        <button type="button" onClick={() => setBattle(null)} className="btn btn-ghost h-8 shrink-0 px-2 text-[11px]">
+          Abbandona
+        </button>
+      }
       speed={scenery?.speed}
       prepare={scenery?.prepare}
       preselect={scenery?.preselect}

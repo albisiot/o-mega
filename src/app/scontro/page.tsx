@@ -11,6 +11,7 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { BackLink } from "@/components/comic-parts";
 import { CombatScreen } from "@/components/combat-screen";
 import { LoadingScreen } from "@/components/loading-screen";
+import { ReturnLink } from "@/components/return-link";
 import { balance } from "@/config/balance";
 import {
   abandonCombatBattle,
@@ -48,6 +49,8 @@ export default function ScontroPage() {
   const [catalog, setCatalog] = useState<CombatCatalog | null>(null);
   const [cards, setCards] = useState<CombatCard[] | null>(null);
   const [battle, setBattle] = useState<{ update: CombatUpdate; startAt: number; round: number } | null>(null);
+  /** The battle on screen has reached its end (then there is nothing to give up). */
+  const [over, setOver] = useState(false);
   const [places, setPlaces] = useState<(CombatCard | null)[]>([null, null, null, null, null]);
   const [auto, setAuto] = useState(false);
   const [strategy, setStrategy] = useState<CombatStrategy>("balanced");
@@ -93,6 +96,7 @@ export default function ScontroPage() {
         auto,
         tactics,
       );
+      setOver(false);
       setBattle({ update, startAt: 0, round: (battle?.round ?? 0) + 1 });
     } catch (cause) {
       setError(describeServerError(cause));
@@ -105,27 +109,31 @@ export default function ScontroPage() {
     const { update } = battle;
     return (
       <main className="flex flex-1 flex-col">
-        <div className="mx-auto flex w-full max-w-md items-center gap-2 px-3 pt-2">
-          <BackLink href="/gioca" />
-          <p className="min-w-0 flex-1 truncate font-display text-xl uppercase leading-6">Scontro a squadre</p>
-          {update.status === "active" && (
-            <button
-              type="button"
-              onClick={async () => {
-                await abandonCombatBattle(update.battleId).catch(() => false);
-                setBattle(null);
-              }}
-              className="btn btn-ghost min-h-10 px-3 text-[12px]"
-            >
-              Abbandona
-            </button>
-          )}
-        </div>
         <CombatScreen
           key={`${update.battleId}-${battle.round}`}
           ctx={combatContext()}
           artOf={artOf}
           auto={update.auto}
+          leading={
+            <ReturnLink href="/gioca" label="Torna a Gioca" className="btn btn-ghost h-8 w-8 shrink-0 px-0 text-[15px]">
+              ←
+            </ReturnLink>
+          }
+          trailing={
+            update.status === "active" && !over ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  await abandonCombatBattle(update.battleId).catch(() => false);
+                  setBattle(null);
+                }}
+                className="btn btn-ghost h-8 shrink-0 px-2 text-[11px]"
+              >
+                Abbandona
+              </button>
+            ) : null
+          }
+          onFinished={() => setOver(true)}
           remote={{
             steps: update.steps,
             startAt: battle.startAt,
@@ -140,7 +148,10 @@ export default function ScontroPage() {
             },
           }}
           onRestart={() => (teamReady ? void fight() : setBattle(null))}
-          onChangeTeam={() => setBattle(null)}
+          onChangeTeam={() => {
+            setOver(false);
+            setBattle(null);
+          }}
         />
       </main>
     );

@@ -13,7 +13,7 @@ import { useRequireSignedIn } from "@/components/auth-provider";
 import { BackLink } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { COMBAT_FAMILIES, combatRules } from "@/lib/combat";
-import { describeCombatMove } from "@/lib/combat-text";
+import { describeCombatMove, italianKitError } from "@/lib/combat-text";
 import { describeServerError } from "@/lib/errors";
 import { getSupabase } from "@/lib/supabase/client";
 import { useIsAdmin } from "@/lib/use-is-admin";
@@ -37,7 +37,7 @@ function problemsOf(text: string): { kit: CombatKit | null; errors: string[] } {
     return { kit: null, errors: [`Non è JSON valido: ${(cause as Error).message}`] };
   }
   try {
-    return { kit, errors: validateCombatKit(kit, COMBAT_FAMILIES, combatRules()) };
+    return { kit, errors: validateCombatKit(kit, COMBAT_FAMILIES, combatRules()).map(italianKitError) };
   } catch (cause) {
     return { kit: null, errors: [`Il kit non ha la forma giusta: ${(cause as Error).message}`] };
   }

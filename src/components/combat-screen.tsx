@@ -8,7 +8,7 @@
 // kept and a cursor walks through them, one at a time, at the chosen speed: the same walk shows the
 // computer's turns, a battle played at once, and the replay.
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   applyCombatAction,
   chooseCombatAction,
@@ -61,6 +61,9 @@ export type CombatScreenProps = {
   speed?: 1 | 2 | 3;
   /** The drawing of a character, by definition id. */
   artOf: (definitionId: string) => string | null;
+  /** What the page puts at the two ends of the top row (back, give up): the screen keeps the phone's height. */
+  leading?: ReactNode;
+  trailing?: ReactNode;
   /** Test scenes: change the battle once it is created, open on a chosen move, play it all at once, show the log. */
   prepare?: (state: CombatState) => void;
   preselect?: CombatSlot;
@@ -104,6 +107,8 @@ export function CombatScreen(props: CombatScreenProps) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rewards, setRewards] = useState<CombatScreenRewards | null>(remote?.rewards ?? null);
+  /** «Rivedi» was touched: walking back through a finished battle is a replay, not its end being shown. */
+  const [replaying, setReplaying] = useState(Boolean(props.finishAtOnce && props.replayAtEnd));
 
   const end = history.length - 1;
   const latest = history[end];
@@ -246,11 +251,13 @@ export function CombatScreen(props: CombatScreenProps) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-1.5 px-3 pb-3 pt-2 text-foreground">
+    <div className="mx-auto flex w-full max-w-md flex-col gap-1 px-3 pb-2 pt-1 text-foreground">
       <style>{"@keyframes combat-float{0%{transform:translate(-50%,0);opacity:0}15%{opacity:1}100%{transform:translate(-50%,-26px);opacity:0}}"}</style>
-      <div className="flex items-center justify-between gap-2 text-[11px] font-bold text-faint">
-        <span className="truncate">{state.field ? `Campo: ${state.field.name}` : "Nessun campo"}</span>
+      <div className="flex min-h-5 items-center gap-2 text-[11px] font-bold text-faint">
+        {props.leading}
+        <span className="min-w-0 flex-1 truncate">{state.field ? `Campo: ${state.field.name}` : "Nessun campo"}</span>
         <span className="shrink-0">Azione {state.actions}/{ctx.rules.maxActions}</span>
+        {props.trailing}
       </div>
 
       <div className="grid grid-cols-3 gap-1.5">{row(enemy, [2, 3, 4]).map(tile)}</div>
@@ -280,7 +287,10 @@ export function CombatScreen(props: CombatScreenProps) {
           playerSide={playerSide}
           nameOf={nameOf}
           rewards={remote ? rewards : undefined}
-          onReplay={() => setCursor(0)}
+          onReplay={() => {
+            setReplaying(true);
+            setCursor(0);
+          }}
           onRestart={props.onRestart}
           onChangeTeam={props.onChangeTeam}
         />
@@ -324,7 +334,7 @@ export function CombatScreen(props: CombatScreenProps) {
       ) : (
         <div className="min-h-[7.5rem] rounded-md border-2 border-black bg-panel p-2">
           <p className="mb-1 text-[12px] font-bold text-faint">
-            {error ?? (latest.state.result && !atEnd ? `Replay · passo ${shownIndex + 1} di ${history.length}` : pending ? "Il server risponde…" : combatActor(state) ? `Tocca a ${combatActor(state)!.name}…` : "")}
+            {error ?? (replaying && !atEnd ? `Replay · passo ${shownIndex + 1} di ${history.length}` : pending ? "Il server risponde…" : combatActor(state) ? `Tocca a ${combatActor(state)!.name}…` : "")}
           </p>
           {error && (
             <button type="button" onClick={() => setError(null)} className="btn btn-ghost mb-1 min-h-9 px-3 text-[12px]">
@@ -399,7 +409,7 @@ function FighterTile(props: {
       aria-label={`${f.name}, Vita ${f.vita} su ${f.maxVita}`}
       className={`relative flex w-full flex-col overflow-visible rounded-md border-2 border-black bg-panel-raised text-left ${ring} ${down ? "opacity-45 grayscale" : ""}`}
     >
-      <div className="relative h-12 w-full overflow-hidden rounded-t-[4px] bg-black">
+      <div className="relative h-11 w-full overflow-hidden rounded-t-[4px] bg-black">
         {props.art && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={props.art} alt="" className="h-full w-full object-cover object-[50%_18%]" draggable={false} />

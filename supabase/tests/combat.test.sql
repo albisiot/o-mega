@@ -61,6 +61,14 @@ create function pg_temp.create(p_user uuid, p_cards uuid[], p_codes text[]) retu
   select public.combat_create(p_user, p_cards, pg_temp.setup(p_codes), '{}'::jsonb, 12345, '{"strategy": "balanced", "priority": null, "orders": {}}'::jsonb, false)
 $$;
 
+-- The Edge Function reads both tables with the service role (writes go through the functions).
+do $$
+begin
+  assert has_table_privilege('service_role', 'public.combat_battles', 'select'), 'the service role reads the battles';
+  assert has_table_privilege('service_role', 'public.combat_kits', 'select'), 'the service role reads the kits';
+  assert not has_table_privilege('service_role', 'public.combat_battles', 'insert'), 'the service role writes only through the functions';
+end $$;
+
 -- ---------------------------------------------------------------------------
 -- Clients: the kits are readable, the battles (and their seed) are not, the service functions neither
 -- ---------------------------------------------------------------------------

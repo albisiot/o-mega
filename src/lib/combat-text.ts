@@ -43,6 +43,60 @@ export function describeCombatMove(move: CombatMove): string {
   return `${reach[move.target]}: ${parts}${move.slot === "special" ? ` · ricarica ${turns(move.cooldown)}` : ""}.`;
 }
 
+/** The engine's checks of a kit (validateCombatKit), in Italian for the EDITOR; an unknown one stays as it is. */
+const KIT_ERRORS: [RegExp, string][] = [
+  [/^move (\S+): /, "Mossa $1: "],
+  [/^passive (\S+): /, "Passiva $1: "],
+  [/^move without id$/, "Una mossa non ha l'id"],
+  [/^passive without id$/, "La passiva non ha l'id"],
+  [/^kit without (\w+)$/, "Manca la mossa $1"],
+  [/^move (\S+) is a (\w+), not a (\w+)$/, "La mossa $1 è una $2, non una $3"],
+  [/weights sum to ([\d.]+), not 1$/, "i pesi fanno $1, non 1"],
+  [/unknown ability (\S+)$/, "abilità sconosciuta $1"],
+  [/weight of (\S+) must be positive$/, "il peso di $1 deve essere positivo"],
+  [/no ability$/, "nessuna abilità"],
+  [/no name$/, "senza nome"],
+  [/unknown slot (\S+)$/, "posto sconosciuto $1"],
+  [/cooldown must be a whole number from 0$/, "la ricarica deve essere un numero intero da 0"],
+  [/a special needs a cooldown$/, "una speciale ha bisogno di una ricarica"],
+  [/only a special has a cooldown$/, "solo una speciale ha una ricarica"],
+  [/unknown family (\S+)$/, "famiglia sconosciuta $1"],
+  [/unknown range (\S+)$/, "portata sconosciuta $1"],
+  [/unknown target (\S+)$/, "bersaglio sconosciuto $1"],
+  [/unknown trigger (\S+)$/, "innesco sconosciuto $1"],
+  [/unknown status (\S+)$/, "effetto sconosciuto $1"],
+  [/no effect$/, "nessun effetto"],
+  [/(\w+) multiplier must be positive$/, "il moltiplicatore di $1 deve essere positivo"],
+  [/damage needs an enemy target$/, "il danno va su un nemico"],
+  [/(\w+) needs an allied target$/, "$1 va su un alleato"],
+  [/(\w+) needs an enemy target$/, "$1 va su un nemico"],
+  [/adjacent needs enemy_and_adjacent$/, "«adjacent» vuole il bersaglio enemy_and_adjacent"],
+  [/all needs all_enemies or all_allies$/, "«all» vuole il bersaglio all_enemies o all_allies"],
+  [/(\w+) has no primary target$/, "$1 non ha un bersaglio principale"],
+  [/(\w+) must last a whole number of turns from 1$/, "$1 deve durare un numero intero di turni, almeno 1"],
+  [/(\w+) lasts more than (\d+) turns$/, "$1 dura più di $2 turni"],
+  [/only a debuff has a chance$/, "solo un effetto negativo ha una probabilità"],
+  [/chance base must be a number$/, "la base della probabilità deve essere un numero"],
+  [/effects need a trigger$/, "gli effetti vogliono un innesco"],
+  [/a trigger needs effects$/, "un innesco vuole degli effetti"],
+  [/low_vita needs a threshold between 0 and 100$/, "low_vita vuole una soglia tra 0 e 100"],
+  [/only low_vita has a threshold$/, "solo low_vita ha una soglia"],
+  [/limit must be a whole number from 0$/, "il limite deve essere un numero intero da 0"],
+  [/other needs the hit or hurt trigger$/, "«other» vuole l'innesco hit o hurt"],
+  [/(\w+) needs enemies$/, "$1 va sui nemici"],
+  [/(\w+) needs allies$/, "$1 va sugli alleati"],
+  [/charge must be a whole number from 1$/, "la Carica deve essere un numero intero da 1"],
+  [/damageVsStatus needs a known status and a number$/, "damageVsStatus vuole un effetto noto e un numero"],
+  [/(\w+) must be a number$/, "$1 deve essere un numero"],
+  [/does nothing$/, "non fa niente"],
+];
+
+export function italianKitError(message: string): string {
+  let out = message;
+  for (const [pattern, replacement] of KIT_ERRORS) out = out.replace(pattern, replacement);
+  return out;
+}
+
 /**
  * The log's line for an event, or null for those the log leaves out (a turn starting). `name`
  * gives a fighter's name by key; `moveName` the name of a move or passive by id.
