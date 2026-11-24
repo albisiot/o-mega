@@ -5,5 +5,6 @@
 import { COMBAT_KITS_BATCH_1, type CombatKitEntry } from "./combat-kits-batch-1.ts";
 import { COMBAT_KITS_BATCH_2 } from "./combat-kits-batch-2.ts";
 import { COMBAT_KITS_BATCH_3 } from "./combat-kits-batch-3.ts";
+import { COMBAT_KITS_BATCH_4 } from "./combat-kits-batch-4.ts";
 
-export const COMBAT_KIT_BATCHES: Record<string, CombatKitEntry[]> = { "1": COMBAT_KITS_BATCH_1, "2": COMBAT_KITS_BATCH_2, "3": COMBAT_KITS_BATCH_3 };
+export const COMBAT_KIT_BATCHES: Record<string, CombatKitEntry[]> = { "1": COMBAT_KITS_BATCH_1, "2": COMBAT_KITS_BATCH_2, "3": COMBAT_KITS_BATCH_3, "4": COMBAT_KITS_BATCH_4 };
