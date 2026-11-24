@@ -614,7 +614,7 @@ Nomi e testi delle mosse sono provvisori, come quelli delle carte.
 - **Quarantun secondi** — Tutti i nemici: danni ×0,8 a tutti, indebolimento 1 turno a tutti (probabile).
 - *Campagna scaduta* (passiva) — sotto il 40% di Vita: cura ×0,4 a sé.
 
-## Gruppo 5 · gli ultimi 16 Gamma più posseduti, i primi 5 Beta e i primi 4 Alfa (approvato il 25 novembre 2026)
+## Gruppo 5 · altri 16 Gamma, i primi 5 Beta e i primi 4 Alfa più posseduti (approvato il 25 novembre 2026)
 
 ### Sextant (P097, Eroe) · vince il 49,4% (con il kit generico 50,2%)
 - **Guanto dell'armatura** — Un nemico, a distanza: danni ×1,15.

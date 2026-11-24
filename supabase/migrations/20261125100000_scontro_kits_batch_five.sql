@@ -1,4 +1,4 @@
--- Scontro a squadre (SPEC §5.19, docs/COMBAT.md), stage 5, batch 5: the kits of the last 16 Gamma,
+-- Scontro a squadre (SPEC §5.19, docs/COMBAT.md), stage 5, batch 5: the kits of 16 more Gamma,
 -- the first 5 Beta and the first 4 Alfa characters players own most after the fourth batch
 -- (src/lib/combat-kits-batch-5.ts on 25 November 2026, described in docs/COMBAT-KITS.md). Each one
 -- was simulated on its own card: with its kit, in a random team against a random team, it wins
