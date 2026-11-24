@@ -14,17 +14,19 @@
 //             side does in a battle: damage, healing, shields, debuffs and buffs put, supremes;
 //   pilots    (stage 3) each pilot of src/lib/combat-pilot.ts with its real kit in a random team,
 //             against the same team with its generic kit; and the pilots' two teams against each other.
-//             With --pilots the pilots use their real kits in every report.
+//             With --pilots the characters with a real kit (pilots and batches) use it in every report.
+//   kits      (stage 5) the same for each kit of a batch (--batch 1: src/lib/combat-kits-batch-1.ts).
 //
 // The dump: npx supabase db query --linked -f scripts/emergency-catalog.sql > emergency-raw.json
 // Usage: node scripts/simulate-combat.mts <emergency-raw.json> [--battles 10000] [--pairs 2000]
 //   [--seed 1] [--report duration,points,rarity,cards,field,repeat,roles,strategies] [--pool all|pack]
-//   [--field-levels 2,3,4|none] [--set speed.perPoint.vel=1.5,vita.base=250] [--pilots]
+//   [--field-levels 2,3,4|none] [--set speed.perPoint.vel=1.5,vita.base=250] [--pilots] [--batch 1]
 //
 // --set changes the numbers of balance.ts `combat` for this run only (dotted paths).
 
 import { readFileSync } from "node:fs";
 import { balance } from "../src/config/balance.ts";
+import { COMBAT_KITS_BATCH_1 } from "../src/lib/combat-kits-batch-1.ts";
 import { COMBAT_PILOTS } from "../src/lib/combat-pilot.ts";
 import {
   COMBAT_STRATEGIES,
@@ -38,6 +40,7 @@ import {
   type CombatContext,
   type CombatEvent,
   type CombatField,
+  type CombatKit,
   type CombatFighterInput,
   type CombatRules,
   type CombatSetup,
@@ -96,7 +99,8 @@ const fields: CombatField[] = data.threats
   .filter((t) => t.active && t.region === "megara" && !t.rarity && fieldLevels.includes(t.level))
   .map((t) => ({ name: t.code, abilities: t.abilities }));
 
-const pilotKits = new Map(COMBAT_PILOTS.map((p) => [p.code, p.kit]));
+const BATCHES: Record<string, { code: string; name: string; kit: CombatKit }[]> = { "1": COMBAT_KITS_BATCH_1 };
+const pilotKits = new Map([...COMBAT_PILOTS, ...Object.values(BATCHES).flat()].map((p) => [p.code, p.kit]));
 const usePilots = args.includes("--pilots");
 const fighter = (card: Card, stats = card.stats, pilotKit = usePilots): CombatFighterInput => ({
   id: card.id,
@@ -295,9 +299,11 @@ if (reports.includes("strategies")) {
   console.log(`  in uno scontro, il lato con la strategia fa in media:\n${behaviour.join("\n")}`);
 }
 
-if (reports.includes("pilots")) {
+if (reports.includes("pilots") || reports.includes("kits")) {
   const rows: string[] = [];
-  for (const pilot of COMBAT_PILOTS) {
+  const batch = option("batch");
+  const entries = reports.includes("kits") && batch ? (BATCHES[batch] ?? []) : COMBAT_PILOTS;
+  for (const pilot of entries) {
     const card = pool.find((c) => c.code === pilot.code);
     if (!card) continue;
     const others = pool.filter((c) => c.code !== pilot.code);
@@ -315,7 +321,7 @@ if (reports.includes("pilots")) {
         add(winsOf(runCombat(setup(foes, team(withKit), field), ctx, mulberry32(battleSeed)).state.result!.winner, "b"));
       }
     }
-    rows.push(`  ${pilot.name} (${pilot.rarity}): con il suo kit ${percent(real / (2 * pairs))}, con quello generico ${percent(generic / (2 * pairs))}`);
+    rows.push(`  ${pilot.name} (${card.rarity}): con il suo kit ${percent(real / (2 * pairs))}, con quello generico ${percent(generic / (2 * pairs))}`);
   }
   const team = (name: string) => COMBAT_PILOTS.filter((p) => p.team === name).map((p) => fighter(pool.find((c) => c.code === p.code)!, undefined, true));
   const rng = mulberry32(seed + 606);
@@ -326,8 +332,8 @@ if (reports.includes("pilots")) {
     porto += winsOf(runCombat(setup(team("porto"), team("rivali"), field), ctx, mulberry32(battleSeed)).state.result!.winner, "a");
     porto += winsOf(runCombat(setup(team("rivali"), team("porto"), field), ctx, mulberry32(battleSeed)).state.result!.winner, "b");
   }
-  console.log(`\nPiloti in una squadra a caso contro una squadra a caso (${pairs} coppie, lati scambiati):\n${rows.join("\n")}`);
-  console.log(`  Porto contro Rivali: ${percent(porto / (2 * pairs))}`);
+  console.log(`\nKit veri in una squadra a caso contro una squadra a caso (${pairs} coppie, lati scambiati):\n${rows.join("\n")}`);
+  if (entries === COMBAT_PILOTS) console.log(`  Porto contro Rivali: ${percent(porto / (2 * pairs))}`);
 }
 
 if (reports.includes("repeat")) {

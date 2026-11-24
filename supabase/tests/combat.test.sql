@@ -79,7 +79,13 @@ do $$
 declare
   v_failed boolean;
 begin
-  assert (select count(*) from public.combat_kits) = 10, 'the ten pilots'' kits are readable';
+  assert (select count(*) from public.combat_kits) >= 35, 'the kits are readable';
+  -- The ten pilots and the first batch (20261124120000_scontro_kits_batch_one.sql).
+  assert (select count(*) from public.combat_kits k join public.card_definitions d on d.id = k.definition_id
+          where d.code in ('P001', 'P125', 'P204', 'P152', 'P123', 'P043', 'P044', 'P037', 'P213', 'P104',
+                           'P003', 'P005', 'P007', 'P008', 'P009', 'P010', 'P012', 'P013', 'P014', 'P018',
+                           'P019', 'P022', 'P024', 'P062', 'P065', 'P081', 'P083', 'P084', 'P093', 'P095',
+                           'P096', 'P150', 'P153', 'P155', 'P197')) = 35, 'every pilot and every kit of the first batch';
   v_failed := false;
   begin perform 1 from public.combat_battles;
   exception when insufficient_privilege then v_failed := true; end;
@@ -236,7 +242,7 @@ begin
   assert v_failed, 'a player took a kit away';
 
   perform pg_temp.as_user(pg_temp.u(3));
-  assert jsonb_array_length(public.admin_combat_kits()) = 10, 'the admin sees the ten kits';
+  assert jsonb_array_length(public.admin_combat_kits()) = (select count(*) from public.combat_kits), 'the admin sees every kit';
   v_version := public.admin_save_combat_kit(v_plain, v_kit);
   assert v_version = 1, 'a new kit';
   assert public.admin_save_combat_kit(v_plain, v_kit) = 2, 'a new version';
