@@ -21,3 +21,5 @@ export * from "./challenges.ts";
 export * from "./challenge-play.ts";
 export * from "./coop.ts";
 export * from "./raid.ts";
+export * from "./combat.ts";
+export * from "./combat-ai.ts";

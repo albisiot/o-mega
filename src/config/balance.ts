@@ -471,6 +471,54 @@ export const balance = {
   },
 
   /**
+   * Scontro a squadre (SPEC §5.19, docs/COMBAT.md): 5 against 5 on two lines, turn meters and
+   * moves. Version 0.1, tuned with scripts/simulate-combat.mts (docs/COMBAT.md); not in game_config yet (stage 4).
+   * Ability codes are lower case here, as game_config keys; the engine reads them as the cards' codes.
+   */
+  combat: {
+    teamSize: 5,
+    /** Front-line places (F1, F2); the others are the second line. */
+    frontSize: 2,
+    /** Rarities are equal: every ability is scaled from its rarity's budget towards this one (the Delta's)... */
+    referenceBudget: 54,
+    /**
+     * ...this far, in percent. All the way (100) makes the rarer cards weaker, because their extra
+     * points sit on their peaks: at 60 each rarity beats the one below 44-57% of the time.
+     */
+    rarityScalePercent: 60,
+    /** Life and Speed: a base plus points for each ability point. */
+    vita: { base: 260, perPoint: { res: 6, vol: 3 } },
+    speed: { base: 100, perPoint: { vel: 1 } },
+    /**
+     * The turn meter fills at the Speed; each starts at a random share of it, up to this percent.
+     * All of it (100): with a fixed start the faster side always struck first and Speed outweighed
+     * every other ability (a point of VEL won 70% of mirror battles; now 54%).
+     */
+    turnMeter: 1000,
+    startMeterMaxPercent: 100,
+    /** A move's Power: base plus perPoint times its weighted abilities (the weights sum to 1). */
+    power: { base: 20, perPoint: 8 },
+    /** Defence against a family: the sum of the target's three abilities of that family times this (catalog mean 50 each). */
+    familyDefense: { body: 3.37, mind: 2.65, power: 5.03, craft: 4.1 },
+    /** Damage times defenseScale / (defenseScale + defence). */
+    defenseScale: 100,
+    /** What a protected second-line target takes from ranged and area moves, in percent. */
+    coverPercent: 80,
+    /** Chance to hit in percent: base, attacker's and target's abilities, limits. */
+    hit: { base: 85, attacker: { per: 1 }, defender: { fur: -0.5 }, minPercent: 70, maxPercent: 97 },
+    /** Chance of a critical in percent, its limit, and what a critical deals. */
+    crit: { base: 5, perPoint: { fur: 1, per: 0.5 }, maxPercent: 28, multiplierPercent: 150 },
+    /** Charge: at the start, its top (what a supreme costs), what a base and a special move give. */
+    charge: { start: 2, max: 6, base: 2, special: 1 },
+    /** A fighter's shield never goes beyond this share of its Life. */
+    shieldMaxPercent: 30,
+    /** After this many actions the battle ends: standing fighters, then Life left. */
+    maxActions: 100,
+    /** Power bonus of a move using the field threat's abilities, in proportion to their weight. */
+    fieldBonusPercent: 20,
+  },
+
+  /**
    * Quadrante (SPEC §5.14): a size × size grid filled in turns, with four abilities drawn
    * as the sides of every card. Seals go on the cards a side beats; the most seals win.
    */

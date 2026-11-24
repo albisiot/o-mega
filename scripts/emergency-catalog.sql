@@ -1,18 +1,18 @@
 -- The catalog dump read by scripts/simulate-emergency.mts (read only):
 --   npx supabase db query --linked -f scripts/emergency-catalog.sql > emergency-raw.json
--- Characters, rarities with their pack weights, threats (rare ones with their
+-- Characters, rarities with their pack weights and ability budgets, threats (rare ones with their
 -- chance and Emergenza target), abilities and game_config.
 select jsonb_build_object(
   'cards', (
     select jsonb_agg(jsonb_build_object(
       'id', d.id, 'code', d.code, 'faction', d.faction, 'rarity', d.rarity_code, 'rank', r.rank,
       'unlock', d.unlock_level, 'stats', d.stats, 'power_code', d.power_code, 'power_params', d.power_params,
-      'active', d.is_active
+      'active', d.is_active, 'in_packs', d.in_packs
     ) order by d.code)
     from public.card_definitions d join public.rarity_definitions r on r.code = d.rarity_code
   ),
   'rarities', (
-    select jsonb_agg(jsonb_build_object('code', r.code, 'rank', r.rank, 'weight', r.drop_weight) order by r.rank)
+    select jsonb_agg(jsonb_build_object('code', r.code, 'rank', r.rank, 'weight', r.drop_weight, 'budget', r.ability_budget) order by r.rank)
     from public.rarity_definitions r
   ),
   'threats', (
