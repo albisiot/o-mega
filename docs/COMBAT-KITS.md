@@ -157,3 +157,155 @@ Nomi e testi delle mosse sono provvisori, come quelli delle carte.
 - **Il gradino da evitare** — Un nemico, a distanza: danni ×0,6, indebolimento 2 turni (probabile), vulnerabilità 1 turno (probabile) · ricarica 3 turni.
 - **Al suo posto** — Un nemico, a distanza: danni ×1,45, stordimento 1 turno (probabile).
 - *Undici giorni* (passiva) — a inizio scontro: indebolimento 1 turno ai nemici (probabile).
+
+## Gruppo 2 · i 25 personaggi Delta più posseduti dopo il primo gruppo (approvato il 24 novembre 2026)
+
+### Censor (P094, Eroe) · vince il 51,7% (con il kit generico 46,3%)
+- **Verbale** — Un nemico, a distanza: danni ×1,1.
+- **Multa** — Un nemico, a distanza: danni ×1, vulnerabilità 2 turni (probabile) · ricarica 3 turni.
+- **Contravvenzione a tutti** — Tutti i nemici: danni ×0,85 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *Magia e pensieri non esistono* (passiva) — a inizio scontro: scudo ×0,5 a sé, fortificazione 2 turni a sé.
+
+### Belladonna (P016, Cattivo) · vince il 53,6% (con il kit generico 52,3%)
+- **Rintocco** — Un nemico, a distanza: danni ×1,1.
+- **Campane a morto** — Tutti i nemici: danni ×0,4 a tutti, indebolimento 1 turno a tutti (probabile) · ricarica 3 turni.
+- **Mezzanotte** — Tutti i nemici: danni ×0,85 a tutti, stordimento 1 turno a tutti (probabile).
+- *La si sente da tre quartieri* (passiva) — sempre: danni +6%, probabilità effetti +5.
+
+### Publican (P017, Neutrale) · vince il 50,9% (con il kit generico 33,4%)
+- **Strofinaccio** — Un nemico, corpo a corpo: danni ×1,3.
+- **Terreno neutrale** — Tutta la squadra: fortificazione 2 turni a tutti, scudo ×0,45 a tutti · ricarica 3 turni.
+- **Chiusura** — Un nemico e i vicini: danni ×1,9, stordimento 1 turno (probabile), danni ×0,6 agli adiacenti.
+- *Al bancone si paga uguale* (passiva) — quando è colpito: scudo ×0,35 a sé (max 4 volte).
+
+### Latchkey (P021, Cattivo) · vince il 50,5% (con il kit generico 39,7%)
+- **Scrocco** — Un nemico, anche dietro le linee: danni ×1,25.
+- **La porta non è mai stata chiusa** — Un nemico, anche dietro le linee: danni ×1,45, vulnerabilità 2 turni (probabile) · ricarica 3 turni.
+- **Cassaforte** — Un nemico, anche dietro le linee: danni ×2,2.
+- *Purché non sia elettronica* (passiva) — sempre: critico +10, velocità +8%.
+
+### Odonate (P067, Cattivo) · vince il 48,5% (con il kit generico 42,3%)
+- **Pungiglione** — Un nemico, a distanza: danni ×1, bruciatura 1 turno (probabile).
+- **Sciame** — Tutti i nemici: danni ×0,5 a tutti, bruciatura 2 turni a tutti (probabile) · ricarica 3 turni.
+- **Nuvola di vespe** — Tutti i nemici: danni ×0,95 a tutti, bruciatura 1 turno a tutti (probabile).
+- *Dorme con la luce accesa* (passiva) — sempre: probabilità effetti +5, danni +20% contro chi ha bruciatura.
+
+### Futures (P106, Neutrale) · vince il 52,6% (con il kit generico 50,2%)
+- **Jab** — Un nemico, corpo a corpo: danni ×1,05.
+- **Guardia alta** — Sé: scudo ×0,7, fortificazione 2 turni · ricarica 3 turni.
+- **KO tecnico** — Un nemico, corpo a corpo: danni ×2, stordimento 1 turno (probabile).
+- *Novanta secondi* (passiva) — a inizio scontro: potenziamento 2 turni a sé.
+
+### Foundling (P002, Cattivo) · vince il 49,4% (con il kit generico 63,1%)
+- **Mani veloci** — Un nemico, anche dietro le linee: danni ×0,95.
+- **Il portafoglio** — Un nemico, anche dietro le linee: danni ×0,8, indebolimento 2 turni (probabile), accelerazione 2 turni a sé · ricarica 3 turni.
+- **Sparito tra la folla** — Un nemico, anche dietro le linee: danni ×1,8.
+- *Hai ancora il portafoglio?* (passiva) — sempre: critico +3, velocità +5%.
+
+### Abeyance (P082, Neutrale) · vince il 46,2% (con il kit generico 44,3%)
+- **Registro** — Un nemico, a distanza: danni ×1,05.
+- **Il pagamento non risulta** — Un nemico, a distanza: danni ×0,8, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Controllo triplo** — Tutti i nemici: danni ×0,75 a tutti, indebolimento 2 turni a tutti (probabile).
+- *Fuori dai registri non vede niente* (passiva) — sempre: precisione +8, probabilità effetti +8.
+
+### Depositum (P192, Neutrale) · vince il 55,3% (con il kit generico 50,5%)
+- **Inventario** — Un nemico, a distanza: danni ×1.
+- **Ogni quanto va girata** — Un compagno: scudo ×0,8, fortificazione 2 turni · ricarica 3 turni.
+- **Nove piani sotto** — Tutta la squadra: scudo ×0,5 a tutti, fortificazione 1 turno a tutti.
+- *Non può rifiutarne una* (passiva) — quando è colpito: +1 Carica a sé (max 4 volte).
+
+### Azimuth (P063, Eroe) · vince il 48,9% (con il kit generico 45,1%)
+- **Chiavi volanti** — Un nemico, a distanza: danni ×1,15.
+- **Tombino** — Un nemico, a distanza: danni ×1,35, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Tutto il metallo del quartiere** — Tutti i nemici: danni ×1,1 a tutti.
+- *Mazzi di chiavi sulla giacca* (passiva) — quando colpisce: scudo ×0,15 a sé (max 5 volte).
+
+### Portineria (P193, Neutrale) · vince il 51,0% (con il kit generico 52,5%)
+- **Chi va là** — Un nemico, a distanza: danni ×1,05.
+- **La tregua** — Tutta la squadra: fortificazione 1 turno a tutti, scudo ×0,3 a tutti · ricarica 3 turni.
+- **Oltre la striscia d'ottone** — Tutti i nemici: danni ×0,55 a tutti, vulnerabilità 2 turni a tutti (probabile).
+- *Sa chi c'è e a che piano* (passiva) — a inizio scontro: vulnerabilità 1 turno ai nemici (probabile).
+
+### Onorario (P196, Cattivo) · vince il 51,3% (con il kit generico 56,5%)
+- **Lama affilata** — Un nemico, corpo a corpo: danni ×1,1.
+- **Mandato controfirmato** — Un nemico, anche dietro le linee: danni ×1,2, vulnerabilità 2 turni (probabile) · ricarica 3 turni.
+- **Tre gesti** — Un nemico, anche dietro le linee: danni ×2,2.
+- *Mai uno in più* (passiva) — quando mette KO: +2 Carica a sé (max 2 volte).
+
+### Wardmother (P004, Neutrale) · vince il 53,2% (con il kit generico 52,7%)
+- **Due monete** — Un nemico, a distanza: danni ×1,05.
+- **Soglia di gesso** — Tutta la squadra: scudo ×0,35 a tutti · ricarica 3 turni.
+- **Il futuro al mercato** — Tutti i nemici: danni ×0,55 a tutti, indebolimento 2 turni a tutti (probabile).
+- *La borsa gliela porta il quartiere* (passiva) — quando cade un compagno: scudo ×0,3 ai compagni (max 2 volte).
+
+### Longwave (P020, Eroe) · vince il 50,5% (con il kit generico 37,1%)
+- **Interferenza** — Un nemico, a distanza: danni ×1,1.
+- **In contatto** — Tutta la squadra: accelerazione 1 turno a tutti · ricarica 3 turni.
+- **Su tutte le frequenze** — Tutti i nemici: danni ×0,85 a tutti, stordimento 1 turno a tutti (probabile).
+- *Ascolta quello che non dovrebbe* (passiva) — a inizio scontro: +1 Carica ai compagni.
+
+### Undercroft (P145, Eroe) · vince il 47,4% (con il kit generico 48,9%)
+- **Dal montacarichi** — Un nemico, anche dietro le linee: danni ×1,05.
+- **Canna fumaria** — Un nemico, anche dietro le linee: danni ×1,2, indebolimento 2 turni (probabile) · ricarica 3 turni.
+- **Al meno tre** — Un nemico, anche dietro le linee: danni ×1,9, stordimento 1 turno (probabile).
+- *Se il passaggio è ostruito* (passiva) — quando è colpito: accelerazione 1 turno a sé (max 2 volte).
+
+### Isonomy (P147, Eroe) · vince il 55,2% (con il kit generico 51,7%)
+- **Senza microfono** — Un nemico, a distanza: danni ×1,05.
+- **Misuratemi di nuovo** — Tutti i nemici: danni ×0,4 a tutti, indebolimento 2 turni a tutti (probabile) · ricarica 3 turni.
+- **Siamo la stessa cosa** — Tutta la squadra: cura ×0,35 a tutti, potenziamento 1 turno a tutti.
+- *Né togliere né dare* (passiva) — a inizio scontro: fortificazione 1 turno ai compagni.
+
+### Ephemeris (P006, Neutrale) · vince il 55,3% (con il kit generico 57,9%)
+- **Te l'avevo detto** — Un nemico, a distanza: danni ×1,05.
+- **Come andrà a finire** — Un compagno: scudo ×0,8, accelerazione 1 turno · ricarica 3 turni.
+- **Lo sapevo** — Un nemico, a distanza: danni ×1,8, stordimento 1 turno (probabile).
+- *Nessuno le crede* (passiva) — sempre: precisione +8, critico +8.
+
+### Epigone (P011, Cattivo) · vince il 48,3% (con il kit generico 36,0%)
+- **Tre formule e mezza** — Un nemico, a distanza: danni ×1,2.
+- **Entusiasmo** — Sé: potenziamento 2 turni, scudo ×0,7 · ricarica 3 turni.
+- **La formula intera** — Tutti i nemici: danni ×1,05 a tutti, bruciatura 1 turno a tutti (probabile).
+- *Ha portato i biscotti* (passiva) — a inizio scontro: potenziamento 1 turno ai compagni.
+
+### Suture (P015, Eroe) · vince il 49,0% (con il kit generico 37,1%)
+- **Bisturi** — Un nemico, a distanza: danni ×1,05.
+- **Quaranta minuti** — Un compagno: cura ×1,3, potenziamento 2 turni · ricarica 3 turni.
+- **La clinica delle Lanterne** — Tutta la squadra: cura ×0,9 a tutti, fortificazione 1 turno a tutti.
+- *Si ammala solo lei* (passiva) — sempre: cure +25%.
+
+### Ignifuge (P023, Eroe) · vince il 46,5% (con il kit generico 38,1%)
+- **Accetta** — Un nemico, corpo a corpo: danni ×1,05.
+- **Entra per primo** — Sé: scudo ×0,8, provocazione 2 turni · ricarica 3 turni.
+- **Undici gesti** — Tutta la squadra: cura ×0,4 a tutti, fortificazione 2 turni a tutti.
+- *Esce per ultimo* (passiva) — sotto il 30% di Vita: scudo ×0,6 a sé, fortificazione 2 turni a sé.
+
+### Procura (P107, Cattivo) · vince il 51,2% (con il kit generico 55,3%)
+- **Firma del cliente** — Un nemico, anche dietro le linee: danni ×1,1.
+- **La sua voce** — Un nemico, a distanza: danni ×1,1, indebolimento 2 turni (probabile) · ricarica 3 turni.
+- **La camera nove** — Un nemico, anche dietro le linee: danni ×2,1, vulnerabilità 1 turno.
+- *Una vita che non è sua* (passiva) — quando colpisce: indebolimento 1 turno all'avversario (probabile).
+
+### Impound (P124, Eroe) · vince il 50,6% (con il kit generico 54,6%)
+- **Martellata** — Un nemico, corpo a corpo: danni ×1,05.
+- **Carro attrezzi** — Un nemico e i vicini: danni ×1,2, danni ×0,4 agli adiacenti · ricarica 3 turni.
+- **Doppia fila** — Un nemico, corpo a corpo: danni ×2, stordimento 1 turno (probabile).
+- *Ogni tanto sbaglia macchina* (passiva) — sempre: danni +12%, precisione -5.
+
+### Periplus (P154, Neutrale) · vince il 55,8% (con il kit generico 50,5%)
+- **Contrappeso** — Un nemico, a distanza: danni ×1,05.
+- **Mappa in undici minuti** — Tutta la squadra: accelerazione 2 turni a tutti · ricarica 3 turni.
+- **Una costa che non sta ferma** — Tutti i nemici: danni ×0,8 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *Vera fino a stanotte* (passiva) — sempre: precisione +5, velocità +8%.
+
+### Sottovento (P195, Cattivo) · vince il 55,8% (con il kit generico 57,6%)
+- **Agguato** — Un nemico, anche dietro le linee: danni ×1,1.
+- **Conosce i turni** — Un nemico, a distanza: danni ×1, vulnerabilità 2 turni (probabile) · ricarica 3 turni.
+- **Chi torna a casa stanco** — Un nemico, anche dietro le linee: danni ×2,2.
+- *Caccia i cacciatori* (passiva) — sempre: critico +6, danni +25% contro chi ha vulnerabilità.
+
+### Tether (P064, Eroe) · vince il 52,4% (con il kit generico 56,9%)
+- **Braccio lungo** — Un nemico, anche dietro le linee: danni ×1.
+- **Afferra** — Un nemico, anche dietro le linee: danni ×1, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Presa a distanza** — Un nemico, anche dietro le linee: danni ×1,8, indebolimento 2 turni.
+- *Il resto, con calma* (passiva) — sotto il 40% di Vita: cura ×0,5 a sé.

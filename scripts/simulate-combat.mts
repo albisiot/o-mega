@@ -15,7 +15,7 @@
 //   pilots    (stage 3) each pilot of src/lib/combat-pilot.ts with its real kit in a random team,
 //             against the same team with its generic kit; and the pilots' two teams against each other.
 //             With --pilots the characters with a real kit (pilots and batches) use it in every report.
-//   kits      (stage 5) the same for each kit of a batch (--batch 1: src/lib/combat-kits-batch-1.ts).
+//   kits      (stage 5) the same for each kit of a batch (--batch 2: src/lib/combat-kits-batch-2.ts).
 //
 // The dump: npx supabase db query --linked -f scripts/emergency-catalog.sql > emergency-raw.json
 // Usage: node scripts/simulate-combat.mts <emergency-raw.json> [--battles 10000] [--pairs 2000]
@@ -26,7 +26,7 @@
 
 import { readFileSync } from "node:fs";
 import { balance } from "../src/config/balance.ts";
-import { COMBAT_KITS_BATCH_1 } from "../src/lib/combat-kits-batch-1.ts";
+import { COMBAT_KIT_BATCHES as BATCHES } from "../src/lib/combat-kits.ts";
 import { COMBAT_PILOTS } from "../src/lib/combat-pilot.ts";
 import {
   COMBAT_STRATEGIES,
@@ -40,7 +40,6 @@ import {
   type CombatContext,
   type CombatEvent,
   type CombatField,
-  type CombatKit,
   type CombatFighterInput,
   type CombatRules,
   type CombatSetup,
@@ -99,7 +98,6 @@ const fields: CombatField[] = data.threats
   .filter((t) => t.active && t.region === "megara" && !t.rarity && fieldLevels.includes(t.level))
   .map((t) => ({ name: t.code, abilities: t.abilities }));
 
-const BATCHES: Record<string, { code: string; name: string; kit: CombatKit }[]> = { "1": COMBAT_KITS_BATCH_1 };
 const pilotKits = new Map([...COMBAT_PILOTS, ...Object.values(BATCHES).flat()].map((p) => [p.code, p.kit]));
 const usePilots = args.includes("--pilots");
 const fighter = (card: Card, stats = card.stats, pilotKit = usePilots): CombatFighterInput => ({
