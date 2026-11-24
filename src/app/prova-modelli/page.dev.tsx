@@ -1,53 +1,47 @@
 "use client";
 
-// The cards that can be looked at in 3D, to try the models and the dioramas without a server
+// The cards that can be looked at in 3D, to try the dioramas and the models without a server
 // or an account. A development-only page: next.config.ts serves *.dev.tsx pages in `next dev`
 // only, so it is never part of the published site.
-//   /prova-modelli/   one "Guarda in 3D" per card: models (P001, P030, P060) and dioramas (P001, P004, P013, P025, P028, P030, P042, P044, P048, P051, P052, P053, P054, P055, P056, P057, P058, P059, P060)
+//   /prova-modelli/                    every card with a diorama (src/lib/diorama-index.ts)
+//   /prova-modelli/?codes=P055,P013    only these cards (scripts/shoot-dioramas.mjs uses it)
 
-import { CardModelButton } from "@/components/card-model";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import { CardModelButton, hasCardModel } from "@/components/card-model";
 import { PageHeader } from "@/components/comic-parts";
 import { withBasePath } from "@/lib/base-path";
+import { DIORAMAS } from "@/lib/diorama-index";
 
-const CARDS = [
-  { code: "P055", name: "Keelstone", kind: "Diorama" },
-  { code: "P028", name: "Juncture", kind: "Diorama" },
-  { code: "P013", name: "Hawser", kind: "Diorama" },
-  { code: "P059", name: "Multitude", kind: "Diorama" },
-  { code: "P058", name: "Absentia", kind: "Diorama" },
-  { code: "P057", name: "Holdout", kind: "Diorama" },
-  { code: "P051", name: "Vetrix", kind: "Diorama" },
-  { code: "P052", name: "Auctor", kind: "Diorama" },
-  { code: "P053", name: "Moth", kind: "Diorama" },
-  { code: "P054", name: "Vera Kross", kind: "Diorama" },
-  { code: "P056", name: "Mekana", kind: "Diorama" },
-  { code: "P044", name: "Kiln", kind: "Diorama" },
-  { code: "P042", name: "Postmark", kind: "Diorama" },
-  { code: "P025", name: "Bulwark", kind: "Diorama" },
-  { code: "P048", name: "Hapax", kind: "Diorama" },
-  { code: "P004", name: "Wardmother", kind: "Diorama" },
-  { code: "P001", name: "Gantry", kind: "Diorama e modello" },
-  { code: "P030", name: "Milewright", kind: "Diorama e modello" },
-  { code: "P060", name: "Mongibello", kind: "Diorama e modello" },
-];
-
-export default function ModelsTrialPage() {
+function Cards() {
+  const filter = useSearchParams().get("codes")?.split(",").filter(Boolean);
+  const cards = filter ? DIORAMAS.filter((card) => filter.includes(card.code)) : DIORAMAS;
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 pb-10 pt-4">
-      <PageHeader title="Prova modelli 3D" />
-      {CARDS.map((card) => (
+    <>
+      {cards.map((card) => (
         <div key={card.code} data-code={card.code} className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={withBasePath(`/cards/${card.code}.webp`)} alt="" className="h-20 w-15 shrink-0 rounded object-cover" />
+          <img src={withBasePath(`/cards/${card.code}.webp`)} alt="" loading="lazy" className="h-20 w-15 shrink-0 rounded object-cover" />
           <div className="min-w-0 flex-1">
             <p className="font-display text-xl uppercase">{card.name}</p>
             <p className="text-xs font-semibold text-muted">
-              {card.code} · {card.kind}
+              {card.code} · {hasCardModel(card.code) ? "Diorama e modello" : "Diorama"}
             </p>
           </div>
           <CardModelButton code={card.code} name={card.name} className="shrink-0" />
         </div>
       ))}
+    </>
+  );
+}
+
+export default function ModelsTrialPage() {
+  return (
+    <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 pb-10 pt-4">
+      <PageHeader title="Prova modelli 3D" />
+      <Suspense>
+        <Cards />
+      </Suspense>
     </main>
   );
 }

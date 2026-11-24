@@ -2,11 +2,15 @@
 
 import { type RefObject, useEffect, useRef, useState } from "react";
 import { withBasePath } from "@/lib/base-path";
+import { hasCardDiorama } from "@/lib/diorama-index";
 
 /** Cards that have a 3D model in public/models. */
 const CARD_MODELS = new Set(["P001", "P030", "P060"]);
-/** Cards whose 3D view is a diorama built from shapes in src/lib/card-diorama.ts: no model to download. */
-const CARD_DIORAMAS = new Set(["P001", "P004", "P013", "P025", "P028", "P030", "P042", "P044", "P048", "P051", "P052", "P053", "P054", "P055", "P056", "P057", "P058", "P059", "P060"]);
+
+/** Whether a card has a 3D model in public/models (its diorama, if any, is in src/lib/dioramas). */
+export function hasCardModel(code: string): boolean {
+  return CARD_MODELS.has(code);
+}
 
 /** Three.js and the viewer: downloaded only by players who ask for a model. */
 const loadViewer = () => import("@/lib/card-model");
@@ -38,7 +42,7 @@ export function CardModelButton({ code, name, className = "w-full max-w-sm" }: {
   // A card with both a model and a diorama opens on the diorama, with a switch between the two.
   const [view, setView] = useState<"diorama" | "model">("diorama");
 
-  const diorama = CARD_DIORAMAS.has(code);
+  const diorama = hasCardDiorama(code);
   const model = CARD_MODELS.has(code);
   if (!diorama && !model) return null;
   const shown = diorama && (!model || view === "diorama") ? "diorama" : "model";

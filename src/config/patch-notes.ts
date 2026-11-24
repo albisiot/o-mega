@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "24 novembre 2026",
+    changes: [
+      "Altri 72 personaggi si guardano in 3D: da Foundling, che scappa dal mercato col portafoglio rubato, a Talos, l'automa di bronzo che esce dagli scavi con l'unico punto debole che gli brilla nella caviglia. Ogni diorama ha il suo angolo di Nuova Megara e un dettaglio che racconta il personaggio: Kelvin non riesce ad aprire il barattolo, Cullet ha la mascella di vetro incerottata, Cerbero litiga con sé stesso per l'unica ciotola. Tocca «Guarda in 3D» nel dettaglio della carta.",
+    ],
+  },
+  {
     date: "23 novembre 2026",
     changes: [
       "Keelstone si guarda in 3D come un diorama: tocca «Guarda in 3D» nel dettaglio della carta e lo vedi a braccia conserte davanti alla porta del tempio, sulla sua basetta, con l'orlo della veste diventato pietra che lo inchioda al selciato. Trascinalo per girarlo.",

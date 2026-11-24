@@ -22,10 +22,8 @@ import {
   SphereGeometry,
   WebGLRenderer,
 } from "three";
-import {
-  type Kit,
-  type Framing,
-} from "@/lib/diorama-kit";
+import { DIORAMAS, type DioramaBuilder } from "@/lib/diorama-index";
+import { type Kit } from "@/lib/diorama-kit";
 
 // A character's diorama: the figure on a small base with a piece of Nuova Megara, built
 // from simple shapes in the comic style of the threat dioramas (src/lib/threat-diorama.ts).
@@ -40,40 +38,12 @@ const FRAME_MARGIN_MS = 4;
 const SLOW_FRAME_MS = 66;
 const SLOW_FRAMES_LIMIT = 20;
 
-type Builder = (kit: Kit) => Framing;
-
-/** Each card's diorama, downloaded only when that card is looked at in 3D. */
-const BUILDERS: Record<string, () => Promise<Builder>> = {
-  P001: () => import("@/lib/dioramas/gantry").then((module) => module.gantry),
-  P004: () => import("@/lib/dioramas/wardmother").then((module) => module.wardmother),
-  P013: () => import("@/lib/dioramas/hawser").then((module) => module.hawser),
-  P025: () => import("@/lib/dioramas/bulwark").then((module) => module.bulwark),
-  P028: () => import("@/lib/dioramas/juncture").then((module) => module.juncture),
-  P030: () => import("@/lib/dioramas/milewright").then((module) => module.milewright),
-  P042: () => import("@/lib/dioramas/postmark").then((module) => module.postmark),
-  P044: () => import("@/lib/dioramas/kiln").then((module) => module.kiln),
-  P048: () => import("@/lib/dioramas/hapax").then((module) => module.hapax),
-  P051: () => import("@/lib/dioramas/vetrix").then((module) => module.vetrix),
-  P052: () => import("@/lib/dioramas/auctor").then((module) => module.auctor),
-  P053: () => import("@/lib/dioramas/moth").then((module) => module.moth),
-  P054: () => import("@/lib/dioramas/vera-kross").then((module) => module.veraKross),
-  P055: () => import("@/lib/dioramas/keelstone").then((module) => module.keelstone),
-  P056: () => import("@/lib/dioramas/mekana").then((module) => module.mekana),
-  P057: () => import("@/lib/dioramas/holdout").then((module) => module.holdout),
-  P058: () => import("@/lib/dioramas/absentia").then((module) => module.absentia),
-  P059: () => import("@/lib/dioramas/multitude").then((module) => module.multitude),
-  P060: () => import("@/lib/dioramas/mongibello").then((module) => module.mongibello),
-};
-
-/** Whether a card has a diorama. */
-export function hasCardDiorama(code: string): boolean {
-  return code in BUILDERS;
-}
+type Builder = DioramaBuilder;
 
 /** A card's diorama, to mount with mountCardDiorama. Rejects if the card has none. */
 export function loadCardDiorama(code: string): Promise<Builder> {
-  const load = BUILDERS[code];
-  return load ? load() : Promise.reject(new Error(`No diorama for ${code}`));
+  const diorama = DIORAMAS.find((entry) => entry.code === code);
+  return diorama ? diorama.load() : Promise.reject(new Error(`No diorama for ${code}`));
 }
 
 /**
