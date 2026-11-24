@@ -181,7 +181,7 @@ Vedi «Risultati della tappa 1» in fondo.
 | Sinergie | Solo dentro le mosse; nessun bonus automatico di fazione o di gruppo |
 | Danni nel tempo contro gli scudi | Uno solo, la bruciatura, che passa sopra gli scudi (fatto nella tappa 2) |
 | Stordimento continuo | Dopo un turno perso si gioca almeno il seguente (fatto nella tappa 2) |
-| Premi | Monete ed esperienza piccole contro il computer; nessuna carta |
+| Premi | Contro il computer: 20 XP e 15 monete una vittoria, 8 XP una sconfitta o un pareggio, per le prime 5 battaglie finite del giorno; nessuna carta (fatto nella tappa 4) |
 | Regole dei luoghi sul campo | Non nella prima versione |
 
 ## Tappe
@@ -191,7 +191,7 @@ Vedi «Risultati della tappa 1» in fondo.
 | 1 (fatta) | Motore (valori, turni, bersagli, copertura, Carica, ricarica, danno, cure, scudi, fine, registro), IA avida, simulatore | Decisioni del 24 novembre | Test superati; 10.000 scontri senza errori; stesso seme = stesso registro; valore di un punto e rarità misurati e vicini all'obiettivo |
 | 2 (fatta) | Effetti di stato, passive, IA con strategie e ordini tattici | 1 | Le mosse sbagliate sono rifiutate; l'IA fa solo mosse permesse; strategie diverse danno risultati misurabilmente diversi |
 | 3 (fatta) | 10 personaggi veri con il loro kit; pagina di prova in locale (manuale e automatico, registro, replay) | 2 | Uno scontro si gioca su iPhone in 2-4 minuti; `npm run test:layout` senza testi coperti |
-| 4 | Tabelle, Edge Function, scontri contro il computer con premi, editor delle mosse solo per gli admin | 3 | Test del database: proprietà delle carte, seme nascosto, `not_admin`; nessun risultato deciso dal telefono |
+| 4 (fatta) | Tabelle, Edge Function, scontri contro il computer con premi, editor delle mosse solo per gli admin | 3 | Test del database: proprietà delle carte, seme nascosto, `not_admin`; nessun risultato deciso dal telefono |
 | 5 | Kit per tutti i personaggi, a gruppi di 20-30 | 2, 4 | Ogni gruppo simulato sulla sua carta e approvato dall'utente |
 | 6 | Sfide asincrone, classifiche, obiettivi | 4, 5 | |
 
@@ -310,3 +310,16 @@ Tutti tra il 46% e il 56%. Porto contro Rivali: 55,1% (la squadra di Delta e Gam
 - **Scontro:** i nemici in alto (seconda linea più lontana), i propri in basso; ogni casella ha disegno, nome, Vita (verde) con lo scudo (azzurro), la Carica (sei puntini) e fino a quattro effetti (sigle di tre lettere sul disegno). In mezzo i prossimi turni. Nel proprio turno, tre pulsanti: la mossa, poi un tocco sul bersaglio evidenziato; sotto, una riga che dice cosa fa la mossa. Automatico, velocità ×1 ×2 ×3, Salta (finisce lo scontro in automatico) e Registro (ogni evento in italiano, una vista a sé).
 - **Fine:** Vittoria, Sconfitta o Pareggio, in quante azioni, chi è in piedi e chi ha fatto più danni; Rivedi (il replay passo per passo), Di nuovo, Squadra.
 - **Scene** per `npm run test:layout` (che ora controlla anche questa pagina): squadra, manuale, bersaglio, effetti, auto, fine, replay, registro. Tutte senza testi coperti, a 375×812 e a 375×667.
+
+## Contro il computer, sul server (tappa 4)
+
+Migrazione `20261124100000_scontro_stage_four.sql`, Edge Function `match`, pagine `/scontro` e `/gestione-scontro`. La modalità nasce **spenta** («combat» in EDITOR → Modalità di gioco, con «Prossimamente»): finché un admin non la apre, nessuno scontro parte e la pagina lo dice.
+
+- **Numeri:** le chiavi `combat.*` di `game_config`, le stesse di `balance.ts` (`npm run test:db` le confronta). In più: il campo è una Minaccia normale di Nuova Megara di livello da 2 a 4 (`combat.field.*`), e i premi (`combat.rewards.*`).
+- **Kit:** `combat_kits`, uno per personaggio (il `CombatKit` del motore come dato), leggibili da ogni giocatore e cambiati solo dagli admin; all'inizio i dieci della tappa 3. Si schierano solo i personaggi con un kit, e il computer ne prende cinque a caso tra quelli.
+- **Scontri:** `combat_battles` tiene le due squadre, i numeri di quel momento, il **seme** e ogni scelta dei due lati, in ordine. Nessun client legge la tabella: il seme resta sul server, altrimenti il telefono potrebbe prevedere colpi e critici. Le scelte salvate sono anche il replay.
+- **Edge Function** (azioni `combat_start`, `combat_act`, `combat_finish`, `combat_state`): a ogni chiamata ricostruisce lo scontro dal seme e dalle scelte con il motore, gioca la scelta del giocatore (o tutto il resto in automatico, con la sua tattica), poi i turni del computer fino al turno successivo del giocatore, e li aggiunge con `combat_record`: due chiamate sullo stesso turno non scrivono entrambe (`combat_stale`). Al telefono arrivano i passi da mostrare e i kit, mai il seme.
+- **Database:** `combat_create` controlla che le cinque carte siano del giocatore, cinque personaggi diversi, nessuna in palio in una Conquista, tutti con un kit, e che la squadra mandata sia quella; uno scontro alla volta (uno nuovo lascia il vecchio, senza premi). `combat_record` chiude lo scontro e paga: XP sempre (vittoria o sconfitta), monete solo per una vittoria, per le prime `combat.rewards.daily_battles` battaglie finite della giornata di gioco (Europe/Rome). `combat_active` e `combat_abandon` per il giocatore.
+- **Pagina `/scontro`:** si scelgono cinque dei propri personaggi con un kit, ai loro posti, manuale o automatico e la strategia; lo schermo è quello della tappa 3, che manda le scelte al server e mostra i passi che tornano. Uno scontro lasciato a metà si riprende da dove era; «Abbandona» lo chiude senza premi. Alla fine i premi, o «niente premi» oltre le battaglie premiate del giorno. In Gioca non c'è ancora un pulsante: si decide quando la modalità si apre.
+- **EDITOR → Scontro (`/gestione-scontro`):** l'elenco dei kit; un kit si apre come JSON, il motore lo controlla mentre lo si scrive (`validateCombatKit`) e si salva solo se è valido (`admin_save_combat_kit`, una versione in più a ogni salvataggio); si toglie con «Togli» (`admin_delete_combat_kit`). Un kit nuovo parte da quello generico del simulatore, da riscrivere dalla carta. Il server controlla l'admin e la forma del kit; l'Edge Function lo ricontrolla con il motore quando uno scontro parte.
+- **Test:** `supabase/tests/combat.test.sql` (kit leggibili, scontri e seme chiusi ai client e alle loro chiamate, carte di altri, personaggi senza kit, squadra in un altro ordine, modalità spenta, uno scontro alla volta, scelte in ordine e chiamata vecchia rifiutata, premi di vittoria e sconfitta, limite del giorno, abbandono, funzioni dell'EDITOR solo per gli admin).

@@ -1,11 +1,12 @@
 "use client";
 
-// Scontro a squadre (SPEC §5.19, docs/COMBAT.md), stage 3: the battle on screen, played in the
-// browser with the engine (training only: nothing here is saved or paid; from stage 4 the server
-// decides). The enemies on top, back line first; the player's side below, front line first. In
-// manual mode the player picks a move and then a target among those the lines allow; the
-// computer plays the other side and, in automatic mode, the player's too. Every step is kept,
-// so the battle can be watched again (replay) from the same steps.
+// Scontro a squadre (SPEC §5.19, docs/COMBAT.md): the battle on screen. The enemies on top, back
+// line first; the player's side below, front line first. In manual mode the player picks a move
+// and then a target among those the lines allow. Two ways to play: on the test page the engine
+// runs in the browser (training, nothing saved); from stage 4, with `remote`, the server decides:
+// the screen sends the player's choices and shows the steps it gets back. Either way every step is
+// kept and a cursor walks through them, one at a time, at the chosen speed: the same walk shows the
+// computer's turns, a battle played at once, and the replay.
 
 import { useEffect, useState } from "react";
 import {
@@ -30,17 +31,32 @@ import {
   type Side,
 } from "@o-mega/game-engine";
 import { combatEventLine, describeCombatMove, SLOT_LABELS, STATUS_LABELS } from "@/lib/combat-text";
+import { describeServerError } from "@/lib/errors";
 
 /** Time an action stays on screen before the next, by speed (ms). */
 const DELAY: Record<1 | 2 | 3, number> = { 1: 1100, 2: 550, 3: 260 };
 const SLOTS: CombatSlot[] = ["base", "special", "supreme"];
 
+/** The prizes of a battle against the computer (stage 4). */
+export type CombatScreenRewards = { xp: number; coins: number };
+/** What the server answers: the new steps, and the prizes once the battle is over. */
+export type CombatScreenUpdate = { steps: CombatStep[]; rewards: CombatScreenRewards | null };
+
 export type CombatScreenProps = {
-  setup: CombatSetup;
   ctx: CombatContext;
-  seed: number;
   playerSide?: Side;
+  /** The test page: the battle to play in the browser, its seed, the tactics of both sides. */
+  setup?: CombatSetup;
+  seed?: number;
   tactics?: Partial<Record<Side, CombatTactics>>;
+  /** Stage 4: the server plays; the steps so far, where to start showing them, how to send a choice or finish. */
+  remote?: {
+    steps: CombatStep[];
+    startAt: number;
+    rewards: CombatScreenRewards | null;
+    act: (action: CombatAction) => Promise<CombatScreenUpdate>;
+    finish: () => Promise<CombatScreenUpdate>;
+  };
   auto?: boolean;
   speed?: 1 | 2 | 3;
   /** The drawing of a character, by definition id. */
@@ -63,35 +79,40 @@ function otherSide(side: Side): Side {
 }
 
 export function CombatScreen(props: CombatScreenProps) {
-  const { setup, ctx, playerSide = "a", artOf } = props;
-  const [rng] = useState(() => mulberry32(props.seed));
+  const { ctx, playerSide = "a", artOf, remote } = props;
+  const [rng] = useState(() => mulberry32(props.seed ?? 1));
+  const tacticsOf = (side: Side) => props.tactics?.[side] ?? DEFAULT_COMBAT_TACTICS;
   const [history, setHistory] = useState<CombatStep[]>(() => {
-    const first = createCombat(setup, ctx, rng);
+    if (remote) return remote.steps;
+    const first = createCombat(props.setup!, ctx, rng);
     props.prepare?.(first.state);
     if (!props.finishAtOnce) return [first];
     const steps = [first];
     while (!steps.at(-1)!.state.result) {
       const state = steps.at(-1)!.state;
-      const side = combatActor(state)!.side;
-      steps.push(applyCombatAction(state, chooseCombatAction(state, ctx, props.tactics?.[side] ?? DEFAULT_COMBAT_TACTICS), ctx, rng));
+      steps.push(applyCombatAction(state, chooseCombatAction(state, ctx, tacticsOf(combatActor(state)!.side)), ctx, rng));
     }
     return steps;
   });
+  /** The step on screen; the steps after it are still to show (the computer's turns, or a replay). */
+  const [cursor, setCursor] = useState(() => (remote ? remote.startAt : props.finishAtOnce && !props.replayAtEnd ? history.length - 1 : 0));
   const [auto, setAuto] = useState(props.auto ?? false);
   const [speed, setSpeed] = useState<1 | 2 | 3>(props.speed ?? 1);
   /** The move chosen; undefined until the player touches one (then a test scene's preselect no longer applies). */
   const [chosen, setChosen] = useState<CombatSlot | null | undefined>(undefined);
   const [logOpen, setLogOpen] = useState(props.logOpen ?? false);
-  // A battle played at once for a replay scene starts its replay right away.
-  const [replay, setReplay] = useState<number | null>(props.finishAtOnce && props.replayAtEnd ? 0 : null);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [rewards, setRewards] = useState<CombatScreenRewards | null>(remote?.rewards ?? null);
 
-  const latest = history.at(-1)!;
-  const shownIndex = replay ?? history.length - 1;
-  const shown = history[shownIndex];
+  const end = history.length - 1;
+  const latest = history[end];
+  const shown = history[Math.min(cursor, end)];
+  const shownIndex = Math.min(cursor, end);
   const state = shown.state;
+  const atEnd = cursor >= end;
   const actor = combatActor(latest.state);
-  const human = replay === null && !auto && actor !== null && actor.side === playerSide;
-  const tacticsOf = (side: Side) => props.tactics?.[side] ?? DEFAULT_COMBAT_TACTICS;
+  const human = atEnd && !pending && !auto && actor !== null && actor.side === playerSide;
 
   const playerActed = history.some((step) => step.events.some((e) => e.kind === "move" && e.actor.startsWith(playerSide)));
   const selected = chosen !== undefined ? chosen : human && !playerActed ? (props.preselect ?? null) : null;
@@ -105,53 +126,74 @@ export function CombatScreen(props: CombatScreenProps) {
   }
   const moveNameOf = (id: string) => moveNames.get(id) ?? id;
 
+  /** The server's answer: its steps after the ones already here, shown from the first new one. */
+  async function ask(call: () => Promise<CombatScreenUpdate>, showFirstAtOnce: boolean) {
+    setPending(true);
+    setError(null);
+    try {
+      const update = await call();
+      setHistory((h) => [...h, ...update.steps]);
+      if (showFirstAtOnce && update.steps.length > 0) setCursor(end + 1);
+      if (update.rewards) setRewards(update.rewards);
+    } catch (cause) {
+      setError(describeServerError(cause));
+      setAuto(false);
+    } finally {
+      setPending(false);
+    }
+  }
+
   function play(action: CombatAction) {
-    setHistory((h) => [...h, applyCombatAction(h.at(-1)!.state, action, ctx, rng)]);
     setChosen(null);
+    if (remote) {
+      void ask(() => remote.act(action), true);
+      return;
+    }
+    setHistory((h) => [...h, applyCombatAction(h.at(-1)!.state, action, ctx, rng)]);
+    setCursor(end + 1);
   }
 
   function finish() {
-    setHistory((h) => {
-      const steps = [...h];
-      while (!steps.at(-1)!.state.result) {
-        const s = steps.at(-1)!.state;
-        const side = combatActor(s)!.side;
-        steps.push(applyCombatAction(s, chooseCombatAction(s, ctx, tacticsOf(side)), ctx, rng));
-      }
-      return steps;
-    });
     setChosen(null);
+    if (remote) {
+      void ask(remote.finish, false).then(() => setCursor(Number.MAX_SAFE_INTEGER));
+      return;
+    }
+    const steps = [...history];
+    while (!steps.at(-1)!.state.result) {
+      const s = steps.at(-1)!.state;
+      steps.push(applyCombatAction(s, chooseCombatAction(s, ctx, tacticsOf(combatActor(s)!.side)), ctx, rng));
+    }
+    setHistory(steps);
+    setCursor(steps.length - 1);
   }
 
-  // The computer's turns, and the player's in automatic mode.
+  // The walk through the steps, and what comes when it reaches the last one.
   useEffect(() => {
-    if (replay !== null) return;
+    if (!atEnd) {
+      const timer = setTimeout(() => setCursor(Math.min(cursor, end) + 1), DELAY[speed]);
+      return () => clearTimeout(timer);
+    }
     if (latest.state.result) {
       props.onFinished?.();
       return;
     }
+    if (pending || error) return;
     if (human) {
       props.onWaiting?.();
       return;
     }
-    const s = latest.state;
-    const side = combatActor(s)!.side;
-    const timer = setTimeout(() => play(chooseCombatAction(s, ctx, tacticsOf(side))), DELAY[speed]);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [latest, human, speed, replay]);
-
-  // The replay: one step at a time, at the chosen speed.
-  useEffect(() => {
-    if (replay === null) return;
-    if (replay >= history.length - 1) {
-      props.onFinished?.();
-      return;
+    if (remote) {
+      // Automatic mode: the server plays the rest with the player's tactics.
+      if (!auto) return;
+      const timer = setTimeout(() => void ask(remote.finish, false), 0);
+      return () => clearTimeout(timer);
     }
-    const timer = setTimeout(() => setReplay(replay + 1), DELAY[speed]);
+    const s = latest.state;
+    const timer = setTimeout(() => setHistory((h) => [...h, applyCombatAction(s, chooseCombatAction(s, ctx, tacticsOf(combatActor(s)!.side)), ctx, rng)]), DELAY[speed]);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [replay, speed]);
+  }, [cursor, end, human, speed, auto, pending, error]);
 
   const lastMove = shown.events.find((e): e is Extract<CombatEvent, { kind: "move" }> => e.kind === "move");
   const struck = new Set(shown.events.flatMap((e) => (e.kind === "damage" || e.kind === "miss" ? [e.target] : [])));
@@ -231,13 +273,14 @@ export function CombatScreen(props: CombatScreenProps) {
       </div>
       <div className="grid grid-cols-3 gap-1.5">{row(playerSide, [2, 3, 4]).map(tile)}</div>
 
-      {latest.state.result && (replay === null || replay >= history.length - 1) ? (
+      {latest.state.result && atEnd ? (
         <EndPanel
           state={latest.state}
           history={history}
           playerSide={playerSide}
           nameOf={nameOf}
-          onReplay={() => setReplay(0)}
+          rewards={remote ? rewards : undefined}
+          onReplay={() => setCursor(0)}
           onRestart={props.onRestart}
           onChangeTeam={props.onChangeTeam}
         />
@@ -280,7 +323,14 @@ export function CombatScreen(props: CombatScreenProps) {
         </div>
       ) : (
         <div className="min-h-[7.5rem] rounded-md border-2 border-black bg-panel p-2">
-          <p className="mb-1 text-[12px] font-bold text-faint">{replay !== null ? `Replay · passo ${replay + 1} di ${history.length}` : actor ? `Tocca a ${actor.name}…` : ""}</p>
+          <p className="mb-1 text-[12px] font-bold text-faint">
+            {error ?? (latest.state.result && !atEnd ? `Replay · passo ${shownIndex + 1} di ${history.length}` : pending ? "Il server risponde…" : combatActor(state) ? `Tocca a ${combatActor(state)!.name}…` : "")}
+          </p>
+          {error && (
+            <button type="button" onClick={() => setError(null)} className="btn btn-ghost mb-1 min-h-9 px-3 text-[12px]">
+              Riprova
+            </button>
+          )}
           {lines.slice(-4).map((line, i) => (
             <p key={`${shownIndex}-${i}`} className="text-[12px] leading-4">
               {line}
@@ -298,7 +348,7 @@ export function CombatScreen(props: CombatScreenProps) {
             ×{s}
           </button>
         ))}
-        <button type="button" onClick={finish} disabled={latest.state.result !== null || replay !== null} className="btn btn-ghost min-h-9 px-2 text-[12px] disabled:opacity-45">
+        <button type="button" onClick={finish} disabled={latest.state.result !== null || pending} className="btn btn-ghost min-h-9 px-2 text-[12px] disabled:opacity-45">
           Salta
         </button>
         <button type="button" onClick={() => setLogOpen(true)} className="btn btn-ghost min-h-9 px-2 text-[12px]">
@@ -422,6 +472,8 @@ function EndPanel(props: {
   history: CombatStep[];
   playerSide: Side;
   nameOf: (key: string) => string;
+  /** Stage 4: what the battle paid; undefined on the test page. */
+  rewards?: CombatScreenRewards | null;
   onReplay: () => void;
   onRestart?: () => void;
   onChangeTeam?: () => void;
@@ -439,6 +491,13 @@ function EndPanel(props: {
         {result.reason === "limit" ? "Dopo 100 azioni." : `In ${props.state.actions} azioni.`} In piedi: {standing(props.playerSide)} dei tuoi, {standing(otherSide(props.playerSide))} degli avversari.
         {best ? ` Più danni: ${props.nameOf(best[0])} (${best[1]}).` : ""}
       </p>
+      {props.rewards !== undefined && (
+        <p className="mt-1 text-[12px] font-bold leading-4 text-comic-yellow">
+          {props.rewards && (props.rewards.xp > 0 || props.rewards.coins > 0)
+            ? `+${props.rewards.xp} XP${props.rewards.coins > 0 ? ` · +${props.rewards.coins} monete` : ""}`
+            : "Niente premi: hai già giocato gli scontri premiati di oggi."}
+        </p>
+      )}
       <div className="mt-2 grid grid-cols-3 gap-1.5">
         <button type="button" onClick={props.onReplay} className="btn btn-ghost min-h-11 px-1 text-[12px]">
           Rivedi

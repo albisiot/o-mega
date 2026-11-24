@@ -283,6 +283,12 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          raid_active: boolean
+          raid_district: string | null
+          raid_magnitude: number | null
+          raid_moves: string[]
+          raid_star_rarities: string[]
+          raid_vita_percent: number
           scene: string
         }
         Insert: {
@@ -292,6 +298,12 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          raid_active?: boolean
+          raid_district?: string | null
+          raid_magnitude?: number | null
+          raid_moves?: string[]
+          raid_star_rarities?: string[]
+          raid_vita_percent?: number
           scene: string
         }
         Update: {
@@ -301,6 +313,12 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          raid_active?: boolean
+          raid_district?: string | null
+          raid_magnitude?: number | null
+          raid_moves?: string[]
+          raid_star_rarities?: string[]
+          raid_vita_percent?: number
           scene?: string
         }
         Relationships: []
@@ -1224,6 +1242,114 @@ export type Database = {
           {
             foreignKeyName: "coin_ledger_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      combat_battles: {
+        Row: {
+          actions: Json
+          auto: boolean
+          coins: number | null
+          created_at: string
+          finished_at: string | null
+          id: string
+          result: Json | null
+          rules: Json
+          seed: number
+          setup: Json
+          status: string
+          tactics: Json
+          updated_at: string
+          user_id: string
+          xp: number | null
+        }
+        Insert: {
+          actions?: Json
+          auto?: boolean
+          coins?: number | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          result?: Json | null
+          rules: Json
+          seed: number
+          setup: Json
+          status?: string
+          tactics: Json
+          updated_at?: string
+          user_id: string
+          xp?: number | null
+        }
+        Update: {
+          actions?: Json
+          auto?: boolean
+          coins?: number | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          result?: Json | null
+          rules?: Json
+          seed?: number
+          setup?: Json
+          status?: string
+          tactics?: Json
+          updated_at?: string
+          user_id?: string
+          xp?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combat_battles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      combat_kits: {
+        Row: {
+          definition_id: string
+          kit: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          definition_id: string
+          kit: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          definition_id?: string
+          kit?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combat_kits_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: true
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combat_kits_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: true
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combat_kits_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -3940,6 +4066,638 @@ export type Database = {
           },
         ]
       }
+      raid_community: {
+        Row: {
+          coins: number
+          event_id: string
+          fallen_at: string | null
+          packs: number
+          shards: number
+          vita: number
+        }
+        Insert: {
+          coins?: number
+          event_id: string
+          fallen_at?: string | null
+          packs?: number
+          shards?: number
+          vita: number
+        }
+        Update: {
+          coins?: number
+          event_id?: string
+          fallen_at?: string | null
+          packs?: number
+          shards?: number
+          vita?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_community_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raid_community_rewards: {
+        Row: {
+          coins: number
+          event_id: string
+          granted_at: string
+          opening_ids: string[]
+          packs: number
+          shards: number
+          user_id: string
+        }
+        Insert: {
+          coins: number
+          event_id: string
+          granted_at?: string
+          opening_ids?: string[]
+          packs: number
+          shards: number
+          user_id: string
+        }
+        Update: {
+          coins?: number
+          event_id?: string
+          granted_at?: string
+          opening_ids?: string[]
+          packs?: number
+          shards?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_community_rewards_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_community_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raid_members: {
+        Row: {
+          bot_avatar_definition_id: string | null
+          bot_name: string | null
+          card_instance_ids: string[] | null
+          coins: number | null
+          community: boolean | null
+          definition_ids: string[] | null
+          joined_at: string
+          last_seen_at: string
+          left_at: string | null
+          placed_round: number | null
+          placement: string | null
+          ready: boolean
+          room_id: string
+          seat: number
+          signal: string | null
+          signal_at: string | null
+          star_coins: number | null
+          stars: string[] | null
+          user_id: string | null
+          weekly_coins: number | null
+          xp: number | null
+        }
+        Insert: {
+          bot_avatar_definition_id?: string | null
+          bot_name?: string | null
+          card_instance_ids?: string[] | null
+          coins?: number | null
+          community?: boolean | null
+          definition_ids?: string[] | null
+          joined_at?: string
+          last_seen_at?: string
+          left_at?: string | null
+          placed_round?: number | null
+          placement?: string | null
+          ready?: boolean
+          room_id: string
+          seat: number
+          signal?: string | null
+          signal_at?: string | null
+          star_coins?: number | null
+          stars?: string[] | null
+          user_id?: string | null
+          weekly_coins?: number | null
+          xp?: number | null
+        }
+        Update: {
+          bot_avatar_definition_id?: string | null
+          bot_name?: string | null
+          card_instance_ids?: string[] | null
+          coins?: number | null
+          community?: boolean | null
+          definition_ids?: string[] | null
+          joined_at?: string
+          last_seen_at?: string
+          left_at?: string | null
+          placed_round?: number | null
+          placement?: string | null
+          ready?: boolean
+          room_id?: string
+          seat?: number
+          signal?: string | null
+          signal_at?: string | null
+          star_coins?: number | null
+          stars?: string[] | null
+          user_id?: string | null
+          weekly_coins?: number | null
+          xp?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_members_bot_avatar_definition_id_fkey"
+            columns: ["bot_avatar_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_members_bot_avatar_definition_id_fkey"
+            columns: ["bot_avatar_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_members_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "raid_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raid_plays: {
+        Row: {
+          auto_played: boolean
+          base_score: number
+          bonus: number
+          card_instance_id: string
+          counted: number
+          definition_id: string
+          highest_value: number
+          parts: Json | null
+          room_id: string
+          round: number
+          score: number
+          seat: number
+          user_id: string | null
+        }
+        Insert: {
+          auto_played: boolean
+          base_score: number
+          bonus: number
+          card_instance_id: string
+          counted: number
+          definition_id: string
+          highest_value: number
+          parts?: Json | null
+          room_id: string
+          round: number
+          score: number
+          seat: number
+          user_id?: string | null
+        }
+        Update: {
+          auto_played?: boolean
+          base_score?: number
+          bonus?: number
+          card_instance_id?: string
+          counted?: number
+          definition_id?: string
+          highest_value?: number
+          parts?: Json | null
+          room_id?: string
+          round?: number
+          score?: number
+          seat?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_plays_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_plays_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_plays_room_id_round_fkey"
+            columns: ["room_id", "round"]
+            isOneToOne: false
+            referencedRelation: "raid_rounds"
+            referencedColumns: ["room_id", "round"]
+          },
+          {
+            foreignKeyName: "raid_plays_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raid_progress: {
+        Row: {
+          boss_id: string
+          completed_at: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          boss_id: string
+          completed_at?: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          boss_id?: string
+          completed_at?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_progress_boss_id_fkey"
+            columns: ["boss_id"]
+            isOneToOne: false
+            referencedRelation: "boss_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_progress_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "raid_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raid_queue: {
+        Row: {
+          boss_id: string
+          card_instance_ids: string[]
+          definition_ids: string[]
+          joined_at: string
+          polled_at: string
+          user_id: string
+        }
+        Insert: {
+          boss_id: string
+          card_instance_ids: string[]
+          definition_ids: string[]
+          joined_at?: string
+          polled_at?: string
+          user_id: string
+        }
+        Update: {
+          boss_id?: string
+          card_instance_ids?: string[]
+          definition_ids?: string[]
+          joined_at?: string
+          polled_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_queue_boss_id_fkey"
+            columns: ["boss_id"]
+            isOneToOne: false
+            referencedRelation: "boss_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_queue_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raid_rooms: {
+        Row: {
+          boss_id: string
+          code: string
+          created_at: string
+          current_round: number
+          defenses: number | null
+          finished_at: string | null
+          forza_percent: number
+          host: string
+          id: string
+          magnitude: number
+          move_modifiers: Json
+          moves: string[]
+          players: number | null
+          reward_percent: number
+          started_at: string | null
+          status: string
+          threat_ids: string[]
+          threat_levels: number[]
+          touched_at: string
+          vita: number | null
+          vita_max: number | null
+          vita_percent: number
+        }
+        Insert: {
+          boss_id: string
+          code: string
+          created_at?: string
+          current_round?: number
+          defenses?: number | null
+          finished_at?: string | null
+          forza_percent: number
+          host: string
+          id?: string
+          magnitude: number
+          move_modifiers?: Json
+          moves: string[]
+          players?: number | null
+          reward_percent: number
+          started_at?: string | null
+          status?: string
+          threat_ids: string[]
+          threat_levels: number[]
+          touched_at?: string
+          vita?: number | null
+          vita_max?: number | null
+          vita_percent: number
+        }
+        Update: {
+          boss_id?: string
+          code?: string
+          created_at?: string
+          current_round?: number
+          defenses?: number | null
+          finished_at?: string | null
+          forza_percent?: number
+          host?: string
+          id?: string
+          magnitude?: number
+          move_modifiers?: Json
+          moves?: string[]
+          players?: number | null
+          reward_percent?: number
+          started_at?: string | null
+          status?: string
+          threat_ids?: string[]
+          threat_levels?: number[]
+          touched_at?: string
+          vita?: number | null
+          vita_max?: number | null
+          vita_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_rooms_boss_id_fkey"
+            columns: ["boss_id"]
+            isOneToOne: false
+            referencedRelation: "boss_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_rooms_host_fkey"
+            columns: ["host"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raid_rounds: {
+        Row: {
+          attack: number
+          cancelled: boolean | null
+          damage: number | null
+          deadline_at: string
+          defenses: number | null
+          defenses_lost: number | null
+          effective_attack: number | null
+          healed: number | null
+          held: boolean | null
+          level: number
+          move: string
+          required: number | null
+          resolved_at: string | null
+          room_id: string
+          round: number
+          threat_id: string
+          total: number | null
+          vita: number | null
+        }
+        Insert: {
+          attack: number
+          cancelled?: boolean | null
+          damage?: number | null
+          deadline_at: string
+          defenses?: number | null
+          defenses_lost?: number | null
+          effective_attack?: number | null
+          healed?: number | null
+          held?: boolean | null
+          level: number
+          move: string
+          required?: number | null
+          resolved_at?: string | null
+          room_id: string
+          round: number
+          threat_id: string
+          total?: number | null
+          vita?: number | null
+        }
+        Update: {
+          attack?: number
+          cancelled?: boolean | null
+          damage?: number | null
+          deadline_at?: string
+          defenses?: number | null
+          defenses_lost?: number | null
+          effective_attack?: number | null
+          healed?: number | null
+          held?: boolean | null
+          level?: number
+          move?: string
+          required?: number | null
+          resolved_at?: string | null
+          room_id?: string
+          round?: number
+          threat_id?: string
+          total?: number | null
+          vita?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_rounds_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "raid_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_rounds_threat_id_fkey"
+            columns: ["threat_id"]
+            isOneToOne: false
+            referencedRelation: "threat_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raid_stars: {
+        Row: {
+          boss_id: string
+          created_at: string
+          room_id: string
+          star: string
+          user_id: string
+        }
+        Insert: {
+          boss_id: string
+          created_at?: string
+          room_id: string
+          star: string
+          user_id: string
+        }
+        Update: {
+          boss_id?: string
+          created_at?: string
+          room_id?: string
+          star?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_stars_boss_id_fkey"
+            columns: ["boss_id"]
+            isOneToOne: false
+            referencedRelation: "boss_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_stars_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "raid_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_stars_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raid_weekly_wins: {
+        Row: {
+          coins: number
+          created_at: string
+          room_id: string
+          user_id: string
+          week: string
+        }
+        Insert: {
+          coins: number
+          created_at?: string
+          room_id: string
+          user_id: string
+          week: string
+        }
+        Update: {
+          coins?: number
+          created_at?: string
+          room_id?: string
+          user_id?: string
+          week?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_weekly_wins_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "raid_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_weekly_wins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raid_weeks: {
+        Row: {
+          boss_id: string
+          chosen_by: string | null
+          created_at: string
+          week: string
+        }
+        Insert: {
+          boss_id: string
+          chosen_by?: string | null
+          created_at?: string
+          week: string
+        }
+        Update: {
+          boss_id?: string
+          chosen_by?: string | null
+          created_at?: string
+          week?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_weeks_boss_id_fkey"
+            columns: ["boss_id"]
+            isOneToOne: false
+            referencedRelation: "boss_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raid_weeks_chosen_by_fkey"
+            columns: ["chosen_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ranked_ghost_turns: {
         Row: {
           match_id: string
@@ -5152,7 +5910,9 @@ export type Database = {
       admin_achievements_payload: { Args: never; Returns: Json }
       admin_bonus_codes_payload: { Args: never; Returns: Json }
       admin_boss_table_payload: { Args: never; Returns: Json }
+      admin_bosses_payload: { Args: never; Returns: Json }
       admin_challenges_payload: { Args: never; Returns: Json }
+      admin_combat_kits: { Args: never; Returns: Json }
       admin_coop_payload: { Args: never; Returns: Json }
       admin_create_bonus_code: {
         Args: {
@@ -5170,13 +5930,19 @@ export type Database = {
       }
       admin_daily_objectives_payload: { Args: never; Returns: Json }
       admin_delete_achievement: { Args: { p_id: string }; Returns: Json }
+      admin_delete_boss: { Args: { p_code: string }; Returns: Json }
       admin_delete_challenge: { Args: { p_id: string }; Returns: Json }
+      admin_delete_combat_kit: {
+        Args: { p_definition: string }
+        Returns: boolean
+      }
       admin_delete_coop_operation: { Args: { p_code: string }; Returns: Json }
       admin_delete_daily_objective: { Args: { p_code: string }; Returns: Json }
       admin_delete_event: { Args: { p_id: string }; Returns: Json }
       admin_delete_special_pack: { Args: { p_id: string }; Returns: Json }
       admin_events_payload: { Args: never; Returns: Json }
       admin_get_boss_table: { Args: never; Returns: Json }
+      admin_get_bosses: { Args: never; Returns: Json }
       admin_get_coop: { Args: never; Returns: Json }
       admin_get_shard_settings: { Args: never; Returns: Json }
       admin_get_story: { Args: never; Returns: Json }
@@ -5203,6 +5969,7 @@ export type Database = {
         Args: { p_draft: Json; p_id: string }
         Returns: Json
       }
+      admin_save_boss: { Args: { p_boss: Json }; Returns: Json }
       admin_save_boss_table: {
         Args: {
           p_base_value: number
@@ -5237,6 +6004,10 @@ export type Database = {
           p_title: string
         }
         Returns: Json
+      }
+      admin_save_combat_kit: {
+        Args: { p_definition: string; p_kit: Json }
+        Returns: number
       }
       admin_save_coop_chapter: {
         Args: {
@@ -5370,6 +6141,20 @@ export type Database = {
       }
       admin_set_event_active: {
         Args: { p_active: boolean; p_id: string }
+        Returns: Json
+      }
+      admin_set_raid_community: {
+        Args: {
+          p_coins: number
+          p_event: string
+          p_packs: number
+          p_shards: number
+          p_vita: number
+        }
+        Returns: Json
+      }
+      admin_set_raid_week: {
+        Args: { p_boss: string; p_week: string }
         Returns: Json
       }
       admin_set_special_pack_active: {
@@ -5818,6 +6603,30 @@ export type Database = {
           locked_copies: number
           starter_copies: number
         }[]
+      }
+      combat_abandon: { Args: { p_battle: string }; Returns: boolean }
+      combat_active: { Args: never; Returns: string }
+      combat_create: {
+        Args: {
+          p_auto: boolean
+          p_card_instance_ids: string[]
+          p_rules: Json
+          p_seed: number
+          p_setup: Json
+          p_tactics: Json
+          p_user: string
+        }
+        Returns: string
+      }
+      combat_record: {
+        Args: {
+          p_actions: Json
+          p_battle: string
+          p_from: number
+          p_result: Json
+          p_user: string
+        }
+        Returns: Json
       }
       complete_achievement: {
         Args: {
@@ -6318,6 +7127,7 @@ export type Database = {
       get_pack_opening: { Args: { p_opening_id: string }; Returns: Json }
       get_pack_status: { Args: never; Returns: Json }
       get_player_notifications: { Args: never; Returns: Json }
+      get_raid: { Args: never; Returns: Json }
       get_ranked_board: {
         Args: { p_format?: string; p_season?: string }
         Returns: Json
@@ -6921,6 +7731,114 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      raid_add_ally: { Args: { p_room: string }; Returns: undefined }
+      raid_ally_squad: { Args: never; Returns: string[] }
+      raid_assert_free: { Args: { p_user: string }; Returns: undefined }
+      raid_attack: {
+        Args: { p_forza: number; p_level: number; p_players: number }
+        Returns: number
+      }
+      raid_close_stale: { Args: never; Returns: undefined }
+      raid_community_damage: { Args: { p_event: string }; Returns: number }
+      raid_community_grant: {
+        Args: { p_event: string; p_user: string }
+        Returns: boolean
+      }
+      raid_community_payload: { Args: { p_user: string }; Returns: Json }
+      raid_create_room: { Args: { p_boss: string }; Returns: Json }
+      raid_draw_moves: {
+        Args: { p_boss: string; p_levels: number[] }
+        Returns: string[]
+      }
+      raid_draw_threats: { Args: { p_boss: string }; Returns: string[] }
+      raid_foreseen: { Args: { p_room: string }; Returns: Json }
+      raid_join_room: { Args: { p_code: string }; Returns: Json }
+      raid_leave_room: { Args: { p_room: string }; Returns: undefined }
+      raid_member_eligible: {
+        Args: { p_room: string; p_seat: number }
+        Returns: boolean
+      }
+      raid_member_stars: {
+        Args: { p_room: string; p_seat: number }
+        Returns: string[]
+      }
+      raid_move_modifiers: { Args: { p_moves: string[] }; Returns: Json }
+      raid_new_room: {
+        Args: { p_boss: string; p_host: string }
+        Returns: string
+      }
+      raid_notify: {
+        Args: { p_kind: string; p_room: string }
+        Returns: undefined
+      }
+      raid_open_room: { Args: { p_user: string }; Returns: string }
+      raid_open_round: {
+        Args: { p_room: string; p_round: number }
+        Returns: undefined
+      }
+      raid_percent: {
+        Args: { p_hundredths: number; p_value: number }
+        Returns: number
+      }
+      raid_place: {
+        Args: {
+          p_card: string
+          p_ready: boolean
+          p_room: string
+          p_round: number
+        }
+        Returns: Json
+      }
+      raid_queue_join: {
+        Args: { p_boss: string; p_card_instance_ids: string[] }
+        Returns: Json
+      }
+      raid_queue_leave: { Args: never; Returns: undefined }
+      raid_queue_match: { Args: { p_boss: string }; Returns: string }
+      raid_queue_poll: { Args: never; Returns: Json }
+      raid_queue_status: { Args: { p_user: string }; Returns: Json }
+      raid_record_round: {
+        Args: { p_record: Json; p_room: string; p_round: number }
+        Returns: Json
+      }
+      raid_remove_ally: {
+        Args: { p_room: string; p_seat: number }
+        Returns: undefined
+      }
+      raid_round_context: {
+        Args: { p_room: string; p_user: string }
+        Returns: Json
+      }
+      raid_seat_ally: { Args: { p_room: string }; Returns: number }
+      raid_set_ready: {
+        Args: { p_ready: boolean; p_room: string }
+        Returns: undefined
+      }
+      raid_set_squad: {
+        Args: { p_card_instance_ids: string[]; p_room: string }
+        Returns: undefined
+      }
+      raid_signal: {
+        Args: { p_room: string; p_signal: string }
+        Returns: undefined
+      }
+      raid_squad_definitions: {
+        Args: { p_card_instance_ids: string[]; p_user: string }
+        Returns: string[]
+      }
+      raid_star_rules: {
+        Args: {
+          p_boss: Database["public"]["Tables"]["boss_definitions"]["Row"]
+        }
+        Returns: Json
+      }
+      raid_start: { Args: { p_room: string }; Returns: undefined }
+      raid_state: { Args: { p_room: string }; Returns: Json }
+      raid_vita_max: {
+        Args: { p_forza: number; p_players: number; p_vita_percent: number }
+        Returns: number
+      }
+      raid_week_boss: { Args: { p_week: string }; Returns: string }
       random_variants_payload: { Args: { p_spec: Json }; Returns: Json }
       random_variants_spec: { Args: { p_spec: Json }; Returns: Json }
       ranked_board_entry: {

@@ -31,7 +31,7 @@ do $$
 declare
   v_failed boolean;
 begin
-  assert (select count(*) from public.mode_availability) = 12, 'twelve modes';
+  assert (select count(*) from public.mode_availability) = 13, 'thirteen modes';
   assert not exists (select 1 from public.mode_availability where state <> 'on' or label is not null), 'default: on, no label';
   assert public.mode_open('classic') and public.mode_open('coop'), 'open by default';
   assert public.mode_open('a_mode_added_later'), 'a mode without a row is open';

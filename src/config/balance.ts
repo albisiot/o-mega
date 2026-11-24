@@ -523,6 +523,13 @@ export const balance = {
     statuses: { empowerPercent: 25, fortifyPercent: 50, hastePercent: 20, weakenPercent: 20, vulnerablePercent: 30, burnPercent: 6, maxTurns: 3 },
     /** Chance of a debuff in percent: its base plus perPoint × (user's ability − target's mean in that family), within the limits. */
     effectChance: { perPoint: 3, minPercent: 10, maxPercent: 90 },
+    /** Stage 4: the field is a usual threat of Nuova Megara between these levels, drawn by the server. */
+    field: { minLevel: 2, maxLevel: 4 },
+    /**
+     * Stage 4, battles against the computer: XP of a win and of a loss (or a draw), coins of a win,
+     * and how many finished battles a day (Europe/Rome) pay. Abandoned battles pay nothing.
+     */
+    rewards: { winXp: 20, lossXp: 8, winCoins: 15, dailyBattles: 5 },
   },
 
   /**

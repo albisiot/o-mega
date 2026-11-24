@@ -38,6 +38,7 @@ const MODE_LOOKS: Record<GameModeKey, string> = {
   emergency_week: "bg-foreground",
   coop: "bg-comic-cyan",
   raid: "bg-comic-orange",
+  combat: "bg-comic-yellow",
 };
 
 const STATES: { key: ModeState; label: string }[] = [

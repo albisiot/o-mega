@@ -75,6 +75,32 @@ import {
   type TripleRules,
   type TripleState,
 } from "../_shared/game-engine/index.ts";
+import {
+  COMBAT_PRIORITIES,
+  COMBAT_STRATEGIES,
+  DEFAULT_COMBAT_TACTICS,
+  applyCombatAction,
+  autoCombatFormation,
+  chooseCombatAction,
+  combatActor,
+  createCombat,
+  mulberry32,
+  shuffle,
+  validateCombatRules,
+  type AbilityFamilies,
+  type CombatAction,
+  type CombatField,
+  type CombatFighterInput,
+  type CombatKit,
+  type CombatOrder,
+  type CombatRules,
+  type CombatSetup,
+  type CombatSlot,
+  type CombatStep,
+  type CombatStrategy,
+  type CombatTactics,
+  type CombatTargetPriority,
+} from "../_shared/game-engine/index.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -145,6 +171,13 @@ const CLIENT_ERRORS = new Set([
   "raid_room_not_found",
   // A mode switched off from the EDITOR, or outside its dates (raised by the database on start).
   "mode_unavailable",
+  // Scontro a squadre (SPEC §5.19)
+  "combat_not_found",
+  "combat_finished",
+  "combat_stale",
+  "combat_no_kit",
+  "combat_not_your_turn",
+  "combat_illegal_action",
 ]);
 
 class GameError extends Error {}
@@ -1945,6 +1978,280 @@ async function simulateChallengeFor(userId: string, body: Record<string, unknown
 }
 
 // ---------------------------------------------------------------------------
+// Scontro a squadre (SPEC §5.19, docs/COMBAT.md): battles against the computer. The battle lives
+// in combat_battles as its setup, its numbers, its seed (never sent out) and every choice so far;
+// each call rebuilds it with the engine from the seed, plays the player's choice and the computer's
+// answers, and appends them (combat_record refuses a stale call). The client gets the steps to show
+// and the fighters' kits, never the seed.
+// ---------------------------------------------------------------------------
+
+type CombatDefinition = { id: string; code: string; name: string; rarity_code: string; stats: Record<string, number> };
+type CombatLoaded = {
+  rules: CombatRules;
+  families: AbilityFamilies;
+  /** Characters with a kit, by definition id. */
+  kits: Map<string, { definition: CombatDefinition; kit: CombatKit }>;
+  /** Ability budget by rarity code. */
+  budgets: Map<string, number>;
+  /** Usual threats of Nuova Megara between combat.field's levels. */
+  fields: CombatField[];
+};
+type CombatRow = {
+  id: string;
+  user_id: string;
+  status: string;
+  setup: CombatSetup;
+  rules: CombatRules;
+  seed: number;
+  tactics: CombatTactics;
+  auto: boolean;
+  actions: CombatAction[];
+  xp: number | null;
+  coins: number | null;
+};
+
+let combatCache: { loaded: CombatLoaded; at: number } | null = null;
+const COMBAT_SLOTS_SENT: CombatSlot[] = ["base", "special", "supreme"];
+
+/** The game_config keys combat.* as the engine's numbers: "combat.per_point.res" → { perPoint: { res } }. */
+function combatNumbers(rows: { key: string; value: unknown }[]): Record<string, unknown> {
+  const root: Record<string, unknown> = {};
+  for (const row of rows) {
+    if (!row.key.startsWith("combat.")) continue;
+    const path = row.key.slice("combat.".length).split(".").map((part) => part.replace(/_([a-z])/g, (_m, c: string) => c.toUpperCase()));
+    let node = root;
+    for (const part of path.slice(0, -1)) node = (node[part] ??= {}) as Record<string, unknown>;
+    node[path[path.length - 1]] = Number(row.value);
+  }
+  return root;
+}
+
+async function loadCombat(): Promise<CombatLoaded> {
+  if (combatCache && Date.now() - combatCache.at < 60_000) return combatCache.loaded;
+  const [config, abilities, rarities, kits, threats] = await Promise.all([
+    admin.from("game_config").select("key, value").like("key", "combat.%"),
+    admin.from("ability_definitions").select("code, family, sort_order").order("sort_order"),
+    admin.from("rarity_definitions").select("code, ability_budget"),
+    admin.from("combat_kits").select("kit, card_definitions(id, code, name, rarity_code, stats, is_active)"),
+    admin.from("threat_definitions").select("name, level, required_abilities, region, rarity_code, is_active"),
+  ]);
+  const numbers = combatNumbers(check(config));
+  const field = numbers.field as { minLevel: number; maxLevel: number } | undefined;
+  delete numbers.field;
+  delete numbers.rewards;
+  const rules = numbers as unknown as CombatRules;
+  const ruleErrors = validateCombatRules(rules);
+  if (ruleErrors.length > 0) throw new Error(`combat rules: ${ruleErrors.join("; ")}`);
+  const kitMap = new Map<string, { definition: CombatDefinition; kit: CombatKit }>();
+  for (const row of check(kits) as unknown as { kit: CombatKit; card_definitions: (CombatDefinition & { is_active: boolean }) | null }[]) {
+    const d = row.card_definitions;
+    if (d && d.is_active) kitMap.set(d.id, { definition: d, kit: row.kit });
+  }
+  const loaded: CombatLoaded = {
+    rules,
+    families: Object.fromEntries(check(abilities).map((a) => [a.code, a.family])),
+    kits: kitMap,
+    budgets: new Map(check(rarities).map((r) => [r.code, Number(r.ability_budget)])),
+    fields: check(threats)
+      .filter((t) => t.is_active && t.region === "megara" && !t.rarity_code && t.level >= (field?.minLevel ?? 2) && t.level <= (field?.maxLevel ?? 4))
+      .map((t) => ({ name: t.name, abilities: t.required_abilities as string[] })),
+  };
+  combatCache = { loaded, at: Date.now() };
+  return loaded;
+}
+
+/** The player's plan for the automatic mode, checked: a known strategy and priority, orders by place 0-4. */
+function combatTacticsFrom(value: unknown): CombatTactics {
+  if (value === undefined || value === null) return { strategy: "balanced", priority: null, orders: {} };
+  if (typeof value !== "object") throw new GameError("invalid_request");
+  const t = value as Record<string, unknown>;
+  const strategy = (t.strategy ?? "balanced") as CombatStrategy;
+  if (typeof strategy !== "string" || !(strategy in COMBAT_STRATEGIES)) throw new GameError("invalid_request");
+  const isPriority = (p: unknown): p is CombatTargetPriority => typeof p === "string" && (COMBAT_PRIORITIES as readonly string[]).includes(p);
+  const priority = t.priority ?? null;
+  if (priority !== null && !isPriority(priority)) throw new GameError("invalid_request");
+  const orders: CombatTactics["orders"] = {};
+  if (t.orders !== undefined && t.orders !== null) {
+    if (typeof t.orders !== "object") throw new GameError("invalid_request");
+    for (const [place, raw] of Object.entries(t.orders as Record<string, unknown>)) {
+      const at = Number(place);
+      if (!Number.isInteger(at) || at < 0 || at > 4 || !raw || typeof raw !== "object") throw new GameError("invalid_request");
+      const o = raw as Record<string, unknown>;
+      const order: CombatOrder = {};
+      if (o.healBelowPercent !== undefined) {
+        const n = Number(o.healBelowPercent);
+        if (!Number.isInteger(n) || n < 1 || n > 99) throw new GameError("invalid_request");
+        order.healBelowPercent = n;
+      }
+      if (o.supremeMinTargets !== undefined) {
+        const n = Number(o.supremeMinTargets);
+        if (!Number.isInteger(n) || n < 1 || n > 5) throw new GameError("invalid_request");
+        order.supremeMinTargets = n;
+      }
+      if (o.priority !== undefined) {
+        if (!isPriority(o.priority)) throw new GameError("invalid_request");
+        order.priority = o.priority;
+      }
+      orders[at] = order;
+    }
+  }
+  return { strategy, priority: priority as CombatTargetPriority | null, orders };
+}
+
+function combatInput(loaded: CombatLoaded, definitionId: string, id: string): CombatFighterInput {
+  const entry = loaded.kits.get(definitionId);
+  if (!entry) throw new GameError("combat_no_kit");
+  const budget = loaded.budgets.get(entry.definition.rarity_code);
+  if (!budget) throw new Error(`no budget for ${entry.definition.rarity_code}`);
+  return { id, definitionId, name: entry.definition.name, stats: entry.definition.stats, budget, kit: entry.kit };
+}
+
+/** The computer plays its side until it is the player's turn or the battle is over; `all` plays the player's side too. */
+function combatPlayOn(ctx: { rules: CombatRules; families: AbilityFamilies }, rng: Rng, steps: CombatStep[], actions: CombatAction[], tactics: CombatTactics, all: boolean) {
+  for (let state = steps[steps.length - 1].state; !state.result; state = steps[steps.length - 1].state) {
+    const side = combatActor(state)!.side;
+    if (side === "a" && !all) return;
+    const action = chooseCombatAction(state, ctx, side === "a" ? tactics : DEFAULT_COMBAT_TACTICS);
+    actions.push(action);
+    steps.push(applyCombatAction(state, action, ctx, rng));
+  }
+}
+
+/** What the client gets: the fighters with their kits once, then the steps from `from` without the kits. */
+function combatView(row: Pick<CombatRow, "id" | "status" | "auto" | "setup" | "xp" | "coins">, steps: CombatStep[], from: number) {
+  const bare = (step: CombatStep) => ({
+    events: step.events,
+    state: {
+      ...step.state,
+      fighters: step.state.fighters.map((f) => {
+        const { kit, ...rest } = f;
+        void kit;
+        return rest;
+      }),
+    },
+  });
+  return {
+    battle_id: row.id,
+    status: row.status,
+    auto: row.auto,
+    field: row.setup.field,
+    kits: Object.fromEntries(steps[0].state.fighters.map((f) => [f.key, f.kit])),
+    from,
+    steps: steps.slice(from).map(bare),
+    rewards: row.status === "active" ? null : { xp: row.xp ?? 0, coins: row.coins ?? 0 },
+  };
+}
+
+async function recordCombat(row: CombatRow, userId: string, from: number, actions: CombatAction[], steps: CombatStep[]) {
+  const result = steps[steps.length - 1].state.result;
+  const saved = check(await admin.rpc("combat_record", { p_battle: row.id, p_user: userId, p_from: from, p_actions: actions, p_result: result })) as {
+    status: string;
+    xp?: number;
+    coins?: number;
+  };
+  row.status = saved.status;
+  row.xp = saved.xp ?? null;
+  row.coins = saved.coins ?? null;
+}
+
+async function loadCombatRow(userId: string, battleId: unknown): Promise<CombatRow> {
+  if (typeof battleId !== "string") throw new GameError("invalid_request");
+  const { data, error } = await admin.from("combat_battles").select("*").eq("id", battleId).eq("user_id", userId).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new GameError("combat_not_found");
+  return data as CombatRow;
+}
+
+function rebuildCombat(row: CombatRow, families: AbilityFamilies) {
+  const ctx = { rules: row.rules, families };
+  const rng = mulberry32(Number(row.seed));
+  const steps: CombatStep[] = [createCombat(row.setup, ctx, rng)];
+  for (const action of row.actions) steps.push(applyCombatAction(steps[steps.length - 1].state, action, ctx, rng));
+  return { ctx, rng, steps };
+}
+
+/** A new battle: the player's five cards in their places, five characters of the computer, a field, a hidden seed. */
+async function startCombat(userId: string, body: Record<string, unknown>) {
+  const cards = cardIds(body.card_instance_ids);
+  const loaded = await loadCombat();
+  if (cards.length !== loaded.rules.teamSize) throw new GameError("invalid_team_size");
+  const auto = body.auto === true;
+  const tactics = combatTacticsFrom(body.tactics);
+  const instances = check(await admin.from("card_instances").select("id, definition_id").in("id", cards));
+  const definitionOf = new Map(instances.map((i) => [i.id as string, i.definition_id as string]));
+  const a = cards.map((id) => {
+    const definitionId = definitionOf.get(id);
+    if (!definitionId) throw new GameError("card_not_owned");
+    return combatInput(loaded, definitionId, id);
+  });
+  const ctx = { rules: loaded.rules, families: loaded.families };
+  const computer = shuffle(rng, [...loaded.kits.keys()]).slice(0, loaded.rules.teamSize);
+  if (computer.length < loaded.rules.teamSize) throw new GameError("combat_no_kit");
+  const b = autoCombatFormation(computer.map((id) => combatInput(loaded, id, id)), ctx);
+  const setup: CombatSetup = { a, b, field: loaded.fields.length > 0 ? pickOne(rng, loaded.fields) : null };
+  const seed = crypto.getRandomValues(new Uint32Array(1))[0];
+  const battleRng = mulberry32(seed);
+  const steps: CombatStep[] = [createCombat(setup, ctx, battleRng)];
+  const actions: CombatAction[] = [];
+  combatPlayOn(ctx, battleRng, steps, actions, tactics, auto);
+  const id = check(
+    await admin.rpc("combat_create", {
+      p_user: userId,
+      p_card_instance_ids: cards,
+      p_setup: setup,
+      p_rules: loaded.rules,
+      p_seed: seed,
+      p_tactics: tactics,
+      p_auto: auto,
+    }),
+  ) as string;
+  const row: CombatRow = { id, user_id: userId, status: "active", setup, rules: loaded.rules, seed, tactics, auto, actions: [], xp: null, coins: null };
+  if (actions.length > 0) await recordCombat(row, userId, 0, actions, steps);
+  return combatView(row, steps, 0);
+}
+
+/** The player's choice in manual mode, then the computer's answers; `finish` plays the rest of the battle automatically. */
+async function actCombat(userId: string, body: Record<string, unknown>, finish: boolean) {
+  const loaded = await loadCombat();
+  const row = await loadCombatRow(userId, body.battle_id);
+  if (row.status !== "active") throw new GameError("combat_finished");
+  const { ctx, rng: battleRng, steps } = rebuildCombat(row, loaded.families);
+  const from = steps.length;
+  const actions: CombatAction[] = [];
+  if (!finish) {
+    const state = steps[steps.length - 1].state;
+    if (state.result || combatActor(state)?.side !== "a") throw new GameError("combat_not_your_turn");
+    const slot = body.slot as CombatSlot;
+    const target = body.target ?? null;
+    if (!COMBAT_SLOTS_SENT.includes(slot) || (target !== null && typeof target !== "string")) throw new GameError("invalid_request");
+    const action: CombatAction = { slot, target: target as string | null };
+    try {
+      steps.push(applyCombatAction(state, action, ctx, battleRng));
+    } catch {
+      throw new GameError("combat_illegal_action");
+    }
+    actions.push(action);
+  }
+  combatPlayOn(ctx, battleRng, steps, actions, row.tactics, finish);
+  if (actions.length > 0) await recordCombat(row, userId, row.actions.length, actions, steps);
+  return combatView(row, steps, from);
+}
+
+/** The battle under way (or the one asked for, if the player's): every step from the start. */
+async function combatStateFor(userId: string, body: Record<string, unknown>) {
+  let battleId = body.battle_id;
+  if (battleId === undefined || battleId === null) {
+    const { data, error } = await admin.from("combat_battles").select("id").eq("user_id", userId).eq("status", "active").order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) return { battle_id: null };
+    battleId = data.id;
+  }
+  const loaded = await loadCombat();
+  const row = await loadCombatRow(userId, battleId);
+  return combatView(row, rebuildCombat(row, loaded.families).steps, 0);
+}
+
+// ---------------------------------------------------------------------------
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -2012,6 +2319,14 @@ Deno.serve(async (req) => {
         return json(await resolveCoopRoundFor(userId, body));
       case "raid_resolve":
         return json(await resolveRaidRoundFor(userId, body));
+      case "combat_start":
+        return json(await startCombat(userId, body));
+      case "combat_act":
+        return json(await actCombat(userId, body, false));
+      case "combat_finish":
+        return json(await actCombat(userId, body, true));
+      case "combat_state":
+        return json(await combatStateFor(userId, body));
       default:
         throw new GameError("invalid_request");
     }

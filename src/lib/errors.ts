@@ -226,6 +226,13 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   raid_community_invalid: "Boss della comunità: Vita da 1 a 100.000.000 e almeno un premio (monete fino a 100.000, pacchetti fino a 5, Schegge fino a 100).",
   // Modalità di gioco (EDITOR)
   mode_unavailable: "Questa modalità non è disponibile ora.",
+  // Scontro a squadre (SPEC §5.19)
+  combat_not_found: "Questo scontro non c'è più.",
+  combat_finished: "Lo scontro è già finito.",
+  combat_stale: "Lo scontro è andato avanti su un altro schermo: ricarica la pagina.",
+  combat_no_kit: "Uno dei personaggi non ha ancora le mosse dello Scontro.",
+  combat_not_your_turn: "Non è il tuo turno.",
+  combat_illegal_action: "Questa mossa non si può fare ora.",
   invalid_mode_state: "Scegli: sempre attiva, da data a data, o spenta.",
   invalid_mode_window: "Metti l'inizio e la fine, con la fine dopo l'inizio.",
   invalid_mode_label: "L'etichetta ha al massimo 16 caratteri.",

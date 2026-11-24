@@ -22,6 +22,7 @@ const PAGES: Record<string, readonly [name: string, back: string]> = {
   "/operazioni": ["Operazioni", "Torna alle Operazioni"],
   "/operazioni/stanza": ["Stanza", "Torna alla stanza"],
   "/operazioni/coda": ["Cerca squadra", "Torna alla coda"],
+  "/scontro": ["Scontro a squadre", "Torna allo Scontro"],
   "/squadra": ["Squadra", "Torna alla squadra"],
   "/partita": ["Partita", "Torna alla partita"],
   "/carta": ["Carta", "Torna alla carta"],

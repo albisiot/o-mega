@@ -20,7 +20,8 @@ export type GameModeKey =
   | "emergency"
   | "emergency_week"
   | "coop"
-  | "raid";
+  | "raid"
+  | "combat";
 
 export type ModeState = "on" | "window" | "off";
 
@@ -54,6 +55,7 @@ export const GAME_MODES: { key: GameModeKey; name: string; detail: string; paren
   { key: "emergency_week", name: "Emergenza della settimana", detail: "Il tentativo della settimana" },
   { key: "coop", name: "Operazioni", detail: "Stanze e coda pubblica" },
   { key: "raid", name: "Caccia grossa", detail: "Stanze contro un Boss" },
+  { key: "combat", name: "Scontro a squadre", detail: "5 contro 5 contro il computer" },
 ];
 
 /** Where a mode is now: `before`/`during`/`after` its period, or always `on`/`off`. */

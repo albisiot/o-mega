@@ -67,6 +67,13 @@ export const ADMIN_TOOLS: AdminTool[] = [
     icon: "M8 11a3 3 0 100-6 3 3 0 000 6zM16 11a3 3 0 100-6 3 3 0 000 6zM2 20c0-3 3-5 6-5s6 2 6 5M12 20c0-3 2-5 4-5s6 2 6 5",
   },
   {
+    href: "/gestione-scontro",
+    name: "Scontro",
+    description: "Le mosse dei personaggi nello Scontro a squadre",
+    group: "contents",
+    icon: "M14.5 17.5L3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M9.5 17.5L21 6V3h-3L6.5 14.5M11 19l-6-6M8 16l-4 4",
+  },
+  {
     href: "/gestione-codici",
     name: "Codici bonus",
     description: "Codici da riscattare",

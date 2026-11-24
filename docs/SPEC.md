@@ -1273,7 +1273,7 @@ Chiesto dall'utente il 24 novembre 2026 con un documento di progetto («COMBAT S
 - **Fine:** vince chi elimina la squadra avversaria; dopo 100 azioni contano i personaggi in piedi, poi la Vita rimasta.
 - **Tre modi, un solo motore:** manuale, automatico e automatico tattico (strategia, priorità dei bersagli e ordini ai singoli personaggi dati prima dello scontro). Decide sempre il server; il motore è puro, con un seme e un registro degli eventi che fa da replay.
 
-**Tappe:** 1) motore, IA semplice e simulatore; 2) effetti di stato, passive, strategie e ordini tattici; 3) 10 personaggi veri e una pagina di prova, `/prova-scontro`, solo in sviluppo (fatte il 24 novembre 2026); 4) tabelle, Edge Function, scontri contro il computer, editor delle mosse per gli admin; 5) i kit di tutti i personaggi; 6) sfide asincrone tra giocatori. Formule, decisioni aperte, criteri di ogni tappa e piano dei test in `docs/COMBAT.md`.
+**Tappe:** 1) motore, IA semplice e simulatore; 2) effetti di stato, passive, strategie e ordini tattici; 3) 10 personaggi veri e una pagina di prova, `/prova-scontro`, solo in sviluppo; 4) tabelle, Edge Function, scontri contro il computer su `/scontro` (20 XP e 15 monete una vittoria, 8 XP una sconfitta, le prime 5 del giorno), editor delle mosse per gli admin (fatte il 24 novembre 2026; la modalità nasce spenta, «Prossimamente», finché un admin non la apre); 5) i kit di tutti i personaggi; 6) sfide asincrone tra giocatori. Formule, decisioni aperte, criteri di ogni tappa e piano dei test in `docs/COMBAT.md`.
 
 ## 6. Conquista delle carte
 
