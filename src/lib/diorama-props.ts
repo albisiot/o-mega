@@ -227,9 +227,10 @@ export function skyline(kit: Kit, z: number, y: number, delay: number, colors: n
 
 /** The volcano far off: a flat silhouette with a glowing crater and a thin plume. */
 export function volcanoBackdrop(kit: Kit, x: number, z: number, y: number, delay: number, size = 1.4): Group[] {
-  const cone = new CylinderGeometry(size * 0.12, size, size * 0.9, 4, 1).scale(1, 1, 0.05);
+  // A four-sided cone turned to show an edge, then flattened: a flat mountain facing the camera.
+  const cone = new CylinderGeometry(size * 0.12, size, size * 0.9, 4, 1).rotateY(Math.PI / 4).scale(1, 1, 0.05);
   return [
-    kit.add(cone, 0x3a2a40, x, y, z, { delay, rotation: [0, Math.PI / 4, 0] }),
+    kit.add(cone, 0x3a2a40, x, y, z, { delay }),
     kit.box(size * 0.22, 0.05, 0.02, 0xff8a00, x, y + size * 0.88, z + 0.04, { delay: delay + 0.1, flat: true, noInk: true }),
     kit.ball(size * 0.12, 0x5a2148, x + size * 0.05, y + size * 1.0, z, { delay: delay + 0.15, noInk: true }),
     kit.ball(size * 0.16, 0x5a2148, x + size * 0.15, y + size * 1.2, z, { delay: delay + 0.2, noInk: true }),

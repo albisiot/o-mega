@@ -100,6 +100,8 @@ export type FigureSpec = {
 export type Figure = {
   /** Centres of the right and left hands, in world space. */
   hands: [Point, Point];
+  /** The right and left elbows, in world space. */
+  elbows: [Point, Point];
   /** Centre of the head, in world space, and its radius. */
   head: Point;
   headRadius: number;
@@ -208,14 +210,14 @@ export function figure(kit: Kit, spec: FigureSpec): Figure {
   const torsoTop = shoulderY - drop;
   if (covered) {
     const length = legs === "sit" || legs === "kneel" ? waist - ankle * 2 : waist - ankle;
-    keep(add(new CylinderGeometry(RW * 1.05, RW * 1.6, length, 18).scale(1, 1, squash + 0.08), top.color, ...at(0, waist - length, 0), o(0.06)));
+    turned(add(new CylinderGeometry(RW * 1.05, RW * 1.6, length, 18).scale(1, 1, squash + 0.08), top.color, ...at(0, waist - length, 0), o(0.06)));
   } else {
-    keep(add(new CylinderGeometry(RW * 1.02, RW * 1.02, 0.28 * u, 16).scale(1, 1, squash), lower, ...at(0, waist - 0.2 * u, 0), o(0.06)));
+    turned(add(new CylinderGeometry(RW * 1.02, RW * 1.02, 0.28 * u, 16).scale(1, 1, squash), lower, ...at(0, waist - 0.2 * u, 0), o(0.06)));
     if (spec.bottom?.kind === "skirt")
-      keep(add(new CylinderGeometry(RW * 1.05, RW * 1.5, 0.45 * u, 16).scale(1, 1, squash + 0.06), spec.bottom.color, ...at(0, waist - 0.45 * u, 0), o(0.07)));
+      turned(add(new CylinderGeometry(RW * 1.05, RW * 1.5, 0.45 * u, 16).scale(1, 1, squash + 0.06), spec.bottom.color, ...at(0, waist - 0.45 * u, 0), o(0.07)));
   }
   if (top.kind === "coat")
-    keep(add(new CylinderGeometry(RW * 1.08, RW * 1.4, 0.62 * u, 16).scale(1, 1, squash + 0.06), top.color, ...at(0, waist - 0.6 * u, 0), o(0.08)));
+    turned(add(new CylinderGeometry(RW * 1.08, RW * 1.4, 0.62 * u, 16).scale(1, 1, squash + 0.06), top.color, ...at(0, waist - 0.6 * u, 0), o(0.08)));
   const torsoHeight = torsoTop - waist + 0.06 * u;
   const torso = turned(add(new CylinderGeometry(RC, RW, torsoHeight, 18).scale(1, 1, squash), top.color, ...at(0, waist - 0.04 * u, 0), o(0.1)));
   const front = RC * squash;
@@ -238,7 +240,7 @@ export function figure(kit: Kit, spec: FigureSpec): Figure {
       [0, mid, front * 0.98],
     ]);
   if (top.kind === "vest") decorate(torso, new BoxGeometry(0.2 * u, torsoHeight * 0.9, 0.02), top.accent ?? 0xe8e2d0, [[0, mid, front * 0.95]]);
-  if (spec.belt !== undefined) keep(add(new CylinderGeometry(RW * 1.06, RW * 1.06, 0.07 * u, 16).scale(1, 1, squash + 0.04), spec.belt, ...at(0, waist, 0), o(0.12)));
+  if (spec.belt !== undefined) turned(add(new CylinderGeometry(RW * 1.06, RW * 1.06, 0.07 * u, 16).scale(1, 1, squash + 0.04), spec.belt, ...at(0, waist, 0), o(0.12)));
   if (top.kind === "hoodie")
     turned(add(new SphereGeometry(0.2 * u, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), top.color, ...at(0, torsoTop - 0.05 * u, -0.22 * u), o(0.14)), [-0.6, 0]);
   if (spec.cape !== undefined) {
@@ -286,8 +288,10 @@ export function figure(kit: Kit, spec: FigureSpec): Figure {
     }
   };
   const arms = spec.arms ?? ["down", "down"];
+  const elbows: Point[] = [];
   const hands = [-1, 1].map((side, i) => {
     const plan = armPlan(arms[i], side);
+    elbows.push(at(...plan.elbow));
     const shoulder = at(side * SW, torsoTop, 0);
     keep(ball(RL * 1.45, sleeves === "none" ? spec.skin : top.color, shoulder[0], shoulder[1] - RL * 1.45, shoulder[2], o(0.16 + i * 0.02)));
     const upperColor = sleeves === "none" ? spec.skin : top.color;
@@ -381,7 +385,8 @@ export function figure(kit: Kit, spec: FigureSpec): Figure {
   if (face.beard === "goatee") turned(add(new ConeGeometry(0.06 * u, 0.14 * u, 6).rotateX(Math.PI), beardColor, ...at(0, headY - drop - RH * 1.2, RH * 0.72), o(0.34)));
   if (face.beard === "moustache") decorate(head, new BoxGeometry(0.16 * u, 0.04 * u, 0.04), beardColor, [[0, cy - 0.065 * u, fz]]);
   if (face.beard === "stubble")
-    turned(add(new SphereGeometry(RH * 1.01, 16, 8, 0, Math.PI * 2, Math.PI * 0.58, Math.PI * 0.42).scale(0.95, 1.06, 0.95), shade(beardColor, 1.3), ...at(0, headY - drop - RH * 1.07, 0.012), o(0.33, { noInk: true })));
+    // Only on the front half of the jaw, not round the back of the head.
+    turned(add(new SphereGeometry(RH * 1.01, 16, 8, 0, Math.PI, Math.PI * 0.58, Math.PI * 0.42).scale(0.95, 1.06, 0.95), shade(beardColor, 1.3), ...at(0, headY - drop - RH * 1.07, 0.012), o(0.33, { noInk: true })));
 
   // Hair.
   const hairColor = spec.hair?.color ?? 0x2a1e1c;
@@ -508,6 +513,7 @@ export function figure(kit: Kit, spec: FigureSpec): Figure {
 
   return {
     hands,
+    elbows: elbows as [Point, Point],
     head: headCentre,
     headRadius: RH,
     top: headCentre[1] + RH * 1.06,

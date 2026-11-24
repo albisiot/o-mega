@@ -4,6 +4,7 @@ export const PATCH_NOTES = [
     date: "24 novembre 2026",
     changes: [
       "Altri 72 personaggi si guardano in 3D: da Foundling, che scappa dal mercato col portafoglio rubato, a Talos, l'automa di bronzo che esce dagli scavi con l'unico punto debole che gli brilla nella caviglia. Ogni diorama ha il suo angolo di Nuova Megara e un dettaglio che racconta il personaggio: Kelvin non riesce ad aprire il barattolo, Cullet ha la mascella di vetro incerottata, Cerbero litiga con sé stesso per l'unica ciotola. Tocca «Guarda in 3D» nel dettaglio della carta.",
+      "E altri 70 dopo di loro: da Cariddi, il gorgo dentato che inghiotte una nave in mezzo al porto, a Miliarium, la pietra miliare che si accende anello dopo anello sulla via romana. Busker suona il mandolino con l'amplificatore staccato, Stentore urla nel megafono dal suo piedistallo tra i piccioni, Mischance è un gatto nero corazzato tra una scala e uno specchio rotto. Ora i personaggi in 3D sono 161.",
     ],
   },
   {
