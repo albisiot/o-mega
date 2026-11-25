@@ -13,5 +13,6 @@ import { COMBAT_KITS_BATCH_8 } from "./combat-kits-batch-8.ts";
 import { COMBAT_KITS_BATCH_9 } from "./combat-kits-batch-9.ts";
 import { COMBAT_KITS_BATCH_10 } from "./combat-kits-batch-10.ts";
 import { COMBAT_KITS_BATCH_11 } from "./combat-kits-batch-11.ts";
+import { COMBAT_KITS_BATCH_12 } from "./combat-kits-batch-12.ts";
 
-export const COMBAT_KIT_BATCHES: Record<string, CombatKitEntry[]> = { "1": COMBAT_KITS_BATCH_1, "2": COMBAT_KITS_BATCH_2, "3": COMBAT_KITS_BATCH_3, "4": COMBAT_KITS_BATCH_4, "5": COMBAT_KITS_BATCH_5, "6": COMBAT_KITS_BATCH_6, "7": COMBAT_KITS_BATCH_7, "8": COMBAT_KITS_BATCH_8, "9": COMBAT_KITS_BATCH_9, "10": COMBAT_KITS_BATCH_10, "11": COMBAT_KITS_BATCH_11 };
+export const COMBAT_KIT_BATCHES: Record<string, CombatKitEntry[]> = { "1": COMBAT_KITS_BATCH_1, "2": COMBAT_KITS_BATCH_2, "3": COMBAT_KITS_BATCH_3, "4": COMBAT_KITS_BATCH_4, "5": COMBAT_KITS_BATCH_5, "6": COMBAT_KITS_BATCH_6, "7": COMBAT_KITS_BATCH_7, "8": COMBAT_KITS_BATCH_8, "9": COMBAT_KITS_BATCH_9, "10": COMBAT_KITS_BATCH_10, "11": COMBAT_KITS_BATCH_11, "12": COMBAT_KITS_BATCH_12 };
