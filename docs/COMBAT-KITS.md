@@ -765,3 +765,155 @@ Nomi e testi delle mosse sono provvisori, come quelli delle carte.
 - **Una clausola** — Un compagno: scudo ×1, fortificazione 2 turni · ricarica 3 turni.
 - **E la cosa finisce lì** — Tutti i nemici: danni ×0,8 a tutti, indebolimento 2 turni a tutti (probabile).
 - *Si ferma al terzo piano* (passiva) — quando cade un compagno: scudo ×0,35 ai compagni (una volta).
+
+## Gruppo 6 · altri 13 Gamma, 11 Beta e 1 Alfa più posseduti (approvato il 25 novembre 2026)
+
+### Monopsony (P203, Cattivo) · vince il 52,0% (con il kit generico 48,7%)
+- **Pezzo unico** — Un nemico, a distanza: danni ×1,15.
+- **Nel caveau** — Un nemico, a distanza: danni ×0,9, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Impossibile riaverlo** — Un nemico, a distanza: danni ×2,2, indebolimento 2 turni.
+- *Non esce più* (passiva) — quando mette KO: scudo ×0,3 a sé, +1 Carica a sé.
+
+### Miliarium (P161, Cattivo) · vince il 54,8% (con il kit generico 48,5%)
+- **Cinque parole** — Un nemico, a distanza: danni ×1,15.
+- **Aspetto la virgola** — Un nemico, a distanza: danni ×1, vulnerabilità 2 turni (probabile) · ricarica 3 turni.
+- **Diventa vero** — Tutti i nemici: danni ×0,9 a tutti, stordimento 1 turno a tutti (probabile).
+- *La finestra dura pochi secondi* (passiva) — sempre: critico +10.
+
+### Hireling (P168, Neutrale) · vince il 52,2% (con il kit generico 56,3%)
+- **Turno di notte** — Un nemico, corpo a corpo: danni ×1,15.
+- **Sei ore in undici minuti** — Sé: accelerazione 2 turni, potenziamento 1 turno · ricarica 3 turni.
+- **In nessun registro** — Un nemico, anche dietro le linee: danni ×2,2.
+- *Dopo le due e dieci* (passiva) — a inizio scontro: accelerazione 2 turni a sé.
+
+### Sanctuary (P173, Eroe) · vince il 52,3% (con il kit generico 51,3%)
+- **Rametto** — Un nemico, a distanza: danni ×1,1.
+- **La talea** — Un compagno: cura ×0,85, fortificazione 2 turni · ricarica 3 turni.
+- **Il pergolato** — Tutta la squadra: cura ×0,4 a tutti, fortificazione 2 turni a tutti.
+- *Per tre giorni conta il pergolato* (passiva) — a inizio scontro: indebolimento 1 turno ai nemici (probabile).
+
+### Custodia (P202, Cattivo) · vince il 54,2% (con il kit generico 52,2%)
+- **Sportello** — Un nemico, a distanza: danni ×1,15.
+- **Indice 0,63** — Un nemico, a distanza: danni ×0,9, indebolimento 2 turni (probabile) · ricarica 3 turni.
+- **Non restituibile** — Un nemico, anche dietro le linee: danni ×2,2, vulnerabilità 2 turni.
+- *Nove minuti allo sportello* (passiva) — sempre: precisione +6, probabilità effetti +8.
+
+### Postmark (P042, Neutrale) · vince il 54,1% (con il kit generico 45,7%)
+- **Consegna** — Un nemico, corpo a corpo: danni ×1,2.
+- **Non fa domande** — Un nemico e i vicini: danni ×1, indebolimento 1 turno (probabile), danni ×0,45 agli adiacenti · ricarica 3 turni.
+- **In ogni angolo della città** — Un nemico, anche dietro le linee: danni ×2,05.
+- *Dieci minuti* (passiva) — sempre: danni +6%, velocità +8%.
+
+### Dredge (P077, Cattivo) · vince il 49,4% (con il kit generico 46,0%)
+- **Tentacolo** — Un nemico, corpo a corpo: danni ×1,25.
+- **Il terrore del porto** — Un nemico e i vicini: danni ×1, stordimento 1 turno (probabile), danni ×0,4 agli adiacenti · ricarica 3 turni.
+- **Dal fondo** — Tutti i nemici: danni ×1,05 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *Per le scale chiede aiuto* (passiva) — sempre: danni +14%, velocità -4%.
+
+### Carillon (P101, Eroe) · vince il 46,6% (con il kit generico 51,9%)
+- **Campane** — Un nemico, corpo a corpo: danni ×1,35.
+- **Prega prima** — Sé: scudo ×0,8, potenziamento 2 turni · ricarica 3 turni.
+- **Schiacciare** — Un nemico e i vicini: danni ×2, danni ×0,7 agli adiacenti.
+- *Dopo, confessa* (passiva) — quando mette KO: cura ×0,4 a sé.
+
+### Plinth (P112, Eroe) · vince il 55,3% (con il kit generico 58,3%)
+- **Colonna** — Un nemico, corpo a corpo: danni ×1,1.
+- **Tengo, voi andate** — Sé: scudo ×0,7, provocazione 2 turni · ricarica 3 turni.
+- **Regge il crollo** — Tutta la squadra: scudo ×0,3 a tutti, fortificazione 1 turno a tutti.
+- *Finché i soccorsi non hanno finito* (passiva) — sotto il 50% di Vita: scudo ×0,6 a sé.
+
+### Attainder (P116, Cattivo) · vince il 49,8% (con il kit generico 42,1%)
+- **Il decreto** — Un nemico, a distanza: danni ×1,35.
+- **Letto il decreto** — Un nemico, a distanza: danni ×1,1, indebolimento 3 turni (probabile) · ricarica 3 turni.
+- **Nemmeno tu** — Tutti i nemici: danni ×1 a tutti, indebolimento 2 turni a tutti (probabile).
+- *Il nome che nessuno pronuncia* (passiva) — sempre: danni +8%, danni +30% contro chi ha indebolimento.
+
+### Lure (P118, Neutrale) · vince il 54,5% (con il kit generico 61,2%)
+- **Corsa** — Un nemico, corpo a corpo: danni ×1,15.
+- **Si fa inseguire** — Sé: scudo ×0,5, provocazione 2 turni, accelerazione 1 turno · ricarica 3 turni.
+- **Il difficile è smettere** — Un nemico, corpo a corpo: danni ×1,9.
+- *Corre per ore* (passiva) — sempre: precisione +3, velocità +6%.
+
+### Bisque (P128, Cattivo) · vince il 49,3% (con il kit generico 50,3%)
+- **Tazzina** — Un nemico, a distanza: danni ×1,15.
+- **Zucchero?** — Un nemico, a distanza: danni ×0,9, vulnerabilità 2 turni (probabile) · ricarica 3 turni.
+- **Riferisce tutto** — Tutti i nemici: danni ×0,75 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *Sente dall'altra parte della sala* (passiva) — sempre: precisione +8, critico +4.
+
+### Indemnity (P136, Cattivo) · vince il 53,1% (con il kit generico 50,0%)
+- **Polizza** — Un nemico, a distanza: danni ×1,1.
+- **La clausola** — Un compagno: scudo ×0,75, fortificazione 1 turno · ricarica 3 turni.
+- **Si distribuisce** — Tutti i nemici: danni ×0,9 a tutti, indebolimento 1 turno a tutti (probabile).
+- *Niente si distrugge* (passiva) — quando è colpito: danni ×0,1 ai nemici (max 2 volte).
+
+### Refector (P163, Eroe) · vince il 51,7% (con il kit generico 51,8%)
+- **Resine** — Un nemico, a distanza: danni ×1,1.
+- **Come il primo giorno** — Un compagno: cura ×0,9 · ricarica 3 turni.
+- **Se era crudele, torna crudele** — Tutti i nemici: danni ×0,95 a tutti, bruciatura 1 turno a tutti (probabile).
+- *Restaura, non corregge* (passiva) — sempre: critico +4, cure +8%.
+
+### Rubicon (P026, Cattivo) · vince il 49,6% (con il kit generico 40,5%)
+- **Moto truccata** — Un nemico, corpo a corpo: danni ×1,3.
+- **Senza freni** — Un nemico, corpo a corpo: danni ×1,3, vulnerabilità 1 turno (probabile) · ricarica 3 turni.
+- **Arriva sempre per primo** — Un nemico e i vicini: danni ×1,9, danni ×0,5 agli adiacenti.
+- *I freni li ha venduti* (passiva) — sempre: danni +4%, velocità +12%.
+
+### Actuary (P047, Neutrale) · vince il 54,3% (con il kit generico 40,3%)
+- **Voce di bilancio** — Un nemico, a distanza: danni ×1,3.
+- **I conti esatti** — Un nemico, a distanza: danni ×1,15, vulnerabilità 2 turni (probabile) · ricarica 3 turni.
+- **Nessun segreto** — Tutti i nemici: danni ×1 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *Righe che non ricorda* (passiva) — sempre: danni +8%, precisione +6, critico +10.
+
+### Hapax (P048, Eroe) · vince il 52,0% (con il kit generico 53,9%)
+- **Incantesimo di strada** — Un nemico, a distanza: danni ×1,15.
+- **Le pietre incise** — Un nemico, a distanza: danni ×1, indebolimento 2 turni (probabile) · ricarica 3 turni.
+- **Vedono per lui** — Tutti i nemici: danni ×1 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *Cieco come una talpa* (passiva) — sempre: precisione +10, probabilità effetti +4.
+
+### Semaphore (P108, Cattivo) · vince il 50,0% (con il kit generico 48,8%)
+- **Riflesso** — Un nemico, a distanza: danni ×1,15.
+- **Lo ha pensato lei** — Un nemico, a distanza: danni ×0,8, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Rete di specchi** — Tutti i nemici: danni ×0,75 a tutti, indebolimento 2 turni a tutti (probabile).
+- *Crede che l'idea sia sua* (passiva) — quando colpisce: stordimento 1 turno all'avversario (probabile) (max 3 volte).
+
+### Contumax (P158, Cattivo) · vince il 54,7% (con il kit generico 46,5%)
+- **Motore climatico** — Un nemico, a distanza: danni ×1,15.
+- **Pioggia per duecento metri** — Un nemico e i vicini: danni ×0,9, indebolimento 1 turno (probabile), danni ×0,4 agli adiacenti · ricarica 3 turni.
+- **Undici mesi al buio** — Tutti i nemici: danni ×0,8 a tutti, stordimento 1 turno a tutti (probabile).
+- *Il motore perde* (passiva) — a ogni suo turno: danni ×0,06 ai nemici (max 2 volte).
+
+### Holloway (P177, Neutrale) · vince il 54,0% (con il kit generico 48,8%)
+- **Corridoio che si allunga** — Un nemico, a distanza: danni ×1,1.
+- **Scale che riportano qui** — Un nemico, a distanza: danni ×0,85, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Prossima fermata** — Tutti i nemici: danni ×0,8 a tutti, indebolimento 1 turno a tutti (probabile).
+- *Banchine che spariscono* (passiva) — quando è colpito: indebolimento 1 turno all'avversario (probabile) (max 3 volte).
+
+### Groma (P180, Cattivo) · vince il 54,5% (con il kit generico 49,4%)
+- **Groma di legno** — Un nemico, a distanza: danni ×1,15.
+- **Dove dice il catasto** — Un nemico, a distanza: danni ×0,9, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Il catasto più antico** — Tutti i nemici: danni ×0,9 a tutti, vulnerabilità 2 turni a tutti (probabile).
+- *Il cippo mai spostato* (passiva) — a inizio scontro: indebolimento 1 turno ai nemici (probabile).
+
+### Scion (P200, Eroe) · vince il 54,3% (con il kit generico 50,0%)
+- **Il guanto** — Un nemico, corpo a corpo: danni ×1,2.
+- **Il pettorale** — Sé: scudo ×0,6, fortificazione 2 turni · ricarica 3 turni.
+- **Il diadema** — Un nemico, a distanza: danni ×2,05, indebolimento 1 turno.
+- *Il guanto sa fare meglio* (passiva) — quando colpisce: potenziamento 1 turno a sé (max 3 volte).
+
+### Reus (P219, Cattivo) · vince il 50,6% (con il kit generico 49,5%)
+- **Rancore** — Un nemico, a distanza: danni ×1,1.
+- **Rendere il colpo** — Tutta la squadra: potenziamento 1 turno a tutti · ricarica 3 turni.
+- **Una cicatrice** — Tutti i nemici: danni ×0,9 a tutti, bruciatura 1 turno a tutti (probabile).
+- *Mi portano i loro figli* (passiva) — quando è colpito: danni ×0,3 all'avversario (max 2 volte).
+
+### Larceny (P046, Cattivo) · vince il 53,3% (con il kit generico 57,9%)
+- **Mano lesta** — Un nemico, corpo a corpo: danni ×1,1.
+- **Ti sfila l'orologio** — Un nemico, corpo a corpo: danni ×0,9, indebolimento 2 turni (probabile) · ricarica 3 turni.
+- **Che ora è** — Un nemico, anche dietro le linee: danni ×1,9.
+- *Prima che te ne accorga* (passiva) — sempre: critico +4, velocità +4%.
+
+### Antiphon (P111, Cattivo) · vince il 49,4% (con il kit generico 57,5%)
+- **Formula** — Un nemico, a distanza: danni ×1,15.
+- **Diventa una condanna** — Un nemico, a distanza: danni ×0,9, indebolimento 2 turni (probabile), vulnerabilità 1 turno (probabile) · ricarica 3 turni.
+- **Ho tutto il tempo** — Tutti i nemici: danni ×0,9 a tutti, bruciatura 2 turni a tutti (probabile).
+- *Al contrario* (passiva) — quando è colpito: vulnerabilità 1 turno all'avversario (probabile) (max 3 volte).
