@@ -212,7 +212,8 @@ export function figure(kit: Kit, spec: FigureSpec): Figure {
     const length = legs === "sit" || legs === "kneel" ? waist - ankle * 2 : waist - ankle;
     turned(add(new CylinderGeometry(RW * 1.05, RW * 1.6, length, 18).scale(1, 1, squash + 0.08), top.color, ...at(0, waist - length, 0), o(0.06)));
   } else {
-    turned(add(new CylinderGeometry(RW * 1.02, RW * 1.02, 0.28 * u, 16).scale(1, 1, squash), lower, ...at(0, waist - 0.2 * u, 0), o(0.06)));
+    // Same side count as the torso, so the two meet in a clean ring instead of a sawtooth.
+    turned(add(new CylinderGeometry(RW * 1.02, RW * 1.02, 0.28 * u, 18).scale(1, 1, squash), lower, ...at(0, waist - 0.2 * u, 0), o(0.06)));
     if (spec.bottom?.kind === "skirt")
       turned(add(new CylinderGeometry(RW * 1.05, RW * 1.5, 0.45 * u, 16).scale(1, 1, squash + 0.06), spec.bottom.color, ...at(0, waist - 0.45 * u, 0), o(0.07)));
   }

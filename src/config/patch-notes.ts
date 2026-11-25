@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "25 novembre 2026",
+    changes: [
+      "Altri 40 personaggi si guardano in 3D, da Praecursor ad Affissione, e ora sono 201. Holloway è una torre di pendolari che ondeggia sulla banchina della linea chiusa, Principal un gigante fatto di registri che cammina nel salone allagato del Banco, Necropsy legge l'ultimo pensiero di un morto, ed è una fetta di pizza. Tocca «Guarda in 3D» nel dettaglio della carta.",
+    ],
+  },
+  {
     date: "24 novembre 2026",
     changes: [
       "Altri 72 personaggi si guardano in 3D: da Foundling, che scappa dal mercato col portafoglio rubato, a Talos, l'automa di bronzo che esce dagli scavi con l'unico punto debole che gli brilla nella caviglia. Ogni diorama ha il suo angolo di Nuova Megara e un dettaglio che racconta il personaggio: Kelvin non riesce ad aprire il barattolo, Cullet ha la mascella di vetro incerottata, Cerbero litiga con sé stesso per l'unica ciotola. Tocca «Guarda in 3D» nel dettaglio della carta.",
