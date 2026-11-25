@@ -1197,3 +1197,131 @@ Nomi e testi delle mosse sono provvisori, come quelli delle carte.
 - **La spinta** — Un nemico, corpo a corpo: danni ×1,2, accelerazione 1 turno a sé · ricarica 3 turni.
 - **Non lo ferma nessuno** — Un nemico e i vicini: danni ×1,8, danni ×0,6 agli adiacenti.
 - *Dopo la prima vittoria* (passiva) — quando mette KO: potenziamento 3 turni a sé, accelerazione 2 turni a sé; sempre: velocità -6%.
+
+## Gruppo 9 · gli ultimi 21 dei pacchetti: 16 Omega, 3 Alfa e 2 Beta (approvato il 25 novembre 2026)
+
+### Inhumer (P211, Neutrale) · vince il 48,1% (con il kit generico 49,8%)
+- **Palata** — Un nemico, a distanza: danni ×1,1.
+- **Il nome vero** — Un nemico, a distanza: danni ×0,9, indebolimento 2 turni (probabile) · ricarica 3 turni.
+- **Sepoltura definitiva** — Un nemico, a distanza: danni ×2, vulnerabilità 2 turni.
+- *La terza palata* (passiva) — quando mette KO: +1 Carica ai compagni.
+
+### Gymnasiarch (P229, Neutrale) · vince il 48,3% (con il kit generico 48,0%)
+- **Spingere** — Un nemico, a distanza: danni ×1,05.
+- **Altri quattro secondi** — Un compagno: potenziamento 2 turni, accelerazione 1 turno · ricarica 3 turni.
+- **Ventinove record** — Tutta la squadra: potenziamento 1 turno a tutti, accelerazione 1 turno a tutti.
+- *Ventinove allievi* (passiva) — quando cade un compagno: potenziamento 2 turni ai compagni (una volta).
+
+### Quarantine (P182, Eroe) · vince il 48,3% (con il kit generico 53,4%)
+- **La sfera** — Un nemico, a distanza: danni ×1,05.
+- **Biologia di un altro mondo** — Un nemico, a distanza: danni ×0,9, bruciatura 2 turni (probabile) · ricarica 3 turni.
+- **Ho bussato io** — Tutti i nemici: danni ×0,85 a tutti, bruciatura 2 turni a tutti (probabile).
+- *Un raggio che cresce* (passiva) — a ogni suo turno: danni ×0,04 ai nemici.
+
+### Absentia (P058, Eroe) · vince il 48,0% (con il kit generico 49,5%)
+- **Pattuglia** — Un nemico, corpo a corpo: danni ×1,25.
+- **Precisa come nessun soldato** — Un nemico, corpo a corpo: danni ×1,2, vulnerabilità 2 turni (probabile) · ricarica 3 turni.
+- **Dentro non c'è nessuno** — Un nemico e i vicini: danni ×1,9, danni ×0,6 agli adiacenti.
+- *Ogni notte* (passiva) — sempre: precisione +10, critico +6.
+
+### Multitude (P059, Cattivo) · vince il 53,8% (con il kit generico 55,9%)
+- **Mille pensieri** — Un nemico, a distanza: danni ×1,05.
+- **L'ultima voce** — Un nemico, a distanza: danni ×0,9, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Sente tutti** — Tutti i nemici: danni ×0,8 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *Nemmeno un pensiero suo* (passiva) — sempre: velocità +3%, probabilità effetti +8.
+
+### Perpetuum (P114, Eroe) · vince il 51,6% (con il kit generico 55,3%)
+- **Campo magnetico** — Un nemico, a distanza: danni ×1,05.
+- **Portatemi da leggere** — Un nemico, a distanza: danni ×0,9, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **La città resta scoperta** — Tutta la squadra: scudo ×0,5 a tutti, fortificazione 1 turno a tutti.
+- *Non può alzarsi* (passiva) — a inizio scontro: scudo ×0,12 ai compagni; sempre: velocità -8%.
+
+### Mischance (P131, Neutrale) · vince il 52,1% (con il kit generico 59,7%)
+- **Ti passa davanti** — Un nemico, a distanza: danni ×0,95.
+- **Va storto un po' tutto** — Tutti i nemici: indebolimento 1 turno a tutti (probabile), vulnerabilità 1 turno a tutti (probabile) · ricarica 3 turni.
+- **Non ne ha bisogno** — Tutti i nemici: danni ×0,5 a tutti, stordimento 1 turno a tutti (probabile).
+- *Ti è solo passato davanti* (passiva) — a inizio scontro: vulnerabilità 1 turno ai nemici (probabile).
+
+### Ansa (P187, Neutrale) · vince il 54,2% (con il kit generico 55,7%)
+- **Spire** — Un nemico, corpo a corpo: danni ×1,1.
+- **Il cerchio chiuso** — Tutta la squadra: cura ×0,3 a tutti, fortificazione 1 turno a tutti · ricarica 3 turni.
+- **Undici passi in più** — Un nemico e i vicini: danni ×1,6, stordimento 1 turno, danni ×0,5 agli adiacenti.
+- *Tutto ciò che sta dentro* (passiva) — quando cade un compagno: scudo ×0,3 ai compagni (una volta).
+
+### Matins (P230, Cattivo) · vince il 55,4% (con il kit generico 57,9%)
+- **Buongiorno** — Un nemico, a distanza: danni ×1,05.
+- **Va tutto bene** — Tutta la squadra: fortificazione 1 turno a tutti · ricarica 3 turni.
+- **Richiamo di branco** — Tutta la squadra: cura ×0,35 a tutti, potenziamento 1 turno a tutti.
+- *All'alba* (passiva) — a inizio scontro: accelerazione 1 turno ai compagni.
+
+### Thicket (P231, Cattivo) · vince il 53,8% (con il kit generico 58,6%)
+- **Radice** — Un nemico, corpo a corpo: danni ×1.
+- **Nebbia** — Un nemico e i vicini: danni ×0,9, indebolimento 2 turni (probabile), danni ×0,3 agli adiacenti · ricarica 3 turni.
+- **Nove chilometri quadrati** — Tutti i nemici: danni ×0,9 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *Un corpo in prestito* (passiva) — sotto il 40% di Vita: cura ×0,35 a sé.
+
+### Holdout (P057, Neutrale) · vince il 54,7% (con il kit generico 54,5%)
+- **Rumore di fondo** — Un nemico, corpo a corpo: danni ×1,1.
+- **Non cede mai** — Sé: scudo ×0,8, fortificazione 2 turni · ricarica 3 turni.
+- **Non ha ancora finito** — Un nemico, corpo a corpo: danni ×2, cura ×0,3 a sé.
+- *Non riesce a morire* (passiva) — sotto il 25% di Vita: cura ×0,5 a sé; sempre: velocità -6%.
+
+### Re Tifeo (P080, Cattivo) · vince il 48,9% (con il kit generico 53,5%)
+- **Si gira nel sonno** — Un nemico, corpo a corpo: danni ×1,1.
+- **La città trema** — Un nemico e i vicini: danni ×1, stordimento 1 turno (probabile), danni ×0,45 agli adiacenti · ricarica 3 turni.
+- **Tremila anni** — Tutti i nemici: danni ×1 a tutti, indebolimento 1 turno a tutti (probabile).
+- *Sotto il vulcano* (passiva) — sempre: danni +15%, velocità -10%.
+
+### Parabellum (P142, Neutrale) · vince il 47,5% (con il kit generico 53,1%)
+- **Puntamento** — Un nemico, a distanza: danni ×1,3.
+- **Nominato al settanta per cento** — Un nemico, a distanza: danni ×0,9, vulnerabilità 3 turni (probabile) · ricarica 3 turni.
+- **Due chiavi di ceramica** — Un nemico, a distanza: danni ×2,9.
+- *Attendo il resto del nome* (passiva) — sempre: velocità -2%, danni +25% contro chi ha vulnerabilità.
+
+### Ordito (P185, Neutrale) · vince il 54,8% (con il kit generico 51,6%)
+- **Filo** — Un nemico, a distanza: danni ×1,1.
+- **Taglia un filo** — Un nemico, a distanza: danni ×1, indebolimento 2 turni (probabile) · ricarica 3 turni.
+- **Sessantatré fili** — Un nemico, a distanza: danni ×2,3.
+- *Se non lo fa, si spezza da solo* (passiva) — a ogni suo turno: danni ×0,08 ai nemici (max 3 volte).
+
+### Novenarium (P217, Cattivo) · vince il 54,6% (con il kit generico 56,1%)
+- **Un pezzo cade fuori** — Un nemico, a distanza: danni ×1,1.
+- **Camera Tre, siamo pronti** — Un nemico e i vicini: danni ×1, bruciatura 2 turni (probabile), danni ×0,45 agli adiacenti · ricarica 3 turni.
+- **Nove secondi** — Tutti i nemici: danni ×1 a tutti, bruciatura 1 turno a tutti (probabile).
+- *Ogni quarantun secondi* (passiva) — quando colpisce: bruciatura 1 turno all'avversario (probabile) (max 3 volte).
+
+### Recesso (P224, Eroe) · vince il 54,1% (con il kit generico 58,4%)
+- **Pettine di rame** — Un nemico, corpo a corpo: danni ×0,9.
+- **Intestata a me** — Sé: scudo ×0,6, provocazione 2 turni · ricarica 3 turni.
+- **Rimanda il colpo** — Un nemico, corpo a corpo: danni ×1,8.
+- *Non è mia* (passiva) — quando è colpito: danni ×0,4 all'avversario.
+
+### Mongibello (P060, Eroe) · vince il 54,5% (con il kit generico 52,5%)
+- **Lava** — Un nemico, a distanza: danni ×1,1, bruciatura 1 turno (probabile).
+- **Eruzione** — Un nemico e i vicini: danni ×1, bruciatura 2 turni (probabile), danni ×0,5 agli adiacenti · ricarica 3 turni.
+- **Il vulcano** — Tutti i nemici: danni ×1,05 a tutti, bruciatura 2 turni a tutti (probabile).
+- *Non ha mai imparato a combattere* (passiva) — sempre: danni +14%, precisione -6.
+
+### Wirepuller (P132, Cattivo) · vince il 55,4% (con il kit generico 45,9%)
+- **Fili di luce** — Un nemico, a distanza: danni ×1.
+- **Il copione** — Un compagno: potenziamento 1 turno · ricarica 3 turni.
+- **Recitate benissimo** — Tutti i nemici: danni ×0,7 a tutti, stordimento 1 turno a tutti (probabile).
+- *Il prossimo entra con più fili* (passiva) — quando cade un compagno: potenziamento 1 turno ai compagni (una volta).
+
+### Prosody (P216, Neutrale) · vince il 51,2% (con il kit generico 49,4%)
+- **Bassorilievo** — Un nemico, a distanza: danni ×1,1.
+- **Un'altra grammatica** — Un nemico, a distanza: danni ×0,9, indebolimento 2 turni (probabile), vulnerabilità 1 turno (probabile) · ricarica 3 turni.
+- **Noi le coniughiamo** — Tutti i nemici: danni ×0,9 a tutti, indebolimento 1 turno a tutti (probabile).
+- *Dove la roccia si interrompe* (passiva) — sempre: precisione +6, probabilità effetti +8.
+
+### Cariddi (P092, Neutrale) · vince il 54,5% (con il kit generico 54,2%)
+- **Denti** — Un nemico, corpo a corpo: danni ×1,15.
+- **Ingoia** — Un nemico, corpo a corpo: danni ×1,2, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Non ha mai restituito niente** — Tutti i nemici: danni ×1 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *Navi, container e denunce* (passiva) — quando mette KO: cura ×0,35 a sé.
+
+### Mordacchia (P186, Cattivo) · vince il 49,0% (con il kit generico 52,1%)
+- **Fauci** — Un nemico, corpo a corpo: danni ×1,25.
+- **Ogni patto si allenta** — Un nemico, corpo a corpo: danni ×1,2, indebolimento 2 turni (probabile), vulnerabilità 1 turno (probabile) · ricarica 3 turni.
+- **Tiro per contare** — Un nemico e i vicini: danni ×1,8, danni ×0,6 agli adiacenti.
+- *Tutti tranne il suo* (passiva) — sempre: danni +6%, velocità +4%, danni +30% contro chi ha fortificazione.
