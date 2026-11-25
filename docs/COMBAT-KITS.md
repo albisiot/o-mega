@@ -1479,3 +1479,155 @@ Nomi e testi delle mosse sono provvisori, come quelli delle carte.
 - **Scudo di luce** — Un compagno: scudo ×0,85, fortificazione 1 turno · ricarica 3 turni.
 - **Li conto** — Tutta la squadra: scudo ×0,45 a tutti.
 - *Tira pure i tuoi fulmini* (passiva) — quando è colpito: scudo ×0,2 a sé (max 2 volte).
+
+## Gruppo 11 · altri 25 fuori dai pacchetti, da Plancia a Mantice (approvato il 25 novembre 2026)
+
+### Plancia (P253, Cattivo) · vince il 52,6% (con il kit generico 48,3%)
+- **Cappotto pesante** — Un nemico, a distanza: danni ×1,2.
+- **Datemi una squadra** — Tutta la squadra: potenziamento 1 turno a tutti, fortificazione 1 turno a tutti · ricarica 3 turni.
+- **Ordini della flotta** — Tutti i nemici: danni ×0,95 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *Un uomo con un cappotto* (passiva) — quando cade un compagno: fortificazione 1 turno ai compagni (max 2 volte).
+
+### Legatura (P254, Cattivo) · vince il 50,0% (con il kit generico 51,3%)
+- **Registro delle lame** — Un nemico, corpo a corpo: danni ×1,15.
+- **Vieni a uccidermi** — Sé: scudo ×0,5, fortificazione 2 turni, provocazione 1 turno · ricarica 3 turni.
+- **Ho ancora spazio in fondo** — Un nemico, corpo a corpo: danni ×2,1.
+- *Ogni lama che non lo uccide* (passiva) — quando è colpito: fortificazione 1 turno a sé (max 3 volte); sempre: danni +20% contro chi ha potenziamento.
+
+### Franchigia (P255, Neutrale) · vince il 51,3% (con il kit generico 48,3%)
+- **Rotta storta** — Un nemico, a distanza: danni ×1,3.
+- **Le faccio pagare** — Un nemico, a distanza: danni ×1, vulnerabilità 1 turno (probabile) · ricarica 3 turni.
+- **Le altre le faccio io** — Un nemico, anche dietro le linee: danni ×2,35.
+- *Appena si mette male* (passiva) — sotto il 40% di Vita: accelerazione 2 turni a sé, scudo ×0,3 a sé.
+
+### Glossa (P256, Neutrale) · vince il 54,5% (con il kit generico 46,4%)
+- **Quattrocento lingue** — Un nemico, a distanza: danni ×1,3.
+- **Capisce tutto ciò che è scritto** — Un nemico, a distanza: danni ×1,05, indebolimento 2 turni (probabile) · ricarica 3 turni.
+- **In nessuna suona meglio** — Tutti i nemici: danni ×0,95 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *Non sa tirare un pugno* (passiva) — sempre: danni +3%, critico +6, probabilità effetti +10.
+
+### Appello (P257, Eroe) · vince il 49,0% (con il kit generico 48,3%)
+- **L'appello** — Un nemico, a distanza: danni ×1,05.
+- **Ai voti** — Tutta la squadra: cura ×0,25 a tutti, fortificazione 1 turno a tutti · ricarica 3 turni.
+- **Una strada** — Tutta la squadra: cura ×0,45 a tutti, accelerazione 1 turno a tutti.
+- *Quando la colonna sta perdendo* (passiva) — quando cade un compagno: cura ×0,25 ai compagni (una volta).
+
+### Sferza (P258, Cattivo) · vince il 55,0% (con il kit generico 58,3%)
+- **Frusta di Trama** — Un nemico, corpo a corpo: danni ×1,05.
+- **Fulmini** — Un nemico e i vicini: danni ×0,9, stordimento 1 turno (probabile), danni ×0,3 agli adiacenti · ricarica 3 turni.
+- **Il prossimo ha già paura** — Un nemico, corpo a corpo: danni ×1,8, indebolimento 2 turni.
+- *Ogni volta che vinco* (passiva) — quando mette KO: indebolimento 1 turno ai nemici (probabile).
+
+### Commiato (P259, Neutrale) · vince il 50,0% (con il kit generico 46,1%)
+- **Lezione** — Un nemico, a distanza: danni ×1,05.
+- **Insegnare** — Un compagno: scudo ×0,4, potenziamento 2 turni · ricarica 3 turni.
+- **L'ultima lezione** — Tutta la squadra: cura ×0,3 a tutti, potenziamento 1 turno a tutti.
+- *Farsi da parte* (passiva) — sotto il 30% di Vita: potenziamento 2 turni ai compagni.
+
+### Caligine (P260, Eroe) · vince il 49,8% (con il kit generico 53,5%)
+- **Nebbia di Trama** — Un nemico, a distanza: danni ×1,1.
+- **Non hai visto nessuno** — Un nemico, a distanza: danni ×0,85, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Ricordatelo** — Tutti i nemici: danni ×0,8 a tutti, indebolimento 2 turni a tutti (probabile).
+- *Chi ne esce non ricorda* (passiva) — quando è colpito: indebolimento 1 turno all'avversario (probabile) (max 2 volte).
+
+### Interregno (P261, Cattivo) · vince il 49,8% (con il kit generico 43,5%)
+- **Fulmini tra le dita** — Un nemico, a distanza: danni ×1,2.
+- **Chi lo serve** — Un compagno: potenziamento 2 turni · ricarica 3 turni.
+- **Il trono vuoto** — Tutti i nemici: danni ×1,05 a tutti, stordimento 1 turno a tutti (probabile).
+- *Non si alza mai dal trono* (passiva) — sempre: danni +8%, velocità -4%.
+
+### Stoppia (P262, Eroe) · vince il 51,7% (con il kit generico 57,3%)
+- **Mestolo di ferro** — Un nemico, corpo a corpo: danni ×1,3.
+- **Prima si mangia** — Un compagno: cura ×0,95 · ricarica 3 turni.
+- **Il mondo si salva dopo** — Tutta la squadra: cura ×0,55 a tutti.
+- *Le gambe corte* (passiva) — sempre: precisione +4, cure +12%.
+
+### Torrione (P263, Eroe) · vince il 54,9% (con il kit generico 59,3%)
+- **Il varco** — Un nemico, corpo a corpo: danni ×1,15.
+- **Indietro di un passo?** — Sé: scudo ×0,8, provocazione 2 turni · ricarica 3 turni.
+- **Il turno non è mai finito** — Tutta la squadra: scudo ×0,35 a tutti, fortificazione 1 turno a tutti.
+- *Non me l'hanno mai insegnato* (passiva) — quando è colpito: fortificazione 1 turno a sé (max 4 volte).
+
+### Muschio (P264, Eroe) · vince il 55,5% (con il kit generico 51,8%)
+- **Traccia nel muschio** — Un nemico, a distanza: danni ×1,2.
+- **Le impronte non mentono** — Un nemico, anche dietro le linee: danni ×1,1, vulnerabilità 2 turni (probabile) · ricarica 3 turni.
+- **Ritrova chi si perde** — Un nemico, anche dietro le linee: danni ×2,15.
+- *Tre giorni dopo* (passiva) — sempre: precisione +4, danni +20% contro chi ha vulnerabilità.
+
+### Ceralacca (P265, Cattivo) · vince il 53,6% (con il kit generico 51,0%)
+- **Obbedisce** — Un nemico, corpo a corpo: danni ×1,2.
+- **Il timbro** — Un nemico, corpo a corpo: danni ×1,15, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Aspetta che il sigillo parli** — Un nemico e i vicini: danni ×1,7, danni ×0,5 agli adiacenti.
+- *Una volontà sua non ce l'ha* (passiva) — a inizio scontro: fortificazione 2 turni a sé.
+
+### Macigno (P266, Cattivo) · vince il 52,6% (con il kit generico 57,4%)
+- **Granito** — Un nemico, corpo a corpo: danni ×1,2.
+- **Per spostare un muro** — Un nemico e i vicini: danni ×0,85, danni ×0,4 agli adiacenti · ricarica 3 turni.
+- **Dove la porto, questa?** — Un nemico, corpo a corpo: danni ×2,15.
+- *C'era una montagna* (passiva) — quando è colpito: scudo ×0,12 a sé (max 2 volte).
+
+### Anagrafe (P267, Cattivo) · vince il 48,2% (con il kit generico 46,4%)
+- **Il registro** — Un nemico, a distanza: danni ×1,15.
+- **Chi va ricordato** — Un nemico, a distanza: danni ×0,95, indebolimento 2 turni (probabile) · ricarica 3 turni.
+- **Il resto lo dirà il registro** — Tutti i nemici: danni ×0,85 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *Nome, provenienza, giorno* (passiva) — sempre: precisione +8, probabilità effetti +8.
+
+### Guado (P268, Neutrale) · vince il 52,3% (con il kit generico 45,5%)
+- **Remo nel buio** — Un nemico, anche dietro le linee: danni ×1,2.
+- **Senza fare domande** — Un compagno: scudo ×0,6, accelerazione 1 turno · ricarica 3 turni.
+- **Quante candele avete** — Un nemico, anche dietro le linee: danni ×2,3.
+- *Ogni passaggio al buio* (passiva) — sempre: precisione +6, velocità +6%.
+
+### Ortica (P269, Neutrale) · vince il 48,9% (con il kit generico 45,9%)
+- **Tintura** — Un nemico, a distanza: danni ×1,25, bruciatura 1 turno (probabile).
+- **Brucia, lo so** — Un compagno: cura ×1 · ricarica 3 turni.
+- **Per questo funziona** — Tutta la squadra: cura ×0,55 a tutti.
+- *Quello che i medici non riconoscono* (passiva) — sempre: cure +12%.
+
+### Postilla (P270, Neutrale) · vince il 52,8% (con il kit generico 49,2%)
+- **Un passo indietro** — Un nemico, anche dietro le linee: danni ×1,15.
+- **Ho timbrato tutto** — Un nemico, a distanza: danni ×1, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Ridatemelo** — Un nemico, anche dietro le linee: danni ×2,2.
+- *Era mio* (passiva) — quando colpisce: indebolimento 1 turno all'avversario (probabile) (max 2 volte).
+
+### Brina (P271, Neutrale) · vince il 55,5% (con il kit generico 58,2%)
+- **Piccozza** — Un nemico, corpo a corpo: danni ×1,15.
+- **Su in cima comando io** — Un compagno: scudo ×0,6, accelerazione 1 turno · ricarica 3 turni.
+- **La valanga** — Tutti i nemici: danni ×0,9 a tutti, stordimento 1 turno a tutti (probabile).
+- *Non la stanca niente* (passiva) — a ogni suo turno: cura ×0,05 a sé.
+
+### Cocca (P272, Eroe) · vince il 54,2% (con il kit generico 51,1%)
+- **Freccia** — Un nemico, a distanza: danni ×1,1.
+- **Vede più lontano** — Un nemico, a distanza: danni ×1, vulnerabilità 1 turno (probabile) · ricarica 3 turni.
+- **Quella giusta** — Un nemico, a distanza: danni ×2,1.
+- *Una freccia basta* (passiva) — sempre: precisione +4, critico +6.
+
+### Sperone (P273, Eroe) · vince il 55,7% (con il kit generico 57,3%)
+- **Lancia** — Un nemico, corpo a corpo: danni ×1,15.
+- **La prima carica** — Un nemico, corpo a corpo: danni ×1,2, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Apre la strada** — Un nemico e i vicini: danni ×1,7, danni ×0,6 agli adiacenti.
+- *Qualcuno deve partire per primo* (passiva) — a inizio scontro: potenziamento 1 turno a sé.
+
+### Vessillo (P274, Eroe) · vince il 53,8% (con il kit generico 47,8%)
+- **Stendardo strappato** — Un nemico, corpo a corpo: danni ×1,15.
+- **Sotto lo stendardo** — Tutta la squadra: fortificazione 1 turno a tutti · ricarica 3 turni.
+- **Chiedimelo dopo una vittoria** — Un nemico, corpo a corpo: danni ×2,1.
+- *Per un momento tutti ricordano* (passiva) — quando mette KO: potenziamento 1 turno ai compagni.
+
+### Scure (P275, Cattivo) · vince il 49,9% (con il kit generico 56,5%)
+- **La scure** — Un nemico, corpo a corpo: danni ×1,2.
+- **Conto chiuso** — Un nemico, corpo a corpo: danni ×1,2, indebolimento 2 turni (probabile) · ricarica 3 turni.
+- **Il resto lo finisco io** — Un nemico, corpo a corpo: danni ×2,3.
+- *Arriva quando è quasi finita* (passiva) — quando mette KO: +2 Carica a sé, accelerazione 1 turno a sé (max 2 volte).
+
+### Imbrunire (P276, Cattivo) · vince il 48,3% (con il kit generico 48,5%)
+- **Ultima luce** — Un nemico, anche dietro le linee: danni ×1,15.
+- **Spegnete pure le luci** — Tutti i nemici: danni ×0,35 a tutti, indebolimento 1 turno a tutti (probabile) · ricarica 3 turni.
+- **Il buio lo porto io** — Un nemico, anche dietro le linee: danni ×2,2.
+- *Quando la luce cala* (passiva) — sempre: critico +4, danni +20% contro chi ha indebolimento.
+
+### Mantice (P277, Cattivo) · vince il 54,1% (con il kit generico 53,1%)
+- **Scintilla** — Un nemico, a distanza: danni ×1,1, bruciatura 1 turno (probabile).
+- **Due mantici** — Un nemico e i vicini: danni ×0,9, bruciatura 2 turni (probabile), danni ×0,4 agli adiacenti · ricarica 3 turni.
+- **La fornace** — Tutti i nemici: danni ×0,95 a tutti, bruciatura 2 turni a tutti (probabile).
+- *A ogni respiro* (passiva) — a ogni suo turno: bruciatura 1 turno ai nemici (probabile) (max 3 volte).
