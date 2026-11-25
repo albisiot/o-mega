@@ -4,6 +4,7 @@ export const PATCH_NOTES = [
     date: "25 novembre 2026",
     changes: [
       "Altri 40 personaggi si guardano in 3D, da Praecursor ad Affissione, e ora sono 201. Holloway è una torre di pendolari che ondeggia sulla banchina della linea chiusa, Principal un gigante fatto di registri che cammina nel salone allagato del Banco, Necropsy legge l'ultimo pensiero di un morto, ed è una fetta di pizza. Tocca «Guarda in 3D» nel dettaglio della carta.",
+      "E altri 40 dopo di loro, da Custodia ad Alaggio: ora i personaggi in 3D sono 241. Penates sono due anziani a braccetto che accendono le luci di un palazzo dove non abita nessuno, Statera è una stadera viva che pesa un impiegato davanti al caveau, Afterimage corre sui tetti insieme al suo doppio trasparente, che fa tutto un attimo prima di lei.",
     ],
   },
   {
