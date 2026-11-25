@@ -4,6 +4,8 @@ Ogni personaggio dello Scontro a squadre (SPEC §5.19, [COMBAT.md](COMBAT.md)) h
 
 Come si legge: «danni ×1,2» vuol dire 1,2 volte la Potenza del personaggio, calcolata sulle abilità della mossa; «(probabile)» vuol dire che l'effetto può essere resistito (dipende dall'abilità di chi lo lancia e dalle difese di chi lo riceve). Ogni personaggio è stato provato con il suo kit in 1200 squadre a caso contro 1200 squadre a caso, a lati scambiati: un kit giusto vince fra il 46% e il 56%. Accanto c'è quanto vince lo stesso personaggio con il kit generico, per confronto.
 
+Le percentuali sono misurate con la riduzione delle rarità in vigore quando ogni gruppo è stato approvato (80%); dal 25 novembre 2026 è al 95%, e le vittorie dei kit cambiano in media di meno di un decimo di punto (Sottovento e Abdicant, appena sopra il 56%, sono stati abbassati di poco e rimisurati).
+
 Nomi e testi delle mosse sono provvisori, come quelli delle carte.
 
 ## Gruppo 1 · i 25 personaggi Delta più posseduti (approvato il 24 novembre 2026)
@@ -298,10 +300,10 @@ Nomi e testi delle mosse sono provvisori, come quelli delle carte.
 - **Una costa che non sta ferma** — Tutti i nemici: danni ×0,8 a tutti, vulnerabilità 1 turno a tutti (probabile).
 - *Vera fino a stanotte* (passiva) — sempre: precisione +5, velocità +8%.
 
-### Sottovento (P195, Cattivo) · vince il 55,8% (con il kit generico 57,6%)
+### Sottovento (P195, Cattivo) · vince il 55,5% (con il kit generico 58,2%)
 - **Agguato** — Un nemico, anche dietro le linee: danni ×1,1.
 - **Conosce i turni** — Un nemico, a distanza: danni ×1, vulnerabilità 2 turni (probabile) · ricarica 3 turni.
-- **Chi torna a casa stanco** — Un nemico, anche dietro le linee: danni ×2,2.
+- **Chi torna a casa stanco** — Un nemico, anche dietro le linee: danni ×2,1.
 - *Caccia i cacciatori* (passiva) — sempre: critico +6, danni +25% contro chi ha vulnerabilità.
 
 ### Tether (P064, Eroe) · vince il 52,4% (con il kit generico 56,9%)
@@ -336,10 +338,10 @@ Nomi e testi delle mosse sono provvisori, come quelli delle carte.
 - **Firma in calce** — Tutti i nemici: danni ×0,7 a tutti, indebolimento 2 turni a tutti (probabile).
 - *Legge molto lentamente* (passiva) — sempre: velocità -8%, probabilità effetti +12.
 
-### Abdicant (P143, Eroe) · vince il 55,8% (con il kit generico 48,8%)
+### Abdicant (P143, Eroe) · vince il 55,8% (con il kit generico 50,4%)
 - **Sirena** — Un nemico, a distanza: danni ×1.
-- **Ambulanza** — Un compagno: cura ×0,8, accelerazione 1 turno · ricarica 3 turni.
-- **Arriviamo prima** — Tutta la squadra: cura ×0,4 a tutti, accelerazione 1 turno a tutti.
+- **Ambulanza** — Un compagno: cura ×0,75, accelerazione 1 turno · ricarica 3 turni.
+- **Arriviamo prima** — Tutta la squadra: cura ×0,35 a tutti, accelerazione 1 turno a tutti.
 - *Scende piano come una piuma* (passiva) — sotto il 35% di Vita: scudo ×0,6 a sé.
 
 ### Signifer (P190, Eroe) · vince il 51,8% (con il kit generico 45,7%)

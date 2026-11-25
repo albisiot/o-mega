@@ -316,7 +316,7 @@ export const COMBAT_KITS_BATCH_2: CombatKitEntry[] = [
       "P195",
       { name: "Agguato", scaling: { COM: 0.5, FUR: 0.5 }, range: "infiltration", effects: [{ kind: "damage", multiplier: 1.1, on: "primary" }] },
       { name: "Conosce i turni", scaling: { INT: 0.6, FUR: 0.4 }, effects: [{ kind: "damage", multiplier: 1, on: "primary" }, { kind: "status", status: "vulnerable", turns: 2, on: "primary", chance: { base: 55, ability: "INT" } }] },
-      { name: "Chi torna a casa stanco", scaling: { COM: 0.5, FUR: 0.5 }, range: "infiltration", effects: [{ kind: "damage", multiplier: 2.2, on: "primary" }] },
+      { name: "Chi torna a casa stanco", scaling: { COM: 0.5, FUR: 0.5 }, range: "infiltration", effects: [{ kind: "damage", multiplier: 2.1, on: "primary" }] },
       passive({ name: "Caccia i cacciatori", modifiers: { critPercent: 6, damageVsStatus: { status: "vulnerable", percent: 25 } } }),
     ),
   },

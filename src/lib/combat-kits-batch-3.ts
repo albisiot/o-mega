@@ -68,8 +68,8 @@ export const COMBAT_KITS_BATCH_3: CombatKitEntry[] = [
     kit: kit(
       "P143",
       { name: "Sirena", scaling: { VOL: 0.6, FUR: 0.4 }, effects: [{ kind: "damage", multiplier: 1, on: "primary" }] },
-      { name: "Ambulanza", scaling: { VOL: 0.6, INT: 0.4 }, target: "ally", effects: [{ kind: "heal", multiplier: 0.8, on: "primary" }, { kind: "status", status: "haste", turns: 1, on: "primary" }] },
-      { name: "Arriviamo prima", scaling: { VOL: 0.6, INT: 0.4 }, target: "all_allies", effects: [{ kind: "heal", multiplier: 0.4, on: "all" }, { kind: "status", status: "haste", turns: 1, on: "all" }] },
+      { name: "Ambulanza", scaling: { VOL: 0.6, INT: 0.4 }, target: "ally", effects: [{ kind: "heal", multiplier: 0.75, on: "primary" }, { kind: "status", status: "haste", turns: 1, on: "primary" }] },
+      { name: "Arriviamo prima", scaling: { VOL: 0.6, INT: 0.4 }, target: "all_allies", effects: [{ kind: "heal", multiplier: 0.35, on: "all" }, { kind: "status", status: "haste", turns: 1, on: "all" }] },
       passive({ name: "Scende piano come una piuma", trigger: "low_vita", thresholdPercent: 35, limit: 1, scaling: { VOL: 1 }, effects: [{ kind: "shield", multiplier: 0.6, to: "self" }] }),
     ),
   },

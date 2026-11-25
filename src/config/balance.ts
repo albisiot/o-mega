@@ -483,9 +483,10 @@ export const balance = {
     referenceBudget: 54,
     /**
      * ...this far, in percent. All the way (100) makes the rarer cards weaker, because their extra
-     * points sit on their peaks: at 80, with the stage 2 kits, each rarity beats the one below 45-58% of the time.
+     * points sit on their peaks. At 95 (80 until 25 November 2026), with the real kits of every pack
+     * character, each rarity beats the one below 48-51% of the time and Omega beats Delta 58%.
      */
-    rarityScalePercent: 80,
+    rarityScalePercent: 95,
     /** Life and Speed: a base plus points for each ability point. */
     vita: { base: 260, perPoint: { res: 6, vol: 3 } },
     speed: { base: 100, perPoint: { vel: 1 } },
