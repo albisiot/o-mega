@@ -49,7 +49,7 @@ function passiveText(p: CombatPassive): string {
 }
 
 const wins = new Map<string, string>();
-if (process.argv[3]) for (const m of readFileSync(process.argv[3], "utf8").matchAll(/^  (\S+) \(\w+\): con il suo kit ([\d.]+)%, con quello generico ([\d.]+)%/gm)) wins.set(m[1], `vince il ${m[2].replace(".", ",")}% (con il kit generico ${m[3].replace(".", ",")}%)`);
+if (process.argv[3]) for (const m of readFileSync(process.argv[3], "utf8").matchAll(/^  (.+?) \(\w+\): con il suo kit ([\d.]+)%, con quello generico ([\d.]+)%/gm)) wins.set(m[1], `vince il ${m[2].replace(".", ",")}% (con il kit generico ${m[3].replace(".", ",")}%)`);
 const faction: Record<string, string> = { heroes: "Eroe", villains: "Cattivo", neutrals: "Neutrale" };
 for (const { code, name, faction: f, kit } of COMBAT_KIT_BATCHES[process.argv[2]] ?? []) {
   console.log(`### ${name} (${code}, ${faction[f] ?? f})${wins.has(name) ? ` · ${wins.get(name)}` : ""}`);
