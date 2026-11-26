@@ -1,7 +1,7 @@
 // Scontro a squadre (SPEC §5.19, docs/COMBAT.md): the words of the screen. Names of the slots,
 // statuses and triggers, a short description of a move from its data, and one line of the log
 // for each event. The player's names for statuses and moves are still provisional.
-import type { CombatEffect, CombatEvent, CombatMove, CombatSlot, CombatStatusCode, Side } from "@o-mega/game-engine";
+import type { CombatEffect, CombatEvent, CombatMove, CombatPassive, CombatPassiveEffect, CombatSlot, CombatStatusCode, Side } from "@o-mega/game-engine";
 
 export const SLOT_LABELS: Record<CombatSlot, string> = { base: "Base", special: "Speciale", supreme: "Suprema" };
 
@@ -41,6 +41,54 @@ export function describeCombatMove(move: CombatMove): string {
   };
   const parts = move.effects.map(effectText).join(", ");
   return `${reach[move.target]}: ${parts}${move.slot === "special" ? ` · ricarica ${turns(move.cooldown)}` : ""}.`;
+}
+
+/** When a passive acts, in words (low_vita says its threshold instead). */
+const TRIGGER_LABELS: Record<string, string> = {
+  battle_start: "a inizio scontro",
+  turn_start: "a ogni suo turno",
+  hit: "quando colpisce",
+  hurt: "quando è colpito",
+  knockout: "quando mette KO",
+  ally_down: "quando cade un compagno",
+  low_vita: "sotto soglia di Vita",
+};
+const PASSIVE_TO: Record<string, string> = { self: " a sé", allies: " ai compagni", enemies: " ai nemici", other: " all'avversario" };
+
+function passiveEffectText(effect: CombatPassiveEffect): string {
+  const to = PASSIVE_TO[effect.to] ?? "";
+  if (effect.kind === "status") return `${STATUS_LABELS[effect.status].name.toLowerCase()} ${turns(effect.turns)}${to}${effect.chance ? " (probabile)" : ""}`;
+  if (effect.kind === "damage") return `danni ×${decimal(effect.multiplier)}${to}`;
+  if (effect.kind === "charge") return `+${effect.amount} Carica${to}`;
+  return `${effect.kind === "heal" ? "cura" : "scudo"} ×${decimal(effect.multiplier)}${to}`;
+}
+
+/**
+ * A passive in one line: when it acts and what it does (with its limit), then what it always
+ * adds; the same words as the sheets of docs/COMBAT-KITS.md.
+ */
+export function describeCombatPassive(passive: CombatPassive): string {
+  const parts: string[] = [];
+  if (passive.trigger) {
+    const when = passive.trigger === "low_vita" ? `sotto il ${passive.thresholdPercent}% di Vita` : TRIGGER_LABELS[passive.trigger];
+    const limit =
+      passive.limit && passive.trigger !== "battle_start" && passive.trigger !== "low_vita" ? (passive.limit === 1 ? " (una volta)" : ` (max ${passive.limit} volte)`) : "";
+    parts.push(`${when}: ${passive.effects.map(passiveEffectText).join(", ")}${limit}`);
+  }
+  if (passive.modifiers) {
+    const m = passive.modifiers;
+    const sign = (x: number) => (x > 0 ? `+${x}` : `${x}`);
+    const mods: string[] = [];
+    if (m.damagePercent) mods.push(`danni ${sign(m.damagePercent)}%`);
+    if (m.hitPercent) mods.push(`precisione ${sign(m.hitPercent)}`);
+    if (m.critPercent) mods.push(`critico ${sign(m.critPercent)}`);
+    if (m.speedPercent) mods.push(`velocità ${sign(m.speedPercent)}%`);
+    if (m.effectChancePercent) mods.push(`probabilità effetti ${sign(m.effectChancePercent)}`);
+    if (m.healPercent) mods.push(`cure ${sign(m.healPercent)}%`);
+    if (m.damageVsStatus) mods.push(`danni ${sign(m.damageVsStatus.percent)}% contro chi ha ${STATUS_LABELS[m.damageVsStatus.status].name.toLowerCase()}`);
+    if (mods.length) parts.push(`sempre: ${mods.join(", ")}`);
+  }
+  return parts.join("; ");
 }
 
 /** The engine's checks of a kit (validateCombatKit), in Italian for the EDITOR; an unknown one stays as it is. */

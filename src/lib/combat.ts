@@ -167,6 +167,31 @@ export async function fetchCombatUnlocks(): Promise<CombatUnlocks> {
   return data as unknown as CombatUnlocks;
 }
 
+let unlocksSeen: { at: number; pending: Promise<CombatUnlocks> } | null = null;
+
+/** The same, asked at most once a minute: the card pages ask it for each character browsed. */
+export function fetchCombatUnlocksOften(): Promise<CombatUnlocks> {
+  if (!unlocksSeen || Date.now() - unlocksSeen.at > 60_000) {
+    const pending = fetchCombatUnlocks();
+    unlocksSeen = { at: Date.now(), pending };
+    pending.catch(() => {
+      if (unlocksSeen?.pending === pending) unlocksSeen = null;
+    });
+  }
+  return unlocksSeen.pending;
+}
+
+/** One character's kit (every player reads the kits); null when it has none. */
+export async function fetchCombatKit(definitionId: string): Promise<CombatKit | null> {
+  const { data, error } = await getSupabase()
+    .from("combat_kits" as never)
+    .select("kit")
+    .eq("definition_id", definitionId)
+    .maybeSingle();
+  if (error) throw error;
+  return ((data as { kit: CombatKit } | null)?.kit ?? null) as CombatKit | null;
+}
+
 export function combatUnlocked(unlocks: CombatUnlocks, definitionId: string): boolean {
   return unlocks.mode === "always" || (unlocks.progress[definitionId] ?? 0) >= unlocks.count;
 }

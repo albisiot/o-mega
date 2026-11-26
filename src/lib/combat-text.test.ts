@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CombatMove } from "@o-mega/game-engine";
-import { combatEventLine, describeCombatMove, italianKitError } from "./combat-text";
+import type { CombatMove, CombatPassive } from "@o-mega/game-engine";
+import { combatEventLine, describeCombatMove, describeCombatPassive, italianKitError } from "./combat-text";
 import { COMBAT_PILOTS } from "./combat-pilot";
 
 const names: Record<string, string> = { a0: "Gantry", b0: "Kiln" };
@@ -33,5 +33,17 @@ describe("the words of the Scontro a squadre", () => {
     expect(combatEventLine({ kind: "heal", actor: "a0", target: "a0", amount: 0 }, name, moveName, "a")).toBeNull();
     expect(combatEventLine({ kind: "end", winner: "b", reason: "limit" }, name, moveName, "a")).toBe("Sconfitta dopo 100 azioni!");
     expect(combatEventLine({ kind: "end", winner: "a", reason: "wiped" }, name, moveName, "a")).toBe("Vittoria!");
+  });
+
+  it("describe a passive: when it acts, what it does, its limit, what it always adds", () => {
+    const base: CombatPassive = { id: "x", name: "x", scaling: {}, trigger: null, limit: 0, effects: [], modifiers: {} };
+    expect(describeCombatPassive({ ...base, trigger: "hurt", limit: 3, effects: [{ kind: "status", status: "vulnerable", turns: 1, to: "other", chance: { base: 45, ability: "COM" } }] })).toBe(
+      "quando è colpito: vulnerabilità 1 turno all'avversario (probabile) (max 3 volte)",
+    );
+    expect(describeCombatPassive({ ...base, trigger: "low_vita", thresholdPercent: 25, limit: 1, effects: [{ kind: "heal", multiplier: 0.4, to: "self" }] })).toBe("sotto il 25% di Vita: cura ×0,4 a sé");
+    expect(describeCombatPassive({ ...base, trigger: "knockout", limit: 0, effects: [{ kind: "charge", amount: 2, to: "self" }] })).toBe("quando mette KO: +2 Carica a sé");
+    expect(describeCombatPassive({ ...base, modifiers: { damagePercent: 10, hitPercent: -4, damageVsStatus: { status: "burn", percent: 20 } } })).toBe(
+      "sempre: danni +10%, precisione -4, danni +20% contro chi ha bruciatura",
+    );
   });
 });

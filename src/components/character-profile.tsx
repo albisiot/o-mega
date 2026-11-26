@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CombatKitPanel } from "@/components/combat-kit-panel";
 import { Sheet } from "@/components/sheet";
 import { fetchCharacterProfile, type CharacterProfile } from "@/lib/character-profile";
 
 /**
  * The character's file on one row under its card: the real name, and a tap opens the
- * rest in a sheet from the bottom (powers and traits). Only the card detail page shows it.
+ * rest in a sheet from the bottom (powers and traits, then the Scontro a squadre kit once
+ * unlocked). Only the card detail page shows it.
  */
 export function CharacterProfileSheet({ definitionId, name }: { definitionId: string; name: string }) {
   const sheet = useRef<HTMLDialogElement>(null);
@@ -53,6 +55,8 @@ export function CharacterProfileSheet({ definitionId, name }: { definitionId: st
       {profile && (
         <Sheet sheetRef={sheet} title={`Scheda di ${name}`}>
           <ProfilePanel profile={profile} />
+          {/* The Scontro a squadre: the kit once unlocked, else how far the unlock is (SPEC §5.19). */}
+          <CombatKitPanel definitionId={definitionId} name={name} />
         </Sheet>
       )}
     </>
