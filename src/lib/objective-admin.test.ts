@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeAdminReward, kindOf, suggestTitle } from "@/lib/objective-admin";
+import { describeAdminReward, kindAudience, kindOf, suggestTitle } from "@/lib/objective-admin";
 
 const rewardCoins = { easy: 20, medium: 40, hard: 60 };
 
@@ -12,6 +12,7 @@ describe("kindOf", () => {
     );
     expect(kindOf({ metric: "matches_won", params: { flawless: true, format: "classic" } })?.key).toBe("win_flawless");
     expect(kindOf({ metric: "emergency_passed", params: {} })?.key).toBe("emergency");
+    expect(kindOf({ metric: "arena_won", params: {} })?.key).toBe("arena_won");
   });
 
   it("leaves hand-written filters alone", () => {
@@ -26,6 +27,16 @@ describe("suggestTitle", () => {
     expect(suggestTitle("win", 1)).toBe("Vinci una partita");
     expect(suggestTitle("packs", 2)).toBe("Apri 2 pacchetti");
     expect(suggestTitle("missing", 2)).toBe("");
+    expect(suggestTitle("combat_played", 3)).toBe("Gioca 3 Scontri a squadre contro il computer");
+    expect(suggestTitle("arena_won", 1)).toBe("Vinci una sfida dello Scontro");
+  });
+});
+
+describe("kindAudience", () => {
+  it("says the Scontro's objectives go only to who can play them", () => {
+    expect(kindAudience("combat_won")).toContain("kit sbloccato");
+    expect(kindAudience("arena_played")).toContain("una difesa pronta");
+    expect(kindAudience("win")).toBeNull();
   });
 });
 

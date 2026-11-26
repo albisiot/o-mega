@@ -22,7 +22,11 @@ export type ObjectiveMetric =
   | "raid_played"
   | "raid_won"
   | "raid_damage"
-  | "raid_stars";
+  | "raid_stars"
+  | "combat_played"
+  | "combat_won"
+  | "arena_played"
+  | "arena_won";
 
 export type ObjectiveParams = Record<string, unknown>;
 
@@ -117,6 +121,10 @@ export const OBJECTIVE_KINDS: {
   { key: "raid_won", label: "Boss abbattuti nella Caccia grossa", metric: "raid_won", params: {}, one: "Abbatti un Boss nella Caccia grossa", many: "Abbatti {n} Boss nella Caccia grossa" },
   { key: "raid_damage", label: "Danni della squadra ai Boss", metric: "raid_damage", params: {}, one: "Infliggi un danno a un Boss", many: "Infliggi {n} danni ai Boss" },
   { key: "raid_stars", label: "Stelle ottenute nella Caccia grossa", metric: "raid_stars", params: {}, one: "Ottieni una stella nella Caccia grossa", many: "Ottieni {n} stelle nella Caccia grossa" },
+  { key: "combat_played", label: "Scontri a squadre contro il computer", metric: "combat_played", params: {}, one: "Gioca uno Scontro a squadre contro il computer", many: "Gioca {n} Scontri a squadre contro il computer" },
+  { key: "combat_won", label: "Scontri a squadre vinti contro il computer", metric: "combat_won", params: {}, one: "Vinci uno Scontro a squadre contro il computer", many: "Vinci {n} Scontri a squadre contro il computer" },
+  { key: "arena_played", label: "Sfide dello Scontro giocate", metric: "arena_played", params: {}, one: "Gioca una sfida dello Scontro", many: "Gioca {n} sfide dello Scontro" },
+  { key: "arena_won", label: "Sfide dello Scontro vinte", metric: "arena_won", params: {}, one: "Vinci una sfida dello Scontro", many: "Vinci {n} sfide dello Scontro" },
   { key: "packs", label: "Pacchetti aperti", metric: "packs_opened", params: {}, one: "Apri un pacchetto", many: "Apri {n} pacchetti" },
   { key: "variants_found", label: "Varianti trovate nei pacchetti", metric: "variants_found", params: {}, one: "Trova una variante in un pacchetto", many: "Trova {n} varianti nei pacchetti" },
   { key: "variant_wins", label: "Partite vinte con una variante in squadra", metric: "variant_wins", params: {}, one: "Vinci una partita con una variante in squadra", many: "Vinci {n} partite con una variante in squadra" },
@@ -133,6 +141,18 @@ function sameParams(a: ObjectiveParams, b: ObjectiveParams): boolean {
 /** The kind an objective counts, or null for one written by hand with SQL. */
 export function kindOf(objective: Pick<AdminObjective, "metric" | "params">) {
   return OBJECTIVE_KINDS.find((kind) => kind.metric === objective.metric && sameParams(kind.params, objective.params)) ?? null;
+}
+
+/** Who is given an objective of a kind, when not everyone: the Scontro's go only to who can play it. */
+export function kindAudience(kindKey: string): string | null {
+  const metric = OBJECTIVE_KINDS.find((kind) => kind.key === kindKey)?.metric;
+  if (metric === "combat_played" || metric === "combat_won") {
+    return "Va solo a chi può giocare lo Scontro a squadre: modalità aperta e abbastanza personaggi col kit sbloccato. Gli altri ricevono un altro obiettivo della stessa difficoltà.";
+  }
+  if (metric === "arena_played" || metric === "arena_won") {
+    return "Va solo a chi può fare le sfide dello Scontro a squadre: modalità aperta, abbastanza personaggi col kit sbloccato e una difesa pronta. Gli altri ricevono un altro obiettivo della stessa difficoltà.";
+  }
+  return null;
 }
 
 /** The title a kind suggests for a target. */

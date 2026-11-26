@@ -9,6 +9,7 @@ import {
   OBJECTIVE_KINDS,
   deleteAdminObjective,
   describeAdminReward,
+  kindAudience,
   kindOf,
   saveAdminObjective,
   setAdminObjectiveActive,
@@ -282,6 +283,7 @@ function ObjectiveForm({
               ))}
             </select>
           )}
+          {!custom && kindAudience(kindKey) && <span className="text-xs font-semibold text-muted">{kindAudience(kindKey)}</span>}
         </label>
 
         <fieldset className="flex flex-col gap-1">

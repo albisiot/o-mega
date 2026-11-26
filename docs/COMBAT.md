@@ -193,7 +193,7 @@ Vedi «Risultati della tappa 1» in fondo.
 | 3 (fatta) | 10 personaggi veri con il loro kit; pagina di prova in locale (manuale e automatico, registro, replay) | 2 | Uno scontro si gioca su iPhone in 2-4 minuti; `npm run test:layout` senza testi coperti |
 | 4 (fatta) | Tabelle, Edge Function, scontri contro il computer con premi, editor delle mosse solo per gli admin | 3 | Test del database: proprietà delle carte, seme nascosto, `not_admin`; nessun risultato deciso dal telefono |
 | 5 (fatta: 14 gruppi, tutti i 351 personaggi hanno un kit; rarità lasciate così dopo il controllo generale) | Kit per tutti i personaggi, a gruppi di 20-30 | 2, 4 | Ogni gruppo simulato sulla sua carta e approvato dall'utente |
-| 6 (progettata il 26 novembre 2026; 6a e 6b fatte lo stesso giorno, da fare la 6c) | Sfide asincrone contro le squadre in difesa, classifica a stagioni, obiettivi | 4, 5 | Test del database: difesa valida, avversari proposti, punti di attacco e difesa, premi del giorno, stagione; nessun risultato deciso dal telefono |
+| 6 (progettata il 26 novembre 2026; 6a, 6b e 6c fatte lo stesso giorno) | Sfide asincrone contro le squadre in difesa, classifica a stagioni, obiettivi | 4, 5 | Test del database: difesa valida, avversari proposti, punti di attacco e difesa, premi del giorno, stagione, obiettivi; nessun risultato deciso dal telefono |
 
 ## Piano dei test
 
@@ -363,6 +363,13 @@ Decise dall'utente il 26 novembre 2026, sulle proposte consigliate: sfide **asin
 - **Test:** `supabase/tests/combat_arena_seasons.test.sql` (registro e funzioni chiuse ai client, righe dei due lati, classifica della stagione, una stagione passata chiusa una volta con posti, leghe, premi e notifiche, classifica passata, stagione che non esiste, premio ritirato una volta e solo da chi ce l'ha, taglio di una nuova stagione). La pagina di prova `/prova-arena` ha le scene `premio` e `classifica`.
 
 **Prova dal vivo della 6a** (26 novembre 2026, con l'account dell'utente, dal browser; la modalità aperta e i kit «sempre attivi» solo per la prova, poi tutto rimesso com'era: chiusa con «Prossimamente», sblocco con le partite): la scheda «Sfide» compare, la difesa si salva dal sito (passando dall'Edge Function), arrivano 3 avversari «Computer» (nessun'altra difesa ancora), una sfida in automatico sul campo «Hacker del metrò» è vinta in 57 azioni e lo schermo dice «+25 XP · +20 monete · +25 Gloria»; nel database la sfida è «arena», con +25 Gloria, il premio e la riga del registro delle monete, e la lista degli avversari si è rinnovata. Nessun errore, e nessun altro giocatore è entrato mentre era aperta. Restano sull'account dell'utente la difesa, 25 Gloria e il premio della sfida.
+
+**6c, fatta il 26 novembre 2026** (migrazione `20261126150000_scontro_objectives.sql`): quattro tipi di obiettivo del giorno nel catalogo degli admin (`/gestione-obiettivi`, solo amministratori, come tutto il catalogo). Il gioco conta, gli admin scelgono quali mettere, a quale difficoltà, con quale soglia e quale premio; il catalogo di partenza non ne ha.
+
+- **Cosa contano:** gli Scontri a squadre contro il computer giocati e vinti (`combat_played`, `combat_won`) e le sfide giocate e vinte (`arena_played`, `arena_won`), senza filtri. Contano le battaglie finite (vittoria, sconfitta o pareggio, trigger su `combat_battles`); una battaglia lasciata, o chiusa cominciandone un'altra, non conta niente, anche quando per la Gloria una sfida lasciata è una sconfitta.
+- **A chi vanno:** un obiettivo dello Scontro si estrae (anche al cambio) solo per chi può giocarlo (`combat_objective_available`): modalità aperta, almeno 5 personaggi con il kit sbloccato e, per le sfide, una difesa che può combattere. Gli altri ricevono un altro obiettivo della stessa difficoltà; con la modalità chiusa nessuno li riceve. L'editor lo scrive sotto «Cosa conta».
+- **Lasciato fuori:** «vinci N difese», proposto nel progetto: una difesa dipende da chi ti sfida, e un obiettivo che il giocatore non può far avanzare da sé non è un buon obiettivo del giorno.
+- **Test:** `supabase/tests/combat_objectives.test.sql` (i quattro tipi salvati solo senza filtri, il controllo chiuso ai client, a chi vanno con la modalità chiusa, i kit bloccati e senza difesa, l'estrazione, battaglie vinte, perse, pari e lasciate contro il computer e nelle sfide, una difesa che non muove le sfide di chi difende).
 
 ## Sblocco dei kit (26 novembre 2026)
 
