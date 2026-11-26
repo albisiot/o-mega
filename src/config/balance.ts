@@ -572,6 +572,28 @@ export const balance = {
     defenseSharePercent: 33,
     computerSpread: 100,
     rewards: { dailyBattles: 5, winXp: 25, winCoins: 20, lossXp: 10 },
+    /** Stage 6b: players shown on the board of a season (the player's own place below when lower). */
+    boardSize: 10,
+    /** Gloria at which each league starts (the names of the Classificata). */
+    leagues: { recluta: 0, vigilante: 300, veterano: 700, asso: 1200, leggenda: 1800, omega: 2500 },
+    /**
+     * A season is a calendar month, Europe/Rome, as the Mandato: a new one keeps the Gloria up to
+     * keepUpTo plus keepSharePercent of the rest; minChallenges challenges in it before its prize,
+     * the prize of the league at its end.
+     */
+    season: {
+      keepUpTo: 700,
+      keepSharePercent: 50,
+      minChallenges: 5,
+      rewards: {
+        recluta: { coins: 25, packs: 0 },
+        vigilante: { coins: 50, packs: 0 },
+        veterano: { coins: 100, packs: 0 },
+        asso: { coins: 100, packs: 1 },
+        leggenda: { coins: 0, packs: 2 },
+        omega: { coins: 0, packs: 3 },
+      },
+    },
   },
 
   /**

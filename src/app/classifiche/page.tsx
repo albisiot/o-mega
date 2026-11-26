@@ -9,6 +9,7 @@ import { parseBoard, PERIOD_LABELS, type LeaderboardPeriod } from "@/lib/leaderb
 
 // /classifiche/?scheda=<board>&periodo=<period>: query string, see CLAUDE.md (static export).
 // /classifiche/?scheda=albo opens the Albo dei Reggenti of the Classificata (SPEC §8.7).
+// /classifiche/?scheda=scontro opens the board of the Scontro a squadre challenges (SPEC §5.19).
 export default function LeaderboardsPage() {
   return (
     <Suspense fallback={<LoadingScreen label="Caricamento delle classifiche…" />}>
@@ -28,6 +29,7 @@ function LeaderboardsPageContent() {
       initialBoard={parseBoard(params.get("scheda"))}
       initialPeriod={period}
       initialAlbo={params.get("scheda") === "albo"}
+      initialScontro={params.get("scheda") === "scontro"}
     />
   );
 }

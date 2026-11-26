@@ -18,6 +18,7 @@ import type {
 import { balance } from "@/config/balance";
 import { withBasePath } from "@/lib/base-path";
 import { invokeFunction } from "@/lib/match";
+import type { RankedLeague } from "@/lib/ranked";
 import { getSupabase } from "@/lib/supabase/client";
 
 /** The numbers of the mode as the engine reads them. */
@@ -129,9 +130,27 @@ export type CombatArenaDefense = { attacker: string; held: boolean; draw: boolea
 /** An opponent offered: a player's defence or a team of the computer, its Gloria and its characters. */
 export type CombatArenaOffer = CombatOpponent & { definition_ids: string[] };
 
-/** Stage 6a (get_combat_arena): the player's Gloria, defence, today's opponents, renewals, paid challenges, defences. */
+/** Stage 6b: the season in course (a calendar month, as the Mandato), the player's league and place in it. */
+export type CombatArenaSeason = {
+  season: string;
+  label: string;
+  ends_at: string;
+  league: RankedLeague;
+  next_league_at: number | null;
+  /** Challenges in this season, against the minimum for its prize. */
+  challenges: number;
+  min_challenges: number;
+  place: number | null;
+};
+
+/** The prize of a past season still to claim. */
+export type CombatArenaPrize = { season: string; label: string; place: number; league: RankedLeague; points: number; coins: number; packs: number };
+
+/** Stage 6a (get_combat_arena): the player's Gloria, defence, today's opponents, renewals, paid challenges, defences; 6b: the season and the prizes. */
 export type CombatArena = {
   points: number;
+  season: CombatArenaSeason;
+  prizes: CombatArenaPrize[];
   defense: { card_instance_ids: string[]; definition_ids: string[]; tactics: CombatTactics; ok: boolean } | null;
   offers: CombatArenaOffer[];
   refreshes_left: number;
@@ -153,6 +172,44 @@ export const refreshCombatArena = () => arenaRpc<CombatArena>("combat_arena_refr
 export const markCombatDefensesSeen = () => arenaRpc<void>("combat_arena_seen");
 /** For Gioca's tile: the defences since the player last read them. */
 export const fetchCombatArenaNews = () => arenaRpc<number>("combat_arena_news");
+
+/** A row of a season's board (stage 6b). */
+export type CombatArenaBoardEntry = {
+  place: number;
+  username: string;
+  avatar_url: string | null;
+  title: string | null;
+  points: number;
+  league: RankedLeague;
+  challenges: number;
+  wins: number;
+  is_me: boolean;
+};
+
+/** The board of a season: the first ten, the player's own row, how many played, the seasons closed. */
+export type CombatArenaBoard = {
+  season: string;
+  label: string;
+  ends_at: string;
+  current: boolean;
+  players: number;
+  top: CombatArenaBoardEntry[];
+  me: CombatArenaBoardEntry | null;
+  seasons: { season: string; label: string }[];
+};
+
+export async function fetchCombatArenaBoard(season: string | null = null): Promise<CombatArenaBoard> {
+  const { data, error } = await getSupabase().rpc("get_combat_arena_board" as never, { p_season: season } as never);
+  if (error) throw error;
+  return data as unknown as CombatArenaBoard;
+}
+
+/** A past season's prize: coins on the ledger, packs opened at once (their openings to show). */
+export async function claimCombatArenaPrize(season: string): Promise<{ coins: number; opening_ids: string[]; coin_balance: number }> {
+  const { data, error } = await getSupabase().rpc("claim_combat_arena_prize" as never, { p_season: season } as never);
+  if (error) throw error;
+  return data as unknown as { coins: number; opening_ids: string[]; coin_balance: number };
+}
 
 /** The battle under way, from its start; null when there is none. */
 export async function fetchCombatBattle(): Promise<CombatUpdate | null> {

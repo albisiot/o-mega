@@ -10,7 +10,9 @@ export type NotificationKind =
   | "leaderboard"
   | "ranked"
   | "challenge"
-  | "challenge_reward";
+  | "challenge_reward"
+  // The end of a season of the Scontro a squadre challenges (SPEC §5.19): its prize is claimed there.
+  | "combat_season";
 
 export type PlayerNotification = {
   id: string;
@@ -96,6 +98,8 @@ export function bannerHref(notification: PlayerNotification): string | null {
       return notification.data.format === "emergency" && typeof notification.data.challenge_id === "string"
         ? `/emergenza/?sfida=${encodeURIComponent(notification.data.challenge_id)}`
         : "/gioca/";
+    case "combat_season":
+      return "/scontro/";
     default:
       return null;
   }
@@ -135,6 +139,8 @@ export function bannerHint(notification: PlayerNotification): string {
       return "Tocca per giocarla";
     case "challenge_reward":
       return "Tocca per vederlo in Gioca";
+    case "combat_season":
+      return "Tocca per aprire lo Scontro";
     default:
       return "Tocca per chiudere";
   }

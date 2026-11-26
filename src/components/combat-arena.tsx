@@ -6,10 +6,14 @@
 // computer), a new list while the day's renewals last, and the defences others challenged. The
 // battle itself is the page's: it gets the opponent chosen, the team and the tactics.
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CombatStrategy } from "@o-mega/game-engine";
 import { COMBAT_STRATEGY_LABELS, CombatStrategySelect, CombatTeamPicker } from "@/components/combat-team-picker";
+import { useOpenPackReveal } from "@/components/pack-reveal-link";
+import { LeagueBadge } from "@/components/ranked-parts";
 import {
+  claimCombatArenaPrize,
   combatArtUrl,
   fetchCombatArena,
   markCombatDefensesSeen,
@@ -17,9 +21,11 @@ import {
   saveCombatDefense,
   type CombatArena,
   type CombatArenaDefense,
+  type CombatArenaPrize,
   type CombatCard,
 } from "@/lib/combat";
 import { describeServerError } from "@/lib/errors";
+import { describePrize } from "@/lib/ranked";
 
 type View = { kind: "list" } | { kind: "defense" } | { kind: "challenge"; offer: number };
 const EMPTY: (CombatCard | null)[] = [null, null, null, null, null];
@@ -163,7 +169,10 @@ export function CombatArenaPanel({
       <div className="flex items-end justify-between gap-2 rounded-md border-2 border-black bg-panel px-3 py-1.5">
         <span>
           <span className="block text-[11px] font-extrabold uppercase leading-4 text-faint">Gloria</span>
-          <span className="font-display text-3xl leading-8 text-comic-yellow">{arena.points}</span>
+          <span className="flex items-center gap-2">
+            <span className="font-display text-3xl leading-8 text-comic-yellow">{arena.points}</span>
+            <LeagueBadge league={arena.season.league} />
+          </span>
         </span>
         <span className="text-right text-[11px] leading-4 text-muted">
           Sfide premiate oggi
@@ -172,6 +181,30 @@ export function CombatArenaPanel({
           </span>
         </span>
       </div>
+      {/* Stage 6b: the season (a month), the place, the challenges its prize asks, the board. */}
+      <div className="flex items-center justify-between gap-2">
+        <p className="min-w-0 text-[11px] leading-4 text-muted">
+          Stagione di {arena.season.label}
+          {arena.season.place ? ` · ${arena.season.place}° posto` : ""} ·{" "}
+          {arena.season.challenges >= arena.season.min_challenges
+            ? "premio di fine stagione assicurato"
+            : `${arena.season.challenges}/${arena.season.min_challenges} sfide per il premio`}
+        </p>
+        <Link href="/classifiche/?scheda=scontro" className="shrink-0 text-[12px] font-extrabold text-comic-yellow underline">
+          Classifica
+        </Link>
+      </div>
+      {arena.prizes.map((prize) => (
+        <PrizeLine
+          key={prize.season}
+          prize={prize}
+          onClaimed={() =>
+            void fetchCombatArena()
+              .then(setArena)
+              .catch(() => {})
+          }
+        />
+      ))}
       {error && <p className="text-sm font-bold text-comic-magenta">{error}</p>}
 
       <Title>La tua difesa</Title>
@@ -258,6 +291,40 @@ export function CombatArenaPanel({
         </ul>
       )}
     </section>
+  );
+}
+
+/** A past season's prize still to claim, on one line: coins on the ledger, packs opened at once. */
+function PrizeLine({ prize, onClaimed }: { prize: CombatArenaPrize; onClaimed: () => void }) {
+  const openReveal = useOpenPackReveal();
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const claim = () => {
+    setBusy(true);
+    setMessage(null);
+    claimCombatArenaPrize(prize.season)
+      .then((result) => {
+        if (result.opening_ids.length > 0) {
+          openReveal(result.opening_ids);
+          return;
+        }
+        setMessage(`+${result.coins} monete: ora ne hai ${result.coin_balance}`);
+        setTimeout(onClaimed, 2500);
+      })
+      .catch((cause: unknown) => setMessage(describeServerError(cause)))
+      .finally(() => setBusy(false));
+  };
+  return (
+    <div className="flex min-h-9 items-center justify-between gap-2 bg-comic-yellow py-1 pl-2.5 pr-1 text-black">
+      <p className="min-w-0 truncate text-[12px] font-bold leading-4">
+        {message ?? `Premio di ${prize.label} (${prize.place}°): ${describePrize(prize)}`}
+      </p>
+      {!message && (
+        <button type="button" disabled={busy} onClick={claim} className="btn min-h-8 shrink-0 bg-black px-2.5 text-[12px] text-comic-yellow disabled:opacity-50">
+          {busy ? "…" : "Ritira"}
+        </button>
+      )}
+    </div>
   );
 }
 

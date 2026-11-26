@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BackLink } from "@/components/comic-parts";
+import { CombatArenaBoardPanel } from "@/components/combat-arena-board";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { RankedBoardPanel, type RankedBoardPreview } from "@/components/ranked-board";
 import { balance } from "@/config/balance";
 import { describeServerError } from "@/lib/errors";
+import { statusOf, useModeAvailability } from "@/lib/mode-availability";
 import {
   BOARDS,
   boardInfo,
@@ -23,6 +25,7 @@ import {
   type LeaderboardPeriod,
 } from "@/lib/leaderboards";
 import { useLockedScreen } from "@/lib/use-locked-screen";
+import { useNow } from "@/lib/use-now";
 
 /** The weekly title of each board (the server gives it; here only to tell the player). */
 const WEEKLY_TITLES: Partial<Record<LeaderboardBoard, string>> = {
@@ -40,22 +43,33 @@ const WEEKLY_TITLES: Partial<Record<LeaderboardBoard, string>> = {
  * The Classifiche (SPEC §8.6): a tab per board, the periods it has, the first players and the
  * player's own place. The page fits the screen: the tabs scroll sideways inside their row, the
  * list scrolls inside the room left. The first tab is the Albo dei Reggenti of the
- * Classificata (SPEC §8.7), with a panel of its own.
+ * Classificata (SPEC §8.7), with a panel of its own; while the Scontro a squadre is open, the
+ * second is its board of challenges by season (SPEC §5.19, stage 6b).
  */
 export function LeaderboardView({
   initialBoard,
   initialPeriod,
   initialAlbo = false,
+  initialScontro = false,
   rankedPreview,
 }: {
   initialBoard: LeaderboardBoard;
   initialPeriod: LeaderboardPeriod | null;
   initialAlbo?: boolean;
+  /** Opened on the Scontro's board (/classifiche/?scheda=scontro). */
+  initialScontro?: boolean;
   /** Development scenes: the Albo with fixed data. */
   rankedPreview?: RankedBoardPreview;
 }) {
   useLockedScreen(true);
-  const [albo, setAlbo] = useState(initialAlbo);
+  // A tab with a panel of its own: the Albo of the Classificata, or the Scontro's board.
+  const [special, setSpecial] = useState<"albo" | "scontro" | null>(initialAlbo ? "albo" : initialScontro ? "scontro" : null);
+  const albo = special === "albo";
+  const scontro = special === "scontro";
+  const other = special !== null;
+  const modes = useModeAvailability(true);
+  const now = useNow(60_000);
+  const scontroShown = scontro || (modes !== null && statusOf(modes, "combat", now).open);
   const [board, setBoard] = useState(initialBoard);
   const [period, setPeriod] = useState(() => periodFor(initialBoard, initialPeriod));
   const [result, setResult] = useState<{ key: string; data: Leaderboard | null; error: string | null } | null>(null);
@@ -63,7 +77,7 @@ export function LeaderboardView({
   const key = `${board}:${period}`;
 
   useEffect(() => {
-    if (albo) return;
+    if (other) return;
     let cancelled = false;
     fetchLeaderboard(board, period)
       .then((data) => {
@@ -75,13 +89,13 @@ export function LeaderboardView({
     return () => {
       cancelled = true;
     };
-  }, [albo, board, period]);
+  }, [other, board, period]);
 
   // The chosen tab in view, also when it opens on one far to the right.
   useEffect(() => {
     const chosen = tabs.current?.querySelector<HTMLElement>('[aria-selected="true"]');
     chosen?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }, [albo, board]);
+  }, [special, board]);
 
   const info = boardInfo(board);
   const shown = result?.key === key ? result : null;
@@ -89,7 +103,7 @@ export function LeaderboardView({
   const title = WEEKLY_TITLES[board];
 
   const pickBoard = (next: LeaderboardBoard) => {
-    setAlbo(false);
+    setSpecial(null);
     setBoard(next);
     // The same period when the new board has it: Settimana stays Settimana.
     setPeriod((current) => periodFor(next, current));
@@ -114,22 +128,35 @@ export function LeaderboardView({
             type="button"
             role="tab"
             aria-selected={albo}
-            onClick={() => setAlbo(true)}
+            onClick={() => setSpecial("albo")}
             className={`min-h-11 shrink-0 -skew-x-8 whitespace-nowrap px-3 font-display text-[17px] uppercase ${
               albo ? "bg-comic-magenta text-black" : "bg-foreground text-black"
             }`}
           >
             Albo
           </button>
+          {scontroShown && (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={scontro}
+              onClick={() => setSpecial("scontro")}
+              className={`min-h-11 shrink-0 -skew-x-8 whitespace-nowrap px-3 font-display text-[17px] uppercase ${
+                scontro ? "bg-comic-magenta text-black" : "bg-panel text-muted"
+              }`}
+            >
+              Scontro
+            </button>
+          )}
           {BOARDS.map((entry) => (
             <button
               key={entry.key}
               type="button"
               role="tab"
-              aria-selected={!albo && entry.key === board}
+              aria-selected={!other && entry.key === board}
               onClick={() => pickBoard(entry.key)}
               className={`min-h-11 shrink-0 -skew-x-8 whitespace-nowrap px-3 font-display text-[17px] uppercase ${
-                !albo && entry.key === board ? "bg-comic-magenta text-black" : "bg-panel text-muted"
+                !other && entry.key === board ? "bg-comic-magenta text-black" : "bg-panel text-muted"
               }`}
             >
               {entry.label}
@@ -138,8 +165,9 @@ export function LeaderboardView({
         </div>
 
         {albo && <RankedBoardPanel preview={rankedPreview} />}
+        {scontro && <CombatArenaBoardPanel />}
 
-        {!albo && info.periods.length > 1 && (
+        {!other && info.periods.length > 1 && (
           <div role="tablist" aria-label="Periodo" className="flex shrink-0 gap-1.5">
             {info.periods.map((entry) => (
               <button
@@ -158,12 +186,12 @@ export function LeaderboardView({
           </div>
         )}
 
-        <p className={albo ? "hidden" : "shrink-0 text-xs font-medium leading-4 text-muted"}>
+        <p className={other ? "hidden" : "shrink-0 text-xs font-medium leading-4 text-muted"}>
           {rule}
           {title && period !== "all" && ` Il primo della settimana riceve il titolo «${title}» fino alla domenica dopo.`}
         </p>
 
-        <section aria-live="polite" className={albo ? "hidden" : "flex min-h-0 flex-1 flex-col gap-1"}>
+        <section aria-live="polite" className={other ? "hidden" : "flex min-h-0 flex-1 flex-col gap-1"}>
           {!shown && <p className="text-sm font-semibold text-muted">Caricamento della classifica…</p>}
           {shown?.error && <p className="text-sm font-semibold text-comic-magenta">{shown.error}</p>}
           {shown?.data && shown.data.top.length === 0 && (
