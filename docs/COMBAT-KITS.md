@@ -1935,3 +1935,149 @@ Nomi e testi delle mosse sono provvisori, come quelli delle carte.
 - **Esca luminosa** — Sé: scudo ×0,5, provocazione 2 turni · ricarica 3 turni.
 - **Uno alla volta** — Un nemico, a distanza: danni ×2,3, stordimento 1 turno (probabile).
 - *Prima che capiscano il trucco* (passiva) — a inizio scontro: vulnerabilità 1 turno ai nemici (probabile).
+
+## Gruppo 14 · gli ultimi 24 fuori dai pacchetti, da Brusio a Controluce (approvato il 26 novembre 2026)
+
+### Brusio (P328, Eroe) · vince il 50,4% (con il kit generico 48,3%)
+- **La cuffia** — Un nemico, a distanza: danni ×1,1.
+- **Ti sento benissimo** — Un nemico, a distanza: danni ×1, vulnerabilità 2 turni (probabile) · ricarica 3 turni.
+- **Il brusio della città** — Tutti i nemici: danni ×0,95 a tutti, indebolimento 1 turno a tutti (probabile).
+- *Chi c'è ancora in giro* (passiva) — sempre: precisione +8, probabilità effetti +6.
+
+### Caleido (P329, Eroe) · vince il 55,1% (con il kit generico 55,9%)
+- **Raggio** — Un nemico, a distanza: danni ×1,15.
+- **Acceca** — Un nemico e i vicini: danni ×0,9, indebolimento 1 turno (probabile), danni ×0,4 agli adiacenti · ricarica 3 turni.
+- **Tutti i colori insieme** — Tutti i nemici: danni ×0,9 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *Anche le persone* (passiva) — quando cade un compagno: potenziamento 1 turno ai compagni (una volta).
+
+### Antidoto (P330, Eroe) · vince il 53,2% (con il kit generico 47,7%)
+- **Mani nude** — Un nemico, corpo a corpo: danni ×1,25.
+- **Qui niente trucchi** — Tutti i nemici: danni ×0,35 a tutti, indebolimento 1 turno a tutti (probabile) · ricarica 3 turni.
+- **Né i tuoi né i miei** — Un nemico, corpo a corpo: danni ×2,1, indebolimento 2 turni.
+- *Le spegne e basta* (passiva) — sempre: probabilità effetti +4, danni +20% contro chi ha potenziamento.
+
+### Argano (P331, Eroe) · vince il 48,0% (con il kit generico 56,4%)
+- **Lancia le auto** — Un nemico, corpo a corpo: danni ×1,4.
+- **Regge i ponti** — Un compagno: scudo ×0,65, fortificazione 1 turno · ricarica 3 turni.
+- **Chiudo io** — Un nemico, corpo a corpo: danni ×2,3.
+- *Arrivo per ultima* (passiva) — quando mette KO: +2 Carica a sé (max 2 volte).
+
+### Siero (P332, Cattivo) · vince il 48,7% (con il kit generico 52,5%)
+- **Pugno gonfio** — Un nemico, corpo a corpo: danni ×1,25.
+- **Un sorso** — Sé: potenziamento 2 turni, accelerazione 1 turno · ricarica 3 turni.
+- **Poi si vede** — Un nemico, corpo a corpo: danni ×2,35.
+- *Ogni volta è una scommessa* (passiva) — sempre: danni +10%, precisione -4.
+
+### Varco (P333, Cattivo) · vince il 53,6% (con il kit generico 54,0%)
+- **Lo strappo** — Un nemico, a distanza: danni ×1,25.
+- **Ve lo porto io** — Un compagno: cura ×0,8, potenziamento 1 turno · ricarica 3 turni.
+- **Oltre lo strappo** — Tutti i nemici: danni ×0,95 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *Fuori città è più forte* (passiva) — sempre: danni +6%, probabilità effetti +6.
+
+### Pressa (P334, Cattivo) · vince il 51,7% (con il kit generico 54,8%)
+- **Stesso passo** — Un nemico, corpo a corpo: danni ×1,3.
+- **Stessa forza** — Un nemico, corpo a corpo: danni ×1,15, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Tutti i giorni** — Un nemico e i vicini: danni ×1,75, danni ×0,55 agli adiacenti.
+- *Impossibile da fermare* (passiva) — quando è colpito: scudo ×0,1 a sé (max 3 volte).
+
+### Seppia (P335, Cattivo) · vince il 55,3% (con il kit generico 53,5%)
+- **Ero il muro** — Un nemico, anche dietro le linee: danni ×1,25.
+- **Sabotaggio** — Un nemico, anche dietro le linee: danni ×1, indebolimento 2 turni (probabile) · ricarica 3 turni.
+- **Ora sono qui** — Un nemico, anche dietro le linee: danni ×2,25.
+- *Prende il colore del posto* (passiva) — a inizio scontro: scudo ×0,2 a sé.
+
+### Lattice (P336, Neutrale) · vince il 54,3% (con il kit generico 55,5%)
+- **Elastica** — Un nemico, anche dietro le linee: danni ×1,15.
+- **Sotto le porte** — Un nemico, anche dietro le linee: danni ×1, vulnerabilità 1 turno (probabile) · ricarica 3 turni.
+- **Ci passo sempre** — Un nemico, anche dietro le linee: danni ×2,2.
+- *La cosa che sa fare meglio* (passiva) — quando colpisce: potenziamento 2 turni a sé (una volta).
+
+### Baricentro (P337, Neutrale) · vince il 54,4% (con il kit generico 52,7%)
+- **Peso** — Un nemico, a distanza: danni ×1,25.
+- **Schiaccia** — Un nemico, a distanza: danni ×1, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Rimette in pari i conti** — Tutti i nemici: danni ×0,95 a tutti, indebolimento 1 turno a tutti (probabile).
+- *Tutto deve pesare quanto deve* (passiva) — sempre: danni +4%, precisione +6.
+
+### Limatura (P338, Neutrale) · vince il 51,0% (con il kit generico 53,5%)
+- **Limatura** — Un nemico, a distanza: danni ×1,25.
+- **Travi piegate** — Un nemico e i vicini: danni ×0,95, danni ×0,45 agli adiacenti · ricarica 3 turni.
+- **Nuvola di ferro** — Tutti i nemici: danni ×1 a tutti.
+- *Il ferro mi ascolta* (passiva) — quando mette KO: +2 Carica a sé, potenziamento 1 turno a sé.
+
+### Bianchetto (P339, Neutrale) · vince il 54,3% (con il kit generico 47,3%)
+- **Carta bianca** — Un nemico, anche dietro le linee: danni ×1,25.
+- **Non c'era niente** — Un nemico, a distanza: danni ×1, indebolimento 2 turni (probabile) · ricarica 3 turni.
+- **Guarda: niente** — Un nemico, anche dietro le linee: danni ×2,3.
+- *Cancella i vantaggi* (passiva) — sempre: critico +4, danni +20% contro chi ha potenziamento.
+
+### Stoccata (P340, Eroe) · vince il 50,7% (con il kit generico 44,4%)
+- **Sciabola** — Un nemico, corpo a corpo: danni ×1,35.
+- **Prima stoccata** — Un nemico, corpo a corpo: danni ×1,25, vulnerabilità 1 turno (probabile) · ricarica 3 turni.
+- **Seconda stoccata** — Un nemico, corpo a corpo: danni ×2,45.
+- *Due bastano* (passiva) — sempre: danni +25% contro chi ha vulnerabilità.
+
+### Batiscafo (P341, Eroe) · vince il 55,4% (con il kit generico 56,7%)
+- **Scafandro** — Un nemico, corpo a corpo: danni ×1.
+- **Una luce degli abissi** — Un compagno: scudo ×0,3, potenziamento 1 turno · ricarica 3 turni.
+- **Per chi viene dopo** — Tutta la squadra: scudo ×0,15 a tutti, potenziamento 1 turno a tutti.
+- *La porto su* (passiva) — a ogni suo turno: +1 Carica ai compagni (una volta).
+
+### Galaverna (P342, Cattivo) · vince il 51,8% (con il kit generico 46,6%)
+- **Respiro gelato** — Un nemico, a distanza: danni ×1,1.
+- **Congela il selciato** — Tutti i nemici: danni ×0,4 a tutti, indebolimento 1 turno a tutti (probabile) · ricarica 3 turni.
+- **È l'ultima ora che arriva** — Tutti i nemici: danni ×0,95 a tutti, indebolimento 2 turni a tutti (probabile).
+- *Fa freddo, vero?* (passiva) — a inizio scontro: indebolimento 1 turno ai nemici (probabile).
+
+### Falla (P343, Cattivo) · vince il 50,3% (con il kit generico 49,0%)
+- **La crepa** — Un nemico, corpo a corpo: danni ×1,1.
+- **Eccola** — Un nemico, a distanza: danni ×1, vulnerabilità 2 turni (probabile) · ricarica 3 turni.
+- **Tutto ha una crepa** — Un nemico, corpo a corpo: danni ×1,9.
+- *Colpisce lì* (passiva) — sempre: critico +4, danni +20% contro chi ha vulnerabilità.
+
+### Mora (P344, Cattivo) · vince il 49,2% (con il kit generico 49,7%)
+- **Catena di monete** — Un nemico, a distanza: danni ×1,1.
+- **Ogni debolezza è un debito** — Un nemico, a distanza: danni ×0,9, indebolimento 2 turni (probabile) · ricarica 3 turni.
+- **Incasso gli interessi** — Tutti i nemici: danni ×0,9 a tutti, vulnerabilità 1 turno a tutti (probabile).
+- *E io incasso* (passiva) — sempre: danni +25% contro chi ha indebolimento.
+
+### Cintura (P345, Neutrale) · vince il 52,3% (con il kit generico 52,9%)
+- **Io e te** — Un nemico, corpo a corpo: danni ×1,15.
+- **Senza trucchi** — Sé: provocazione 2 turni, fortificazione 1 turno · ricarica 3 turni.
+- **Imbattuta** — Un nemico, corpo a corpo: danni ×2.
+- *Solo duelli alla pari* (passiva) — sempre: precisione +6, critico +6.
+
+### Rimonta (P346, Neutrale) · vince il 54,8% (con il kit generico 58,8%)
+- **Presa** — Un nemico, corpo a corpo: danni ×1,1.
+- **Più spingi** — Un nemico, corpo a corpo: danni ×1, stordimento 1 turno (probabile) · ricarica 3 turni.
+- **Più cadi lontano** — Un nemico, corpo a corpo: danni ×1,9, stordimento 1 turno (probabile).
+- *Quando sembra finita* (passiva) — sotto il 30% di Vita: cura ×0,2 a sé, potenziamento 2 turni a sé.
+
+### Preavviso (P347, Neutrale) · vince il 51,6% (con il kit generico 50,3%)
+- **Gira a sinistra** — Un nemico, a distanza: danni ×1,1.
+- **Fra tre secondi** — Un compagno: scudo ×0,4, accelerazione 2 turni · ricarica 3 turni.
+- **Ci arriva prima** — Un nemico, anche dietro le linee: danni ×2.
+- *Sa già dove guarderanno* (passiva) — sempre: critico +6, velocità +8%.
+
+### Boato (P348, Eroe) · vince il 53,4% (con il kit generico 49,2%)
+- **Onda d'urto** — Un nemico, a distanza: danni ×1,1.
+- **La trattiene** — Sé: scudo ×0,5, potenziamento 2 turni · ricarica 3 turni.
+- **Stavolta la lascio uscire tutta** — Tutti i nemici: danni ×1,1 a tutti, stordimento 1 turno a tutti (probabile).
+- *Una forza sola* (passiva) — quando è colpito: +1 Carica a sé (max 3 volte).
+
+### Favilla (P349, Eroe) · vince il 54,2% (con il kit generico 55,4%)
+- **Getto** — Un nemico, a distanza: danni ×1,1, bruciatura 1 turno (probabile).
+- **Arriva col fumo** — Tutta la squadra: scudo ×0,3 a tutti · ricarica 3 turni.
+- **Dalle braci** — Un nemico e i vicini: danni ×1,6, bruciatura 2 turni, danni ×0,6 agli adiacenti.
+- *Mi avete già spento una volta* (passiva) — sotto il 25% di Vita: cura ×0,4 a sé.
+
+### Prelievo (P350, Cattivo) · vince il 49,6% (con il kit generico 43,5%)
+- **Il palmo** — Un nemico, a distanza: danni ×1,15.
+- **Il tuo Segno è un prestito** — Un nemico, a distanza: danni ×1, indebolimento 2 turni (probabile), potenziamento 1 turno a sé · ricarica 3 turni.
+- **Lo rivoglio** — Tutti i nemici: danni ×1 a tutti, indebolimento 1 turno a tutti (probabile).
+- *Cicatrici di luce* (passiva) — quando colpisce: potenziamento 1 turno a sé (max 2 volte).
+
+### Controluce (P351, Neutrale) · vince il 55,4% (con il kit generico 56,2%)
+- **In negativo** — Un nemico, a distanza: danni ×1,15.
+- **Luce nera** — Un nemico, a distanza: danni ×1, vulnerabilità 2 turni (probabile) · ricarica 3 turni.
+- **Dove ti sembro debole** — Un nemico, anche dietro le linee: danni ×2,1.
+- *Valori rovesciati* (passiva) — sotto il 50% di Vita: potenziamento 2 turni a sé, accelerazione 1 turno a sé.
