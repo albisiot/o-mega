@@ -631,20 +631,11 @@ function EmergencyChallengeRow({ challenge, gate }: { challenge: Challenge; gate
 /**
  * «Insieme» on the week's row: the two cooperative modes, the Operazioni (SPEC §5.17) and the
  * Caccia grossa (§5.18). The room the player is in, of either, or the place in the queue; else
- * the page with both. Beside the week's Emergenza, so Gioca gains no line. Closed only when both
- * modes are.
+ * the page with both. Beside the week's Emergenza and the Scontro a squadre, so Gioca gains no
+ * line: a third of the row at most, hence the short «Dal vivo» (until 26 November 2026, with only
+ * the week's Emergenza beside it, «Operazioni · Caccia»). Closed only when both modes are.
  */
-function TogetherTile({
-  coop,
-  raid,
-  compact = false,
-  gate,
-}: {
-  coop: CoopCatalog | null | undefined;
-  raid: RaidCatalog | null | undefined;
-  compact?: boolean;
-  gate: Gate;
-}) {
+function TogetherTile({ coop, raid, gate }: { coop: CoopCatalog | null | undefined; raid: RaidCatalog | null | undefined; gate: Gate }) {
   const coopRoom = coop?.room ?? null;
   const queued = !coopRoom && Boolean(coop?.queue?.queued);
   const raidRoom = raid?.room ?? null;
@@ -659,9 +650,7 @@ function TogetherTile({
         ? raidRoom.status === "active"
           ? "Caccia in corso"
           : `Stanza ${raidRoom.code}`
-        : compact
-          ? "Dal vivo"
-          : "Operazioni · Caccia";
+        : "Dal vivo";
   const inside = Boolean(coopRoom || queued || raidRoom || raidQueued);
   // A room or a place in the queue stays reachable: what started goes on to the end.
   return (
@@ -677,6 +666,28 @@ function TogetherTile({
     >
       <span className="block truncate font-display text-[15px] uppercase leading-5">Insieme</span>
       <span className="block truncate text-[12px] font-bold leading-4">{state}</span>
+    </GateLink>
+  );
+}
+
+/**
+ * The Scontro a squadre (SPEC §5.19, docs/COMBAT.md): five against five against the computer, on
+ * its own page. On the week's row beside «Insieme», so Gioca gains no line; while it is closed
+ * (EDITOR) it stays under its veil with the admin's label, and a tap says why.
+ */
+function CombatTile({ gate }: { gate: Gate }) {
+  return (
+    <GateLink
+      href="/scontro"
+      status={gate.status}
+      onClosed={gate.onClosed}
+      compact
+      low
+      label="Scontro a squadre: 5 contro 5"
+      className="tile flex min-h-10 min-w-0 flex-col justify-center bg-comic-magenta px-2.5 py-1 text-black short:min-h-9"
+    >
+      <span className="block truncate font-display text-[15px] uppercase leading-5">Scontro</span>
+      <span className="block truncate text-[12px] font-bold leading-4">5 contro 5</span>
     </GateLink>
   );
 }
@@ -949,11 +960,12 @@ export function PlayMenuView({
               <EmergencyTile today={emergency} gate={gate("emergency")} />
               <StoryTile chapters={story} disabled={blocked} gate={gate("story")} />
             </div>
-            {/* The week's Emergenza shares its row: with an Emergenza a tema and with «Insieme» (Operazioni, Caccia grossa). */}
+            {/* The week's Emergenza shares its row: with an Emergenza a tema, with «Insieme» (Operazioni, Caccia grossa) and with the Scontro a squadre. */}
             <div className={TODAY_ROW}>
               <EmergencyWeekRow week={emergencyWeek} now={now} compact gate={gate("emergency_week")} />
               {themedEmergency && <EmergencyChallengeRow challenge={themedEmergency} gate={gate("emergency")} />}
-              <TogetherTile coop={coop} raid={raid} compact={Boolean(themedEmergency)} gate={togetherGate} />
+              <TogetherTile coop={coop} raid={raid} gate={togetherGate} />
+              <CombatTile gate={gate("combat")} />
             </div>
 
             <ListTitle>Modalità</ListTitle>

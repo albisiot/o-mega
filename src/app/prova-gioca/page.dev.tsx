@@ -13,7 +13,8 @@
 //   /prova-gioca/?s=carico      while loading
 //   /prova-gioca/?s=modi        modes from the EDITOR: Allarme Triplo off «Prossimamente», Grande Minaccia from
 //                               3 December, Quadrante «Nuova», moving grid off, Storia and Conquista off,
-//                               the week's Emergenza over; «Gioca ancora» on the Grande Minaccia waits
+//                               the week's Emergenza over, the Scontro a squadre off «Prossimamente»;
+//                               «Gioca ancora» on the Grande Minaccia waits
 // The Emergenza della settimana: to play (nuovo, senza), in progress (partita), done (ancora, premio).
 
 import { useSearchParams } from "next/navigation";
@@ -219,6 +220,7 @@ const SCENES: Record<string, Scene> = {
       mode("story", { state: "off", label: "In pausa" }),
       mode("conquest", { state: "off" }),
       mode("emergency_week", { state: "window", starts_at: "2026-11-01T00:00:00Z", ends_at: "2026-11-15T00:00:00Z" }),
+      mode("combat", { state: "off", label: "Prossimamente" }),
     ]),
   },
   carico: {

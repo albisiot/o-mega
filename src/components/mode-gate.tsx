@@ -6,9 +6,11 @@ import { MODE_UNAVAILABLE, type ModeStatus } from "@/lib/mode-availability";
 
 /**
  * A mode's state drawn on its button (EDITOR → Modalità di gioco): a closed mode gets a dark veil,
- * and the label, when there is one, sits on top as a sticker. The button needs `relative`.
+ * and the label, when there is one, sits on top as a sticker. The button needs `relative`. On a
+ * narrow compact tile whose title fills its width, `low` puts the sticker on the second line, so
+ * a long label («Prossimamente») does not hide the name.
  */
-export function ModeGate({ status, compact = false }: { status: ModeStatus | null; compact?: boolean }) {
+export function ModeGate({ status, compact = false, low = false }: { status: ModeStatus | null; compact?: boolean; low?: boolean }) {
   if (!status) return null;
   return (
     <>
@@ -17,7 +19,9 @@ export function ModeGate({ status, compact = false }: { status: ModeStatus | nul
         <span
           aria-hidden
           className={`pointer-events-none absolute z-[2] max-w-[calc(100%-10px)] rotate-3 truncate bg-black font-sfx tracking-wide text-comic-yellow ${
-            compact ? "right-1 top-0.5 px-1 text-[11px] leading-[15px]" : "right-1.5 top-1 px-1.5 text-[13px] leading-[18px]"
+            compact
+              ? `right-1 px-1 text-[11px] leading-[15px] ${low ? "bottom-0.5" : "top-0.5"}`
+              : "right-1.5 top-1 px-1.5 text-[13px] leading-[18px]"
           }`}
         >
           {status.label}
@@ -46,6 +50,7 @@ export function GateLink({
   style,
   label,
   compact = false,
+  low = false,
   children,
 }: {
   href: string;
@@ -56,6 +61,8 @@ export function GateLink({
   /** The aria-label of the open link; the closed state is added to it. */
   label?: string;
   compact?: boolean;
+  /** The sticker on the second line (ModeGate). */
+  low?: boolean;
   children: ReactNode;
 }) {
   const said = label ? `${label}${gateSaid(status)}` : undefined;
@@ -63,14 +70,14 @@ export function GateLink({
     return (
       <button type="button" aria-disabled onClick={onClosed} aria-label={said} className={`relative text-left ${className}`} style={style}>
         {children}
-        <ModeGate status={status} compact={compact} />
+        <ModeGate status={status} compact={compact} low={low} />
       </button>
     );
   }
   return (
     <Link href={href} aria-label={said} className={`relative ${className}`} style={style}>
       {children}
-      <ModeGate status={status} compact={compact} />
+      <ModeGate status={status} compact={compact} low={low} />
     </Link>
   );
 }
