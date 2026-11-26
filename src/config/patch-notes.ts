@@ -1,6 +1,12 @@
 // Player-facing changelog shown in the profile, newest first. Add new entries at the top.
 export const PATCH_NOTES = [
   {
+    date: "26 novembre 2026",
+    changes: [
+      "Tutte le 351 carte ora si guardano in 3D: sono arrivati gli ultimi 70 personaggi, da Concordato a Controluce. Millenario è un olivo che cammina tra le rovine di un tempio mentre una tartaruga lo sorpassa, Fischio è un'arbitra che ferma con i palmi i pugni di due sfidanti, Ovazione un lottatore che si gonfia agli applausi di un pubblico di cartone, Rimonta un vecchio maestro che proietta un bruto in armatura. Tocca «Guarda in 3D» nel dettaglio di qualsiasi carta.",
+    ],
+  },
+  {
     date: "25 novembre 2026",
     changes: [
       "Altri 40 personaggi si guardano in 3D, da Praecursor ad Affissione, e ora sono 201. Holloway è una torre di pendolari che ondeggia sulla banchina della linea chiusa, Principal un gigante fatto di registri che cammina nel salone allagato del Banco, Necropsy legge l'ultimo pensiero di un morto, ed è una fetta di pizza. Tocca «Guarda in 3D» nel dettaglio della carta.",
