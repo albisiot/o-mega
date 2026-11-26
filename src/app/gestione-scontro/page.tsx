@@ -12,9 +12,11 @@ import { genericCombatKit, validateCombatKit, type CombatKit } from "@o-mega/gam
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { BackLink } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
-import { COMBAT_FAMILIES, combatRules } from "@/lib/combat";
+import { fromRomeInput } from "@/lib/challenge-admin";
+import { COMBAT_FAMILIES, combatRules, combatUnlockRule, fetchCombatUnlocks, saveCombatUnlock, type CombatUnlocks } from "@/lib/combat";
 import { describeCombatMove, italianKitError } from "@/lib/combat-text";
 import { describeServerError } from "@/lib/errors";
+import { toRomeInput } from "@/lib/events";
 import { getSupabase } from "@/lib/supabase/client";
 import { useIsAdmin } from "@/lib/use-is-admin";
 
@@ -41,6 +43,122 @@ function problemsOf(text: string): { kit: CombatKit | null; errors: string[] } {
   } catch (cause) {
     return { kit: null, errors: [`Il kit non ha la forma giusta: ${(cause as Error).message}`] };
   }
+}
+
+/**
+ * The unlock of the kits (SPEC §5.19, game_config combat_unlock.*): every kit open, or a kit after
+ * a number of matches with the character in the team, won or played, counted from a moment in Rome
+ * time or over every match ever played. The server checks the admin and the values.
+ */
+function UnlockSettings() {
+  const [mode, setMode] = useState<CombatUnlocks["mode"]>("progress");
+  const [basis, setBasis] = useState<CombatUnlocks["basis"]>("wins");
+  const [count, setCount] = useState("50");
+  const [everyMatch, setEveryMatch] = useState(false);
+  const [since, setSince] = useState("");
+  const [loaded, setLoaded] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    fetchCombatUnlocks()
+      .then((unlocks) => {
+        if (!live) return;
+        setMode(unlocks.mode);
+        setBasis(unlocks.basis);
+        setCount(String(unlocks.count));
+        setEveryMatch(unlocks.since === null);
+        setSince(toRomeInput(unlocks.since ?? Date.now()));
+        setLoaded(true);
+      })
+      .catch((cause) => live && setMessage(describeServerError(cause)));
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const number = Number(count);
+  const instant = everyMatch ? null : fromRomeInput(since);
+  const valid = Number.isInteger(number) && number >= 1 && number <= 10000 && (instant === null || !Number.isNaN(instant));
+
+  async function save() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await saveCombatUnlock({ mode, basis, count: number, since: instant === null ? null : new Date(instant).toISOString() });
+      setMessage("Sblocco salvato.");
+    } catch (cause) {
+      setMessage(describeServerError(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const choice = (on: boolean) => `btn min-h-10 px-1 text-[12px] ${on ? "btn-primary" : "btn-ghost"}`;
+  return (
+    <section className="flex flex-col gap-1.5 rounded-md border-2 border-black bg-panel p-2">
+      <p className="text-[14px] font-extrabold leading-5">Sblocco dei kit</p>
+      {!loaded ? (
+        <p className="text-[12px] leading-4 text-muted">{message ?? "Carico…"}</p>
+      ) : (
+        <>
+          <div role="radiogroup" aria-label="Come si sbloccano i kit" className="grid grid-cols-2 gap-1.5">
+            <button type="button" role="radio" aria-checked={mode === "progress"} onClick={() => setMode("progress")} className={choice(mode === "progress")}>
+              Con le partite
+            </button>
+            <button type="button" role="radio" aria-checked={mode === "always"} onClick={() => setMode("always")} className={choice(mode === "always")}>
+              Sempre attivi
+            </button>
+          </div>
+          {mode === "progress" ? (
+            <>
+              <div role="radiogroup" aria-label="Cosa si conta" className="grid grid-cols-2 gap-1.5">
+                <button type="button" role="radio" aria-checked={basis === "wins"} onClick={() => setBasis("wins")} className={choice(basis === "wins")}>
+                  Partite vinte
+                </button>
+                <button type="button" role="radio" aria-checked={basis === "played"} onClick={() => setBasis("played")} className={choice(basis === "played")}>
+                  Partite giocate
+                </button>
+              </div>
+              <label className="flex items-center gap-2 text-[12px] font-bold">
+                Quante
+                <input
+                  value={count}
+                  onChange={(e) => setCount(e.target.value)}
+                  inputMode="numeric"
+                  aria-label="Partite per sbloccare un kit"
+                  className="min-h-10 w-24 rounded-md border-2 border-black bg-panel-raised px-2 text-[14px] font-bold"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-[12px] font-bold">
+                <input type="checkbox" checked={everyMatch} onChange={(e) => setEveryMatch(e.target.checked)} className="h-5 w-5" />
+                Conta tutte le partite, anche quelle già giocate
+              </label>
+              {!everyMatch && (
+                <label className="flex flex-col gap-1 text-[12px] font-bold">
+                  Conta le partite finite da (ora di Roma)
+                  <input
+                    type="datetime-local"
+                    value={since}
+                    onChange={(e) => setSince(e.target.value)}
+                    className="min-h-10 rounded-md border-2 border-black bg-panel-raised px-2 text-[13px] font-bold"
+                  />
+                </label>
+              )}
+              {valid && <p className="text-[11px] leading-4 text-muted">{combatUnlockRule({ basis, count: number })}</p>}
+            </>
+          ) : (
+            <p className="text-[11px] leading-4 text-muted">Ogni personaggio con un kit si può schierare subito.</p>
+          )}
+          <button type="button" disabled={busy || !valid} onClick={() => void save()} className="btn btn-primary min-h-10 px-2 text-[12px] disabled:opacity-45">
+            Salva lo sblocco
+          </button>
+          {message && <p className="text-[12px] font-bold leading-4 text-comic-yellow">{message}</p>}
+        </>
+      )}
+    </section>
+  );
 }
 
 export default function CombatKitsAdminPage() {
@@ -186,6 +304,7 @@ export default function CombatKitsAdminPage() {
         </section>
       ) : (
         <>
+          <UnlockSettings />
           <div className="flex gap-1.5">
             <input
               value={code}

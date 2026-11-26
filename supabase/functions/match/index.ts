@@ -178,6 +178,7 @@ const CLIENT_ERRORS = new Set([
   "combat_no_kit",
   "combat_not_your_turn",
   "combat_illegal_action",
+  "combat_locked",
 ]);
 
 class GameError extends Error {}

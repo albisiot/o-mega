@@ -4,7 +4,7 @@
 // serves *.dev.tsx pages in `next dev` only, so it is never part of the published site.
 // Names and numbers are placeholders. Tap a mode to open it.
 //   /prova-gioca/?s=nuovo       first visit: «Prima partita», Conquista locked, Emergenza to play
-//   /prova-gioca/?s=ancora      «Gioca ancora» on Quadrante, Emergenza done, Conquista open
+//   /prova-gioca/?s=ancora      «Gioca ancora» on Quadrante, Emergenza done, Conquista open, 3 of 5 Scontro kits unlocked
 //   /prova-gioca/?s=partita     a match in progress: no «Gioca ancora», the modes blocked
 //   /prova-gioca/?s=premio      an event reward to open, the Conquista limit reached: «Gioca ancora» on it waits
 //   /prova-gioca/?s=finita      the last play was a Sfida a tema now over: «Gioca ancora» says so and waits
@@ -23,6 +23,7 @@ import { PlayMenuView, type EmergencyThisWeek, type EmergencyToday } from "@/com
 import type { Challenge } from "@/lib/challenges";
 import type { LastPlay } from "@/lib/last-play";
 import type { ActiveMatch, ConquestStatus } from "@/lib/match";
+import type { CombatUnlocks } from "@/lib/combat";
 import { toModeMap, type ModeAvailability, type ModeAvailabilityMap } from "@/lib/mode-availability";
 import type { MyRanked } from "@/lib/ranked";
 import type { StoryChapter } from "@/lib/story";
@@ -108,6 +109,8 @@ type Scene = {
   challenges?: Challenge[];
   /** When each mode is open (EDITOR); missing: all open. */
   modes?: ModeAvailabilityMap;
+  /** The Scontro kits unlocked; missing: not known (the tile says «5 contro 5»). */
+  combatUnlocks?: CombatUnlocks;
 };
 
 const mode = (key: ModeAvailability["key"], patch: Partial<ModeAvailability>): ModeAvailability => ({
@@ -151,6 +154,7 @@ const SCENES: Record<string, Scene> = {
     story: chapters(false),
     lastPlay: { mode: "bot", format: "quadrant_shifting", difficulty: "hard" },
     event: "on",
+    combatUnlocks: { mode: "progress", basis: "wins", count: 50, since: null, needed: 5, progress: {}, ready: 3 },
   },
   partita: {
     active: { id: "x", mode: "bot", format: "classic", bot_difficulty: "medium", current_round: 3 },
@@ -250,6 +254,7 @@ function Scenes() {
         lastPlay={scene.lastPlay}
         challenges={scene.challenges ?? null}
         modes={scene.modes ?? null}
+        combatUnlocks={scene.combatUnlocks ?? null}
         event={scene.event === "off" ? null : <FakeEvent reward={scene.event === "reward"} />}
         now={Date.parse("2026-11-17T12:00:00Z")}
         onForfeit={() => {}}

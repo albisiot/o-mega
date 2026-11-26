@@ -10,6 +10,7 @@ import { StarCount } from "@/components/story-stars";
 import { TutorialButton } from "@/components/tutorial";
 import { balance } from "@/config/balance";
 import { challengeEmergencyHref, runningChallenge, type Challenge } from "@/lib/challenges";
+import { combatReady, type CombatUnlocks } from "@/lib/combat";
 import { COOP_QUEUE_HREF, coopRoomHref, type CoopCatalog } from "@/lib/coop";
 import { RAID_QUEUE_HREF, raidRoomHref, type RaidCatalog } from "@/lib/raid";
 import { daysLeft, daysLeftText, emergencyHref } from "@/lib/emergency";
@@ -673,9 +674,12 @@ function TogetherTile({ coop, raid, gate }: { coop: CoopCatalog | null | undefin
 /**
  * The Scontro a squadre (SPEC §5.19, docs/COMBAT.md): five against five against the computer, on
  * its own page. On the week's row beside «Insieme», so Gioca gains no line; while it is closed
- * (EDITOR) it stays under its veil with the admin's label, and a tap says why.
+ * (EDITOR) it stays under its veil with the admin's label, and a tap says why. Until the player has
+ * enough characters with their kit unlocked it says how many («Kit 3/5»): its page shows how far
+ * the closest ones are, and no team.
  */
-function CombatTile({ gate }: { gate: Gate }) {
+function CombatTile({ gate, unlocks }: { gate: Gate; unlocks: CombatUnlocks | null }) {
+  const short = unlocks && !combatReady(unlocks) ? `Kit ${unlocks.ready}/${unlocks.needed}` : null;
   return (
     <GateLink
       href="/scontro"
@@ -683,11 +687,11 @@ function CombatTile({ gate }: { gate: Gate }) {
       onClosed={gate.onClosed}
       compact
       low
-      label="Scontro a squadre: 5 contro 5"
+      label={`Scontro a squadre: ${short ? `kit sbloccati ${unlocks!.ready} su ${unlocks!.needed}` : "5 contro 5"}`}
       className="tile flex min-h-10 min-w-0 flex-col justify-center bg-comic-magenta px-2.5 py-1 text-black short:min-h-9"
     >
       <span className="block truncate font-display text-[15px] uppercase leading-5">Scontro</span>
-      <span className="block truncate text-[12px] font-bold leading-4">5 contro 5</span>
+      <span className="block truncate text-[12px] font-bold leading-4">{short ?? "5 contro 5"}</span>
     </GateLink>
   );
 }
@@ -877,6 +881,7 @@ export function PlayMenuView({
   challenges = null,
   coop,
   raid,
+  combatUnlocks = null,
   modes = null,
   now,
   onForfeit,
@@ -899,6 +904,8 @@ export function PlayMenuView({
   coop?: CoopCatalog | null;
   /** The Caccia grossa (SPEC §5.18): the Bosses and the room the player is in; undefined while loading. */
   raid?: RaidCatalog | null;
+  /** The Scontro a squadre: how many of the player's kits are unlocked; null while loading or unknown. */
+  combatUnlocks?: CombatUnlocks | null;
   /** When each mode is open (EDITOR → Modalità di gioco); null while loading: all open. */
   modes?: ModeAvailabilityMap | null;
   now: number;
@@ -965,7 +972,7 @@ export function PlayMenuView({
               <EmergencyWeekRow week={emergencyWeek} now={now} compact gate={gate("emergency_week")} />
               {themedEmergency && <EmergencyChallengeRow challenge={themedEmergency} gate={gate("emergency")} />}
               <TogetherTile coop={coop} raid={raid} gate={togetherGate} />
-              <CombatTile gate={gate("combat")} />
+              <CombatTile gate={gate("combat")} unlocks={combatUnlocks} />
             </div>
 
             <ListTitle>Modalità</ListTitle>

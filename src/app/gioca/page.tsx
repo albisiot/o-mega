@@ -6,6 +6,7 @@ import { EventBanner } from "@/components/event-banner";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayMenuView, type EmergencyThisWeek, type EmergencyToday } from "@/components/play-menu";
 import { fetchChallenges, seenChallenges, type Challenge } from "@/lib/challenges";
+import { fetchCombatUnlocks, type CombatUnlocks } from "@/lib/combat";
 import { fetchCoop, seenCoop, type CoopCatalog } from "@/lib/coop";
 import {
   fetchEmergencyLeaderboard,
@@ -65,6 +66,8 @@ export default function PlayPage() {
   const [coop, setCoop] = useState<CoopCatalog | null | undefined>(() => seenCoop() ?? undefined);
   // The Caccia grossa (SPEC §5.18): the room the player is in, on the same tile «Insieme».
   const [raid, setRaid] = useState<RaidCatalog | null | undefined>(() => seenRaid() ?? undefined);
+  // The Scontro a squadre (SPEC §5.19): how many of the player's kits are unlocked, on its tile.
+  const [combatUnlocks, setCombatUnlocks] = useState<CombatUnlocks | null>(null);
   // On this device only: read once, the page is left to start a match anyway.
   const [lastPlay] = useState<LastPlay | null>(() => readLastPlay());
   // When each mode is open (EDITOR): a closed one stays, under its veil.
@@ -134,6 +137,11 @@ export default function PlayPage() {
         console.error("Hunt failed", cause);
         if (!cancelled) setRaid(null);
       });
+    fetchCombatUnlocks()
+      .then((next) => {
+        if (!cancelled) setCombatUnlocks(next);
+      })
+      .catch((cause: unknown) => console.error("Scontro unlocks failed", cause));
     return () => {
       cancelled = true;
     };
@@ -167,6 +175,7 @@ export default function PlayPage() {
         challenges={challenges}
         coop={coop}
         raid={raid}
+        combatUnlocks={combatUnlocks}
         modes={modes}
         now={now}
         onForfeit={() => setConfirmForfeit(true)}

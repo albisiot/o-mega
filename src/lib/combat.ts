@@ -128,19 +128,67 @@ export type CombatCard = { instanceId: string; definitionId: string; code: strin
 
 export async function fetchCombatCards(kits: Map<string, CombatKit>): Promise<CombatCard[]> {
   if (kits.size === 0) return [];
+  // The player's own copies (row security), all of them: since every character has a kit, a list
+  // of 351 ids in the query string is longer than the copies themselves.
   const { data, error } = await getSupabase()
     .from("card_instances")
     .select("id, definition_id, card_definitions(code, name, rarity_code, faction, stats)")
-    .in("definition_id", [...kits.keys()])
     .order("acquired_at");
   if (error) throw error;
   const cards = new Map<string, CombatCard>();
   for (const row of (data ?? []) as unknown as { id: string; definition_id: string; card_definitions: { code: string; name: string; rarity_code: string; faction: string; stats: Record<string, number> } }[]) {
-    if (cards.has(row.definition_id)) continue;
+    if (cards.has(row.definition_id) || !kits.has(row.definition_id)) continue;
     const d = row.card_definitions;
     cards.set(row.definition_id, { instanceId: row.id, definitionId: row.definition_id, code: d.code, name: d.name, rarity: d.rarity_code, faction: d.faction, stats: d.stats, kit: kits.get(row.definition_id)! });
   }
   return [...cards.values()].sort((x, y) => x.code.localeCompare(y.code));
+}
+
+/**
+ * The unlock of the kits (SPEC §5.19, get_combat_unlocks): with mode "progress" a character fights
+ * after `count` matches with it in the player's team, won or finished as `basis` says, counted from
+ * `since`; with "always" every kit is open. `ready` of the player's characters with a kit are
+ * unlocked, and fighting takes `needed`.
+ */
+export type CombatUnlocks = {
+  mode: "progress" | "always";
+  basis: "wins" | "played";
+  count: number;
+  since: string | null;
+  needed: number;
+  /** The matches that count, by character (definition id); a missing one has none. */
+  progress: Record<string, number>;
+  ready: number;
+};
+
+export async function fetchCombatUnlocks(): Promise<CombatUnlocks> {
+  const { data, error } = await getSupabase().rpc("get_combat_unlocks" as never);
+  if (error) throw error;
+  return data as unknown as CombatUnlocks;
+}
+
+export function combatUnlocked(unlocks: CombatUnlocks, definitionId: string): boolean {
+  return unlocks.mode === "always" || (unlocks.progress[definitionId] ?? 0) >= unlocks.count;
+}
+
+/** The player can fight: enough characters unlocked. */
+export function combatReady(unlocks: CombatUnlocks): boolean {
+  return unlocks.ready >= unlocks.needed;
+}
+
+/** How a kit is unlocked, in one sentence for the players. */
+export function combatUnlockRule(unlocks: Pick<CombatUnlocks, "basis" | "count">): string {
+  const what = unlocks.basis === "played" ? `${unlocks.count} partite giocate` : `${unlocks.count} vittorie`;
+  return `Un personaggio sblocca il suo kit dopo ${what} con lui in squadra, in qualunque modalità a partita: Classica, Grande Minaccia, Allarme Triplo, Quadrante, Storia e sfide.`;
+}
+
+/** EDITOR → Scontro: the four values of the unlock (admins only, checked by the server). */
+export async function saveCombatUnlock(settings: Pick<CombatUnlocks, "mode" | "basis" | "count" | "since">): Promise<void> {
+  const { error } = await getSupabase().rpc(
+    "admin_save_combat_unlock" as never,
+    { p_mode: settings.mode, p_basis: settings.basis, p_count: settings.count, p_since: settings.since } as never,
+  );
+  if (error) throw error;
 }
 
 /** The drawing of a character by code (the thumbnails are enough for the tiles). */

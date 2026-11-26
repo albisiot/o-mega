@@ -60,6 +60,8 @@ const ADMIN_KEYS = new Set([
   "packs.variant_chance_percent",
   // /gestione-schegge
   "shards.pack_cost", "shards.random_cosmetic_cost", "shards.chosen_kind_cosmetic_cost", "shards.new_variant_cost",
+  // /gestione-scontro, the unlock of the kits
+  "combat_unlock.mode", "combat_unlock.basis", "combat_unlock.count", "combat_unlock.since",
 ]);
 const describe = (row) =>
   `${row.key}: database ${JSON.stringify(row.value)}, balance.ts ${flat.has(row.key) ? JSON.stringify(flat.get(row.key)) : "missing"}`;

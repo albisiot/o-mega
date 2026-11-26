@@ -532,6 +532,19 @@ export const balance = {
      */
     rewards: { winXp: 20, lossXp: 8, winCoins: 15, dailyBattles: 5 },
   },
+  /**
+   * Scontro a squadre (SPEC §5.19, docs/COMBAT.md): a character's kit is unlocked by playing the
+   * other modes. "progress": after `count` matches with it in the player's team, won ("wins") or
+   * finished ("played"), in every mode played as a match, counted from `since` (null: every match
+   * ever played); "always": every kit is open. Fighting takes combat.teamSize unlocked characters.
+   * Admins change them from /gestione-scontro: these are the defaults (game_config combat_unlock.*).
+   */
+  combatUnlock: {
+    mode: "progress" as "progress" | "always",
+    basis: "wins" as "wins" | "played",
+    count: 50,
+    since: "2026-11-25T23:00:00+00:00" as string | null,
+  },
 
   /**
    * Quadrante (SPEC §5.14): a size × size grid filled in turns, with four abilities drawn

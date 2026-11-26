@@ -12,6 +12,8 @@ update public.mode_availability set state = 'on' where key = 'combat';
 update public.game_config c set value = to_jsonb(d.value)
 from (values ('combat.rewards.win_xp', 20), ('combat.rewards.loss_xp', 8), ('combat.rewards.win_coins', 15), ('combat.rewards.daily_battles', 5)) as d(key, value)
 where c.key = d.key;
+-- Every kit open: the unlock by matches played has its own test (combat_unlock.test.sql).
+update public.game_config set value = '"always"' where key = 'combat_unlock.mode';
 -- The test fields P002, P004 and P006 as characters without a kit: whatever the batches of
 -- stage 5 gave them, not here.
 delete from public.combat_kits k using public.card_definitions d

@@ -233,6 +233,8 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
   combat_no_kit: "Uno dei personaggi non ha ancora le mosse dello Scontro.",
   combat_not_your_turn: "Non è il tuo turno.",
   combat_illegal_action: "Questa mossa non si può fare ora.",
+  combat_locked: "Uno dei personaggi non ha ancora sbloccato il suo kit dello Scontro.",
+  invalid_combat_unlock: "Controlla i valori: un modo, cosa contare e un numero di partite da 1 a 10000.",
   invalid_mode_state: "Scegli: sempre attiva, da data a data, o spenta.",
   invalid_mode_window: "Metti l'inizio e la fine, con la fine dopo l'inizio.",
   invalid_mode_label: "L'etichetta ha al massimo 16 caratteri.",
