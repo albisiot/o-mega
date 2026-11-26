@@ -545,6 +545,34 @@ export const balance = {
     count: 50,
     since: "2026-11-25T23:00:00+00:00" as string | null,
   },
+  /**
+   * Scontro a squadre, stage 6a (SPEC §5.19, docs/COMBAT.md): challenges between players, never live,
+   * against another player's saved defence played by the computer. `choices` opponents offered with a
+   * Gloria within `range`, then `rangeWide`, then anyone, completed by teams of the computer at the
+   * player's Gloria ± `computerSpread`; `refreshesDaily` lists renewed by hand a game day. The Gloria
+   * moves as the Fama of the Classificata without streaks or league floors; the defender wins or loses
+   * `defenseSharePercent` of it (at least 1); the same opponent moves it `sameOpponentDaily` times a
+   * day. The first `rewards.dailyBattles` finished challenges of a day pay, apart from the battles
+   * against the computer. No card is ever at stake.
+   */
+  combatArena: {
+    choices: 3,
+    range: 150,
+    rangeWide: 400,
+    refreshesDaily: 5,
+    winPoints: 25,
+    lossPoints: 20,
+    pointsPerStep: 20,
+    winMin: 10,
+    winMax: 40,
+    lossMin: 5,
+    lossMax: 35,
+    noLossBelow: 300,
+    sameOpponentDaily: 3,
+    defenseSharePercent: 33,
+    computerSpread: 100,
+    rewards: { dailyBattles: 5, winXp: 25, winCoins: 20, lossXp: 10 },
+  },
 
   /**
    * Quadrante (SPEC §5.14): a size × size grid filled in turns, with four abilities drawn

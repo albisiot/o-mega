@@ -38,7 +38,8 @@ const DELAY: Record<1 | 2 | 3, number> = { 1: 1100, 2: 550, 3: 260 };
 const SLOTS: CombatSlot[] = ["base", "special", "supreme"];
 
 /** The prizes of a battle against the computer (stage 4). */
-export type CombatScreenRewards = { xp: number; coins: number };
+/** What a battle paid; `points` is a challenge's Gloria (stage 6a). */
+export type CombatScreenRewards = { xp: number; coins: number; points?: number };
 /** What the server answers: the new steps, and the prizes once the battle is over. */
 export type CombatScreenUpdate = { steps: CombatStep[]; rewards: CombatScreenRewards | null };
 
@@ -506,6 +507,7 @@ function EndPanel(props: {
           {props.rewards && (props.rewards.xp > 0 || props.rewards.coins > 0)
             ? `+${props.rewards.xp} XP${props.rewards.coins > 0 ? ` · +${props.rewards.coins} monete` : ""}`
             : "Niente premi: hai già giocato gli scontri premiati di oggi."}
+          {props.rewards?.points !== undefined && ` · ${props.rewards.points < 0 ? "−" : "+"}${Math.abs(props.rewards.points)} Gloria`}
         </p>
       )}
       <div className="mt-2 grid grid-cols-3 gap-1.5">

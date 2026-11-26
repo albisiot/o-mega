@@ -678,8 +678,10 @@ function TogetherTile({ coop, raid, gate }: { coop: CoopCatalog | null | undefin
  * enough characters with their kit unlocked it says how many («Kit 3/5»): its page shows how far
  * the closest ones are, and no team.
  */
-function CombatTile({ gate, unlocks }: { gate: Gate; unlocks: CombatUnlocks | null }) {
-  const short = unlocks && !combatReady(unlocks) ? `Kit ${unlocks.ready}/${unlocks.needed}` : null;
+function CombatTile({ gate, unlocks, news }: { gate: Gate; unlocks: CombatUnlocks | null; news: number }) {
+  // Stage 6a: the defences others challenged since the player last looked.
+  const defenses = news > 0 ? `${news} ${news === 1 ? "difesa" : "difese"}` : null;
+  const short = unlocks && !combatReady(unlocks) ? `Kit ${unlocks.ready}/${unlocks.needed}` : defenses;
   return (
     <GateLink
       href="/scontro"
@@ -687,7 +689,9 @@ function CombatTile({ gate, unlocks }: { gate: Gate; unlocks: CombatUnlocks | nu
       onClosed={gate.onClosed}
       compact
       low
-      label={`Scontro a squadre: ${short ? `kit sbloccati ${unlocks!.ready} su ${unlocks!.needed}` : "5 contro 5"}`}
+      label={`Scontro a squadre: ${
+        unlocks && !combatReady(unlocks) ? `kit sbloccati ${unlocks.ready} su ${unlocks.needed}` : defenses ? `${defenses} da vedere` : "5 contro 5"
+      }`}
       className="tile flex min-h-10 min-w-0 flex-col justify-center bg-comic-magenta px-2.5 py-1 text-black short:min-h-9"
     >
       <span className="block truncate font-display text-[15px] uppercase leading-5">Scontro</span>
@@ -882,6 +886,7 @@ export function PlayMenuView({
   coop,
   raid,
   combatUnlocks = null,
+  combatNews = 0,
   modes = null,
   now,
   onForfeit,
@@ -906,6 +911,8 @@ export function PlayMenuView({
   raid?: RaidCatalog | null;
   /** The Scontro a squadre: how many of the player's kits are unlocked; null while loading or unknown. */
   combatUnlocks?: CombatUnlocks | null;
+  /** The Scontro's defences others challenged since the player last looked (stage 6a). */
+  combatNews?: number;
   /** When each mode is open (EDITOR → Modalità di gioco); null while loading: all open. */
   modes?: ModeAvailabilityMap | null;
   now: number;
@@ -972,7 +979,7 @@ export function PlayMenuView({
               <EmergencyWeekRow week={emergencyWeek} now={now} compact gate={gate("emergency_week")} />
               {themedEmergency && <EmergencyChallengeRow challenge={themedEmergency} gate={gate("emergency")} />}
               <TogetherTile coop={coop} raid={raid} gate={togetherGate} />
-              <CombatTile gate={gate("combat")} unlocks={combatUnlocks} />
+              <CombatTile gate={gate("combat")} unlocks={combatUnlocks} news={combatNews} />
             </div>
 
             <ListTitle>Modalità</ListTitle>

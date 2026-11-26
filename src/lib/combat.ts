@@ -45,17 +45,33 @@ export function combatContext(): CombatContext {
   return { rules: combatRules(), families: COMBAT_FAMILIES };
 }
 
-/** What a finished battle paid: nothing past the day's paid battles. */
-export type CombatRewards = { xp: number; coins: number };
+/** What a finished battle paid: nothing past the day's paid battles; a challenge's Gloria too. */
+export type CombatRewards = { xp: number; coins: number; points?: number };
+
+/** A challenge's opponent (stage 6a): another player's defence, or a team of the computer. */
+export type CombatOpponent = { kind: "player" | "computer"; name: string; points: number };
 
 /** A battle as the client knows it: the steps it was sent (from `from`), whether it is over, the prizes. */
-export type CombatUpdate = { battleId: string; status: string; auto: boolean; field: CombatField | null; from: number; steps: CombatStep[]; rewards: CombatRewards | null };
+export type CombatUpdate = {
+  battleId: string;
+  status: string;
+  auto: boolean;
+  /** "computer", or "arena" for a challenge. */
+  kind: string;
+  opponent: CombatOpponent | null;
+  field: CombatField | null;
+  from: number;
+  steps: CombatStep[];
+  rewards: CombatRewards | null;
+};
 
 type ServerStep = { events: CombatEvent[]; state: Omit<CombatState, "fighters"> & { fighters: Omit<CombatFighter, "kit">[] } };
 type ServerView = {
   battle_id: string | null;
   status?: string;
   auto?: boolean;
+  kind?: string;
+  opponent?: CombatOpponent | null;
   field?: CombatField | null;
   kits?: Record<string, CombatKit>;
   from?: number;
@@ -70,6 +86,8 @@ function updateOf(view: ServerView): CombatUpdate {
     battleId: view.battle_id!,
     status: view.status ?? "active",
     auto: view.auto ?? false,
+    kind: view.kind ?? "computer",
+    opponent: view.opponent ?? null,
     field: view.field ?? null,
     from: view.from ?? 0,
     steps: (view.steps ?? []).map((step) => ({
@@ -94,6 +112,47 @@ export async function actCombatBattle(battleId: string, action: CombatAction): P
 export async function finishCombatBattle(battleId: string): Promise<CombatUpdate> {
   return updateOf(await invokeFunction<ServerView>({ action: "combat_finish", battle_id: battleId }));
 }
+
+/** Stage 6a: a challenge against one of today's opponents (by its place in the list), five cards in their places. */
+export async function startArenaBattle(offer: number, cardInstanceIds: string[], auto: boolean, tactics: CombatTactics): Promise<CombatUpdate> {
+  return updateOf(await invokeFunction<ServerView>({ action: "arena_start", offer, card_instance_ids: cardInstanceIds, auto, tactics }));
+}
+
+/** Stage 6a: the player's defence, five unlocked cards in their places with the computer's orders for them. */
+export async function saveCombatDefense(cardInstanceIds: string[], tactics: CombatTactics): Promise<void> {
+  await invokeFunction<unknown>({ action: "combat_defense_save", card_instance_ids: cardInstanceIds, tactics });
+}
+
+/** A defence of the player that someone challenged: who, how it ended for the defence, the Gloria. */
+export type CombatArenaDefense = { attacker: string; held: boolean; draw: boolean; points: number; finished_at: string; new: boolean };
+
+/** An opponent offered: a player's defence or a team of the computer, its Gloria and its characters. */
+export type CombatArenaOffer = CombatOpponent & { definition_ids: string[] };
+
+/** Stage 6a (get_combat_arena): the player's Gloria, defence, today's opponents, renewals, paid challenges, defences. */
+export type CombatArena = {
+  points: number;
+  defense: { card_instance_ids: string[]; definition_ids: string[]; tactics: CombatTactics; ok: boolean } | null;
+  offers: CombatArenaOffer[];
+  refreshes_left: number;
+  paid_today: number;
+  paid_daily: number;
+  defenses: CombatArenaDefense[];
+};
+
+async function arenaRpc<T>(name: string): Promise<T> {
+  const { data, error } = await getSupabase().rpc(name as never);
+  if (error) throw error;
+  return data as unknown as T;
+}
+
+export const fetchCombatArena = () => arenaRpc<CombatArena>("get_combat_arena");
+/** A new list of opponents, while the day's renewals last. */
+export const refreshCombatArena = () => arenaRpc<CombatArena>("combat_arena_refresh");
+/** The defences shown: no longer new. */
+export const markCombatDefensesSeen = () => arenaRpc<void>("combat_arena_seen");
+/** For Gioca's tile: the defences since the player last read them. */
+export const fetchCombatArenaNews = () => arenaRpc<number>("combat_arena_news");
 
 /** The battle under way, from its start; null when there is none. */
 export async function fetchCombatBattle(): Promise<CombatUpdate | null> {

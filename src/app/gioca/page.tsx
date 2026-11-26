@@ -6,7 +6,7 @@ import { EventBanner } from "@/components/event-banner";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlayMenuView, type EmergencyThisWeek, type EmergencyToday } from "@/components/play-menu";
 import { fetchChallenges, seenChallenges, type Challenge } from "@/lib/challenges";
-import { fetchCombatUnlocks, type CombatUnlocks } from "@/lib/combat";
+import { fetchCombatArenaNews, fetchCombatUnlocks, type CombatUnlocks } from "@/lib/combat";
 import { fetchCoop, seenCoop, type CoopCatalog } from "@/lib/coop";
 import {
   fetchEmergencyLeaderboard,
@@ -68,6 +68,8 @@ export default function PlayPage() {
   const [raid, setRaid] = useState<RaidCatalog | null | undefined>(() => seenRaid() ?? undefined);
   // The Scontro a squadre (SPEC §5.19): how many of the player's kits are unlocked, on its tile.
   const [combatUnlocks, setCombatUnlocks] = useState<CombatUnlocks | null>(null);
+  // ...and the defences others challenged since the player last looked (stage 6a).
+  const [combatNews, setCombatNews] = useState(0);
   // On this device only: read once, the page is left to start a match anyway.
   const [lastPlay] = useState<LastPlay | null>(() => readLastPlay());
   // When each mode is open (EDITOR): a closed one stays, under its veil.
@@ -142,6 +144,11 @@ export default function PlayPage() {
         if (!cancelled) setCombatUnlocks(next);
       })
       .catch((cause: unknown) => console.error("Scontro unlocks failed", cause));
+    fetchCombatArenaNews()
+      .then((next) => {
+        if (!cancelled) setCombatNews(next);
+      })
+      .catch((cause: unknown) => console.error("Scontro news failed", cause));
     return () => {
       cancelled = true;
     };
@@ -176,6 +183,7 @@ export default function PlayPage() {
         coop={coop}
         raid={raid}
         combatUnlocks={combatUnlocks}
+        combatNews={combatNews}
         modes={modes}
         now={now}
         onForfeit={() => setConfirmForfeit(true)}

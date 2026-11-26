@@ -179,6 +179,9 @@ const CLIENT_ERRORS = new Set([
   "combat_not_your_turn",
   "combat_illegal_action",
   "combat_locked",
+  "combat_no_defense",
+  "combat_offer_gone",
+  "combat_no_refresh",
 ]);
 
 class GameError extends Error {}
@@ -2009,6 +2012,13 @@ type CombatRow = {
   actions: CombatAction[];
   xp: number | null;
   coins: number | null;
+  /** "computer", or "arena" for a challenge against another player's defence (stage 6a). */
+  kind?: string;
+  /** A challenge's opponent as offered: kind, name, Gloria at the start. */
+  opponent?: { kind: string; name: string; points: number } | null;
+  /** The defender's orders as saved; null: the computer's own. */
+  opponent_tactics?: unknown;
+  points_change?: number | null;
 };
 
 let combatCache: { loaded: CombatLoaded; at: number } | null = null;
@@ -2107,19 +2117,40 @@ function combatInput(loaded: CombatLoaded, definitionId: string, id: string): Co
   return { id, definitionId, name: entry.definition.name, stats: entry.definition.stats, budget, kit: entry.kit };
 }
 
-/** The computer plays its side until it is the player's turn or the battle is over; `all` plays the player's side too. */
-function combatPlayOn(ctx: { rules: CombatRules; families: AbilityFamilies }, rng: Rng, steps: CombatStep[], actions: CombatAction[], tactics: CombatTactics, all: boolean) {
+/**
+ * The computer plays its side (with a defender's orders in a challenge) until it is the player's
+ * turn or the battle is over; `all` plays the player's side too.
+ */
+function combatPlayOn(
+  ctx: { rules: CombatRules; families: AbilityFamilies },
+  rng: Rng,
+  steps: CombatStep[],
+  actions: CombatAction[],
+  tactics: CombatTactics,
+  all: boolean,
+  opponentTactics: CombatTactics = DEFAULT_COMBAT_TACTICS,
+) {
   for (let state = steps[steps.length - 1].state; !state.result; state = steps[steps.length - 1].state) {
     const side = combatActor(state)!.side;
     if (side === "a" && !all) return;
-    const action = chooseCombatAction(state, ctx, side === "a" ? tactics : DEFAULT_COMBAT_TACTICS);
+    const action = chooseCombatAction(state, ctx, side === "a" ? tactics : opponentTactics);
     actions.push(action);
     steps.push(applyCombatAction(state, action, ctx, rng));
   }
 }
 
 /** What the client gets: the fighters with their kits once, then the steps from `from` without the kits. */
-function combatView(row: Pick<CombatRow, "id" | "status" | "auto" | "setup" | "xp" | "coins">, steps: CombatStep[], from: number) {
+/** A defender's orders as saved (checked when saved); anything unreadable plays as the computer's own. */
+function savedTactics(value: unknown): CombatTactics {
+  if (value === null || value === undefined) return DEFAULT_COMBAT_TACTICS;
+  try {
+    return combatTacticsFrom(value);
+  } catch {
+    return DEFAULT_COMBAT_TACTICS;
+  }
+}
+
+function combatView(row: Pick<CombatRow, "id" | "status" | "auto" | "setup" | "xp" | "coins" | "kind" | "opponent" | "points_change">, steps: CombatStep[], from: number) {
   const bare = (step: CombatStep) => ({
     events: step.events,
     state: {
@@ -2139,7 +2170,9 @@ function combatView(row: Pick<CombatRow, "id" | "status" | "auto" | "setup" | "x
     kits: Object.fromEntries(steps[0].state.fighters.map((f) => [f.key, f.kit])),
     from,
     steps: steps.slice(from).map(bare),
-    rewards: row.status === "active" ? null : { xp: row.xp ?? 0, coins: row.coins ?? 0 },
+    kind: row.kind ?? "computer",
+    opponent: row.opponent ? { kind: row.opponent.kind, name: row.opponent.name, points: row.opponent.points } : null,
+    rewards: row.status === "active" ? null : { xp: row.xp ?? 0, coins: row.coins ?? 0, ...(row.kind === "arena" ? { points: row.points_change ?? 0 } : {}) },
   };
 }
 
@@ -2149,10 +2182,12 @@ async function recordCombat(row: CombatRow, userId: string, from: number, action
     status: string;
     xp?: number;
     coins?: number;
+    points?: number | null;
   };
   row.status = saved.status;
   row.xp = saved.xp ?? null;
   row.coins = saved.coins ?? null;
+  row.points_change = saved.points ?? null;
 }
 
 async function loadCombatRow(userId: string, battleId: unknown): Promise<CombatRow> {
@@ -2175,16 +2210,9 @@ function rebuildCombat(row: CombatRow, families: AbilityFamilies) {
 async function startCombat(userId: string, body: Record<string, unknown>) {
   const cards = cardIds(body.card_instance_ids);
   const loaded = await loadCombat();
-  if (cards.length !== loaded.rules.teamSize) throw new GameError("invalid_team_size");
   const auto = body.auto === true;
   const tactics = combatTacticsFrom(body.tactics);
-  const instances = check(await admin.from("card_instances").select("id, definition_id").in("id", cards));
-  const definitionOf = new Map(instances.map((i) => [i.id as string, i.definition_id as string]));
-  const a = cards.map((id) => {
-    const definitionId = definitionOf.get(id);
-    if (!definitionId) throw new GameError("card_not_owned");
-    return combatInput(loaded, definitionId, id);
-  });
+  const a = await combatSideA(loaded, cards);
   const ctx = { rules: loaded.rules, families: loaded.families };
   const computer = shuffle(rng, [...loaded.kits.keys()]).slice(0, loaded.rules.teamSize);
   if (computer.length < loaded.rules.teamSize) throw new GameError("combat_no_kit");
@@ -2211,6 +2239,94 @@ async function startCombat(userId: string, body: Record<string, unknown>) {
   return combatView(row, steps, 0);
 }
 
+/** The player's five cards in their places, as the engine takes them (the database checks they are theirs). */
+async function combatSideA(loaded: CombatLoaded, cards: string[]): Promise<CombatFighterInput[]> {
+  if (cards.length !== loaded.rules.teamSize) throw new GameError("invalid_team_size");
+  const instances = check(await admin.from("card_instances").select("id, definition_id").in("id", cards));
+  const definitionOf = new Map(instances.map((i) => [i.id as string, i.definition_id as string]));
+  return cards.map((id) => {
+    const definitionId = definitionOf.get(id);
+    if (!definitionId) throw new GameError("card_not_owned");
+    return combatInput(loaded, definitionId, id);
+  });
+}
+
+/** Stage 6a: the player's defence, its orders checked with the engine first (combat_defense_save checks the rest). */
+async function saveCombatDefense(userId: string, body: Record<string, unknown>) {
+  const cards = cardIds(body.card_instance_ids);
+  const tactics = combatTacticsFrom(body.tactics);
+  return check(await admin.rpc("combat_defense_save", { p_user: userId, p_card_instance_ids: cards, p_tactics: tactics }));
+}
+
+/**
+ * Stage 6a: a challenge against one of today's opponents. A player's defence fights in its saved
+ * places with its saved orders; a team of the computer takes the engine's places and the computer's
+ * own orders. combat_arena_create checks the offer, both sides and the player's own defence.
+ */
+async function startArena(userId: string, body: Record<string, unknown>) {
+  const index = Number(body.offer);
+  if (!Number.isInteger(index) || index < 0) throw new GameError("invalid_request");
+  const cards = cardIds(body.card_instance_ids);
+  const loaded = await loadCombat();
+  const auto = body.auto === true;
+  const tactics = combatTacticsFrom(body.tactics);
+  const a = await combatSideA(loaded, cards);
+  const ctx = { rules: loaded.rules, families: loaded.families };
+  const offers = check(await admin.from("combat_arena_offers").select("offers").eq("user_id", userId)) as { offers: unknown }[];
+  const offer = ((offers[0]?.offers ?? []) as { kind: string; user_id?: string; name: string; points: number; definition_ids: string[] }[])[index];
+  if (!offer) throw new GameError("combat_offer_gone");
+  let b: CombatFighterInput[];
+  let opponentTactics = DEFAULT_COMBAT_TACTICS;
+  if (offer.kind === "player") {
+    const defenses = check(await admin.from("combat_defenses").select("definition_ids, tactics").eq("user_id", offer.user_id ?? "")) as {
+      definition_ids: string[];
+      tactics: unknown;
+    }[];
+    if (defenses.length === 0) throw new GameError("combat_offer_gone");
+    b = defenses[0].definition_ids.map((id) => combatInput(loaded, id, id));
+    opponentTactics = savedTactics(defenses[0].tactics);
+  } else {
+    b = autoCombatFormation(offer.definition_ids.map((id) => combatInput(loaded, id, id)), ctx);
+  }
+  const setup: CombatSetup = { a, b, field: loaded.fields.length > 0 ? pickOne(rng, loaded.fields) : null };
+  const seed = crypto.getRandomValues(new Uint32Array(1))[0];
+  const battleRng = mulberry32(seed);
+  const steps: CombatStep[] = [createCombat(setup, ctx, battleRng)];
+  const actions: CombatAction[] = [];
+  combatPlayOn(ctx, battleRng, steps, actions, tactics, auto, opponentTactics);
+  const id = check(
+    await admin.rpc("combat_arena_create", {
+      p_user: userId,
+      p_offer: index,
+      p_card_instance_ids: cards,
+      p_setup: setup,
+      p_rules: loaded.rules,
+      p_seed: seed,
+      p_tactics: tactics,
+      p_auto: auto,
+    }),
+  ) as string;
+  const row: CombatRow = {
+    id,
+    user_id: userId,
+    status: "active",
+    setup,
+    rules: loaded.rules,
+    seed,
+    tactics,
+    auto,
+    actions: [],
+    xp: null,
+    coins: null,
+    kind: "arena",
+    opponent: { kind: offer.kind, name: offer.name, points: offer.points },
+    opponent_tactics: opponentTactics,
+    points_change: null,
+  };
+  if (actions.length > 0) await recordCombat(row, userId, 0, actions, steps);
+  return combatView(row, steps, 0);
+}
+
 /** The player's choice in manual mode, then the computer's answers; `finish` plays the rest of the battle automatically. */
 async function actCombat(userId: string, body: Record<string, unknown>, finish: boolean) {
   const loaded = await loadCombat();
@@ -2233,7 +2349,7 @@ async function actCombat(userId: string, body: Record<string, unknown>, finish: 
     }
     actions.push(action);
   }
-  combatPlayOn(ctx, battleRng, steps, actions, row.tactics, finish);
+  combatPlayOn(ctx, battleRng, steps, actions, row.tactics, finish, savedTactics(row.opponent_tactics));
   if (actions.length > 0) await recordCombat(row, userId, row.actions.length, actions, steps);
   return combatView(row, steps, from);
 }
@@ -2326,6 +2442,10 @@ Deno.serve(async (req) => {
         return json(await actCombat(userId, body, false));
       case "combat_finish":
         return json(await actCombat(userId, body, true));
+      case "combat_defense_save":
+        return json(await saveCombatDefense(userId, body));
+      case "arena_start":
+        return json(await startArena(userId, body));
       case "combat_state":
         return json(await combatStateFor(userId, body));
       default:
