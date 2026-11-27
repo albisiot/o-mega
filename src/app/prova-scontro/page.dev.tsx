@@ -17,6 +17,7 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { autoCombatFormation, type CombatContext, type CombatFighterInput, type CombatField, type CombatSetup, type CombatState, type CombatStrategy } from "@o-mega/game-engine";
+import { CombatViewSwitch } from "@/components/combat-board";
 import { CombatScreen, type CombatScreenProps } from "@/components/combat-screen";
 import { withBasePath } from "@/lib/base-path";
 import { combatRules } from "@/lib/combat";
@@ -155,6 +156,11 @@ function Builder(props: { initial: CombatPilot[]; onFight: (setup: CombatSetup, 
         <button type="button" onClick={() => setPlaces(rivali().map((f) => COMBAT_PILOTS.find((p) => p.code === f.id)!))} className="btn btn-ghost min-h-10 px-2 text-[12px]">
           Squadra dei rivali
         </button>
+      </div>
+      {/* As on /scontro: how the battle is shown on this device. */}
+      <div className="flex items-center gap-2">
+        <span className="shrink-0 text-[12px] font-bold text-faint">Battaglie con</span>
+        <CombatViewSwitch className="flex-1" />
       </div>
       <button type="button" onClick={() => setField((field + 1) % FIELDS.length)} className="btn btn-ghost min-h-10 px-2 text-[12px]">
         Campo: {FIELDS[field].name}

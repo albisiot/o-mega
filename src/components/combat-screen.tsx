@@ -30,7 +30,7 @@ import {
   type CombatTactics,
   type Side,
 } from "@o-mega/game-engine";
-import { CombatBoardView, useCombatView } from "@/components/combat-board";
+import { CombatBoardView, useCombatView, ViewSwitch } from "@/components/combat-board";
 import { combatEventLine, describeCombatMove, SLOT_LABELS, STATUS_LABELS } from "@/lib/combat-text";
 import { describeServerError } from "@/lib/errors";
 
@@ -114,20 +114,17 @@ export function CombatScreen(props: CombatScreenProps) {
   /** The 3D board could not be drawn on this phone: the cards for the rest of the battle. */
   const [boardFailed, setBoardFailed] = useState(false);
   const board3d = Boolean(props.codeOf) && view === "3d" && !boardFailed;
-  /** The switch between the 3D board and the cards, at the end of the turn strip. */
+  /** The switch between the 3D board and the cards, at the end of the turn strip: it shows what is on screen. */
   const viewSwitch = props.codeOf ? (
-    <button
-      type="button"
-      aria-pressed={board3d}
-      aria-label="Campo in 3D"
-      onClick={() => {
-        if (!board3d) setBoardFailed(false);
-        chooseView(board3d ? "cards" : "3d");
+    <ViewSwitch
+      compact
+      value={board3d ? "3d" : "cards"}
+      onChange={(next) => {
+        if (next === "3d") setBoardFailed(false);
+        chooseView(next);
       }}
-      className={`btn ${board3d ? "btn-primary" : "btn-ghost"} ml-auto h-7 shrink-0 px-2 text-[11px]`}
-    >
-      3D
-    </button>
+      className="ml-auto"
+    />
   ) : null;
   const [rewards, setRewards] = useState<CombatScreenRewards | null>(remote?.rewards ?? null);
   /** «Rivedi» was touched: walking back through a finished battle is a replay, not its end being shown. */
@@ -510,7 +507,7 @@ function TurnStrip(props: {
   return (
     <div className="flex items-center gap-1.5 py-0.5" aria-label="Prossimi turni">
       <span className="shrink-0 text-[10px] font-bold uppercase text-faint">Turni</span>
-      {keys.slice(0, 7).map((key, i) => {
+      {keys.slice(0, props.trailing ? 6 : 7).map((key, i) => {
         const f = byKey.get(key);
         if (!f) return null;
         const art = props.artOf(f.definitionId);

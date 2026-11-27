@@ -52,6 +52,36 @@ export function useCombatView(): [CombatView, (view: CombatView) => void] {
   return [view, choose];
 }
 
+/** The choice between the dioramas in 3D and the cards with the drawings, as two buttons. */
+export function ViewSwitch(props: { value: CombatView; onChange: (view: CombatView) => void; compact?: boolean; className?: string }) {
+  const options: [CombatView, string][] = [
+    ["3d", props.compact ? "3D" : "Diorami 3D"],
+    ["cards", "Carte"],
+  ];
+  return (
+    <div role="radiogroup" aria-label="Come vedere la battaglia" className={`flex shrink-0 gap-1 ${props.className ?? ""}`}>
+      {options.map(([key, label]) => (
+        <button
+          key={key}
+          type="button"
+          role="radio"
+          aria-checked={props.value === key}
+          onClick={() => props.onChange(key)}
+          className={`btn ${props.value === key ? "btn-primary" : "btn-ghost"} ${props.compact ? "h-7 px-2 text-[11px]" : "min-h-10 flex-1 px-2 text-[12px]"}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** The player's choice on this device, for the Scontro page before a battle. */
+export function CombatViewSwitch({ className }: { className?: string }) {
+  const [view, choose] = useCombatView();
+  return <ViewSwitch value={view} onChange={choose} className={className} />;
+}
+
 /** Starts downloading the board's code: the press on «Combatti» comes a moment before the battle. */
 export function prefetchCombatBoard() {
   void loadBoard().catch(() => {});

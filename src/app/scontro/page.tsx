@@ -13,7 +13,7 @@ import type { CombatStrategy, CombatTactics } from "@o-mega/game-engine";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { BackLink } from "@/components/comic-parts";
 import { CombatArenaPanel } from "@/components/combat-arena";
-import { prefetchCombatBoard } from "@/components/combat-board";
+import { CombatViewSwitch, prefetchCombatBoard, useCombatView } from "@/components/combat-board";
 import { CombatScreen } from "@/components/combat-screen";
 import { CombatStrategySelect, CombatTeamPicker } from "@/components/combat-team-picker";
 import { LoadingScreen } from "@/components/loading-screen";
@@ -62,6 +62,7 @@ export default function ScontroPage() {
   const [strategy, setStrategy] = useState<CombatStrategy>("balanced");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [view] = useCombatView();
 
   useEffect(() => {
     if (!session) return;
@@ -99,7 +100,7 @@ export default function ScontroPage() {
 
   async function begin(start: () => Promise<CombatUpdate>) {
     // The 3D board downloads while the server prepares the battle.
-    prefetchCombatBoard();
+    if (view === "3d") prefetchCombatBoard();
     setBusy(true);
     setError(null);
     try {
@@ -236,6 +237,10 @@ export default function ScontroPage() {
                 {label}
               </button>
             ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="shrink-0 text-[12px] font-bold text-faint">Battaglie con</span>
+            <CombatViewSwitch className="flex-1" />
           </div>
           {tab === "arena" ? (
             <>
