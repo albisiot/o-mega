@@ -14,7 +14,7 @@ Principio: **aprire, collezionare, giocare, conquistare.**
 - **Backend:** Supabase: Auth (login Google), Postgres con Row Level Security, Realtime per le partite, funzioni RPC Postgres ed Edge Functions per tutta la logica autoritativa.
 - **Codice e deploy:** repository su **GitHub**; il sito è pubblicato su **GitHub Pages** tramite GitHub Actions a ogni push sul branch `main`. Niente Vercel.
 - **Test:** Vitest per il motore di regole e la logica di economia.
-- **Controllo delle tavole:** `npm run test:layout` gioca in Chrome le scene fisse di `/prova-tavole` e di `/prova-scontro` (pagine che esistono solo in `next dev`) a misura di iPhone e di iPhone basso, e segnala i testi che si coprono. Da lanciare dopo ogni modifica alle tavole dei risultati (`round-comic`, `boss-comic`, `emergency-comic`, `triple-comic`, `comic-page`, `comic-fx`) e allo schermo dello Scontro a squadre (`combat-screen`).
+- **Controllo delle tavole:** `npm run test:layout` gioca in Chrome le scene fisse di `/prova-tavole` e di `/prova-scontro` (pagine che esistono solo in `next dev`) a misura di iPhone e di iPhone basso, e segnala i testi che si coprono. Da lanciare dopo ogni modifica alle tavole dei risultati (`round-comic`, `boss-comic`, `emergency-comic`, `triple-comic`, `comic-page`, `comic-fx`) e allo schermo dello Scontro a squadre (`combat-screen`, `combat-board`).
 
 ## Vincoli dell'export statico (GitHub Pages)
 

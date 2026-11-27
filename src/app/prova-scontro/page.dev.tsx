@@ -201,6 +201,7 @@ function ScontroProof() {
       seed={7 + battle.round}
       tactics={{ a: { strategy: battle.strategy, priority: null, orders: {} } }}
       artOf={artOf}
+      codeOf={(id) => id}
       auto={battle.auto}
       // The same top row as /scontro: back, and give up while the battle is on.
       leading={

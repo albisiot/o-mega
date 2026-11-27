@@ -13,6 +13,7 @@ import type { CombatStrategy, CombatTactics } from "@o-mega/game-engine";
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { BackLink } from "@/components/comic-parts";
 import { CombatArenaPanel } from "@/components/combat-arena";
+import { prefetchCombatBoard } from "@/components/combat-board";
 import { CombatScreen } from "@/components/combat-screen";
 import { CombatStrategySelect, CombatTeamPicker } from "@/components/combat-team-picker";
 import { LoadingScreen } from "@/components/loading-screen";
@@ -97,6 +98,8 @@ export default function ScontroPage() {
   const teamReady = places.every((p) => p !== null);
 
   async function begin(start: () => Promise<CombatUpdate>) {
+    // The 3D board downloads while the server prepares the battle.
+    prefetchCombatBoard();
     setBusy(true);
     setError(null);
     try {
@@ -141,6 +144,7 @@ export default function ScontroPage() {
           key={`${update.battleId}-${battle.round}`}
           ctx={combatContext()}
           artOf={artOf}
+          codeOf={(id) => catalog?.codes.get(id) ?? null}
           auto={update.auto}
           leading={
             <ReturnLink href="/gioca" label="Torna a Gioca" className="btn btn-ghost h-8 w-8 shrink-0 px-0 text-[15px]">

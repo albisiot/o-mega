@@ -30,6 +30,7 @@ import {
   type CombatTactics,
   type Side,
 } from "@o-mega/game-engine";
+import { CombatBoardView, useCombatView } from "@/components/combat-board";
 import { combatEventLine, describeCombatMove, SLOT_LABELS, STATUS_LABELS } from "@/lib/combat-text";
 import { describeServerError } from "@/lib/errors";
 
@@ -62,6 +63,8 @@ export type CombatScreenProps = {
   speed?: 1 | 2 | 3;
   /** The drawing of a character, by definition id. */
   artOf: (definitionId: string) => string | null;
+  /** A character's card code, by definition id: with it the battle can be shown on the 3D board of dioramas. */
+  codeOf?: (definitionId: string) => string | null;
   /** What the page puts at the two ends of the top row (back, give up): the screen keeps the phone's height. */
   leading?: ReactNode;
   trailing?: ReactNode;
@@ -107,6 +110,25 @@ export function CombatScreen(props: CombatScreenProps) {
   const [logOpen, setLogOpen] = useState(props.logOpen ?? false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [view, chooseView] = useCombatView();
+  /** The 3D board could not be drawn on this phone: the cards for the rest of the battle. */
+  const [boardFailed, setBoardFailed] = useState(false);
+  const board3d = Boolean(props.codeOf) && view === "3d" && !boardFailed;
+  /** The switch between the 3D board and the cards, at the end of the turn strip. */
+  const viewSwitch = props.codeOf ? (
+    <button
+      type="button"
+      aria-pressed={board3d}
+      aria-label="Campo in 3D"
+      onClick={() => {
+        if (!board3d) setBoardFailed(false);
+        chooseView(board3d ? "cards" : "3d");
+      }}
+      className={`btn ${board3d ? "btn-primary" : "btn-ghost"} ml-auto h-7 shrink-0 px-2 text-[11px]`}
+    >
+      3D
+    </button>
+  ) : null;
   const [rewards, setRewards] = useState<CombatScreenRewards | null>(remote?.rewards ?? null);
   /** «Rivedi» was touched: walking back through a finished battle is a replay, not its end being shown. */
   const [replaying, setReplaying] = useState(Boolean(props.finishAtOnce && props.replayAtEnd));
@@ -252,7 +274,7 @@ export function CombatScreen(props: CombatScreenProps) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-1 px-3 pb-2 pt-1 text-foreground">
+    <div className={`mx-auto flex w-full max-w-md flex-col gap-1 px-3 pb-2 pt-1 text-foreground ${board3d ? "min-h-0 flex-1" : ""}`}>
       <style>{"@keyframes combat-float{0%{transform:translate(-50%,0);opacity:0}15%{opacity:1}100%{transform:translate(-50%,-26px);opacity:0}}"}</style>
       <div className="flex min-h-5 items-center gap-2 text-[11px] font-bold text-faint">
         {props.leading}
@@ -261,25 +283,48 @@ export function CombatScreen(props: CombatScreenProps) {
         {props.trailing}
       </div>
 
-      <div className="grid grid-cols-3 gap-1.5">{row(enemy, [2, 3, 4]).map(tile)}</div>
-      <div className="flex justify-center gap-1.5">
-        {row(enemy, [0, 1]).map((f) => (
-          <div key={f.key} className="w-[calc((100%-0.75rem)/3)]">
-            {tile(f)}
+      {board3d ? (
+        <>
+          <CombatBoardView
+            fighters={state.fighters}
+            playerSide={playerSide}
+            codeOf={props.codeOf!}
+            rules={ctx.rules}
+            step={shownIndex}
+            acting={new Set([state.current, lastMove?.actor].filter((key): key is string => Boolean(key)))}
+            struck={struck}
+            targets={targets}
+            floats={floats}
+            onTap={(key) => {
+              if (targets?.includes(key)) play({ slot: selected!, target: key });
+            }}
+            onFail={() => setBoardFailed(true)}
+          />
+          <TurnStrip order={upcoming} current={state.current} fighters={state.fighters} artOf={artOf} playerSide={playerSide} trailing={viewSwitch} />
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-1.5">{row(enemy, [2, 3, 4]).map(tile)}</div>
+          <div className="flex justify-center gap-1.5">
+            {row(enemy, [0, 1]).map((f) => (
+              <div key={f.key} className="w-[calc((100%-0.75rem)/3)]">
+                {tile(f)}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <TurnStrip order={upcoming} current={state.current} fighters={state.fighters} artOf={artOf} playerSide={playerSide} />
+          <TurnStrip order={upcoming} current={state.current} fighters={state.fighters} artOf={artOf} playerSide={playerSide} trailing={viewSwitch} />
 
-      <div className="flex justify-center gap-1.5">
-        {row(playerSide, [0, 1]).map((f) => (
-          <div key={f.key} className="w-[calc((100%-0.75rem)/3)]">
-            {tile(f)}
+          <div className="flex justify-center gap-1.5">
+            {row(playerSide, [0, 1]).map((f) => (
+              <div key={f.key} className="w-[calc((100%-0.75rem)/3)]">
+                {tile(f)}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-3 gap-1.5">{row(playerSide, [2, 3, 4]).map(tile)}</div>
+          <div className="grid grid-cols-3 gap-1.5">{row(playerSide, [2, 3, 4]).map(tile)}</div>
+        </>
+      )}
 
       {latest.state.result && atEnd ? (
         <EndPanel
@@ -451,7 +496,15 @@ function FighterTile(props: {
   );
 }
 
-function TurnStrip(props: { order: string[]; current: string | null; fighters: CombatFighter[]; artOf: (id: string) => string | null; playerSide: Side }) {
+function TurnStrip(props: {
+  order: string[];
+  current: string | null;
+  fighters: CombatFighter[];
+  artOf: (id: string) => string | null;
+  playerSide: Side;
+  /** At the right end of the strip (the 3D switch). */
+  trailing?: ReactNode;
+}) {
   const byKey = new Map(props.fighters.map((f) => [f.key, f]));
   const keys = props.current ? [props.current, ...props.order] : props.order;
   return (
@@ -474,6 +527,7 @@ function TurnStrip(props: { order: string[]; current: string | null; fighters: C
           </span>
         );
       })}
+      {props.trailing}
     </div>
   );
 }
