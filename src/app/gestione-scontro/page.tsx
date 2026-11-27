@@ -19,6 +19,7 @@ import { describeServerError } from "@/lib/errors";
 import { toRomeInput } from "@/lib/events";
 import { getSupabase } from "@/lib/supabase/client";
 import { useIsAdmin } from "@/lib/use-is-admin";
+import { useLockedScreen } from "@/lib/use-locked-screen";
 
 type KitRow = { definition_id: string; code: string; name: string; faction: string; rarity: string; stats: Record<string, number>; kit: CombatKit; version: number; updated_at: string };
 type Editing = { definitionId: string; code: string; name: string; text: string; version: number | null };
@@ -170,6 +171,9 @@ export default function CombatKitsAdminPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Fits the phone and never scrolls (see .game-shell): the header stays, and the settings and
+  // the list (or the kit being written) scroll inside.
+  useLockedScreen(isAdmin === true);
 
   async function reload() {
     setRows(await rpc<KitRow[]>("admin_combat_kits"));
@@ -241,105 +245,109 @@ export default function CombatKitsAdminPage() {
   const check = editing ? problemsOf(editing.text) : null;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-2 px-3 pb-4 pt-2 text-foreground">
-      <div className="flex items-center gap-2">
+    <div className="game-shell text-foreground">
+      <header className="flex shrink-0 items-center gap-2 px-3 pb-1 pt-2">
         <BackLink href="/editor" />
         <div className="min-w-0">
-          <p className="font-display text-2xl uppercase leading-8">Mosse dello Scontro</p>
+          <h1 className="truncate font-display text-2xl uppercase leading-8">Mosse dello Scontro</h1>
           <p className="text-[11px] font-semibold leading-4 text-muted">Un kit per personaggio: chi non ce l&apos;ha non si schiera.</p>
         </div>
-      </div>
-      {message && <p className="text-[12px] font-bold leading-4 text-comic-yellow">{message}</p>}
+      </header>
+      <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
+        {message && <p className="shrink-0 text-[12px] font-bold leading-4 text-comic-yellow">{message}</p>}
 
-      {editing && check ? (
-        <section className="flex flex-col gap-2">
-          <p className="text-[14px] font-extrabold">
-            {editing.name} <span className="text-faint">({editing.code})</span> · {editing.version ? `versione ${editing.version}` : "nuovo"}
-          </p>
-          <textarea
-            value={editing.text}
-            onChange={(e) => {
-              setEditing({ ...editing, text: e.target.value });
-              setConfirmDelete(false);
-            }}
-            spellCheck={false}
-            aria-label="Il kit"
-            className="min-h-[22rem] w-full rounded-md border-2 border-black bg-panel p-2 font-mono text-[11px] leading-4"
-          />
-          {check.errors.length > 0 ? (
-            <ul className="list-disc pl-4 text-[12px] leading-4 text-comic-magenta">
-              {check.errors.map((e) => (
-                <li key={e}>{e}</li>
+        {editing && check ? (
+          <section className="flex min-h-0 flex-1 flex-col gap-2">
+            <p className="shrink-0 text-[14px] font-extrabold">
+              {editing.name} <span className="text-faint">({editing.code})</span> · {editing.version ? `versione ${editing.version}` : "nuovo"}
+            </p>
+            <textarea
+              value={editing.text}
+              onChange={(e) => {
+                setEditing({ ...editing, text: e.target.value });
+                setConfirmDelete(false);
+              }}
+              spellCheck={false}
+              aria-label="Il kit"
+              className="min-h-32 w-full flex-1 resize-none rounded-md border-2 border-black bg-panel p-2 font-mono text-[11px] leading-4"
+            />
+            <div className="max-h-[30%] shrink-0 overflow-y-auto overscroll-contain empty:hidden">
+              {check.errors.length > 0 ? (
+                <ul className="list-disc pl-4 text-[12px] leading-4 text-comic-magenta">
+                  {check.errors.map((e) => (
+                    <li key={e}>{e}</li>
+                  ))}
+                </ul>
+              ) : (
+                check.kit && (
+                  <ul className="text-[12px] leading-4 text-muted">
+                    {(["base", "special", "supreme"] as const).map((slot) => (
+                      <li key={slot}>
+                        <span className="font-bold text-foreground">{check.kit!.base && check.kit![slot].name}</span>: {describeCombatMove(check.kit![slot])}
+                      </li>
+                    ))}
+                    {check.kit.passive && (
+                      <li>
+                        <span className="font-bold text-foreground">{check.kit.passive.name}</span> (passiva)
+                      </li>
+                    )}
+                  </ul>
+                )
+              )}
+            </div>
+            <div className="grid shrink-0 grid-cols-3 gap-1.5">
+              <button type="button" disabled={busy || check.errors.length > 0 || !check.kit} onClick={() => check.kit && void save(check.kit)} className="btn btn-primary min-h-11 px-1 text-[12px] disabled:opacity-45">
+                Salva
+              </button>
+              <button type="button" onClick={() => setEditing(null)} className="btn btn-ghost min-h-11 px-1 text-[12px]">
+                Chiudi
+              </button>
+              {editing.version !== null && (
+                <button type="button" disabled={busy} onClick={() => (confirmDelete ? void remove() : setConfirmDelete(true))} className="btn btn-ghost min-h-11 px-1 text-[12px] text-comic-magenta">
+                  {confirmDelete ? "Sicuro?" : "Togli"}
+                </button>
+              )}
+            </div>
+          </section>
+        ) : (
+          <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-1 pb-1">
+            <UnlockSettings />
+            <div className="flex gap-1.5">
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Codice, es. P002"
+                aria-label="Codice del personaggio"
+                className="min-h-11 min-w-0 flex-1 rounded-md border-2 border-black bg-panel px-2 text-[14px] font-bold uppercase"
+              />
+              <button type="button" disabled={!code.trim()} onClick={() => void startNew()} className="btn btn-primary min-h-11 px-3 text-[12px] disabled:opacity-45">
+                Apri kit
+              </button>
+            </div>
+            <ul className="flex flex-col gap-1.5">
+              {(rows ?? []).map((row) => (
+                <li key={row.definition_id}>
+                  <button
+                    type="button"
+                    onClick={() => setEditing({ definitionId: row.definition_id, code: row.code, name: row.name, text: JSON.stringify(row.kit, null, 2), version: row.version })}
+                    className="flex w-full items-center justify-between gap-2 rounded-md border-2 border-black bg-panel px-2 py-1.5 text-left"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] font-extrabold leading-4">
+                        {row.name} <span className="text-faint">({row.code})</span>
+                      </span>
+                      <span className="block truncate text-[11px] leading-4 text-muted">
+                        {row.kit.base.name} · {row.kit.special.name} · {row.kit.supreme.name}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-[11px] font-bold text-faint">v{row.version}</span>
+                  </button>
+                </li>
               ))}
             </ul>
-          ) : (
-            check.kit && (
-              <ul className="text-[12px] leading-4 text-muted">
-                {(["base", "special", "supreme"] as const).map((slot) => (
-                  <li key={slot}>
-                    <span className="font-bold text-foreground">{check.kit!.base && check.kit![slot].name}</span>: {describeCombatMove(check.kit![slot])}
-                  </li>
-                ))}
-                {check.kit.passive && (
-                  <li>
-                    <span className="font-bold text-foreground">{check.kit.passive.name}</span> (passiva)
-                  </li>
-                )}
-              </ul>
-            )
-          )}
-          <div className="grid grid-cols-3 gap-1.5">
-            <button type="button" disabled={busy || check.errors.length > 0 || !check.kit} onClick={() => check.kit && void save(check.kit)} className="btn btn-primary min-h-11 px-1 text-[12px] disabled:opacity-45">
-              Salva
-            </button>
-            <button type="button" onClick={() => setEditing(null)} className="btn btn-ghost min-h-11 px-1 text-[12px]">
-              Chiudi
-            </button>
-            {editing.version !== null && (
-              <button type="button" disabled={busy} onClick={() => (confirmDelete ? void remove() : setConfirmDelete(true))} className="btn btn-ghost min-h-11 px-1 text-[12px] text-comic-magenta">
-                {confirmDelete ? "Sicuro?" : "Togli"}
-              </button>
-            )}
           </div>
-        </section>
-      ) : (
-        <>
-          <UnlockSettings />
-          <div className="flex gap-1.5">
-            <input
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="Codice, es. P002"
-              aria-label="Codice del personaggio"
-              className="min-h-11 min-w-0 flex-1 rounded-md border-2 border-black bg-panel px-2 text-[14px] font-bold uppercase"
-            />
-            <button type="button" disabled={!code.trim()} onClick={() => void startNew()} className="btn btn-primary min-h-11 px-3 text-[12px] disabled:opacity-45">
-              Apri kit
-            </button>
-          </div>
-          <ul className="flex flex-col gap-1.5">
-            {(rows ?? []).map((row) => (
-              <li key={row.definition_id}>
-                <button
-                  type="button"
-                  onClick={() => setEditing({ definitionId: row.definition_id, code: row.code, name: row.name, text: JSON.stringify(row.kit, null, 2), version: row.version })}
-                  className="flex w-full items-center justify-between gap-2 rounded-md border-2 border-black bg-panel px-2 py-1.5 text-left"
-                >
-                  <span className="min-w-0">
-                    <span className="block truncate text-[13px] font-extrabold leading-4">
-                      {row.name} <span className="text-faint">({row.code})</span>
-                    </span>
-                    <span className="block truncate text-[11px] leading-4 text-muted">
-                      {row.kit.base.name} · {row.kit.special.name} · {row.kit.supreme.name}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-[11px] font-bold text-faint">v{row.version}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </main>
+        )}
+      </main>
+    </div>
   );
 }
