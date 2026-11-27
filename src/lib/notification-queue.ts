@@ -12,7 +12,9 @@ export type NotificationKind =
   | "challenge"
   | "challenge_reward"
   // The end of a season of the Scontro a squadre challenges (SPEC §5.19): its prize is claimed there.
-  | "combat_season";
+  | "combat_season"
+  // Scontro a squadre kits unlocked by playing (SPEC §5.19): one character's opens its card, more the Scontro.
+  | "combat_kit";
 
 export type PlayerNotification = {
   id: string;
@@ -100,9 +102,19 @@ export function bannerHref(notification: PlayerNotification): string | null {
         : "/gioca/";
     case "combat_season":
       return "/scontro/";
+    case "combat_kit": {
+      const one = kitAlone(notification);
+      return one ? `/carta/?id=${encodeURIComponent(one)}` : "/scontro/";
+    }
     default:
       return null;
   }
+}
+
+/** The character of a kit notification about one only (its definition id), or null. */
+function kitAlone(notification: PlayerNotification): string | null {
+  const ids = notification.data.definition_ids;
+  return Array.isArray(ids) && ids.length === 1 && typeof ids[0] === "string" ? ids[0] : null;
 }
 
 const count = (value: unknown) => (typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 0);
@@ -141,6 +153,8 @@ export function bannerHint(notification: PlayerNotification): string {
       return "Tocca per vederlo in Gioca";
     case "combat_season":
       return "Tocca per aprire lo Scontro";
+    case "combat_kit":
+      return kitAlone(notification) ? "Tocca per vedere le sue mosse" : "Tocca per aprire lo Scontro";
     default:
       return "Tocca per chiudere";
   }

@@ -83,6 +83,11 @@ describe("banner content", () => {
     expect(bannerHref(note("a", 1, "leaderboard", { board: "triple" }))).toBe("/classifiche/?scheda=triple&periodo=week");
     expect(bannerHref(note("a", 1, "leaderboard"))).toBe("/classifiche/");
     expect(bannerHref(note("a", 1, "something_new"))).toBeNull();
+    // A kit of the Scontro: one character opens its card, several the Scontro.
+    expect(bannerHref(note("a", 1, "combat_kit", { definition_ids: ["d-1"], codes: ["P001"] }))).toBe("/carta/?id=d-1");
+    expect(bannerHint(note("a", 1, "combat_kit", { definition_ids: ["d-1"], codes: ["P001"] }))).toBe("Tocca per vedere le sue mosse");
+    expect(bannerHref(note("a", 1, "combat_kit", { definition_ids: ["d-1", "d-2"], codes: ["P001", "P043"] }))).toBe("/scontro/");
+    expect(bannerHint(note("a", 1, "combat_kit", { definition_ids: ["d-1", "d-2"] }))).toBe("Tocca per aprire lo Scontro");
     expect(bannerHint(note("a", 1, "something_new"))).toBe("Tocca per chiudere");
   });
 
