@@ -19,6 +19,7 @@ import {
   type FilterRarity,
   type FilterStyle,
 } from "@/lib/admin-card-filter";
+import { useBackStep } from "@/lib/back-step";
 import { FACTION_LABELS } from "@/lib/catalog";
 import {
   DEFAULT_EVENT_POINTS,
@@ -191,6 +192,8 @@ export function EventAdmin({ data, onChange }: EventAdminProps) {
   const [formKey, setFormKey] = useState(0);
   const [tab, setTab] = useState<ScreenTab>("form");
   const [saved, setSaved] = useState<string | null>(null);
+  // An event opened from the list: the back arrow returns to the list.
+  useBackStep(tab === "form" && Boolean(form.id), () => setTab("list"));
 
   function load(next: FormState) {
     setForm(next);
@@ -329,6 +332,9 @@ function EventForm({
 }) {
   const [form, setForm] = useState(initial);
   const [step, setStep] = useState<Step>("info");
+  // Past the first step, the back arrow goes to the step before.
+  const stepIndex = STEPS.findIndex((entry) => entry.key === step);
+  useBackStep(stepIndex > 0, () => setStep(STEPS[stepIndex - 1].key));
   const [tierIndex, setTierIndex] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

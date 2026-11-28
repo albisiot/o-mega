@@ -10,6 +10,7 @@ import { RandomVariantsField } from "@/components/random-variants-field";
 import { TraitFilter } from "@/components/trait-filter";
 import { balance } from "@/config/balance";
 import { FACTION_CODES, toggleValue, variantStylesOf } from "@/lib/admin-card-filter";
+import { useBackStep } from "@/lib/back-step";
 import { FACTION_LABELS } from "@/lib/catalog";
 import {
   CHALLENGE_COLORS,
@@ -297,6 +298,8 @@ export function ChallengeAdmin({
   const [formKey, setFormKey] = useState(0);
   const [tab, setTab] = useState<ScreenTab>("form");
   const [saved, setSaved] = useState<string | null>(null);
+  // A challenge opened from the list: the back arrow returns to the list.
+  useBackStep(tab === "form" && Boolean(form.id), () => setTab("list"));
 
   function load(next: FormState) {
     setForm(next);
@@ -440,6 +443,9 @@ function ChallengeForm({
 }) {
   const [form, setForm] = useState(initial);
   const [step, setStep] = useState<Step>("info");
+  // Past the first step, the back arrow goes to the step before.
+  const stepIndex = STEPS.findIndex((entry) => entry.key === step);
+  useBackStep(stepIndex > 0, () => setStep(STEPS[stepIndex - 1].key));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const locked = form.started;

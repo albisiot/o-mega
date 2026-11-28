@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { BackLink, TabBar } from "@/components/comic-parts";
 import { TraitFilter } from "@/components/trait-filter";
+import { useBackStep } from "@/lib/back-step";
 import { fetchTraitIndex } from "@/lib/catalog";
 import { fetchCatalog, type CatalogCard } from "@/lib/collection";
 import {
@@ -52,6 +53,11 @@ export function CoopAdminView({ initial }: { initial: CoopAdmin }) {
   const [busy, setBusy] = useState(false);
   const [cards, setCards] = useState<CatalogCard[]>([]);
   const [traits, setTraits] = useState<TraitCategory[]>([]);
+  // An operation or a chapter being edited: the back arrow returns to its list, the draft kept.
+  useBackStep(tab === "edit", () => {
+    setTab(editing?.kind === "chapter" ? "chapters" : "operations");
+    setNotice(null);
+  });
 
   useEffect(() => {
     fetchCatalog()

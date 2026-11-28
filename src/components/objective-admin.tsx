@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { AdminCardPicker, useAdminCardReference } from "@/components/admin-card-filter";
 import { BackLink, TabBar } from "@/components/comic-parts";
 import { RandomVariantsField } from "@/components/random-variants-field";
+import { useBackStep } from "@/lib/back-step";
 import { describeServerError } from "@/lib/errors";
 import {
   OBJECTIVE_KINDS,
@@ -35,6 +36,12 @@ export function ObjectiveAdmin({ data, onChange }: { data: AdminObjectives; onCh
   const [tab, setTab] = useState<"list" | "form">("list");
   const [editing, setEditing] = useState<AdminObjective | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // The form, new or opened from the list: the back arrow returns to the list.
+  useBackStep(tab === "form", () => {
+    setTab("list");
+    setEditing(null);
+    setNotice(null);
+  });
   const active = data.objectives.filter((objective) => objective.is_active).length;
 
   return (

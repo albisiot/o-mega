@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
+import { takeBackStep, useBackStepOpen } from "@/lib/back-step";
 import { navHistory, usePreviousPage } from "@/lib/nav-history";
 import { isPlace } from "@/lib/nav-stack";
 import { placeHref } from "@/lib/pack-return";
@@ -59,8 +60,9 @@ export function returnTo(router: Router, href: string, onward = false, state?: R
 
 /**
  * A back arrow or button: to the page the player came from, `fallback` (the page above this
- * one) when there is none. `children` gets the page it leads to (a place key) and whether it
- * is the one behind; `labelled` names it for screen readers ("Torna al profilo").
+ * one) when there is none. A screen open inside the page (useBackStep: an edit form, a step of a
+ * form) is closed first, one level at a time. `children` gets the page it leads to (a place key)
+ * and whether it is the one behind; `labelled` names it for screen readers ("Torna al profilo").
  */
 export function GoBackLink({
   fallback,
@@ -75,15 +77,17 @@ export function GoBackLink({
 }) {
   const router = useRouter();
   const previous = usePreviousPage();
+  const inside = useBackStepOpen();
   const target = previous ?? placeKey(fallback);
   return (
     <Link
       href={placeHref(target)}
       data-return=""
-      aria-label={labelled ? backLabel(target) : undefined}
+      aria-label={labelled ? (inside ? "Torna indietro" : backLabel(target)) : undefined}
       className={className}
       onClick={(event) => {
         event.preventDefault();
+        if (takeBackStep()) return;
         goBack(router, fallback);
       }}
     >

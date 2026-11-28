@@ -22,6 +22,7 @@ import { CombatScreen, type CombatScreenProps } from "@/components/combat-screen
 import { withBasePath } from "@/lib/base-path";
 import { combatRules } from "@/lib/combat";
 import { COMBAT_PILOTS, PILOT_BUDGETS, type CombatPilot } from "@/lib/combat-pilot";
+import { useLockedScreen } from "@/lib/use-locked-screen";
 
 const FAMILIES = { FOR: "body", VEL: "body", RES: "body", INT: "mind", VOL: "mind", PER: "mind", ENE: "power", MAG: "power", PSI: "power", COM: "craft", TEC: "craft", FUR: "craft" };
 const CTX: CombatContext = { rules: combatRules(), families: FAMILIES };
@@ -191,6 +192,8 @@ function ScontroProof() {
     preset && preset !== "builder" ? { setup: { a: porto(), b: rivali(), field: FIELDS[2] }, auto: preset.auto ?? false, strategy: "balanced", round: 0 } : null,
   );
   const initialTeam = useMemo(() => (scene === "squadra" ? porto().map((f) => COMBAT_PILOTS.find((p) => p.code === f.id)!) : []), [scene]);
+  // The battle fits the phone as on /scontro: the page stays still.
+  useLockedScreen(battle !== null);
 
   useEffect(() => {
     (window as unknown as { __SCENES: string[] }).__SCENES = Object.keys(SCENES);
@@ -200,37 +203,39 @@ function ScontroProof() {
   if (!battle) return <Builder initial={initialTeam} onFight={(setup, auto, strategy) => setBattle({ setup, auto, strategy, round: 0 })} />;
   const scenery = preset && preset !== "builder" ? preset : null;
   return (
-    <CombatScreen
-      key={battle.round}
-      setup={battle.setup}
-      ctx={CTX}
-      seed={7 + battle.round}
-      tactics={{ a: { strategy: battle.strategy, priority: null, orders: {} } }}
-      artOf={artOf}
-      codeOf={(id) => id}
-      auto={battle.auto}
-      // The same top row as /scontro: back, and give up while the battle is on.
-      leading={
-        <button type="button" onClick={() => setBattle(null)} aria-label="Torna alla squadra" className="btn btn-ghost h-8 w-8 shrink-0 px-0 text-[15px]">
-          ←
-        </button>
-      }
-      trailing={
-        <button type="button" onClick={() => setBattle(null)} className="btn btn-ghost h-8 shrink-0 px-2 text-[11px]">
-          Abbandona
-        </button>
-      }
-      speed={scenery?.speed}
-      prepare={scenery?.prepare}
-      preselect={scenery?.preselect}
-      finishAtOnce={scenery?.finishAtOnce}
-      logOpen={scenery?.logOpen}
-      replayAtEnd={scenery?.replayAtEnd}
-      onWaiting={scenery?.done === "waiting" ? markDone : undefined}
-      onFinished={scenery?.done === "finished" ? markDone : undefined}
-      onRestart={() => setBattle({ ...battle, round: battle.round + 1 })}
-      onChangeTeam={() => setBattle(null)}
-    />
+    <main className="game-shell">
+      <CombatScreen
+        key={battle.round}
+        setup={battle.setup}
+        ctx={CTX}
+        seed={7 + battle.round}
+        tactics={{ a: { strategy: battle.strategy, priority: null, orders: {} } }}
+        artOf={artOf}
+        codeOf={(id) => id}
+        auto={battle.auto}
+        // The same top row as /scontro: back, and give up while the battle is on.
+        leading={
+          <button type="button" onClick={() => setBattle(null)} aria-label="Torna alla squadra" className="btn btn-ghost h-8 w-8 shrink-0 px-0 text-[15px]">
+            ←
+          </button>
+        }
+        trailing={
+          <button type="button" onClick={() => setBattle(null)} className="btn btn-ghost h-8 shrink-0 px-2 text-[11px]">
+            Abbandona
+          </button>
+        }
+        speed={scenery?.speed}
+        prepare={scenery?.prepare}
+        preselect={scenery?.preselect}
+        finishAtOnce={scenery?.finishAtOnce}
+        logOpen={scenery?.logOpen}
+        replayAtEnd={scenery?.replayAtEnd}
+        onWaiting={scenery?.done === "waiting" ? markDone : undefined}
+        onFinished={scenery?.done === "finished" ? markDone : undefined}
+        onRestart={() => setBattle({ ...battle, round: battle.round + 1 })}
+        onChangeTeam={() => setBattle(null)}
+      />
+    </main>
   );
 }
 

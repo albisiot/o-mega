@@ -7,6 +7,7 @@ import { BackLink, TabBar } from "@/components/comic-parts";
 import { PackColorPicker } from "@/components/pack-color-picker";
 import { EMPTY_ADMIN_CARD_FILTER, filterAdminCards, withCardFacts, type AdminCardFilter } from "@/lib/admin-card-filter";
 import { thumbArtUrl } from "@/lib/art";
+import { useBackStep } from "@/lib/back-step";
 import { withBasePath } from "@/lib/base-path";
 import { sortCards, type CardOrder } from "@/lib/card-sort";
 import { describeServerError } from "@/lib/errors";
@@ -58,6 +59,11 @@ export function SpecialPackAdmin({ data, onChange }: SpecialPackAdminProps) {
   const [tab, setTab] = useState<"list" | "form">(data.packs.length === 0 ? "form" : "list");
   const [draft, setDraft] = useState<SpecialPackDraft>(emptyDraft);
   const [notice, setNotice] = useState<string | null>(null);
+  // The form, new or opened from the list: the back arrow returns to the list, the draft kept.
+  useBackStep(tab === "form" && data.packs.length > 0, () => {
+    setTab("list");
+    setNotice(null);
+  });
 
   function edit(next: SpecialPackDraft) {
     setDraft(next);
@@ -268,6 +274,9 @@ type PackFormProps = {
 function PackForm({ data, draft, onDraft, onCancel, onSaved }: PackFormProps) {
   const now = useNow(60_000);
   const [step, setStep] = useState<Step>("details");
+  // Past the first step, the back arrow goes to the step before.
+  const stepIndex = STEPS.findIndex((entry) => entry.key === step);
+  useBackStep(stepIndex > 0, () => setStep(STEPS[stepIndex - 1].key));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const update = (changes: Partial<SpecialPackDraft>) => onDraft({ ...draft, ...changes });

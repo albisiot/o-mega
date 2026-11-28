@@ -3,6 +3,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { BackLink, TabBar } from "@/components/comic-parts";
 import { TraitFilter } from "@/components/trait-filter";
+import { useBackStep } from "@/lib/back-step";
 import { describeServerError } from "@/lib/errors";
 import { DIFFICULTY_LABELS } from "@/lib/match";
 import {
@@ -50,6 +51,11 @@ export function StoryAdminView({ initial }: { initial: StoryAdmin }) {
   const [chapter, setChapter] = useState(initial.chapters.find((c) => c.season === season)?.chapter ?? 1);
   const [editing, setEditing] = useState<Editing>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // A mission, chapter or season being edited: the back arrow returns to its list.
+  useBackStep(tab === "edit", () => {
+    setTab(editing && editing.kind !== "mission" ? "chapters" : "missions");
+    setNotice(null);
+  });
 
   const edit = (next: Editing) => {
     setEditing(next);

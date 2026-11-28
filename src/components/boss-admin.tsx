@@ -15,6 +15,7 @@ import {
   type BossAdminEvent,
   type BossDraft,
 } from "@/lib/boss-admin";
+import { useBackStep } from "@/lib/back-step";
 import { describeServerError } from "@/lib/errors";
 import { formatRomeDateTime } from "@/lib/events";
 import { describeCommunityPrize, DISTRICT_NAMES, MAGNITUDE_NAMES, RAID_MOVES, type RaidMove } from "@/lib/raid";
@@ -53,6 +54,12 @@ export function BossAdminView({ initial }: { initial: BossAdmin }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // A Boss being edited: the back arrow returns to the list of Bosses, the draft kept.
+  useBackStep(tab === "edit", () => {
+    setTab("bosses");
+    setNotice(null);
+    setError(null);
+  });
 
   const edit = (next: BossDraft) => {
     setDraft(next);

@@ -252,14 +252,15 @@ export function CombatScreen(props: CombatScreenProps) {
 
   if (logOpen) {
     return (
-      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-3 pb-3 pt-2 text-foreground">
-        <div className="flex items-center justify-between gap-2 border-b-2 border-black pb-2">
+      // In a page that fits the phone (.game-shell) the title stays and only the lines scroll.
+      <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col px-3 pb-3 pt-2 text-foreground">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-black pb-2">
           <p className="font-display text-2xl leading-8">Registro</p>
           <button type="button" onClick={() => setLogOpen(false)} className="btn btn-ghost min-h-10 px-3 text-[12px]">
             Torna allo scontro
           </button>
         </div>
-        <ol className="flex-1 py-2">
+        <ol className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-2">
           {lines.map((line, i) => (
             <li key={i} className="py-0.5 text-[12px] leading-4">
               {line}
@@ -271,7 +272,9 @@ export function CombatScreen(props: CombatScreenProps) {
   }
 
   return (
-    <div className={`mx-auto flex w-full max-w-md flex-col gap-1 px-3 pb-2 pt-1 text-foreground ${board3d ? "min-h-0 flex-1" : ""}`}>
+    // In a page that fits the phone (.game-shell): the 3D board takes the room left, the cards fit
+    // a phone, and either scrolls inside on a shorter one rather than run off the screen.
+    <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-3 pb-2 pt-1 text-foreground">
       <style>{"@keyframes combat-float{0%{transform:translate(-50%,0);opacity:0}15%{opacity:1}100%{transform:translate(-50%,-26px);opacity:0}}"}</style>
       <div className="flex min-h-5 items-center gap-2 text-[11px] font-bold text-faint">
         {props.leading}

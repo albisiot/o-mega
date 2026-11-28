@@ -12,6 +12,7 @@ import { genericCombatKit, validateCombatKit, type CombatKit } from "@o-mega/gam
 import { useRequireSignedIn } from "@/components/auth-provider";
 import { BackLink } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
+import { useBackStep } from "@/lib/back-step";
 import { fromRomeInput } from "@/lib/challenge-admin";
 import { COMBAT_FAMILIES, combatRules, combatUnlockRule, fetchCombatUnlocks, saveCombatUnlock, type CombatUnlocks } from "@/lib/combat";
 import { describeCombatMove, italianKitError } from "@/lib/combat-text";
@@ -174,6 +175,11 @@ export default function CombatKitsAdminPage() {
   // Fits the phone and never scrolls (see .game-shell): the header stays, and the settings and
   // the list (or the kit being written) scroll inside.
   useLockedScreen(isAdmin === true);
+  // A kit open: the back arrow closes it and shows the list again.
+  useBackStep(editing !== null, () => {
+    setEditing(null);
+    setConfirmDelete(false);
+  });
 
   async function reload() {
     setRows(await rpc<KitRow[]>("admin_combat_kits"));

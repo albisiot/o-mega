@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { AdminCardPicker, useAdminCardReference } from "@/components/admin-card-filter";
 import { BackLink, TabBar } from "@/components/comic-parts";
 import { RandomVariantsField } from "@/components/random-variants-field";
+import { useBackStep } from "@/lib/back-step";
 import { describeBonusReward } from "@/lib/packs";
 import {
   bonusCodeState,
@@ -112,6 +113,9 @@ function NewCodeForm({
   onCreated: (next: AdminBonusCodes, code: string) => void;
 }) {
   const [step, setStep] = useState<Step>("reward");
+  // Past the first step, the back arrow goes to the step before.
+  const stepIndex = STEPS.findIndex((entry) => entry.key === step);
+  useBackStep(stepIndex > 0, () => setStep(STEPS[stepIndex - 1].key));
   const [code, setCode] = useState("");
   const [coins, setCoins] = useState("");
   const [packs, setPacks] = useState("");

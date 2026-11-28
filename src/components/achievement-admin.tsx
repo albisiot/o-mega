@@ -28,6 +28,7 @@ import {
   type ParamField,
 } from "@/lib/achievement-admin";
 import { TIERS, TIER_COLORS, TIER_LABELS, type AchievementTier } from "@/lib/achievements";
+import { useBackStep } from "@/lib/back-step";
 import { describeServerError } from "@/lib/errors";
 import type { RandomVariantsRule } from "@/lib/random-variants";
 import { MAX_SHARD_REWARD, shardsFromInput, shardsInput } from "@/lib/shard-rewards";
@@ -62,6 +63,12 @@ export function AchievementAdmin({ data, onChange }: { data: AdminAchievements; 
   const [tab, setTab] = useState<"list" | "form">("list");
   const [editing, setEditing] = useState<AdminAchievement | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // The form, new or opened from the list: the back arrow returns to the list.
+  useBackStep(tab === "form", () => {
+    setTab("list");
+    setEditing(null);
+    setNotice(null);
+  });
   const active = data.achievements.filter((a) => a.is_active).length;
   const ids = data.achievements.map((a) => a.id);
 

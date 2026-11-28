@@ -41,6 +41,7 @@ import {
 } from "@/lib/combat";
 import { describeServerError } from "@/lib/errors";
 import { statusOf, useModeAvailability } from "@/lib/mode-availability";
+import { useLockedScreen } from "@/lib/use-locked-screen";
 import { useNow } from "@/lib/use-now";
 
 type Tab = "computer" | "arena";
@@ -63,6 +64,9 @@ export default function ScontroPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [view] = useCombatView();
+  // Fits the phone and never scrolls (see .game-shell): the team, the challenges and the battle
+  // scroll inside, under a header that stays.
+  useLockedScreen(Boolean(session));
 
   useEffect(() => {
     if (!session) return;
@@ -140,7 +144,7 @@ export default function ScontroPage() {
       setBattle(null);
     };
     return (
-      <main className="flex flex-1 flex-col">
+      <main className="game-shell">
         <CombatScreen
           key={`${update.battleId}-${battle.round}`}
           ctx={combatContext()}
@@ -198,87 +202,91 @@ export default function ScontroPage() {
   const chosen = places.filter((p): p is CombatCard => p !== null);
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-2 px-3 pb-4 pt-2 text-foreground">
-      <div className="flex items-center gap-2">
+    <div className="game-shell text-foreground">
+      <header className="mx-auto flex w-full max-w-md shrink-0 items-center gap-2 px-3 pb-1 pt-2">
         <BackLink href="/gioca" />
-        <p className="font-display text-2xl uppercase leading-8">Scontro a squadre</p>
-      </div>
-      {closed && <p className="border-[3px] border-black bg-comic-yellow px-3 py-2 text-sm font-extrabold text-black">{closed}</p>}
-      {error && <p className="text-sm font-bold text-comic-magenta">{error}</p>}
-      {locked && unlocks ? (
-        <section className="flex flex-col gap-2">
-          <p className="border-[3px] border-black bg-comic-yellow px-3 py-2 text-sm font-extrabold text-black">
-            Per entrare ti servono {unlocks.needed} personaggi con il kit sbloccato: ne hai {unlocks.ready}.
-          </p>
-          <p className="text-[12px] leading-4 text-muted">{combatUnlockRule(unlocks)}</p>
-          {waiting.length > 0 && <p className="text-[12px] font-extrabold uppercase leading-4 text-faint">I più vicini</p>}
-          <WaitingList cards={waiting.slice(0, 10)} done={done} unlocks={unlocks} />
-          {waiting.length > 10 && <p className="text-[11px] leading-4 text-faint">E altri {waiting.length - 10}.</p>}
-        </section>
-      ) : cards && fieldable.length < 5 ? (
-        <p className="text-[13px] leading-5">Ti servono cinque personaggi con le mosse dello Scontro: ne hai {fieldable.length}.</p>
-      ) : (
-        <>
-          <div role="tablist" aria-label="Contro chi" className="grid grid-cols-2 gap-1.5">
-            {(
-              [
-                ["computer", "Contro il computer"],
-                ["arena", "Sfide"],
-              ] as const
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                role="tab"
-                aria-selected={tab === key}
-                onClick={() => setTab(key)}
-                className={`btn min-h-10 px-1 text-[12px] ${tab === key ? "btn-primary" : "btn-ghost"}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="shrink-0 text-[12px] font-bold text-faint">Battaglie con</span>
-            <CombatViewSwitch className="flex-1" />
-          </div>
-          {tab === "arena" ? (
-            <>
-              <p className="text-[12px] leading-4 text-muted">
-                Sfida la squadra in difesa di altri giocatori, guidata dal computer: vincendo guadagni Gloria, e chi ti sfida la vince o la perde contro la tua difesa.
-                Le prime {balance.combatArena.rewards.dailyBattles} sfide finite di ogni giorno danno {balance.combatArena.rewards.winXp} XP e{" "}
-                {balance.combatArena.rewards.winCoins} monete se vinci, {balance.combatArena.rewards.lossXp} XP se perdi. Le carte non si perdono.
+        <h1 className="font-display text-2xl uppercase leading-8">Scontro a squadre</h1>
+      </header>
+      <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="mx-auto flex w-full max-w-md flex-col gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-1">
+          {closed && <p className="border-[3px] border-black bg-comic-yellow px-3 py-2 text-sm font-extrabold text-black">{closed}</p>}
+          {error && <p className="text-sm font-bold text-comic-magenta">{error}</p>}
+          {locked && unlocks ? (
+            <section className="flex flex-col gap-2">
+              <p className="border-[3px] border-black bg-comic-yellow px-3 py-2 text-sm font-extrabold text-black">
+                Per entrare ti servono {unlocks.needed} personaggi con il kit sbloccato: ne hai {unlocks.ready}.
               </p>
-              <CombatArenaPanel cards={fieldable} codeOf={(id) => catalog?.codes.get(id) ?? null} closed={closed !== null} busy={busy} onChallenge={challenge} />
-            </>
+              <p className="text-[12px] leading-4 text-muted">{combatUnlockRule(unlocks)}</p>
+              {waiting.length > 0 && <p className="text-[12px] font-extrabold uppercase leading-4 text-faint">I più vicini</p>}
+              <WaitingList cards={waiting.slice(0, 10)} done={done} unlocks={unlocks} />
+              {waiting.length > 10 && <p className="text-[11px] leading-4 text-faint">E altri {waiting.length - 10}.</p>}
+            </section>
+          ) : cards && fieldable.length < 5 ? (
+            <p className="text-[13px] leading-5">Ti servono cinque personaggi con le mosse dello Scontro: ne hai {fieldable.length}.</p>
           ) : (
             <>
-              <p className="text-[12px] leading-4 text-muted">
-                Cinque dei tuoi contro cinque del computer: due in prima linea, tre dietro. Le prime {rewards.dailyBattles} battaglie finite di ogni giorno danno {rewards.winXp} XP e{" "}
-                {rewards.winCoins} monete se vinci, {rewards.lossXp} XP se perdi. Le carte non si perdono.
-              </p>
-              <CombatTeamPicker cards={fieldable} places={places} onChange={setPlaces} />
-              <div className="flex items-center gap-1.5">
-                <button type="button" onClick={() => setAuto(!auto)} className={`btn ${auto ? "btn-primary" : "btn-ghost"} min-h-10 flex-1 px-2 text-[12px]`}>
-                  {auto ? "Automatico" : "Manuale"}
-                </button>
-                <CombatStrategySelect value={strategy} onChange={setStrategy} />
+              <div role="tablist" aria-label="Contro chi" className="grid grid-cols-2 gap-1.5">
+                {(
+                  [
+                    ["computer", "Contro il computer"],
+                    ["arena", "Sfide"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === key}
+                    onClick={() => setTab(key)}
+                    className={`btn min-h-10 px-1 text-[12px] ${tab === key ? "btn-primary" : "btn-ghost"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
-              <button type="button" disabled={chosen.length < 5 || busy || closed !== null} onClick={() => void fight()} className="btn btn-primary min-h-12 px-2 text-[15px] disabled:opacity-45">
-                {busy ? "Preparo lo scontro…" : chosen.length < 5 ? `Scegli ancora ${5 - chosen.length}` : "Combatti"}
-              </button>
-              {unlocks && waiting.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="shrink-0 text-[12px] font-bold text-faint">Battaglie con</span>
+                <CombatViewSwitch className="flex-1" />
+              </div>
+              {tab === "arena" ? (
                 <>
-                  <p className="pt-1 text-[12px] font-extrabold uppercase leading-4 text-faint">Da sbloccare</p>
-                  <p className="text-[11px] leading-4 text-muted">{combatUnlockRule(unlocks)}</p>
-                  <WaitingList cards={waiting.slice(0, 6)} done={done} unlocks={unlocks} />
+                  <p className="text-[12px] leading-4 text-muted">
+                    Sfida la squadra in difesa di altri giocatori, guidata dal computer: vincendo guadagni Gloria, e chi ti sfida la vince o la perde contro la tua difesa.
+                    Le prime {balance.combatArena.rewards.dailyBattles} sfide finite di ogni giorno danno {balance.combatArena.rewards.winXp} XP e{" "}
+                    {balance.combatArena.rewards.winCoins} monete se vinci, {balance.combatArena.rewards.lossXp} XP se perdi. Le carte non si perdono.
+                  </p>
+                  <CombatArenaPanel cards={fieldable} codeOf={(id) => catalog?.codes.get(id) ?? null} closed={closed !== null} busy={busy} onChallenge={challenge} />
+                </>
+              ) : (
+                <>
+                  <p className="text-[12px] leading-4 text-muted">
+                    Cinque dei tuoi contro cinque del computer: due in prima linea, tre dietro. Le prime {rewards.dailyBattles} battaglie finite di ogni giorno danno {rewards.winXp} XP e{" "}
+                    {rewards.winCoins} monete se vinci, {rewards.lossXp} XP se perdi. Le carte non si perdono.
+                  </p>
+                  <CombatTeamPicker cards={fieldable} places={places} onChange={setPlaces} />
+                  <div className="flex items-center gap-1.5">
+                    <button type="button" onClick={() => setAuto(!auto)} className={`btn ${auto ? "btn-primary" : "btn-ghost"} min-h-10 flex-1 px-2 text-[12px]`}>
+                      {auto ? "Automatico" : "Manuale"}
+                    </button>
+                    <CombatStrategySelect value={strategy} onChange={setStrategy} />
+                  </div>
+                  <button type="button" disabled={chosen.length < 5 || busy || closed !== null} onClick={() => void fight()} className="btn btn-primary min-h-12 px-2 text-[15px] disabled:opacity-45">
+                    {busy ? "Preparo lo scontro…" : chosen.length < 5 ? `Scegli ancora ${5 - chosen.length}` : "Combatti"}
+                  </button>
+                  {unlocks && waiting.length > 0 && (
+                    <>
+                      <p className="pt-1 text-[12px] font-extrabold uppercase leading-4 text-faint">Da sbloccare</p>
+                      <p className="text-[11px] leading-4 text-muted">{combatUnlockRule(unlocks)}</p>
+                      <WaitingList cards={waiting.slice(0, 6)} done={done} unlocks={unlocks} />
+                    </>
+                  )}
                 </>
               )}
             </>
           )}
-        </>
-      )}
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }
 

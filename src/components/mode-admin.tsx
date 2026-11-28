@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { BackLink } from "@/components/comic-parts";
 import { ModeGate } from "@/components/mode-gate";
+import { useBackStep } from "@/lib/back-step";
 import { describeServerError } from "@/lib/errors";
 import { toRomeInput } from "@/lib/events";
 import {
@@ -104,6 +105,8 @@ export function ModeAdmin({ initial }: { initial: AdminModes }) {
   const [rows, setRows] = useState<ModeAvailability[]>(initial.modes);
   const [editing, setEditing] = useState<GameModeKey | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
+  // A mode's form: the back arrow returns to the list.
+  useBackStep(editing !== null, () => setEditing(null));
   const byKey = Object.fromEntries(rows.map((row) => [row.key, row])) as Partial<Record<GameModeKey, ModeAvailability>>;
   const mode = editing ? GAME_MODES.find((item) => item.key === editing) : null;
 
