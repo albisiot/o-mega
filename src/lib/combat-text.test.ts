@@ -17,9 +17,15 @@ describe("the words of the Scontro a squadre", () => {
 
   it("put the engine's checks of a kit in Italian for the EDITOR", () => {
     expect(italianKitError("move P001-base: weights sum to 0.9, not 1")).toBe("Mossa P001-base: i pesi fanno 0.9, non 1");
-    expect(italianKitError("move x: stun needs an enemy target")).toBe("Mossa x: stun va su un nemico");
-    expect(italianKitError("passive p: other needs the hit or hurt trigger")).toBe("Passiva p: «other» vuole l'innesco hit o hurt");
-    expect(italianKitError("kit without supreme")).toBe("Manca la mossa supreme");
+    expect(italianKitError("move x: stun needs an enemy target")).toBe("Mossa x: stordimento va su un nemico");
+    expect(italianKitError("move x: heal needs an allied target")).toBe("Mossa x: la cura va su un alleato");
+    expect(italianKitError("move P001-special is a base, not a special")).toBe("La mossa P001-special è una base, non una speciale");
+    expect(italianKitError("move x: adjacent needs enemy_and_adjacent")).toBe("Mossa x: «I suoi vicini» vuole il bersaglio «Un nemico e i vicini»");
+    expect(italianKitError("passive p: other needs the hit or hurt trigger")).toBe(
+      "Passiva p: il nemico colpito, o chi ha colpito, c'è solo con «Quando colpisce» o «Quando è colpito»",
+    );
+    expect(italianKitError("passive p: speedPercent must be a number")).toBe("Passiva p: «velocità %» deve essere un numero");
+    expect(italianKitError("kit without supreme")).toBe("Manca la suprema");
     expect(italianKitError("something new")).toBe("something new");
   });
 

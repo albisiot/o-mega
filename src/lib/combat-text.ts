@@ -97,7 +97,9 @@ const KIT_ERRORS: [RegExp, string][] = [
   [/^passive (\S+): /, "Passiva $1: "],
   [/^move without id$/, "Una mossa non ha l'id"],
   [/^passive without id$/, "La passiva non ha l'id"],
-  [/^kit without (\w+)$/, "Manca la mossa $1"],
+  [/^kit without base$/, "Manca la base"],
+  [/^kit without special$/, "Manca la speciale"],
+  [/^kit without supreme$/, "Manca la suprema"],
   [/^move (\S+) is a (\w+), not a (\w+)$/, "La mossa $1 è una $2, non una $3"],
   [/weights sum to ([\d.]+), not 1$/, "i pesi fanno $1, non 1"],
   [/unknown ability (\S+)$/, "abilità sconosciuta $1"],
@@ -118,31 +120,52 @@ const KIT_ERRORS: [RegExp, string][] = [
   [/damage needs an enemy target$/, "il danno va su un nemico"],
   [/(\w+) needs an allied target$/, "$1 va su un alleato"],
   [/(\w+) needs an enemy target$/, "$1 va su un nemico"],
-  [/adjacent needs enemy_and_adjacent$/, "«adjacent» vuole il bersaglio enemy_and_adjacent"],
-  [/all needs all_enemies or all_allies$/, "«all» vuole il bersaglio all_enemies o all_allies"],
-  [/(\w+) has no primary target$/, "$1 non ha un bersaglio principale"],
+  [/adjacent needs enemy_and_adjacent$/, "«I suoi vicini» vuole il bersaglio «Un nemico e i vicini»"],
+  [/all needs all_enemies or all_allies$/, "«Tutti» vuole il bersaglio «Tutti i nemici» o «Tutta la squadra»"],
+  [/(\w+) has no primary target$/, "con il bersaglio $1 l'effetto va su tutti, non su uno scelto"],
   [/(\w+) must last a whole number of turns from 1$/, "$1 deve durare un numero intero di turni, almeno 1"],
   [/(\w+) lasts more than (\d+) turns$/, "$1 dura più di $2 turni"],
   [/only a debuff has a chance$/, "solo un effetto negativo ha una probabilità"],
   [/chance base must be a number$/, "la base della probabilità deve essere un numero"],
   [/effects need a trigger$/, "gli effetti vogliono un innesco"],
   [/a trigger needs effects$/, "un innesco vuole degli effetti"],
-  [/low_vita needs a threshold between 0 and 100$/, "low_vita vuole una soglia tra 0 e 100"],
-  [/only low_vita has a threshold$/, "solo low_vita ha una soglia"],
+  [/low_vita needs a threshold between 0 and 100$/, "«Sotto una soglia di Vita» vuole una soglia tra 0 e 100"],
+  [/only low_vita has a threshold$/, "solo «Sotto una soglia di Vita» ha una soglia"],
   [/limit must be a whole number from 0$/, "il limite deve essere un numero intero da 0"],
-  [/other needs the hit or hurt trigger$/, "«other» vuole l'innesco hit o hurt"],
+  [/other needs the hit or hurt trigger$/, "il nemico colpito, o chi ha colpito, c'è solo con «Quando colpisce» o «Quando è colpito»"],
   [/(\w+) needs enemies$/, "$1 va sui nemici"],
   [/(\w+) needs allies$/, "$1 va sugli alleati"],
   [/charge must be a whole number from 1$/, "la Carica deve essere un numero intero da 1"],
-  [/damageVsStatus needs a known status and a number$/, "damageVsStatus vuole un effetto noto e un numero"],
+  [/damageVsStatus needs a known status and a number$/, "«più danni contro chi ha…» vuole un effetto e un numero"],
   [/(\w+) must be a number$/, "$1 deve essere un numero"],
   [/does nothing$/, "non fa niente"],
 ];
 
+/** The engine's words left in a message, as the form of the EDITOR names them. */
+const KIT_WORDS: Record<string, string> = {
+  ...Object.fromEntries(Object.entries(STATUS_LABELS).map(([code, label]) => [code, label.name.toLowerCase()])),
+  damage: "il danno",
+  heal: "la cura",
+  shield: "lo scudo",
+  base: "base",
+  special: "speciale",
+  supreme: "suprema",
+  all_enemies: "«Tutti i nemici»",
+  all_allies: "«Tutta la squadra»",
+  damagePercent: "«danni %»",
+  critPercent: "«critico»",
+  hitPercent: "«precisione»",
+  healPercent: "«cure %»",
+  speedPercent: "«velocità %»",
+  effectChancePercent: "«probabilità effetti»",
+};
+
 export function italianKitError(message: string): string {
   let out = message;
   for (const [pattern, replacement] of KIT_ERRORS) out = out.replace(pattern, replacement);
-  return out;
+  // After the id at its start ("Mossa P001-base: "), the codes of the engine in words.
+  const [, head = "", body = out] = /^((?:Mossa|Passiva|La mossa) \S+:? )?(.*)$/.exec(out) ?? [];
+  return head + body.replace(/\b[A-Za-z_]+\b/g, (word) => KIT_WORDS[word] ?? word);
 }
 
 /**

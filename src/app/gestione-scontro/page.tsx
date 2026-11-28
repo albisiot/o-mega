@@ -2,20 +2,22 @@
 
 // EDITOR → Scontro (SPEC §5.19, docs/COMBAT.md, stage 4): the kits of the Scontro a squadre, for
 // admins only. A kit is the engine's data (base, special, supreme, passive): the page shows it as
-// JSON, checks it with the engine while it is written (validateCombatKit), and saves it only when
-// valid; the server checks the admin and the kit's shape, and the "match" Edge Function checks it
+// a form (src/components/combat-kit-form.tsx, with the JSON in its «Testo» tab), checks it with the
+// engine while it is written (validateCombatKit), and saves it only when valid; the server checks the admin and the kit's shape, and the "match" Edge Function checks it
 // again with the engine when a battle starts. A new kit starts from the generic one of the
 // character's best ability (the simulator's), to be rewritten from its card.
 
 import { useEffect, useState } from "react";
 import { genericCombatKit, validateCombatKit, type CombatKit } from "@o-mega/game-engine";
 import { useRequireSignedIn } from "@/components/auth-provider";
+import { CombatKitForm } from "@/components/combat-kit-form";
 import { BackLink } from "@/components/comic-parts";
 import { LoadingScreen } from "@/components/loading-screen";
 import { useBackStep } from "@/lib/back-step";
+import { fetchAbilities, seenAbilities, type AbilityInfo } from "@/lib/catalog";
 import { fromRomeInput } from "@/lib/challenge-admin";
 import { COMBAT_FAMILIES, combatRules, combatUnlockRule, fetchCombatUnlocks, saveCombatUnlock, type CombatUnlocks } from "@/lib/combat";
-import { describeCombatMove, italianKitError } from "@/lib/combat-text";
+import { italianKitError } from "@/lib/combat-text";
 import { describeServerError } from "@/lib/errors";
 import { toRomeInput } from "@/lib/events";
 import { getSupabase } from "@/lib/supabase/client";
@@ -23,7 +25,7 @@ import { useIsAdmin } from "@/lib/use-is-admin";
 import { useLockedScreen } from "@/lib/use-locked-screen";
 
 type KitRow = { definition_id: string; code: string; name: string; faction: string; rarity: string; stats: Record<string, number>; kit: CombatKit; version: number; updated_at: string };
-type Editing = { definitionId: string; code: string; name: string; text: string; version: number | null };
+type Editing = { definitionId: string; code: string; name: string; kit: CombatKit; version: number | null };
 
 // The generated database types may not list these functions yet: the calls are the same.
 async function rpc<T>(name: string, params?: Record<string, unknown>): Promise<T> {
@@ -32,18 +34,12 @@ async function rpc<T>(name: string, params?: Record<string, unknown>): Promise<T
   return data as T;
 }
 
-/** What is wrong with the text: not JSON, or what the engine refuses. */
-function problemsOf(text: string): { kit: CombatKit | null; errors: string[] } {
-  let kit: CombatKit;
+/** What the engine refuses in a kit, in Italian (empty when it can fight). */
+function problemsOf(kit: CombatKit): string[] {
   try {
-    kit = JSON.parse(text) as CombatKit;
+    return validateCombatKit(kit, COMBAT_FAMILIES, combatRules()).map(italianKitError);
   } catch (cause) {
-    return { kit: null, errors: [`Non è JSON valido: ${(cause as Error).message}`] };
-  }
-  try {
-    return { kit, errors: validateCombatKit(kit, COMBAT_FAMILIES, combatRules()).map(italianKitError) };
-  } catch (cause) {
-    return { kit: null, errors: [`Il kit non ha la forma giusta: ${(cause as Error).message}`] };
+    return [`Il kit non ha la forma giusta: ${(cause as Error).message}`];
   }
 }
 
@@ -172,6 +168,7 @@ export default function CombatKitsAdminPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [abilities, setAbilities] = useState<AbilityInfo[]>(() => seenAbilities() ?? []);
   // Fits the phone and never scrolls (see .game-shell): the header stays, and the settings and
   // the list (or the kit being written) scroll inside.
   useLockedScreen(isAdmin === true);
@@ -184,6 +181,12 @@ export default function CombatKitsAdminPage() {
   async function reload() {
     setRows(await rpc<KitRow[]>("admin_combat_kits"));
   }
+
+  useEffect(() => {
+    fetchAbilities()
+      .then(setAbilities)
+      .catch((cause: unknown) => console.error("Abilities failed", cause));
+  }, []);
 
   useEffect(() => {
     if (isAdmin !== true) return;
@@ -209,11 +212,11 @@ export default function CombatKitsAdminPage() {
     }
     const existing = rows?.find((r) => r.definition_id === data.id);
     if (existing) {
-      setEditing({ definitionId: existing.definition_id, code: existing.code, name: existing.name, text: JSON.stringify(existing.kit, null, 2), version: existing.version });
+      setEditing({ definitionId: existing.definition_id, code: existing.code, name: existing.name, kit: structuredClone(existing.kit), version: existing.version });
       return;
     }
     const kit = genericCombatKit(data.code, data.stats as Record<string, number>, COMBAT_FAMILIES);
-    setEditing({ definitionId: data.id, code: data.code, name: data.name, text: JSON.stringify(kit, null, 2), version: null });
+    setEditing({ definitionId: data.id, code: data.code, name: data.name, kit, version: null });
   }
 
   async function save(kit: CombatKit) {
@@ -248,7 +251,7 @@ export default function CombatKitsAdminPage() {
     }
   }
 
-  const check = editing ? problemsOf(editing.text) : null;
+  const errors = editing ? problemsOf(editing.kit) : [];
 
   return (
     <div className="game-shell text-foreground">
@@ -262,47 +265,34 @@ export default function CombatKitsAdminPage() {
       <main className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-1">
         {message && <p className="shrink-0 text-[12px] font-bold leading-4 text-comic-yellow">{message}</p>}
 
-        {editing && check ? (
+        {editing ? (
           <section className="flex min-h-0 flex-1 flex-col gap-2">
             <p className="shrink-0 text-[14px] font-extrabold">
               {editing.name} <span className="text-faint">({editing.code})</span> · {editing.version ? `versione ${editing.version}` : "nuovo"}
             </p>
-            <textarea
-              value={editing.text}
-              onChange={(e) => {
-                setEditing({ ...editing, text: e.target.value });
+            <CombatKitForm
+              kit={editing.kit}
+              errors={errors}
+              abilities={abilities}
+              onChange={(kit) => {
+                setEditing({ ...editing, kit });
                 setConfirmDelete(false);
               }}
-              spellCheck={false}
-              aria-label="Il kit"
-              className="min-h-32 w-full flex-1 resize-none rounded-md border-2 border-black bg-panel p-2 font-mono text-[11px] leading-4"
             />
-            <div className="max-h-[30%] shrink-0 overflow-y-auto overscroll-contain empty:hidden">
-              {check.errors.length > 0 ? (
+            {errors.length > 0 && (
+              <div className="max-h-[22%] shrink-0 overflow-y-auto overscroll-contain rounded-md border-2 border-comic-magenta p-1.5">
+                <p className="text-[12px] font-extrabold leading-4 text-comic-magenta">
+                  {errors.length === 1 ? "Un problema" : `${errors.length} problemi`}: si salva quando è a posto. Il pallino giallo segna la scheda.
+                </p>
                 <ul className="list-disc pl-4 text-[12px] leading-4 text-comic-magenta">
-                  {check.errors.map((e) => (
+                  {errors.map((e) => (
                     <li key={e}>{e}</li>
                   ))}
                 </ul>
-              ) : (
-                check.kit && (
-                  <ul className="text-[12px] leading-4 text-muted">
-                    {(["base", "special", "supreme"] as const).map((slot) => (
-                      <li key={slot}>
-                        <span className="font-bold text-foreground">{check.kit!.base && check.kit![slot].name}</span>: {describeCombatMove(check.kit![slot])}
-                      </li>
-                    ))}
-                    {check.kit.passive && (
-                      <li>
-                        <span className="font-bold text-foreground">{check.kit.passive.name}</span> (passiva)
-                      </li>
-                    )}
-                  </ul>
-                )
-              )}
-            </div>
+              </div>
+            )}
             <div className="grid shrink-0 grid-cols-3 gap-1.5">
-              <button type="button" disabled={busy || check.errors.length > 0 || !check.kit} onClick={() => check.kit && void save(check.kit)} className="btn btn-primary min-h-11 px-1 text-[12px] disabled:opacity-45">
+              <button type="button" disabled={busy || errors.length > 0} onClick={() => void save(editing.kit)} className="btn btn-primary min-h-11 px-1 text-[12px] disabled:opacity-45">
                 Salva
               </button>
               <button type="button" onClick={() => setEditing(null)} className="btn btn-ghost min-h-11 px-1 text-[12px]">
@@ -335,7 +325,7 @@ export default function CombatKitsAdminPage() {
                 <li key={row.definition_id}>
                   <button
                     type="button"
-                    onClick={() => setEditing({ definitionId: row.definition_id, code: row.code, name: row.name, text: JSON.stringify(row.kit, null, 2), version: row.version })}
+                    onClick={() => setEditing({ definitionId: row.definition_id, code: row.code, name: row.name, kit: structuredClone(row.kit), version: row.version })}
                     className="flex w-full items-center justify-between gap-2 rounded-md border-2 border-black bg-panel px-2 py-1.5 text-left"
                   >
                     <span className="min-w-0">
