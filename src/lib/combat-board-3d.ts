@@ -52,12 +52,14 @@ export type BoardLook = { key: string; acting: boolean; targetable: boolean; str
 export type BoardAnchor = {
   key: string;
   hud: { x: number; y: number };
+  /** The top of the plate, where the statuses sit. */
+  plate: { x: number; y: number };
   middle: { x: number; y: number };
   box: { x: number; y: number; width: number; height: number };
 };
 export type CombatBoard = {
   /** The looks at a step; a struck character shakes again at every new step. */
-  show(looks: BoardLook[], step: number): void;
+  show(looks: BoardLook[], step: number, lunge?: { from: string; to: string } | null): void;
   dispose(): void;
 };
 
@@ -80,6 +82,9 @@ const SLOW_FRAMES_LIMIT = 20;
 const POP_SECONDS = 0.45;
 const POP_STAGGER = 0.07;
 const SHAKE_SECONDS = 0.45;
+/** Who acts leans towards whom it reaches, and back. */
+const LUNGE_SECONDS = 0.45;
+const LUNGE_UNITS = 1.6;
 /** Times at which the diorama's own motion is sampled to find the parts that move. */
 const SAMPLE_TIMES = [0.4, 1.3, 2.2, 3.7, 5.9, 8.3];
 
@@ -425,6 +430,8 @@ type Piece = {
   grey: boolean;
   lift: number;
   sunk: number;
+  lungeAt: number;
+  lungeDir: Vector3;
 };
 
 /** Turns a piece grey (down) or back to its colours. */
@@ -558,6 +565,8 @@ export async function mountCombatBoard(
       grey: false,
       lift: 0,
       sunk: 0,
+      lungeAt: -Infinity,
+      lungeDir: new Vector3(),
     });
     // A breath between dioramas, so the page stays responsive while they are built.
     await new Promise((done) => setTimeout(done, 0));
@@ -629,6 +638,7 @@ export async function mountCombatBoard(
         return {
           key: piece.fighter.key,
           hud: project(under),
+          plate: project(new Vector3(0, 0.5, 0).applyEuler(piece.plate.rotation).add(piece.plate.position).add(piece.rest)),
           middle: project(piece.rest.clone().add(new Vector3(0, piece.height * 0.6, 0))),
           box: { x: Math.min(...xs), y: Math.min(...ys), width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) },
         };
@@ -646,7 +656,7 @@ export async function mountCombatBoard(
   /** Whether anything moves: the pop-up, a shake, a step forward, the dioramas' own motion. */
   function moving(now: number): boolean {
     if (now - start < popEnd + 50) return true;
-    if (pieces.some((piece) => now - piece.struckAt < SHAKE_SECONDS * 1000)) return true;
+    if (pieces.some((piece) => now - piece.struckAt < SHAKE_SECONDS * 1000 || now - piece.lungeAt < LUNGE_SECONDS * 1000)) return true;
     if (pieces.some((piece) => Math.abs(piece.lift - (piece.look.acting ? 1 : 0)) > 0.01 || Math.abs(piece.sunk - (piece.look.down ? 1 : 0)) > 0.01)) return true;
     if (still) return false;
     return pieces.some((piece) => piece.look.targetable || (!piece.look.down && (piece.diorama.tickers.length > 0 || piece.diorama.specks.length > 0)));
@@ -668,7 +678,13 @@ export async function mountCombatBoard(
       piece.lift += ((look.acting ? 1 : 0) - piece.lift) * (reduced ? 1 : 0.2);
       piece.sunk += ((look.down ? 1 : 0) - piece.sunk) * (reduced ? 1 : 0.15);
       const shake = now - piece.struckAt < SHAKE_SECONDS * 1000 && !reduced ? Math.sin(now * 0.06) * 0.35 * (1 - (now - piece.struckAt) / (SHAKE_SECONDS * 1000)) : 0;
-      holder.position.set(piece.rest.x + shake, piece.lift * 0.4 - piece.sunk * 0.3, piece.rest.z);
+      const lunging = (now - piece.lungeAt) / (LUNGE_SECONDS * 1000);
+      const lean = lunging >= 0 && lunging < 1 && !reduced ? Math.sin(Math.PI * lunging) * LUNGE_UNITS : 0;
+      holder.position.set(
+        piece.rest.x + shake + piece.lungeDir.x * lean,
+        piece.lift * 0.4 - piece.sunk * 0.3,
+        piece.rest.z + piece.lungeDir.z * lean,
+      );
       diorama.root.rotation.x = -piece.sunk * 0.12;
       const flash = Math.max(0, 1 - (now - piece.struckAt) / (SHAKE_SECONDS * 1000));
       for (const material of piece.flash) {
@@ -739,7 +755,7 @@ export async function mountCombatBoard(
 
   let lastStep = -1;
   return {
-    show(looks, step) {
+    show(looks, step, lunge) {
       const now = performance.now();
       for (const piece of pieces) {
         const look = looks.find((entry) => entry.key === piece.fighter.key);
@@ -749,6 +765,15 @@ export async function mountCombatBoard(
         piece.acting.visible = look.acting && !look.down;
         piece.target.visible = look.targetable;
         paintDown(piece, look.down);
+      }
+      // At a new step, who acted leans towards the first character it reached.
+      if (lunge && step !== lastStep) {
+        const from = pieces.find((piece) => piece.fighter.key === lunge.from);
+        const to = pieces.find((piece) => piece.fighter.key === lunge.to);
+        if (from && to && from !== to) {
+          from.lungeDir.copy(to.rest).sub(from.rest).setY(0).normalize();
+          from.lungeAt = now;
+        }
       }
       lastStep = step;
       draw(now);

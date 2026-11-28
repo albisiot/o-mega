@@ -7,8 +7,14 @@
 // the screen sends the player's choices and shows the steps it gets back. Either way every step is
 // kept and a cursor walks through them, one at a time, at the chosen speed: the same walk shows the
 // computer's turns, a battle played at once, and the replay.
+//
+// What each step means for the eye (src/lib/combat-clarity.ts, asked by the user on 28 November
+// 2026): one yellow ring on who acts, an arrow to each character the move reached and a bubble with
+// its name, the words of what happened over each character (a miss never flashes), the whole action
+// in one line with the sides in their colours, the moves in words, and while a move is chosen what
+// it would do to each target. Holding a character opens its sheet.
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   applyCombatAction,
   chooseCombatAction,
@@ -31,7 +37,20 @@ import {
   type Side,
 } from "@o-mega/game-engine";
 import { CombatBoardView, useCombatView, ViewSwitch } from "@/components/combat-board";
-import { combatEventLine, describeCombatMove, SLOT_LABELS, STATUS_LABELS } from "@/lib/combat-text";
+import { ActionArrows, BattleLine, FighterSheet, MoveBubble, OVERLAY_KEYFRAMES, RisingWords, StatusChips, useHold, type Point } from "@/components/combat-overlays";
+import {
+  combatPreview,
+  combatStepLines,
+  combatStepView,
+  describeMovePlain,
+  describeMoveShort,
+  namePassiveFloats,
+  previewText,
+  protectedFrom,
+  type StepFloat,
+  type TargetPreview,
+} from "@/lib/combat-clarity";
+import { combatEventLine, SLOT_LABELS } from "@/lib/combat-text";
 import { describeServerError } from "@/lib/errors";
 
 /** Time an action stays on screen before the next, by speed (ms). */
@@ -127,6 +146,11 @@ export function CombatScreen(props: CombatScreenProps) {
     />
   ) : null;
   const [rewards, setRewards] = useState<CombatScreenRewards | null>(remote?.rewards ?? null);
+  /** The character whose sheet is open (held, or tapped when it is not a target). */
+  const [sheetKey, setSheetKey] = useState<string | null>(null);
+  /** With the cards: the middle and the top of each card, for the arrows and the bubble. */
+  const cardsRef = useRef<HTMLDivElement>(null);
+  const [cardPoints, setCardPoints] = useState<Map<string, Point & { top: number }>>(new Map());
   /** «Rivedi» was touched: walking back through a finished battle is a replay, not its end being shown. */
   const [replaying, setReplaying] = useState(Boolean(props.finishAtOnce && props.replayAtEnd));
 
@@ -220,13 +244,55 @@ export function CombatScreen(props: CombatScreenProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cursor, end, human, speed, auto, pending, error]);
 
-  const lastMove = shown.events.find((e): e is Extract<CombatEvent, { kind: "move" }> => e.kind === "move");
-  const struck = new Set(shown.events.flatMap((e) => (e.kind === "damage" || e.kind === "miss" ? [e.target] : [])));
+  const stepView = namePassiveFloats(combatStepView(shown.events), shown.events, moveNameOf);
+  /** Who acts: the one choosing now, else the one whose move is on screen. */
+  const actingKey = human ? state.current : (stepView.actor ?? state.current);
+  const stepMoveName = stepView.move ? moveNameOf(stepView.move) : null;
+  const struck = new Set(stepView.struck);
+  const lungeTarget = (stepView.arrows.find((arrow) => arrow.tone !== "miss") ?? stepView.arrows[0])?.to ?? null;
   const targets = human && selected ? combatTargets(latest.state, actor!, actor!.kit[selected], ctx.rules) : null;
-  const floats = floatingNumbers(shown.events);
+  const previews = human && selected && targets ? combatPreview(latest.state, actor!, actor!.kit[selected], targets, ctx) : [];
+  const previewOf = new Map(previews.map((preview) => [preview.key, preview]));
+  const protectedKeys = human && selected ? protectedFrom(latest.state, actor!, actor!.kit[selected], ctx.rules) : [];
   const upcoming = state.result ? [] : combatUpcoming(state, ctx.rules, 6);
   const enemy = otherSide(playerSide);
   const row = (side: Side, positions: number[]) => positions.map((p) => state.fighters.find((f) => f.side === side && f.position === p)!);
+  const isMine = (key: string) => key.startsWith(playerSide);
+  const otherLine = (e: CombatEvent) => combatEventLine(e, nameOf, moveNameOf, playerSide);
+  const linesOf = (step: CombatStep) => combatStepLines(step.events, nameOf, moveNameOf, isMine, otherLine);
+  const sheetFighter = sheetKey ? (state.fighters.find((f) => f.key === sheetKey) ?? null) : null;
+
+  // With the cards: where each card is, measured after it is drawn (and when the screen changes size).
+  useEffect(() => {
+    const box = cardsRef.current;
+    if (board3d || !box) return;
+    const measure = () => {
+      const origin = box.getBoundingClientRect();
+      const next = new Map<string, Point & { top: number }>();
+      box.querySelectorAll<HTMLElement>("[data-fighter]").forEach((card) => {
+        const rect = card.getBoundingClientRect();
+        next.set(card.dataset.fighter!, { x: rect.left - origin.left + rect.width / 2, y: rect.top - origin.top + rect.height / 2, top: rect.top - origin.top });
+      });
+      setCardPoints(next);
+    };
+    const frame = requestAnimationFrame(measure);
+    const observer = new ResizeObserver(() => requestAnimationFrame(measure));
+    observer.observe(box);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [board3d, logOpen]);
+
+  /** Who acts at a step leans towards whom it reached: the direction, a few pixels long. */
+  const lungeOf = (key: string): Point | null => {
+    if (stepView.actor !== key || !lungeTarget) return null;
+    const from = cardPoints.get(key);
+    const to = cardPoints.get(lungeTarget);
+    if (!from || !to) return null;
+    const length = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+    return { x: ((to.x - from.x) / length) * 10, y: ((to.y - from.y) / length) * 10 };
+  };
 
   const tile = (f: CombatFighter) => (
     <FighterTile
@@ -234,21 +300,18 @@ export function CombatScreen(props: CombatScreenProps) {
       fighter={f}
       art={artOf(f.definitionId)}
       rules={ctx.rules}
-      acting={state.current === f.key || lastMove?.actor === f.key}
+      acting={actingKey === f.key}
       struck={struck.has(f.key)}
       targetable={targets?.includes(f.key) ?? false}
-      floats={floats.get(f.key) ?? []}
-      onTap={targets?.includes(f.key) ? () => play({ slot: selected!, target: f.key }) : undefined}
+      floats={stepView.floats.get(f.key) ?? []}
+      step={shownIndex}
+      preview={previewOf.get(f.key)}
+      protectedHere={protectedKeys.includes(f.key)}
+      lunge={lungeOf(f.key)}
+      onTap={() => (targets?.includes(f.key) ? play({ slot: selected!, target: f.key }) : setSheetKey(f.key))}
+      onHold={() => setSheetKey(f.key)}
     />
   );
-
-  const lines: string[] = [];
-  for (const step of history.slice(0, shownIndex + 1)) {
-    for (const e of step.events) {
-      const line = combatEventLine(e, nameOf, moveNameOf, playerSide);
-      if (line) lines.push(line);
-    }
-  }
 
   if (logOpen) {
     return (
@@ -261,11 +324,17 @@ export function CombatScreen(props: CombatScreenProps) {
           </button>
         </div>
         <ol className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-2">
-          {lines.map((line, i) => (
-            <li key={i} className="py-0.5 text-[12px] leading-4">
-              {line}
-            </li>
-          ))}
+          {history.slice(0, shownIndex + 1).map((step, i) => {
+            const stepLines = linesOf(step);
+            if (!stepLines.length) return null;
+            return (
+              <li key={i} className="border-b border-white/10 py-1">
+                {stepLines.map((segments, j) => (
+                  <BattleLine key={j} segments={segments} className="text-[12px] leading-4" />
+                ))}
+              </li>
+            );
+          })}
         </ol>
       </div>
     );
@@ -275,7 +344,7 @@ export function CombatScreen(props: CombatScreenProps) {
     // In a page that fits the phone (.game-shell): the 3D board takes the room left, the cards fit
     // a phone, and either scrolls inside on a shorter one rather than run off the screen.
     <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-3 pb-2 pt-1 text-foreground">
-      <style>{"@keyframes combat-float{0%{transform:translate(-50%,0);opacity:0}15%{opacity:1}100%{transform:translate(-50%,-26px);opacity:0}}"}</style>
+      <style>{OVERLAY_KEYFRAMES}</style>
       <div className="flex min-h-5 items-center gap-2 text-[11px] font-bold text-faint">
         {props.leading}
         <span className="min-w-0 flex-1 truncate">{state.field ? `Campo: ${state.field.name}` : "Nessun campo"}</span>
@@ -291,19 +360,22 @@ export function CombatScreen(props: CombatScreenProps) {
             codeOf={props.codeOf!}
             rules={ctx.rules}
             step={shownIndex}
-            acting={new Set([state.current, lastMove?.actor].filter((key): key is string => Boolean(key)))}
-            struck={struck}
+            acting={actingKey}
+            view={stepView}
+            moveName={stepMoveName}
             targets={targets}
-            floats={floats}
+            previews={previews}
+            protectedKeys={protectedKeys}
             onTap={(key) => {
               if (targets?.includes(key)) play({ slot: selected!, target: key });
             }}
+            onHold={setSheetKey}
             onFail={() => setBoardFailed(true)}
           />
           <TurnStrip order={upcoming} current={state.current} fighters={state.fighters} artOf={artOf} playerSide={playerSide} trailing={viewSwitch} />
         </>
       ) : (
-        <>
+        <div ref={cardsRef} className="relative flex flex-col gap-1">
           <div className="grid grid-cols-3 gap-1.5">{row(enemy, [2, 3, 4]).map(tile)}</div>
           <div className="flex justify-center gap-1.5">
             {row(enemy, [0, 1]).map((f) => (
@@ -323,7 +395,11 @@ export function CombatScreen(props: CombatScreenProps) {
             ))}
           </div>
           <div className="grid grid-cols-3 gap-1.5">{row(playerSide, [2, 3, 4]).map(tile)}</div>
-        </>
+          <ActionArrows points={cardPoints} arrows={stepView.arrows} step={shownIndex} />
+          {stepView.actor && stepMoveName && cardPoints.get(stepView.actor) && (
+            <MoveBubble at={{ x: cardPoints.get(stepView.actor)!.x, y: cardPoints.get(stepView.actor)!.top + 6 }} text={stepMoveName} slot={stepView.slot} step={shownIndex} />
+          )}
+        </div>
       )}
 
       {latest.state.result && atEnd ? (
@@ -365,16 +441,19 @@ export function CombatScreen(props: CombatScreenProps) {
                     if (targetsOf === null) play({ slot, target: null });
                     else setChosen(selected === slot ? null : slot);
                   }}
-                  className={`btn ${selected === slot ? "btn-primary" : "btn-ghost"} flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-1 text-center text-[12px] leading-4 disabled:opacity-45`}
+                  className={`btn ${selected === slot ? "btn-primary" : "btn-ghost"} flex min-h-14 w-full flex-col items-center justify-start gap-0.5 px-1 py-1 text-center text-[12px] leading-4 disabled:opacity-60`}
                 >
                   <span className="font-extrabold">{move.name}</span>
                   <span className="text-[10px] font-bold opacity-80">{status}</span>
+                  <span className="text-[10px] font-semibold normal-case leading-3 opacity-85">{describeMoveShort(move)}</span>
                 </button>
               );
             })}
           </div>
           <p className="mt-1.5 min-h-8 text-[11px] leading-4 text-muted">
-            {selected ? `${describeCombatMove(actor!.kit[selected])} Tocca un bersaglio evidenziato.` : "Scegli una mossa."}
+            {selected
+              ? `${describeMovePlain(actor!.kit[selected], ctx.rules)} Tocca un bersaglio: sopra ha il danno atteso e la probabilità di colpire.`
+              : "Scegli una mossa. Tieni premuto un personaggio per la sua scheda."}
           </p>
         </div>
       ) : (
@@ -387,10 +466,8 @@ export function CombatScreen(props: CombatScreenProps) {
               Riprova
             </button>
           )}
-          {lines.slice(-4).map((line, i) => (
-            <p key={`${shownIndex}-${i}`} className="text-[12px] leading-4">
-              {line}
-            </p>
+          {linesOf(shown).map((segments, i) => (
+            <BattleLine key={`${shownIndex}-${i}`} segments={segments} className="text-[12px] leading-4" />
           ))}
         </div>
       )}
@@ -411,24 +488,9 @@ export function CombatScreen(props: CombatScreenProps) {
           Registro
         </button>
       </div>
-
+      <FighterSheet fighter={sheetFighter} mine={sheetFighter ? isMine(sheetFighter.key) : false} ctx={ctx} onClose={() => setSheetKey(null)} />
     </div>
   );
-}
-
-/** The numbers that rise over a tile after a step: damage, misses, healing, shields, burns. */
-function floatingNumbers(events: CombatEvent[]): Map<string, { text: string; tone: string }[]> {
-  const out = new Map<string, { text: string; tone: string }[]>();
-  const add = (key: string, text: string, tone: string) => out.set(key, [...(out.get(key) ?? []), { text, tone }]);
-  for (const e of events) {
-    if (e.kind === "damage") add(e.target, `−${e.amount}${e.critical ? "!" : ""}`, e.critical ? "text-comic-orange" : "text-comic-magenta");
-    else if (e.kind === "miss") add(e.target, "mancato", "text-faint");
-    else if (e.kind === "heal" && e.amount > 0) add(e.target, `+${e.amount}`, "text-[#3ddc84]");
-    else if (e.kind === "shield" && e.amount > 0) add(e.target, `+${e.amount}`, "text-comic-cyan");
-    else if (e.kind === "burn") add(e.target, `−${e.amount}`, "text-comic-orange");
-    else if (e.kind === "stunned") add(e.actor, "stordito", "text-comic-yellow");
-  }
-  return out;
 }
 
 function FighterTile(props: {
@@ -438,22 +500,31 @@ function FighterTile(props: {
   acting: boolean;
   struck: boolean;
   targetable: boolean;
-  floats: { text: string; tone: string }[];
-  onTap?: () => void;
+  floats: StepFloat[];
+  step: number;
+  preview?: TargetPreview;
+  protectedHere: boolean;
+  lunge: Point | null;
+  onTap: () => void;
+  onHold: () => void;
 }) {
   const { fighter: f, rules } = props;
+  const press = useHold(props.onHold, props.onTap);
   const down = f.vita <= 0;
   const life = Math.max(0, f.vita) / f.maxVita;
   const shield = Math.min(1, f.shield / f.maxVita);
   const ring = props.targetable ? "ring-2 ring-comic-cyan animate-pulse" : props.acting ? "ring-2 ring-comic-yellow" : props.struck ? "ring-2 ring-comic-magenta" : "";
-  const badges = f.statuses.slice(0, 4);
+  const lunge: CSSProperties | undefined = props.lunge
+    ? ({ ["--lx" as string]: `${props.lunge.x}px`, ["--ly" as string]: `${props.lunge.y}px`, animation: "combat-lunge 0.45s ease-out" } as CSSProperties)
+    : undefined;
   return (
     <button
       type="button"
-      onClick={props.onTap}
-      disabled={!props.onTap}
-      aria-label={`${f.name}, Vita ${f.vita} su ${f.maxVita}`}
-      className={`relative flex w-full flex-col overflow-visible rounded-md border-2 border-black bg-panel-raised text-left ${ring} ${down ? "opacity-45 grayscale" : ""}`}
+      data-fighter={f.key}
+      {...press}
+      aria-label={`${f.name}, Vita ${Math.max(0, f.vita)} su ${f.maxVita}${props.targetable ? ", bersaglio" : ", tocca per la scheda"}`}
+      className={`relative flex w-full select-none flex-col overflow-visible rounded-md border-2 border-black bg-panel-raised text-left [-webkit-touch-callout:none] ${ring} ${down ? "opacity-45 grayscale" : ""}`}
+      style={lunge}
     >
       <div className="relative h-11 w-full overflow-hidden rounded-t-[4px] bg-black">
         {props.art && (
@@ -461,15 +532,14 @@ function FighterTile(props: {
           <img src={props.art} alt="" className="h-full w-full object-cover object-[50%_18%]" draggable={false} />
         )}
         {down && <span className="absolute inset-0 grid place-items-center bg-black/55 font-display text-lg text-comic-magenta">KO</span>}
-        {badges.length > 0 && (
-          <span className="absolute bottom-0.5 left-0.5 right-0.5 flex flex-wrap-reverse gap-[2px]">
-            {badges.map((s) => (
-              <span key={s.code} className={`rounded-[3px] px-[2px] text-[8px] font-black leading-3 shadow-[0_1px_0_#000] ${STATUS_LABELS[s.code].good ? "bg-[#3ddc84] text-black" : "bg-comic-magenta text-white"}`}>
-                {STATUS_LABELS[s.code].short}
-              </span>
-            ))}
+        {!down && <StatusChips statuses={f.statuses} className="absolute bottom-0.5 left-0.5 right-0.5" />}
+        {props.preview && (
+          <span className="absolute inset-x-0.5 top-0.5 flex flex-col items-center rounded-[3px] bg-black/85 text-center ring-1 ring-comic-cyan">
+            <span className="whitespace-nowrap text-[11px] font-black leading-[14px] text-comic-cyan">{previewText(props.preview)}</span>
+            {props.preview.covered && <span className="text-[9px] font-bold leading-3 text-[#c9c4d6]">coperto</span>}
           </span>
         )}
+        {props.protectedHere && <span className="absolute inset-x-0.5 top-0.5 rounded-[3px] bg-black/85 text-center text-[11px] font-black leading-[14px] text-[#c9c4d6]">protetto</span>}
       </div>
       <div className="px-1 pb-1 pt-0.5">
         <p className="truncate text-[11px] font-extrabold leading-4">{f.name}</p>
@@ -483,15 +553,9 @@ function FighterTile(props: {
           ))}
         </div>
       </div>
-      {props.floats.map((float, i) => (
-        <span
-          key={i}
-          className={`fx-token pointer-events-none absolute left-1/2 font-sfx text-xl ${float.tone}`}
-          style={{ top: `${4 + i * 16}px`, animation: "combat-float 0.9s ease-out forwards", textShadow: "0 2px 0 #000" }}
-        >
-          {float.text}
-        </span>
-      ))}
+      <span className="pointer-events-none absolute left-1/2 top-2">
+        <RisingWords floats={props.floats} at={{ x: 0, y: 0 }} step={props.step} />
+      </span>
     </button>
   );
 }

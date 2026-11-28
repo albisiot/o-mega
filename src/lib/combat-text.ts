@@ -8,7 +8,8 @@ export const SLOT_LABELS: Record<CombatSlot, string> = { base: "Base", special: 
 /** Name, three letters for the badge, and whether it helps who has it. */
 export const STATUS_LABELS: Record<CombatStatusCode, { name: string; short: string; good: boolean }> = {
   empower: { name: "Potenziamento", short: "POT", good: true },
-  fortify: { name: "Fortificazione", short: "FOR", good: true },
+  // Not "FOR": that is the Forza of the cards.
+  fortify: { name: "Fortificazione", short: "FRT", good: true },
   haste: { name: "Accelerazione", short: "ACC", good: true },
   taunt: { name: "Provocazione", short: "PRV", good: true },
   weaken: { name: "Indebolimento", short: "IND", good: false },

@@ -393,6 +393,21 @@ Deciso dall'utente il 27 novembre 2026, dopo le foto di una prova a misura di iP
 - **Diorami 3D o carte:** ogni giocatore sceglie dal suo dispositivo come vedere le battaglie, con le carte e i loro disegni come prima della tappa: nella pagina dello Scontro («Battaglie con: Diorami 3D · Carte», per il computer e per le sfide) e durante la battaglia, a destra della fila dei turni («3D · Carte»). La scelta resta su quel dispositivo (`localStorage`, `o-mega.combat-view`); di partenza i diorami. Con le carte three.js non si scarica nemmeno.
 - **Test:** `src/lib/combat-board-3d.test.ts` (posti sul campo, colore dei nomi, unione delle parti ferme, parti che si muovono tenute a parte); `npm run test:layout -- scontro` passa in tutte le scene, a misura di iPhone e di iPhone basso. Resta da provare sul telefono vero.
 
+## Chi colpisce chi (28 novembre 2026)
+
+Chiesto dall'utente il 28 novembre 2026: «vorrei che durante la partita si capissero bene cosa fanno le abilità e che si capisse chi colpisce chi in che modo». Dopo un'analisi e un mock animato con tre direzioni, ha scelto **A più B**: correggere ciò che inganna e dire meglio, poi far vedere chi colpisce chi. Vale per il campo in 3D e per le carte; la logica è pura, in `src/lib/combat-clarity.ts` (con i suoi test), e quello che si disegna sopra i personaggi in `src/components/combat-overlays.tsx`.
+
+- **Un solo anello giallo:** su chi agisce nel passo mostrato (o su chi sceglie ora); chi tocca dopo sta nella fila dei turni. Prima gli anelli erano due.
+- **Il colpo mancato** non fa più tremare né lampeggiare di rosso il bersaglio: sopra compare «MANCATO» in grigio.
+- **Le parole sopra i personaggi:** «−66», «CRITICO −133», «46 sullo scudo», «+40 Vita», «+46 scudo», «brucia −12», l'effetto quando arriva («Bruciatura!» in rosso, «Accelerazione!» in verde), «resiste», «stordito», e il nome della passiva quando scatta.
+- **Gli effetti di stato** stanno sulla basetta del loro personaggio, sopra la targhetta, con i turni che restano («IND 2»); con le carte il nome intero quando è uno solo. La Fortificazione ha la sigla «FRT», perché «FOR» è la Forza delle carte.
+- **L'azione intera in una riga,** nel riquadro sotto il campo e nel Registro (raggruppato per azione), con i nomi nel colore della squadra: «Kiln → Higgler · Serratura fusa: −100, Bruciatura 2 turni»; «Busker → tutti i nemici · La canzone giusta: Sordina −24; Kiln −35 critico, resiste a Indebolimento; Aion mancato»; una passiva e gli effetti del turno dopo (bruciatura, effetti che finiscono) in righe proprie.
+- **Le mosse a parole:** sotto ogni pulsante chi raggiunge e cosa fa («1 nemico a distanza · danno normale»), anche la Suprema ancora da caricare; scelta una mossa, una frase con le regole delle linee («in seconda linea, finché la prima è in piedi, fa il 20% in meno»; «la seconda è protetta»). I moltiplicatori diventano parole: leggero (sotto ×0,6), normale (fino a ×1,05), forte (fino a ×1,5), molto forte.
+- **Una freccia da chi agisce a ogni personaggio che raggiunge:** rossa per i danni, verde per le cure, azzurra per gli scudi, gialla per gli effetti, grigia e tratteggiata per i colpi mancati; chi agisce si sporge verso il bersaglio; un **fumetto** con il nome della mossa sopra di lui (arancione per la Suprema).
+- **Prima di confermare,** su ogni bersaglio possibile il danno atteso senza critico e la probabilità di colpire («~66 / 87%», «coperto» in seconda linea), o la cura e lo scudo sui compagni; «protetto» sui nemici che una mossa corpo a corpo non raggiunge. Li calcolano le formule del motore; l'esito lo decide sempre il server.
+- **La scheda di un personaggio:** tenendolo premuto (o toccandolo quando non è un bersaglio): Vita, scudo, Carica, linea, effetti con i turni che restano, le tre mosse a parole con quando sono pronte, la passiva.
+- **Controlli:** `npm run test:layout -- scontro` passa in tutte le scene a misura di iPhone e di iPhone basso; nel 3D, sui telefoni bassi, gli effetti restano in sigla perché i nomi interi si coprivano tra vicini.
+
 ## I kit di tutti (tappa 5)
 
 Gli altri 341 personaggi ricevono il loro kit a gruppi di 20-30, cominciando da quelli che i giocatori possiedono di più. L'elenco dei kit approvati, in italiano, è in [COMBAT-KITS.md](COMBAT-KITS.md).
